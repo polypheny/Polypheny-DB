@@ -17,9 +17,12 @@
 package org.polypheny.db.webui.models.requests;
 
 
+import lombok.experimental.SuperBuilder;
+import lombok.extern.jackson.Jacksonized;
 import org.polypheny.db.webui.models.catalog.UiColumnDefinition;
 
-
+@SuperBuilder
+@Jacksonized
 public class ColumnRequest extends UIRequest {
 
     public UiColumnDefinition oldColumn;

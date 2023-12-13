@@ -65,7 +65,7 @@ public abstract class AbstractEntityQueryable<T, K extends Entity & QueryableEnt
     public AbstractEntityQueryable( DataContext dataContext, Snapshot snapshot, K entity ) {
         this.dataContext = dataContext;
         this.snapshot = snapshot;
-        assert entity.unwrap( QueryableEntity.class ) != null;
+        assert entity.unwrap( QueryableEntity.class ).isPresent();
         this.entity = entity;
     }
 

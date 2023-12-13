@@ -17,6 +17,7 @@
 package org.polypheny.db.algebra.enumerable;
 
 
+import java.util.Optional;
 import java.util.function.Predicate;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.algebra.AlgNode;
@@ -46,15 +47,19 @@ public class EnumerableScanRule extends ConverterRule {
     @Override
     public AlgNode convert( AlgNode alg ) {
         LogicalRelScan scan = (LogicalRelScan) alg;
-        final LogicalTable entity = scan.getEntity().unwrap( LogicalTable.class );
-        if ( !EnumerableScan.canHandle( entity ) ) {
+        Optional<LogicalTable> oEntity = scan.getEntity().unwrap( LogicalTable.class );
+        if ( oEntity.isEmpty() ) {
             return null;
         }
-        final Expression expression = entity.asExpression();
+
+        if ( !EnumerableScan.canHandle( oEntity.get() ) ) {
+            return null;
+        }
+        final Expression expression = oEntity.get().asExpression();
         if ( expression == null ) {
             return null;
         }
-        return EnumerableScan.create( scan.getCluster(), entity );
+        return EnumerableScan.create( scan.getCluster(), oEntity.get() );
     }
 
 }

@@ -34,6 +34,8 @@
 package org.polypheny.db.schema;
 
 import com.google.common.collect.ImmutableList;
+import java.util.Optional;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.schema.Namespace.Schema;
@@ -100,7 +102,7 @@ public interface SchemaPlus extends Namespace, Schema {
     /**
      * Returns an underlying object.
      */
-    <T> T unwrap( Class<T> clazz );
+    @NotNull <T> Optional<T> unwrap( Class<T> clazz );
 
     void setPath( ImmutableList<ImmutableList<String>> path );
 

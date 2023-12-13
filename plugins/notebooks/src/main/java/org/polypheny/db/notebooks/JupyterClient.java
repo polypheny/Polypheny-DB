@@ -274,7 +274,7 @@ public class JupyterClient {
      * Send a GET request to the specified endpoint.
      *
      * @param resource the endpoint the GET request is sent to
-     * @param queryParams query parameters as string, correctly formatted (key1=value1&key2=value2...)
+     * @param queryParams query parameters as string, correctly formatted {@code (key1=value1&key2=value2...)}
      * @return the HttpResponse from the jupyter server
      * @throws JupyterServerException if the request fails
      */

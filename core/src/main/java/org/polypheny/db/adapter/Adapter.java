@@ -16,7 +16,6 @@
 
 package org.polypheny.db.adapter;
 
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -32,7 +31,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.catalogs.StoreCatalog;
+import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
@@ -53,9 +52,10 @@ import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.types.Expressible;
 import org.polypheny.db.transaction.PolyXid;
 
+
 @Getter
 @Slf4j
-public abstract class Adapter<S extends StoreCatalog> implements Scannable, Expressible {
+public abstract class Adapter<S extends AdapterCatalog> implements Scannable, Expressible {
 
     private final AdapterProperties properties;
     protected final DeployMode deployMode;
@@ -103,7 +103,7 @@ public abstract class Adapter<S extends StoreCatalog> implements Scannable, Expr
         informationGroups = new ArrayList<>();
         informationElements = new ArrayList<>();
 
-        // this is need for docker deployable stores and should not interfere too much with other adapters
+        // This is need for docker deployable stores and should not interfere too much with other adapters
         if ( deployMode == DeployMode.DOCKER ) {
             this.listener = attachListener( Integer.parseInt( settings.get( "instanceId" ) ) );
         }
@@ -183,7 +183,6 @@ public abstract class Adapter<S extends StoreCatalog> implements Scannable, Expr
                 updatedSettings.add( newSetting.getKey() );
             }
         }
-
         return updatedSettings;
     }
 

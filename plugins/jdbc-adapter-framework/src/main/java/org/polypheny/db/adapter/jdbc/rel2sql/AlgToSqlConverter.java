@@ -275,7 +275,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
      */
     public Result visit( RelScan<?> e ) {
         return result(
-                new SqlIdentifier( List.of( e.getEntity().unwrap( LogicalTable.class ).getNamespaceName(), e.getEntity().name ), ParserPos.ZERO ),
+                new SqlIdentifier( List.of( e.getEntity().unwrap( LogicalTable.class ).orElseThrow().getNamespaceName(), e.getEntity().name ), ParserPos.ZERO ),
                 ImmutableList.of( Clause.FROM ),
                 e,
                 null );
@@ -453,7 +453,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
         final Context context = aliasContext( pairs, false );
 
         // Target Table Name
-        final SqlIdentifier sqlTargetTable = getPhysicalTableName( modify.getEntity().unwrap( JdbcTable.class ) );
+        final SqlIdentifier sqlTargetTable = getPhysicalTableName( modify.getEntity().unwrap( JdbcTable.class ).orElseThrow() );
 
         switch ( modify.getOperation() ) {
             case INSERT: {
@@ -466,7 +466,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
                         sqlTargetTable,
                         sqlSource,
                         physicalIdentifierList(
-                                modify.getEntity().unwrap( JdbcTable.class ),
+                                modify.getEntity().unwrap( JdbcTable.class ).orElseThrow(),
                                 modify.getInput().getRowType().getFieldNames() ) );
                 return result( sqlInsert, ImmutableList.of(), modify, null );
             }
@@ -475,7 +475,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
                 final SqlUpdate sqlUpdate = new SqlUpdate(
                         POS,
                         sqlTargetTable,
-                        physicalIdentifierList( modify.getEntity().unwrap( JdbcTable.class ), modify.getUpdateColumns() ),
+                        physicalIdentifierList( modify.getEntity().unwrap( JdbcTable.class ).orElseThrow(), modify.getUpdateColumns() ),
                         exprList( context, modify.getSourceExpressions() ),
                         ((SqlSelect) input.node).getWhere(),
                         input.asSelect(),

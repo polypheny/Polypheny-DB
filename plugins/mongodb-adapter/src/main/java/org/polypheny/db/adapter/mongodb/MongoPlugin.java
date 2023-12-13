@@ -49,7 +49,7 @@ import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.document.DocumentModify;
-import org.polypheny.db.catalog.catalogs.DocStoreCatalog;
+import org.polypheny.db.catalog.catalogs.DocAdapterCatalog;
 import org.polypheny.db.catalog.entity.LogicalDefaultValue;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
@@ -117,7 +117,7 @@ public class MongoPlugin extends PolyPlugin {
     @AdapterSettingInteger(name = "port", defaultValue = 27017, appliesTo = DeploySetting.REMOTE)
     @AdapterSettingString(name = "host", defaultValue = "localhost", appliesTo = DeploySetting.REMOTE)
     @AdapterSettingInteger(name = "trxLifetimeLimit", defaultValue = 1209600) // two weeks
-    public static class MongoStore extends DataStore<DocStoreCatalog> {
+    public static class MongoStore extends DataStore<DocAdapterCatalog> {
 
         private final String DEFAULT_DATABASE = "public";
 
@@ -137,7 +137,7 @@ public class MongoPlugin extends PolyPlugin {
 
 
         public MongoStore( long adapterId, String uniqueName, Map<String, String> settings ) {
-            super( adapterId, uniqueName, settings, true, new DocStoreCatalog( adapterId ) );
+            super( adapterId, uniqueName, settings, true, new DocAdapterCatalog( adapterId ) );
 
             if ( deployMode == DeployMode.DOCKER ) {
                 if ( settings.getOrDefault( "deploymentId", "" ).isEmpty() ) {
@@ -328,7 +328,7 @@ public class MongoPlugin extends PolyPlugin {
         public void dropCollection( Context context, AllocationCollection allocation ) {
             commitAll();
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
-            PhysicalCollection collection = storeCatalog.fromAllocation( allocation.id, PhysicalCollection.class );
+            PhysicalEntity collection = storeCatalog.fromAllocation( allocation.id, PhysicalEntity.class );
             this.currentNamespace.database.getCollection( collection.name ).drop();
 
             storeCatalog.removeAllocAndPhysical( allocation.id );
@@ -550,10 +550,10 @@ public class MongoPlugin extends PolyPlugin {
         @Override
         public AlgNode getDocModify( long allocId, DocumentModify<?> modify, AlgBuilder builder ) {
             PhysicalCollection collection = storeCatalog.fromAllocation( allocId, PhysicalCollection.class );
-            if ( collection.unwrap( ModifiableTable.class ) == null ) {
+            if ( collection.unwrap( ModifiableTable.class ).isPresent() ) {
                 return null;
             }
-            return collection.unwrap( ModifiableTable.class ).toModificationTable(
+            return collection.unwrap( ModifiableTable.class ).get().toModificationTable(
                     modify.getCluster(),
                     modify.getTraitSet(),
                     collection,

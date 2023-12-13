@@ -124,4 +124,11 @@ public class MonitoringServiceImpl implements MonitoringService {
         this.repository.resetQueryPostCosts();
     }
 
+
+    @Override
+    public long getSize() {
+        return monitoringQueue.getNumberOfElementsInQueue();
+    }
+
+
 }

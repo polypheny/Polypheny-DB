@@ -16,6 +16,18 @@
 
 package org.polypheny.db.type.entity;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JacksonException;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import java.io.IOException;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.calcite.avatica.util.ByteString;
@@ -32,10 +44,14 @@ import org.polypheny.db.util.ConversionUtil;
 public class PolyBinary extends PolyValue {
 
     public static final PolyBinary EMPTY = new PolyBinary( ByteString.EMPTY );
+    @JsonProperty()
+    @JsonSerialize(using = ByteStringSerializer.class)
+    @JsonDeserialize(using = ByteStringDeserializer.class)
     public ByteString value;
 
 
-    public PolyBinary( ByteString value ) {
+    @JsonCreator
+    public PolyBinary( @JsonProperty("value") ByteString value ) {
         super( PolyType.BINARY );
         this.value = value;
     }
@@ -114,6 +130,36 @@ public class PolyBinary extends PolyValue {
     @Override
     public @NotNull Long deriveByteSize() {
         return (long) (value == null ? 1 : value.getBytes().length);
+    }
+
+
+    public static class ByteStringSerializer extends StdSerializer<ByteString> {
+
+        public ByteStringSerializer() {
+            super( ByteString.class );
+        }
+
+
+        @Override
+        public void serialize( ByteString value, JsonGenerator gen, SerializerProvider provider ) throws IOException {
+            gen.writeBinary( value.getBytes() );
+        }
+
+    }
+
+
+    public static class ByteStringDeserializer extends StdDeserializer<ByteString> {
+
+        public ByteStringDeserializer() {
+            super( ByteString.class );
+        }
+
+
+        @Override
+        public ByteString deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException, JacksonException {
+            return new ByteString( p.getBinaryValue() );
+        }
+
     }
 
 

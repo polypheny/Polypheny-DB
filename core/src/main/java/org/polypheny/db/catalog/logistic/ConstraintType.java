@@ -16,11 +16,16 @@
 
 package org.polypheny.db.catalog.logistic;
 
+import lombok.Getter;
 import lombok.NonNull;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 
+@Getter
 public enum ConstraintType {
     UNIQUE( 1 ),
-    PRIMARY( 2 );
+    PRIMARY( 2 ),
+
+    FOREIGN( 3 );
 
     private final int id;
 
@@ -30,18 +35,13 @@ public enum ConstraintType {
     }
 
 
-    public int getId() {
-        return id;
-    }
-
-
     public static ConstraintType getById( int id ) {
         for ( ConstraintType e : values() ) {
             if ( e.id == id ) {
                 return e;
             }
         }
-        throw new RuntimeException( "Unknown ConstraintType with id: " + id );
+        throw new GenericRuntimeException( "Unknown ConstraintType with id: " + id );
     }
 
 
@@ -49,6 +49,6 @@ public enum ConstraintType {
         if ( str.equalsIgnoreCase( "UNIQUE" ) ) {
             return ConstraintType.UNIQUE;
         }
-        throw new RuntimeException( "Unknown ConstraintType with name: " + str );
+        throw new GenericRuntimeException( "Unknown ConstraintType with name: " + str );
     }
 }

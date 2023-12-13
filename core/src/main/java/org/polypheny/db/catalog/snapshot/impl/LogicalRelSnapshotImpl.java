@@ -182,8 +182,9 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
         return ImmutableMap.copyOf( tables
                 .values()
                 .stream()
-                .filter( t -> t.unwrap( LogicalView.class ) != null )
                 .map( t -> t.unwrap( LogicalView.class ) )
+                .filter( Optional::isPresent )
+                .map( Optional::get )
                 .collect( Collectors.toMap( e -> e.id, e -> e, getDuplicateError() ) ) );
     }
 

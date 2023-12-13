@@ -20,14 +20,15 @@ import com.google.common.collect.Streams;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import lombok.Data;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Collation;
-import org.polypheny.db.util.Pair;
 
 @Data
 public class DocumentType implements AlgDataType, AlgDataTypeFamily {
@@ -38,28 +39,32 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
     public static final Integer DATA_SIZE = 12024;
     public StructKind structKind;
 
-    public final List<AlgDataTypeField> fixedFields;
+    public final List<AlgDataTypeField> fixed;
 
+    public final List<String> excluded;
+
+    boolean isFixed = false;
 
     public String physicalName = null;
 
     public String digest;
 
 
-    public DocumentType( @Nonnull List<AlgDataTypeField> fixedFields ) {
-        this.structKind = fixedFields.isEmpty() ? StructKind.NONE : StructKind.SEMI;
-        this.fixedFields = new ArrayList<>( fixedFields );
+    public DocumentType( @NotNull List<AlgDataTypeField> fixed, @NotNull List<String> excluded ) {
+        this.structKind = fixed.isEmpty() ? StructKind.NONE : StructKind.SEMI;
+        this.excluded = excluded;
+        this.fixed = new ArrayList<>( fixed );
         this.digest = computeDigest();
+    }
+
+
+    public DocumentType( @Nonnull List<AlgDataTypeField> fixed ) {
+        this( fixed, List.of() );
     }
 
 
     public DocumentType() {
         this( List.of() );
-    }
-
-
-    public DocumentType( List<? extends RexNode> ids, List<String> names ) {
-        this( Streams.mapWithIndex( Pair.zip( ids, names ).stream(), ( p, i ) -> new AlgDataTypeFieldImpl( -1L, p.getRight(), (int) i, p.getLeft().getType() ) ).collect( Collectors.toList() ) );
     }
 
 
@@ -81,10 +86,21 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
     }
 
 
+    public static DocumentType ofIncludes( Map<String, ? extends RexNode> includes ) {
+        return new DocumentType( Streams.mapWithIndex( includes.entrySet().stream(), ( e, i ) -> new AlgDataTypeFieldImpl( -1L, e.getKey() == null ? "" : e.getKey(), (int) i, e.getValue().getType() ) ).collect( Collectors.toList() ) );
+    }
+
+
+    public AlgDataType ofExcludes( List<String> excludes ) {
+        return new DocumentType( fixed, excludes );
+    }
+
+
     private String computeDigest() {
-        assert fixedFields != null;
+        assert fixed != null;
         return getClass().getSimpleName() +
-                fixedFields.stream().map( f -> f.getType().getFullTypeString() ).collect( Collectors.joining( "$" ) );
+                fixed.stream().map( f -> f.getType().getFullTypeString() ).collect( Collectors.joining( "$" ) ) +
+                String.join( "$", excluded );
     }
 
 
@@ -96,7 +112,7 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
 
     @Override
     public List<AlgDataTypeField> getFields() {
-        return fixedFields;
+        return fixed;
     }
 
 
@@ -108,7 +124,7 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
 
     @Override
     public List<Long> getFieldIds() {
-        return fixedFields.stream().map( AlgDataTypeField::getId ).collect( Collectors.toList() );
+        return fixed.stream().map( AlgDataTypeField::getId ).collect( Collectors.toList() );
     }
 
 
@@ -126,7 +142,7 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
             return getFields().get( index );
         }
         AlgDataTypeFieldImpl added = new AlgDataTypeFieldImpl( -1L, fieldName, getFieldCount(), new DocumentType() );
-        fixedFields.add( added );
+        fixed.add( added );
         computeDigest();
 
         return added;

@@ -117,7 +117,7 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
         for ( RoutedAlgBuilder builder : builders ) {
             RoutedAlgBuilder newBuilder = RoutedAlgBuilder.createCopy( statement, cluster, builder );
             newBuilder.addPhysicalInfo( Map.of( allocs.get( 0 ).partitionId, columns ) );
-            newBuilder.push( super.buildJoinedScan( statement, cluster, table, Map.of( allocs.get( 0 ).placementId, allocs.get( 0 ).unwrap( AllocationTable.class ).getColumns() ) ) );
+            newBuilder.push( super.buildJoinedScan( statement, cluster, table, Map.of( allocs.get( 0 ).placementId, allocs.get( 0 ).unwrap( AllocationTable.class ).orElseThrow().getColumns() ) ) );
             newBuilders.add( newBuilder );
         }
         //}
@@ -143,13 +143,13 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
     }
 
 
-    protected Set<List<AllocationColumn>> selectPlacement( LogicalTable catalogTable, LogicalQueryInformation queryInformation ) {
+    protected Set<List<AllocationColumn>> selectPlacement( LogicalTable table, LogicalQueryInformation queryInformation ) {
         // Get used columns from analyze
-        List<Long> usedColumns = queryInformation.getAllColumnsPerTable( catalogTable.id );
+        List<Long> usedColumns = queryInformation.getAllColumnsPerTable( table.id );
 
         // Filter for placements by adapters
-        List<AllocationEntity> allocs = Catalog.snapshot().alloc().getFromLogical( catalogTable.id ).stream()
-                .map( a -> a.unwrap( AllocationTable.class ) )
+        List<AllocationEntity> allocs = Catalog.snapshot().alloc().getFromLogical( table.id ).stream()
+                .map( a -> a.unwrap( AllocationTable.class ).orElseThrow() )
                 .filter( a -> new HashSet<>( a.getColumnIds() ).containsAll( usedColumns ) )
                 .collect( Collectors.toList() );
 
@@ -162,7 +162,7 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
         final Set<List<AllocationColumn>> result = new HashSet<>();
         for ( AllocationEntity alloc : allocs ) {
             List<AllocationColumn> placements = usedColumns.stream()
-                    .map( colId -> alloc.unwrap( AllocationTable.class ).getColumns().stream().filter( c -> c.columnId == colId ).findFirst().get() )
+                    .map( colId -> alloc.unwrap( AllocationTable.class ).orElseThrow().getColumns().stream().filter( c -> c.columnId == colId ).findFirst().orElseThrow() )
                     .collect( Collectors.toList() );
 
             if ( !placements.isEmpty() ) {

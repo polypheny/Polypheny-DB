@@ -167,7 +167,7 @@ public abstract class AlgOptRule {
      * @param <R> Class of relational expression to match
      * @return Operand that matches a relational expression that has a particular trait and predicate
      */
-    public static <R extends AlgNode> AlgOptRuleOperand operandJ( Class<R> clazz, AlgTrait trait, Predicate<? super R> predicate, AlgOptRuleOperandChildren operandList ) {
+    public static <R extends AlgNode> AlgOptRuleOperand operandJ( Class<R> clazz, AlgTrait<?> trait, Predicate<? super R> predicate, AlgOptRuleOperandChildren operandList ) {
         return new AlgOptRuleOperand( clazz, trait, predicate, operandList.policy, operandList.operands );
     }
 
@@ -177,7 +177,7 @@ public abstract class AlgOptRule {
      */
     @SuppressWarnings("Guava")
     @Deprecated // to be removed before 2.0
-    public static <R extends AlgNode> AlgOptRuleOperand operand( Class<R> clazz, AlgTrait trait, com.google.common.base.Predicate<? super R> predicate, AlgOptRuleOperandChildren operandList ) {
+    public static <R extends AlgNode> AlgOptRuleOperand operand( Class<R> clazz, AlgTrait<?> trait, com.google.common.base.Predicate<? super R> predicate, AlgOptRuleOperandChildren operandList ) {
         return operandJ( clazz, trait, (Predicate<? super R>) predicate::apply, operandList );
     }
 
@@ -193,14 +193,14 @@ public abstract class AlgOptRule {
      * @param <R> Class of relational expression to match
      * @return Operand
      */
-    public static <R extends AlgNode> AlgOptRuleOperand operandJ( Class<R> clazz, AlgTrait trait, Predicate<? super R> predicate, AlgOptRuleOperand first, AlgOptRuleOperand... rest ) {
+    public static <R extends AlgNode> AlgOptRuleOperand operandJ( Class<R> clazz, AlgTrait<?> trait, Predicate<? super R> predicate, AlgOptRuleOperand first, AlgOptRuleOperand... rest ) {
         return operandJ( clazz, trait, predicate, some( first, rest ) );
     }
 
 
     @SuppressWarnings("Guava")
     @Deprecated // to be removed before 2.0
-    public static <R extends AlgNode> AlgOptRuleOperand operand( Class<R> clazz, AlgTrait trait, com.google.common.base.Predicate<? super R> predicate, AlgOptRuleOperand first, AlgOptRuleOperand... rest ) {
+    public static <R extends AlgNode> AlgOptRuleOperand operand( Class<R> clazz, AlgTrait<?> trait, com.google.common.base.Predicate<? super R> predicate, AlgOptRuleOperand first, AlgOptRuleOperand... rest ) {
         return operandJ( clazz, trait, (Predicate<? super R>) predicate::apply, first, rest );
     }
 

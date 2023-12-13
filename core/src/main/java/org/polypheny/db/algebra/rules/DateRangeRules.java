@@ -196,7 +196,7 @@ public abstract class DateRangeRules {
         public void onMatch( AlgOptRuleCall call ) {
             final Filter filter = call.alg( 0 );
             final RexBuilder rexBuilder = filter.getCluster().getRexBuilder();
-            final String timeZone = filter.getCluster().getPlanner().getContext().unwrap( PolyphenyDbConnectionConfig.class ).timeZone();
+            final String timeZone = filter.getCluster().getPlanner().getContext().unwrap( PolyphenyDbConnectionConfig.class ).orElseThrow().timeZone();
             final RexNode condition = replaceTimeUnits( rexBuilder, filter.getCondition(), timeZone );
             if ( condition.equals( filter.getCondition() ) ) {
                 return;

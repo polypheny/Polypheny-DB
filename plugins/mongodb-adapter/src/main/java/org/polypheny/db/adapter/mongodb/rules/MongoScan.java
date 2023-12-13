@@ -25,14 +25,16 @@ import org.bson.BsonString;
 import org.polypheny.db.adapter.mongodb.MongoAlg;
 import org.polypheny.db.adapter.mongodb.MongoEntity;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.relational.RelScan;
+import org.polypheny.db.algebra.core.common.Scan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.schema.trait.ModelTraitDef;
 import org.polypheny.db.util.Pair;
 
 
@@ -41,7 +43,7 @@ import org.polypheny.db.util.Pair;
  *
  * Additional operations might be applied, using the "find" or "aggregate" methods.</p>
  */
-public class MongoScan extends RelScan<MongoEntity> implements MongoAlg {
+public class MongoScan extends Scan<MongoEntity> implements MongoAlg {
 
 
 
@@ -54,6 +56,7 @@ public class MongoScan extends RelScan<MongoEntity> implements MongoAlg {
      */
     public MongoScan( AlgOptCluster cluster, AlgTraitSet traitSet, MongoEntity table ) {
         super( cluster, traitSet, table );
+        this.rowType = table.getRowType( cluster.getTypeFactory() );
 
         assert getConvention() == CONVENTION;
     }
@@ -83,8 +86,15 @@ public class MongoScan extends RelScan<MongoEntity> implements MongoAlg {
     @Override
     public void register( AlgOptPlanner planner ) {
         for ( AlgOptRule rule : MongoRules.RULES ) {
-            planner.addRule( rule );
+            planner.addRuleDuringRuntime( rule );
         }
+    }
+
+
+    @Override
+    public String algCompareString() {
+        return this.getClass().getSimpleName() + "$" +
+                entity.id + "&";
     }
 
 
@@ -97,7 +107,9 @@ public class MongoScan extends RelScan<MongoEntity> implements MongoAlg {
         if ( implementor.isDML() ) {
             return;
         }
-        implementor.list.add( Pair.of( null, new BsonDocument( "$project", new BsonDocument( rowType.getFields().stream().map( p -> new BsonElement( p.getName(), new BsonString( "$" + p.getPhysicalName() ) ) ).collect( Collectors.toList() ) ) ).toJson() ) );
+        if ( traitSet.getTrait( ModelTraitDef.INSTANCE ).getDataModel() == DataModel.RELATIONAL ) {
+            implementor.list.add( Pair.of( null, new BsonDocument( "$project", new BsonDocument( rowType.getFields().stream().map( p -> new BsonElement( p.getName(), new BsonString( "$" + p.getPhysicalName() ) ) ).collect( Collectors.toList() ) ) ).toJson() ) );
+        }
     }
 
 }

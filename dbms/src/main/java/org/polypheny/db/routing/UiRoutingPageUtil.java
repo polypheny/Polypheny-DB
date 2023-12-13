@@ -109,8 +109,8 @@ public class UiRoutingPageUtil {
                 AllocationEntity alloc = snapshot.alloc().getEntity( k ).orElseThrow();
                 LogicalEntity entity = snapshot.getLogicalEntity( alloc.logicalId ).orElseThrow();
 
-                if ( alloc.unwrap( AllocationTable.class ) != null ) {
-                    AllocationTable allocTable = alloc.unwrap( AllocationTable.class );
+                if ( alloc.unwrap( AllocationTable.class ).isPresent() ) {
+                    AllocationTable allocTable = alloc.unwrap( AllocationTable.class ).get();
                     List<AllocationColumn> columns = snapshot.alloc().getColumns( allocTable.id );
 
                     for ( AllocationColumn column : columns ) {
@@ -122,14 +122,14 @@ public class UiRoutingPageUtil {
                                 alloc.adapterId );
                     }
 
-                } else if ( alloc.unwrap( AllocationCollection.class ) != null ) {
+                } else if ( alloc.unwrap( AllocationCollection.class ).isPresent() ) {
                     table.addRow(
                             entity.getNamespaceName() + "." + entity.name,
                             entity.name,
                             alloc.id,
                             alloc.adapterId );
 
-                } else if ( alloc.unwrap( AllocationGraph.class ) != null ) {
+                } else if ( alloc.unwrap( AllocationGraph.class ).isPresent() ) {
                     table.addRow(
                             entity.getNamespaceName() + "." + entity.name,
                             entity.name,

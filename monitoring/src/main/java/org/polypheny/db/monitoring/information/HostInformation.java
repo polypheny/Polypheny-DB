@@ -14,15 +14,23 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.information;
+package org.polypheny.db.monitoring.information;
 
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Supplier;
+import lombok.Getter;
 import org.apache.commons.lang3.SystemUtils;
+import org.polypheny.db.information.InformationGraph;
 import org.polypheny.db.information.InformationGraph.GraphData;
 import org.polypheny.db.information.InformationGraph.GraphType;
+import org.polypheny.db.information.InformationGroup;
+import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.information.InformationPage;
+import org.polypheny.db.information.InformationTable;
+import org.polypheny.db.util.Pair;
 import oshi.SystemInfo;
 import oshi.hardware.GlobalMemory;
 import oshi.hardware.HWDiskStore;
@@ -33,18 +41,27 @@ import oshi.software.os.OperatingSystem;
 import oshi.software.os.OperatingSystem.ProcessSorting;
 
 
+@Getter
 public class HostInformation {
+
+
+    private final SystemInfo systemInfo;
+    private final HardwareAbstractionLayer hardwareAbstractionLayer;
+    private final Supplier<Pair<Long, Long>> usedFreeProvider;
+
+    @Getter(lazy = true)
+    private final static HostInformation INSTANCE = new HostInformation();
 
 
     /**
      * Generate test data
      */
-    public HostInformation() {
+    private HostInformation() {
         InformationManager im = InformationManager.getInstance();
 
-        SystemInfo si = new SystemInfo();
-        HardwareAbstractionLayer hal = si.getHardware();
-        OperatingSystem os = si.getOperatingSystem();
+        this.systemInfo = new SystemInfo();
+        this.hardwareAbstractionLayer = systemInfo.getHardware();
+        OperatingSystem os = systemInfo.getOperatingSystem();
 
         InformationPage page = new InformationPage( "Host" );
         im.addPage( page );
@@ -66,20 +83,20 @@ public class HostInformation {
         im.addGroup( hardwareGroup );
 
         InformationTable hardwareInformation = new InformationTable( hardwareGroup, Arrays.asList( "Attribute", "Value" ) );
-        hardwareInformation.addRow( "CPU / Core Count", hal.getProcessor().getPhysicalPackageCount() + " / " + hal.getProcessor().getPhysicalProcessorCount() );
-        if ( hal.getProcessor().getPhysicalPackageCount() > 1 ) {
-            for ( int i = 0; i < hal.getProcessor().getPhysicalPackageCount(); i++ ) {
-                hardwareInformation.addRow( "CPU " + i, hal.getProcessor().getProcessorIdentifier().getName() );
+        hardwareInformation.addRow( "CPU / Core Count", hardwareAbstractionLayer.getProcessor().getPhysicalPackageCount() + " / " + hardwareAbstractionLayer.getProcessor().getPhysicalProcessorCount() );
+        if ( hardwareAbstractionLayer.getProcessor().getPhysicalPackageCount() > 1 ) {
+            for ( int i = 0; i < hardwareAbstractionLayer.getProcessor().getPhysicalPackageCount(); i++ ) {
+                hardwareInformation.addRow( "CPU " + i, hardwareAbstractionLayer.getProcessor().getProcessorIdentifier().getName() );
             }
         } else {
-            hardwareInformation.addRow( "CPU", hal.getProcessor().getProcessorIdentifier().getName() );
+            hardwareInformation.addRow( "CPU", hardwareAbstractionLayer.getProcessor().getProcessorIdentifier().getName() );
         }
-        hardwareInformation.addRow( "Memory", humanReadableByteCount( hal.getMemory().getTotal(), false ) );
-        hardwareInformation.addRow( "Mainboard", hal.getComputerSystem().getBaseboard().getModel() );
-        hardwareInformation.addRow( "Firmware Version", hal.getComputerSystem().getFirmware().getVersion() );
-        hardwareInformation.addRow( "Manufacturer", hal.getComputerSystem().getManufacturer() );
-        hardwareInformation.addRow( "Model", hal.getComputerSystem().getModel() );
-        hardwareInformation.addRow( "Serial Number", hal.getComputerSystem().getSerialNumber() );
+        hardwareInformation.addRow( "Memory", humanReadableByteCount( hardwareAbstractionLayer.getMemory().getTotal(), false ) );
+        hardwareInformation.addRow( "Mainboard", hardwareAbstractionLayer.getComputerSystem().getBaseboard().getModel() );
+        hardwareInformation.addRow( "Firmware Version", hardwareAbstractionLayer.getComputerSystem().getFirmware().getVersion() );
+        hardwareInformation.addRow( "Manufacturer", hardwareAbstractionLayer.getComputerSystem().getManufacturer() );
+        hardwareInformation.addRow( "Model", hardwareAbstractionLayer.getComputerSystem().getModel() );
+        hardwareInformation.addRow( "Serial Number", hardwareAbstractionLayer.getComputerSystem().getSerialNumber() );
         im.registerInformation( hardwareInformation );
 
         //
@@ -88,7 +105,7 @@ public class HostInformation {
         im.addGroup( storageGroup );
 
         InformationTable storageInformation = new InformationTable( storageGroup, Arrays.asList( "Name", "Model", "Size" ) );
-        for ( HWDiskStore diskStore : hal.getDiskStores() ) {
+        for ( HWDiskStore diskStore : hardwareAbstractionLayer.getDiskStores() ) {
             storageInformation.addRow( diskStore.getName(), diskStore.getModel(), humanReadableByteCount( diskStore.getSize(), false ) );
         }
         im.registerInformation( storageInformation );
@@ -99,7 +116,7 @@ public class HostInformation {
         im.addGroup( networkGroup );
 
         InformationTable networkInformation = new InformationTable( networkGroup, Arrays.asList( "Name", "IPv4" ) );
-        for ( NetworkIF networkIF : hal.getNetworkIFs() ) {
+        for ( NetworkIF networkIF : hardwareAbstractionLayer.getNetworkIFs() ) {
             networkInformation.addRow( networkIF.getDisplayName(), String.join( ".", networkIF.getIPv4addr() ) );
         }
         im.registerInformation( networkInformation );
@@ -126,6 +143,9 @@ public class HostInformation {
 */
 
         //Memory Information
+        InformationGroup memoryGroup = new InformationGroup( page, "Memory" ).setOrder( 5 );
+        im.addGroup( memoryGroup );
+
         final int base;
         if ( SystemUtils.IS_OS_MAC ) {
             base = 1000;
@@ -133,13 +153,14 @@ public class HostInformation {
             base = 1024;
         }
         final double div = Math.pow( base, 3 );
-        InformationGroup memoryGroup = new InformationGroup( page, "Memory" ).setOrder( 5 );
-        im.addGroup( memoryGroup );
-        GlobalMemory mem = hal.getMemory();
+
+        GlobalMemory mem = hardwareAbstractionLayer.getMemory();
         final String[] labels = new String[]{ "used", "free" };
         InformationGraph memoryGraph = new InformationGraph( memoryGroup, GraphType.PIE, labels );
+        this.usedFreeProvider = () -> Pair.of( mem.getTotal() - mem.getAvailable(), mem.getAvailable() );
         memoryGroup.setRefreshFunction( () -> {
-            memoryGraph.updateGraph( labels, new GraphData<>( "memory", new Double[]{ (mem.getTotal() - mem.getAvailable()) / div, mem.getAvailable() / div } ) );
+            Pair<Long, Long> usedFree = usedFreeProvider.get();
+            memoryGraph.updateGraph( labels, new GraphData<>( "memory", new Double[]{ usedFree.left / div, usedFree.right / div } ) );
         } );
         im.registerInformation( memoryGraph );
 

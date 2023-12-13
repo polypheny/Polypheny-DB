@@ -16,7 +16,11 @@
 
 package org.polypheny.db.webui.models.requests;
 
+import lombok.experimental.SuperBuilder;
+import lombok.extern.jackson.Jacksonized;
 
+@SuperBuilder
+@Jacksonized
 public class QueryExplorationRequest extends UIRequest {
 
     /**

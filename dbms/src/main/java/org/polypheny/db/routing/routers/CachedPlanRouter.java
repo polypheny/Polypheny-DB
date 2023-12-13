@@ -42,8 +42,6 @@ import org.polypheny.db.transaction.Statement;
 @Slf4j
 public class CachedPlanRouter extends BaseRouter {
 
-    final static Catalog catalog = Catalog.getInstance();
-
 
     public RoutedAlgBuilder routeCached( AlgRoot logicalRoot, CachedProposedRoutingPlan routingPlanCached, Statement statement, LogicalQueryInformation queryInformation ) {
         final RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, logicalRoot.alg.getCluster() );
@@ -56,12 +54,12 @@ public class CachedPlanRouter extends BaseRouter {
             builder = buildCachedSelect( node.getInput( i ), builder, statement, cluster, cachedPlan, queryInformation );
         }
 
-        if ( node instanceof DocumentScan ) {
+        if ( node.unwrap( DocumentScan.class ).isPresent() ) {
             return builder.push( super.handleDocScan( (DocumentScan<?>) node, statement, null ) );
         }
 
-        if ( node instanceof LogicalRelScan && node.getEntity() != null ) {
-            LogicalTable table = node.getEntity().unwrap( LogicalTable.class );
+        if ( node.unwrap( LogicalRelScan.class ).isPresent() && node.getEntity() != null ) {
+            LogicalTable table = node.getEntity().unwrap( LogicalTable.class ).orElseThrow();
             PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( table.id ).orElseThrow();
             List<Long> partitionIds = property.partitionIds;
             Map<Long, List<AllocationColumn>> partitions = new HashMap<>();

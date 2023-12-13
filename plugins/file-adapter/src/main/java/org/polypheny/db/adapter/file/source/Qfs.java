@@ -43,7 +43,7 @@ import org.polypheny.db.adapter.RelationalScanDelegate;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
 import org.polypheny.db.adapter.file.FileTranslatableEntity;
-import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
+import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
@@ -68,7 +68,7 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
         description = "This data source maps a file system on the Polypheny-DB host system as a relational table and allows to query it.", usedModes = DeployMode.EMBEDDED,
         defaultMode = DeployMode.EMBEDDED)
 @AdapterSettingString(name = "rootDir", defaultValue = "")
-public class Qfs extends DataSource<RelStoreCatalog> {
+public class Qfs extends DataSource<RelAdapterCatalog> {
 
     @Delegate(excludes = Exclude.class)
     private final RelationalScanDelegate delegate;
@@ -81,7 +81,7 @@ public class Qfs extends DataSource<RelStoreCatalog> {
 
 
     public Qfs( long adapterId, String uniqueName, Map<String, String> settings ) {
-        super( adapterId, uniqueName, settings, true, new RelStoreCatalog( adapterId ) );
+        super( adapterId, uniqueName, settings, true, new RelAdapterCatalog( adapterId ) );
         init( settings );
         registerInformationPage( uniqueName );
         this.delegate = new RelationalScanDelegate( this, storeCatalog );

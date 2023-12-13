@@ -34,7 +34,6 @@ import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.prepare.Prepare.PreparingEntity;
 import org.polypheny.db.schema.CustomColumnResolvingEntity;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlIdentifier;
@@ -102,19 +101,17 @@ public abstract class DelegatingScope implements SqlValidatorScope {
         final AlgDataType rowType = ns.getRowType();
         if ( rowType.isStruct() ) {
             Entity validatorTable = ns.getTable();
-            if ( validatorTable instanceof PreparingEntity ) {
-                org.polypheny.db.schema.Entity t = validatorTable.unwrap( org.polypheny.db.schema.Entity.class );
-                if ( t instanceof CustomColumnResolvingEntity ) {
-                    final List<Pair<AlgDataTypeField, List<String>>> entries = ((CustomColumnResolvingEntity) t).resolveColumn( rowType, validator.getTypeFactory(), names );
-                    for ( Pair<AlgDataTypeField, List<String>> entry : entries ) {
-                        final AlgDataTypeField field = entry.getKey();
-                        final List<String> remainder = entry.getValue();
-                        final SqlValidatorNamespace ns2 = new FieldNamespace( validator, field.getType() );
-                        final Step path2 = path.plus( rowType, field.getIndex(), field.getName(), StructKind.FULLY_QUALIFIED );
-                        resolveInNamespace( ns2, nullable, remainder, nameMatcher, path2, resolved );
-                    }
-                    return;
+
+            if ( validatorTable != null && validatorTable.unwrap( CustomColumnResolvingEntity.class ).isPresent() ) {
+                final List<Pair<AlgDataTypeField, List<String>>> entries = validatorTable.unwrap( CustomColumnResolvingEntity.class ).get().resolveColumn( rowType, validator.getTypeFactory(), names );
+                for ( Pair<AlgDataTypeField, List<String>> entry : entries ) {
+                    final AlgDataTypeField field = entry.getKey();
+                    final List<String> remainder = entry.getValue();
+                    final SqlValidatorNamespace ns2 = new FieldNamespace( validator, field.getType() );
+                    final Step path2 = path.plus( rowType, field.getIndex(), field.getName(), StructKind.FULLY_QUALIFIED );
+                    resolveInNamespace( ns2, nullable, remainder, nameMatcher, path2, resolved );
                 }
+                return;
             }
 
             final String name = names.get( 0 );

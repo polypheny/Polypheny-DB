@@ -17,9 +17,13 @@
 package org.polypheny.db.webui.models.requests;
 
 
+import lombok.experimental.SuperBuilder;
+import lombok.extern.jackson.Jacksonized;
 import org.polypheny.db.webui.models.UIAlgNode;
 
 
+@Jacksonized
+@SuperBuilder
 public class AlgRequest extends UIRequest {
 
     public UIAlgNode topNode;

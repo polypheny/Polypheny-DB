@@ -38,7 +38,7 @@ public class NeoLpgUnwind extends LpgUnwind implements NeoGraphAlg {
      * Creates a {@link org.polypheny.db.adapter.neo4j.NeoConvention} of a {@link LpgUnwind}.
      *
      * @param cluster Cluster this expression belongs to
-     * @param traits Traits active for this node, including {@link org.polypheny.db.schema.ModelTrait#GRAPH}
+     * @param traits Traits active for this node, including {@link org.polypheny.db.catalog.logistic.DataModel#GRAPH}
      * @param input Input algebraic expression
      */
     public NeoLpgUnwind( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, int index, @Nullable String alias ) {

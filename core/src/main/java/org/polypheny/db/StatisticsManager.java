@@ -30,7 +30,7 @@ public abstract class StatisticsManager implements PropertyChangeListener {
 
     public static StatisticsManager setAndGetInstance( StatisticsManager transaction ) {
         if ( INSTANCE != null ) {
-            throw new GenericRuntimeException( "Overwriting the MaterializedViewManager is not permitted." );
+            throw new GenericRuntimeException( "Overwriting the StatisticsManager is not permitted." );
         }
         INSTANCE = transaction;
         return INSTANCE;
@@ -45,7 +45,7 @@ public abstract class StatisticsManager implements PropertyChangeListener {
     }
 
 
-    // Use relNode to update
+    // Use algNode to update
     public abstract void tablesToUpdate( long tableId );
 
     // Use cache if possible

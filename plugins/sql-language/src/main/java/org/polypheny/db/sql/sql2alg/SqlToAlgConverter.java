@@ -55,6 +55,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Supplier;
@@ -240,7 +241,6 @@ import org.polypheny.db.util.NumberUtil;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.ValidatorUtil;
-import org.polypheny.db.util.Wrapper;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import org.slf4j.Logger;
 
@@ -2111,7 +2111,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         Entity table = SqlValidatorUtil.getLogicalEntity( fromNamespace, snapshot, datasetName, usedDataset );
         if ( extendedColumns != null && extendedColumns.size() > 0 ) {
             assert table != null;
-            final ValidatorTable validatorTable = table.unwrap( ValidatorTable.class );
+            final ValidatorTable validatorTable = table.unwrap( ValidatorTable.class ).orElseThrow();
             final List<AlgDataTypeField> extendedFields = SqlValidatorUtil.getExtendedColumns( validator.getTypeFactory(), table, extendedColumns );
             table = table; // table.extend( extendedFields ); todo dl
         }
@@ -2867,9 +2867,9 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
      * Creates a relational expression to modify a table or modifiable view.
      */
     private AlgNode createModify( Entity targetTable, AlgNode source ) {
-        final ModifiableTable modifiableTable = targetTable.unwrap( ModifiableTable.class );
-        if ( modifiableTable != null && modifiableTable == targetTable.unwrap( org.polypheny.db.schema.Entity.class ) ) {
-            return modifiableTable.toModificationTable(
+        Optional<ModifiableTable> oModifiableTable = targetTable.unwrap( ModifiableTable.class );
+        if ( oModifiableTable.isPresent() && oModifiableTable.get() == targetTable.unwrap( Entity.class ).orElse( null ) ) {
+            return oModifiableTable.get().toModificationTable(
                     cluster,
                     source.getTraitSet(),
                     targetTable,
@@ -2889,12 +2889,8 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
 
     public AlgNode toAlg( final Entity table ) {
-        final AlgNode scan = table.unwrap( TranslatableEntity.class ).toAlg( cluster, cluster.traitSet() );
-
-        final InitializerExpressionFactory ief =
-                Util.first(
-                        table.unwrap( InitializerExpressionFactory.class ),
-                        NullInitializerExpressionFactory.INSTANCE );
+        final AlgNode scan = table.unwrap( TranslatableEntity.class ).orElseThrow().toAlg( cluster, cluster.traitSet() );
+        final InitializerExpressionFactory ief = table.unwrap( InitializerExpressionFactory.class ).orElse( NullInitializerExpressionFactory.INSTANCE );
 
         // Lazily create a blackboard that contains all non-generated columns.
         final Supplier<Blackboard> bb = () -> {
@@ -3011,7 +3007,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         int j = 0;
 
         // Assign expressions for non-generated columns.
-        final List<ColumnStrategy> strategies = targetTable.unwrap( LogicalTable.class ).getColumnStrategies();
+        final List<ColumnStrategy> strategies = targetTable.unwrap( LogicalTable.class ).orElseThrow().getColumnStrategies();
         final List<String> targetFields = targetTable.getRowType().getFieldNames();
         for ( String targetColumnName : targetColumnNames ) {
             final int i = targetFields.indexOf( targetColumnName );
@@ -3029,23 +3025,16 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
     private InitializerExpressionFactory getInitializerFactory( Entity validatorTable ) {
         // We might unwrap a null instead of a InitializerExpressionFactory.
-        final org.polypheny.db.schema.Entity entity = unwrap( validatorTable, org.polypheny.db.schema.Entity.class );
-        if ( entity != null ) {
-            InitializerExpressionFactory f = unwrap( entity, InitializerExpressionFactory.class );
-            if ( f != null ) {
-                return f;
+        Optional<Entity> oEntity = validatorTable.unwrap( Entity.class );
+        if ( oEntity.isPresent() ) {
+            Optional<InitializerExpressionFactory> f = validatorTable.unwrap( InitializerExpressionFactory.class );
+            if ( f.isPresent() ) {
+                return f.get();
             }
         }
         return NullInitializerExpressionFactory.INSTANCE;
     }
 
-
-    private static <T> T unwrap( Object o, Class<T> clazz ) {
-        if ( o instanceof Wrapper ) {
-            return ((Wrapper) o).unwrap( clazz );
-        }
-        return null;
-    }
 
 
     private RexNode castNullLiteralIfNeeded( RexNode node, AlgDataType type ) {
@@ -3104,14 +3093,14 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         final Blackboard bb = createInsertBlackboard( targetTable, sourceRef, targetColumnNames );
 
         // Next, assign expressions for generated columns.
-        final List<ColumnStrategy> strategies = targetTable.unwrap( LogicalTable.class ).getColumnStrategies();
+        final List<ColumnStrategy> strategies = targetTable.unwrap( LogicalTable.class ).orElseThrow().getColumnStrategies();
         for ( String columnName : targetColumnNames ) {
             final int i = tableRowType.getFieldNames().indexOf( columnName );
             final RexNode expr;
             if ( i != -1 ) {
                 switch ( strategies.get( i ) ) {
                     case STORED:
-                        final InitializerExpressionFactory f = Util.first( targetTable.unwrap( InitializerExpressionFactory.class ), NullInitializerExpressionFactory.INSTANCE );
+                        final InitializerExpressionFactory f = targetTable.unwrap( InitializerExpressionFactory.class ).orElse( NullInitializerExpressionFactory.INSTANCE );
                         expr = f.newColumnDefaultValue( targetTable, i, bb );
                         break;
                     case VIRTUAL:

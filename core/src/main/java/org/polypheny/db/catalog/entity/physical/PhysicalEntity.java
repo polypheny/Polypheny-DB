@@ -56,7 +56,7 @@ public abstract class PhysicalEntity extends Entity {
 
 
     @Override
-    public State getCatalogType() {
+    public State getLayer() {
         return State.PHYSICAL;
     }
 

@@ -155,7 +155,7 @@ public class PhysicalColumn extends PhysicalField {
 
 
     @Override
-    public State getCatalogType() {
+    public State getLayer() {
         return State.PHYSICAL;
     }
 

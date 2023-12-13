@@ -19,47 +19,43 @@ package org.polypheny.db.algebra.core.document;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
-import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.core.DocumentAggregateCall;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.schema.trait.ModelTrait;
 
 
 public class DocumentAggregate extends SingleAlg implements DocumentAlg {
 
-    public final boolean indicator;
-    public final List<AggregateCall> aggCalls;
-    public final List<String> groupSet;
-    public final List<List<String>> groupSets;
-    public final List<String> names;
+    @NotNull
+    public final List<DocumentAggregateCall> aggCalls;
+
+    @Nullable // null means "group by all columns in input row"
+    private final RexNameRef group;
 
 
     /**
      * Creates a {@link DocumentAggregate}.
      * {@link ModelTrait#DOCUMENT} native node of an aggregate.
      */
-    protected DocumentAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, boolean indicator, @NotNull List<String> groupSet, List<List<String>> groupSets, List<AggregateCall> aggCalls, List<String> names ) {
+    protected DocumentAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, @Nullable RexNameRef group, List<DocumentAggregateCall> aggCalls ) {
         super( cluster, traits, child );
-        this.indicator = indicator; // true is allowed, but discouraged
+        this.group = group;
         this.aggCalls = ImmutableList.copyOf( aggCalls );
-        this.groupSet = Objects.requireNonNull( groupSet );
-        this.names = names;
-        if ( groupSets == null ) {
-            this.groupSets = ImmutableList.of( groupSet );
-        } else {
-            this.groupSets = ImmutableList.copyOf( groupSets );
-            //assert ImmutableBitSet.ORDERING.isStrictlyOrdered( groupSets ) : groupSets;
-            /*for ( List<String> set : groupSets ) {
-                assert groupSet.contains( set );
-            }*/
-        }
-        assert groupSet.size() <= child.getRowType().getFieldCount();
         this.rowType = DocumentType.ofDoc();
+    }
+
+
+    public Optional<RexNameRef> getGroup() {
+        return Optional.ofNullable( group );
     }
 
 
@@ -67,10 +63,8 @@ public class DocumentAggregate extends SingleAlg implements DocumentAlg {
     public String algCompareString() {
         return this.getClass().getSimpleName() + "$" +
                 input.algCompareString() + "$" +
-                (aggCalls != null ? aggCalls.stream().map( Objects::toString ).collect( Collectors.joining( " $ " ) ) : "") + "$" +
-                (groupSet != null ? groupSet.toString() : "") + "$" +
-                (groupSets != null ? groupSets.stream().map( Objects::toString ).collect( Collectors.joining( " $ " ) ) : "") + "$" +
-                indicator + "&";
+                (group != null ? group.hashCode() : "") + "$" +
+                aggCalls.stream().map( Objects::toString ).collect( Collectors.joining( " $ " ) ) + "&";
     }
 
 

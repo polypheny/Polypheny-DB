@@ -37,12 +37,13 @@ package org.polypheny.db.plan;
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.util.Wrapper;
 
 
 /**
  * Node in a planner.
  */
-public interface AlgOptNode {
+public interface AlgOptNode extends Wrapper {
 
     /**
      * Returns the ID of this relational expression, unique among all relational expressions created since the server was started.

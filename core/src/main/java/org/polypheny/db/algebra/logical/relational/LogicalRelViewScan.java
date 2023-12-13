@@ -62,7 +62,7 @@ public class LogicalRelViewScan extends RelScan<Entity> {
                                     return ImmutableList.of();
                                 } );
 
-        LogicalView logicalView = entity.unwrap( LogicalView.class );
+        LogicalView logicalView = entity.unwrap( LogicalView.class ).orElseThrow();
         AlgCollation algCollation = logicalView.getAlgCollation();
 
         return new LogicalRelViewScan( cluster, traitSet, entity, logicalView.prepareView( cluster ), algCollation );

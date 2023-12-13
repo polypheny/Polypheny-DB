@@ -208,6 +208,11 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
             return new BinarySerializer<>() {
                 @Override
                 public void encode( BinaryOutput out, PolyList<?> item ) {
+                    if ( item == null ) {
+                        out.writeBoolean( true );
+                        return;
+                    }
+                    out.writeBoolean( false );
                     out.writeLong( item.size() );
                     for ( PolyValue entry : item ) {
                         out.writeUTF8( PolySerializable.serialize( serializer, entry ) );
@@ -217,6 +222,9 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
 
                 @Override
                 public PolyList<?> decode( BinaryInput in ) throws CorruptedDataException {
+                    if ( in.readBoolean() ) {
+                        return null;
+                    }
                     List<PolyValue> list = new ArrayList<>();
                     long size = in.readLong();
                     for ( long i = 0; i < size; i++ ) {
@@ -247,6 +255,13 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
         @Override
         public PolyList<PolyValue> deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException {
             JsonNode node = p.getCodec().readTree( p );
+            JsonNode nField = node.get( "isNull" );
+            boolean isNull = nField.booleanValue();
+            if ( isNull ) {
+                return new PolyList<>( (List<PolyValue>) null );
+            }
+
+
             List<PolyValue> values = new ArrayList<>();
             ArrayNode elements = node.withArray( "_es" );
             for ( JsonNode element : elements ) {
@@ -278,6 +293,14 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
         @Override
         public void serialize( PolyList<PolyValue> values, JsonGenerator gen, SerializerProvider serializers ) throws IOException {
             gen.writeStartObject();
+            gen.writeFieldName( "isNull" );
+            if ( values == null ) {
+                gen.writeBoolean( true );
+                return;
+            }
+            gen.writeBoolean( false );
+
+
             gen.writeFieldName( "@class" );
             gen.writeString( PolyList.class.getCanonicalName() );
             gen.writeFieldName( "_es" );

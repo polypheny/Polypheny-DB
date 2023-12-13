@@ -20,6 +20,7 @@ import lombok.Getter;
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonInt64;
+import org.bson.BsonNull;
 import org.bson.BsonString;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexDynamicParam;
@@ -29,11 +30,6 @@ public class BsonDynamic extends BsonDocument {
 
     @Getter
     private final long id;
-    private final String polyTypeName;
-    private boolean isRegex = false;
-    private boolean isFunc = false;
-    private boolean isValue = false;
-    private String key = "";
 
 
     public BsonDynamic( RexDynamicParam rexNode ) {
@@ -51,35 +47,44 @@ public class BsonDynamic extends BsonDocument {
     public BsonDynamic( long id, String polyTypeName ) {
         super();
         this.id = id;
-        this.polyTypeName = polyTypeName;
         append( "_dyn", new BsonInt64( id ) );
         append( "_type", new BsonString( polyTypeName ) );
         append( "_reg", new BsonBoolean( false ) );
         append( "_func", new BsonBoolean( false ) );
-        append( "_isVal", new BsonBoolean( false ) );
-        append( "_key", new BsonString( "" ) );
+        append( "_functionName", BsonNull.VALUE );
+    }
+
+
+    public static BsonDocument addFunction( BsonDocument doc, String functionName ) {
+        return doc.append( "_functionName", new BsonString( functionName ) );
+    }
+
+
+    public static BsonDocument changeType( BsonDocument doc, PolyType polyType ) {
+        return doc.append( "_type", new BsonString( polyType.getTypeName() ) );
     }
 
 
     public BsonDynamic setIsRegex( boolean isRegex ) {
-        this.isRegex = isRegex;
         append( "_reg", new BsonBoolean( isRegex ) );
         return this;
     }
 
 
     public BsonDynamic setIsFunc( boolean isFunc ) {
-        this.isFunc = isFunc;
         append( "_func", new BsonBoolean( isFunc ) );
         return this;
     }
 
 
-    public BsonDynamic setIsValue( boolean isValue, String key ) {
-        this.isValue = isValue;
-        this.key = key;
-        append( "_isVal", new BsonBoolean( isValue ) );
-        append( "_key", new BsonString( key ) );
+    public BsonDynamic setPolyFunction( String functionName ) {
+        append( "_functionName", new BsonString( functionName ) );
+        return this;
+    }
+
+
+    public BsonDynamic adjustType( PolyType polyType ) {
+        append( "_type", new BsonString( polyType.getTypeName() ) );
         return this;
     }
 

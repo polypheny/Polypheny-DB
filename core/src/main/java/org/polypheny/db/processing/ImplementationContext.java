@@ -39,10 +39,10 @@ public class ImplementationContext {
     Statement statement;
 
     @Nullable
-    Exception exception;
+    Throwable exception;
 
 
-    public static ImplementationContext ofError( Exception e, ParsedQueryContext parsed, Statement statement ) {
+    public static ImplementationContext ofError( Throwable e, ParsedQueryContext parsed, Statement statement ) {
         return new ImplementationContext( null, parsed, statement, e );
     }
 
@@ -53,7 +53,7 @@ public class ImplementationContext {
             ResultIterator result = implementation.execute( statement, query.getBatch(), query.isAnalysed(), query.isAnalysed(), false );
             time = System.nanoTime() - time;
             return new ExecutedContext( implementation, null, query, time, result, statement );
-        } catch ( Exception e ) {
+        } catch ( Throwable e ) {
             time = System.nanoTime() - time;
             return new ExecutedContext( implementation, e, query, time, null, statement );
         }
@@ -61,7 +61,7 @@ public class ImplementationContext {
     }
 
 
-    public Optional<Exception> getException() {
+    public Optional<Throwable> getException() {
         return Optional.ofNullable( exception );
     }
 
@@ -75,26 +75,18 @@ public class ImplementationContext {
 
         long executionTime;
 
-        @Nullable
-        Exception error;
 
-
-        private ExecutedContext( PolyImplementation implementation, @Nullable Exception error, ParsedQueryContext query, long executionTime, ResultIterator iterator, Statement statement ) {
+        private ExecutedContext( PolyImplementation implementation, @Nullable Throwable error, ParsedQueryContext query, long executionTime, ResultIterator iterator, Statement statement ) {
             super( implementation, query, statement, error );
             this.executionTime = executionTime;
             this.iterator = iterator;
-            this.error = error;
         }
 
 
-        public static ExecutedContext ofError( Exception e, ImplementationContext implementation ) {
+        public static ExecutedContext ofError( Throwable e, ImplementationContext implementation ) {
             return new ExecutedContext( implementation.implementation, e, implementation.query, 0l, null, implementation.statement );
         }
 
-
-        public Optional<Exception> getError() {
-            return Optional.ofNullable( error );
-        }
 
     }
 

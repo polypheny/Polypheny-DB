@@ -157,7 +157,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
     public AlgProtoDataType buildProto() {
         final AlgDataTypeFactory.Builder fieldInfo = AlgDataTypeFactory.DEFAULT.builder();
 
-        for ( PhysicalColumn column : fields.stream().map( f -> f.unwrap( PhysicalColumn.class ) ).sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() ) ) {
+        for ( PhysicalColumn column : fields.stream().map( f -> f.unwrap( PhysicalColumn.class ).orElseThrow() ).sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() ) ) {
             AlgDataType sqlType = column.getAlgDataType( AlgDataTypeFactory.DEFAULT );
             fieldInfo.add( column.id, column.logicalName, column.name, sqlType ).nullable( column.nullable );
         }
@@ -167,7 +167,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
 
 
     public String toString() {
-        return "MongoTable {" + physical.name + "}";
+        return "MongoEntity {" + physical.name + "}";
     }
 
 
@@ -190,7 +190,6 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
      * @return Enumerator of results
      */
     private Enumerable<PolyValue[]> find( MongoDatabase mongoDb, MongoEntity table, String filterJson, String projectJson, MongoTupleType tupleType ) {
-        final MongoCollection<Document> collection = mongoDb.getCollection( physical.name );
         final Bson filter = filterJson == null ? new BsonDocument() : BsonDocument.parse( filterJson );
         final Bson project = projectJson == null ? new BsonDocument() : BsonDocument.parse( projectJson );
         final Function1<Document, PolyValue[]> getter = MongoEnumerator.getter( tupleType );
@@ -199,7 +198,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
             @Override
             public Enumerator<PolyValue[]> enumerator() {
                 final FindIterable<Document> cursor = collection.find( filter ).projection( project );
-                return new MongoEnumerator( cursor.iterator(), getter, table.getMongoNamespace().getBucket() );
+                return new MongoEnumerator( cursor.map( getter::apply ).iterator(), table.getMongoNamespace().getBucket() );
             }
         };
     }
@@ -243,11 +242,11 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
         } else {
             // prepared
             preOps.stream()
-                    .map( op -> new MongoDynamic( new BsonDocument( "$addFields", op ), mongoNamespace.getBucket(), dataContext ) )
+                    .map( op -> new MongoDynamic( new BsonDocument( "$addFields", op ), mongoNamespace.getBucket() ) )
                     .forEach( util -> list.add( util.insert( parameterValues ) ) );
 
             for ( String operation : operations ) {
-                MongoDynamic opUtil = new MongoDynamic( BsonDocument.parse( operation ), getMongoNamespace().getBucket(), dataContext );
+                MongoDynamic opUtil = new MongoDynamic( BsonDocument.parse( operation ), getMongoNamespace().getBucket() );
                 list.add( opUtil.insert( parameterValues ) );
             }
         }
@@ -259,7 +258,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
         final Function1<Document, PolyValue[]> getter = MongoEnumerator.getter( tupleType );
 
         if ( log.isDebugEnabled() ) {
-            log.debug( list.stream().map( el -> el.toBsonDocument().toJson( JsonWriterSettings.builder().outputMode( JsonMode.SHELL ).build() ) ).collect( Collectors.joining( ",\n" ) ) );
+            log.warn( list.stream().map( el -> el.toBsonDocument().toJson( JsonWriterSettings.builder().outputMode( JsonMode.SHELL ).build() ) ).collect( Collectors.joining( ",\n" ) ) );
         }
 
         // empty docs are possible
@@ -270,17 +269,17 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
         return new AbstractEnumerable<>() {
             @Override
             public Enumerator<PolyValue[]> enumerator() {
-                final Iterator<Document> resultIterator;
+                final Iterator<PolyValue[]> resultIterator;
                 try {
                     if ( !list.isEmpty() ) {
-                        resultIterator = mongoDb.getCollection( physical.name ).aggregate( session, list ).iterator();
+                        resultIterator = mongoDb.getCollection( physical.name ).aggregate( session, list ).map( d -> getter.apply( d ) ).iterator();
                     } else {
                         resultIterator = Collections.emptyIterator();
                     }
                 } catch ( Exception e ) {
                     throw new GenericRuntimeException( "While running MongoDB query " + Util.toString( list, "[", ",\n", "]" ), e );
                 }
-                return new MongoEnumerator( resultIterator, getter, table.getMongoNamespace().getBucket() );
+                return new MongoEnumerator( resultIterator, table.getMongoNamespace().getBucket() );
             }
         };
     }
@@ -367,7 +366,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
                                 Expressions.call(
                                         mongoNamespace.getStore().getCatalogAsExpression(),
                                         "getPhysical", Expressions.constant( id ) ),
-                                "unwrap", Expressions.constant( MongoEntity.class ) ),
+                                "unwrapOrThrow", Expressions.constant( MongoEntity.class ) ),
                         MongoEntity.class ),
                 "asQueryable",
                 DataContext.ROOT,
@@ -517,7 +516,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
                     if ( !dataContext.getParameterValues().isEmpty() ) {
                         assert operations.size() == 1;
                         // prepared
-                        MongoDynamic util = new MongoDynamic( BsonDocument.parse( operations.get( 0 ) ), bucket, dataContext );
+                        MongoDynamic util = MongoDynamic.create( BsonDocument.parse( operations.get( 0 ) ), bucket, getEntity().getDataModel() );
                         List<Document> inserts = util.getAll( dataContext.getParameterValues() );
                         entity.getCollection().insertMany( session, inserts );
                         return inserts.size();
@@ -533,8 +532,8 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
                     // we use only update docs
                     if ( !dataContext.getParameterValues().isEmpty() ) {
                         // prepared we use document update not pipeline
-                        MongoDynamic filterUtil = new MongoDynamic( BsonDocument.parse( filter ), bucket, dataContext );
-                        MongoDynamic docUtil = new MongoDynamic( BsonDocument.parse( operations.get( 0 ) ), bucket, dataContext );
+                        MongoDynamic filterUtil = new MongoDynamic( BsonDocument.parse( filter ), bucket );
+                        MongoDynamic docUtil = new MongoDynamic( BsonDocument.parse( operations.get( 0 ) ), bucket );
                         for ( Map<Long, PolyValue> parameterValue : dataContext.getParameterValues() ) {
                             if ( onlyOne ) {
                                 if ( needsDocument ) {
@@ -582,7 +581,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
                 case DELETE:
                     if ( !dataContext.getParameterValues().isEmpty() ) {
                         // prepared
-                        MongoDynamic filterUtil = new MongoDynamic( BsonDocument.parse( filter ), bucket, dataContext );
+                        MongoDynamic filterUtil = new MongoDynamic( BsonDocument.parse( filter ), bucket );
                         List<? extends WriteModel<Document>> filters;
                         if ( onlyOne ) {
                             filters = filterUtil.getAll( dataContext.getParameterValues(), DeleteOneModel::new );

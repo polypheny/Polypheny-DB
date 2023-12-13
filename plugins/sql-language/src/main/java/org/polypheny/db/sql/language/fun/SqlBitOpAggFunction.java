@@ -21,7 +21,6 @@ import com.google.common.base.Preconditions;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.fun.AggFunction;
-import org.polypheny.db.algebra.fun.SplittableAggFunction;
 import org.polypheny.db.sql.language.SqlAggFunction;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
@@ -54,14 +53,6 @@ public class SqlBitOpAggFunction extends SqlAggFunction implements AggFunction {
         Preconditions.checkArgument( kind == Kind.BIT_AND || kind == Kind.BIT_OR );
     }
 
-
-    @Override
-    public <T> T unwrap( Class<T> clazz ) {
-        if ( clazz == SplittableAggFunction.class ) {
-            return clazz.cast( SplittableAggFunction.SelfSplitter.INSTANCE );
-        }
-        return super.unwrap( clazz );
-    }
 
 }
 

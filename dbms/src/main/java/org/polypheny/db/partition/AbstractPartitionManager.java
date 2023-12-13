@@ -72,7 +72,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
                 if ( excludedAdapters.contains( allocation.adapterId ) ) {
                     continue;
                 }
-                List<AllocationColumn> allocColumns = allocation.unwrap( AllocationTable.class ).getColumns();
+                List<AllocationColumn> allocColumns = allocation.unwrap( AllocationTable.class ).orElseThrow().getColumns();
                 if( placementDistribution.containsKey( allocation.partitionId ) ){
                     List<AllocationColumn> existingAllocColumns = placementDistribution.get( allocation.partitionId );
                     List<Long> existingColumnsIds = existingAllocColumns.stream().map( e -> e.columnId ).collect( Collectors.toList() );

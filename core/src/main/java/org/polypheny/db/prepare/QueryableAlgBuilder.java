@@ -104,7 +104,7 @@ class QueryableAlgBuilder<T> implements QueryableFactory<T> {
         }
         if ( queryable instanceof AbstractEntityQueryable ) {
             final AbstractEntityQueryable tableQueryable = (AbstractEntityQueryable) queryable;
-            final QueryableEntity table = tableQueryable.entity.unwrap( QueryableEntity.class );
+            final QueryableEntity table = tableQueryable.entity.unwrap( QueryableEntity.class ).orElseThrow();
 
             if ( table instanceof TranslatableEntity ) {
                 return ((TranslatableEntity) table).toAlg( translator.cluster, translator.cluster.traitSet() );

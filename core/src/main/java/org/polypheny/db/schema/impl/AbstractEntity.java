@@ -81,15 +81,6 @@ public abstract class AbstractEntity implements Entity, Wrapper {
 
 
     @Override
-    public <C> C unwrap( Class<C> aClass ) {
-        if ( aClass.isInstance( this ) ) {
-            return aClass.cast( this );
-        }
-        return null;
-    }
-
-
-    @Override
     public boolean isRolledUp( String column ) {
         return false;
     }

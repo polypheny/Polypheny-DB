@@ -53,7 +53,7 @@ import org.polypheny.db.adapter.annotations.AdapterSettingBoolean;
 import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
 import org.polypheny.db.adapter.googlesheet.util.PolyphenyTokenStoreFactory;
-import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
+import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
@@ -84,7 +84,7 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 @AdapterSettingString(name = "oAuth-Client-ID", description = "Authentication credentials used for GoogleSheets API. Not the account credentials.", defaultValue = "", position = 5)
 @AdapterSettingString(name = "oAuth-Client-Key", description = "Authentication credentials used for GoogleSheets API. Not the account credentials.", defaultValue = "")
 @AdapterSettingString(name = "sheetName", description = "Name of sheet to use.", defaultValue = "")
-public class GoogleSheetSource extends DataSource<RelStoreCatalog> {
+public class GoogleSheetSource extends DataSource<RelAdapterCatalog> {
 
     @Delegate(excludes = Excludes.class)
     private final RelationalScanDelegate delegate;
@@ -110,7 +110,7 @@ public class GoogleSheetSource extends DataSource<RelStoreCatalog> {
 
 
     public GoogleSheetSource( final long storeId, final String uniqueName, final Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, true, new RelStoreCatalog( storeId ) );
+        super( storeId, uniqueName, settings, true, new RelAdapterCatalog( storeId ) );
 
         this.clientId = getSettingOrFail( "oAuth-Client-ID", settings );
         this.clientKey = getSettingOrFail( "oAuth-Client-Key", settings );

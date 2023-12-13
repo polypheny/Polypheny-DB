@@ -321,7 +321,7 @@ public class InformationManager {
     }
 
 
-    public void attachStacktrace( Exception e ) {
+    public void attachStacktrace( Throwable e ) {
         InformationPage exceptionPage = new InformationPage( "Stacktrace" ).fullWidth();
         InformationGroup exceptionGroup = new InformationGroup( exceptionPage.getId(), "Stacktrace" );
         InformationStacktrace exceptionElement = new InformationStacktrace( e, exceptionGroup );

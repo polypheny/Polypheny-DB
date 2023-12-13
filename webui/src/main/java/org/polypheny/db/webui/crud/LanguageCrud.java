@@ -65,7 +65,9 @@ import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyGraph;
+import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.util.PolyMode;
+import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.TemporalFileManager;
 import org.polypheny.db.webui.models.IndexModel;
@@ -141,40 +143,44 @@ public class LanguageCrud {
         transaction.setUseCache( context.isUsesCache() );
         attachAnalyzerIfSpecified( context, crud, transaction );
 
-        List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( context, transaction.createStatement() );
+        List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( context.addTransaction( transaction ), transaction.createStatement() );
 
         List<Result<?, ?>> results = new ArrayList<>();
         TriFunction<ExecutedContext, UIRequest, Statement, ResultBuilder<?, ?, ?, ?>> builder = REGISTER.get( context.getLanguage() );
 
         for ( ExecutedContext executedContext : executedContexts ) {
-            if ( executedContext.getError().isPresent() ) {
-                return List.of( buildErrorResult( transaction, executedContext, executedContext.getError().get() ).build() );
+            if ( executedContext.getException().isPresent() ) {
+                log.warn( "Caught exception", executedContext.getException().get() );
+                return List.of( buildErrorResult( transaction, executedContext, executedContext.getException().get() ).build() );
             }
 
             results.add( builder.apply( executedContext, request, executedContext.getStatement() ).build() );
         }
 
-        commitAndFinish( transaction, transaction.getQueryAnalyzer(), results, executedContexts.stream().map( ExecutedContext::getExecutionTime ).reduce( Long::sum ).orElseThrow() );
+        commitAndFinish( executedContexts, transaction.getQueryAnalyzer(), results, executedContexts.stream().map( ExecutedContext::getExecutionTime ).reduce( Long::sum ).orElseThrow() );
 
         return results;
     }
 
 
-    public static void commitAndFinish( Transaction transaction, InformationManager queryAnalyzer, List<Result<?, ?>> results, long executionTime ) {
+    public static void commitAndFinish( List<ExecutedContext> executedContexts, InformationManager queryAnalyzer, List<Result<?, ?>> results, long executionTime ) {
         executionTime = System.nanoTime() - executionTime;
-        String commitStatus;
-        try {
-            transaction.commit();
-            commitStatus = "Committed";
-        } catch ( TransactionException e ) {
-            log.error( "Caught exception", e );
-            results.add( RelationalResult.builder().error( e.getMessage() ).build() );
+        String commitStatus = "Error on starting committing";
+        for ( Transaction transaction : executedContexts.stream().flatMap( c -> c.getQuery().getTransactions().stream() ).collect( Collectors.toList() ) ) {
+            // this has a lot of unnecessary no-op commits atm
             try {
-                transaction.rollback();
-                commitStatus = "Rolled back";
-            } catch ( TransactionException ex ) {
-                log.error( "Caught exception while rollback", e );
-                commitStatus = "Error while rolling back";
+                transaction.commit();
+                commitStatus = "Committed";
+            } catch ( TransactionException e ) {
+                log.error( "Caught exception", e );
+                results.add( RelationalResult.builder().error( e.getMessage() ).build() );
+                try {
+                    transaction.rollback();
+                    commitStatus = "Rolled back";
+                } catch ( TransactionException ex ) {
+                    log.error( "Caught exception while rollback", e );
+                    commitStatus = "Error while rolling back";
+                }
             }
         }
 
@@ -201,12 +207,17 @@ public class LanguageCrud {
         Transaction transaction = Crud.getTransaction( false, false, manager, Catalog.defaultUserId, Catalog.defaultNamespaceId, "getGraph" );
         ImplementationContext context = LanguageManager.getINSTANCE().anyPrepareQuery(
                 QueryContext.builder()
-                        .query( "MATCH (*) RETURN n" )
+                        .query( "MATCH (*) RETURN *" )
                         .language( language )
                         .origin( transaction.getOrigin() )
+                        .namespaceId( getNamespaceIdOrDefault( namespace ) )
                         .transactionManager( manager )
                         .informationTarget( i -> i.setSession( session ) )
                         .build(), transaction.createStatement() ).get( 0 );
+
+        if ( context.getException().isPresent() ) {
+            return new PolyGraph( PolyMap.of( new HashMap<>() ), PolyMap.of( new HashMap<>() ) );
+        }
 
         ResultIterator iterator = context.execute( transaction.createStatement() ).getIterator();
         List<List<PolyValue>> res = iterator.getNextBatch();
@@ -227,13 +238,13 @@ public class LanguageCrud {
         ResultBuilder<?, ?, ?, ?> result;
         switch ( context.getQuery().getLanguage().getDataModel() ) {
             case RELATIONAL:
-                result = RelationalResult.builder().error( t == null ? null : t.getMessage() ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() );
+                result = RelationalResult.builder().error( t == null ? null : t.getMessage() ).exception( t ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() );
                 break;
             case DOCUMENT:
-                result = DocResult.builder().error( t == null ? null : t.getMessage() ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() );
+                result = DocResult.builder().error( t == null ? null : t.getMessage() ).exception( t ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() );
                 break;
             case GRAPH:
-                result = GraphResult.builder().error( t == null ? null : t.getMessage() ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() );
+                result = GraphResult.builder().error( t == null ? null : t.getMessage() ).exception( t ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() );
                 break;
             default:
                 throw new GenericRuntimeException( "Unknown data model." );
@@ -327,7 +338,7 @@ public class LanguageCrud {
                     temp[counter] = null;
                 } else {
                     String columnName = String.valueOf( header.get( counter ).name.hashCode() );
-                    File mmFolder = new File( System.getProperty( "user.home" ), ".polypheny/tmp" );
+                    File mmFolder = PolyphenyHomeDirManager.getInstance().getGlobalFile( "/tmp" ).orElseThrow();
                     mmFolder.mkdirs();
                     ContentInfoUtil util = new ContentInfoUtil();
                     if ( List.of( PolyType.FILE.getName(), PolyType.VIDEO.getName(), PolyType.AUDIO.getName(), PolyType.IMAGE.getName() ).contains( header.get( counter ).dataType ) ) {
@@ -358,28 +369,30 @@ public class LanguageCrud {
 
     public static ResultBuilder<?, ?, ?, ?> getGraphResult( ExecutedContext context, UIRequest request, Statement statement ) {
         ResultIterator iterator = context.getIterator();
-        List<PolyValue[]> data = iterator.getArrayRows();
+        List<PolyValue[]> data;
         try {
+            data = iterator.getArrayRows();
+
             iterator.close();
+
+            GraphResultBuilder<?, ?> builder = GraphResult.builder()
+                    .data( data.stream().map( r -> Arrays.stream( r ).map( LanguageCrud::toJson ).toArray( String[]::new ) ).toArray( String[][]::new ) )
+                    .header( context.getIterator().getImplementation().rowType.getFields().stream().map( FieldDefinition::of ).toArray( FieldDefinition[]::new ) )
+                    .query( context.getQuery().getQuery() )
+                    .language( context.getQuery().getLanguage() )
+                    .dataModel( context.getIterator().getImplementation().getDataModel() )
+                    .affectedTuples( data.size() )
+                    .xid( statement.getTransaction().getXid().toString() )
+                    .namespace( request.namespace );
+
+            if ( Kind.DML.contains( context.getIterator().getImplementation().getKind() ) ) {
+                builder.affectedTuples( data.get( 0 )[0].asNumber().longValue() );
+            }
+            return builder;
+
         } catch ( Exception e ) {
-            throw new GenericRuntimeException( e );
+            return buildErrorResult( statement.getTransaction(), context, e );
         }
-
-        GraphResultBuilder<?, ?> builder = GraphResult.builder()
-                .data( data.stream().map( r -> Arrays.stream( r ).map( LanguageCrud::toJson ).toArray( String[]::new ) ).toArray( String[][]::new ) )
-                .header( context.getIterator().getImplementation().rowType.getFields().stream().map( FieldDefinition::of ).toArray( FieldDefinition[]::new ) )
-                .query( context.getQuery().getQuery() )
-                .language( context.getQuery().getLanguage() )
-                .dataModel( context.getIterator().getImplementation().getDataModel() )
-                .affectedTuples( data.size() )
-                .xid( statement.getTransaction().getXid().toString() )
-                .namespace( request.namespace );
-
-        if ( Kind.DML.contains( context.getIterator().getImplementation().getKind() ) ) {
-            builder.affectedTuples( data.get( 0 )[0].asNumber().longValue() );
-        }
-
-        return builder;
     }
 
 
@@ -393,22 +406,22 @@ public class LanguageCrud {
             }
 
             iterator.close();
+
+            boolean hasMoreRows = context.getIterator().hasMoreRows();
+
+            return DocResult.builder()
+                    .header( context.getIterator().getImplementation().rowType.getFields().stream().map( FieldDefinition::of ).toArray( FieldDefinition[]::new ) )
+                    .data( data.stream().map( d -> d.get( 0 ).toJson() ).toArray( String[]::new ) )
+                    .query( context.getQuery().getQuery() )
+                    .language( context.getQuery().getLanguage() )
+                    .hasMore( hasMoreRows )
+                    .affectedTuples( data.size() )
+                    .xid( statement.getTransaction().getXid().toString() )
+                    .dataModel( context.getIterator().getImplementation().getDataModel() )
+                    .namespace( request.namespace );
         } catch ( Exception e ) {
             return buildErrorResult( statement.getTransaction(), context, e );
         }
-
-        boolean hasMoreRows = context.getIterator().hasMoreRows();
-
-        return DocResult.builder()
-                .header( context.getIterator().getImplementation().rowType.getFields().stream().map( FieldDefinition::of ).toArray( FieldDefinition[]::new ) )
-                .data( data.stream().map( d -> d.get( 0 ).toJson() ).toArray( String[]::new ) )
-                .query( context.getQuery().getQuery() )
-                .language( context.getQuery().getLanguage() )
-                .hasMore( hasMoreRows )
-                .affectedTuples( data.size() )
-                .xid( statement.getTransaction().getXid().toString() )
-                .dataModel( context.getIterator().getImplementation().getDataModel() )
-                .namespace( request.namespace );
     }
 
 

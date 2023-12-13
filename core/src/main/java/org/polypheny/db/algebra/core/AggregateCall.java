@@ -51,7 +51,7 @@ import org.polypheny.db.util.mapping.Mappings;
 
 
 /**
- * Call to an aggregate function within an {@link org.polypheny.db.algebra.core.Aggregate}.
+ * Call to an aggregate function within an {@link Aggregate}.
  */
 public class AggregateCall {
 

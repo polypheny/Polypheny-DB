@@ -166,7 +166,7 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
                                 Expressions.call(
                                         store.getCatalogAsExpression(),
                                         "getPhysical", Expressions.constant( id ) ),
-                                "unwrap", Expressions.constant( NeoGraph.class ) ),
+                                "unwrapOrThrow", Expressions.constant( NeoGraph.class ) ),
                         NeoGraph.class ),
                 "asQueryable",
                 DataContext.ROOT,

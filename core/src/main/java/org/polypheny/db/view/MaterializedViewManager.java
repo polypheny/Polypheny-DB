@@ -94,10 +94,10 @@ public abstract class MaterializedViewManager {
         public AlgNode visit( LogicalRelModify modify ) {
             if ( modify.getOperation() != Modify.Operation.MERGE ) {
                 if ( modify.getEntity() != null ) {
-                    if ( modify.getEntity().unwrap( PhysicalEntity.class ) != null ) {
-                        ids.add( modify.getEntity().unwrap( PhysicalEntity.class ).id );
-                    } else if ( modify.getEntity().unwrap( AllocationEntity.class ) != null ) {
-                        ids.add( modify.getEntity().unwrap( AllocationEntity.class ).getLogicalId() );
+                    if ( modify.getEntity().unwrap( PhysicalEntity.class ).isPresent() ) {
+                        ids.add( modify.getEntity().unwrap( PhysicalEntity.class ).get().id );
+                    } else if ( modify.getEntity().unwrap( AllocationEntity.class ).isPresent() ) {
+                        ids.add( modify.getEntity().unwrap( AllocationEntity.class ).get().getLogicalId() );
                     } else {
                         ids.add( modify.getEntity().id );
                     }

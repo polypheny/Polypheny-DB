@@ -23,9 +23,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import lombok.EqualsAndHashCode;
-import lombok.Value;
-import lombok.experimental.NonFinal;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
@@ -45,9 +42,6 @@ import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 
 
-@EqualsAndHashCode(callSuper = false)
-@Value
-@NonFinal
 public abstract class DocumentProject extends SingleAlg implements DocumentAlg {
 
 
@@ -63,13 +57,13 @@ public abstract class DocumentProject extends SingleAlg implements DocumentAlg {
         super( cluster, traits, input );
         this.includes = includes;
         this.excludes = excludes;
-        this.rowType = DocumentType.ofDoc();
+        this.rowType = DocumentType.ofIncludes( includes ).ofExcludes( excludes );
     }
 
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + includes.hashCode() + "$" + getInput().algCompareString();
+        return "$" + getClass().getSimpleName() + "$" + includes.hashCode() + "$" + excludes.hashCode() + getInput().algCompareString();
     }
 
 
@@ -92,11 +86,15 @@ public abstract class DocumentProject extends SingleAlg implements DocumentAlg {
 
     public RexNode asSingleProject() {
         RexBuilder builder = getCluster().getRexBuilder();
-        RexNode doc = RexIndexRef.of( 0, getRowType() );
+        RexNode doc = RexIndexRef.of( 0, DocumentType.ofId() );
         List<RexNode> nodes = new ArrayList<>();
         nodes.add( doc );
         // null key is replaceRoot
-        nodes.add( builder.makeLiteral( PolyList.copyOf( includes.keySet().stream().filter( Objects::nonNull ).map( v -> PolyList.copyOf( Arrays.stream( v.split( "\\." ) ).map( PolyString::of ).collect( Collectors.toList() ) ) ).collect( Collectors.toList() ) ), builder.getTypeFactory().createArrayType( builder.getTypeFactory().createPolyType( PolyType.CHAR, 255 ), -1 ), PolyType.ARRAY ) );
+        nodes.add(
+                builder.makeLiteral(
+                        PolyList.copyOf( includes.keySet().stream().filter( Objects::nonNull ).map( v -> PolyList.copyOf( Arrays.stream( v.split( "\\." ) ).map( PolyString::of ).collect( Collectors.toList() ) ) )
+                                .collect( Collectors.toList() ) ),
+                        builder.getTypeFactory().createArrayType( builder.getTypeFactory().createPolyType( PolyType.CHAR, 255 ), -1 ), PolyType.ARRAY ) );
         nodes.addAll( includes.entrySet().stream().filter( o -> Objects.nonNull( o.getKey() ) ).map( Entry::getValue ).collect( Collectors.toList() ) );
 
         if ( !includes.isEmpty() ) {

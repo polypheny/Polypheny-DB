@@ -110,6 +110,7 @@ public abstract class Result<E, F> {
             this.query = instance.query;
             this.exception = instance.exception;
             this.language$value = instance.language;
+            this.error = instance.error;
 
             return self();
         }

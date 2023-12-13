@@ -109,7 +109,7 @@ public class MongoLanguagePlugin extends PolyPlugin {
                 if ( queryNode instanceof MqlCreateCollection || queryNode instanceof MqlCreateView ) {
                     // entity was created during this query
                     created.add( Pair.of( context.getNamespaceId(), queryNode.getEntity() ) );
-                } else {
+                } else if ( !queryNode.isA( Kind.DDL ) ) {
                     // we have to create this query manually
                     toCreate.add( 0, Pair.of( context.getNamespaceId(), queryNode.getEntity() ) );
                 }
@@ -121,6 +121,7 @@ public class MongoLanguagePlugin extends PolyPlugin {
                         .query( "db.createCollection(" + p.right + ")" )
                         .namespaceId( p.left )
                         .language( context.getLanguage() )
+                        .namespaceId( context.getNamespaceId() )
                         .transactionManager( context.getTransactionManager() )
                         .origin( context.getOrigin() )
                         .informationTarget( context.getInformationTarget() )
@@ -186,9 +187,13 @@ public class MongoLanguagePlugin extends PolyPlugin {
 
         register( OperatorName.MQL_GTE, new LangFunctionOperator( "MQL_GTE", Kind.GREATER_THAN_OR_EQUAL ) );
 
+        register( OperatorName.MQL_NOT_UNSET, new LangFunctionOperator( "MQL_NOT_UNSET", Kind.OTHER ) );
+
         register( OperatorName.MQL_MERGE, new LangFunctionOperator( OperatorName.MQL_MERGE.name(), Kind.OTHER ) );
 
         register( OperatorName.MQL_REPLACE_ROOT, new LangFunctionOperator( OperatorName.MQL_REPLACE_ROOT.name(), Kind.OTHER ) );
+
+        register( OperatorName.MQL_PROJECT_INCLUDES, new LangFunctionOperator( OperatorName.MQL_PROJECT_INCLUDES.name(), Kind.OTHER ) );
 
         register( OperatorName.DESERIALIZE, new DeserializeFunctionOperator( "DESERIALIZE_DOC" ) );
 

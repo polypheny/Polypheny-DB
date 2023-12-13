@@ -201,6 +201,8 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             rollback();
             throw new TransactionException( "Unable to prepare all involved entities for commit. Changes have been rolled back." );
         }
+
+        Catalog.getInstance().commit();
         // Free resources hold by statements
         statements.forEach( Statement::close );
 
@@ -212,7 +214,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         // Handover information about commit to Materialized Manager
         MaterializedViewManager.getInstance().updateCommittedXid( xid );
 
-        Catalog.getInstance().commit();
+
     }
 
 

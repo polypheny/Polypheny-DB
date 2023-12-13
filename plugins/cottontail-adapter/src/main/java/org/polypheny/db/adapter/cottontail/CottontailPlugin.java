@@ -41,7 +41,7 @@ import org.polypheny.db.adapter.annotations.AdapterSettingList;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
 import org.polypheny.db.adapter.cottontail.util.CottontailNameUtil;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
-import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
+import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
@@ -131,7 +131,7 @@ public class CottontailPlugin extends PolyPlugin {
     @AdapterSettingInteger(name = "port", defaultValue = 1865, position = 2)
     @AdapterSettingString(name = "database", defaultValue = "cottontail", position = 3)
     @AdapterSettingList(name = "engine", options = { "MAPDB", "HARE" }, defaultValue = "MAPDB", position = 4)
-    public static class CottontailStore extends DataStore<RelStoreCatalog> {
+    public static class CottontailStore extends DataStore<RelAdapterCatalog> {
 
         @Delegate(excludes = Exclude.class)
         private final RelationalModifyDelegate delegate;
@@ -153,7 +153,7 @@ public class CottontailPlugin extends PolyPlugin {
 
 
         public CottontailStore( long storeId, String uniqueName, Map<String, String> settings ) {
-            super( storeId, uniqueName, settings, true, new RelStoreCatalog( storeId ) );
+            super( storeId, uniqueName, settings, true, new RelAdapterCatalog( storeId ) );
 
             this.dbName = settings.get( "database" );
             this.isEmbedded = settings.get( "mode" ).equalsIgnoreCase( "embedded" );

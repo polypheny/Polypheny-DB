@@ -57,7 +57,6 @@ import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.jdbc.JdbcScan;
-import org.polypheny.db.adapter.jdbc.JdbcTable;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.JoinType;
@@ -179,14 +178,11 @@ public abstract class SqlImplementor {
         for ( Ord<AlgNode> input : Ord.zip( alg.getInputs() ) ) {
             final Result result = visitChild( input.i, input.e );
             if ( node == null ) {
-                if ( input.getValue() instanceof JdbcScan ) {
-                    node = result.asSelect( input.getValue().getEntity().unwrap( JdbcTable.class ).getNodeList() );
-                } else {
-                    node = result.asSelect();
-                }
+                node = input.getValue().unwrap( JdbcScan.class ).map( i -> result.asSelect( i.getEntity().getNodeList() ) )
+                        .orElse( result.asSelect() );
             } else {
-                if ( input.getValue() instanceof JdbcScan ) {
-                    node = (SqlNode) operator.createCall( POS, node, result.asSelect( input.getValue().getEntity().unwrap( JdbcTable.class ).getNodeList() ) );
+                if ( input.getValue().unwrap( JdbcScan.class ).isPresent() ) {
+                    node = (SqlNode) operator.createCall( POS, node, result.asSelect( input.getValue().unwrap( JdbcScan.class ).get().getEntity().getNodeList() ) );
                 } else {
                     node = (SqlNode) operator.createCall( POS, node, result.asSelect() );
                 }
@@ -833,7 +829,6 @@ public abstract class SqlImplementor {
         }
 
 
-
         void addOrderItem( List<SqlNode> orderByList, AlgFieldCollation field ) {
             if ( field.nullDirection != AlgFieldCollation.NullDirection.UNSPECIFIED ) {
                 final boolean first = field.nullDirection == AlgFieldCollation.NullDirection.FIRST;
@@ -1149,8 +1144,8 @@ public abstract class SqlImplementor {
             if ( needNew ) {
                 select = subSelect();
             } else {
-                if ( explicitColumnNames && alg.getInputs().size() == 1 && alg.getInput( 0 ) instanceof JdbcScan ) {
-                    select = asSelect( alg.getInput( 0 ).getEntity().unwrap( JdbcTable.class ).getNodeList() );
+                if ( explicitColumnNames && alg.getInputs().size() == 1 && alg.getInput( 0 ).unwrap( JdbcScan.class ).isPresent() ) {
+                    select = asSelect( alg.getInput( 0 ).unwrap( JdbcScan.class ).get().getEntity().getNodeList() );
                 } else {
                     select = asSelect();
                 }

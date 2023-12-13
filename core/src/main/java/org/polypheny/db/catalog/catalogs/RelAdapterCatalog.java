@@ -23,6 +23,7 @@ import io.activej.serializer.annotations.Deserialize;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
@@ -49,17 +50,17 @@ import org.polypheny.db.util.Pair;
 @Value
 @Slf4j
 @NonFinal
-public class RelStoreCatalog extends StoreCatalog {
+public class RelAdapterCatalog extends AdapterCatalog {
 
-    public BinarySerializer<GraphStoreCatalog> serializer = PolySerializable.buildSerializer( GraphStoreCatalog.class );
+    public BinarySerializer<GraphAdapterCatalog> serializer = PolySerializable.buildSerializer( GraphAdapterCatalog.class );
 
 
-    public RelStoreCatalog( long adapterId ) {
+    public RelAdapterCatalog( long adapterId ) {
         this( adapterId, Map.of(), Map.of(), Map.of(), Map.of(), Map.of() );
     }
 
 
-    public RelStoreCatalog(
+    public RelAdapterCatalog(
             @Deserialize("adapterId") long adapterId,
             @Deserialize("physicals") Map<Long, PhysicalEntity> physicals,
             @Deserialize("allocations") Map<Long, AllocationEntity> allocations,
@@ -75,7 +76,7 @@ public class RelStoreCatalog extends StoreCatalog {
         List<PhysicalColumn> updates = new ArrayList<>();
         for ( PhysicalField field : fields.values() ) {
             if ( field.id == id ) {
-                updates.add( field.unwrap( PhysicalColumn.class ).toBuilder().logicalName( newFieldName ).build() );
+                updates.add( field.unwrap( PhysicalColumn.class ).orElseThrow().toBuilder().logicalName( newFieldName ).build() );
             }
         }
         for ( PhysicalColumn u : updates ) {
@@ -94,12 +95,12 @@ public class RelStoreCatalog extends StoreCatalog {
 
 
     public PhysicalTable getTable( long id ) {
-        return getPhysical( id ).unwrap( PhysicalTable.class );
+        return getPhysical( id ).unwrap( PhysicalTable.class ).orElseThrow();
     }
 
 
     public PhysicalColumn getColumn( long id, long allocId ) {
-        return fields.get( Pair.of( allocId, id ) ).unwrap( PhysicalColumn.class );
+        return fields.get( Pair.of( allocId, id ) ).unwrap( PhysicalColumn.class ).orElseThrow();
     }
 
 
@@ -139,12 +140,12 @@ public class RelStoreCatalog extends StoreCatalog {
 
 
     public PhysicalTable fromAllocation( long id ) {
-        return getPhysicalsFromAllocs( id ).get( 0 ).unwrap( PhysicalTable.class );
+        return getPhysicalsFromAllocs( id ).get( 0 ).unwrap( PhysicalTable.class ).orElseThrow();
     }
 
 
     public void dropColumn( long allocId, long columnId ) {
-        PhysicalColumn column = fields.get( Pair.of( allocId, columnId ) ).unwrap( PhysicalColumn.class );
+        PhysicalColumn column = fields.get( Pair.of( allocId, columnId ) ).unwrap( PhysicalColumn.class ).orElseThrow();
         PhysicalTable table = fromAllocation( allocId );
         List<PhysicalColumn> pColumns = new ArrayList<>( table.columns );
         pColumns.remove( column );
@@ -154,13 +155,13 @@ public class RelStoreCatalog extends StoreCatalog {
 
 
     public List<PhysicalColumn> getColumns( long allocId ) {
-        return fields.values().stream().map( p -> p.unwrap( PhysicalColumn.class ) ).filter( c -> c.allocId == allocId ).collect( Collectors.toList() );
+        return fields.values().stream().map( p -> p.unwrap( PhysicalColumn.class ) ).filter( Optional::isPresent ).map( Optional::get ).filter( c -> c.allocId == allocId ).collect( Collectors.toList() );
     }
 
 
     @Override
     public PolySerializable copy() {
-        return PolySerializable.deserialize( serialize(), RelStoreCatalog.class );
+        return PolySerializable.deserialize( serialize(), RelAdapterCatalog.class );
     }
 
 }

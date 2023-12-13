@@ -116,7 +116,7 @@ public class GoogleSheetTable extends PhysicalTable implements TranslatableEntit
                         Expressions.call(
                                 googleSheetSource.getCatalogAsExpression(),
                                 "getPhysical", Expressions.constant( id ) ),
-                        "unwrap", Expressions.constant( GoogleSheetTable.class ) ),
+                        "unwrapOrThrow", Expressions.constant( GoogleSheetTable.class ) ),
                 GoogleSheetTable.class );
     }
 

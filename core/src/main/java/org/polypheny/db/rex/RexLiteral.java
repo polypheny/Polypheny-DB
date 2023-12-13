@@ -616,7 +616,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
                 pw.print( value );
                 break;
             case DOCUMENT:
-                assert value.isDocument();
+                // assert value.isDocument(); documents can be any PolyValue
                 pw.println( value );
                 break;
             default:

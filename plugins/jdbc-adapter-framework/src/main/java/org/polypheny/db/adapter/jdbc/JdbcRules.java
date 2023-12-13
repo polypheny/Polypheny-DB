@@ -36,6 +36,7 @@ package org.polypheny.db.adapter.jdbc;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import org.apache.calcite.linq4j.Queryable;
@@ -1005,8 +1006,8 @@ public class JdbcRules {
         @Override
         public boolean matches( AlgOptRuleCall call ) {
             final RelModify<?> modify = call.alg( 0 );
-            if ( modify.getEntity().unwrap( JdbcTable.class ) != null ) {
-                JdbcTable table = modify.getEntity().unwrap( JdbcTable.class );
+            if ( modify.getEntity().unwrap( JdbcTable.class ).isPresent() ) {
+                JdbcTable table = modify.getEntity().unwrap( JdbcTable.class ).get();
                 return out.getJdbcSchema() == table.getSchema();
             }
             return false;
@@ -1016,15 +1017,15 @@ public class JdbcRules {
         @Override
         public AlgNode convert( AlgNode alg ) {
             final RelModify<?> modify = (RelModify<?>) alg;
-            final ModifiableTable modifiableTable = modify.getEntity().unwrap( ModifiableTable.class );
-            if ( modifiableTable == null ) {
+            Optional<ModifiableTable> oModifiableTable = modify.getEntity().unwrap( ModifiableTable.class );
+            if ( oModifiableTable.isEmpty() ) {
                 return null;
             }
             final AlgTraitSet traitSet = modify.getTraitSet().replace( out );
             return new JdbcTableModify(
                     modify.getCluster(),
                     traitSet,
-                    modify.getEntity().unwrap( JdbcTable.class ),
+                    modify.getEntity().unwrap( JdbcTable.class ).orElseThrow(),
                     AlgOptRule.convert( modify.getInput(), traitSet ),
                     modify.getOperation(),
                     modify.getUpdateColumns(),
@@ -1053,8 +1054,8 @@ public class JdbcRules {
             super( cluster, traitSet, table, input, operation, updateColumnList, sourceExpressionList, flattened );
             assert input.getConvention() instanceof JdbcConvention;
             assert getConvention() instanceof JdbcConvention;
-            final ModifiableTable modifiableTable = table.unwrap( ModifiableTable.class );
-            if ( modifiableTable == null ) {
+            Optional<ModifiableTable> oModifiableTable = table.unwrap( ModifiableTable.class );
+            if ( oModifiableTable.isEmpty() ) {
                 throw new AssertionError(); // TODO: user error in validator
             }
             Expression expression = table.asExpression( Queryable.class );

@@ -154,4 +154,9 @@ public class QueryPlanCache {
         im.registerInformation( invalidateAction );
     }
 
+
+    public long getSize() {
+        return planCache.size();
+    }
+
 }

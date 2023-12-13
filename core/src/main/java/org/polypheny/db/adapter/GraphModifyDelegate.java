@@ -16,7 +16,7 @@
 
 package org.polypheny.db.adapter;
 
-import org.polypheny.db.catalog.catalogs.GraphStoreCatalog;
+import org.polypheny.db.catalog.catalogs.GraphAdapterCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
@@ -29,7 +29,7 @@ public class GraphModifyDelegate extends GraphScanDelegate implements Modifiable
     private final Modifiable modifiable;
 
 
-    public GraphModifyDelegate( Modifiable modifiable, GraphStoreCatalog catalog ) {
+    public GraphModifyDelegate( Modifiable modifiable, GraphAdapterCatalog catalog ) {
         super( modifiable, catalog );
         this.modifiable = modifiable;
     }

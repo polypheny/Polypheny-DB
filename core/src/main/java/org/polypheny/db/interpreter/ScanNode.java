@@ -44,6 +44,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.calcite.linq4j.Enumerable;
@@ -93,28 +94,28 @@ public class ScanNode implements Node {
      * Tries various table SPIs, and negotiates with the table which filters and projects it can implement. Adds to the Enumerable implementations of any filters and projects that cannot be implemented by the table.
      */
     static ScanNode create( Compiler compiler, RelScan<?> alg, ImmutableList<RexNode> filters, ImmutableList<Integer> projects ) {
-        final ProjectableFilterableEntity pfTable = alg.entity.unwrap( ProjectableFilterableEntity.class );
-        if ( pfTable != null ) {
-            return createProjectableFilterable( compiler, alg, filters, projects, pfTable );
+        Optional<ProjectableFilterableEntity> oPfTable = alg.entity.unwrap( ProjectableFilterableEntity.class );
+        if ( oPfTable.isPresent() ) {
+            return createProjectableFilterable( compiler, alg, filters, projects, oPfTable.get() );
         }
-        final FilterableEntity filterableTable = alg.entity.unwrap( FilterableEntity.class );
-        if ( filterableTable != null ) {
-            return createFilterable( compiler, alg, filters, projects, filterableTable );
+        Optional<FilterableEntity> oFilterableTable = alg.entity.unwrap( FilterableEntity.class );
+        if ( oFilterableTable.isPresent() ) {
+            return createFilterable( compiler, alg, filters, projects, oFilterableTable.get() );
         }
-        final ScannableEntity scannableTable = alg.entity.unwrap( ScannableEntity.class );
-        if ( scannableTable != null ) {
-            return createScannable( compiler, alg, filters, projects, scannableTable );
+        Optional<ScannableEntity> oScannableTable = alg.entity.unwrap( ScannableEntity.class );
+        if ( oScannableTable.isPresent() ) {
+            return createScannable( compiler, alg, filters, projects, oScannableTable.get() );
         }
-        //noinspection unchecked
-        final Enumerable<Row<PolyValue>> enumerable = alg.entity.unwrap( Enumerable.class );
-        if ( enumerable != null ) {
-            return createEnumerable( compiler, alg, enumerable, null, filters, projects );
+        Optional<Enumerable> oEnumerable = alg.entity.unwrap( Enumerable.class );
+        if ( oEnumerable.isPresent() ) {
+            //noinspection unchecked
+            return createEnumerable( compiler, alg, (Enumerable<Row<PolyValue>>) oEnumerable.get(), null, filters, projects );
         }
-        final QueryableEntity queryableTable = alg.entity.unwrap( QueryableEntity.class );
-        if ( queryableTable != null ) {
-            return createQueryable( compiler, alg, filters, projects, queryableTable );
+        Optional<QueryableEntity> oQueryableTable = alg.entity.unwrap( QueryableEntity.class );
+        if ( oQueryableTable.isPresent() ) {
+            return createQueryable( compiler, alg, filters, projects, oQueryableTable.get() );
         }
-        throw new AssertionError( "cannot convert table " + alg.entity + " to enumerable" );
+        throw new GenericRuntimeException( "cannot convert table " + alg.entity + " to enumerable" );
     }
 
 

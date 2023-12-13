@@ -16,26 +16,26 @@
 
 package org.polypheny.db.adapter.mongodb.rules;
 
-import com.mongodb.client.gridfs.GridFSBucket;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import org.apache.commons.lang3.NotImplementedException;
 import org.bson.BsonDocument;
 import org.polypheny.db.adapter.mongodb.MongoAlg;
 import org.polypheny.db.adapter.mongodb.MongoEntity;
+import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
 import org.polypheny.db.adapter.mongodb.rules.MongoRules.MongoDocuments;
+import org.polypheny.db.adapter.mongodb.util.RexToMongoTranslator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.document.DocumentModify;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.entity.PolyValue;
 
 public class MongoDocumentModify extends DocumentModify<MongoEntity> implements MongoAlg {
-
-    private final GridFSBucket bucket;
-    private Implementor implementor;
 
 
     protected MongoDocumentModify(
@@ -47,14 +47,12 @@ public class MongoDocumentModify extends DocumentModify<MongoEntity> implements 
             List<String> removes,
             Map<String, String> renames ) {
         super( traits, collection, input, operation, updates, removes, renames );
-        this.bucket = entity.unwrap( MongoEntity.class ).getMongoNamespace().getBucket();
     }
 
 
     @Override
     public void implement( Implementor implementor ) {
         implementor.setDML( true );
-        this.implementor = implementor;
 
         implementor.setEntity( entity );
         implementor.setOperation( this.getOperation() );
@@ -62,6 +60,7 @@ public class MongoDocumentModify extends DocumentModify<MongoEntity> implements 
         switch ( this.getOperation() ) {
             case INSERT:
                 handleInsert( implementor, ((MongoDocuments) input) );
+                break;
             case UPDATE:
                 handleUpdate( implementor );
                 break;
@@ -75,20 +74,66 @@ public class MongoDocumentModify extends DocumentModify<MongoEntity> implements 
 
 
     private void handleDelete( Implementor implementor ) {
-        throw new NotImplementedException();
+        Implementor condImplementor = new Implementor( true );
+        input.unwrap( MongoAlg.class ).orElseThrow().implement( condImplementor );
+
+        implementor.filter = condImplementor.filter;
+
+        if ( updates.isEmpty() ) {
+            implementor.add( null, "{}" );
+        } else {
+            throw new NotImplementedException();
+        }
     }
 
 
     private void handleUpdate( Implementor implementor ) {
-        throw new NotImplementedException();
+        Implementor condImplementor = new Implementor( true );
+        input.unwrap( MongoAlg.class ).orElseThrow().implement( condImplementor );
+
+        implementor.filter = condImplementor.filter;
+
+        final RexToMongoTranslator translator = new RexToMongoTranslator( getCluster().getTypeFactory(), List.of(), implementor, DataModel.DOCUMENT );
+        for ( Entry<String, ? extends RexNode> entry : updates.entrySet() ) {
+            String key = entry.getKey();
+            String value = entry.getValue().accept( translator );
+            implementor.operations.add( BsonDocument.parse( "{ $set:{" + key + ":" + value + "}}" ) );
+        }
+        if ( !removes.isEmpty() ) {
+            implementor.operations.add( BsonDocument.parse( "{ $unset:{ " + removes.stream().map( r -> r + ":\"\"" ).collect( Collectors.joining( "," ) ) + "}" ) );
+        }
+
+        if ( !renames.isEmpty() ) {
+            implementor.operations.add( BsonDocument.parse( "{ $rename:{ " + renames.entrySet().stream().map( r -> r.getKey() + ": \"" + r.getValue() + "\"" ).collect( Collectors.joining( "," ) ) + "}" ) );
+        }
+    }
+
+
+    @Override
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+        return new MongoDocumentModify(
+                traitSet,
+                entity,
+                inputs.get( 0 ),
+                operation,
+                updates,
+                removes,
+                renames );
     }
 
 
     private void handleInsert( Implementor implementor, MongoDocuments documents ) {
+        if ( documents.isPrepared() ) {
+            implementor.operations = documents.dynamicDocuments
+                    .stream()
+                    .map( BsonDynamic::new )
+                    .collect( Collectors.toList() );
+            return;
+        }
         implementor.operations = documents.documents
                 .stream()
                 .filter( PolyValue::isDocument )
-                .map( d -> BsonDocument.parse( d.toTypedJson() ) )
+                .map( d -> BsonDocument.parse( d.toJson() ) )
                 .collect( Collectors.toList() );
     }
 

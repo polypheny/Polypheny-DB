@@ -18,7 +18,7 @@ package org.polypheny.db.adapter;
 
 import java.util.List;
 import lombok.Getter;
-import org.polypheny.db.catalog.catalogs.GraphStoreCatalog;
+import org.polypheny.db.catalog.catalogs.GraphAdapterCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
@@ -33,10 +33,10 @@ public class GraphScanDelegate implements Scannable {
 
     protected final Scannable scannable;
     @Getter
-    protected final GraphStoreCatalog catalog;
+    protected final GraphAdapterCatalog catalog;
 
 
-    public GraphScanDelegate( Scannable scannable, GraphStoreCatalog catalog ) {
+    public GraphScanDelegate( Scannable scannable, GraphAdapterCatalog catalog ) {
         this.scannable = scannable;
         this.catalog = catalog;
     }

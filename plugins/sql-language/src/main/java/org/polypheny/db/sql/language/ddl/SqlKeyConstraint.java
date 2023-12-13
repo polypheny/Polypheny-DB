@@ -38,25 +38,26 @@ import org.polypheny.db.util.ImmutableNullableList;
  *
  * And {@code FOREIGN KEY}, when we support it.
  */
+@Getter
 public class SqlKeyConstraint extends SqlCall {
 
     public static final SqlSpecialOperator UNIQUE = new SqlSpecialOperator( "UNIQUE", Kind.UNIQUE );
 
     public static final SqlSpecialOperator PRIMARY = new SqlSpecialOperator( "PRIMARY KEY", Kind.PRIMARY_KEY );
 
-    @Getter
+    public static final SqlSpecialOperator FOREIGN = new SqlSpecialOperator( "FOREIGN KEY", Kind.FOREIGN_KEY );
+
     private final SqlIdentifier name;
-    @Getter
-    private final SqlNodeList columnList;
+    private final SqlNodeList columns;
 
 
     /**
      * Creates a SqlKeyConstraint.
      */
-    SqlKeyConstraint( ParserPos pos, SqlIdentifier name, SqlNodeList columnList ) {
+    SqlKeyConstraint( ParserPos pos, SqlIdentifier name, SqlNodeList columns ) {
         super( pos );
         this.name = name;
-        this.columnList = columnList;
+        this.columns = columns;
     }
 
 
@@ -85,6 +86,8 @@ public class SqlKeyConstraint extends SqlCall {
     public ConstraintType getConstraintType() {
         if ( getOperator().equals( PRIMARY ) ) {
             return ConstraintType.PRIMARY;
+        } else if ( getOperator().equals( FOREIGN ) ) {
+            return ConstraintType.FOREIGN;
         } else {
             return ConstraintType.UNIQUE;
         }
@@ -99,13 +102,13 @@ public class SqlKeyConstraint extends SqlCall {
 
     @Override
     public List<Node> getOperandList() {
-        return ImmutableNullableList.of( name, columnList );
+        return ImmutableNullableList.of( name, columns );
     }
 
 
     @Override
     public List<SqlNode> getSqlOperandList() {
-        return ImmutableNullableList.of( name, columnList );
+        return ImmutableNullableList.of( name, columns );
     }
 
 
@@ -116,7 +119,7 @@ public class SqlKeyConstraint extends SqlCall {
             name.unparse( writer, 0, 0 );
         }
         writer.keyword( getOperator().getName() ); // "UNIQUE" or "PRIMARY KEY"
-        columnList.unparse( writer, 1, 1 );
+        columns.unparse( writer, 1, 1 );
     }
 
 }

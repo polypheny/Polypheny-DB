@@ -46,7 +46,7 @@ import org.polypheny.db.adapter.GraphModifyDelegate;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.catalogs.GraphStoreCatalog;
+import org.polypheny.db.catalog.catalogs.GraphAdapterCatalog;
 import org.polypheny.db.catalog.entity.LogicalDefaultValue;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
@@ -135,7 +135,7 @@ public class Neo4jPlugin extends PolyPlugin {
             usedModes = { DeployMode.DOCKER, DeployMode.REMOTE },
             defaultMode = DeployMode.DOCKER)
     @Extension
-    public static class Neo4jStore extends DataStore<GraphStoreCatalog> {
+    public static class Neo4jStore extends DataStore<GraphAdapterCatalog> {
 
         private final String DEFAULT_DATABASE = "public";
         @Delegate(excludes = Exclude.class)
@@ -159,7 +159,7 @@ public class Neo4jPlugin extends PolyPlugin {
 
 
         public Neo4jStore( long adapterId, String uniqueName, Map<String, String> adapterSettings ) {
-            super( adapterId, uniqueName, adapterSettings, true, new GraphStoreCatalog( adapterId ) );
+            super( adapterId, uniqueName, adapterSettings, true, new GraphAdapterCatalog( adapterId ) );
 
             this.user = "neo4j";
             if ( !settings.containsKey( "password" ) ) {
@@ -349,7 +349,7 @@ public class Neo4jPlugin extends PolyPlugin {
         @Override
         public void dropColumn( Context context, long allocId, long columnId ) {
             PhysicalTable physical = storeCatalog.fromAllocation( allocId, PhysicalTable.class );
-            PhysicalColumn column = storeCatalog.getField( columnId, allocId ).unwrap( PhysicalColumn.class );
+            PhysicalColumn column = storeCatalog.getField( columnId, allocId ).unwrap( PhysicalColumn.class ).orElseThrow();
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
             executeDdlTrx(
                     context.getStatement().getTransaction().getXid(),

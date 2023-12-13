@@ -23,13 +23,11 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.mql.Mql.Type;
 
 
+@Getter
 public class MqlFind extends MqlCollectionStatement implements MqlQueryStatement {
 
-    @Getter
     private final BsonDocument query;
-    @Getter
     private final BsonDocument projection;
-    @Getter
     private final boolean onlyOne;
 
 

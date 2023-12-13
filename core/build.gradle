@@ -13,6 +13,9 @@ configurations {
     testClasses {
         extendsFrom testImplementation
     }
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
 }
 
 
@@ -30,6 +33,9 @@ buildscript {
 
 
 dependencies {
+    annotationProcessor project(':util')
+    implementation project(':util')
+
     api project(":config")
     api project(":information")
 
@@ -73,7 +79,7 @@ dependencies {
     implementation group: "com.github.docker-java", name: "docker-java", version: java_docker_version // Apache 2.0
     implementation group: "com.github.docker-java", name: "docker-java-transport-httpclient5", version: java_docker_version // TODO: should probably be independent version in future
 
-    api group: "io.activej", name: "activej-serializer", version: activej_serializer_version // Apache 2.0
+    api group: "io.activej", name: "activej-serializer", version: activej_serializer_version
 
     // --- Test Compile ---
     testImplementation group: "junit", name: "junit", version: junit_version
@@ -87,11 +93,15 @@ protobuf {
     }
 }
 
+tasks.withType(JavaCompile) {
+    options.annotationProcessorGeneratedSourcesDirectory = file("${buildDir}/generated/sources/annotationProcessor")
+}
+
 
 sourceSets {
     main {
         java {
-            srcDirs = ["src/main/java", "build/generated-sources", "build/generated/source/proto/main/java"]
+            srcDirs = ["src/main/java", "build/generated-sources", "build/generated/source/proto/main/java", "build/generated/sources/annotationProcessor"]
             outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {
@@ -113,6 +123,9 @@ sourceSets {
     }
 }
 
+tasks.withType(JavaCompile) {
+    options.annotationProcessorPath = configurations.annotationProcessor
+}
 
 task generateJdbcVersionProperties(type: Copy) {
     from "src/main/resources/version"

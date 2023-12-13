@@ -36,6 +36,7 @@ import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.PolyValue;
 
+
 @Value
 public class ResultIterator implements AutoCloseable {
 
@@ -62,7 +63,6 @@ public class ResultIterator implements AutoCloseable {
 
 
     public List<List<PolyValue>> getNextBatch() {
-
         StopWatch stopWatch = null;
         try {
             if ( isTimed ) {
@@ -93,7 +93,6 @@ public class ResultIterator implements AutoCloseable {
             } catch ( Exception e ) {
                 throw new GenericRuntimeException( t );
             }
-
         }
     }
 
@@ -131,9 +130,7 @@ public class ResultIterator implements AutoCloseable {
 
 
     public List<PolyValue[]> getArrayRows() {
-
         return getNextBatch( rowType.getFieldCount() == 1 ? e -> (PolyValue[]) e : null );
-
     }
 
 

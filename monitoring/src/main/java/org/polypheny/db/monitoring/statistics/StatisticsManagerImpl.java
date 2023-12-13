@@ -545,11 +545,12 @@ public class StatisticsManagerImpl extends StatisticsManager {
                         Collections.singletonList( tableScan.getRowType().getFieldNames().get( i ) ) );
 
                 LogicalAggregate logicalAggregate = LogicalAggregate.create(
-                        logicalProject, ImmutableBitSet.of( 0 ),
+                        logicalProject,
+                        ImmutableBitSet.of( 0 ),
                         Collections.singletonList( ImmutableBitSet.of( 0 ) ),
                         Collections.emptyList() );
 
-                Pair<BigDecimal, PolyType> valuePair = new Pair<>( new BigDecimal( (int) 6 ), PolyType.DECIMAL );
+                Pair<BigDecimal, PolyType> valuePair = new Pair<>( new BigDecimal( 6 ), PolyType.DECIMAL );
 
                 return LogicalSort.create(
                         logicalAggregate,
@@ -819,7 +820,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
 
     private void handleTruncate( long tableId, Snapshot snapshot ) {
-        LogicalTable catalogTable = snapshot.getLogicalEntity( tableId ).map( e -> e.unwrap( LogicalTable.class ) ).orElseThrow();
+        LogicalTable catalogTable = snapshot.getLogicalEntity( tableId ).map( e -> e.unwrap( LogicalTable.class ).orElseThrow() ).orElseThrow();
         for ( LogicalColumn column : catalogTable.getColumns() ) {
             PolyType polyType = column.type;
             QueryResult queryResult = new QueryResult( catalogTable, column );
@@ -853,7 +854,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
 
     private void handleInsert( long tableId, Map<Long, List<?>> changedValues, Snapshot snapshot ) {
-        LogicalTable catalogTable = snapshot.getLogicalEntity( tableId ).map( e -> e.unwrap( LogicalTable.class ) ).orElseThrow();
+        LogicalTable catalogTable = snapshot.getLogicalEntity( tableId ).map( e -> e.unwrap( LogicalTable.class ).orElseThrow() ).orElseThrow();
         List<LogicalColumn> columns = catalogTable.getColumns();
         if ( changedValues.size() != columns.size() ) {
             log.warn( "non-matching statistics length" );

@@ -36,7 +36,7 @@ import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingBoolean;
 import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
-import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
+import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
@@ -91,7 +91,7 @@ public class EthereumPlugin extends PolyPlugin {
     @AdapterSettingString(name = "ClientUrl", description = "The URL of the ethereum JSON RPC client", defaultValue = "https://mainnet.infura.io/v3/4d06589e97064040b5da99cf4051ef04", position = 1)
     @AdapterSettingInteger(name = "Blocks", description = "The number of Blocks to fetch when processing a query", defaultValue = 10, position = 2, modifiable = true)
     @AdapterSettingBoolean(name = "ExperimentalFiltering", description = "Experimentally filter Past Block", defaultValue = false, position = 3, modifiable = true)
-    public static class EthereumDataSource extends DataSource<RelStoreCatalog> {
+    public static class EthereumDataSource extends DataSource<RelAdapterCatalog> {
 
         @Delegate(excludes = Excludes.class)
         private final RelationalScanDelegate delegate;
@@ -105,7 +105,7 @@ public class EthereumPlugin extends PolyPlugin {
 
 
         public EthereumDataSource( final long storeId, final String uniqueName, final Map<String, String> settings ) {
-            super( storeId, uniqueName, settings, true, new RelStoreCatalog( storeId ) );
+            super( storeId, uniqueName, settings, true, new RelAdapterCatalog( storeId ) );
             setClientURL( settings.get( "ClientUrl" ) );
             this.blocks = Integer.parseInt( settings.get( "Blocks" ) );
             this.experimentalFiltering = Boolean.parseBoolean( settings.get( "ExperimentalFiltering" ) );

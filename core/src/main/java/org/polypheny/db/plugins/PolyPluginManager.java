@@ -60,6 +60,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.ConfigPlugin;
+import org.polypheny.db.config.ConfigString;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.monitoring.repository.PersistentMonitoringRepository;
@@ -153,11 +154,13 @@ public class PolyPluginManager extends DefaultPluginManager {
 
 
     public static void init( boolean resetPluginsOnStartup ) {
-        attachRuntimeToPlugins();
-
         if ( resetPluginsOnStartup ) {
             deletePluginFolder();
+            RuntimeConfig.AVAILABLE_PLUGINS.getList( ConfigPlugin.class ).clear();
+            RuntimeConfig.BLOCKED_PLUGINS.getList( ConfigString.class ).clear();
         }
+
+        attachRuntimeToPlugins();
 
         pluginManager.loadPlugins();
 
@@ -285,7 +288,7 @@ public class PolyPluginManager extends DefaultPluginManager {
      */
     private static void startAvailablePlugin( String pluginId ) {
         if ( !PLUGINS.containsKey( pluginId ) ) {
-            throw new RuntimeException( "Plugin is not not loaded and can not be started." );
+            throw new GenericRuntimeException( "Plugin is not not loaded and can not be started." );
         }
 
         PolyPluginDescriptor descriptor = (PolyPluginDescriptor) PLUGINS.get( pluginId ).getDescriptor();

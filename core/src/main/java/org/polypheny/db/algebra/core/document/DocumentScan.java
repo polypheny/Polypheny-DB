@@ -16,6 +16,7 @@
 
 package org.polypheny.db.algebra.core.document;
 
+import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.common.Scan;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.entity.Entity;
@@ -34,6 +35,14 @@ public abstract class DocumentScan<E extends Entity> extends Scan<E> implements 
     public DocumentScan( AlgOptCluster cluster, AlgTraitSet traitSet, E collection ) {
         super( cluster, traitSet.replace( ModelTrait.DOCUMENT ), collection );
         this.rowType = DocumentType.ofId();
+    }
+
+
+    @Override
+    public AlgWriter explainTerms( AlgWriter pw ) {
+        return super.explainTerms( pw )
+                .item( "table", entity.id )
+                .item( "layer", entity.getLayer() );
     }
 
 

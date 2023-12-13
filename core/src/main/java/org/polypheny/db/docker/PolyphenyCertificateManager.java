@@ -66,8 +66,8 @@ public final class PolyphenyCertificateManager {
     static PolyphenyKeypair loadClientKeypair( String context, String hostname ) throws IOException {
         PolyphenyHomeDirManager dirManager = PolyphenyHomeDirManager.getInstance();
         String basePath = getBaseDirectory( context, hostname );
-        String clientKeyPath = dirManager.getFileIfExists( basePath + "key.pem" ).getAbsolutePath();
-        String clientCertificatePath = dirManager.getFileIfExists( basePath + "cert.pem" ).getAbsolutePath();
+        String clientKeyPath = dirManager.getHomeFile( basePath + "key.pem" ).orElseThrow().getAbsolutePath();
+        String clientCertificatePath = dirManager.getHomeFile( basePath + "cert.pem" ).orElseThrow().getAbsolutePath();
         return PolyphenyKeypair.loadFromDisk( clientCertificatePath, clientKeyPath, RuntimeConfig.INSTANCE_UUID.getString() );
     }
 

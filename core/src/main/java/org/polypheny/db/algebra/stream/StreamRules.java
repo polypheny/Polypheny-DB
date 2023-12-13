@@ -37,6 +37,7 @@ package org.polypheny.db.algebra.stream;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AlgFactories;
@@ -266,10 +267,10 @@ public class StreamRules {
             final Delta delta = call.alg( 0 );
             final RelScan<?> scan = call.alg( 1 );
             final AlgOptCluster cluster = delta.getCluster();
-            final StreamableEntity streamableTable = scan.entity.unwrap( StreamableEntity.class );
-            if ( streamableTable != null ) {
-                final Entity entity1 = streamableTable.stream();
-                final LogicalTable catalogTable = scan.entity.unwrap( LogicalTable.class );
+            Optional<StreamableEntity> oStreamableTable = scan.entity.unwrap( StreamableEntity.class );
+            if ( oStreamableTable.isPresent() ) {
+                final Entity entity1 = oStreamableTable.get().stream();
+                final LogicalTable catalogTable = scan.entity.unwrap( LogicalTable.class ).orElse( null );
                 /*final CatalogPartitionPlacement placement = scan.entity.unwrap( PhysicalTable.class ).getPartitionPlacement().unwrap( CatalogPartitionPlacement.class );
                 final AlgOptEntity algOptEntity2 =
                         AlgOptEntityImpl.create( algOptEntity.getRelOptSchema(),
@@ -306,9 +307,9 @@ public class StreamRules {
         public void onMatch( AlgOptRuleCall call ) {
             final Delta delta = call.alg( 0 );
             final RelScan<?> scan = call.alg( 1 );
-            final StreamableEntity streamableTable = scan.getEntity().unwrap( StreamableEntity.class );
+            Optional<StreamableEntity> oStreamableTable = scan.getEntity().unwrap( StreamableEntity.class );
             final AlgBuilder builder = call.builder();
-            if ( streamableTable == null ) {
+            if ( oStreamableTable.isEmpty() ) {
                 call.transformTo( builder.values( delta.getRowType() ).build() );
             }
         }

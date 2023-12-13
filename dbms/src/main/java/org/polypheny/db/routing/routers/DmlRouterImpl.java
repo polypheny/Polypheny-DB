@@ -105,11 +105,12 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         if ( modify.entity == null ) {
             throw new GenericRuntimeException( "Unexpected operator!" );
         }
-        LogicalTable table = modify.entity.unwrap( LogicalTable.class );
+        Optional<LogicalTable> oTable = modify.entity.unwrap( LogicalTable.class );
 
-        if ( table == null ) {
+        if ( oTable.isEmpty() ) {
             throw new GenericRuntimeException( "Unexpected table. Only logical tables expected here!" );
         }
+        LogicalTable table = oTable.get();
 
         List<LogicalColumn> columns = catalog.getSnapshot().rel().getColumns( table.id );
         List<Long> columnIds = columns.stream().map( c -> c.id ).collect( Collectors.toList() );
@@ -161,7 +162,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             // If this is an update, check whether we need to execute on this storeId at all
             List<String> updateColumns = modify.getUpdateColumns();
             List<? extends RexNode> sourceExpressions = modify.getSourceExpressions();
-            if ( placementsOnAdapter.size() != table.getColumnIds().size() ) {
+            if ( placementsOnAdapter.size() != oTable.get().getColumnIds().size() ) {
 
                 if ( modify.getOperation() == Operation.UPDATE ) {
                     updateColumns = new ArrayList<>( modify.getUpdateColumns() );
@@ -288,7 +289,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             if ( statement.getMonitoringEvent() != null ) {
                 statement.getMonitoringEvent()
                         .updateAccessedPartitions(
-                                Collections.singletonMap( table.id, accessedPartitions ) );
+                                Collections.singletonMap( oTable.get().id, accessedPartitions ) );
             }
 
             if ( !operationWasRewritten ) {
@@ -304,7 +305,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     AlgNode input = buildDml(
                             super.recursiveCopy( modify.getInput( 0 ) ),
                             RoutedAlgBuilder.create( statement, cluster ),
-                            table,
+                            oTable.get(),
                             placementsOnAdapter,
                             allocation,
                             statement,
@@ -656,7 +657,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     public AlgNode routeDocumentDml( LogicalDocumentModify alg, Statement statement, @Nullable AllocationEntity target, @Nullable List<Long> excludedPlacements ) {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
 
-        LogicalCollection collection = alg.entity.unwrap( LogicalCollection.class );
+        LogicalCollection collection = alg.entity.unwrap( LogicalCollection.class ).orElseThrow();
 
         List<AlgNode> modifies = new ArrayList<>();
 
@@ -679,7 +680,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     public AlgNode routeGraphDml( LogicalLpgModify alg, Statement statement, @Nullable AllocationEntity target, @Nullable List<Long> excludedPlacements ) {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
         List<AlgNode> modifies = new ArrayList<>();
-        LogicalGraph graph = alg.entity.unwrap( LogicalGraph.class );
+        LogicalGraph graph = alg.entity.unwrap( LogicalGraph.class ).orElseThrow();
 
         if ( target != null ) {
             return new LogicalLpgModify( alg.getCluster(),

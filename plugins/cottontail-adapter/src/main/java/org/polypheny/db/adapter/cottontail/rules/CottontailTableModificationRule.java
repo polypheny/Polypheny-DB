@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.cottontail.rules;
 
 
+import java.util.Optional;
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
 import org.polypheny.db.adapter.cottontail.CottontailEntity;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailTableModify;
@@ -47,11 +48,11 @@ public class CottontailTableModificationRule extends CottontailConverterRule {
     @Override
     public boolean matches( AlgOptRuleCall call ) {
         final RelModify<?> modify = call.alg( 0 );
-        if ( modify.getEntity().unwrap( CottontailEntity.class ) == null ) {
+        if ( modify.getEntity().unwrap( CottontailEntity.class ).isEmpty() ) {
             return false;
         }
 
-        if ( !modify.getEntity().unwrap( CottontailEntity.class ).getUnderlyingConvention().equals( this.out ) ) {
+        if ( !modify.getEntity().unwrap( CottontailEntity.class ).get().getUnderlyingConvention().equals( this.out ) ) {
             return false;
         }
         return modify.getOperation() != Modify.Operation.MERGE;
@@ -62,12 +63,12 @@ public class CottontailTableModificationRule extends CottontailConverterRule {
     public AlgNode convert( AlgNode alg ) {
         final RelModify<?> modify = (RelModify<?>) alg;
 
-        final ModifiableTable modifiableTable = modify.getEntity().unwrap( ModifiableTable.class );
+        Optional<ModifiableTable> oModifiableTable = modify.getEntity().unwrap( ModifiableTable.class );
 
-        if ( modifiableTable == null ) {
+        if ( oModifiableTable.isEmpty() ) {
             return null;
         }
-        if ( modify.getEntity().unwrap( CottontailEntity.class ) == null ) {
+        if ( modify.getEntity().unwrap( CottontailEntity.class ).isEmpty() ) {
             return null;
         }
 
@@ -75,7 +76,7 @@ public class CottontailTableModificationRule extends CottontailConverterRule {
 
         return new CottontailTableModify(
                 traitSet,
-                modify.getEntity().unwrap( CottontailEntity.class ),
+                modify.getEntity().unwrap( CottontailEntity.class ).get(),
                 AlgOptRule.convert( modify.getInput(), traitSet ),
                 modify.getOperation(),
                 modify.getUpdateColumns(),

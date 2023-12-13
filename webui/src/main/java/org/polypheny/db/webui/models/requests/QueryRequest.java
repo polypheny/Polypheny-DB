@@ -20,7 +20,11 @@ package org.polypheny.db.webui.models.requests;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.experimental.SuperBuilder;
+import lombok.extern.jackson.Jacksonized;
 
+@Jacksonized
+@SuperBuilder
 public class QueryRequest extends UIRequest {
 
 

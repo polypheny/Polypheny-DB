@@ -72,7 +72,7 @@ public abstract class PhysicalField extends Entity {
 
 
     @Override
-    public State getCatalogType() {
+    public State getLayer() {
         return State.PHYSICAL;
     }
 

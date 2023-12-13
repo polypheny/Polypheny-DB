@@ -32,4 +32,8 @@ public interface TransactionManager {
 
     boolean isActive( PolyXid xid );
 
+    long getNumberOfActiveTransactions();
+
+    long getNumberOfTotalTransactions();
+
 }

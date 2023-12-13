@@ -38,6 +38,7 @@ import java.util.Collection;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.nodes.Node;
+import org.polypheny.db.util.Wrapper;
 
 
 /**
@@ -50,7 +51,7 @@ import org.polypheny.db.nodes.Node;
  *
  * All sub-classes of RexNode are immutable.
  */
-public abstract class RexNode {
+public abstract class RexNode implements Wrapper {
 
     // Effectively final. Set in each sub-class constructor, and never re-set.
     protected String digest;

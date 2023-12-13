@@ -44,7 +44,6 @@ dependencies {
     implementation group: "io.javalin", name: "javalin", version: javalin_version  // Apache 2.0
 
     implementation group: "com.github.rvesse", name: "airline", version: airline_version  // Apache 2.0
-    implementation group: "com.github.oshi", name: "oshi-core", version: oshi_core_version  // MIT
 
     implementation group: "com.j256.simplemagic", name: "simplemagic", version: simplemagic_version
     implementation group: "org.jetbrains", name: "annotations", version: jetbrains_annotations_version  // ISC
@@ -328,6 +327,7 @@ task createProperties() {
         }
         // copy needed, otherwise the bean VersionController can't load the file at startup when running complete-app tests.
         copy {
+            setDuplicatesStrategy(DuplicatesStrategy.WARN)
             from "$buildDir/version.properties"
             into "src/main/resources"
         }

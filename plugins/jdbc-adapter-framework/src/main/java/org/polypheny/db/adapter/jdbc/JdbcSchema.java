@@ -54,8 +54,8 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
-import org.polypheny.db.catalog.catalogs.StoreCatalog;
+import org.polypheny.db.catalog.catalogs.AdapterCatalog;
+import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -140,7 +140,7 @@ public class JdbcSchema implements Namespace, Schema, Expressible {
 
 
     public JdbcTable createJdbcTable(
-            StoreCatalog storeCatalog,
+            AdapterCatalog adapterCatalog,
             PhysicalTable table ) {
         return new JdbcTable(
                 this,
@@ -151,7 +151,7 @@ public class JdbcSchema implements Namespace, Schema, Expressible {
 
     public static JdbcSchema create(
             long id,
-            RelStoreCatalog storeCatalog,
+            RelAdapterCatalog storeCatalog,
             String name,
             ConnectionFactory connectionFactory,
             SqlDialect dialect,

@@ -1933,6 +1933,8 @@ void TableElement(List<SqlNode> list) :
     final Span s = Span.of();
     final ColumnStrategy strategy;
     final String collation;
+    SqlIdentifier refTable;
+    SqlIdentifier refColumn;
 }
 {
     id = SimpleIdentifier()
@@ -2008,6 +2010,19 @@ void TableElement(List<SqlNode> list) :
                 <KEY>
                 columnList = ParenthesizedSimpleIdentifierList() {
                     list.add(SqlDdlNodes.primary(s.end(columnList), name, columnList));
+                }
+            |
+                <FOREIGN> { s.add(this); }
+                <KEY>
+                columnList = ParenthesizedSimpleIdentifierList()
+                <REFERENCES> {
+                    s.add(this);
+                }
+                refTable = CompoundIdentifier()
+                <LPAREN>
+                refColumn = SimpleIdentifier()
+                <RPAREN> {
+                    list.add(SqlDdlNodes.foreign(s.end(this), name, columnList, refTable, refColumn));
                 }
         )
 }

@@ -35,7 +35,7 @@ public class EnumerableLpgTransformerRule extends ConverterRule {
                 Convention.NONE,
                 EnumerableConvention.INSTANCE,
                 AlgFactories.LOGICAL_BUILDER,
-                "EnumerableGraphTransformer" );
+                EnumerableLpgTransformerRule.class.getSimpleName() );
     }
 
 

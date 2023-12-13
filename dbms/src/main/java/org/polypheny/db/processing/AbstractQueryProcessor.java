@@ -20,7 +20,6 @@ package org.polypheny.db.processing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.lang.reflect.Type;
-import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -584,7 +583,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     if ( node instanceof LogicalRelModify ) {
                         final Catalog catalog = Catalog.getInstance();
                         final LogicalRelModify ltm = (LogicalRelModify) node;
-                        final LogicalTable table = ltm.getEntity().unwrap( LogicalTable.class );
+                        final LogicalTable table = ltm.getEntity().unwrap( LogicalTable.class ).orElseThrow();
                         final LogicalNamespace namespace = catalog.getSnapshot().getNamespace( table.namespaceId ).orElseThrow();
                         final List<Index> indices = IndexManager.getInstance().getIndices( namespace, table );
 
@@ -881,7 +880,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     }
                     // Retrieve the catalog schema and database representations required for index lookup
                     final LogicalNamespace schema = statement.getTransaction().getDefaultNamespace();
-                    final LogicalTable ctable = scan.getEntity().unwrap( LogicalTable.class );
+                    final LogicalTable ctable = scan.getEntity().unwrap( LogicalTable.class ).orElseThrow();
                     // Retrieve any index and use for simplification
                     final Index idx = IndexManager.getInstance().getIndex( schema, ctable, columns );
                     if ( idx == null ) {
@@ -1083,18 +1082,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         AlgDataType newParameterRowType = statement.getTransaction().getTypeFactory().createStructType(
                 types.stream().map( t -> 1L ).collect( Collectors.toList() ),
                 types,
-                new AbstractList<>() {
-                    @Override
-                    public String get( int index ) {
-                        return "?" + index;
-                    }
-
-
-                    @Override
-                    public int size() {
-                        return types.size();
-                    }
-                } );
+                IntStream.range( 0, types.size() ).mapToObj( i -> "?" + i ).collect( Collectors.toList() ) );
 
         return new Pair<>(
                 new AlgRoot( parameterized, routedRoot.validatedRowType, routedRoot.kind, routedRoot.fields, routedRoot.collation ),
@@ -1295,7 +1283,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 long scanId = entity.id;
 
                 // Get placements of this table
-                LogicalTable table = entity.unwrap( LogicalTable.class );
+                LogicalTable table = entity.unwrap( LogicalTable.class ).orElseThrow();
 
                 if ( table == null ) {
                     return accessedPartitions;

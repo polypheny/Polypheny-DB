@@ -16,6 +16,7 @@
 
 package org.polypheny.db.algebra.rules;
 
+import java.util.Optional;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
@@ -42,19 +43,19 @@ public class AllocationToPhysicalModifyRule extends AlgOptRule {
 
 
     private static boolean canApply( Modify<?> r ) {
-        return r.entity.getCatalogType() == State.ALLOCATION;
+        return r.entity.getLayer() == State.ALLOCATION;
     }
 
 
     @Override
     public void onMatch( AlgOptRuleCall call ) {
         Modify<?> modify = call.alg( 0 );
-        AllocationEntity alloc = modify.entity.unwrap( AllocationEntity.class );
-        if ( alloc == null ) {
+        Optional<AllocationEntity> oAlloc = modify.entity.unwrap( AllocationEntity.class );
+        if ( oAlloc.isEmpty() ) {
             return;
         }
 
-        AlgNode newAlg = AdapterManager.getInstance().getStore( alloc.adapterId ).getModify( alloc.id, modify, call.builder() );
+        AlgNode newAlg = AdapterManager.getInstance().getStore( oAlloc.get().adapterId ).getModify( oAlloc.get().id, modify, call.builder() );
 
         if ( newAlg != null ) {
             call.transformTo( newAlg );

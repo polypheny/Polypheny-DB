@@ -18,7 +18,7 @@ package org.polypheny.db.adapter;
 
 import java.util.List;
 import lombok.Getter;
-import org.polypheny.db.catalog.catalogs.DocStoreCatalog;
+import org.polypheny.db.catalog.catalogs.DocAdapterCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
@@ -34,10 +34,10 @@ public class DocumentScanDelegate implements Scannable {
     private final Scannable scannable;
 
     @Getter
-    private final DocStoreCatalog catalog;
+    private final DocAdapterCatalog catalog;
 
 
-    public DocumentScanDelegate( Scannable scannable, DocStoreCatalog catalog ) {
+    public DocumentScanDelegate( Scannable scannable, DocAdapterCatalog catalog ) {
         this.scannable = scannable;
         this.catalog = catalog;
     }

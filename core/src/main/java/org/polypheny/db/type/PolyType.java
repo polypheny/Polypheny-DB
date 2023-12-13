@@ -236,6 +236,12 @@ public enum PolyType {
             Types.VARCHAR,
             PolyTypeFamily.CHARACTER ),
 
+    TEXT(
+            PrecScale.NO_NO,
+            false,
+            Types.VARCHAR,
+            PolyTypeFamily.CHARACTER ),
+
     BINARY(
             PrecScale.NO_NO | PrecScale.YES_NO,
             false,

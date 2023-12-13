@@ -76,7 +76,7 @@ public abstract class ProjectScanRule extends AlgOptRule {
                 @Override
                 public void onMatch( AlgOptRuleCall call ) {
                     final Project project = call.alg( 0 );
-                    final RelScan scan = call.alg( 1 );
+                    final RelScan<?> scan = call.alg( 1 );
                     apply( call, project, scan );
                 }
             };
@@ -92,7 +92,7 @@ public abstract class ProjectScanRule extends AlgOptRule {
                 @Override
                 public void onMatch( AlgOptRuleCall call ) {
                     final Project project = call.alg( 0 );
-                    final RelScan scan = call.alg( 2 );
+                    final RelScan<?> scan = call.alg( 2 );
                     apply( call, project, scan );
                 }
             };
@@ -108,12 +108,12 @@ public abstract class ProjectScanRule extends AlgOptRule {
 
     protected static boolean test( RelScan<?> scan ) {
         // We can only push projects into a ProjectableFilterableTable.
-        return scan.entity.unwrap( ProjectableFilterableEntity.class ) != null;
+        return scan.entity.unwrap( ProjectableFilterableEntity.class ).isPresent();
     }
 
 
     protected void apply( AlgOptRuleCall call, Project project, RelScan<?> scan ) {
-        assert scan.entity.unwrap( ProjectableFilterableEntity.class ) != null;
+        assert scan.entity.unwrap( ProjectableFilterableEntity.class ).isPresent();
 
         final TargetMapping mapping = project.getMapping();
         if ( mapping == null || Mappings.isIdentity( mapping ) ) {

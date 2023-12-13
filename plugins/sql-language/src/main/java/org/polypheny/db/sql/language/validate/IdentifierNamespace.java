@@ -192,19 +192,17 @@ public class IdentifierNamespace extends AbstractNamespace {
             if ( validator.shouldExpandIdentifiers() ) {
                 // TODO:  expand qualifiers for column references also
                 List<String> qualifiedNames = List.of( table.name );
-                if ( qualifiedNames != null ) {
-                    // Assign positions to the components of the fully-qualified identifier, as best we can. We assume that qualification adds names to the front, e.g. FOO.BAR becomes BAZ.FOO.BAR.
-                    List<ParserPos> poses = new ArrayList<>( Collections.nCopies( qualifiedNames.size(), id.getPos() ) );
-                    int offset = qualifiedNames.size() - id.names.size();
+                // Assign positions to the components of the fully-qualified identifier, as best we can. We assume that qualification adds names to the front, e.g. FOO.BAR becomes BAZ.FOO.BAR.
+                List<ParserPos> poses = new ArrayList<>( Collections.nCopies( qualifiedNames.size(), id.getPos() ) );
+                int offset = qualifiedNames.size() - id.names.size();
 
-                    // Test offset in case catalog supports fewer qualifiers than catalog reader.
-                    if ( offset >= 0 ) {
-                        for ( int i = 0; i < id.names.size(); i++ ) {
-                            poses.set( i + offset, id.getComponentParserPosition( i ) );
-                        }
+                // Test offset in case catalog supports fewer qualifiers than catalog reader.
+                if ( offset >= 0 ) {
+                    for ( int i = 0; i < id.names.size(); i++ ) {
+                        poses.set( i + offset, id.getComponentParserPosition( i ) );
                     }
-                    id.setNames( qualifiedNames, poses );
                 }
+                id.setNames( qualifiedNames, poses );
             }
         }
 

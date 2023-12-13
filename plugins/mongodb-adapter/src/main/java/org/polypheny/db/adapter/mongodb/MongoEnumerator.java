@@ -44,19 +44,26 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.commons.lang3.NotImplementedException;
 import org.bson.BsonDocument;
+import org.bson.BsonType;
 import org.bson.BsonValue;
 import org.bson.Document;
 import org.polypheny.db.adapter.mongodb.util.MongoTupleType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBigDecimal;
+import org.polypheny.db.type.entity.PolyBinary;
+import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyDate;
+import org.polypheny.db.type.entity.PolyDouble;
 import org.polypheny.db.type.entity.PolyInteger;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyTime;
 import org.polypheny.db.type.entity.PolyTimeStamp;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyDocument;
 
 
 /**
@@ -64,8 +71,7 @@ import org.polypheny.db.type.entity.PolyValue;
  */
 class MongoEnumerator implements Enumerator<PolyValue[]> {
 
-    protected final Iterator<Document> cursor;
-    protected final Function1<Document, PolyValue[]> getter;
+    protected final Iterator<PolyValue[]> cursor;
     protected final GridFSBucket bucket;
     protected PolyValue[] current;
 
@@ -74,11 +80,9 @@ class MongoEnumerator implements Enumerator<PolyValue[]> {
      * Creates a MongoEnumerator.
      *
      * @param cursor Mongo iterator (usually a {@link com.mongodb.ServerCursor})
-     * @param getter Converts an object into a list of fields
      */
-    MongoEnumerator( Iterator<Document> cursor, Function1<Document, PolyValue[]> getter, GridFSBucket bucket ) {
+    MongoEnumerator( Iterator<PolyValue[]> cursor, GridFSBucket bucket ) {
         this.cursor = cursor;
-        this.getter = getter;
         this.bucket = bucket;
     }
 
@@ -93,8 +97,7 @@ class MongoEnumerator implements Enumerator<PolyValue[]> {
     public boolean moveNext() {
         try {
             if ( cursor.hasNext() ) {
-                Document map = cursor.next();
-                current = getter.apply( map );
+                current = cursor.next();
 
                 //current = handleTransforms( current );
 
@@ -232,6 +235,10 @@ class MongoEnumerator implements Enumerator<PolyValue[]> {
         for ( MongoTupleType sub : type.subs ) {
             trans.add( o -> convert( o.asDocument().get( sub.name ), sub ) );
         }
+        if ( type.type == PolyType.DOCUMENT ) {
+            trans.add( o -> convert( o, type ) );
+        }
+
         return e -> {
             BsonDocument doc = e.toBsonDocument();
 
@@ -251,6 +258,7 @@ class MongoEnumerator implements Enumerator<PolyValue[]> {
         if ( o == null || o.isNull() ) {
             return new PolyNull();
         }
+
         switch ( type.type ) {
             case BIGINT:
                 return PolyLong.of( o.asNumber().longValue() );
@@ -268,6 +276,8 @@ class MongoEnumerator implements Enumerator<PolyValue[]> {
                 return PolyTime.of( o.asNumber().longValue() );
             case DATE:
                 return PolyDate.of( o.asNumber().longValue() );
+            case DOCUMENT:
+                return polyDocumentFromBson( o.asDocument() );
         }
         throw new NotImplementedException();
 
@@ -298,6 +308,49 @@ class MongoEnumerator implements Enumerator<PolyValue[]> {
         }
 
         return o;*/
+    }
+
+
+    private static PolyDocument polyDocumentFromBson( BsonDocument document ) {
+        PolyDocument doc = new PolyDocument();
+        for ( String key : document.keySet() ) {
+            doc.put( PolyString.of( key ), convert( document.get( key ), document.get( key ).getBsonType() ) );
+        }
+        return doc;
+    }
+
+
+    private static PolyValue convert( BsonValue value, BsonType bsonType ) {
+        switch ( bsonType ) {
+            case DOUBLE:
+                return PolyDouble.of( value.asDouble().getValue() );
+            case STRING:
+                return PolyString.of( value.asString().getValue() );
+            case DOCUMENT:
+                return polyDocumentFromBson( value.asDocument() );
+            case ARRAY:
+                return PolyList.of( value.asArray().getValues().stream().map( v -> convert( v, v.getBsonType() ) ).toArray( PolyValue[]::new ) );
+            case BINARY:
+                return PolyBinary.of( value.asBinary().getData() );
+            case OBJECT_ID:
+                return PolyString.of( value.asObjectId().getValue().toHexString() );
+            case BOOLEAN:
+                return PolyBoolean.of( value.asBoolean().getValue() );
+            case DATE_TIME:
+                return PolyTimeStamp.of( value.asDateTime().getValue() );
+            case NULL:
+                return PolyNull.NULL;
+            case INT32:
+                return PolyInteger.of( value.asInt32().getValue() );
+            case TIMESTAMP:
+                return PolyTimeStamp.of( value.asTimestamp().getValue() );
+            case INT64:
+                return PolyLong.of( value.asInt64().getValue() );
+            case DECIMAL128:
+                return PolyBigDecimal.of( value.asDecimal128().decimal128Value().bigDecimalValue() );
+            default:
+                throw new NotImplementedException();
+        }
     }
 
 

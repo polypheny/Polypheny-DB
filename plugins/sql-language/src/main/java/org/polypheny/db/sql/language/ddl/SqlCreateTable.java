@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Ord;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
@@ -279,14 +280,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
                 SqlKeyConstraint constraint = (SqlKeyConstraint) c.e;
                 String constraintName = constraint.getName() != null ? constraint.getName().getSimple() : null;
 
-                ConstraintInformation ci = new ConstraintInformation(
-                        constraintName,
-                        constraint.getConstraintType(),
-                        constraint.getColumnList().getSqlList().stream()
-                                .map( SqlNode::toString )
-                                .collect( Collectors.toList() )
-                );
-                constraintInformation.add( ci );
+                constraintInformation.add( getConstraintInformation( constraintName, constraint ) );
             } else {
                 throw new AssertionError( c.e.getClass() );
             }
@@ -295,6 +289,32 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
 
         return new Pair<>( fieldInformation, constraintInformation );
 
+    }
+
+
+    @NotNull
+    private ConstraintInformation getConstraintInformation( String constraintName, SqlKeyConstraint constraint ) {
+        switch ( constraint.getConstraintType() ) {
+            case PRIMARY:
+            case UNIQUE:
+                return new ConstraintInformation(
+                        constraintName,
+                        constraint.getConstraintType(),
+                        constraint.getColumns().getSqlList().stream()
+                                .map( SqlNode::toString )
+                                .collect( Collectors.toList() ) );
+            case FOREIGN:
+                return new ConstraintInformation(
+                        constraintName,
+                        constraint.getConstraintType(),
+                        constraint.getColumns().getSqlList().stream()
+                                .map( SqlNode::toString )
+                                .collect( Collectors.toList() ),
+                        ((SqlForeignKeyConstraint) constraint).getReferencedTable().toString(),
+                        ((SqlForeignKeyConstraint) constraint).getReferencedColumn().toString() );
+            default:
+                throw new AssertionError( constraint.getConstraintType() );
+        }
     }
 
 

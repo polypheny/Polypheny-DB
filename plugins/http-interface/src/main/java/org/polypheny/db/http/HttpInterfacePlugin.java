@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.Extension;
-import org.polypheny.db.StatusService;
+import org.polypheny.db.StatusNotificationService;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -161,7 +161,7 @@ public class HttpInterfacePlugin extends PolyPlugin {
             } );
 
             server.routes( () -> {
-                StatusService.printInfo( String.format( "%s started and is listening on port %d.", INTERFACE_NAME, port ) );
+                StatusNotificationService.printInfo( String.format( "%s started and is listening on port %d.", INTERFACE_NAME, port ) );
             } );
 
             LanguageManager.getLanguages().forEach( this::addRoute );

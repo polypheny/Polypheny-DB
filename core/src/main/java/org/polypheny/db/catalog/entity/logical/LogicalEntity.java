@@ -42,7 +42,7 @@ public abstract class LogicalEntity extends Entity {
     }
 
 
-    public State getCatalogType() {
+    public State getLayer() {
         return State.LOGICAL;
     }
 

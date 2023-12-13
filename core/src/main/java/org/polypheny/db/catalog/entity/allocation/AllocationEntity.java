@@ -68,7 +68,7 @@ public abstract class AllocationEntity extends Entity {
     }
 
 
-    public State getCatalogType() {
+    public State getLayer() {
         return State.ALLOCATION;
     }
 

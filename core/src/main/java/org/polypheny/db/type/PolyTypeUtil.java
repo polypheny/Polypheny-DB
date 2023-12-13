@@ -44,7 +44,6 @@ import java.nio.charset.Charset;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -963,19 +962,11 @@ public abstract class PolyTypeUtil {
      */
     public static List<AlgDataType> projectTypes( final AlgDataType rowType, final List<? extends Number> requiredFields ) {
         final List<AlgDataTypeField> fields = rowType.getFields();
-
-        return new AbstractList<>() {
-            @Override
-            public AlgDataType get( int index ) {
-                return fields.get( requiredFields.get( index ).intValue() ).getType();
-            }
-
-
-            @Override
-            public int size() {
-                return requiredFields.size();
-            }
-        };
+        return requiredFields.stream()
+                .map( Number::intValue )
+                .map( fields::get )
+                .map( AlgDataTypeField::getType )
+                .collect( Collectors.toList() );
     }
 
 

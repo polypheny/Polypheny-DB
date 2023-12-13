@@ -3,6 +3,7 @@ group "org.polypheny"
 
 dependencies {
     implementation project(":core")
+    implementation group: "com.github.oshi", name: "oshi-core", version: oshi_core_version  // MIT License
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
