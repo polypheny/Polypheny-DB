@@ -21,6 +21,10 @@ import lombok.Setter;
 import org.polypheny.db.backup.dependencies.EntityReferencer;
 import org.polypheny.db.catalog.entity.PolyObject;
 
+/**
+ * Wrapps elements to be backed up with additional information needed for the insertion of the backup process
+ * @param <E> The type of element to be wrapped
+ */
 @Getter @Setter
 public class BackupEntityWrapper<E extends PolyObject> {
 
@@ -34,6 +38,13 @@ public class BackupEntityWrapper<E extends PolyObject> {
     private EntityReferencer entityReferencer;
 
 
+    /**
+     * Constructor for a BackupEntityWrapper
+     * @param entity The entity to be wrapped
+     * @param toBeInserted Whether the entity should be inserted or not (on restoration, default true)
+     * @param nameForQuery The name to be used for the entity in the restoration (insertion), the original name is preserved in the entityObject
+     * @param entityReferencer The entityReferencer to be used for the entity (all entities that reference this entity)
+     */
     public BackupEntityWrapper( E entity, Boolean toBeInserted, String nameForQuery, EntityReferencer entityReferencer ) {
         this.entityObject = entity;
         this.toBeInserted = toBeInserted;
@@ -41,6 +52,13 @@ public class BackupEntityWrapper<E extends PolyObject> {
         this.entityReferencer = entityReferencer;
     }
 
+
+    /**
+     * Constructor for a BackupEntityWrapper
+     * @param entity The entity to be wrapped
+     * @param nameForQuery The name to be used for the entity in the restoration (insertion), the original name is preserved in the entityObject
+     * @param entityReferencer The entityReferencer to be used for the entity (all entities that reference this entity)
+     */
     public BackupEntityWrapper( E entity, String nameForQuery, EntityReferencer entityReferencer ) {
         this.entityObject = entity;
         this.nameForQuery = nameForQuery;

@@ -33,6 +33,9 @@ import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.util.Pair;
 
 @Getter @Setter
+/**
+ * This class stores all information (in the correct format) about the schema for the backup process
+ */
 public class BackupInformationObject {
 
     //ImmutableMap<Long, LogicalNamespace> namespaces;
@@ -121,6 +124,14 @@ public class BackupInformationObject {
     }
 
 
+    /**
+     * Wraps each element of a list in a BackupEntityWrapper and returns a map of the wrapped namespaces
+     * @param namespaces the list of namespaces to be wrapped
+     * @param namespaceDependencies Map <namespaceId, List<referencerNamespaceId>> has per namespaceId a list of namespaceIds that reference (have a dependency) the namespace (the key)
+     * @param tableDependencies Map <namespaceId, List<referencerTableId>> has per namespaceId a list of tableIds that reference (have a dependency) the namespace (the key)
+     * @param namespaceTableDependencies Map<Long, List<Pair<Long, Long>>> has per namespaceId a list of pairs of tableIds and the corresponding namespaceId that reference (have a dependency) the namespace (the key)
+     * @return ImmutableMap<Long, BackupEntityWrapper<LogicalNamespace>> of wrapped namespaces, where the key is the namespaceId and the Value is the wrapped namespace
+     */
     public ImmutableMap<Long, BackupEntityWrapper<LogicalNamespace>> wrapNamespaces( List<LogicalNamespace> namespaces, Map<Long, List<Long>> namespaceDependencies, Map<Long, List<Long>> tableDependencies, Map<Long, List<Pair<Long, Long>>> namespaceTableDependencies ) {
 
         ImmutableMap<Long, BackupEntityWrapper<LogicalNamespace>> resultMap;
@@ -217,6 +228,15 @@ public class BackupInformationObject {
 
      */
 
+
+    /**
+     * Wraps each element of a list in a BackupEntityWrapper and returns a map of the wrapped entity (right now only tested for tables and collections (no dependencies yet), but should work for all inheritors of LogicalEntity)
+     * @param entityMap the list of entities to be wrapped (where the key is the namespaceId, and the value is a list of entities for that namespace)
+     * @param tableDependencies Map <tableId, List<referencerTableId>> has per tableId a list of tableIds that reference (have a dependency) the table (the key)
+     * @param namespaceTableDependendencies Map<Long, List<Pair<Long, Long>>> has per tableId a list of pairs of tableIds and the corresponding namespaceId that reference (have a dependency) the table (the key)
+     * @param toBeInserted boolean that indicates if the entity should be inserted (while restoring)
+     * @return ImmutableMap<Long, List<BackupEntityWrapper<LogicalEntity>>> of wrapped entities, where the key is the namespaceId, and the value is a list of wrapped entities (each entity individually is wrapped) for that namespace
+     */
     public ImmutableMap<Long, List<BackupEntityWrapper<LogicalEntity>>> wrapLogicalEntities( Map<Long, List<LogicalEntity>> entityMap, Map<Long, List<Long>> tableDependencies, Map<Long, List<Pair<Long, Long>>> namespaceTableDependendencies, Boolean toBeInserted ) {
 
         ImmutableMap<Long, List<BackupEntityWrapper<LogicalEntity>>> resultMap;
@@ -263,7 +283,7 @@ public class BackupInformationObject {
 
 
     /**
-     * Creates a list of all entityReferencers for all tables
+     * Collects all entityReferencers for all tables that are saved in the BackupInformationObject (needs wrapped tables)
      * @return list of all entityReferencers of the BackupEntityType table
      */
     public List<EntityReferencer> getAllTableReferencers() {

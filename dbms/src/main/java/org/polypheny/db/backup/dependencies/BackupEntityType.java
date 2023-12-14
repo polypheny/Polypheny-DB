@@ -16,6 +16,9 @@
 
 package org.polypheny.db.backup.dependencies;
 
+/**
+ * Enum that represents the different types of entities that can be backed up. (Used for dependencies/Referencers)
+ */
 public enum BackupEntityType {
     NAMESPACE( 1 ),
     TABLE( 2 );

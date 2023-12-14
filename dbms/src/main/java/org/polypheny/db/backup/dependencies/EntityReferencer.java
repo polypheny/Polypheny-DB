@@ -38,9 +38,9 @@ public class EntityReferencer {
 
 
     /**
-     *
+     * Creates an entityReferencer, which contains the id and type of the entity and the ids of the entities that reference it ("namespace", "table" are the only implemented ones at the moment)
      * @param entityId The id of the entity that is referenced by another entity
-     * @param entityType The type of the entity ("namespace", "
+     * @param entityType The type of the entity
      */
     public EntityReferencer(Long entityId, BackupEntityType entityType) {
         this.entityId = entityId;

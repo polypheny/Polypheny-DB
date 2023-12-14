@@ -42,6 +42,9 @@ import org.polypheny.db.util.Triple;
 
 
 @Slf4j
+/**
+ * The BackupManager manages the backup process. It manages the data gathering, inserting and saving.
+ */
 public class BackupManager {
 
 
@@ -57,6 +60,10 @@ public class BackupManager {
     //private final Logger logger;
 
 
+    /**
+     * Constructor for the BackupManager
+     * @param transactionManager the transactionManager is required to execute queries
+     */
     public BackupManager( TransactionManager transactionManager ) {
         this.transactionManager = transactionManager;
 
@@ -102,6 +109,11 @@ public class BackupManager {
     }
 
 
+    /**
+     * Sets and returns the BackupManager instance
+     * @param backupManager The backupManager to be set
+     * @return the instance of the backupManager
+     */
     public static BackupManager setAndGetInstance( BackupManager backupManager ) {
         if ( INSTANCE != null ) {
             throw new GenericRuntimeException( "Setting the BackupInterface, when already set is not permitted." );
@@ -111,6 +123,11 @@ public class BackupManager {
     }
 
 
+    /**
+     * Starts the data gathering process. It is responsible for starting and managing the schema and the entry data gathering.
+     * It starts the wrapping process of the schema data.
+     * It also starts the process of saving the data to a file (resp. it is started in the GatherEntries class)
+     */
     public void startDataGathering() {
         this.backupInformationObject = new BackupInformationObject();
         GatherSchema gatherSchema = new GatherSchema();
@@ -134,6 +151,11 @@ public class BackupManager {
     }
 
 
+    /**
+     * Wraps the entities with the BackupEntityWrapper. Each entity is wrapped indivually (but the wrapping itself is not happening here), and are brought back into the respecitve (map or list) form for the BackupInformationObject
+     * Part of the wrapped information is the entity itself, if the entity should be inserted, the name used in the insertion and the dependencies between the entites.
+     * Entities that are wrapped are: namespaces, tables, collections (to be done: views, indexes (document and relational), materialized views)
+     */
     private void wrapEntities() {
         // 1. check for dependencies
         // 2. wrap namespaces, tables, views, etc
@@ -227,6 +249,9 @@ public class BackupManager {
     }
 
 
+    /**
+     * Starts the inserting process. It is responsible for starting and managing the schema and the entry data inserting.
+     */
     private void startInserting() {
         InsertSchema insertSchema = new InsertSchema( transactionManager );
 
@@ -244,8 +269,8 @@ public class BackupManager {
 
 
     /**
-     * returns a list of all table names where the entry-data should be collected for the backup (right now, all of them, except sources)
-     * @return list of triples with the format: namespaceId (long), namespaceName (string), tablename (string) with all the names/id's
+     * Returns a list of all table names where the entry-data should be collected for the backup (right now, all of them, except sources)
+     * @return List of triples with the format: <namespaceId (long), namespaceName (string), tablename (string)>
      */
     private List<Triple<Long, String, String>> tableDataToBeGathered() {
         List<Triple<Long, String, String>> tableDataToBeGathered = new ArrayList<>();
@@ -270,8 +295,8 @@ public class BackupManager {
 
 
     /**
-     * returns a list of pairs with all collection names and their corresponding namespaceId where the entry-data should be collected for the backup (right now all of them)
-     * @return list of triples with the format: <namespaceId (long), namespaceName (string), collectionName (string)>
+     * Returns a list of triples with all collection names and their corresponding namespaceId where the entry-data should be collected for the backup (right now all of them)
+     * @return List of triples with the format: <namespaceId (long), namespaceName (string), collectionName (string)>
      */
     private List<Triple<Long, String, String>> collectionDataToBeGathered() {
         List<Triple<Long, String, String>> collectionDataToBeGathered = new ArrayList<>();
@@ -287,8 +312,8 @@ public class BackupManager {
 
 
     /**
-     * gets a list of all graph namespaceIds
-     * @return list of all graph namespaceIds
+     * Gets a list of all graph namespaceIds, which should be collected in the backup (right now all of them)
+     * @return List of all graph namespaceIds
      */
     private List<Long> collectGraphNamespaceIds() {
         List<Long> graphNamespaceIds = new ArrayList<>();
@@ -300,7 +325,7 @@ public class BackupManager {
 
 
     /**
-     * gets the namespaceName for a given namespaceId
+     * Gets the namespaceName for a given namespaceId
      * @param nsId id of the namespace you want the name for
      * @return the name of the namespace
      */
@@ -309,6 +334,13 @@ public class BackupManager {
         return namespaceName;
     }
 
+
+    /**
+     * Gets the number of columns for a given table (via the table name)
+     * @param nsId The id of the namespace where the table is located in
+     * @param tableName The name of the table you want to know the number of columns from
+     * @return The number of columns for the table
+     */
     public int getNumberColumns( Long nsId, String tableName ) {
         //get the tableId for the given tableName
         Long tableId = backupInformationObject.getTables().get( nsId ).stream().filter( table -> table.name.equals( tableName ) ).findFirst().get().id;

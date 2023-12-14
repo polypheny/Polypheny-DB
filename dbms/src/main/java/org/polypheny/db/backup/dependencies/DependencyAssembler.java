@@ -20,8 +20,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Class that assembles the dependencies of a given entity.
+ */
 public class DependencyAssembler {
 
+    /**
+     * Returns a list of all entities that depend on the given entity.
+     * @param visited List of already visited entities (already checked the follow up dependencies, to manage cycles)
+     * @param currentEntity The entity to check the dependencies for
+     * @param allTableReferencers List of all entityReferencers for tables that are in the backupInformationObject
+     * @return List of all entities (resp. their id's) that depend on the given entity
+     */
     public List<Long> getDependencies( List<Long> visited, EntityReferencer currentEntity, List<EntityReferencer> allTableReferencers ) {
         if ( (visited.contains( currentEntity.getEntityId() )) || (currentEntity.getReferencerTables().isEmpty() && currentEntity.getReferencerNamespaces().isEmpty()) ) {
             return visited;

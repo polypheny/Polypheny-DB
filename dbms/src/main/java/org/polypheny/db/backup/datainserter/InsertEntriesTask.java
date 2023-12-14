@@ -26,6 +26,7 @@ import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.backup.BackupManager;
+import org.polypheny.db.backup.datasaver.BackupFileReader;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
@@ -68,10 +69,11 @@ public class InsertEntriesTask implements Runnable{
         PolyImplementation result;
 
         try(
-                DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(dataFile), 32768));
-                BufferedReader bIn = new BufferedReader( new InputStreamReader( new BufferedInputStream( new FileInputStream( dataFile ), 32768 ) ) );
+                DataInputStream iin = new DataInputStream(new BufferedInputStream(new FileInputStream(dataFile), 32768));
+                //BufferedReader bIn = new BufferedReader( new InputStreamReader( new BufferedInputStream( new FileInputStream( dataFile ), 32768 ) ) );
             )
         {
+            BackupFileReader in = new BackupFileReader( dataFile );
             int counter = 0;
             String query = "";
 
@@ -82,7 +84,7 @@ public class InsertEntriesTask implements Runnable{
                     transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Backup Entry-Inserter" );
                     statement = transaction.createStatement();
                     //build up row for query (since each value is one row in the file), and then execute query for each row
-                    while ( (inLine = bIn.readLine()) != null ) {
+                    while ( (inLine = in.readLine()) != null ) {
                         counter++;
                         //PolyValue deserialized = PolyValue.deserialize( inLine );   //somehow only reads two first lines from table file and nothing else (if there is only doc file, it doesnt read)
                         PolyValue deserialized = PolyValue.fromTypedJson( inLine, PolyValue.class );
@@ -114,7 +116,7 @@ public class InsertEntriesTask implements Runnable{
                 case DOCUMENT:
                     transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Backup Entry-Inserter" );
                     statement = transaction.createStatement();
-                    while ( (inLine = bIn.readLine()) != null ) {
+                    while ( (inLine = in.readLine()) != null ) {
                         //PolyValue deserialized = PolyValue.deserialize( inLine );   //somehow only reads two first lines from table file and nothing else (if there is only doc file, it doesnt read)
                         PolyValue deserialized = PolyValue.fromTypedJson( inLine, PolyValue.class );
                         String value = deserialized.toJson();
@@ -136,6 +138,7 @@ public class InsertEntriesTask implements Runnable{
                 default:
                     throw new GenericRuntimeException( "Unknown data model" );
             }
+            in.close();
             log.info( "data-insertion: end of thread for " + entityName );
 
             /*

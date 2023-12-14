@@ -18,18 +18,15 @@ package org.polypheny.db.backup.datainserter;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.backup.BackupManager;
-import org.polypheny.db.backup.manifest.BackupManifest;
-import org.polypheny.db.backup.manifest.EntityInfo;
-import org.polypheny.db.backup.manifest.ManifestReader;
+import org.polypheny.db.backup.datasaver.manifest.BackupManifest;
+import org.polypheny.db.backup.datasaver.manifest.EntityInfo;
+import org.polypheny.db.backup.datasaver.manifest.ManifestReader;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 

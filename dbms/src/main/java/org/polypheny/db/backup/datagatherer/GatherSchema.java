@@ -276,7 +276,7 @@ public class GatherSchema {
         }
 
         //safes the gathered information in the class variables
-        this.collections = ImmutableMap.copyOf( collections.entrySet().stream().collect( Collectors.toMap( Entry::getKey, v -> v.getValue().stream().map( e -> e.unwrap( LogicalEntity.class ).orElseThrow() ).collect( Collectors.toList() ) ) ) );
+        this.collections = ImmutableMap.copyOf( nsCollections.entrySet().stream().collect( Collectors.toMap( Entry::getKey, v -> v.getValue().stream().map( e -> e.unwrap( LogicalEntity.class ).orElseThrow() ).collect( Collectors.toList() ) ) ) );
         this.backupInformationObject.setCollections( this.collections );
         this.backupInformationObject.setCollectedDocSchema( true );
     }

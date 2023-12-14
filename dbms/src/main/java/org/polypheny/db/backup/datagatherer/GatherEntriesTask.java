@@ -33,6 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.backup.BackupManager;
+import org.polypheny.db.backup.datasaver.BackupFileWriter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
@@ -44,7 +45,12 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.graph.PolyEdge;
+import org.polypheny.db.type.entity.graph.PolyGraph;
+import org.polypheny.db.type.entity.graph.PolyNode;
+import org.polypheny.db.type.entity.relational.PolyMap;
 
 @Slf4j
 public class GatherEntriesTask implements Runnable {
@@ -168,10 +174,12 @@ public class GatherEntriesTask implements Runnable {
 
                 // bufferedOutputStream, io way
                 try(
-                        DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(dataFile), 32768));
+                        //DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(dataFile), 32768));
                         PrintWriter pOut = new PrintWriter( new DataOutputStream(new BufferedOutputStream(new FileOutputStream(dataFile), 32768)));
 
-                        BufferedWriter bOut = new BufferedWriter( new OutputStreamWriter( new BufferedOutputStream( new FileOutputStream( dataFile ), 32768 ) ) );
+                        //BufferedWriter bOut = new BufferedWriter( new OutputStreamWriter( new BufferedOutputStream( new FileOutputStream( dataFile ), 32768 ) ) );
+
+
 
                         //DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(dataFile)));
 
@@ -179,6 +187,7 @@ public class GatherEntriesTask implements Runnable {
                         //in.close();
 
                 ) {
+                    BackupFileWriter out = new BackupFileWriter( dataFile );
 
                     transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Backup Entry-Gatherer" );
                     statement = transaction.createStatement();
@@ -206,9 +215,9 @@ public class GatherEntriesTask implements Runnable {
                                 //out.write( byteString.getBytes( StandardCharsets.UTF_8 ) );
                                 //out.writeChars( jsonString );
                                 //pOut.println( jsonString );
-                                bOut.write( jsonString );
-                                //bOut.write( byteString );
-                                bOut.newLine();
+                                out.write( jsonString );
+                                //out.write( byteString );
+                                out.newLine();
 
 
                                 //larger, testing easier, replace later
@@ -220,25 +229,26 @@ public class GatherEntriesTask implements Runnable {
                         // flush only batchwise? is this even possible? does it make sense?
 
                     }
-                    bOut.flush();
+                    out.flush();
                     out.close();
                     transaction.commit();
 
                 } catch(Exception e){
                     throw new GenericRuntimeException( "Error while collecting entries", e );
                 } catch ( TransactionException e ) {
-                    throw new RuntimeException( e );
+                    throw new GenericRuntimeException( e.getMessage() );
                 }
 
                 break;
 
             case DOCUMENT:
                 try(
-                        DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(dataFile), 32768));
+                        //DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(dataFile), 32768));
                         PrintWriter pOut = new PrintWriter( new DataOutputStream(new BufferedOutputStream(new FileOutputStream(dataFile), 32768)));
-                        BufferedWriter bOut = new BufferedWriter( new OutputStreamWriter( new BufferedOutputStream( new FileOutputStream( dataFile ), 32768 ) ) );
+                        //BufferedWriter bOut = new BufferedWriter( new OutputStreamWriter( new BufferedOutputStream( new FileOutputStream( dataFile ), 32768 ) ) );
                 )
                 {
+                    BackupFileWriter out = new BackupFileWriter( dataFile );
                     // get a transaction and a statement
                     transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Backup Entry-Gatherer" );
                     statement = transaction.createStatement();
@@ -258,9 +268,9 @@ public class GatherEntriesTask implements Runnable {
                                 //out.write( byteBytes );
                                 //out.write( byteString.getBytes( StandardCharsets.UTF_8 ) );
                                 //pOut.println( jsonString);
-                                bOut.write( jsonString);
+                                out.write( jsonString);
                                 //bOut.write( byteString );
-                                bOut.newLine();
+                                out.newLine();
                                 //out.writeChars( jsonString );
                             }
                         }
@@ -269,19 +279,24 @@ public class GatherEntriesTask implements Runnable {
                         //out.writeChars( resultsPerCollection.toString() );
                         log.info( resultsPerCollection.toString() );
                     }
-                    bOut.flush();
+                    out.flush();
+                    out.close();
                     log.info( "end of thread reached: case document" );
                     transaction.commit();
                 } catch ( Exception e ) {
                     throw new GenericRuntimeException( "Error while collecting entries", e );
                 } catch ( TransactionException e ) {
-                    throw new RuntimeException( e );
+                    throw new GenericRuntimeException( e.getMessage() );
                 }
                 break;
 
             case GRAPH:
-                try(DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(dataFile), 32768));)
+                try(
+                        DataOutputStream ouuut = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(dataFile), 32768));
+                        //BufferedWriter bOut = new BufferedWriter( new OutputStreamWriter( new BufferedOutputStream( new FileOutputStream( dataFile ), 32768 ) ) );
+                    )
                 {
+                    BackupFileWriter out = new BackupFileWriter( dataFile );
                     // get a transaction and a statement
                     transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Backup Entry-Gatherer" );
                     statement = transaction.createStatement();
@@ -292,10 +307,57 @@ public class GatherEntriesTask implements Runnable {
                     while ( iter.hasMoreRows() ) {
                         // liste mit tuples
                         List<List<PolyValue>> graphPerNamespace = iter.getNextBatch();
+                        for ( List<PolyValue> entry : graphPerNamespace ) {
+                            for ( PolyValue polyValue : entry ) {
+                                PolyGraph polyGraph = polyValue.asGraph();
+                                PolyMap<PolyString, PolyNode> nodes = polyGraph.getNodes();
+                                PolyMap<PolyString, PolyEdge> edges = polyGraph.getEdges();
+                                String edgejson = edges.get( 0 ).toTypedJson();
+                                String nodejson = nodes.get( 0 ).toTypedJson();
+                                String edgeByte = edges.get( 0 ).serialize();
+                                String nodeByte = nodes.get( 0 ).serialize();
+
+                                PolyNode node = PolyNode.fromTypedJson( nodejson, PolyNode.class );
+                                PolyEdge edge = PolyNode.fromTypedJson( edgejson, PolyEdge.class );
+                                PolyValue node1 = PolyNode.deserialize( nodeByte );
+                                PolyValue edge1 = PolyEdge.deserialize( edgeByte );
+
+
+
+                                String typedJson = polyValue.asGraph().toTypedJson();
+                                //String bytestr = polyValue.asGraph().serialize();   //not implemented exception
+
+                                //PolyValue dd = PolyGraph.deserialize( bytestr );  //get exception
+                                PolyValue aa = PolyGraph.fromTypedJson( typedJson, PolyGraph.class );   //is null
+                                PolyValue aaa = PolyGraph.fromTypedJson( typedJson, PolyValue.class );  //au null
+
+                                String jsonString = polyValue.toTypedJson();
+                                PolyValue test = PolyValue.fromTypedJson( jsonString, PolyValue.class );
+
+                                String byteString = polyValue.serialize();  //not implemented exception
+                                PolyValue haha = PolyValue.deserialize( byteString );
+                                byte[] byteBytes = polyValue.serialize().getBytes( StandardCharsets.UTF_8 );
+
+
+                                //out.write( byteBytes );
+                                //out.write( byteString.getBytes( StandardCharsets.UTF_8 ) );
+                                //pOut.println( jsonString);
+                                out.write( jsonString);
+                                //out.write( byteString );
+                                out.newLine();
+                                //out.writeChars( jsonString );
+                            }
+                        }
                         log.info( graphPerNamespace.toString() );
                     }
+                    out.flush();
+                    out.close();
+                    log.info( "end of thread reached: case graph" );
+                    transaction.commit();
                 } catch ( Exception e ) {
                     throw new GenericRuntimeException( "Error while collecting entries", e );
+                } catch ( TransactionException e ) {
+                    throw new GenericRuntimeException( e.getMessage() );
                 }
                 break;
 

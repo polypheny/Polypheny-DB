@@ -21,9 +21,18 @@ import java.util.List;
 import org.polypheny.db.backup.BackupInformationObject;
 import org.polypheny.db.util.Pair;
 
+/**
+ * Initiates and handles the search for all "follow up" dependencies of a given entityReferencer (only works for tables at them moment)
+ */
 public class DependencyManager {
-    
-    
+
+
+    /**
+     * Returns a list of all entities referenced by the entityReferencer, and all entities referenced by those entities, and so on (calls recursive function getDependencies)
+     * @param entityReferencer the entityReferencer for which to find all entities that reference it
+     * @param allTableReferencers a list of all entityReferencers in the backupInformationObject
+     * @return a list of all entity id's that reference the entityReferencer, and their follow up dependencies
+     */
     public List<Long> getReferencedEntities( EntityReferencer entityReferencer, List<EntityReferencer> allTableReferencers ) {
         DependencyAssembler dependencyAssembler = new DependencyAssembler();
         List<Long> visited = new ArrayList<>();

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.backup.manifest;
+package org.polypheny.db.backup.datasaver.manifest;
 
 import com.google.gson.Gson;
 import java.io.FileNotFoundException;
