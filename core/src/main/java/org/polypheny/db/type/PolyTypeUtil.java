@@ -71,7 +71,7 @@ import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyTime;
-import org.polypheny.db.type.entity.PolyTimeStamp;
+import org.polypheny.db.type.entity.PolyTimestamp;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.NumberUtil;
@@ -1343,7 +1343,7 @@ public abstract class PolyTypeUtil {
             case DATE:
                 return PolyDate.of( Integer.parseInt( s ) );
             case TIMESTAMP:
-                return PolyTimeStamp.of( Long.parseLong( s ) );
+                return PolyTimestamp.of( Long.parseLong( s ) );
             case BIGINT:
                 return PolyLong.of( Long.parseLong( s ) );
             case DOUBLE:

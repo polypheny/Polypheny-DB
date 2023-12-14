@@ -30,7 +30,7 @@ import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.relational.PolyMap;
 
-public class PolyTypedJsonDeserializeTest {
+public class PolyValueSerializationTest {
 
     @BeforeClass
     public static void start() {

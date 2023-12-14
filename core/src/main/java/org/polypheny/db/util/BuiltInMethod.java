@@ -143,7 +143,7 @@ import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyTime;
-import org.polypheny.db.type.entity.PolyTimeStamp;
+import org.polypheny.db.type.entity.PolyTimestamp;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.category.PolyTemporal;
@@ -301,7 +301,7 @@ public enum BuiltInMethod {
     STRING_CONCAT( Functions.class, "concat", PolyString.class, PolyString.class ),
     FLOOR_DIV( TemporalFunctions.class, "floorDiv", PolyNumber.class, PolyNumber.class ),
     FLOOR_MOD( TemporalFunctions.class, "floorMod", PolyNumber.class, PolyNumber.class ),
-    ADD_MONTHS( TemporalFunctions.class, "addMonths", PolyTimeStamp.class, PolyNumber.class ),
+    ADD_MONTHS( TemporalFunctions.class, "addMonths", PolyTimestamp.class, PolyNumber.class ),
     ADD_MONTHS_INT( TemporalFunctions.class, "addMonths", PolyDate.class, PolyNumber.class ),
     SUBTRACT_MONTHS( TemporalFunctions.class, "subtractMonths", PolyDate.class, PolyDate.class ),
     FLOOR( Functions.class, "floor", PolyNumber.class, PolyNumber.class ),
@@ -352,14 +352,14 @@ public enum BuiltInMethod {
     TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_STRING( Functions.class, "timestampWithLocalTimeZoneToString", long.class, TimeZone.class ),
     UNIX_DATE_TO_STRING( TemporalFunctions.class, "unixDateToString", PolyDate.class ),
     UNIX_TIME_TO_STRING( TemporalFunctions.class, "unixTimeToString", PolyTime.class ),
-    UNIX_TIMESTAMP_TO_STRING( TemporalFunctions.class, "unixTimestampToString", PolyTimeStamp.class ),
+    UNIX_TIMESTAMP_TO_STRING( TemporalFunctions.class, "unixTimestampToString", PolyTimestamp.class ),
     INTERVAL_YEAR_MONTH_TO_STRING( TemporalFunctions.class, "intervalYearMonthToString", PolyInterval.class, TimeUnitRange.class ),
     INTERVAL_DAY_TIME_TO_STRING( TemporalFunctions.class, "intervalDayTimeToString", PolyInterval.class, TimeUnitRange.class, PolyNumber.class ),
     UNIX_DATE_EXTRACT( TemporalFunctions.class, "unixDateExtract", TimeUnitRange.class, PolyTemporal.class ),
     UNIX_DATE_FLOOR( TemporalFunctions.class, "unixDateFloor", TimeUnitRange.class, PolyDate.class ),
     UNIX_DATE_CEIL( TemporalFunctions.class, "unixDateCeil", TimeUnitRange.class, PolyDate.class ),
-    UNIX_TIMESTAMP_FLOOR( TemporalFunctions.class, "unixTimestampFloor", TimeUnitRange.class, PolyTimeStamp.class ),
-    UNIX_TIMESTAMP_CEIL( TemporalFunctions.class, "unixTimestampCeil", TimeUnitRange.class, PolyTimeStamp.class ),
+    UNIX_TIMESTAMP_FLOOR( TemporalFunctions.class, "unixTimestampFloor", TimeUnitRange.class, PolyTimestamp.class ),
+    UNIX_TIMESTAMP_CEIL( TemporalFunctions.class, "unixTimestampCeil", TimeUnitRange.class, PolyTimestamp.class ),
     CURRENT_TIMESTAMP( Functions.class, "currentTimestamp", DataContext.class ),
     CURRENT_TIME( Functions.class, "currentTime", DataContext.class ),
     CURRENT_DATE( Functions.class, "currentDate", DataContext.class ),

@@ -103,7 +103,7 @@ import org.polypheny.db.type.entity.spatial.PolyPoint;
         PolyFloat.class,
         PolyDouble.class,
         PolyBigDecimal.class,
-        PolyTimeStamp.class,
+        PolyTimestamp.class,
         PolyDocument.class,
         PolyDictionary.class,
         PolyDate.class,
@@ -133,7 +133,7 @@ import org.polypheny.db.type.entity.spatial.PolyPoint;
         @JsonSubTypes.Type(value = PolyLong.class, name = "LONG"),
         @JsonSubTypes.Type(value = PolyInteger.class, name = "INTEGER"),
         @JsonSubTypes.Type(value = PolyBoolean.class, name = "BOOLEAN"),
-        @JsonSubTypes.Type(value = PolyTimeStamp.class, name = "TIMESTAMP"),
+        @JsonSubTypes.Type(value = PolyTimestamp.class, name = "TIMESTAMP"),
         @JsonSubTypes.Type(value = PolyBinary.class, name = "BINARY"),
         @JsonSubTypes.Type(value = PolyDocument.class, name = "DOCUMENT"),
         @JsonSubTypes.Type(value = PolySymbol.class, name = "SYMBOL"),
@@ -229,7 +229,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case TIME:
                 return o -> o.asTime().ofDay % DateTimeUtils.MILLIS_PER_DAY;
             case TIMESTAMP:
-                return o -> o.asTimeStamp().milliSinceEpoch;
+                return o -> o.asTimestamp().milliSinceEpoch;
             case BOOLEAN:
                 return o -> o.asBoolean().value;
             case ARRAY:
@@ -339,9 +339,9 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case TIME_WITH_LOCAL_TIME_ZONE:
                 return PolyTime.class;
             case TIMESTAMP:
-                return PolyTimeStamp.class;
+                return PolyTimestamp.class;
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                return PolyTimeStamp.class;
+                return PolyTimestamp.class;
             case INTERVAL_YEAR:
                 return PolyInterval.class;
             case INTERVAL_YEAR_MONTH:
@@ -428,73 +428,6 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
 
     public static PolyValue deserialize( String json ) {
         return PolySerializable.deserialize( json, serializer );
-    }
-
-
-    public static PolyValue convert( PolyValue value, PolyType type ) {
-
-        switch ( type ) {
-            case INTEGER:
-                return PolyInteger.from( value );
-            case DOCUMENT:
-                // docs accept all
-                return value;
-            case BIGINT:
-                return PolyLong.from( value );
-        }
-        if ( type.getFamily() == value.getType().getFamily() ) {
-            return value;
-        }
-
-        throw new GenericRuntimeException( "%s does not support conversion to %s.", value, type );
-    }
-
-
-    public static PolyValue fromType( Object object, PolyType type ) {
-        switch ( type ) {
-            case BOOLEAN:
-                return PolyBoolean.of( (Boolean) object );
-            case TINYINT:
-            case SMALLINT:
-            case INTEGER:
-                return PolyInteger.of( (Number) object );
-            case BIGINT:
-                return PolyLong.of( (Number) object );
-            case DECIMAL:
-                return PolyBigDecimal.of( object.toString() );
-            case FLOAT:
-            case REAL:
-                return PolyFloat.of( (Number) object );
-            case DOUBLE:
-                return PolyDouble.of( (Number) object );
-            case DATE:
-                if ( object instanceof Number ) {
-                    return PolyDate.of( (Number) object );
-                }
-                throw new NotImplementedException();
-
-            case TIME:
-            case TIME_WITH_LOCAL_TIME_ZONE:
-                if ( object instanceof Number ) {
-                    return PolyTime.of( (Number) object );
-                }
-                throw new NotImplementedException();
-            case TIMESTAMP:
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                if ( object instanceof Timestamp ) {
-                    return PolyTimeStamp.of( (Timestamp) object );
-                }
-                throw new NotImplementedException();
-            case CHAR:
-            case VARCHAR:
-                return PolyString.of( (String) object );
-            case BINARY:
-            case VARBINARY:
-                return PolyBinary.of( (ByteString) object );
-            case GEOMETRY:
-                return PolyGeometry.of( (Geometry) object ); // or of( (String) object )
-        }
-        throw new NotImplementedException();
     }
 
 
@@ -763,12 +696,12 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
 
 
     @NotNull
-    public PolyTimeStamp asTimeStamp() {
+    public PolyTimestamp asTimestamp() {
         if ( isTimestamp() ) {
-            return (PolyTimeStamp) this;
+            return (PolyTimestamp) this;
         }
 
-        throw cannotParse( this, PolyTimeStamp.class );
+        throw cannotParse( this, PolyTimestamp.class );
     }
 
 
@@ -921,6 +854,71 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             return (PolyUserDefinedValue) this;
         }
         throw cannotParse( this, PolyUserDefinedValue.class );
+    }
+
+
+    public static PolyValue convert( PolyValue value, PolyType type ) {
+
+        switch ( type ) {
+            case INTEGER:
+                return PolyInteger.from( value );
+            case DOCUMENT:
+                // docs accept all
+                return value;
+            case BIGINT:
+                return PolyLong.from( value );
+        }
+        if ( type.getFamily() == value.getType().getFamily() ) {
+            return value;
+        }
+
+        throw new GenericRuntimeException( "%s does not support conversion to %s.", value, type );
+    }
+
+
+    public static PolyValue fromType( Object object, PolyType type ) {
+        switch ( type ) {
+            case BOOLEAN:
+                return PolyBoolean.of( (Boolean) object );
+            case TINYINT:
+            case SMALLINT:
+            case INTEGER:
+                return PolyInteger.of( (Number) object );
+            case BIGINT:
+                return PolyLong.of( (Number) object );
+            case DECIMAL:
+                return PolyBigDecimal.of( object.toString() );
+            case FLOAT:
+            case REAL:
+                return PolyFloat.of( (Number) object );
+            case DOUBLE:
+                return PolyDouble.of( (Number) object );
+            case DATE:
+                if ( object instanceof Number ) {
+                    return PolyDate.of( (Number) object );
+                }
+                throw new NotImplementedException();
+
+            case TIME:
+            case TIME_WITH_LOCAL_TIME_ZONE:
+                if ( object instanceof Number ) {
+                    return PolyTime.of( (Number) object );
+                }
+                throw new NotImplementedException();
+            case TIMESTAMP:
+            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+                if ( object instanceof Timestamp ) {
+                    return PolyTimestamp.of( (Timestamp) object );
+                }
+                throw new NotImplementedException();
+            case CHAR:
+            case VARCHAR:
+                return PolyString.of( (String) object );
+            case BINARY:
+            case VARBINARY:
+                return PolyBinary.of( (ByteString) object );
+        }
+        throw new NotImplementedException();
     }
 
 

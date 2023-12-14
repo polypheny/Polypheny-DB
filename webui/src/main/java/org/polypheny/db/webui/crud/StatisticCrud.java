@@ -121,7 +121,6 @@ public class StatisticCrud {
 
         Timestamp endTime = new Timestamp( System.currentTimeMillis() );
         Timestamp startTimeAll;
-        long interval60min = convertIntervalMinuteToLong( 60 );
 
         if ( !queryData.isEmpty() && !dmlData.isEmpty() ) {
             startTimeAll = (queryData.get( queryData.size() - 1 ).getRecordedTimestamp().getTime() < dmlData.get( dmlData.size() - 1 ).getRecordedTimestamp().getTime()) ? queryData.get( queryData.size() - 1 ).getRecordedTimestamp() : dmlData.get( dmlData.size() - 1 ).getRecordedTimestamp();
@@ -130,7 +129,6 @@ public class StatisticCrud {
         } else if ( !queryData.isEmpty() ) {
             startTimeAll = queryData.get( queryData.size() - 1 ).getRecordedTimestamp();
         } else {
-            //throw new RuntimeException( "No Data available for Dashboard Diagram" ); // we should not fail loudly here
             ctx.json( new TreeMap<>() );
             return;
         }

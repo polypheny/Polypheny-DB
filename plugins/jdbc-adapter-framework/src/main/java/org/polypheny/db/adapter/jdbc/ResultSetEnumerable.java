@@ -285,7 +285,7 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                 preparedStatement.setTime( i, value.asTime().asSqlTime(), Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) ) );
                 break;
             case TIMESTAMP:
-                preparedStatement.setTimestamp( i, value.asTimeStamp().asSqlTimestamp(), Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) ) );
+                preparedStatement.setTimestamp( i, value.asTimestamp().asSqlTimestamp(), Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) ) );
                 break;
             case VARBINARY:
             case BINARY:

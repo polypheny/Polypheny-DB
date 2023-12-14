@@ -236,8 +236,8 @@ public class PolyNull extends PolyValue {
 
 
     @Override
-    public @NonNull PolyTimeStamp asTimeStamp() {
-        return PolyTimeStamp.of( (Long) null );
+    public @NonNull PolyTimestamp asTimestamp() {
+        return PolyTimestamp.of( (Long) null );
     }
 
 

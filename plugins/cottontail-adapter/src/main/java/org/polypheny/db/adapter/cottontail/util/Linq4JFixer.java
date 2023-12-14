@@ -32,7 +32,7 @@ import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyTime;
-import org.polypheny.db.type.entity.PolyTimeStamp;
+import org.polypheny.db.type.entity.PolyTimestamp;
 import org.polypheny.db.type.entity.PolyValue;
 import org.vitrivr.cottontail.client.language.basics.Distances;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicBooleanOperand;
@@ -173,11 +173,11 @@ public class Linq4JFixer {
      * @param data The data, expected to be {@link java.util.Date}.
      * @return {@link Integer}
      */
-    public static PolyTimeStamp getTimestampData( Object data ) {
+    public static PolyTimestamp getTimestampData( Object data ) {
         if ( data == null ) {
             return null;
         }
-        return PolyTimeStamp.of( (java.util.Date) data );
+        return PolyTimestamp.of( (java.util.Date) data );
     }
 
 

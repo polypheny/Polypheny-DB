@@ -553,7 +553,7 @@ public abstract class SqlImplementor {
                         case TIME:
                             return SqlLiteral.createTime( literal.value.asTime(), literal.getType().getPrecision(), POS );
                         case TIMESTAMP:
-                            return SqlLiteral.createTimestamp( literal.value.asTimeStamp(), literal.getType().getPrecision(), POS );
+                            return SqlLiteral.createTimestamp( literal.value.asTimestamp(), literal.getType().getPrecision(), POS );
                         case BINARY:
                             return SqlBinaryStringLiteral.createBinaryString( literal.value.asBinary(), POS );
                         case ARRAY:

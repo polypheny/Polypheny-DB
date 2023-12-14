@@ -95,7 +95,7 @@ import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyTime;
-import org.polypheny.db.type.entity.PolyTimeStamp;
+import org.polypheny.db.type.entity.PolyTimestamp;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyBlob;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
@@ -420,7 +420,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 poly = Expressions.call( PolyTime.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Long.class ) );
                 break;
             case TIMESTAMP:
-                poly = Expressions.call( PolyTimeStamp.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Long.class ) );
+                poly = Expressions.call( PolyTimestamp.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Long.class ) );
                 break;
             case DATE:
                 poly = Expressions.call( PolyDate.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Long.class ) );

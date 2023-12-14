@@ -604,9 +604,9 @@ public abstract class DateRangeRules {
             switch ( timeLiteral.getPolyType() ) {
                 case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                     final TimeZone tz = TimeZone.getTimeZone( this.timeZone );
-                    return Util.calendar( Functions.timestampWithLocalTimeZoneToTimestamp( timeLiteral.value.asTimeStamp().milliSinceEpoch, tz ) );
+                    return Util.calendar( Functions.timestampWithLocalTimeZoneToTimestamp( timeLiteral.value.asTimestamp().milliSinceEpoch, tz ) );
                 case TIMESTAMP:
-                    return Util.calendar( timeLiteral.value.asTimeStamp().milliSinceEpoch );
+                    return Util.calendar( timeLiteral.value.asTimestamp().milliSinceEpoch );
                 case DATE:
                     // Cast date to timestamp with local time zone
                     //final DateString d = timeLiteral.getValue( DateString.class );
