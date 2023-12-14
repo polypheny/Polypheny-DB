@@ -127,7 +127,7 @@ import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyTime;
-import org.polypheny.db.type.entity.PolyTimeStamp;
+import org.polypheny.db.type.entity.PolyTimestamp;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
@@ -1332,7 +1332,7 @@ public class DbmsMeta implements ProtobufMeta {
             case JAVA_SQL_TIME:
                 return PolyTime.of( (Time) jdbc );
             case JAVA_SQL_TIMESTAMP:
-                return PolyTimeStamp.of( (Timestamp) jdbc );
+                return PolyTimestamp.of( (Timestamp) jdbc );
             case NUMBER:
                 return PolyBigDecimal.of( (BigDecimal) jdbc );
             case DOUBLE:

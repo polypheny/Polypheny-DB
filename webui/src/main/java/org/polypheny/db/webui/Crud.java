@@ -397,7 +397,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         .language( language )
                         .origin( ORIGIN )
                         .transactionManager( transactionManager )
-                        .build(), new UIRequest() ).get( 0 );
+                        .build(), UIRequest.builder().build() ).get( 0 );
 
         ctx.json( result );
     }
@@ -430,7 +430,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         .userId( Catalog.defaultUserId )
                         .origin( ORIGIN )
                         .transactionManager( transactionManager )
-                        .build(), new UIRequest() ).get( 0 );
+                        .build(), UIRequest.builder().build() ).get( 0 );
         ctx.json( result );
     }
 
@@ -536,7 +536,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         .language( language )
                         .origin( ORIGIN )
                         .transactionManager( transactionManager )
-                        .build(), new UIRequest() ).get( 0 );
+                        .build(), UIRequest.builder().build() ).get( 0 );
         ctx.json( result );
     }
 
@@ -622,7 +622,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 .transactionManager( transactionManager )
                 .build();
 
-        Result<?, ?> result = LanguageCrud.anyQueryResult( context, new UIRequest() ).get( 0 );//executeSqlUpdate( statement, transaction, query );
+        UIRequest request = UIRequest.builder().build();
+        Result<?, ?> result = LanguageCrud.anyQueryResult( context, request ).get( 0 );//executeSqlUpdate( statement, transaction, query );
         ctx.json( result );
 
     }
@@ -879,7 +880,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         .language( language )
                         .origin( ORIGIN )
                         .transactionManager( transactionManager )
-                        .build(), new UIRequest() ).get( 0 );
+                        .build(), UIRequest.builder().build() ).get( 0 );
 
         if ( result.error == null && statisticCrud.isActiveTracking() ) {
             transaction.addChangedTable( tableId );
@@ -944,7 +945,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         .language( language )
                         .origin( ORIGIN )
                         .transactionManager( transactionManager )
-                        .build(), new UIRequest() ).get( 0 );
+                        .build(), UIRequest.builder().build() ).get( 0 );
 
         if ( result.error == null && result.data.length == 1 && statisticCrud.isActiveTracking() ) {
             transaction.addChangedTable( fullName );
@@ -975,7 +976,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                             .language( language )
                             .origin( ORIGIN )
                             .transactionManager( transactionManager )
-                            .build(), new UIRequest() ).get( 0 ) );
+                            .build(), UIRequest.builder().build() ).get( 0 ) );
         }
         ctx.json( results );
     }
@@ -1184,7 +1185,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                             .language( language )
                             .origin( ORIGIN )
                             .transactionManager( transactionManager )
-                            .build(), new UIRequest() ).get( 0 );
+                            .build(), UIRequest.builder().build() ).get( 0 );
             ctx.json( result );
 
         }
@@ -1299,7 +1300,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                             .language( language )
                             .origin( ORIGIN )
                             .transactionManager( transactionManager )
-                            .build(), new UIRequest() ).get( 0 );
+                            .build(), UIRequest.builder().build() ).get( 0 );
             ctx.json( result );
         }
 
@@ -1378,7 +1379,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         .language( language )
                         .origin( ORIGIN )
                         .transactionManager( transactionManager )
-                        .build(), new UIRequest() ).get( 0 );
+                        .build(), UIRequest.builder().build() ).get( 0 );
         ctx.json( res );
     }
 
@@ -1398,7 +1399,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         .language( language )
                         .origin( ORIGIN )
                         .transactionManager( transactionManager )
-                        .build(), new UIRequest() ).get( 0 );
+                        .build(), UIRequest.builder().build() ).get( 0 );
         ctx.json( res );
     }
 
@@ -1486,7 +1487,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         .language( language )
                         .origin( ORIGIN )
                         .transactionManager( transactionManager )
-                        .build(), new UIRequest() ).get( 0 );
+                        .build(), UIRequest.builder().build() ).get( 0 );
         ctx.json( res );
     }
 
@@ -1518,7 +1519,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         .language( language )
                         .origin( ORIGIN )
                         .transactionManager( transactionManager )
-                        .build(), new UIRequest() ).get( 0 );
+                        .build(), UIRequest.builder().build() ).get( 0 );
 
         ctx.json( res );
     }
@@ -1547,7 +1548,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                             .language( language )
                             .origin( ORIGIN )
                             .transactionManager( transactionManager )
-                            .build(), new UIRequest() ).get( 0 );
+                            .build(), UIRequest.builder().build() ).get( 0 );
         } else {
             result = RelationalResult.builder().error( "Cannot add unique constraint if no columns are provided." ).build();
         }
@@ -1632,7 +1633,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         .language( language )
                         .origin( ORIGIN )
                         .transactionManager( transactionManager )
-                        .build(), new UIRequest() ).get( 0 );
+                        .build(), UIRequest.builder().build() ).get( 0 );
         ctx.json( res );
     }
 
@@ -1665,7 +1666,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         .language( language )
                         .origin( ORIGIN )
                         .transactionManager( transactionManager )
-                        .build(), new UIRequest() ).get( 0 );
+                        .build(), UIRequest.builder().build() ).get( 0 );
         ctx.json( res );
     }
 
@@ -1761,7 +1762,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         .language( language )
                         .origin( ORIGIN )
                         .transactionManager( transactionManager )
-                        .build(), new UIRequest() ).get( 0 );
+                        .build(), UIRequest.builder().build() ).get( 0 );
         ctx.json( res );
     }
 
@@ -1925,7 +1926,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         .language( language )
                         .origin( ORIGIN )
                         .transactionManager( transactionManager )
-                        .build(), new UIRequest() ).get( 0 );
+                        .build(), UIRequest.builder().build() ).get( 0 );
         ctx.json( res );
     }
 
@@ -1940,7 +1941,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         .language( language )
                         .origin( ORIGIN )
                         .transactionManager( transactionManager )
-                        .build(), new UIRequest() ).get( 0 );
+                        .build(), UIRequest.builder().build() ).get( 0 );
         ctx.json( res );
     }
 
@@ -1959,7 +1960,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         .language( language )
                         .origin( ORIGIN )
                         .transactionManager( transactionManager )
-                        .build(), new UIRequest() ).get( 0 );
+                        .build(), UIRequest.builder().build() ).get( 0 );
         ctx.json( res );
     }
 
@@ -2121,7 +2122,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         .language( language )
                         .origin( ORIGIN )
                         .transactionManager( transactionManager )
-                        .build(), new UIRequest() ).get( 0 );
+                        .build(), UIRequest.builder().build() ).get( 0 );
         ctx.json( res );
     }
 
@@ -2180,7 +2181,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         .language( language )
                         .origin( ORIGIN )
                         .transactionManager( transactionManager )
-                        .build(), new UIRequest() ).get( 0 );
+                        .build(), UIRequest.builder().build() ).get( 0 );
         ctx.json( res );
     }
 
@@ -2345,7 +2346,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         .language( language )
                         .origin( ORIGIN )
                         .transactionManager( transactionManager )
-                        .build(), new UIRequest() ).get( 0 );
+                        .build(), UIRequest.builder().build() ).get( 0 );
         ctx.json( res );
     }
 
@@ -2606,7 +2607,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                             .language( language )
                             .origin( ORIGIN )
                             .transactionManager( transactionManager )
-                            .build(), new UIRequest() ).get( 0 );
+                            .build(), UIRequest.builder().build() ).get( 0 );
             ctx.json( res );
         }
         // drop namespace
@@ -2628,7 +2629,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                             .language( language )
                             .origin( ORIGIN )
                             .transactionManager( transactionManager )
-                            .build(), new UIRequest() ).get( 0 );
+                            .build(), UIRequest.builder().build() ).get( 0 );
             ctx.json( res );
         } else {
             ctx.json( RelationalResult.builder().error( "Neither the field 'create' nor the field 'drop' was set." ).build() );
@@ -2644,7 +2645,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 .origin( ORIGIN )
                 .transactionManager( transactionManager )
                 .build();
-        ctx.json( LanguageCrud.anyQueryResult( context, new UIRequest() ).get( 0 ) );
+        ctx.json( LanguageCrud.anyQueryResult( context, UIRequest.builder().build() ).get( 0 ) );
     }
 
 

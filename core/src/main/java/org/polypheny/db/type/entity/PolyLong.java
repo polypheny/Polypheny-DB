@@ -213,7 +213,7 @@ public class PolyLong extends PolyNumber {
             }
         }
 
-        throw new NotImplementedException( "convert " + PolyTimeStamp.class.getSimpleName() );
+        throw new NotImplementedException( "convert " + PolyTimestamp.class.getSimpleName() );
     }
 
 

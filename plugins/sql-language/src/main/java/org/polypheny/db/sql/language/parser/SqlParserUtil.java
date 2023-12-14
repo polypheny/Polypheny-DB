@@ -53,7 +53,7 @@ import org.polypheny.db.sql.language.SqlTimeLiteral;
 import org.polypheny.db.sql.language.SqlTimestampLiteral;
 import org.polypheny.db.type.entity.PolyDate;
 import org.polypheny.db.type.entity.PolyTime;
-import org.polypheny.db.type.entity.PolyTimeStamp;
+import org.polypheny.db.type.entity.PolyTimestamp;
 import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.PrecedenceClimbingParser;
 import org.polypheny.db.util.Util;
@@ -102,7 +102,7 @@ public final class SqlParserUtil {
             throw CoreUtil.newContextException( pos, RESOURCE.illegalLiteral( "TIMESTAMP", s, RESOURCE.badFormat( DateTimeUtils.TIMESTAMP_FORMAT_STRING ).str() ) );
         }
         //final TimestampString ts = TimestampString.fromCalendarFields( pt.getCalendar() ).withFraction( pt.getFraction() );
-        return SqlLiteral.createTimestamp( PolyTimeStamp.of( pt.getCalendar().getTime() ), pt.getPrecision(), pos );
+        return SqlLiteral.createTimestamp( PolyTimestamp.of( pt.getCalendar().getTime() ), pt.getPrecision(), pos );
     }
 
 

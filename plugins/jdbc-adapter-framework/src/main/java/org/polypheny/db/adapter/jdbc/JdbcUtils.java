@@ -74,7 +74,7 @@ import org.polypheny.db.type.entity.PolyFloat;
 import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyTime;
-import org.polypheny.db.type.entity.PolyTimeStamp;
+import org.polypheny.db.type.entity.PolyTimestamp;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
@@ -203,7 +203,7 @@ public final class JdbcUtils {
             // should prevent this, but does not. So we shift explicitly.
             switch ( types[i] ) {
                 case Types.TIMESTAMP:
-                    return PolyTimeStamp.of( shift( resultSet.getTimestamp( i + 1 ) ) );
+                    return PolyTimestamp.of( shift( resultSet.getTimestamp( i + 1 ) ) );
                 case Types.TIME:
                     return PolyTime.of( shift( resultSet.getTime( i + 1 ) ) );
                 case Types.DATE:

@@ -71,7 +71,7 @@ import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolySymbol;
-import org.polypheny.db.type.entity.PolyTimeStamp;
+import org.polypheny.db.type.entity.PolyTimestamp;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyBlob;
 import org.polypheny.db.type.entity.category.PolyNumber;
@@ -229,7 +229,7 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                     return PolyNumber.class;
                 case TIMESTAMP:
                 case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                    return PolyTimeStamp.class;
+                    return PolyTimestamp.class;
                 case INTERVAL_YEAR:
                 case INTERVAL_YEAR_MONTH:
                 case INTERVAL_MONTH:

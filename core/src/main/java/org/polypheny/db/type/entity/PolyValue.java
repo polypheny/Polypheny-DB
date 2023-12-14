@@ -98,7 +98,7 @@ import org.polypheny.db.type.entity.relational.PolyMap.PolyMapSerializerDef;
         PolyFloat.class,
         PolyDouble.class,
         PolyBigDecimal.class,
-        PolyTimeStamp.class,
+        PolyTimestamp.class,
         PolyDocument.class,
         PolyDictionary.class,
         PolyDate.class,
@@ -126,7 +126,7 @@ import org.polypheny.db.type.entity.relational.PolyMap.PolyMapSerializerDef;
         @JsonSubTypes.Type(value = PolyLong.class, name = "LONG"),
         @JsonSubTypes.Type(value = PolyInteger.class, name = "INTEGER"),
         @JsonSubTypes.Type(value = PolyBoolean.class, name = "BOOLEAN"),
-        @JsonSubTypes.Type(value = PolyTimeStamp.class, name = "TIMESTAMP"),
+        @JsonSubTypes.Type(value = PolyTimestamp.class, name = "TIMESTAMP"),
         @JsonSubTypes.Type(value = PolyBinary.class, name = "BINARY"),
         @JsonSubTypes.Type(value = PolyDocument.class, name = "DOCUMENT"),
         @JsonSubTypes.Type(value = PolySymbol.class, name = "SYMBOL"),
@@ -219,7 +219,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case TIME:
                 return o -> o.asTime().ofDay % DateTimeUtils.MILLIS_PER_DAY;
             case TIMESTAMP:
-                return o -> o.asTimeStamp().milliSinceEpoch;
+                return o -> o.asTimestamp().milliSinceEpoch;
             case BOOLEAN:
                 return o -> o.asBoolean().value;
             case ARRAY:
@@ -364,9 +364,9 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case TIME_WITH_LOCAL_TIME_ZONE:
                 return PolyTime.class;
             case TIMESTAMP:
-                return PolyTimeStamp.class;
+                return PolyTimestamp.class;
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                return PolyTimeStamp.class;
+                return PolyTimestamp.class;
             case INTERVAL_YEAR:
                 return PolyInterval.class;
             case INTERVAL_YEAR_MONTH:
@@ -686,12 +686,12 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
 
 
     @NotNull
-    public PolyTimeStamp asTimeStamp() {
+    public PolyTimestamp asTimestamp() {
         if ( isTimestamp() ) {
-            return (PolyTimeStamp) this;
+            return (PolyTimestamp) this;
         }
 
-        throw cannotParse( this, PolyTimeStamp.class );
+        throw cannotParse( this, PolyTimestamp.class );
     }
 
 
@@ -885,7 +885,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case TIMESTAMP:
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                 if ( object instanceof Timestamp ) {
-                    return PolyTimeStamp.of( (Timestamp) object );
+                    return PolyTimestamp.of( (Timestamp) object );
                 }
                 throw new NotImplementedException();
             case CHAR:

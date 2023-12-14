@@ -35,6 +35,7 @@ public class QueryRequest extends UIRequest {
             @JsonProperty("cache") boolean cache,
             @JsonProperty("language") String language,
             @JsonAlias("database") @JsonProperty("namespace") String namespace ) {
+        super();
         this.query = query;
         this.analyze = analyze;
         this.cache = cache;

@@ -108,7 +108,7 @@ public class SqlNodeToRexConverterImpl implements SqlNodeToRexConverter {
                 return rexBuilder.makeFlag( literal.getValueAs( Enum.class ) );
             case TIMESTAMP:
                 return rexBuilder.makeTimestampLiteral(
-                        literal.value.asTimeStamp(),
+                        literal.value.asTimestamp(),
                         ((SqlTimestampLiteral) literal).getPrec() );
             case TIME:
                 return rexBuilder.makeTimeLiteral(

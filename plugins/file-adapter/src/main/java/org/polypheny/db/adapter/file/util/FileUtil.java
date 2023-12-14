@@ -56,7 +56,7 @@ public class FileUtil {
             case TIME:
                 return value.asTime().ofDay;
             case TIMESTAMP:
-                return value.asTimeStamp().milliSinceEpoch;
+                return value.asTimestamp().milliSinceEpoch;
         }
         throw new NotImplementedException();
     }

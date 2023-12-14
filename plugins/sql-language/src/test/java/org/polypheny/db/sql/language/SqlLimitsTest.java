@@ -236,7 +236,7 @@ public class SqlLimitsTest {
                         pos );
             case TIMESTAMP:
                 return SqlLiteral.createTimestamp(
-                        o.asTimeStamp(),
+                        o.asTimestamp(),
                         0 /* todo */,
                         pos );
             default:

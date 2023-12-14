@@ -58,7 +58,7 @@ import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyTime;
-import org.polypheny.db.type.entity.PolyTimeStamp;
+import org.polypheny.db.type.entity.PolyTimestamp;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Source;
 
@@ -324,7 +324,7 @@ class CsvEnumerator implements Enumerator<PolyValue[]> {
                     }
                 case TIMESTAMP:
                     try {
-                        return PolyTimeStamp.of( TIME_FORMAT_TIMESTAMP.parse( string ) );
+                        return PolyTimestamp.of( TIME_FORMAT_TIMESTAMP.parse( string ) );
                     } catch ( ParseException e ) {
                         return PolyNull.NULL;
                     }
