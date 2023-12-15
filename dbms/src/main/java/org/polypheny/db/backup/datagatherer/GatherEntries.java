@@ -30,6 +30,7 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -96,6 +97,7 @@ public class GatherEntries {
             //PolyphenyHomeDirManager homeDirManager = PolyphenyHomeDirManager.getInstance();
             backupFolder = homeDirManager.registerNewFolder( "backup" );
             dataFolder = homeDirManager.registerNewFolder( backupFolder, "data" );
+            String dataFolderPath = "backup/data";
 
             if ( !tablesToBeCollected.isEmpty() ) {
                 //go through each pair in tablesToBeCollectedList
@@ -107,8 +109,9 @@ public class GatherEntries {
                     String query = String.format( "SELECT * FROM %s.%s", table.getMiddle(), table.getRight() );
                     //executeQuery2( query, DataModel.RELATIONAL, Catalog.defaultNamespaceId );
 
-                    File tableData = homeDirManager.registerNewFile( getDataFolder(), String.format( "tab_%s_%s.txt", table.getMiddle(), table.getRight() ) );
-                    filePaths.add( tableData.getPath() );   //FIXME(FF): is complete path, i only want path from backup folder
+                    String fileName = String.format( "tab_%s_%s.txt", table.getMiddle(), table.getRight() );
+                    File tableData = homeDirManager.registerNewFile( getDataFolder(), fileName );
+                    filePaths.add( String.format( "%s/%s", dataFolderPath, fileName ) );
                     EntityInfo entityInfo = new EntityInfo( filePaths, table.getRight(), table.getMiddle(), table.getLeft(), DataModel.RELATIONAL, nbrCols );
                     entityInfoList.add( entityInfo );
                     executorService.submit( new GatherEntriesTask( transactionManager, query, DataModel.RELATIONAL, Catalog.defaultNamespaceId, tableData ) );
@@ -125,8 +128,10 @@ public class GatherEntries {
                     List<String> filePaths = new ArrayList<>();
                     String query = String.format( "db.%s.find()", collection.getRight() );
                     //executeQuery2( query, DataModel.DOCUMENT, collection.getKey() );
-                    File collectionData = homeDirManager.registerNewFile( getDataFolder(), String.format( "col_%s.txt", collection.getRight() ) );
-                    filePaths.add( collectionData.getPath() );  //FIXME(FF): is complete path, i only want path from backup folder
+
+                    String fileName = String.format( "col_%s.txt", collection.getRight() );
+                    File collectionData = homeDirManager.registerNewFile( getDataFolder(), fileName );
+                    filePaths.add( String.format( "%s/%s", dataFolderPath, fileName ) );
                     EntityInfo entityInfo = new EntityInfo( filePaths, collection.getRight(), collection.getMiddle(), collection.getLeft(), DataModel.DOCUMENT );
                     entityInfoList.add( entityInfo );
                     executorService.submit( new GatherEntriesTask( transactionManager, query, DataModel.DOCUMENT, collection.getLeft(), collectionData ) );
@@ -135,10 +140,14 @@ public class GatherEntries {
 
             if ( !graphNamespaceIds.isEmpty() ) {
                 for ( Long graphNamespaceId : graphNamespaceIds ) {
-                    //String query = "MATCH (n) RETURN n";
-                    String query = "MATCH (*) RETURN n"; //todo: result is polygraph
+                    List<String> filePaths = new ArrayList<>();
+                    String query = "MATCH (*) RETURN n";
                     //executeQuery2( query, DataModel.GRAPH, graphNamespaceId );
-                    File graphData = homeDirManager.registerNewFile( getDataFolder(), String.format( "graph_%s.txt", graphNamespaceId.toString() ) );
+
+                    String fileName = String.format( "graph_%s.txt", graphNamespaceId.toString() );
+                    File graphData = homeDirManager.registerNewFile( getDataFolder(), fileName );
+                    EntityInfo entityInfo = new EntityInfo( filePaths, "graph", "graph", graphNamespaceId, DataModel.GRAPH );
+                    entityInfoList.add( entityInfo );
                     executorService.submit( new GatherEntriesTask( transactionManager, query, DataModel.GRAPH, graphNamespaceId, graphData ) );
                 }
             }

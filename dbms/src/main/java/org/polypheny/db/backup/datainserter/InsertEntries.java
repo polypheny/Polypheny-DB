@@ -56,16 +56,17 @@ public class InsertEntries {
             for ( EntityInfo entityInfo : manifest.getEntityInfos() ) {
                 for ( String path : entityInfo.getFilePaths()) {
                     //TODO(FF): check if file is there from path, if not, skip it and move to next file...
-                    File filee = new File( path );
-                    Path filePath = Path.of( path );
-                    File file = filePath.toFile();
+                    //File filee = new File( path.toString() );
+                    //Path filePath = filee.toPath();
+                    //File file = filePath.toFile();
+                    File file = homeDirManager.getHomeFile( path ).get();
                     log.info( path );
                     if ( file.isFile() && file.exists() ) {
                         log.info( "insertEntries - file exists: " + file.getPath() );
                         //TransactionManager transactionManager, File dataFile, DataModel dataModel, Long namespaceId, String namespaceName, String tableName, int nbrCols
                         executorService.submit( new InsertEntriesTask( transactionManager, file, entityInfo.getDataModel(), entityInfo.getNamespaceId(), entityInfo.getNamespaceName(), entityInfo.getEntityName(), entityInfo.getNbrCols() ) );
                     } else {
-                        log.warn( "Insert Entries for Backup: " + file.getPath() + " does not exist, but is listed in manifest" );
+                        log.warn( "Insert Entries for Backup: " + path + " does not exist, but is listed in manifest" );
                     }
 
                 }

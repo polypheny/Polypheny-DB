@@ -22,12 +22,22 @@ import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 
+/**
+ * This class represents the manifest file that is created during a backup.
+ */
 @Getter @Setter
 public class BackupManifest {
     private List<EntityInfo> entityInfos;
     private String overallChecksum;
     private Date backupDate;
 
+
+    /**
+     * The manifest contains information about the saved data from the backup
+     * @param entityInfos list of entityInfos - Information about each saved entity in the backup
+     * @param overallChecksum checksum of the whole backup (not implemented yet)
+     * @param backupDate date when the backup was created
+     */
     public BackupManifest( List<EntityInfo> entityInfos, String overallChecksum, Date backupDate ) {
         this.entityInfos = entityInfos;
         this.overallChecksum = overallChecksum;

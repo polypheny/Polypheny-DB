@@ -24,9 +24,19 @@ import java.util.Date;
 import java.util.List;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 
+/**
+ * This class generates the manifest file that is created during a backup.
+ */
 public class BackupManifestGenerator {
 
 
+    /**
+     * The manifest contains information about the saved data from the backup
+     * @param entityInfoList list of entityInfos - Information about each saved entity in the backup
+     * @param overallChecksum checksum of the whole backup (not implemented yet)
+     * @param manifestPath path where the manifest file should be saved
+     * @param backupDate date when the backup was created
+     */
     public static void generateManifest( List<EntityInfo> entityInfoList, String overallChecksum, File manifestPath, Date backupDate ) {
         BackupManifest backupManifest = new BackupManifest(entityInfoList, overallChecksum, backupDate);
         Gson gson = new Gson();

@@ -16,11 +16,15 @@
 
 package org.polypheny.db.backup.datasaver.manifest;
 
+import java.nio.file.Path;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.catalog.logistic.DataModel;
 
+/**
+ *
+ */
 @Getter @Setter
 public class EntityInfo {
     private List<String> filePaths;
