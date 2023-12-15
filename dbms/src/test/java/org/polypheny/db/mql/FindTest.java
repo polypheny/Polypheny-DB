@@ -16,20 +16,21 @@
 
 package org.polypheny.db.mql;
 
-import static org.junit.Assert.assertTrue;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
 import java.util.List;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.MongoConnection;
 import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.webui.models.results.DocResult;
 
-
-@Category({ AdapterTestSuite.class, FileExcluded.class })
+@Tag("adapter")
+@Tag("fileExcluded")
 public class FindTest extends MqlTestTemplate {
 
     private final List<String> DATA_0 = Arrays.asList(

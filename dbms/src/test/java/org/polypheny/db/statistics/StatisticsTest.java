@@ -16,6 +16,9 @@
 
 package org.polypheny.db.statistics;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -23,10 +26,9 @@ import java.sql.Statement;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
@@ -146,7 +148,7 @@ public class StatisticsTest {
             } );
 
 
-    @BeforeClass
+    @BeforeAll
     public static void start() {
         // Ensures that Polypheny-DB is running
         //noinspection ResultOfMethodCallIgnored
@@ -155,7 +157,7 @@ public class StatisticsTest {
     }
 
 
-    @AfterClass
+    @AfterAll
     public static void end() {
         dropTables();
     }
@@ -256,8 +258,8 @@ public class StatisticsTest {
                 Long rowCountNation = StatisticsManager.getInstance().rowCountPerTable( catalogTableNation.id );
                 Long rowCountRegion = StatisticsManager.getInstance().rowCountPerTable( catalogTableRegion.id );
 
-                Assert.assertEquals( Integer.valueOf( 3 ), rowCountNation );
-                Assert.assertEquals( Integer.valueOf( 2 ), rowCountRegion );
+                assertEquals( Integer.valueOf( 3 ), rowCountNation );
+                assertEquals( Integer.valueOf( 2 ), rowCountRegion );
 
                 connection.commit();
             } catch ( InterruptedException e ) {
@@ -315,7 +317,7 @@ public class StatisticsTest {
             }
 
             if ( !successfull ) {
-                Assert.fail( String.format( "RowCount did not diverge to the correct number: %d.", target ) );
+                fail( String.format( "RowCount did not diverge to the correct number: %d.", target ) );
             }
 
             // collection was removed too fast, so the count was already removed -> returns null

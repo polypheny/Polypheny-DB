@@ -21,9 +21,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.MongoConnection;
 import org.polypheny.db.excluded.CottontailExcluded;
@@ -31,8 +31,8 @@ import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.excluded.MonetdbExcluded;
 import org.polypheny.db.webui.models.results.DocResult;
 
-
-@Category({ AdapterTestSuite.class, FileExcluded.class })
+@Tag("adapter")
+@Tag("fileExcluded")
 public class AggregateTest extends MqlTestTemplate {
 
 
@@ -160,7 +160,7 @@ public class AggregateTest extends MqlTestTemplate {
 
 
     @Test
-    @Category(MonetdbExcluded.class) // MonetClob instead of String
+    @Tag("monetdbExcluded") // MonetClob instead of String
     public void countTest() {
         List<String> expected = MongoConnection.arrayToDoc( ImmutableList.of(
                         new Object[]{ 3 } ),
@@ -242,7 +242,7 @@ public class AggregateTest extends MqlTestTemplate {
 
     //$limit
     @Test
-    @Category(CottontailExcluded.class)
+    @Tag("cottontailExcluded")
     public void limitTest() {
         List<String> expected = ImmutableList.of(
                 "{\"test\":\"val1\",\"key\":1}" );
@@ -286,7 +286,7 @@ public class AggregateTest extends MqlTestTemplate {
             insertMany( DATA_2 );
 
             DocResult result = aggregate( $replaceRoot( "$test.key" ) );
-            Assert.fail();
+            Assertions.fail();
         } catch ( Exception e ) {
             // empty on purpose
         }
@@ -319,7 +319,7 @@ public class AggregateTest extends MqlTestTemplate {
             DocResult result = aggregate( $replaceWith( "$test.key" ) );
 
             // this has to fail
-            Assert.fail();
+            Assertions.fail();
         } catch ( Exception e ) {
             // empty on purpose
         }
@@ -346,7 +346,7 @@ public class AggregateTest extends MqlTestTemplate {
 
 
     @Test
-    @Category(CottontailExcluded.class) // cottontail does not support skips/offset queries
+    @Tag("cottontailExcluded") // cottontail does not support skips/offset queries
     // without a limit therefore this test cannot be performed correctly using this adapter
     public void skipTest() {
         List<String> expected = ImmutableList.of(

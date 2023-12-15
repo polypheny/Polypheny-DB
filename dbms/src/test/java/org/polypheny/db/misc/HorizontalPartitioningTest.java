@@ -25,10 +25,10 @@ import java.sql.Statement;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.calcite.avatica.AvaticaSqlException;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
@@ -51,10 +51,10 @@ import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 
 
 @SuppressWarnings({ "SqlNoDataSourceInspection", "SqlDialectInspection" })
-@Category({ AdapterTestSuite.class })
+@Tag("adapter")
 public class HorizontalPartitioningTest {
 
-    @BeforeClass
+    @BeforeAll
     public static void start() {
         // Ensures that Polypheny-DB is running
         //noinspection ResultOfMethodCallIgnored
@@ -88,7 +88,7 @@ public class HorizontalPartitioningTest {
                     } catch ( AvaticaSqlException e ) {
                         failed = true;
                     }
-                    Assert.assertTrue( failed );
+                    Assertions.assertTrue( failed );
 
                     // check assert False. Wrong partition column
                     failed = false;
@@ -103,7 +103,7 @@ public class HorizontalPartitioningTest {
                     } catch ( AvaticaSqlException e ) {
                         failed = true;
                     }
-                    Assert.assertTrue( failed );
+                    Assertions.assertTrue( failed );
                 } finally {
                     // Drop tables and stores
                     statement.executeUpdate( "DROP TABLE horizontalparttest" );
@@ -146,7 +146,7 @@ public class HorizontalPartitioningTest {
                     } catch ( AvaticaSqlException e ) {
                         failed = true;
                     }
-                    Assert.assertTrue( failed );
+                    Assertions.assertTrue( failed );
 
                     //Create another table with initial partitioning
                     statement.executeUpdate( "CREATE TABLE horizontalparttestextension( "
@@ -194,7 +194,7 @@ public class HorizontalPartitioningTest {
                     } catch ( AvaticaSqlException e ) {
                         failed = true;
                     }
-                    Assert.assertTrue( failed );
+                    Assertions.assertTrue( failed );
                 } finally {
                     // Drop tables and stores
                     statement.executeUpdate( "DROP TABLE IF EXISTS horizontalparttestextension" );
@@ -260,7 +260,7 @@ public class HorizontalPartitioningTest {
                 } catch ( AvaticaSqlException e ) {
                     failed = true;
                 }
-                Assert.assertTrue( failed );
+                Assertions.assertTrue( failed );
 
                 // assert false partitioning only with partition name is not allowed
                 failed = false;
@@ -275,7 +275,7 @@ public class HorizontalPartitioningTest {
                 } catch ( AvaticaSqlException e ) {
                     failed = true;
                 }
-                Assert.assertTrue( failed );
+                Assertions.assertTrue( failed );
 
                 statement.executeUpdate( "DROP TABLE horizontalparttestfalseNEW" );
                 statement.executeUpdate( "DROP TABLE horizontal2" );
@@ -320,7 +320,7 @@ public class HorizontalPartitioningTest {
                                     new Object[]{ 1, 3, "hans" },
                                     new Object[]{ 2, 7, "bob" } ) );
                     LogicalTable table = Catalog.snapshot().rel().getTable( Catalog.defaultNamespaceId, "hashpartition" ).orElseThrow();
-                    Assert.assertEquals( 2, Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).size() );
+                    Assertions.assertEquals( 2, Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).size() );
 
                     statement.executeUpdate( "ALTER TABLE \"hashpartition\" MERGE PARTITIONS" );
                     TestHelper.checkResultSet(
@@ -337,13 +337,13 @@ public class HorizontalPartitioningTest {
                     statement.executeUpdate( "ALTER TABLE hashpartition MODIFY PLACEMENT"
                             + " DROP COLUMN tinteger ON STORE hsqldb" );
 
-                    Assert.assertTrue( Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).stream().allMatch( placement -> 2 == Catalog.snapshot().alloc().getColumns( placement.id ).size() ) );
+                    Assertions.assertTrue( Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).stream().allMatch( placement -> 2 == Catalog.snapshot().alloc().getColumns( placement.id ).size() ) );
 
                     statement.executeUpdate( "ALTER TABLE hashpartition "
                             + "PARTITION BY HASH (tvarchar) "
                             + "PARTITIONS 3" );
 
-                    Assert.assertEquals( 6, Catalog.snapshot().alloc().getFromLogical( table.id ).size() );
+                    Assertions.assertEquals( 6, Catalog.snapshot().alloc().getFromLogical( table.id ).size() );
 
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM hashpartition ORDER BY tprimary" ),
@@ -353,7 +353,7 @@ public class HorizontalPartitioningTest {
 
                     statement.executeUpdate( "ALTER TABLE \"hashpartition\" MERGE PARTITIONS" );
 
-                    Assert.assertEquals( 2, Catalog.snapshot().alloc().getFromLogical( table.id ).size() );
+                    Assertions.assertEquals( 2, Catalog.snapshot().alloc().getFromLogical( table.id ).size() );
 
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM hashpartition ORDER BY tprimary" ),
@@ -400,7 +400,7 @@ public class HorizontalPartitioningTest {
                     } catch ( AvaticaSqlException e ) {
                         failed = true;
                     }
-                    Assert.assertTrue( failed );
+                    Assertions.assertTrue( failed );
 
                     // ADD adapter
                     statement.executeUpdate( "ALTER ADAPTERS ADD \"storehash\" USING 'Hsqldb' AS 'Store'"
@@ -428,7 +428,7 @@ public class HorizontalPartitioningTest {
                     } catch ( AvaticaSqlException e ) {
                         failed = true;
                     }
-                    Assert.assertTrue( failed );
+                    Assertions.assertTrue( failed );
                 } finally {
                     statement.executeUpdate( "DROP TABLE hashpartition" );
                     statement.executeUpdate( "DROP TABLE IF EXISTS hashpartitioning" );
@@ -481,7 +481,7 @@ public class HorizontalPartitioningTest {
                     } catch ( AvaticaSqlException e ) {
                         failed = true;
                     }
-                    Assert.assertTrue( failed );
+                    Assertions.assertTrue( failed );
 
                     // TODO: Check partition distribution violation
 
@@ -544,10 +544,10 @@ public class HorizontalPartitioningTest {
 
                     List<AllocationEntity> entites = Catalog.snapshot().alloc().getFromLogical( table.id );
 
-                    /*Assert.assertEquals( new ArrayList<>( Arrays.asList( "4", "5" ) )
+                    /*Assertions.assertEquals( new ArrayList<>( Arrays.asList( "4", "5" ) )
                             , catalogPartitions.get( 0 ).partitionQualifiers );
 
-                    Assert.assertEquals( new ArrayList<>( Arrays.asList( "6", "10" ) )
+                    Assertions.assertEquals( new ArrayList<>( Arrays.asList( "6", "10" ) )
                             , catalogPartitions.get( 1 ).partitionQualifiers );*/
 
                     // RANGE partitioning can't be created without specifying ranges
@@ -563,7 +563,7 @@ public class HorizontalPartitioningTest {
                     } catch ( AvaticaSqlException e ) {
                         failed = true;
                     }
-                    Assert.assertTrue( failed );
+                    Assertions.assertTrue( failed );
                 } finally {
                     statement.executeUpdate( "DROP TABLE rangepartitioning1" );
                     statement.executeUpdate( "DROP TABLE IF EXISTS rangepartitioning2" );
@@ -654,7 +654,7 @@ public class HorizontalPartitioningTest {
                     // Check if sufficient PartitionPlacements have been created
 
                     // Check if initially as many partitionPlacements are created as requested
-                    Assert.assertEquals( partitionsToCreate, Catalog.snapshot().alloc().getFromLogical( table.id ).size() );
+                    Assertions.assertEquals( partitionsToCreate, Catalog.snapshot().alloc().getFromLogical( table.id ).size() );
 
                     // ADD adapter
                     statement.executeUpdate( "ALTER ADAPTERS ADD \"anotherstore\" USING 'Hsqldb' AS 'Store'"
@@ -662,19 +662,19 @@ public class HorizontalPartitioningTest {
 
                     // ADD FullPlacement
                     statement.executeUpdate( "ALTER TABLE \"physicalPartitionTest\" ADD PLACEMENT ON STORE \"anotherstore\"" );
-                    Assert.assertEquals( partitionsToCreate * 2, Catalog.snapshot().alloc().getFromLogical( table.id ).size() );
+                    Assertions.assertEquals( partitionsToCreate * 2, Catalog.snapshot().alloc().getFromLogical( table.id ).size() );
 
                     // Modify partitions on second storeId
                     statement.executeUpdate( "ALTER TABLE \"physicalPartitionTest\" MODIFY PARTITIONS (\"foo\") ON STORE anotherstore" );
-                    Assert.assertEquals( partitionsToCreate + 1, Catalog.snapshot().alloc().getFromLogical( table.id ).size() );
+                    Assertions.assertEquals( partitionsToCreate + 1, Catalog.snapshot().alloc().getFromLogical( table.id ).size() );
 
                     // After MERGE should only hold one partition
                     statement.executeUpdate( "ALTER TABLE \"physicalPartitionTest\" MERGE PARTITIONS" );
-                    Assert.assertEquals( 2, Catalog.snapshot().alloc().getFromLogical( table.id ).size() );
+                    Assertions.assertEquals( 2, Catalog.snapshot().alloc().getFromLogical( table.id ).size() );
 
                     // DROP STORE and verify number of partition Placements
                     statement.executeUpdate( "ALTER TABLE \"physicalPartitionTest\" DROP PLACEMENT ON STORE \"anotherstore\"" );
-                    Assert.assertEquals( 1, Catalog.snapshot().alloc().getFromLogical( table.id ).size() );
+                    Assertions.assertEquals( 1, Catalog.snapshot().alloc().getFromLogical( table.id ).size() );
 
                 } finally {
                     // Drop tables and stores
@@ -716,16 +716,16 @@ public class HorizontalPartitioningTest {
                     PartitionProperty partitionProperty = Catalog.snapshot().alloc().getPartitionProperty( table.id ).orElseThrow();
 
                     // Check if partition properties are correctly set and parsed
-                    Assert.assertEquals( 600, ((TemperaturePartitionProperty) partitionProperty).getFrequencyInterval() );
-                    Assert.assertEquals( 12, ((TemperaturePartitionProperty) partitionProperty).getHotAccessPercentageIn() );
-                    Assert.assertEquals( 14, ((TemperaturePartitionProperty) partitionProperty).getHotAccessPercentageOut() );
-                    Assert.assertEquals( PartitionType.HASH, ((TemperaturePartitionProperty) partitionProperty).getInternalPartitionFunction() );
+                    Assertions.assertEquals( 600, ((TemperaturePartitionProperty) partitionProperty).getFrequencyInterval() );
+                    Assertions.assertEquals( 12, ((TemperaturePartitionProperty) partitionProperty).getHotAccessPercentageIn() );
+                    Assertions.assertEquals( 14, ((TemperaturePartitionProperty) partitionProperty).getHotAccessPercentageOut() );
+                    Assertions.assertEquals( PartitionType.HASH, ((TemperaturePartitionProperty) partitionProperty).getInternalPartitionFunction() );
 
-                    Assert.assertEquals( 2, partitionProperty.getPartitionGroupIds().size() );
-                    Assert.assertEquals( 20, partitionProperty.getPartitionIds().size() );
+                    Assertions.assertEquals( 2, partitionProperty.getPartitionGroupIds().size() );
+                    Assertions.assertEquals( 20, partitionProperty.getPartitionIds().size() );
 
                     // Check if initially as many partitionPlacements are created as requested and stored in the partition property
-                    Assert.assertEquals( partitionProperty.getPartitionIds().size(), Catalog.snapshot().alloc().getPartitionsFromLogical( table.id ).size() );
+                    Assertions.assertEquals( partitionProperty.getPartitionIds().size(), Catalog.snapshot().alloc().getPartitionsFromLogical( table.id ).size() );
 
                     // Retrieve partition distribution
                     // Get percentage of tables which can remain in HOT
@@ -743,7 +743,7 @@ public class HorizontalPartitioningTest {
                     List<AllocationPartition> hotPartitions = Catalog.snapshot().alloc().getPartitionsFromGroup( ((TemperaturePartitionProperty) partitionProperty).getHotPartitionGroupId() );
                     List<AllocationPartition> coldPartitions = Catalog.snapshot().alloc().getPartitionsFromGroup( ((TemperaturePartitionProperty) partitionProperty).getColdPartitionGroupId() );
 
-                    Assert.assertTrue( (numberOfPartitionsInHot == hotPartitions.size()) || (numberOfPartitionsInHot == allowedTablesInHot) );
+                    Assertions.assertTrue( (numberOfPartitionsInHot == hotPartitions.size()) || (numberOfPartitionsInHot == allowedTablesInHot) );
 
                     // ADD adapter
                     statement.executeUpdate( "ALTER ADAPTERS ADD \"hot\" USING 'Hsqldb' AS 'Store'"
@@ -781,7 +781,7 @@ public class HorizontalPartitioningTest {
                     long targetId = partitionManager.getTargetPartitionId( table, partitionProperty, partitionValue );
 
                     List<AllocationPartition> hotPartitionsAfterChange = Catalog.snapshot().alloc().getPartitionsFromGroup( ((TemperaturePartitionProperty) updatedProperty).getHotPartitionGroupId() );
-                    Assert.assertTrue( hotPartitionsAfterChange.stream().map( p -> p.id ).collect( Collectors.toList() ).contains( targetId ) );
+                    Assertions.assertTrue( hotPartitionsAfterChange.stream().map( p -> p.id ).collect( Collectors.toList() ).contains( targetId ) );
 
                     //Todo @Hennlo check number of access
                 } finally {
@@ -840,7 +840,7 @@ public class HorizontalPartitioningTest {
 
 
     @Test
-    @Category(FileExcluded.class)
+    @Tag("file")
     public void batchPartitionTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -1194,17 +1194,17 @@ public class HorizontalPartitioningTest {
                     // Check if initially as many DataPlacements are created as requested
                     // One for each storeId
 
-                    Assert.assertEquals( 1, Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).size() );
+                    Assertions.assertEquals( 1, Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).size() );
 
                     AllocationPlacement placement = Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).get( 0 );
 
                     long initialAdapterId = placement.adapterId;
 
                     // Check how many columnPlacements are added to the one DataPlacement
-                    Assert.assertEquals( table.getColumnIds().size(), Catalog.snapshot().alloc().getAllocsOfPlacement( placement.id ).get( 0 ).getRowType().getFieldCount() );
+                    Assertions.assertEquals( table.getColumnIds().size(), Catalog.snapshot().alloc().getAllocsOfPlacement( placement.id ).get( 0 ).getRowType().getFieldCount() );
 
                     // Check how many partitionPlacements are added to the one DataPlacement
-                    Assert.assertEquals( partitionsToCreate, Catalog.snapshot().alloc().getPartitionsFromLogical( table.id ).size() );
+                    Assertions.assertEquals( partitionsToCreate, Catalog.snapshot().alloc().getPartitionsFromLogical( table.id ).size() );
 
                     // ADD adapter
                     statement.executeUpdate( "ALTER ADAPTERS ADD \"anotherstore\" USING 'Hsqldb' AS 'Store'"
@@ -1215,7 +1215,7 @@ public class HorizontalPartitioningTest {
 
                     // Check if we now have two dataPlacements in table
                     table = Catalog.snapshot().rel().getTable( table.id ).orElseThrow();
-                    Assert.assertEquals( 2, Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).size() );
+                    Assertions.assertEquals( 2, Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).size() );
 
                     // Modify partitions on second storeId
                     statement.executeUpdate( "ALTER TABLE \"horizontalDataPlacementTest\" MODIFY PARTITIONS (\"foo\") ON STORE anotherstore" );
@@ -1225,9 +1225,9 @@ public class HorizontalPartitioningTest {
                     for ( AllocationPlacement place : placements ) {
                         if ( place.adapterId != initialAdapterId ) {
                             otherAdapterId = place.adapterId;
-                            Assert.assertEquals( 1, Catalog.snapshot().alloc().getAllocsOfPlacement( place.id ).size() );
+                            Assertions.assertEquals( 1, Catalog.snapshot().alloc().getAllocsOfPlacement( place.id ).size() );
                         } else {
-                            Assert.assertEquals( 4, Catalog.snapshot().alloc().getAllocsOfPlacement( place.id ).size() );
+                            Assertions.assertEquals( 4, Catalog.snapshot().alloc().getAllocsOfPlacement( place.id ).size() );
                         }
                     }
 
@@ -1238,15 +1238,15 @@ public class HorizontalPartitioningTest {
                     placements = Catalog.snapshot().alloc().getPlacementsFromLogical( table.id );
                     for ( AllocationPlacement place : placements ) {
                         if ( place.adapterId == otherAdapterId ) {
-                            Assert.assertEquals( 2, Catalog.snapshot().alloc().getColumns( place.id ).size() );
-                            Assert.assertEquals( 3, Catalog.snapshot().alloc().getAllocsOfPlacement( place.id ).size() );
-                            //Assert.assertEquals( 2, Catalog.snapshot().alloc().getColumnPlacementsOnAdapterPerTable( adapterId, table.id ).size() );
-                            //Assert.assertEquals( 3, Catalog.snapshot().alloc().getPartitionsOnDataPlacement( adapterId, table.id ).size() );
+                            Assertions.assertEquals( 2, Catalog.snapshot().alloc().getColumns( place.id ).size() );
+                            Assertions.assertEquals( 3, Catalog.snapshot().alloc().getAllocsOfPlacement( place.id ).size() );
+                            //Assertions.assertEquals( 2, Catalog.snapshot().alloc().getColumnPlacementsOnAdapterPerTable( adapterId, table.id ).size() );
+                            //Assertions.assertEquals( 3, Catalog.snapshot().alloc().getPartitionsOnDataPlacement( adapterId, table.id ).size() );
                         } else if ( place.adapterId == initialAdapterId ) {
-                            Assert.assertEquals( 3, Catalog.snapshot().alloc().getColumns( place.id ).size() );
-                            Assert.assertEquals( 4, Catalog.snapshot().alloc().getAllocsOfPlacement( place.id ).size() );
-                            //Assert.assertEquals( 3, Catalog.snapshot().alloc().getColumnPlacementsOnAdapterPerTable( initialAdapterId, table.id ).size() );
-                            //Assert.assertEquals( 4, Catalog.snapshot().alloc().getPartitionsOnDataPlacement( initialAdapterId, table.id ).size() );
+                            Assertions.assertEquals( 3, Catalog.snapshot().alloc().getColumns( place.id ).size() );
+                            Assertions.assertEquals( 4, Catalog.snapshot().alloc().getAllocsOfPlacement( place.id ).size() );
+                            //Assertions.assertEquals( 3, Catalog.snapshot().alloc().getColumnPlacementsOnAdapterPerTable( initialAdapterId, table.id ).size() );
+                            //Assertions.assertEquals( 4, Catalog.snapshot().alloc().getPartitionsOnDataPlacement( initialAdapterId, table.id ).size() );
                         }
                     }
 
@@ -1255,15 +1255,15 @@ public class HorizontalPartitioningTest {
                     placements = Catalog.snapshot().alloc().getPlacementsFromLogical( table.id );
 
                     for ( AllocationPlacement dp : placements ) {
-                        Assert.assertEquals( 1, Catalog.snapshot().alloc().getAllocsOfPlacement( dp.id ).size() );
+                        Assertions.assertEquals( 1, Catalog.snapshot().alloc().getAllocsOfPlacement( dp.id ).size() );
                     }
 
                     //Still two data placements left
-                    Assert.assertEquals( 2, placements.size() );
+                    Assertions.assertEquals( 2, placements.size() );
 
                     // DROP STORE and verify number of dataPlacements
                     statement.executeUpdate( "ALTER TABLE \"horizontalDataPlacementTest\" DROP PLACEMENT ON STORE \"anotherstore\"" );
-                    Assert.assertEquals( 1, Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).size() );
+                    Assertions.assertEquals( 1, Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).size() );
 
                 } finally {
                     // Drop tables and stores

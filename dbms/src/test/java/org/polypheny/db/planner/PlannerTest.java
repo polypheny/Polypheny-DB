@@ -17,8 +17,8 @@
 package org.polypheny.db.planner;
 
 import java.util.List;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
@@ -50,7 +50,7 @@ public class PlannerTest {
     };
 
 
-    @BeforeClass
+    @BeforeAll
     public static void init() {
         // to load the main classes
         TestHelper.getInstance();
