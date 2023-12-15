@@ -17,16 +17,16 @@
 package org.polypheny.db.plan;
 
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
@@ -53,7 +53,7 @@ import org.polypheny.db.util.Util;
 /**
  * Unit test for {@link AlgOptUtil} and other classes in this package.
  */
-@Ignore
+@Disabled
 public class AlgOptUtilTest {
 
     /**

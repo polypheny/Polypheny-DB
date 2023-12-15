@@ -18,9 +18,9 @@ package org.polypheny.db.crossmodel;
 
 import java.sql.ResultSet;
 import java.util.List;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.mql.MqlTestTemplate;
 
@@ -33,7 +33,7 @@ public class RelationalOnDocumentTest extends CrossModelTestTemplate {
     public static final String TEST_DATA = "{\"test\": 3, \"_id\": \"630103687f2e95058018fd9b\"}";
 
 
-    @BeforeClass
+    @BeforeAll
     public static void init() {
         //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
@@ -43,7 +43,7 @@ public class RelationalOnDocumentTest extends CrossModelTestTemplate {
     }
 
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() {
         MqlTestTemplate.dropDatabase( DATABASE_NAME );
     }

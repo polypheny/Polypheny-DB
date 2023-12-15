@@ -24,10 +24,10 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.entity.LogicalAdapter;
@@ -37,7 +37,7 @@ import org.polypheny.db.catalog.entity.LogicalAdapter;
 @Slf4j
 public class CatalogTest {
 
-    @BeforeClass
+    @BeforeAll
     public static void start() {
         // Ensures that Polypheny-DB is running
         //noinspection ResultOfMethodCallIgnored
@@ -47,7 +47,7 @@ public class CatalogTest {
     }
 
 
-    @AfterClass
+    @AfterAll
     public static void stop() {
         deleteOldData();
     }
@@ -111,12 +111,12 @@ public class CatalogTest {
 
             // Check number of columns
             int totalColumns = rsmd.getColumnCount();
-            Assert.assertEquals( "Wrong number of columns", 3, totalColumns );
+            Assertions.assertEquals( 3, totalColumns, "Wrong number of columns" );
 
             // Check column names
-            Assert.assertEquals( "Wrong column name", "TABLE_CAT", rsmd.getColumnName( 1 ) );
-            Assert.assertEquals( "Wrong column name", "OWNER", rsmd.getColumnName( 2 ) );
-            Assert.assertEquals( "Wrong column name", "DEFAULT_SCHEMA", rsmd.getColumnName( 3 ) );
+            Assertions.assertEquals( "Wrong column name", "TABLE_CAT", rsmd.getColumnName( 1 ) );
+            Assertions.assertEquals( "Wrong column name", "OWNER", rsmd.getColumnName( 2 ) );
+            Assertions.assertEquals( "Wrong column name", "DEFAULT_SCHEMA", rsmd.getColumnName( 3 ) );
 
             // Check data
             final Object[] databaseApp = new Object[]{ "APP", "system", "public" };

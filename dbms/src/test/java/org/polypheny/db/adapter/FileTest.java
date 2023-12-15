@@ -29,21 +29,20 @@ import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.polypheny.db.AdapterTestSuite;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
-@Category(AdapterTestSuite.class)
+@Tag("adapter")
 public class FileTest {
 
-    @BeforeClass
+    @BeforeAll
     public static void start() throws SQLException {
         // Ensures that Polypheny-DB is running
         // noinspection ResultOfMethodCallIgnored
@@ -51,7 +50,7 @@ public class FileTest {
     }
 
 
-    @AfterClass
+    @AfterAll
     public static void end() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
@@ -76,10 +75,10 @@ public class FileTest {
 
                     // check inserts
                     int insertCount = statement.executeUpdate( "INSERT INTO preparedTest (a,b) VALUES (1,2),(3,4),(5,null)" );
-                    Assert.assertEquals( 3, insertCount );
+                    Assertions.assertEquals( 3, insertCount );
                     // insert only into one column
                     insertCount = statement.executeUpdate( "INSERT INTO preparedTest (a) VALUES (6)" );
-                    Assert.assertEquals( 1, insertCount );
+                    Assertions.assertEquals( 1, insertCount );
 
                     // test conditions
                     ResultSet rs = statement.executeQuery( "SELECT * FROM preparedTest  WHERE a = 3" );

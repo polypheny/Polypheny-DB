@@ -35,11 +35,11 @@ package org.polypheny.db.util;
 
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
@@ -48,7 +48,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.runtime.ComparableList;
 
 
@@ -187,7 +187,7 @@ public class BitSetsTest {
 
 
     /**
-     * Tests the method {@link org.polypheny.db.util.BitSets#of()}.
+     * Tests the method .
      */
     @Test
     public void testBitSetOfImmutableIntList() {

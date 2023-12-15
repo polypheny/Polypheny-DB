@@ -34,10 +34,10 @@
 package org.polypheny.db.rex;
 
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -45,8 +45,8 @@ import java.util.Calendar;
 import java.util.TimeZone;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
@@ -69,7 +69,7 @@ import org.polypheny.db.util.Util;
  */
 public class RexBuilderTest {
 
-    @BeforeClass
+    @BeforeAll
     public static void init() {
         try {
             PolyphenyHomeDirManager.setModeAndGetInstance( PolyMode.TEST );

@@ -17,9 +17,9 @@
 package org.polypheny.db;
 
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.gson.JsonObject;
@@ -52,8 +52,8 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.junit.AfterClass;
-import org.junit.Assert;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.functions.Functions;
@@ -161,7 +161,7 @@ public class TestHelper {
     }
 
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() {
         //LOG.info( "shutdown - closing DB connection" );
     }
@@ -187,18 +187,18 @@ public class TestHelper {
         ResultSetMetaData rsmd = resultSet.getMetaData();
         int i = 0;
         for ( Object[] row : received ) {
-            Assert.assertTrue( "Result set has more rows than expected", i < expected.size() );
+            assertTrue( i < expected.size(), "Result set has more rows than expected" );
             Object[] expectedRow = expected.get( i++ );
-            Assert.assertEquals( "Wrong number of columns", expectedRow.length, rsmd.getColumnCount() );
+            assertEquals( expectedRow.length, rsmd.getColumnCount(), "Wrong number of columns" );
             int j = 0;
             while ( j < expectedRow.length ) {
                 if ( expectedRow.length >= j + 1 ) {
                     int columnType = rsmd.getColumnType( j + 1 );
                     if ( columnType == Types.BINARY ) {
                         if ( expectedRow[j] == null ) {
-                            Assert.assertNull( "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': ", row[j] );
+                            Assertions.assertNull( row[j], "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': " );
                         } else {
-                            Assert.assertEquals(
+                            assertEquals(
                                     "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'",
                                     new String( (byte[]) expectedRow[j] ),
                                     new String( (byte[]) row[j] ) );
@@ -207,38 +207,37 @@ public class TestHelper {
                         if ( expectedRow[j] != null ) {
                             if ( columnType == Types.FLOAT || columnType == Types.REAL ) {
                                 float diff = Math.abs( (float) expectedRow[j] - (float) row[j] );
-                                Assert.assertTrue(
-                                        "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': The difference between the expected float and the received float exceeds the epsilon. Difference: " + (diff - EPSILON),
-                                        diff < EPSILON );
+                                assertTrue( diff < EPSILON,
+                                        "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': The difference between the expected float and the received float exceeds the epsilon. Difference: " + (diff - EPSILON) );
                             } else if ( columnType == Types.DOUBLE ) {
                                 double diff = Math.abs( (double) expectedRow[j] - (double) row[j] );
-                                Assert.assertTrue(
-                                        "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': The difference between the expected double and the received double exceeds the epsilon. Difference: " + (diff - EPSILON),
-                                        diff < EPSILON );
+                                assertTrue( diff < EPSILON,
+                                        "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': The difference between the expected double and the received double exceeds the epsilon. Difference: " + (diff - EPSILON) );
                             } else if ( columnType == Types.DECIMAL ) { // Decimals are exact // but not for calculations?
                                 BigDecimal expectedResult = new BigDecimal( expectedRow[j].toString() );
                                 double diff = Math.abs( expectedResult.doubleValue() - ((BigDecimal) row[j]).doubleValue() );
                                 if ( isConvertingDecimals ) {
-                                    Assert.assertTrue(
-                                            "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': The difference between the expected decimal and the received decimal exceeds the epsilon. Difference: " + (diff - EPSILON),
-                                            diff < EPSILON );
+                                    assertTrue( diff < EPSILON,
+                                            "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': The difference between the expected decimal and the received decimal exceeds the epsilon. Difference: " + (diff - EPSILON) );
                                 } else {
-                                    Assert.assertEquals( "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'", 0, expectedResult.doubleValue() - ((BigDecimal) row[j]).doubleValue(), 0.0 );
+                                    assertEquals( 0, expectedResult.doubleValue() - ((BigDecimal) row[j]).doubleValue(), 0.0, "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'" );
                                 }
                             } else if ( expectedRow[j] != null && row[j] != null && expectedRow[j] instanceof Number && row[j] instanceof Number ) {
-                                assertEquals( "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'", ((Number) expectedRow[j]).longValue(), ((Number) row[j]).longValue() );
+                                assertEquals( ((Number) expectedRow[j]).longValue(), ((Number) row[j]).longValue(), "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'" );
                             } else {
-                                Assert.assertEquals(
-                                        "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'",
+                                assertEquals(
+
                                         expectedRow[j],
-                                        row[j]
+                                        row[j],
+                                        "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'"
                                 );
                             }
                         } else {
-                            Assert.assertEquals(
-                                    "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'",
+                            assertEquals(
+
                                     expectedRow[j],
-                                    row[j]
+                                    row[j],
+                                    "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'"
                             );
                         }
 
@@ -251,7 +250,7 @@ public class TestHelper {
                 }
             }
         }
-        Assert.assertEquals( "Wrong number of rows in the result set", expected.size(), i );
+        assertEquals( expected.size(), i, "Wrong number of rows in the result set" );
     }
 
 
@@ -259,17 +258,17 @@ public class TestHelper {
         List<?> resultList = (List<?>) row[j];
 
         if ( expectedRow[j] == null ) {
-            Assert.assertNull( "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': ", resultList );
+            Assertions.assertNull( resultList, "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': " );
             return;
         }
 
         List<?> expectedArray = toList( (Object[]) expectedRow[j] );//(Object[]) expectedRow[j];
 
         for ( int k = 0; k < expectedArray.size(); k++ ) {
-            Assert.assertEquals(
-                    "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "' at position: " + k + 1,
+            assertEquals(
                     expectedArray.get( k ),
-                    resultList.get( k ) );
+                    resultList.get( k ),
+                    "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "' at position: " + k + 1 );
         }
 
     }
@@ -428,10 +427,10 @@ public class TestHelper {
             List<BsonValue> parsedExpected = expected.stream().map( e -> e != null ? BsonDocument.parse( e ) : null ).collect( Collectors.toList() );
 
             if ( unordered ) {
-                assertTrue( "Expected result does not contain all actual results: \nexpected: \n" + new BsonArray( parsedExpected ) + "\nactual: \n" + new BsonArray( parsedResults ),
-                        areDocumentEqual( parsedExpected, parsedResults ) );
-                assertTrue( "Actual result does not contain all expected results: \nexpected: \n" + new BsonArray( parsedExpected ) + "\nactual: \n" + new BsonArray( parsedResults ),
-                        areDocumentEqual( parsedResults, parsedExpected ) );
+                assertTrue( areDocumentEqual( parsedExpected, parsedResults ),
+                        "Expected result does not contain all actual results: \nexpected: \n" + new BsonArray( parsedExpected ) + "\nactual: \n" + new BsonArray( parsedResults ) );
+                assertTrue( areDocumentEqual( parsedResults, parsedExpected ),
+                        "Actual result does not contain all expected results: \nexpected: \n" + new BsonArray( parsedExpected ) + "\nactual: \n" + new BsonArray( parsedResults ) );
             } else {
                 List<Pair<BsonValue, BsonValue>> wrong = new ArrayList<>();
                 for ( Pair<BsonValue, BsonValue> pair : Pair.zip( parsedExpected, parsedResults ) ) {
@@ -440,10 +439,10 @@ public class TestHelper {
                     }
                 }
 
-                assertTrue( "Expected and actual result do not contain the same element or order: \n"
+                assertTrue( wrong.isEmpty(), "Expected and actual result do not contain the same element or order: \n"
                         + "expected: " + wrong.stream().map( p -> p.left.toString()
                         + " != "
-                        + "actual: " + (p.right == null ? null : p.right.toString()) ).collect( Collectors.joining( ", \n" ) ), wrong.isEmpty() );
+                        + "actual: " + (p.right == null ? null : p.right.toString()) ).collect( Collectors.joining( ", \n" ) ) );
             }
 
             return true;

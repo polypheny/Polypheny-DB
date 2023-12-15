@@ -17,16 +17,16 @@
 package org.polypheny.db.cypher;
 
 import java.util.List;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.GraphResult;
 
 public class DmlUpdateTest extends CypherTestTemplate {
 
-    @Before
+    @BeforeEach
     public void reset() {
         tearDown();
         createGraph();
@@ -97,7 +97,7 @@ public class DmlUpdateTest extends CypherTestTemplate {
 
 
     @Test
-    @Ignore
+    @Disabled
     public void updatePropertyReturnTest() {
         execute( "MATCH (a:Animal {name: 'Kira'})\n"
                 + "SET a.age = 4\n"
@@ -106,7 +106,7 @@ public class DmlUpdateTest extends CypherTestTemplate {
 
 
     @Test
-    @Ignore
+    @Disabled
     public void updateRelationshipExistingPropertyTest() {
         execute( "MATCH (:Person {name:'Max Muster'})-[rel:OWNER_OF]->(a:Animal {name: 'Kira'})\n"
                 + "SET rel.since = 2018" );
@@ -114,7 +114,7 @@ public class DmlUpdateTest extends CypherTestTemplate {
 
 
     @Test
-    @Ignore
+    @Disabled
     public void updateRelationshipNewPropertyTest() {
         execute( "MATCH (:Person {name:'Max Muster'})-[rel:OWNER_OF]->(a:Animal {name: 'Kira'})\n"
                 + "SET rel.status = 'fresh'" );

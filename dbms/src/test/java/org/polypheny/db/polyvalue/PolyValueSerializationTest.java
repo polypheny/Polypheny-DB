@@ -18,9 +18,10 @@ package org.polypheny.db.polyvalue;
 
 import java.util.List;
 import java.util.Map;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
@@ -30,59 +31,61 @@ import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.relational.PolyMap;
 
+@DisplayName("Testing of binary and typed json serialization")
 public class PolyValueSerializationTest {
 
-    @BeforeClass
+    @BeforeAll
     public static void start() {
         TestHelper.getInstance();
+    }
+
+
+    private void assertEqualAfterSerialization( PolyValue value ) {
+        Assertions.assertEquals( value, PolyValue.fromTypedJson( value.toTypedJson(), value.getClass() ), "Json serialization is incorrect" );
+        Assertions.assertEquals( value, PolyValue.deserialize( value.serialize() ), "Binary serialization is incorrect" );
     }
 
 
     @Test
     public void deserializeEmptyNodeTest() {
         PolyNode node = new PolyNode( new PolyDictionary(), PolyList.of( PolyString.of( "test" ) ), null );
-        PolyValue node1 = PolyValue.fromTypedJson( node.toTypedJson(), PolyNode.class );
-        Assert.assertNotNull( node1 );
+
+        assertEqualAfterSerialization( node );
     }
 
 
     @Test
     public void deserializeEmptyDictionaryTest() {
         PolyDictionary dic = new PolyDictionary();
-        PolyDictionary dic1 = PolyValue.fromTypedJson( dic.toTypedJson(), PolyDictionary.class );
-        Assert.assertEquals( dic, dic1 );
+        assertEqualAfterSerialization( dic );
     }
 
 
     @Test
     public void deserializeEmptyMapTest() {
         PolyMap<PolyString, PolyString> map = new PolyMap<>( Map.of( PolyString.of( "test" ), PolyString.of( "test1" ) ) );
-        PolyValue map1 = PolyValue.fromTypedJson( map.toTypedJson(), PolyMap.class );
-        Assert.assertEquals( map, map1 );
+        assertEqualAfterSerialization( map );
     }
 
 
     @Test
     public void deserializeEmptyDocumentTest() {
         PolyDocument a = new PolyDocument();
-        PolyDocument b = PolyValue.fromTypedJson( a.toTypedJson(), PolyDocument.class );
-        Assert.assertEquals( a, b );
+        assertEqualAfterSerialization( a );
     }
 
 
     @Test
     public void deserializeEmptyListTest() {
         PolyList<PolyString> a = new PolyList<>();
-        PolyValue b = PolyValue.fromTypedJson( a.toTypedJson(), PolyList.class );
-        Assert.assertEquals( a, b );
+        assertEqualAfterSerialization( a );
     }
 
 
     @Test
     public void deserializeistTest() {
         PolyList<PolyString> a = new PolyList<>( PolyString.of( "a" ), PolyString.of( "b" ) );
-        PolyValue b = PolyValue.fromTypedJson( a.toTypedJson(), PolyList.class );
-        Assert.assertEquals( a, b );
+        assertEqualAfterSerialization( a );
     }
 
 
@@ -90,16 +93,14 @@ public class PolyValueSerializationTest {
     public void deserializeNestedListTest() {
         PolyList<PolyString> list = PolyList.of( PolyString.of( "a" ) );
         PolyList<PolyList<PolyString>> a = PolyList.ofElements( list );
-        PolyValue b = PolyValue.fromTypedJson( a.toTypedJson(), PolyList.class );
-        Assert.assertEquals( a, b );
+        assertEqualAfterSerialization( a );
     }
 
 
     @Test
     public void deserializeStringListTest() {
         PolyList<PolyString> a = new PolyList<>( List.of( PolyString.of( "a" ), PolyString.of( "b" ) ) );
-        PolyValue b = PolyValue.fromTypedJson( a.toTypedJson(), PolyList.class );
-        Assert.assertEquals( a, b );
+        assertEqualAfterSerialization( a );
     }
 
 }

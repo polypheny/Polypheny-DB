@@ -34,11 +34,10 @@
 package org.polypheny.db.util;
 
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.Test;
-
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests for TestUtil
@@ -49,7 +48,7 @@ public class TestUtilTest {
     public void javaMajorVersionExceeds6() {
         // shouldn't throw any exceptions (for current JDK)
         int majorVersion = TestUtil.getJavaMajorVersion();
-        assertTrue( "current JavaMajorVersion == " + majorVersion + " is expected to exceed 6", majorVersion > 6 );
+        assertTrue( majorVersion > 6, "current JavaMajorVersion == " + majorVersion + " is expected to exceed 6" );
     }
 
 
@@ -105,7 +104,7 @@ public class TestUtilTest {
 
 
     private void testJavaVersion( int expectedMajorVersion, String versionString ) {
-        assertEquals( versionString, expectedMajorVersion, TestUtil.majorVersionFromString( versionString ) );
+        assertEquals( expectedMajorVersion, TestUtil.majorVersionFromString( versionString ), versionString );
     }
 
 }

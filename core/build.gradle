@@ -19,6 +19,7 @@ configurations {
 }
 
 
+
 buildscript {
     dependencies {
         // JavaCC (https://github.com/johnmartel/javaccPlugin)
@@ -88,7 +89,8 @@ dependencies {
     implementation group: "org.locationtech.proj4j", name: "proj4j-epsg", version: proj4j_version // Apache 2.0
 
     // --- Test Compile ---
-    testImplementation group: "junit", name: "junit", version: junit_version
+    testImplementation group: 'org.junit.platform', name: 'junit-platform-suite-engine', version: junit_suite_version
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: junit_jupiter_version
     testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
 }
 
