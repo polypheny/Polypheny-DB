@@ -16,24 +16,24 @@
 
 package org.polypheny.db.cypher;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
 
 
 public class AggregateTest extends CypherTestTemplate {
 
-    @Before
+    @BeforeEach
     public void reset() {
         tearDown();
         createGraph();
     }
 
 
-    @After
+    @AfterEach
     public void tearGraphDown() {
         tearDown();
     }
@@ -112,7 +112,7 @@ public class AggregateTest extends CypherTestTemplate {
 
 
     @Test
-    @Ignore // own min max impl necessary
+    @Disabled // own min max impl necessary
     public void singleAvgAggregateTest() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
@@ -129,7 +129,7 @@ public class AggregateTest extends CypherTestTemplate {
 
 
     @Test
-    @Ignore // own min max impl necessary
+    @Disabled // own min max impl necessary
     public void singleMinMaxAggregateTest() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
@@ -151,7 +151,7 @@ public class AggregateTest extends CypherTestTemplate {
 
 
     @Test
-    @Ignore// own min max impl necessary
+    @Disabled// own min max impl necessary
     public void singleSumAggregateTest() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );

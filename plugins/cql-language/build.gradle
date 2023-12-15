@@ -41,7 +41,7 @@ dependencies {
 
     testImplementation group: "com.konghq", name: "unirest-java", version: unirest_version // MIT
 
-    testImplementation group: "junit", name: "junit", version: junit_version
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: junit_jupiter_version
 }
 
 task generateParser(type: CompileJavaccTask) {

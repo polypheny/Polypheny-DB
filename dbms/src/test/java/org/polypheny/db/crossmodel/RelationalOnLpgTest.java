@@ -21,20 +21,19 @@ import static java.lang.String.format;
 import com.google.common.collect.ImmutableList;
 import java.sql.ResultSet;
 import java.util.List;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.CypherTestTemplate.Row;
 import org.polypheny.db.cypher.helper.TestNode;
-import org.polypheny.db.excluded.FileExcluded;
-import org.polypheny.db.excluded.Neo4jExcluded;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.GraphResult;
 
-@Category(FileExcluded.class) // Array support for FileAdapter is quite wonky, which results in mismatched labels here, todo enable when fixed @see simpleLpgTest
+@Tag("adapter")
+@Tag("fileExcluded") // Array support for FileAdapter is quite wonky, which results in mismatched labels here, todo enable when fixed @see simpleLpgTest
 public class RelationalOnLpgTest extends CrossModelTestTemplate {
 
     private static final String GRAPH_NAME = "crossGraph";
@@ -42,7 +41,7 @@ public class RelationalOnLpgTest extends CrossModelTestTemplate {
     private static final String DATA_LABEL = "label1";
 
 
-    @BeforeClass
+    @BeforeAll
     public static void init() {
         //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
@@ -53,7 +52,7 @@ public class RelationalOnLpgTest extends CrossModelTestTemplate {
     }
 
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() {
         CypherTestTemplate.deleteData( GRAPH_NAME );
     }
@@ -116,7 +115,7 @@ public class RelationalOnLpgTest extends CrossModelTestTemplate {
 
 
     @Test
-    @Category(Neo4jExcluded.class) // returns 3.0, this is an inconsistency, which should be expected when working on cross model queries, might adjust the checkResultSet method
+    @Tag("neoExcluded") // returns 3.0, this is an inconsistency, which should be expected when working on cross model queries, might adjust the checkResultSet method
     public void simpleProjectTest() {
         executeStatements( ( s, c ) -> {
             ResultSet result = s.executeQuery( String.format( "SELECT properties, labels FROM \"%s\".\"%s\"", GRAPH_NAME, DATA_LABEL ) );
@@ -128,7 +127,7 @@ public class RelationalOnLpgTest extends CrossModelTestTemplate {
 
 
     @Test
-    @Category(Neo4jExcluded.class) // see simpleProjectTest method
+    @Tag("neoExcluded") // see simpleProjectTest method
     public void itemSelectTest() {
         executeStatements( ( s, c ) -> {
             ResultSet result = s.executeQuery( String.format( "SELECT properties[\"key\"] FROM \"%s\".\"%s\"", GRAPH_NAME, DATA_LABEL ) );

@@ -31,39 +31,54 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.algebra;
+package org.polypheny.db.plan;
 
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
 
 import com.google.common.collect.ImmutableList;
-import org.junit.Test;
-import org.polypheny.db.plan.AlgTraitSet;
+import java.util.List;
+import java.util.function.Supplier;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollationTraitDef;
+import org.polypheny.db.algebra.AlgCollations;
 
 
 /**
- * Tests for {@link AlgDistribution}.
+ * Test to verify {@link AlgCompositeTrait}.
  */
-public class RelDistributionTest {
+public class AlgTraitTest {
+
+    private static final AlgCollationTraitDef COLLATION = AlgCollationTraitDef.INSTANCE;
+
+
+    private void assertCanonical( String message, Supplier<List<AlgCollation>> collation ) {
+        AlgTrait trait1 = AlgCompositeTrait.of( COLLATION, collation.get() );
+        AlgTrait trait2 = AlgCompositeTrait.of( COLLATION, collation.get() );
+
+        Assertions.assertEquals(
+                "RelCompositeTrait.of should return the same instance for " + message,
+                trait1 + " @" + Integer.toHexString( System.identityHashCode( trait1 ) ),
+                trait2 + " @" + Integer.toHexString( System.identityHashCode( trait2 ) ) );
+    }
+
 
     @Test
-    public void testRelDistributionSatisfy() {
-        AlgDistribution distribution1 = AlgDistributions.hash( ImmutableList.of( 0 ) );
-        AlgDistribution distribution2 = AlgDistributions.hash( ImmutableList.of( 1 ) );
+    public void compositeEmpty() {
+        assertCanonical( "empty composite", ImmutableList::of );
+    }
 
-        AlgTraitSet traitSet = AlgTraitSet.createEmpty();
-        AlgTraitSet simpleTrait1 = traitSet.plus( distribution1 );
-        AlgTraitSet simpleTrait2 = traitSet.plus( distribution2 );
-        AlgTraitSet compositeTrait = traitSet.replace( AlgDistributionTraitDef.INSTANCE, ImmutableList.of( distribution1, distribution2 ) );
 
-        assertThat( compositeTrait.satisfies( simpleTrait1 ), is( true ) );
-        assertThat( compositeTrait.satisfies( simpleTrait2 ), is( true ) );
+    @Test
+    public void compositeOne() {
+        assertCanonical( "composite with one element", () -> ImmutableList.of( AlgCollations.of( ImmutableList.of() ) ) );
+    }
 
-        assertThat( distribution1.compareTo( distribution2 ), is( -1 ) );
-        assertThat( distribution2.compareTo( distribution1 ), is( 1 ) );
-        //noinspection EqualsWithItself
-        assertThat( distribution2.compareTo( distribution2 ), is( 0 ) );
+
+    @Test
+    public void compositeTwo() {
+        assertCanonical( "composite with two elements", () -> ImmutableList.of( AlgCollations.of( 0 ), AlgCollations.of( 1 ) ) );
     }
 
 }
+

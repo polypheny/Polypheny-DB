@@ -38,13 +38,13 @@ import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.sameInstance;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -56,8 +56,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.runtime.Utilities;
 import org.polypheny.db.util.ImmutableBitSet.Builder;
 
@@ -158,7 +157,7 @@ public class ImmutableBitSetTest {
                 if ( c == 0 ) {
                     assertTrue( i == j || i == 3 && j == 4 || i == 4 && j == 3 );
                 } else {
-                    Assert.assertEquals( c, Utilities.compare( i, j ) );
+                    assertEquals( c, Utilities.compare( i, j ) );
                 }
                 assertEquals( c == 0, set0.equals( set1 ) );
                 assertEquals( c == 0, set1.equals( set0 ) );

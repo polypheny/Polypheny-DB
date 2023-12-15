@@ -19,6 +19,7 @@ configurations {
 }
 
 
+
 buildscript {
     dependencies {
         // JavaCC (https://github.com/johnmartel/javaccPlugin)
@@ -82,7 +83,8 @@ dependencies {
     api group: "io.activej", name: "activej-serializer", version: activej_serializer_version
 
     // --- Test Compile ---
-    testImplementation group: "junit", name: "junit", version: junit_version
+    testImplementation group: 'org.junit.platform', name: 'junit-platform-suite-engine', version: junit_suite_version
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: junit_jupiter_version
     testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
 }
 
