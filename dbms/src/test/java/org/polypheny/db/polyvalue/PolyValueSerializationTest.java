@@ -16,6 +16,8 @@
 
 package org.polypheny.db.polyvalue;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Assertions;
@@ -23,6 +25,10 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
+import org.polypheny.db.type.PolySerializable;
+import org.polypheny.db.type.entity.PolyDouble;
+import org.polypheny.db.type.entity.PolyFloat;
+import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
@@ -49,7 +55,6 @@ public class PolyValueSerializationTest {
     @Test
     public void deserializeEmptyNodeTest() {
         PolyNode node = new PolyNode( new PolyDictionary(), PolyList.of( PolyString.of( "test" ) ), null );
-
         assertEqualAfterSerialization( node );
     }
 
@@ -83,7 +88,7 @@ public class PolyValueSerializationTest {
 
 
     @Test
-    public void deserializeistTest() {
+    public void deserializeListTest() {
         PolyList<PolyString> a = new PolyList<>( PolyString.of( "a" ), PolyString.of( "b" ) );
         assertEqualAfterSerialization( a );
     }
@@ -101,6 +106,102 @@ public class PolyValueSerializationTest {
     public void deserializeStringListTest() {
         PolyList<PolyString> a = new PolyList<>( List.of( PolyString.of( "a" ), PolyString.of( "b" ) ) );
         assertEqualAfterSerialization( a );
+    }
+
+
+    @Test
+    public void simpleIntegerTest() {
+        PolyInteger v1 = PolyInteger.of( 3 );
+
+        String serialized = PolySerializable.serialize( PolyValue.serializer, v1 );
+
+        PolyInteger v2 = PolySerializable.deserialize( serialized, PolyValue.serializer ).asInteger();
+
+        assertEquals( v1.value, v2.value );
+    }
+
+
+    @Test
+    public void simpleStringTest() {
+        PolyString v1 = PolyString.of( "test" );
+
+        String serialized = PolySerializable.serialize( PolyValue.serializer, v1 );
+
+        PolyString v2 = PolySerializable.deserialize( serialized, PolyValue.serializer ).asString();
+
+        assertEquals( v1.value, v2.value );
+    }
+
+
+    @Test
+    public void simpleFloatTest() {
+        PolyFloat v1 = PolyFloat.of( 3.4f );
+
+        String serialized = PolySerializable.serialize( PolyValue.serializer, v1 );
+
+        PolyFloat v2 = PolySerializable.deserialize( serialized, PolyValue.serializer ).asFloat();
+
+        assertEquals( v1.value, v2.value );
+    }
+
+
+    @Test
+    public void simpleDocumentTest() {
+        PolyDocument d1 = PolyDocument.ofDocument( Map.of( PolyString.of( "test" ), PolyFloat.of( 3.f ) ) );
+
+        String serialized = PolySerializable.serialize( PolyValue.serializer, d1 );
+
+        PolyDocument d2 = PolySerializable.deserialize( serialized, PolyValue.serializer ).asDocument();
+
+        assertEquals( 0, d1.compareTo( d2 ) );
+    }
+
+
+    @Test
+    public void simpleMapTest() {
+        PolyMap<PolyString, PolyFloat> d1 = PolyMap.of( Map.of( PolyString.of( "test" ), PolyFloat.of( 3.f ) ) );
+
+        String serialized = PolySerializable.serialize( PolyValue.serializer, d1 );
+
+        PolyMap<PolyValue, PolyValue> d2 = PolySerializable.deserialize( serialized, PolyValue.serializer ).asMap();
+
+        assertEquals( 0, d1.compareTo( d2 ) );
+    }
+
+
+    @Test
+    public void simpleMixedMapTest() {
+        PolyMap<PolyValue, PolyValue> d1 = PolyMap.of( Map.of( PolyString.of( "test" ), PolyFloat.of( 3.f ), PolyFloat.of( 4.5f ), PolyDouble.of( 3d ) ) );
+
+        String serialized = PolySerializable.serialize( PolyValue.serializer, d1 );
+
+        PolyMap<PolyValue, PolyValue> d2 = PolySerializable.deserialize( serialized, PolyValue.serializer ).asMap();
+
+        assertEquals( 0, d1.compareTo( d2 ) );
+    }
+
+
+    @Test
+    public void simpleListTest() {
+        PolyList<PolyString> d1 = PolyList.of( List.of( PolyString.of( "test" ) ) );
+
+        String serialized = PolySerializable.serialize( PolyValue.serializer, d1 );
+
+        PolyList<PolyValue> d2 = PolySerializable.deserialize( serialized, PolyValue.serializer ).asList();
+
+        assertEquals( 0, d1.compareTo( d2 ) );
+    }
+
+
+    @Test
+    public void simpleMixedListTest() {
+        PolyList<PolyValue> d1 = PolyList.of( List.of( PolyString.of( "test" ), PolyInteger.of( 1 ) ) );
+
+        String serialized = PolySerializable.serialize( PolyValue.serializer, d1 );
+
+        PolyList<PolyValue> d2 = PolySerializable.deserialize( serialized, PolyValue.serializer ).asList();
+
+        assertEquals( 0, d1.compareTo( d2 ) );
     }
 
 }

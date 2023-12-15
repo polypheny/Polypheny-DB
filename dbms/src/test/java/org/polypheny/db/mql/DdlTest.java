@@ -16,8 +16,8 @@
 
 package org.polypheny.db.mql;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
@@ -25,8 +25,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.TestHelper.MongoConnection;
@@ -37,7 +37,7 @@ import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.webui.models.results.DocResult;
 
 @SuppressWarnings("SqlNoDataSourceInspection")
-@Category({ AdapterTestSuite.class })
+@Tag("adapter")
 public class DdlTest extends MqlTestTemplate {
 
     final static String collectionName = "doc";
