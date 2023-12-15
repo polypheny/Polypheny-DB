@@ -29,13 +29,16 @@ import org.polypheny.db.backup.datainserter.InsertEntries;
 import org.polypheny.db.backup.datainserter.InsertSchema;
 import org.polypheny.db.backup.dependencies.DependencyManager;
 import org.polypheny.db.backup.dependencies.EntityReferencer;
-import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.information.*;
+import org.polypheny.db.information.InformationAction;
+import org.polypheny.db.information.InformationGroup;
+import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.information.InformationPage;
+import org.polypheny.db.information.InformationText;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Triple;
@@ -252,7 +255,7 @@ public class BackupManager {
     /**
      * Starts the inserting process. It is responsible for starting and managing the schema and the entry data inserting.
      */
-    private void startInserting() {
+    public void startInserting() {
         InsertSchema insertSchema = new InsertSchema( transactionManager );
 
         if ( backupInformationObject != null ) {
