@@ -43,7 +43,7 @@ public class BackupFileWriter {
         try {
             this.out = new BufferedWriter( new OutputStreamWriter( new BufferedOutputStream( new FileOutputStream( file ), 32768 ) ) );
         } catch ( Exception e ) {
-            throw new GenericRuntimeException( "Couldn't open file " + file.getName() + " " + e );
+            throw new GenericRuntimeException( "Couldn't open file " + file.getName() + " " + e.getMessage() );
         }
     }
 
@@ -57,7 +57,7 @@ public class BackupFileWriter {
             out.write( string );
             out.newLine();
         } catch ( Exception e ) {
-            throw new GenericRuntimeException( "Couldn't write to file " + file.getName() + " " + e );
+            throw new GenericRuntimeException( "Couldn't write to file " + file.getName() + " " + e.getMessage() );
         }
     }
 
@@ -70,7 +70,7 @@ public class BackupFileWriter {
         try {
             out.write( string );
         } catch ( IOException e ) {
-            throw new GenericRuntimeException( e );
+            throw new GenericRuntimeException( "Couldn't write to file " + file.getName() + " " + e.getMessage() );
         }
 
     }
@@ -83,7 +83,7 @@ public class BackupFileWriter {
         try {
             out.newLine();
         } catch ( IOException e ) {
-            throw new GenericRuntimeException( e );
+            throw new GenericRuntimeException( "Couldn't write to file " + file.getName() + " " + e.getMessage() );
         }
     }
 
@@ -95,7 +95,7 @@ public class BackupFileWriter {
         try {
             out.flush();
         } catch ( IOException e ) {
-            throw new GenericRuntimeException( e );
+            throw new GenericRuntimeException( "Couldn't flush file " + file.getName() + " " + e.getMessage() );
         }
     }
 
@@ -107,7 +107,7 @@ public class BackupFileWriter {
         try {
             out.close();
         } catch ( IOException e ) {
-            throw new GenericRuntimeException( e );
+            throw new GenericRuntimeException( "Couldn't close file " + file.getName() + " " + e.getMessage() );
         }
     }
 

@@ -234,9 +234,9 @@ public class GatherEntriesTask implements Runnable {
                     transaction.commit();
 
                 } catch(Exception e){
-                    throw new GenericRuntimeException( "Error while collecting entries", e );
+                    throw new GenericRuntimeException( "Error while collecting entries: " + e.getMessage() );
                 } catch ( TransactionException e ) {
-                    throw new GenericRuntimeException( e.getMessage() );
+                    throw new GenericRuntimeException( "Error while collecting entries: " + e.getMessage() );
                 }
 
                 break;
@@ -284,9 +284,9 @@ public class GatherEntriesTask implements Runnable {
                     log.info( "end of thread reached: case document" );
                     transaction.commit();
                 } catch ( Exception e ) {
-                    throw new GenericRuntimeException( "Error while collecting entries", e );
+                    throw new GenericRuntimeException( "Error while collecting entries: " + e.getMessage() );
                 } catch ( TransactionException e ) {
-                    throw new GenericRuntimeException( e.getMessage() );
+                    throw new GenericRuntimeException( "Error while collecting entries: " + e.getMessage() );
                 }
                 break;
 
@@ -355,9 +355,9 @@ public class GatherEntriesTask implements Runnable {
                     log.info( "end of thread reached: case graph" );
                     transaction.commit();
                 } catch ( Exception e ) {
-                    throw new GenericRuntimeException( "Error while collecting entries", e );
+                    throw new GenericRuntimeException( "Error while collecting entries: " + e.getMessage() );
                 } catch ( TransactionException e ) {
-                    throw new GenericRuntimeException( e.getMessage() );
+                    throw new GenericRuntimeException( "Error while collecting entries: " + e.getMessage() );
                 }
                 break;
 

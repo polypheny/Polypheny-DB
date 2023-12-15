@@ -106,7 +106,7 @@ public class InsertEntries {
             log.info( "executor service was shut down" );
 
         } catch ( Exception e ) {
-            throw new GenericRuntimeException( e );
+            throw new GenericRuntimeException( "Error with threadpool, datagathering: " + e.getMessage() );
         }
         /*
         finally {

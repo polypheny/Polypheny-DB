@@ -34,9 +34,9 @@ public class ManifestReader {
             return gson.fromJson( reader, BackupManifest.class );
 
         } catch ( FileNotFoundException e ) {
-            throw new GenericRuntimeException( "Manifest was not found" + e );
+            throw new GenericRuntimeException( "Manifest was not found" + e.getMessage());
         } catch ( IOException e ) {
-            throw new GenericRuntimeException( "Couldn't read manifest" + e );
+            throw new GenericRuntimeException( "Couldn't read manifest" + e.getMessage() );
         }
     }
 

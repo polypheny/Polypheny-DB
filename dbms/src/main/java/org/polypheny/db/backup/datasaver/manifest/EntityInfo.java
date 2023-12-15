@@ -23,7 +23,7 @@ import lombok.Setter;
 import org.polypheny.db.catalog.logistic.DataModel;
 
 /**
- *
+ * This class saves information to be saved in the manifest, about an entity that is saved in a backup.
  */
 @Getter @Setter
 public class EntityInfo {
@@ -36,6 +36,14 @@ public class EntityInfo {
     private String checksum;
 
 
+    /**
+     * The entityInfo contains information (that should be saved in the manifest) about an entity that is saved in a backup.
+     * @param filePaths List of paths (from backup/data/...) to the file where the entry-data is saved. If the entity is saved in multiple files, the list contains multiple paths.
+     * @param entityName Name of the entity with which it should be inserted
+     * @param namespaceName Name of the namespace of the entity
+     * @param namespaceId Id of the namespace of the entity
+     * @param dataModel DataModel of the entity
+     */
     public EntityInfo( List<String> filePaths, String entityName, String namespaceName, Long namespaceId, DataModel dataModel ) {
         this.filePaths = filePaths;
         this.entityName = entityName;
@@ -44,6 +52,16 @@ public class EntityInfo {
         this.dataModel = dataModel;
     }
 
+
+    /**
+     The entityInfo contains information (that should be saved in the manifest) about an entity that is saved in a backup.
+     * @param filePaths List of paths (from backup/data/...) to the file where the entry-data is saved. If the entity is saved in multiple files, the list contains multiple paths.
+     * @param entityName Name of the entity with which it should be inserted
+     * @param namespaceName Name of the namespace of the entity
+     * @param namespaceId Id of the namespace of the entity
+     * @param dataModel DataModel of the entity
+     * @param nbrCols Number of columns of the entity (for tables)
+     */
     public EntityInfo( List<String> filePaths, String entityName, String namespaceName, Long namespaceId, DataModel dataModel, int nbrCols ) {
         this.filePaths = filePaths;
         this.entityName = entityName;

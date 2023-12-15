@@ -159,7 +159,7 @@ public class GatherEntries {
             log.info( "executor service was shut down" );
 
         } catch ( Exception e ) {
-            throw new GenericRuntimeException( e );
+            throw new GenericRuntimeException( "An error occured during threadpooling to collect the data: " + e.getMessage() );
         }
         /*
         finally {
@@ -181,7 +181,7 @@ public class GatherEntries {
             File manifestFile = homeDirManager.registerNewFile( getBackupFolder(), "manifest.txt" );
             BackupManifestGenerator.generateManifest( entityInfoList, "", manifestFile, currentDate );
         } catch ( Exception e ) {
-            throw new GenericRuntimeException( "Could not create manifest for backup" + e );
+            throw new GenericRuntimeException( "Could not create manifest for backup" + e.getMessage() );
         }
 
 
@@ -243,9 +243,9 @@ public class GatherEntries {
                     transaction.commit();
 
                 } catch ( Exception e ) {
-                    throw new RuntimeException( "Error while starting transaction", e );
+                    throw new GenericRuntimeException( "Error while starting transaction: " + e.getMessage() );
                 } catch ( TransactionException e ) {
-                    throw new RuntimeException( e );
+                    throw new GenericRuntimeException( "Error while starting transaction: " + e.getMessage() );
                 }
                 break;
 
@@ -263,7 +263,7 @@ public class GatherEntries {
                         log.info( resultsPerCollection.toString() );
                     }
                 } catch ( Exception e ) {
-                    throw new RuntimeException( "Error while starting transaction", e );
+                    throw new GenericRuntimeException( "Error while starting transaction: "+ e.getMessage() );
                 }
                 break;
 
@@ -281,7 +281,7 @@ public class GatherEntries {
                         log.info( graphPerNamespace.toString() );
                     }
                 } catch ( Exception e ) {
-                    throw new RuntimeException( "Error while starting transaction", e );
+                    throw new GenericRuntimeException( "Error while starting transaction: " + e.getMessage() );
                 }
                 break;
 
@@ -367,7 +367,7 @@ public class GatherEntries {
 
             String read = Files.readAllLines(file.toPath()).get(0);
         } catch ( Exception e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
 
         // apparently this is slower, no buffered is okee
@@ -417,7 +417,7 @@ public class GatherEntries {
             in.close();
 
         } catch ( Exception e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
 
 

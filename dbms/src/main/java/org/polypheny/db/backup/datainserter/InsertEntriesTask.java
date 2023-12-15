@@ -74,7 +74,8 @@ public class InsertEntriesTask implements Runnable{
             )
         {
             BackupFileReader in = new BackupFileReader( dataFile );
-            int counter = 0;
+            int elementCounter = 0;
+            int batchCounter = 0;
             String query = "";
 
             switch ( dataModel ) {
@@ -83,9 +84,10 @@ public class InsertEntriesTask implements Runnable{
                     String row = "";
                     transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Backup Entry-Inserter" );
                     statement = transaction.createStatement();
+                    String relValues = "";
                     //build up row for query (since each value is one row in the file), and then execute query for each row
                     while ( (inLine = in.readLine()) != null ) {
-                        counter++;
+                        elementCounter++;
                         //PolyValue deserialized = PolyValue.deserialize( inLine );   //somehow only reads two first lines from table file and nothing else (if there is only doc file, it doesnt read)
                         PolyValue deserialized = PolyValue.fromTypedJson( inLine, PolyValue.class );
 
@@ -98,38 +100,98 @@ public class InsertEntriesTask implements Runnable{
                         }
                         row += value + ", ";
 
-                        if (counter == nbrCols) {
+                        if (elementCounter == nbrCols) {
                             row = row.substring( 0, row.length() - 2 ); // remove last ", "
-                            query = String.format( "INSERT INTO %s.%s VALUES (%s)", namespaceName, entityName, row );
-                            log.info( query );
+                            //query = String.format( "INSERT INTO %s.%s VALUES (%s)", namespaceName, entityName, row );
+                            log.info( row );
 
-                            ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "sql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( namespaceId ).build(), statement ).get( 0 );
-
-                            counter = 0;
-                            query = "";
+                            //ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "sql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( namespaceId ).build(), statement ).get( 0 );
+                            //relValues = relValues + row + ", ";
+                            row = String.format( "(%s), ", row );
+                            relValues = relValues + row;
+                            log.info( relValues );
+                            elementCounter = 0;
+                            batchCounter ++;
+                            //query = "";
                             row= "";
+
+
+
+                        }
+
+                        if (batchCounter == BackupManager.batchSize) {
+                            log.info( "in batchcounter: " + relValues );
+                            relValues = relValues.substring( 0, relValues.length() - 2 ); // remove last ", "
+                            query = String.format( "INSERT INTO %s.%s VALUES %s", namespaceName, entityName, relValues );
+
+                            log.info( query );
+                            ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "sql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( namespaceId ).build(), statement ).get( 0 );
+                            transaction.commit();
+                            batchCounter = 0;
+                            relValues = "";
                         }
 
                     }
+                    if ( batchCounter != 0 ) {
+                        //execute the statement with the remaining values
+                        relValues = relValues.substring( 0, relValues.length() - 2 ); // remove last ", "
+                        query = String.format( "INSERT INTO %s.%s VALUES %s", namespaceName, entityName, relValues );
+
+                        log.info( "rest: " + query );
+                        ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "sql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( namespaceId ).build(), statement ).get( 0 );
+                        transaction.commit();
+                        batchCounter = 0;
+                        query = "";
+                    }
                     transaction.commit();
+                    batchCounter = 0;
                     break;
                 case DOCUMENT:
                     transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Backup Entry-Inserter" );
                     statement = transaction.createStatement();
+                    String docValues = "";
                     while ( (inLine = in.readLine()) != null ) {
                         //PolyValue deserialized = PolyValue.deserialize( inLine );   //somehow only reads two first lines from table file and nothing else (if there is only doc file, it doesnt read)
                         PolyValue deserialized = PolyValue.fromTypedJson( inLine, PolyValue.class );
                         String value = deserialized.toJson();
-                        query = String.format( "db.%s.insertOne(%s)", entityName, value );
-                        log.info( query );
+                        docValues += value + ", ";
+                        batchCounter++;
+                        //query = String.format( "db.%s.insertOne(%s)", entityName, value );
+                        log.info( value );
 
-                        transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Backup Entry-Gatherer" );
-                        statement = transaction.createStatement();
-                        ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "mql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( namespaceId ).build(), statement ).get( 0 );
-                        transaction.commit();
+                        //transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Backup Entry-Gatherer" );
+                        //statement = transaction.createStatement();
+                        //ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "mql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( namespaceId ).build(), statement ).get( 0 );
+                        //transaction.commit();
 
+                        if (batchCounter == BackupManager.batchSize) {
+                            // remove the last ", " from the string
+                            docValues = docValues.substring( 0, docValues.length() - 2 );
+
+                            query = String.format( "db.%s.insertMany([%s])", entityName, docValues );
+                            log.info( query );
+                            ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "mql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( namespaceId ).build(), statement ).get( 0 );
+                            transaction.commit();
+                            batchCounter = 0;
+                            docValues = "";
+                            query = "";
+                        }
 
                     }
+
+                    if (batchCounter != 0) {
+                        // remove the last ", " from the string
+                        docValues = docValues.substring( 0, docValues.length() - 2 );
+
+                        query = String.format( "db.%s.insertMany([%s])", entityName, docValues );
+                        log.info( "rest: " + query );
+                        ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "mql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( namespaceId ).build(), statement ).get( 0 );
+                        transaction.commit();
+                        batchCounter = 0;
+                        docValues = "";
+                        query = "";
+                    }
+
                     transaction.commit();
                     break;
                 case GRAPH:
@@ -159,9 +221,9 @@ public class InsertEntriesTask implements Runnable{
 
 
         } catch(Exception e){
-            throw new GenericRuntimeException( "Error while inserting entries", e );
+            throw new GenericRuntimeException( "Error while inserting entries: " + e.getMessage() );
         } catch ( TransactionException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( "Error while inserting entries: " + e.getMessage() );
         }
     }
 

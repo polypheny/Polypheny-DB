@@ -41,7 +41,7 @@ public class BackupFileReader {
         try {
             this.in = new BufferedReader( new InputStreamReader( new BufferedInputStream( new FileInputStream( file ), 32768 ) ) );
         } catch ( Exception e ) {
-            throw new GenericRuntimeException( "Couldn't open file " + file.getName() + " " + e );
+            throw new GenericRuntimeException( "Couldn't open file " + file.getName() + " " + e.getMessage() );
         }
     }
 
@@ -54,7 +54,7 @@ public class BackupFileReader {
         try {
             return in.readLine();
         } catch ( Exception e ) {
-            throw new GenericRuntimeException( "Couldn't read from file " + file.getName() + " " + e );
+            throw new GenericRuntimeException( "Couldn't read from file " + file.getName() + " " + e.getMessage() );
         }
     }
 
@@ -66,7 +66,7 @@ public class BackupFileReader {
         try {
             in.close();
         } catch ( Exception e ) {
-            throw new GenericRuntimeException( "Couldn't close file " + file.getName() + " " + e );
+            throw new GenericRuntimeException( "Couldn't close file " + file.getName() + " " + e.getMessage() );
         }
     }
 

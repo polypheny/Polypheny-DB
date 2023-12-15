@@ -622,9 +622,9 @@ public class InsertSchema {
                     transaction.commit();
 
                 } catch ( Exception e ) {
-                    throw new RuntimeException( "Error while starting transaction", e );
+                    throw new GenericRuntimeException( "Error while starting transaction: " + e.getMessage() );
                 } catch ( TransactionException e ) {
-                    throw new RuntimeException( e );
+                    throw new GenericRuntimeException( "Error while starting transaction: " + e.getMessage() );
                 }
                 break;
 
@@ -637,9 +637,9 @@ public class InsertSchema {
                     transaction.commit();
 
                 } catch ( Exception e ) {
-                    throw new RuntimeException( "Error while starting transaction", e );
+                    throw new GenericRuntimeException( "Error while starting transaction" + e.getMessage() );
                 } catch ( TransactionException e ) {
-                    throw new RuntimeException( e );
+                    throw new GenericRuntimeException( "Error while starting transaction" + e.getMessage() );
                 }
                 break;
 
@@ -652,9 +652,9 @@ public class InsertSchema {
                     transaction.commit();
 
                 } catch ( Exception e ) {
-                    throw new RuntimeException( "Error while starting transaction", e );
+                    throw new GenericRuntimeException( "Error while starting transaction"+ e.getMessage() );
                 } catch ( TransactionException e ) {
-                    throw new RuntimeException( e );
+                    throw new GenericRuntimeException( "Error while starting transaction"+ e.getMessage() );
                 }
                 break;
 
@@ -678,7 +678,7 @@ public class InsertSchema {
                 }
 
             } catch ( Exception e ) {
-                throw new RuntimeException( "Error while starting transaction", e );
+                throw new GenericRuntimeException( "Error while starting transaction" + e.getMessage() );
             }
         }
 
