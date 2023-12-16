@@ -16,11 +16,13 @@
 
 package org.polypheny.db.cql.utils;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -46,18 +48,21 @@ public class FilterTest extends AlgBuildTestHelper {
         baseNode = algBuilder.peek();
         AlgDataType filtersRowType = baseNode.getRowType();
         List<AlgDataTypeField> filtersRows = filtersRowType.getFields();
-        filtersRows.forEach( ( r ) -> filterMap.put( r.getKey(), r ) );
+        filtersRows.forEach( ( r ) -> filterMap.put( r.getName(), r ) );
     }
 
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void testColumnFilterThrowsNotImplementedRuntimeException() throws UnknownIndexException {
-        ColumnFilter columnFilter = new ColumnFilter(
-                ColumnIndex.createIndex( "test", "dept", "deptno" ),
-                new Relation( Comparator.EQUALS ),
-                ColumnIndex.createIndex( "test", "employee", "deptno" )
-        );
-        columnFilter.convert2RexNode( baseNode, rexBuilder, filterMap );
+
+        RuntimeException thrown = Assertions.assertThrows( RuntimeException.class, () -> {
+            ColumnFilter columnFilter = new ColumnFilter(
+                    ColumnIndex.createIndex( "test", "dept", "deptno" ),
+                    new Relation( Comparator.EQUALS ),
+                    ColumnIndex.createIndex( "test", "employee", "deptno" )
+            );
+            columnFilter.convert2RexNode( baseNode, rexBuilder, filterMap );
+        } );
     }
 
 
@@ -69,7 +74,7 @@ public class FilterTest extends AlgBuildTestHelper {
                 "1"
         );
         RexNode rexNode = literalFilter.convert2RexNode( baseNode, rexBuilder, filterMap );
-        Assert.assertEquals( Kind.EQUALS, rexNode.getKind() );
+        assertEquals( Kind.EQUALS, rexNode.getKind() );
     }
 
 }

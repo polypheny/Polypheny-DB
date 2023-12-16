@@ -17,11 +17,11 @@
 package org.polypheny.db.sql.language;
 
 
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.google.common.collect.Lists;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -56,7 +56,7 @@ public class SqlOperatorBindingTest {
     }
 
 
-    @Before
+    @BeforeEach
     public void setUp() {
         JavaTypeFactory typeFactory = new JavaTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         integerDataType = typeFactory.createPolyType( PolyType.INTEGER );

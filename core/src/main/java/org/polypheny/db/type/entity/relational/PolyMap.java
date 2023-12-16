@@ -58,13 +58,15 @@ import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.relational.PolyMap.PolyMapDeserializer;
 import org.polypheny.db.type.entity.relational.PolyMap.PolyMapSerializer;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
 
 @EqualsAndHashCode(callSuper = true)
-@Value(staticConstructor = "of")
+@Value
 @NonFinal
 @Slf4j
 @JsonSerialize(using = PolyMapSerializer.class)
@@ -77,16 +79,30 @@ public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue
     @JsonDeserialize(using = PolyMapDeserializer.class)
     public Map<K, V> map;
 
+    @Serialize
+    public MapType mapType;
+
 
     @JsonCreator
-    public PolyMap( @JsonProperty("map") Map<K, V> map ) {
-        this( map, PolyType.MAP );
+    public PolyMap( @JsonProperty("map") Map<K, V> map, @JsonProperty("type") MapType type ) {
+        this( map, PolyType.MAP, type );
     }
 
 
-    public PolyMap( Map<K, V> map, PolyType type ) {
+    public PolyMap( Map<K, V> map, PolyType type, MapType mapType ) {
         super( type );
+        this.mapType = mapType;
         this.map = new HashMap<>( map );
+    }
+
+
+    public static <K extends PolyValue, V extends PolyValue> PolyMap<K, V> of( Map<K, V> map, MapType mapType ) {
+        return new PolyMap<>( map, PolyType.MAP, mapType );
+    }
+
+
+    public static <K extends PolyValue, V extends PolyValue> PolyMap<K, V> of( Map<K, V> map ) {
+        return new PolyMap<>( map, PolyType.MAP, MapType.MAP );
     }
 
 
@@ -145,6 +161,34 @@ public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue
     }
 
 
+    public boolean isDocument() {
+        return mapType == MapType.DOCUMENT;
+    }
+
+
+    @NotNull
+    public PolyDocument asDocument() {
+        if ( isDocument() ) {
+            return (PolyDocument) this;
+        }
+        throw cannotParse( this, PolyDocument.class );
+    }
+
+
+    public boolean isDictionary() {
+        return mapType == MapType.DICTIONARY;
+    }
+
+
+    @NotNull
+    public PolyDictionary asDictionary() {
+        if ( isDictionary() ) {
+            return (PolyDictionary) this;
+        }
+        throw cannotParse( this, PolyDictionary.class );
+    }
+
+
     @Override
     public @Nullable String toTypedJson() {
         try {
@@ -166,6 +210,13 @@ public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue
     @Override
     public @Nullable Long deriveByteSize() {
         return null;
+    }
+
+
+    public enum MapType {
+        MAP, // all keys allowed
+        DOCUMENT, // keys are PolyString, allows nesting
+        DICTIONARY // keys are PolyString, no nesting
     }
 
 
@@ -193,7 +244,7 @@ public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue
                                 PolySerializable.deserialize( in.readUTF8(), serializer ),
                                 PolySerializable.deserialize( in.readUTF8(), serializer ) );
                     }
-                    return PolyMap.of( map );
+                    return PolyMap.of( map, MapType.MAP );
                 }
             };
         }
@@ -257,7 +308,7 @@ public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue
                 Pair<PolyValue, PolyValue> el = deserializeElement( ctxt, element );
                 values.put( el.getKey(), el.getValue() );
             }
-            return PolyMap.of( values );
+            return PolyMap.of( values, MapType.MAP );
         }
 
 

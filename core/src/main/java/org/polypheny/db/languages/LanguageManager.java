@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.PolyImplementation;
@@ -42,6 +43,7 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.util.Pair;
 
+@Slf4j
 public class LanguageManager {
 
     private final PropertyChangeSupport listeners = new PropertyChangeSupport( this );
@@ -98,6 +100,7 @@ public class LanguageManager {
         try {
             parsedQueries = context.getLanguage().getSplitter().apply( context );
         } catch ( Throwable e ) {
+            log.warn( "Error on preparing query: " + e.getMessage() );
             if ( transaction.isAnalyze() ) {
                 transaction.getQueryAnalyzer().attachStacktrace( e );
             }
@@ -177,6 +180,7 @@ public class LanguageManager {
                 implementationContexts.add( new ImplementationContext( implementation, parsed, statement, null ) );
 
             } catch ( Throwable e ) {
+                log.warn( "Caught exception: ", e );
                 if ( transaction.isAnalyze() ) {
                     transaction.getQueryAnalyzer().attachStacktrace( e );
                 }

@@ -16,9 +16,12 @@
 
 package org.polypheny.db.cql.utils;
 
-import org.junit.Assert;
-import org.junit.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.junit.jupiter.api.Test;
 
 public class ExclusiveComparisonsTest {
 
@@ -57,27 +60,27 @@ public class ExclusiveComparisonsTest {
 
     @Test
     public void testIsExclusivelyTrue() {
-        Assert.assertTrue( ExclusiveComparisons.IsExclusivelyTrue( false, exclusivelyTrue ) );
-        Assert.assertFalse( ExclusiveComparisons.IsExclusivelyTrue( true, exclusivelyTrue ) );
-        Assert.assertFalse( ExclusiveComparisons.IsExclusivelyTrue( false, notExclusivelyTrue ) );
-        Assert.assertFalse( ExclusiveComparisons.IsExclusivelyTrue( true, notExclusivelyTrue ) );
-        Assert.assertFalse( ExclusiveComparisons.IsExclusivelyTrue( false, allTrue ) );
-        Assert.assertFalse( ExclusiveComparisons.IsExclusivelyTrue( true, allTrue ) );
-        Assert.assertFalse( ExclusiveComparisons.IsExclusivelyTrue( false, allFalse ) );
-        Assert.assertTrue( ExclusiveComparisons.IsExclusivelyTrue( true, allFalse ) );
+        assertTrue( ExclusiveComparisons.IsExclusivelyTrue( false, exclusivelyTrue ) );
+        assertFalse( ExclusiveComparisons.IsExclusivelyTrue( true, exclusivelyTrue ) );
+        assertFalse( ExclusiveComparisons.IsExclusivelyTrue( false, notExclusivelyTrue ) );
+        assertFalse( ExclusiveComparisons.IsExclusivelyTrue( true, notExclusivelyTrue ) );
+        assertFalse( ExclusiveComparisons.IsExclusivelyTrue( false, allTrue ) );
+        assertFalse( ExclusiveComparisons.IsExclusivelyTrue( true, allTrue ) );
+        assertFalse( ExclusiveComparisons.IsExclusivelyTrue( false, allFalse ) );
+        assertTrue( ExclusiveComparisons.IsExclusivelyTrue( true, allFalse ) );
     }
 
 
     @Test
     public void testGetExclusivelyTrue() {
-        Assert.assertEquals( 2, ExclusiveComparisons.GetExclusivelyTrue( false, exclusivelyTrue ) );
-        Assert.assertEquals( -1, ExclusiveComparisons.GetExclusivelyTrue( true, exclusivelyTrue ) );
-        Assert.assertEquals( -1, ExclusiveComparisons.GetExclusivelyTrue( false, notExclusivelyTrue ) );
-        Assert.assertEquals( -1, ExclusiveComparisons.GetExclusivelyTrue( true, notExclusivelyTrue ) );
-        Assert.assertEquals( -1, ExclusiveComparisons.GetExclusivelyTrue( false, allTrue ) );
-        Assert.assertEquals( -1, ExclusiveComparisons.GetExclusivelyTrue( true, allTrue ) );
-        Assert.assertEquals( -1, ExclusiveComparisons.GetExclusivelyTrue( false, allFalse ) );
-        Assert.assertEquals( 0, ExclusiveComparisons.GetExclusivelyTrue( true, allFalse ) );
+        assertEquals( 2, ExclusiveComparisons.GetExclusivelyTrue( false, exclusivelyTrue ) );
+        assertEquals( -1, ExclusiveComparisons.GetExclusivelyTrue( true, exclusivelyTrue ) );
+        assertEquals( -1, ExclusiveComparisons.GetExclusivelyTrue( false, notExclusivelyTrue ) );
+        assertEquals( -1, ExclusiveComparisons.GetExclusivelyTrue( true, notExclusivelyTrue ) );
+        assertEquals( -1, ExclusiveComparisons.GetExclusivelyTrue( false, allTrue ) );
+        assertEquals( -1, ExclusiveComparisons.GetExclusivelyTrue( true, allTrue ) );
+        assertEquals( -1, ExclusiveComparisons.GetExclusivelyTrue( false, allFalse ) );
+        assertEquals( 0, ExclusiveComparisons.GetExclusivelyTrue( true, allFalse ) );
     }
 
 }

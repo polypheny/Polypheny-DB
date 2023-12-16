@@ -102,9 +102,9 @@ allprojects {
         description = 'Runs integration tests.'
         group = 'verification'
         systemProperty 'store.default', storeName
-        useJUnit {
-            includeCategories 'org.polypheny.db.AdapterTestSuite'
-            excludeCategories 'org.polypheny.db.excluded.' + storeName.capitalize() + "Excluded"
+        useJUnitPlatform {
+            includeTags("adapter")
+            excludeTags(storeName.capitalize() + "Excluded")
         }
         shouldRunAfter(tasks.named('test'))
     }

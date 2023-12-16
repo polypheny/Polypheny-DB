@@ -34,15 +34,15 @@
 package org.polypheny.db.sql.volcano;
 
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import java.util.List;
 import lombok.Getter;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
@@ -110,7 +110,7 @@ public class VolcanoPlannerTraitTest {
     }
 
 
-    @Ignore
+    @Disabled
     @Test
     public void testDoubleConversion() {
         VolcanoPlanner planner = new VolcanoPlanner();
@@ -135,8 +135,8 @@ public class VolcanoPlannerTraitTest {
         AlgNode result = planner.chooseDelegate().findBestExp();
 
         assertTrue( result instanceof IterSingleRel );
-        Assert.assertEquals( EnumerableConvention.INSTANCE, result.getTraitSet().getTrait( ConventionTraitDef.INSTANCE ) );
-        Assert.assertEquals( ALT_TRAIT2, result.getTraitSet().getTrait( ALT_TRAIT_DEF ) );
+        assertEquals( EnumerableConvention.INSTANCE, result.getTraitSet().getTrait( ConventionTraitDef.INSTANCE ) );
+        assertEquals( ALT_TRAIT2, result.getTraitSet().getTrait( ALT_TRAIT_DEF ) );
 
         AlgNode child = result.getInputs().get( 0 );
         assertTrue( (child instanceof AltTraitConverter) || (child instanceof PhysToIteratorConverter) );
@@ -176,7 +176,7 @@ public class VolcanoPlannerTraitTest {
     }
 
 
-    @Ignore
+    @Disabled
     @Test
     public void testTraitPropagation() {
         VolcanoPlanner planner = new VolcanoPlanner();
@@ -201,13 +201,13 @@ public class VolcanoPlannerTraitTest {
         AlgNode result = planner.chooseDelegate().findBestExp();
 
         assertTrue( result instanceof IterSingleRel );
-        Assert.assertEquals( EnumerableConvention.INSTANCE, result.getTraitSet().getTrait( ConventionTraitDef.INSTANCE ) );
-        Assert.assertEquals( ALT_TRAIT2, result.getTraitSet().getTrait( ALT_TRAIT_DEF ) );
+        assertEquals( EnumerableConvention.INSTANCE, result.getTraitSet().getTrait( ConventionTraitDef.INSTANCE ) );
+        assertEquals( ALT_TRAIT2, result.getTraitSet().getTrait( ALT_TRAIT_DEF ) );
 
         AlgNode child = result.getInputs().get( 0 );
         assertTrue( child instanceof IterSingleRel );
-        Assert.assertEquals( EnumerableConvention.INSTANCE, child.getTraitSet().getTrait( ConventionTraitDef.INSTANCE ) );
-        Assert.assertEquals( ALT_TRAIT2, child.getTraitSet().getTrait( ALT_TRAIT_DEF ) );
+        assertEquals( EnumerableConvention.INSTANCE, child.getTraitSet().getTrait( ConventionTraitDef.INSTANCE ) );
+        assertEquals( ALT_TRAIT2, child.getTraitSet().getTrait( ALT_TRAIT_DEF ) );
 
         child = child.getInputs().get( 0 );
         assertTrue( (child instanceof AltTraitConverter) || (child instanceof PhysToIteratorConverter) );

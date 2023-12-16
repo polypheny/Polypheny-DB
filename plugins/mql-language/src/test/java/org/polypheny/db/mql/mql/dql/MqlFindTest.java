@@ -18,7 +18,7 @@ package org.polypheny.db.mql.mql.dql;
 
 import java.util.Map;
 import org.bson.BsonValue;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.languages.mql.Mql.Type;
 import org.polypheny.db.languages.mql.MqlFind;

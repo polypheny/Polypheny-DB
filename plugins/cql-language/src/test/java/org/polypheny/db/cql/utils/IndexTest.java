@@ -16,8 +16,10 @@
 
 package org.polypheny.db.cql.utils;
 
-import org.junit.Assert;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.cql.ColumnIndex;
 import org.polypheny.db.cql.TableIndex;
 import org.polypheny.db.cql.exception.UnknownIndexException;
@@ -29,12 +31,15 @@ public class IndexTest extends CqlTestHelper {
     @Test
     public void testCreateColumnIndex() throws UnknownIndexException {
         ColumnIndex index = ColumnIndex.createIndex( "test", "testtable", "tbigint" );
-        Assert.assertEquals( index.fullyQualifiedName, "test.testtable.tbigint" );
+        assertEquals( index.fullyQualifiedName, "test.testtable.tbigint" );
     }
 
 
-    @Test(expected = UnknownIndexException.class)
+    @Test
     public void testCreateColumnIndexThrowsUnknownIndexException() throws UnknownIndexException {
+        UnknownIndexException thrown = assertThrows( UnknownIndexException.class, () -> {
+            ColumnIndex.createIndex( "hello", "world", "!" );
+        } );
         ColumnIndex.createIndex( "hello", "world", "!" );
     }
 
@@ -42,13 +47,15 @@ public class IndexTest extends CqlTestHelper {
     @Test
     public void testCreateTableIndex() throws UnknownIndexException {
         TableIndex index = TableIndex.createIndex( "test", "testtable" );
-        Assert.assertEquals( index.fullyQualifiedName, "test.testtable" );
+        assertEquals( index.fullyQualifiedName, "test.testtable" );
     }
 
 
-    @Test(expected = UnknownIndexException.class)
+    @Test
     public void testCreateTableIndexThrowsUnknownIndexException() throws UnknownIndexException {
-        TableIndex.createIndex( "hello", "world" );
+        UnknownIndexException thrown = assertThrows( UnknownIndexException.class, () -> {
+            TableIndex.createIndex( "hello", "world" );
+        } );
     }
 
 }

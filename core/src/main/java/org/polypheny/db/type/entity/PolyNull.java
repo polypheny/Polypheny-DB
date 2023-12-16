@@ -43,6 +43,7 @@ import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.type.entity.relational.PolyMap;
+import org.polypheny.db.type.entity.relational.PolyMap.MapType;
 
 public class PolyNull extends PolyValue {
 
@@ -249,7 +250,7 @@ public class PolyNull extends PolyValue {
 
     @Override
     public @NonNull PolyMap<PolyValue, PolyValue> asMap() {
-        return PolyMap.of( null );
+        return PolyMap.of( null, MapType.MAP );
     }
 
 

@@ -24,6 +24,8 @@ import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.SimpleSerializerDef;
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -36,7 +38,6 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
 import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
@@ -51,18 +52,26 @@ import org.polypheny.db.util.Pair;
 @Getter
 public class PolyGraph extends GraphObject {
 
+    @Serialize
     @JsonProperty
     private final PolyMap<PolyString, PolyNode> nodes;
+
+    @Serialize
     @JsonProperty
     private final PolyMap<PolyString, PolyEdge> edges;
 
 
-    public PolyGraph( @NonNull PolyMap<PolyString, PolyNode> nodes, @NonNull PolyMap<PolyString, PolyEdge> edges ) {
+    public PolyGraph(
+            @NonNull PolyMap<PolyString, PolyNode> nodes,
+            @NonNull PolyMap<PolyString, PolyEdge> edges ) {
         this( PolyString.of( UUID.randomUUID().toString() ), nodes, edges );
     }
 
 
-    public PolyGraph( PolyString id, @NonNull PolyMap<PolyString, PolyNode> nodes, @NonNull PolyMap<PolyString, PolyEdge> edges ) {
+    public PolyGraph(
+            @Deserialize("id") @JsonProperty("id") PolyString id,
+            @Deserialize("nodes") @JsonProperty("nodes") @NonNull PolyMap<PolyString, PolyNode> nodes,
+            @Deserialize("edges") @JsonProperty("edges") @NonNull PolyMap<PolyString, PolyEdge> edges ) {
         super( id, PolyType.GRAPH, null );
         this.nodes = nodes;
         this.edges = edges;
@@ -345,13 +354,20 @@ public class PolyGraph extends GraphObject {
             return new BinarySerializer<>() {
                 @Override
                 public void encode( BinaryOutput out, PolyGraph item ) {
-                    throw new NotImplementedException();
+                    out.writeUTF8Nullable( item.id.value );
+                    out.writeUTF8( item.nodes.serialize() );
+                    out.writeUTF8( item.edges.serialize() );
                 }
 
 
                 @Override
                 public PolyGraph decode( BinaryInput in ) throws CorruptedDataException {
-                    throw new NotImplementedException();
+                    PolyString id = PolyString.of( in.readUTF8Nullable() );
+                    //noinspection unchecked
+                    PolyMap<PolyString, PolyNode> nodes = (PolyMap<PolyString, PolyNode>) (PolyMap<?, ?>) PolyValue.deserialize( in.readUTF8() ).asMap();
+                    //noinspection unchecked
+                    PolyMap<PolyString, PolyEdge> edges = (PolyMap<PolyString, PolyEdge>) (PolyMap<?, ?>) PolyValue.deserialize( in.readUTF8() ).asMap();
+                    return new PolyGraph( id, nodes, edges );
                 }
             };
         }
