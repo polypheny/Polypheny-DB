@@ -17,6 +17,12 @@
 package org.polypheny.db.config;
 
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Files;
 import java.io.File;
@@ -26,9 +32,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.exception.ConfigRuntimeException;
 
@@ -71,7 +76,7 @@ public class ConfigManagerTest implements ConfigListener {
     }
 
 
-    @AfterClass
+    @AfterAll
     public static void resetTestEnvironment() {
         ConfigManager.getInstance().useDefaultApplicationConfFile();
     }
@@ -100,10 +105,10 @@ public class ConfigManagerTest implements ConfigListener {
             cm.getConfig( "java.int.validation" ).setInt( 2 );
             cm.getConfig( "java.int.validation" ).setInt( 20 );
             int a = cm.getConfig( "java.int.validation" ).getInt();
-            Assert.assertEquals( 2, a );
+            assertEquals( 2, a );
             cm.getConfig( "java.double.validation" ).setDouble( 1.2 );
             cm.getConfig( "java.double.validation" ).setDouble( 10.4 );
-            Assert.assertEquals( 1.2, cm.getConfig( "java.double.validation" ).getDouble(), 0.01 );
+            assertEquals( 1.2, cm.getConfig( "java.double.validation" ).getDouble(), 0.01 );
 
             System.out.println( cm.getPage( "p" ) );
 
@@ -144,12 +149,12 @@ public class ConfigManagerTest implements ConfigListener {
 
             cm.registerConfigs( c2, c3, c4, c5, c6, c7 );
 
-            Assert.assertEquals( "string", cm.getConfig( "type.string" ).getString() );
-            Assert.assertTrue( cm.getConfig( "type.boolean" ).getBoolean() );
-            Assert.assertEquals( 10, (int) cm.getConfig( "type.integer" ).getInt() );
-            Assert.assertEquals( 11, (long) cm.getConfig( "type.long" ).getLong() );
-            Assert.assertEquals( 10.1, cm.getConfig( "type.double" ).getDouble(), 0.0001 );
-            Assert.assertEquals( new BigDecimal( "3.14" ), cm.getConfig( "type.decimal" ).getDecimal() );
+            assertEquals( "string", cm.getConfig( "type.string" ).getString() );
+            assertTrue( cm.getConfig( "type.boolean" ).getBoolean() );
+            assertEquals( 10, (int) cm.getConfig( "type.integer" ).getInt() );
+            assertEquals( 11, (long) cm.getConfig( "type.long" ).getLong() );
+            assertEquals( 10.1, cm.getConfig( "type.double" ).getDouble(), 0.0001 );
+            assertEquals( new BigDecimal( "3.14" ), cm.getConfig( "type.decimal" ).getDecimal() );
         } finally {
             testFile.toFile().delete();
         }
@@ -178,8 +183,8 @@ public class ConfigManagerTest implements ConfigListener {
             cm.getConfig( "will.change" ).addObserver( o2 );
             cm.getConfig( "will.change" ).removeObserver( o1 );
             cm.getConfig( "will.change" ).setBoolean( true );
-            Assert.assertTrue( o2.wasNotified() );
-            Assert.assertFalse( o1.wasNotified() );
+            assertTrue( o2.wasNotified() );
+            assertFalse( o1.wasNotified() );
         } finally {
             testFile.toFile().delete();
         }
@@ -203,7 +208,7 @@ public class ConfigManagerTest implements ConfigListener {
             Config c = new ConfigString( "test.restart", "restart" ).requiresRestart( true ).addObserver( this );
             cm.registerConfig( c );
             cm.getConfig( c.getKey() ).setString( "someValue" );
-            Assert.assertTrue( this.wasRestarted );
+            assertTrue( this.wasRestarted );
         } finally {
             testFile.toFile().delete();
         }
@@ -232,20 +237,20 @@ public class ConfigManagerTest implements ConfigListener {
             ConfigObserver o = new ConfigObserver();
             cm.getConfig( "enum" ).addObserver( o );
 
-            Assert.assertSame( testEnum.FOO, c.getEnum() );
+            assertSame( testEnum.FOO, c.getEnum() );
 
             c.setEnum( testEnum.BAR );
 
-            Assert.assertSame( testEnum.BAR, c.getEnum() );
-            Assert.assertTrue( c.getEnumValues().contains( testEnum.FOO ) );
-            Assert.assertTrue( c.getEnumValues().contains( testEnum.BAR ) );
-            Assert.assertTrue( c.getEnumValues().contains( testEnum.FOO_BAR ) );
+            assertSame( testEnum.BAR, c.getEnum() );
+            assertTrue( c.getEnumValues().contains( testEnum.FOO ) );
+            assertTrue( c.getEnumValues().contains( testEnum.BAR ) );
+            assertTrue( c.getEnumValues().contains( testEnum.FOO_BAR ) );
 
             c.setEnum( testEnum.FOO_BAR );
-            Assert.assertSame( testEnum.FOO_BAR, c.getEnum() );
+            assertSame( testEnum.FOO_BAR, c.getEnum() );
 
-            Assert.assertTrue( o.wasNotified() );
-            Assert.assertEquals( 2, o.n );
+            assertTrue( o.wasNotified() );
+            assertEquals( 2, o.n );
 
         } finally {
             testFile.toFile().delete();
@@ -273,24 +278,24 @@ public class ConfigManagerTest implements ConfigListener {
             ConfigObserver o = new ConfigObserver();
             cm.getConfig( "enumList" ).addObserver( o );
 
-            Assert.assertTrue( c.getEnumList().contains( testEnum.BAR ) );
-            Assert.assertFalse( c.getEnumList().contains( testEnum.FOO ) );
-            Assert.assertFalse( c.getEnumList().contains( testEnum.FOO_BAR ) );
+            assertTrue( c.getEnumList().contains( testEnum.BAR ) );
+            assertFalse( c.getEnumList().contains( testEnum.FOO ) );
+            assertFalse( c.getEnumList().contains( testEnum.FOO_BAR ) );
 
-            Assert.assertTrue( c.removeEnum( testEnum.BAR ) );
-            Assert.assertFalse( c.removeEnum( testEnum.FOO ) );
+            assertTrue( c.removeEnum( testEnum.BAR ) );
+            assertFalse( c.removeEnum( testEnum.FOO ) );
             c.addEnum( testEnum.FOO );
             c.addEnum( testEnum.FOO_BAR );
-            Assert.assertFalse( c.getEnumList().contains( testEnum.BAR ) );
-            Assert.assertTrue( c.getEnumList().contains( testEnum.FOO ) );
-            Assert.assertTrue( c.getEnumList().contains( testEnum.FOO_BAR ) );
+            assertFalse( c.getEnumList().contains( testEnum.BAR ) );
+            assertTrue( c.getEnumList().contains( testEnum.FOO ) );
+            assertTrue( c.getEnumList().contains( testEnum.FOO_BAR ) );
 
-            Assert.assertTrue( c.getEnumValues().contains( testEnum.FOO ) );
-            Assert.assertTrue( c.getEnumValues().contains( testEnum.BAR ) );
-            Assert.assertTrue( c.getEnumValues().contains( testEnum.FOO_BAR ) );
+            assertTrue( c.getEnumValues().contains( testEnum.FOO ) );
+            assertTrue( c.getEnumValues().contains( testEnum.BAR ) );
+            assertTrue( c.getEnumValues().contains( testEnum.FOO_BAR ) );
 
-            Assert.assertTrue( o.wasNotified() );
-            Assert.assertEquals( 4, o.n );
+            assertTrue( o.wasNotified() );
+            assertEquals( 4, o.n );
 
         } finally {
             testFile.toFile().delete();
@@ -346,22 +351,22 @@ public class ConfigManagerTest implements ConfigListener {
             ConfigObserver o = new ConfigObserver();
             cm.getConfig( "clazz" ).addObserver( o );
 
-            Assert.assertSame( FooImplementation.class, c.getClazz() );
+            assertSame( FooImplementation.class, c.getClazz() );
 
             c.setClazz( BarImplementation.class );
 
-            Assert.assertSame( BarImplementation.class, c.getClazz() );
-            Assert.assertTrue( c.getClazzes().contains( FooImplementation.class ) );
-            Assert.assertTrue( c.getClazzes().contains( BarImplementation.class ) );
+            assertSame( BarImplementation.class, c.getClazz() );
+            assertTrue( c.getClazzes().contains( FooImplementation.class ) );
+            assertTrue( c.getClazzes().contains( BarImplementation.class ) );
 
-            Assert.assertTrue( o.wasNotified() );
-            Assert.assertEquals( 1, o.n );
+            assertTrue( o.wasNotified() );
+            assertEquals( 1, o.n );
 
             // The order in which gson serializes sets is not predictable. Disabling the serialization test to avoid randomly failing tests
             /*String json = c.toJson();
             Gson gson = new Gson();
             ConfigClazz z = gson.fromJson( json, ConfigClazz.class );
-            Assert.assertEquals( json, z.toJson() );*/
+            assertEquals( json, z.toJson() );*/
         } finally {
             testFile.toFile().delete();
         }
@@ -391,30 +396,30 @@ public class ConfigManagerTest implements ConfigListener {
             ConfigObserver o = new ConfigObserver();
             cm.getConfig( "clazzList" ).addObserver( o );
 
-            Assert.assertTrue( c.getClazzList().contains( FooImplementation.class ) );
-            Assert.assertTrue( c.getClazzList().contains( BarImplementation.class ) );
-            Assert.assertFalse( c.getClazzList().contains( FooBarImplementation.class ) );
+            assertTrue( c.getClazzList().contains( FooImplementation.class ) );
+            assertTrue( c.getClazzList().contains( BarImplementation.class ) );
+            assertFalse( c.getClazzList().contains( FooBarImplementation.class ) );
 
-            Assert.assertFalse( c.removeClazz( FooBarImplementation.class ) );
+            assertFalse( c.removeClazz( FooBarImplementation.class ) );
             c.addClazz( FooBarImplementation.class );
-            Assert.assertTrue( c.removeClazz( BarImplementation.class ) );
+            assertTrue( c.removeClazz( BarImplementation.class ) );
 
-            Assert.assertTrue( c.getClazzList().contains( FooImplementation.class ) );
-            Assert.assertFalse( c.getClazzList().contains( BarImplementation.class ) );
-            Assert.assertTrue( c.getClazzList().contains( FooBarImplementation.class ) );
+            assertTrue( c.getClazzList().contains( FooImplementation.class ) );
+            assertFalse( c.getClazzList().contains( BarImplementation.class ) );
+            assertTrue( c.getClazzList().contains( FooBarImplementation.class ) );
 
-            Assert.assertTrue( c.getClazzes().contains( FooImplementation.class ) );
-            Assert.assertTrue( c.getClazzes().contains( BarImplementation.class ) );
-            Assert.assertTrue( c.getClazzes().contains( FooBarImplementation.class ) );
+            assertTrue( c.getClazzes().contains( FooImplementation.class ) );
+            assertTrue( c.getClazzes().contains( BarImplementation.class ) );
+            assertTrue( c.getClazzes().contains( FooBarImplementation.class ) );
 
-            Assert.assertTrue( o.wasNotified() );
-            Assert.assertEquals( 3, o.n );
+            assertTrue( o.wasNotified() );
+            assertEquals( 3, o.n );
 
             // The order in which gson serializes sets is not predictable. Disabling the serialization test to avoid randomly failing tests
             /*String json = c.toJson();
             Gson gson = new Gson();
             ConfigClazzList z = gson.fromJson( json, ConfigClazzList.class );
-            Assert.assertEquals( json, z.toJson() );*/
+            assertEquals( json, z.toJson() );*/
 
         } finally {
             testFile.toFile().delete();
@@ -446,9 +451,9 @@ public class ConfigManagerTest implements ConfigListener {
             int[] otherArray = { 5, 4, 3, 2, 1 };
             c.setIntArray( otherArray );
 
-            Assert.assertArrayEquals( otherArray, c.getIntArray() );
-            Assert.assertTrue( o.wasNotified() );
-            Assert.assertEquals( 1, o.n );
+            assertArrayEquals( otherArray, c.getIntArray() );
+            assertTrue( o.wasNotified() );
+            assertEquals( 1, o.n );
 
         } finally {
             testFile.toFile().delete();
@@ -485,9 +490,9 @@ public class ConfigManagerTest implements ConfigListener {
             };
             c.setIntTable( otherTable );
 
-            Assert.assertArrayEquals( otherTable[0], c.getIntTable()[0] );
-            Assert.assertTrue( o.wasNotified() );
-            Assert.assertEquals( 1, o.n );
+            assertArrayEquals( otherTable[0], c.getIntTable()[0] );
+            assertTrue( o.wasNotified() );
+            assertEquals( 1, o.n );
 
         } finally {
             testFile.toFile().delete();
@@ -512,75 +517,75 @@ public class ConfigManagerTest implements ConfigListener {
                 e.printStackTrace();
             }
             cm.setApplicationConfFile( testFile.toFile() );
-            Assert.assertEquals( testFile.toFile().getAbsolutePath(), cm.getActiveConfFile() );
+            assertEquals( testFile.toFile().getAbsolutePath(), cm.getActiveConfFile() );
 
             // Check if it works for integer values
             Config c = new ConfigInteger( "test.junit.int", 18 );
-            Assert.assertEquals( c.getInt(), 18 );
+            assertEquals( c.getInt(), 18 );
             cm.registerConfig( c );
-            Assert.assertEquals( c.getInt(), 42 );
+            assertEquals( c.getInt(), 42 );
 
             // Check if it works for string values
             c = new ConfigString( "test.junit.string", "Hello World" );
-            Assert.assertEquals( c.getString(), "Hello World" );
+            assertEquals( c.getString(), "Hello World" );
             cm.registerConfig( c );
-            Assert.assertEquals( c.getString(), "Polypheny-DB" );
+            assertEquals( c.getString(), "Polypheny-DB" );
 
             // Check if it works for boolean values
             c = new ConfigBoolean( "test.junit.boolean", false );
-            Assert.assertFalse( c.getBoolean() );
+            assertFalse( c.getBoolean() );
             cm.registerConfig( c );
-            Assert.assertTrue( c.getBoolean() );
+            assertTrue( c.getBoolean() );
 
             // Check if it works for decimal values
             c = new ConfigDecimal( "test.junit.decimal", new BigDecimal( "2.22222222222" ) );
-            Assert.assertEquals( c.getDecimal(), new BigDecimal( "2.22222222222" ) );
+            assertEquals( c.getDecimal(), new BigDecimal( "2.22222222222" ) );
             cm.registerConfig( c );
-            Assert.assertEquals( c.getDecimal(), new BigDecimal( "1.111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111234567891" ) );
+            assertEquals( c.getDecimal(), new BigDecimal( "1.111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111234567891" ) );
 
             // Check if it works for double values
             c = new ConfigDouble( "test.junit.double", 1.11d );
-            Assert.assertEquals( c.getDouble(), 1.11d, 0.0 );
+            assertEquals( c.getDouble(), 1.11d, 0.0 );
             cm.registerConfig( c );
-            Assert.assertEquals( c.getDouble(), -3.0d, 0.0 );
+            assertEquals( c.getDouble(), -3.0d, 0.0 );
 
             // Check if it works for long values
             c = new ConfigLong( "test.junit.long", Integer.MAX_VALUE + 152463L );
-            Assert.assertEquals( c.getLong(), Integer.MAX_VALUE + 152463L );
+            assertEquals( c.getLong(), Integer.MAX_VALUE + 152463L );
             cm.registerConfig( c );
-            Assert.assertEquals( c.getLong(), Integer.MAX_VALUE + 9999999L );
+            assertEquals( c.getLong(), Integer.MAX_VALUE + 9999999L );
 
             // Check if it works for Enum values
             c = new ConfigEnum( "test.junit.enum", "Test description", testEnum.class, testEnum.FOO_BAR );
-            Assert.assertEquals( c.getEnum(), testEnum.FOO_BAR );
+            assertEquals( c.getEnum(), testEnum.FOO_BAR );
             cm.registerConfig( c );
-            Assert.assertEquals( c.getEnum(), testEnum.FOO );
+            assertEquals( c.getEnum(), testEnum.FOO );
 
             // Check if it works for Enum Lists
             c = new ConfigEnumList( "test.junit.enumList", "Test description", testEnum.class, ImmutableList.of( testEnum.FOO_BAR ) );
-            Assert.assertEquals( c.getEnumList(), ImmutableList.of( testEnum.FOO_BAR ) );
+            assertEquals( c.getEnumList(), ImmutableList.of( testEnum.FOO_BAR ) );
             cm.registerConfig( c );
-            Assert.assertEquals( c.getEnumList(), ImmutableList.of( testEnum.FOO, testEnum.BAR ) );
+            assertEquals( c.getEnumList(), ImmutableList.of( testEnum.FOO, testEnum.BAR ) );
 
             // Check if it works for Class values
             c = new ConfigClazz( "test.junit.class", TestClass.class, FooBarImplementation.class );
-            Assert.assertEquals( c.getClazz(), FooBarImplementation.class );
+            assertEquals( c.getClazz(), FooBarImplementation.class );
             cm.registerConfig( c );
-            Assert.assertEquals( c.getClazz(), FooImplementation.class );
+            assertEquals( c.getClazz(), FooImplementation.class );
 
             // Check if it works for Class Lists
             c = new ConfigClazzList( "test.junit.classList", TestClass.class, ImmutableList.of( FooBarImplementation.class ) );
-            Assert.assertEquals( c.getClazzList(), ImmutableList.of( FooBarImplementation.class ) );
+            assertEquals( c.getClazzList(), ImmutableList.of( FooBarImplementation.class ) );
             cm.registerConfig( c );
-            Assert.assertEquals( c.getClazzList(), ImmutableList.of( FooImplementation.class, BarImplementation.class ) );
+            assertEquals( c.getClazzList(), ImmutableList.of( FooImplementation.class, BarImplementation.class ) );
 
             // ----
 
             // Check for a key that is not present in the config file
             c = new ConfigString( "mot.in.config.file", "Polystore" );
-            Assert.assertEquals( c.getString(), "Polystore" );
+            assertEquals( c.getString(), "Polystore" );
             cm.registerConfig( c );
-            Assert.assertEquals( c.getString(), "Polystore" );
+            assertEquals( c.getString(), "Polystore" );
         } finally {
             testFile.toFile().delete();
         }
@@ -601,7 +606,7 @@ public class ConfigManagerTest implements ConfigListener {
         } catch ( ConfigRuntimeException e ) {
             failed = true;
         }
-        Assert.assertTrue( failed );
+        assertTrue( failed );
         failed = false;
 
         // Check if the correct file will be accessed
@@ -618,7 +623,7 @@ public class ConfigManagerTest implements ConfigListener {
 
             File customConfFile = new File( testFile.toString() );
             cm.setApplicationConfFile( customConfFile );
-            Assert.assertEquals( customConfFile.getAbsolutePath(), cm.getActiveConfFile() );
+            assertEquals( customConfFile.getAbsolutePath(), cm.getActiveConfFile() );
 
             // Check if file will be re-created after config change
 
@@ -628,15 +633,15 @@ public class ConfigManagerTest implements ConfigListener {
             Files.move( testFile.toFile(), backupFile.toFile() );
             Config c = new ConfigInteger( "test.my.dummy", 5000 );
 
-            Assert.assertEquals( c.getInt(), 5000 );
+            assertEquals( c.getInt(), 5000 );
 
             // Check if file is still present after registration
             cm.registerConfig( c );
-            Assert.assertEquals( cm.getConfig( "test.my.dummy" ).getInt(), 5000 );
+            assertEquals( cm.getConfig( "test.my.dummy" ).getInt(), 5000 );
 
             // Modify config value in CUSTOM value
             c.setInt( 5001 );
-            Assert.assertEquals( c.getInt(), 5001 );
+            assertEquals( c.getInt(), 5001 );
 
             // Check if file was recreated
             // with new updated value as well as old values that were in the file before
@@ -681,15 +686,15 @@ public class ConfigManagerTest implements ConfigListener {
             String url = "test";
             String alias = "name";
             ConfigDocker c = new ConfigDocker( 0, url, alias, "docker.io", 7001, 7002, 7003 );
-            Assert.assertEquals( c.getAlias(), alias );
-            Assert.assertEquals( c.getHost(), url );
-            Assert.assertEquals( c.getRegistry(), "docker.io" );
-            Assert.assertEquals( 7001, c.getCommunicationPort() );
-            Assert.assertEquals( 7002, c.getHandshakePort() );
-            Assert.assertEquals( 7003, c.getProxyPort() );
+            assertEquals( c.getAlias(), alias );
+            assertEquals( c.getHost(), url );
+            assertEquals( c.getRegistry(), "docker.io" );
+            assertEquals( 7001, c.getCommunicationPort() );
+            assertEquals( 7002, c.getHandshakePort() );
+            assertEquals( 7003, c.getProxyPort() );
 
             cm.registerConfig( c );
-            Assert.assertEquals( cm.getConfig( c.getKey() ), c );
+            assertEquals( cm.getConfig( c.getKey() ), c );
 
         } finally {
             testFile.toFile().delete();

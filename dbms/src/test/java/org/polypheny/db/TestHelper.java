@@ -199,9 +199,9 @@ public class TestHelper {
                             Assertions.assertNull( row[j], "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': " );
                         } else {
                             assertEquals(
-                                    "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'",
                                     new String( (byte[]) expectedRow[j] ),
-                                    new String( (byte[]) row[j] ) );
+                                    new String( (byte[]) row[j] ),
+                                    "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'" );
                         }
                     } else if ( columnType != Types.ARRAY ) {
                         if ( expectedRow[j] != null ) {

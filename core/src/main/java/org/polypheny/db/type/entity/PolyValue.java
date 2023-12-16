@@ -80,6 +80,7 @@ import org.polypheny.db.type.entity.document.PolyDocument.PolyDocumentSerializer
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.graph.PolyDictionary.PolyDictionarySerializerDef;
 import org.polypheny.db.type.entity.graph.PolyEdge;
+import org.polypheny.db.type.entity.graph.PolyEdge.PolyEdgeSerializerDef;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyGraph.PolyGraphSerializerDef;
 import org.polypheny.db.type.entity.graph.PolyNode;
@@ -153,6 +154,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             .with( PolyList.class, ctx -> new PolyListSerializerDef() )
             .with( PolyBigDecimal.class, ctx -> new PolyBigDecimalSerializerDef() )
             .with( PolyNode.class, ctx -> new PolyNodeSerializerDef() )
+            .with( PolyEdge.class, ctx -> new PolyEdgeSerializerDef() )
             .with( PolyNull.class, ctx -> new PolyNullSerializerDef() )
             .with( PolyBoolean.class, ctx -> new PolyBooleanSerializerDef() )
             .with( PolyGraph.class, ctx -> new PolyGraphSerializerDef() )
@@ -498,7 +500,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
 
 
     @NotNull
-    private GenericRuntimeException cannotParse( PolyValue value, Class<?> clazz ) {
+    public GenericRuntimeException cannotParse( PolyValue value, Class<?> clazz ) {
         return new GenericRuntimeException( "Cannot parse %s to type %s", value, clazz.getSimpleName() );
     }
 

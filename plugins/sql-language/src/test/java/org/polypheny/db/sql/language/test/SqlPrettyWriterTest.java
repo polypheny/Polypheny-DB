@@ -34,12 +34,12 @@
 package org.polypheny.db.sql.language.test;
 
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
@@ -233,7 +233,7 @@ public class SqlPrettyWriterTest {
     }
 
 
-    @Ignore("default SQL parser cannot parse DDL")
+    @Disabled("default SQL parser cannot parse DDL")
     @Test
     public void testExplain() {
         assertPrintsTo( false, "explain select * from t", "foo" );

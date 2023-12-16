@@ -65,7 +65,7 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
 
 
     public PolyDocument( @JsonProperty("map") @Deserialize("map") Map<PolyString, PolyValue> value, @JsonProperty("isUnset") @Deserialize("isUnset") boolean isUnset ) {
-        super( value, PolyType.DOCUMENT );
+        super( value, PolyType.DOCUMENT, MapType.DOCUMENT );
         this.isUnset = isUnset;
     }
 
@@ -208,7 +208,7 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
                 Pair<PolyValue, PolyValue> el = deserializeElement( ctxt, element );
                 values.put( el.getKey(), el.getValue() );
             }
-            return PolyMap.of( values );
+            return PolyMap.of( values, MapType.DOCUMENT );
         }
 
 

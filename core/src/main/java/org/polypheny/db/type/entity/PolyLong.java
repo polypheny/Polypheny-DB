@@ -46,6 +46,7 @@ import org.polypheny.db.type.entity.category.PolyNumber;
 public class PolyLong extends PolyNumber {
 
     @Serialize
+    @JsonProperty
     public Long value;
 
 
@@ -254,7 +255,7 @@ public class PolyLong extends PolyNumber {
                 @Override
                 public PolyLong decode( BinaryInput in ) throws CorruptedDataException {
                     boolean isNull = in.readBoolean();
-                    if ( !isNull ) {
+                    if ( isNull ) {
                         return null;
                     }
                     return PolyLong.of( in.readLong() );

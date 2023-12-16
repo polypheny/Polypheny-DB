@@ -18,18 +18,18 @@ package org.polypheny.db.sql.volcano;
 
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.polypheny.db.test.Matchers.isLinux;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
@@ -153,7 +153,7 @@ public class VolcanoPlannerTest {
     /**
      * Tests transformation of a single+leaf from NONE to PHYS. In the past, this one didn't work due to the definition of ReformedSingleRule.
      */
-    @Ignore // broken, because ReformedSingleRule matches child traits strictly
+    @Disabled // broken, because ReformedSingleRule matches child traits strictly
     @Test
     public void testTransformSingleReformed() {
         VolcanoPlanner planner = new VolcanoPlanner();
@@ -233,7 +233,7 @@ public class VolcanoPlannerTest {
     /**
      * Previously, this didn't work because ReformedRemoveSingleRule uses a pattern which spans calling conventions.
      */
-    @Ignore // broken, because ReformedSingleRule matches child traits strictly
+    @Disabled // broken, because ReformedSingleRule matches child traits strictly
     @Test
     public void testRemoveSingleReformed() {
         VolcanoPlanner planner = new VolcanoPlanner();
@@ -280,7 +280,7 @@ public class VolcanoPlannerTest {
     }
 
 
-    @Ignore("POLYPHENYDB-2592 EnumerableMergeJoin is never taken")
+    @Disabled("POLYPHENYDB-2592 EnumerableMergeJoin is never taken")
     @Test
     public void testMergeJoin() {
         VolcanoPlanner planner = new VolcanoPlanner();
@@ -321,7 +321,7 @@ public class VolcanoPlannerTest {
     /**
      * Tests whether planner correctly notifies listeners of events.
      */
-    @Ignore
+    @Disabled
     @Test
     public void testListener() {
         TestListener listener = new TestListener();

@@ -160,8 +160,10 @@ public interface Snapshot extends OperatorTable {
     @NotNull
     List<AdapterTemplate> getAdapterTemplates();
 
+    @NotNull
     Optional<? extends LogicalEntity> getLogicalEntity( long id );
 
+    @NotNull
     Optional<AdapterTemplate> getAdapterTemplate( String name, AdapterType adapterType );
 
     List<AdapterTemplate> getAdapterTemplates( AdapterType adapterType );

@@ -30,14 +30,18 @@ import org.polypheny.db.type.entity.PolyDouble;
 import org.polypheny.db.type.entity.PolyFloat;
 import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
+import org.polypheny.db.type.entity.graph.PolyEdge;
+import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
+import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.relational.PolyMap;
 
-@DisplayName("Testing of binary and typed json serialization")
+@DisplayName("Binary/Typed-json Serialization")
 public class PolyValueSerializationTest {
 
     @BeforeAll
@@ -68,7 +72,7 @@ public class PolyValueSerializationTest {
 
     @Test
     public void deserializeEmptyMapTest() {
-        PolyMap<PolyString, PolyString> map = new PolyMap<>( Map.of( PolyString.of( "test" ), PolyString.of( "test1" ) ) );
+        PolyMap<PolyString, PolyString> map = PolyMap.of( Map.of( PolyString.of( "test" ), PolyString.of( "test1" ) ) );
         assertEqualAfterSerialization( map );
     }
 
@@ -125,11 +129,7 @@ public class PolyValueSerializationTest {
     public void simpleStringTest() {
         PolyString v1 = PolyString.of( "test" );
 
-        String serialized = PolySerializable.serialize( PolyValue.serializer, v1 );
-
-        PolyString v2 = PolySerializable.deserialize( serialized, PolyValue.serializer ).asString();
-
-        assertEquals( v1.value, v2.value );
+        assertEqualAfterSerialization( v1 );
     }
 
 
@@ -137,11 +137,7 @@ public class PolyValueSerializationTest {
     public void simpleFloatTest() {
         PolyFloat v1 = PolyFloat.of( 3.4f );
 
-        String serialized = PolySerializable.serialize( PolyValue.serializer, v1 );
-
-        PolyFloat v2 = PolySerializable.deserialize( serialized, PolyValue.serializer ).asFloat();
-
-        assertEquals( v1.value, v2.value );
+        assertEqualAfterSerialization( v1 );
     }
 
 
@@ -149,11 +145,7 @@ public class PolyValueSerializationTest {
     public void simpleDocumentTest() {
         PolyDocument d1 = PolyDocument.ofDocument( Map.of( PolyString.of( "test" ), PolyFloat.of( 3.f ) ) );
 
-        String serialized = PolySerializable.serialize( PolyValue.serializer, d1 );
-
-        PolyDocument d2 = PolySerializable.deserialize( serialized, PolyValue.serializer ).asDocument();
-
-        assertEquals( 0, d1.compareTo( d2 ) );
+        assertEqualAfterSerialization( d1 );
     }
 
 
@@ -161,11 +153,7 @@ public class PolyValueSerializationTest {
     public void simpleMapTest() {
         PolyMap<PolyString, PolyFloat> d1 = PolyMap.of( Map.of( PolyString.of( "test" ), PolyFloat.of( 3.f ) ) );
 
-        String serialized = PolySerializable.serialize( PolyValue.serializer, d1 );
-
-        PolyMap<PolyValue, PolyValue> d2 = PolySerializable.deserialize( serialized, PolyValue.serializer ).asMap();
-
-        assertEquals( 0, d1.compareTo( d2 ) );
+        assertEqualAfterSerialization( d1 );
     }
 
 
@@ -173,11 +161,7 @@ public class PolyValueSerializationTest {
     public void simpleMixedMapTest() {
         PolyMap<PolyValue, PolyValue> d1 = PolyMap.of( Map.of( PolyString.of( "test" ), PolyFloat.of( 3.f ), PolyFloat.of( 4.5f ), PolyDouble.of( 3d ) ) );
 
-        String serialized = PolySerializable.serialize( PolyValue.serializer, d1 );
-
-        PolyMap<PolyValue, PolyValue> d2 = PolySerializable.deserialize( serialized, PolyValue.serializer ).asMap();
-
-        assertEquals( 0, d1.compareTo( d2 ) );
+        assertEqualAfterSerialization( d1 );
     }
 
 
@@ -185,11 +169,7 @@ public class PolyValueSerializationTest {
     public void simpleListTest() {
         PolyList<PolyString> d1 = PolyList.of( List.of( PolyString.of( "test" ) ) );
 
-        String serialized = PolySerializable.serialize( PolyValue.serializer, d1 );
-
-        PolyList<PolyValue> d2 = PolySerializable.deserialize( serialized, PolyValue.serializer ).asList();
-
-        assertEquals( 0, d1.compareTo( d2 ) );
+        assertEqualAfterSerialization( d1 );
     }
 
 
@@ -197,11 +177,61 @@ public class PolyValueSerializationTest {
     public void simpleMixedListTest() {
         PolyList<PolyValue> d1 = PolyList.of( List.of( PolyString.of( "test" ), PolyInteger.of( 1 ) ) );
 
-        String serialized = PolySerializable.serialize( PolyValue.serializer, d1 );
+        assertEqualAfterSerialization( d1 );
+    }
 
-        PolyList<PolyValue> d2 = PolySerializable.deserialize( serialized, PolyValue.serializer ).asList();
 
-        assertEquals( 0, d1.compareTo( d2 ) );
+    @Test
+    public void simpleNodeTest() {
+        PolyNode node = new PolyNode(
+                PolyDictionary.ofDict( Map.of( PolyString.of( "key1" ), PolyLong.of( 1L ) ) ),
+                PolyList.of( PolyString.of( "label1" ), PolyString.of( "label2" ) ),
+                null );
+
+        assertEqualAfterSerialization( node );
+    }
+
+
+    @Test
+    public void simpleEdgeTest() {
+        PolyEdge edge = new PolyEdge(
+                PolyDictionary.ofDict( Map.of( PolyString.of( "key1" ), PolyLong.of( 1L ) ) ),
+                PolyList.of( PolyString.of( "label1" ), PolyString.of( "label2" ) ),
+                PolyString.of( "source1" ), PolyString.of( "target1" ),
+                EdgeDirection.RIGHT_TO_LEFT,
+                null );
+
+        assertEqualAfterSerialization( edge );
+    }
+
+
+    @Test
+    public void simpleGraphTest() {
+        PolyNode node = new PolyNode(
+                PolyString.of( "source1" ),
+                PolyDictionary.ofDict( Map.of( PolyString.of( "key1" ), PolyLong.of( 1L ) ) ),
+                PolyList.of( PolyString.of( "label1" ), PolyString.of( "label2" ) ),
+                null );
+
+        PolyNode node1 = new PolyNode(
+                PolyString.of( "target1" ),
+                PolyDictionary.ofDict( Map.of( PolyString.of( "key1" ), PolyLong.of( 1L ) ) ),
+                PolyList.of( PolyString.of( "label1" ) ),
+                PolyString.of( "var1" ) );
+
+        PolyMap<PolyString, PolyNode> nodes = PolyMap.of( Map.of( node.id, node, node1.id, node1 ) );
+
+        PolyEdge edge = new PolyEdge(
+                PolyDictionary.ofDict( Map.of( PolyString.of( "key1" ), PolyLong.of( 1L ) ) ),
+                PolyList.of( PolyString.of( "label1" ), PolyString.of( "label2" ) ),
+                PolyString.of( "source1" ), PolyString.of( "target1" ),
+                EdgeDirection.RIGHT_TO_LEFT,
+                null );
+
+        PolyMap<PolyString, PolyEdge> edges = PolyMap.of( Map.of( edge.id, edge ) );
+        PolyGraph graph = new PolyGraph( nodes, edges );
+        assertEqualAfterSerialization( graph );
+
     }
 
 }
