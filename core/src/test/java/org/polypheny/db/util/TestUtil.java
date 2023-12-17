@@ -38,7 +38,6 @@ import com.google.common.annotations.VisibleForTesting;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.junit.ComparisonFailure;
 
 
 /**
@@ -61,7 +60,7 @@ public abstract class TestUtil {
                 return;
             } else {
                 String message = "Expected:\n" + expected + "\nActual: null";
-                throw new ComparisonFailure( message, expected, null );
+                throw new RuntimeException( message + " " + expected + "!=" + null );
             }
         }
         if ( (expected != null) && expected.equals( actual ) ) {
@@ -70,7 +69,7 @@ public abstract class TestUtil {
         String s = toJavaString( actual );
 
         String message = "Expected:\n" + expected + "\nActual:\n" + actual + "\nActual java:\n" + s + '\n';
-        throw new ComparisonFailure( message, expected, actual );
+        throw new RuntimeException( message + " " + expected + "!=" + actual );
     }
 
 

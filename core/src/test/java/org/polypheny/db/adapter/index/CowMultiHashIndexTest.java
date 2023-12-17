@@ -20,8 +20,8 @@ package org.polypheny.db.adapter.index;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PUID.Type;
 import org.polypheny.db.transaction.PolyXid;
@@ -36,7 +36,7 @@ public class CowMultiHashIndexTest {
         CowMultiHashIndex idx = new CowMultiHashIndex( 42L, "idx_test", null, null, Collections.emptyList(), Collections.emptyList() );
         PolyXid xid1 = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.NODE ), PUID.randomPUID( Type.TRANSACTION ) );
         PolyXid xid2 = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.NODE ), PUID.randomPUID( Type.TRANSACTION ) );
-        Assert.assertEquals( 0, ((Map) idx.getRaw()).size() );
+        Assertions.assertEquals( 0, ((Map) idx.getRaw()).size() );
         // Insert and delete some values as xid1
         idx.insert( xid1, CowHashIndexTest.asPolyValues( 1, 2, 3 ), CowHashIndexTest.asPolyValues( 1 ) );
         idx.insertAll( xid1, Arrays.asList(
@@ -48,40 +48,40 @@ public class CowMultiHashIndexTest {
         ) );
         idx.delete( xid1, CowHashIndexTest.asPolyValues( 2, 3, 4 ) );
         // Make sure the values are not yet visible by either transaction
-        Assert.assertFalse( idx.contains( xid1, CowHashIndexTest.asPolyValues( 1, 2, 3 ) ) );
-        Assert.assertFalse( idx.contains( xid1, CowHashIndexTest.asPolyValues( 2, 3, 4 ) ) );
-        Assert.assertFalse( idx.contains( xid1, CowHashIndexTest.asPolyValues( 3, 4, 5 ) ) );
-        Assert.assertFalse( idx.contains( xid2, CowHashIndexTest.asPolyValues( 1, 2, 3 ) ) );
-        Assert.assertFalse( idx.contains( xid2, CowHashIndexTest.asPolyValues( 2, 3, 4 ) ) );
-        Assert.assertFalse( idx.contains( xid2, CowHashIndexTest.asPolyValues( 3, 4, 5 ) ) );
+        Assertions.assertFalse( idx.contains( xid1, CowHashIndexTest.asPolyValues( 1, 2, 3 ) ) );
+        Assertions.assertFalse( idx.contains( xid1, CowHashIndexTest.asPolyValues( 2, 3, 4 ) ) );
+        Assertions.assertFalse( idx.contains( xid1, CowHashIndexTest.asPolyValues( 3, 4, 5 ) ) );
+        Assertions.assertFalse( idx.contains( xid2, CowHashIndexTest.asPolyValues( 1, 2, 3 ) ) );
+        Assertions.assertFalse( idx.contains( xid2, CowHashIndexTest.asPolyValues( 2, 3, 4 ) ) );
+        Assertions.assertFalse( idx.contains( xid2, CowHashIndexTest.asPolyValues( 3, 4, 5 ) ) );
         // Invoke atom isolation barrier
         idx.barrier( xid1 );
         // Make sure the values are only visible by transaction 1
-        Assert.assertTrue( idx.contains( xid1, CowHashIndexTest.asPolyValues( 1, 2, 3 ) ) );
-        Assert.assertFalse( idx.contains( xid1, CowHashIndexTest.asPolyValues( 2, 3, 4 ) ) );
-        Assert.assertTrue( idx.contains( xid1, CowHashIndexTest.asPolyValues( 3, 4, 5 ) ) );
-        Assert.assertFalse( idx.contains( xid2, CowHashIndexTest.asPolyValues( 1, 2, 3 ) ) );
-        Assert.assertFalse( idx.contains( xid2, CowHashIndexTest.asPolyValues( 2, 3, 4 ) ) );
-        Assert.assertFalse( idx.contains( xid2, CowHashIndexTest.asPolyValues( 3, 4, 5 ) ) );
+        Assertions.assertTrue( idx.contains( xid1, CowHashIndexTest.asPolyValues( 1, 2, 3 ) ) );
+        Assertions.assertFalse( idx.contains( xid1, CowHashIndexTest.asPolyValues( 2, 3, 4 ) ) );
+        Assertions.assertTrue( idx.contains( xid1, CowHashIndexTest.asPolyValues( 3, 4, 5 ) ) );
+        Assertions.assertFalse( idx.contains( xid2, CowHashIndexTest.asPolyValues( 1, 2, 3 ) ) );
+        Assertions.assertFalse( idx.contains( xid2, CowHashIndexTest.asPolyValues( 2, 3, 4 ) ) );
+        Assertions.assertFalse( idx.contains( xid2, CowHashIndexTest.asPolyValues( 3, 4, 5 ) ) );
         // Commit
         idx.commit( xid1 );
         // Make sure the values are visible by both transactions
-        Assert.assertTrue( idx.contains( xid1, CowHashIndexTest.asPolyValues( 1, 2, 3 ) ) );
-        Assert.assertFalse( idx.contains( xid1, CowHashIndexTest.asPolyValues( 2, 3, 4 ) ) );
-        Assert.assertTrue( idx.contains( xid1, CowHashIndexTest.asPolyValues( 3, 4, 5 ) ) );
-        Assert.assertTrue( idx.contains( xid2, CowHashIndexTest.asPolyValues( 1, 2, 3 ) ) );
-        Assert.assertFalse( idx.contains( xid1, CowHashIndexTest.asPolyValues( 2, 3, 4 ) ) );
-        Assert.assertTrue( idx.contains( xid2, CowHashIndexTest.asPolyValues( 3, 4, 5 ) ) );
+        Assertions.assertTrue( idx.contains( xid1, CowHashIndexTest.asPolyValues( 1, 2, 3 ) ) );
+        Assertions.assertFalse( idx.contains( xid1, CowHashIndexTest.asPolyValues( 2, 3, 4 ) ) );
+        Assertions.assertTrue( idx.contains( xid1, CowHashIndexTest.asPolyValues( 3, 4, 5 ) ) );
+        Assertions.assertTrue( idx.contains( xid2, CowHashIndexTest.asPolyValues( 1, 2, 3 ) ) );
+        Assertions.assertFalse( idx.contains( xid1, CowHashIndexTest.asPolyValues( 2, 3, 4 ) ) );
+        Assertions.assertTrue( idx.contains( xid2, CowHashIndexTest.asPolyValues( 3, 4, 5 ) ) );
         // Insert, then rollback
         idx.insert( xid1, CowHashIndexTest.asPolyValues( 2, 3, 4 ), CowHashIndexTest.asPolyValues( 1 ) );
-        Assert.assertFalse( idx.contains( xid1, CowHashIndexTest.asPolyValues( 2, 3, 4 ) ) );
-        Assert.assertFalse( idx.contains( xid2, CowHashIndexTest.asPolyValues( 2, 3, 4 ) ) );
+        Assertions.assertFalse( idx.contains( xid1, CowHashIndexTest.asPolyValues( 2, 3, 4 ) ) );
+        Assertions.assertFalse( idx.contains( xid2, CowHashIndexTest.asPolyValues( 2, 3, 4 ) ) );
         idx.barrier( xid1 );
-        Assert.assertTrue( idx.contains( xid1, CowHashIndexTest.asPolyValues( 2, 3, 4 ) ) );
-        Assert.assertFalse( idx.contains( xid2, CowHashIndexTest.asPolyValues( 2, 3, 4 ) ) );
+        Assertions.assertTrue( idx.contains( xid1, CowHashIndexTest.asPolyValues( 2, 3, 4 ) ) );
+        Assertions.assertFalse( idx.contains( xid2, CowHashIndexTest.asPolyValues( 2, 3, 4 ) ) );
         idx.rollback( xid1 );
-        Assert.assertFalse( idx.contains( xid1, CowHashIndexTest.asPolyValues( 2, 3, 4 ) ) );
-        Assert.assertFalse( idx.contains( xid2, CowHashIndexTest.asPolyValues( 2, 3, 4 ) ) );
+        Assertions.assertFalse( idx.contains( xid1, CowHashIndexTest.asPolyValues( 2, 3, 4 ) ) );
+        Assertions.assertFalse( idx.contains( xid2, CowHashIndexTest.asPolyValues( 2, 3, 4 ) ) );
     }
 
 
@@ -117,12 +117,12 @@ public class CowMultiHashIndexTest {
                 Pair.of( CowHashIndexTest.asPolyValues( 5, 6, 7 ), CowHashIndexTest.asPolyValues( 6 ) )
         ) );
         idx.barrier( xid1 );
-        Assert.assertTrue( idx.contains( xid1, CowHashIndexTest.asPolyValues( 3, 4, 5 ) ) );
-        Assert.assertFalse( idx.contains( xid1, CowHashIndexTest.asPolyValues( 1, 2, 3 ) ) );
-        Assert.assertTrue( idx.containsAny( xid1, Arrays.asList( CowHashIndexTest.asPolyValues( 1, 2, 3 ), CowHashIndexTest.asPolyValues( 3, 4, 5 ) ) ) );
-        Assert.assertFalse( idx.containsAny( xid1, Arrays.asList( CowHashIndexTest.asPolyValues( 1, 2, 3 ), CowHashIndexTest.asPolyValues( 0, 1, 2 ) ) ) );
-        Assert.assertTrue( idx.containsAll( xid1, Arrays.asList( CowHashIndexTest.asPolyValues( 3, 4, 5 ), CowHashIndexTest.asPolyValues( 5, 6, 7 ) ) ) );
-        Assert.assertFalse( idx.containsAll( xid1, Arrays.asList( CowHashIndexTest.asPolyValues( 1, 2, 3 ), CowHashIndexTest.asPolyValues( 3, 4, 5 ) ) ) );
+        Assertions.assertTrue( idx.contains( xid1, CowHashIndexTest.asPolyValues( 3, 4, 5 ) ) );
+        Assertions.assertFalse( idx.contains( xid1, CowHashIndexTest.asPolyValues( 1, 2, 3 ) ) );
+        Assertions.assertTrue( idx.containsAny( xid1, Arrays.asList( CowHashIndexTest.asPolyValues( 1, 2, 3 ), CowHashIndexTest.asPolyValues( 3, 4, 5 ) ) ) );
+        Assertions.assertFalse( idx.containsAny( xid1, Arrays.asList( CowHashIndexTest.asPolyValues( 1, 2, 3 ), CowHashIndexTest.asPolyValues( 0, 1, 2 ) ) ) );
+        Assertions.assertTrue( idx.containsAll( xid1, Arrays.asList( CowHashIndexTest.asPolyValues( 3, 4, 5 ), CowHashIndexTest.asPolyValues( 5, 6, 7 ) ) ) );
+        Assertions.assertFalse( idx.containsAll( xid1, Arrays.asList( CowHashIndexTest.asPolyValues( 1, 2, 3 ), CowHashIndexTest.asPolyValues( 3, 4, 5 ) ) ) );
     }
 
 }

@@ -16,6 +16,13 @@
 
 package org.polypheny.db;
 
+import org.junit.jupiter.api.DisplayName;
+import org.junit.platform.suite.api.IncludeTags;
+import org.junit.platform.suite.api.Suite;
+
+@Suite
+@IncludeTags("adapter")
+@DisplayName("Adapter Test Suite")
 public class AdapterTestSuite {
 
 }

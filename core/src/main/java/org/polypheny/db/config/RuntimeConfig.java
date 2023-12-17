@@ -482,6 +482,12 @@ public enum RuntimeConfig {
             "Unique ID of this instance of Polypheny.",
             "WARNING! YOU SHOULD NOT BE SEEING THIS",
             ConfigType.STRING
+    ),
+    DOCKER_TIMEOUT(
+            "runtime/dockerTimeout",
+            "Connection and respones timeout for autodocker.",
+            45,
+            ConfigType.INTEGER
     );
 
 

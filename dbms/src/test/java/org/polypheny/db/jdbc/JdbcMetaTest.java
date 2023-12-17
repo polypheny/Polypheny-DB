@@ -25,10 +25,10 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
@@ -38,7 +38,7 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 public class JdbcMetaTest {
 
 
-    @BeforeClass
+    @BeforeAll
     public static void start() throws SQLException {
         // Ensures that Polypheny-DB is running
         //noinspection ResultOfMethodCallIgnored
@@ -59,14 +59,14 @@ public class JdbcMetaTest {
                 statement.executeUpdate( "ALTER TABLE test.foo2 ADD CONSTRAINT fk_foo_2 FOREIGN KEY (id) REFERENCES public.foo(id)" );
                 statement.executeUpdate( "ALTER TABLE foo ADD UNIQUE INDEX i_foo ON id ON STORE hsqldb" );
                 statement.executeUpdate( "ALTER TABLE test.foo2 ADD INDEX i_foo2 ON (name, foobar) USING \"default\" ON STORE hsqldb" );
-               // statement.executeUpdate( "CREATE DOCUMENT SCHEMA doc" ); // todo There should be an alias to use the SQL default term SCHEMA instead of NAMESPACE
+                // statement.executeUpdate( "CREATE DOCUMENT SCHEMA doc" ); // todo There should be an alias to use the SQL default term SCHEMA instead of NAMESPACE
                 connection.commit();
             }
         }
     }
 
 
-    @AfterClass
+    @AfterAll
     public static void stop() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
@@ -92,20 +92,20 @@ public class JdbcMetaTest {
 
             // Check number of columns
             int totalColumns = rsmd.getColumnCount();
-            Assert.assertEquals( "Wrong number of columns", 11, totalColumns );
+            Assertions.assertEquals( 11, totalColumns, "Wrong number of columns" );
 
             // Check column names
-            Assert.assertEquals( "Wrong column name", "TABLE_CAT", rsmd.getColumnName( 1 ) );
-            Assert.assertEquals( "Wrong column name", "TABLE_SCHEM", rsmd.getColumnName( 2 ) );
-            Assert.assertEquals( "Wrong column name", "TABLE_NAME", rsmd.getColumnName( 3 ) );
-            Assert.assertEquals( "Wrong column name", "TABLE_TYPE", rsmd.getColumnName( 4 ) );
-            Assert.assertEquals( "Wrong column name", "REMARKS", rsmd.getColumnName( 5 ) );
-            Assert.assertEquals( "Wrong column name", "TYPE_CAT", rsmd.getColumnName( 6 ) );
-            Assert.assertEquals( "Wrong column name", "TYPE_SCHEM", rsmd.getColumnName( 7 ) );
-            Assert.assertEquals( "Wrong column name", "TYPE_NAME", rsmd.getColumnName( 8 ) );
-            Assert.assertEquals( "Wrong column name", "SELF_REFERENCING_COL_NAME", rsmd.getColumnName( 9 ) );
-            Assert.assertEquals( "Wrong column name", "REF_GENERATION", rsmd.getColumnName( 10 ) );
-            Assert.assertEquals( "Wrong column name", "OWNER", rsmd.getColumnName( 11 ) );
+            Assertions.assertEquals( "Wrong column name", "TABLE_CAT", rsmd.getColumnName( 1 ) );
+            Assertions.assertEquals( "Wrong column name", "TABLE_SCHEM", rsmd.getColumnName( 2 ) );
+            Assertions.assertEquals( "Wrong column name", "TABLE_NAME", rsmd.getColumnName( 3 ) );
+            Assertions.assertEquals( "Wrong column name", "TABLE_TYPE", rsmd.getColumnName( 4 ) );
+            Assertions.assertEquals( "Wrong column name", "REMARKS", rsmd.getColumnName( 5 ) );
+            Assertions.assertEquals( "Wrong column name", "TYPE_CAT", rsmd.getColumnName( 6 ) );
+            Assertions.assertEquals( "Wrong column name", "TYPE_SCHEM", rsmd.getColumnName( 7 ) );
+            Assertions.assertEquals( "Wrong column name", "TYPE_NAME", rsmd.getColumnName( 8 ) );
+            Assertions.assertEquals( "Wrong column name", "SELF_REFERENCING_COL_NAME", rsmd.getColumnName( 9 ) );
+            Assertions.assertEquals( "Wrong column name", "REF_GENERATION", rsmd.getColumnName( 10 ) );
+            Assertions.assertEquals( "Wrong column name", "OWNER", rsmd.getColumnName( 11 ) );
 
             // Check data
             final Object[] tableFoo = new Object[]{ "APP", "public", "foo", "ENTITY", "", null, null, null, null, null, "pa" };
@@ -138,28 +138,28 @@ public class JdbcMetaTest {
 
             // Check number of columns
             int totalColumns = rsmd.getColumnCount();
-            Assert.assertEquals( "Wrong number of columns", 19, totalColumns );
+            Assertions.assertEquals( 19, totalColumns, "Wrong number of columns" );
 
             // Check column names
-            Assert.assertEquals( "Wrong column name", "TABLE_CAT", rsmd.getColumnName( 1 ) );
-            Assert.assertEquals( "Wrong column name", "TABLE_SCHEM", rsmd.getColumnName( 2 ) );
-            Assert.assertEquals( "Wrong column name", "TABLE_NAME", rsmd.getColumnName( 3 ) );
-            Assert.assertEquals( "Wrong column name", "COLUMN_NAME", rsmd.getColumnName( 4 ) );
-            Assert.assertEquals( "Wrong column name", "DATA_TYPE", rsmd.getColumnName( 5 ) );
-            Assert.assertEquals( "Wrong column name", "TYPE_NAME", rsmd.getColumnName( 6 ) );
-            Assert.assertEquals( "Wrong column name", "COLUMN_SIZE", rsmd.getColumnName( 7 ) );
-            Assert.assertEquals( "Wrong column name", "BUFFER_LENGTH", rsmd.getColumnName( 8 ) );
-            Assert.assertEquals( "Wrong column name", "DECIMAL_DIGITS", rsmd.getColumnName( 9 ) );
-            Assert.assertEquals( "Wrong column name", "NUM_PREC_RADIX", rsmd.getColumnName( 10 ) );
-            Assert.assertEquals( "Wrong column name", "NULLABLE", rsmd.getColumnName( 11 ) );
-            Assert.assertEquals( "Wrong column name", "REMARKS", rsmd.getColumnName( 12 ) );
-            Assert.assertEquals( "Wrong column name", "COLUMN_DEF", rsmd.getColumnName( 13 ) );
-            Assert.assertEquals( "Wrong column name", "SQL_DATA_TYPE", rsmd.getColumnName( 14 ) );
-            Assert.assertEquals( "Wrong column name", "SQL_DATETIME_SUB", rsmd.getColumnName( 15 ) );
-            Assert.assertEquals( "Wrong column name", "CHAR_OCTET_LENGTH", rsmd.getColumnName( 16 ) );
-            Assert.assertEquals( "Wrong column name", "ORDINAL_POSITION", rsmd.getColumnName( 17 ) );
-            Assert.assertEquals( "Wrong column name", "IS_NULLABLE", rsmd.getColumnName( 18 ) );
-            Assert.assertEquals( "Wrong column name", "COLLATION", rsmd.getColumnName( 19 ) );
+            Assertions.assertEquals( "Wrong column name", "TABLE_CAT", rsmd.getColumnName( 1 ) );
+            Assertions.assertEquals( "Wrong column name", "TABLE_SCHEM", rsmd.getColumnName( 2 ) );
+            Assertions.assertEquals( "Wrong column name", "TABLE_NAME", rsmd.getColumnName( 3 ) );
+            Assertions.assertEquals( "Wrong column name", "COLUMN_NAME", rsmd.getColumnName( 4 ) );
+            Assertions.assertEquals( "Wrong column name", "DATA_TYPE", rsmd.getColumnName( 5 ) );
+            Assertions.assertEquals( "Wrong column name", "TYPE_NAME", rsmd.getColumnName( 6 ) );
+            Assertions.assertEquals( "Wrong column name", "COLUMN_SIZE", rsmd.getColumnName( 7 ) );
+            Assertions.assertEquals( "Wrong column name", "BUFFER_LENGTH", rsmd.getColumnName( 8 ) );
+            Assertions.assertEquals( "Wrong column name", "DECIMAL_DIGITS", rsmd.getColumnName( 9 ) );
+            Assertions.assertEquals( "Wrong column name", "NUM_PREC_RADIX", rsmd.getColumnName( 10 ) );
+            Assertions.assertEquals( "Wrong column name", "NULLABLE", rsmd.getColumnName( 11 ) );
+            Assertions.assertEquals( "Wrong column name", "REMARKS", rsmd.getColumnName( 12 ) );
+            Assertions.assertEquals( "Wrong column name", "COLUMN_DEF", rsmd.getColumnName( 13 ) );
+            Assertions.assertEquals( "Wrong column name", "SQL_DATA_TYPE", rsmd.getColumnName( 14 ) );
+            Assertions.assertEquals( "Wrong column name", "SQL_DATETIME_SUB", rsmd.getColumnName( 15 ) );
+            Assertions.assertEquals( "Wrong column name", "CHAR_OCTET_LENGTH", rsmd.getColumnName( 16 ) );
+            Assertions.assertEquals( "Wrong column name", "ORDINAL_POSITION", rsmd.getColumnName( 17 ) );
+            Assertions.assertEquals( "Wrong column name", "IS_NULLABLE", rsmd.getColumnName( 18 ) );
+            Assertions.assertEquals( "Wrong column name", "COLLATION", rsmd.getColumnName( 19 ) );
 
             // Check data
             final Object[] columnId = new Object[]{ "APP", "public", "foo", "id", 4, "INTEGER", null, null, null, null, 0, "", null, null, null, null, 1, "NO", null };
@@ -187,13 +187,13 @@ public class JdbcMetaTest {
 
             // Check number of columns
             int totalColumns = rsmd.getColumnCount();
-            Assert.assertEquals( "Wrong number of columns", 4, totalColumns );
+            Assertions.assertEquals( 4, totalColumns, "Wrong number of columns" );
 
             // Check column names
-            Assert.assertEquals( "Wrong column name", "TABLE_SCHEM", rsmd.getColumnName( 1 ) );
-            Assert.assertEquals( "Wrong column name", "TABLE_CATALOG", rsmd.getColumnName( 2 ) );
-            Assert.assertEquals( "Wrong column name", "OWNER", rsmd.getColumnName( 3 ) );
-            Assert.assertEquals( "Wrong column name", "SCHEMA_TYPE", rsmd.getColumnName( 4 ) );
+            Assertions.assertEquals( "Wrong column name", "TABLE_SCHEM", rsmd.getColumnName( 1 ) );
+            Assertions.assertEquals( "Wrong column name", "TABLE_CATALOG", rsmd.getColumnName( 2 ) );
+            Assertions.assertEquals( "Wrong column name", "OWNER", rsmd.getColumnName( 3 ) );
+            Assertions.assertEquals( "Wrong column name", "SCHEMA_TYPE", rsmd.getColumnName( 4 ) );
 
             // Check data
             final Object[] schemaPublic = new Object[]{ "public", "APP", "pa", "RELATIONAL" };
@@ -228,12 +228,12 @@ public class JdbcMetaTest {
 
             // Check number of columns
             int totalColumns = rsmd.getColumnCount();
-            Assert.assertEquals( "Wrong number of columns", 3, totalColumns );
+            Assertions.assertEquals( 3, totalColumns, "Wrong number of columns" );
 
             // Check column names
-            Assert.assertEquals( "Wrong column name", "TABLE_CAT", rsmd.getColumnName( 1 ) );
-            Assert.assertEquals( "Wrong column name", "OWNER", rsmd.getColumnName( 2 ) );
-            Assert.assertEquals( "Wrong column name", "DEFAULT_SCHEMA", rsmd.getColumnName( 3 ) );
+            Assertions.assertEquals( "Wrong column name", "TABLE_CAT", rsmd.getColumnName( 1 ) );
+            Assertions.assertEquals( "Wrong column name", "OWNER", rsmd.getColumnName( 2 ) );
+            Assertions.assertEquals( "Wrong column name", "DEFAULT_SCHEMA", rsmd.getColumnName( 3 ) );
 
             // Check data
             final Object[] databaseApp = new Object[]{ "APP", "system", "public" };
@@ -254,10 +254,10 @@ public class JdbcMetaTest {
 
             // Check number of columns
             int totalColumns = rsmd.getColumnCount();
-            Assert.assertEquals( "Wrong number of columns", 1, totalColumns );
+            Assertions.assertEquals( 1, totalColumns, "Wrong number of columns" );
 
             // Check column names
-            Assert.assertEquals( "Wrong column name", "TABLE_TYPE", rsmd.getColumnName( 1 ) );
+            Assertions.assertEquals( "Wrong column name", "TABLE_TYPE", rsmd.getColumnName( 1 ) );
 
             // Check data
             final List<Object[]> tableTypeTable = ImmutableList.of( new Object[]{ "ENTITY" }, new Object[]{ "SOURCE" }, new Object[]{ "VIEW" }, new Object[]{ "MATERIALIZED_VIEW" } );
@@ -278,15 +278,15 @@ public class JdbcMetaTest {
 
             // Check number of columns
             int totalColumns = rsmd.getColumnCount();
-            Assert.assertEquals( "Wrong number of columns", 6, totalColumns );
+            Assertions.assertEquals( 6, totalColumns, "Wrong number of columns" );
 
             // Check column names
-            Assert.assertEquals( "Wrong column name", "TABLE_CAT", rsmd.getColumnName( 1 ) );
-            Assert.assertEquals( "Wrong column name", "TABLE_SCHEM", rsmd.getColumnName( 2 ) );
-            Assert.assertEquals( "Wrong column name", "TABLE_NAME", rsmd.getColumnName( 3 ) );
-            Assert.assertEquals( "Wrong column name", "COLUMN_NAME", rsmd.getColumnName( 4 ) );
-            Assert.assertEquals( "Wrong column name", "KEY_SEQ", rsmd.getColumnName( 5 ) );
-            Assert.assertEquals( "Wrong column name", "PK_NAME", rsmd.getColumnName( 6 ) );
+            Assertions.assertEquals( "Wrong column name", "TABLE_CAT", rsmd.getColumnName( 1 ) );
+            Assertions.assertEquals( "Wrong column name", "TABLE_SCHEM", rsmd.getColumnName( 2 ) );
+            Assertions.assertEquals( "Wrong column name", "TABLE_NAME", rsmd.getColumnName( 3 ) );
+            Assertions.assertEquals( "Wrong column name", "COLUMN_NAME", rsmd.getColumnName( 4 ) );
+            Assertions.assertEquals( "Wrong column name", "KEY_SEQ", rsmd.getColumnName( 5 ) );
+            Assertions.assertEquals( "Wrong column name", "PK_NAME", rsmd.getColumnName( 6 ) );
 
             // Check data
             final Object[] primaryKey = new Object[]{ "APP", "public", "foo", "id", 1, null };
@@ -321,23 +321,23 @@ public class JdbcMetaTest {
 
             // Check number of columns
             int totalColumns = rsmd.getColumnCount();
-            Assert.assertEquals( "Wrong number of columns", 14, totalColumns );
+            Assertions.assertEquals( 14, totalColumns, "Wrong number of columns" );
 
             // Check column names
-            Assert.assertEquals( "Wrong column name", "PKTABLE_CAT", rsmd.getColumnName( 1 ) );
-            Assert.assertEquals( "Wrong column name", "PKTABLE_SCHEM", rsmd.getColumnName( 2 ) );
-            Assert.assertEquals( "Wrong column name", "PKTABLE_NAME", rsmd.getColumnName( 3 ) );
-            Assert.assertEquals( "Wrong column name", "PKCOLUMN_NAME", rsmd.getColumnName( 4 ) );
-            Assert.assertEquals( "Wrong column name", "FKTABLE_CAT", rsmd.getColumnName( 5 ) );
-            Assert.assertEquals( "Wrong column name", "FKTABLE_SCHEM", rsmd.getColumnName( 6 ) );
-            Assert.assertEquals( "Wrong column name", "FKTABLE_NAME", rsmd.getColumnName( 7 ) );
-            Assert.assertEquals( "Wrong column name", "FKCOLUMN_NAME", rsmd.getColumnName( 8 ) );
-            Assert.assertEquals( "Wrong column name", "KEY_SEQ", rsmd.getColumnName( 9 ) );
-            Assert.assertEquals( "Wrong column name", "UPDATE_RULE", rsmd.getColumnName( 10 ) );
-            Assert.assertEquals( "Wrong column name", "DELETE_RULE", rsmd.getColumnName( 11 ) );
-            Assert.assertEquals( "Wrong column name", "FK_NAME", rsmd.getColumnName( 12 ) );
-            Assert.assertEquals( "Wrong column name", "PK_NAME", rsmd.getColumnName( 13 ) );
-            Assert.assertEquals( "Wrong column name", "DEFERRABILITY", rsmd.getColumnName( 14 ) );
+            Assertions.assertEquals( "Wrong column name", "PKTABLE_CAT", rsmd.getColumnName( 1 ) );
+            Assertions.assertEquals( "Wrong column name", "PKTABLE_SCHEM", rsmd.getColumnName( 2 ) );
+            Assertions.assertEquals( "Wrong column name", "PKTABLE_NAME", rsmd.getColumnName( 3 ) );
+            Assertions.assertEquals( "Wrong column name", "PKCOLUMN_NAME", rsmd.getColumnName( 4 ) );
+            Assertions.assertEquals( "Wrong column name", "FKTABLE_CAT", rsmd.getColumnName( 5 ) );
+            Assertions.assertEquals( "Wrong column name", "FKTABLE_SCHEM", rsmd.getColumnName( 6 ) );
+            Assertions.assertEquals( "Wrong column name", "FKTABLE_NAME", rsmd.getColumnName( 7 ) );
+            Assertions.assertEquals( "Wrong column name", "FKCOLUMN_NAME", rsmd.getColumnName( 8 ) );
+            Assertions.assertEquals( "Wrong column name", "KEY_SEQ", rsmd.getColumnName( 9 ) );
+            Assertions.assertEquals( "Wrong column name", "UPDATE_RULE", rsmd.getColumnName( 10 ) );
+            Assertions.assertEquals( "Wrong column name", "DELETE_RULE", rsmd.getColumnName( 11 ) );
+            Assertions.assertEquals( "Wrong column name", "FK_NAME", rsmd.getColumnName( 12 ) );
+            Assertions.assertEquals( "Wrong column name", "PK_NAME", rsmd.getColumnName( 13 ) );
+            Assertions.assertEquals( "Wrong column name", "DEFERRABILITY", rsmd.getColumnName( 14 ) );
 
             // Check data
             final Object[] foreignKey1a = new Object[]{ "APP", "test", "foo2", "name", "APP", "public", "foo", "name", 1, 1, 1, "fk_foo_1", null, null };
@@ -370,23 +370,23 @@ public class JdbcMetaTest {
 
             // Check number of columns
             int totalColumns = rsmd.getColumnCount();
-            Assert.assertEquals( "Wrong number of columns", 14, totalColumns );
+            Assertions.assertEquals( 14, totalColumns, "Wrong number of columns" );
 
             // Check column names
-            Assert.assertEquals( "Wrong column name", "PKTABLE_CAT", rsmd.getColumnName( 1 ) );
-            Assert.assertEquals( "Wrong column name", "PKTABLE_SCHEM", rsmd.getColumnName( 2 ) );
-            Assert.assertEquals( "Wrong column name", "PKTABLE_NAME", rsmd.getColumnName( 3 ) );
-            Assert.assertEquals( "Wrong column name", "PKCOLUMN_NAME", rsmd.getColumnName( 4 ) );
-            Assert.assertEquals( "Wrong column name", "FKTABLE_CAT", rsmd.getColumnName( 5 ) );
-            Assert.assertEquals( "Wrong column name", "FKTABLE_SCHEM", rsmd.getColumnName( 6 ) );
-            Assert.assertEquals( "Wrong column name", "FKTABLE_NAME", rsmd.getColumnName( 7 ) );
-            Assert.assertEquals( "Wrong column name", "FKCOLUMN_NAME", rsmd.getColumnName( 8 ) );
-            Assert.assertEquals( "Wrong column name", "KEY_SEQ", rsmd.getColumnName( 9 ) );
-            Assert.assertEquals( "Wrong column name", "UPDATE_RULE", rsmd.getColumnName( 10 ) );
-            Assert.assertEquals( "Wrong column name", "DELETE_RULE", rsmd.getColumnName( 11 ) );
-            Assert.assertEquals( "Wrong column name", "FK_NAME", rsmd.getColumnName( 12 ) );
-            Assert.assertEquals( "Wrong column name", "PK_NAME", rsmd.getColumnName( 13 ) );
-            Assert.assertEquals( "Wrong column name", "DEFERRABILITY", rsmd.getColumnName( 14 ) );
+            Assertions.assertEquals( "Wrong column name", "PKTABLE_CAT", rsmd.getColumnName( 1 ) );
+            Assertions.assertEquals( "Wrong column name", "PKTABLE_SCHEM", rsmd.getColumnName( 2 ) );
+            Assertions.assertEquals( "Wrong column name", "PKTABLE_NAME", rsmd.getColumnName( 3 ) );
+            Assertions.assertEquals( "Wrong column name", "PKCOLUMN_NAME", rsmd.getColumnName( 4 ) );
+            Assertions.assertEquals( "Wrong column name", "FKTABLE_CAT", rsmd.getColumnName( 5 ) );
+            Assertions.assertEquals( "Wrong column name", "FKTABLE_SCHEM", rsmd.getColumnName( 6 ) );
+            Assertions.assertEquals( "Wrong column name", "FKTABLE_NAME", rsmd.getColumnName( 7 ) );
+            Assertions.assertEquals( "Wrong column name", "FKCOLUMN_NAME", rsmd.getColumnName( 8 ) );
+            Assertions.assertEquals( "Wrong column name", "KEY_SEQ", rsmd.getColumnName( 9 ) );
+            Assertions.assertEquals( "Wrong column name", "UPDATE_RULE", rsmd.getColumnName( 10 ) );
+            Assertions.assertEquals( "Wrong column name", "DELETE_RULE", rsmd.getColumnName( 11 ) );
+            Assertions.assertEquals( "Wrong column name", "FK_NAME", rsmd.getColumnName( 12 ) );
+            Assertions.assertEquals( "Wrong column name", "PK_NAME", rsmd.getColumnName( 13 ) );
+            Assertions.assertEquals( "Wrong column name", "DEFERRABILITY", rsmd.getColumnName( 14 ) );
 
             // Check data
             final Object[] foreignKey1a = new Object[]{ "APP", "test", "foo2", "name", "APP", "public", "foo", "name", 1, 1, 1, "fk_foo_1", null, null };
@@ -419,27 +419,27 @@ public class JdbcMetaTest {
 
             // Check number of columns
             int totalColumns = rsmd.getColumnCount();
-            Assert.assertEquals( "Wrong number of columns", 18, totalColumns );
+            Assertions.assertEquals( 18, totalColumns, "Wrong number of columns" );
 
             // Check column names
-            Assert.assertEquals( "Wrong column name", "TYPE_NAME", rsmd.getColumnName( 1 ) );
-            Assert.assertEquals( "Wrong column name", "DATA_TYPE", rsmd.getColumnName( 2 ) );
-            Assert.assertEquals( "Wrong column name", "PRECISION", rsmd.getColumnName( 3 ) );
-            Assert.assertEquals( "Wrong column name", "LITERAL_PREFIX", rsmd.getColumnName( 4 ) );
-            Assert.assertEquals( "Wrong column name", "LITERAL_SUFFIX", rsmd.getColumnName( 5 ) );
-            Assert.assertEquals( "Wrong column name", "CREATE_PARAMS", rsmd.getColumnName( 6 ) );
-            Assert.assertEquals( "Wrong column name", "NULLABLE", rsmd.getColumnName( 7 ) );
-            Assert.assertEquals( "Wrong column name", "CASE_SENSITIVE", rsmd.getColumnName( 8 ) );
-            Assert.assertEquals( "Wrong column name", "SEARCHABLE", rsmd.getColumnName( 9 ) );
-            Assert.assertEquals( "Wrong column name", "UNSIGNED_ATTRIBUTE", rsmd.getColumnName( 10 ) );
-            Assert.assertEquals( "Wrong column name", "FIXED_PREC_SCALE", rsmd.getColumnName( 11 ) );
-            Assert.assertEquals( "Wrong column name", "AUTO_INCREMENT", rsmd.getColumnName( 12 ) );
-            Assert.assertEquals( "Wrong column name", "LOCAL_TYPE_NAME", rsmd.getColumnName( 13 ) );
-            Assert.assertEquals( "Wrong column name", "MINIMUM_SCALE", rsmd.getColumnName( 14 ) );
-            Assert.assertEquals( "Wrong column name", "MAXIMUM_SCALE", rsmd.getColumnName( 15 ) );
-            Assert.assertEquals( "Wrong column name", "SQL_DATA_TYPE", rsmd.getColumnName( 16 ) );
-            Assert.assertEquals( "Wrong column name", "SQL_DATETIME_SUB", rsmd.getColumnName( 17 ) );
-            Assert.assertEquals( "Wrong column name", "NUM_PREC_RADIX", rsmd.getColumnName( 18 ) );
+            Assertions.assertEquals( "Wrong column name", "TYPE_NAME", rsmd.getColumnName( 1 ) );
+            Assertions.assertEquals( "Wrong column name", "DATA_TYPE", rsmd.getColumnName( 2 ) );
+            Assertions.assertEquals( "Wrong column name", "PRECISION", rsmd.getColumnName( 3 ) );
+            Assertions.assertEquals( "Wrong column name", "LITERAL_PREFIX", rsmd.getColumnName( 4 ) );
+            Assertions.assertEquals( "Wrong column name", "LITERAL_SUFFIX", rsmd.getColumnName( 5 ) );
+            Assertions.assertEquals( "Wrong column name", "CREATE_PARAMS", rsmd.getColumnName( 6 ) );
+            Assertions.assertEquals( "Wrong column name", "NULLABLE", rsmd.getColumnName( 7 ) );
+            Assertions.assertEquals( "Wrong column name", "CASE_SENSITIVE", rsmd.getColumnName( 8 ) );
+            Assertions.assertEquals( "Wrong column name", "SEARCHABLE", rsmd.getColumnName( 9 ) );
+            Assertions.assertEquals( "Wrong column name", "UNSIGNED_ATTRIBUTE", rsmd.getColumnName( 10 ) );
+            Assertions.assertEquals( "Wrong column name", "FIXED_PREC_SCALE", rsmd.getColumnName( 11 ) );
+            Assertions.assertEquals( "Wrong column name", "AUTO_INCREMENT", rsmd.getColumnName( 12 ) );
+            Assertions.assertEquals( "Wrong column name", "LOCAL_TYPE_NAME", rsmd.getColumnName( 13 ) );
+            Assertions.assertEquals( "Wrong column name", "MINIMUM_SCALE", rsmd.getColumnName( 14 ) );
+            Assertions.assertEquals( "Wrong column name", "MAXIMUM_SCALE", rsmd.getColumnName( 15 ) );
+            Assertions.assertEquals( "Wrong column name", "SQL_DATA_TYPE", rsmd.getColumnName( 16 ) );
+            Assertions.assertEquals( "Wrong column name", "SQL_DATETIME_SUB", rsmd.getColumnName( 17 ) );
+            Assertions.assertEquals( "Wrong column name", "NUM_PREC_RADIX", rsmd.getColumnName( 18 ) );
         }
     }
 
@@ -453,24 +453,24 @@ public class JdbcMetaTest {
 
             // Check number of columns
             int totalColumns = rsmd.getColumnCount();
-            Assert.assertEquals( "Wrong number of columns", 15, totalColumns );
+            Assertions.assertEquals( 15, totalColumns, "Wrong number of columns" );
 
             // Check column names
-            Assert.assertEquals( "Wrong column name", "TABLE_CAT", rsmd.getColumnName( 1 ) );
-            Assert.assertEquals( "Wrong column name", "TABLE_SCHEM", rsmd.getColumnName( 2 ) );
-            Assert.assertEquals( "Wrong column name", "TABLE_NAME", rsmd.getColumnName( 3 ) );
-            Assert.assertEquals( "Wrong column name", "NON_UNIQUE", rsmd.getColumnName( 4 ) );
-            Assert.assertEquals( "Wrong column name", "INDEX_QUALIFIER", rsmd.getColumnName( 5 ) );
-            Assert.assertEquals( "Wrong column name", "INDEX_NAME", rsmd.getColumnName( 6 ) );
-            Assert.assertEquals( "Wrong column name", "TYPE", rsmd.getColumnName( 7 ) );
-            Assert.assertEquals( "Wrong column name", "ORDINAL_POSITION", rsmd.getColumnName( 8 ) );
-            Assert.assertEquals( "Wrong column name", "COLUMN_NAME", rsmd.getColumnName( 9 ) );
-            Assert.assertEquals( "Wrong column name", "ASC_OR_DESC", rsmd.getColumnName( 10 ) );
-            Assert.assertEquals( "Wrong column name", "CARDINALITY", rsmd.getColumnName( 11 ) );
-            Assert.assertEquals( "Wrong column name", "PAGES", rsmd.getColumnName( 12 ) );
-            Assert.assertEquals( "Wrong column name", "FILTER_CONDITION", rsmd.getColumnName( 13 ) );
-            Assert.assertEquals( "Wrong column name", "LOCATION", rsmd.getColumnName( 14 ) );
-            Assert.assertEquals( "Wrong column name", "INDEX_TYPE", rsmd.getColumnName( 15 ) );
+            Assertions.assertEquals( "Wrong column name", "TABLE_CAT", rsmd.getColumnName( 1 ) );
+            Assertions.assertEquals( "Wrong column name", "TABLE_SCHEM", rsmd.getColumnName( 2 ) );
+            Assertions.assertEquals( "Wrong column name", "TABLE_NAME", rsmd.getColumnName( 3 ) );
+            Assertions.assertEquals( "Wrong column name", "NON_UNIQUE", rsmd.getColumnName( 4 ) );
+            Assertions.assertEquals( "Wrong column name", "INDEX_QUALIFIER", rsmd.getColumnName( 5 ) );
+            Assertions.assertEquals( "Wrong column name", "INDEX_NAME", rsmd.getColumnName( 6 ) );
+            Assertions.assertEquals( "Wrong column name", "TYPE", rsmd.getColumnName( 7 ) );
+            Assertions.assertEquals( "Wrong column name", "ORDINAL_POSITION", rsmd.getColumnName( 8 ) );
+            Assertions.assertEquals( "Wrong column name", "COLUMN_NAME", rsmd.getColumnName( 9 ) );
+            Assertions.assertEquals( "Wrong column name", "ASC_OR_DESC", rsmd.getColumnName( 10 ) );
+            Assertions.assertEquals( "Wrong column name", "CARDINALITY", rsmd.getColumnName( 11 ) );
+            Assertions.assertEquals( "Wrong column name", "PAGES", rsmd.getColumnName( 12 ) );
+            Assertions.assertEquals( "Wrong column name", "FILTER_CONDITION", rsmd.getColumnName( 13 ) );
+            Assertions.assertEquals( "Wrong column name", "LOCATION", rsmd.getColumnName( 14 ) );
+            Assertions.assertEquals( "Wrong column name", "INDEX_TYPE", rsmd.getColumnName( 15 ) );
 
             // Check data
             final Object[] index1 = new Object[]{ "APP", "public", "foo", false, null, "i_foo", 0, 1, "id", null, -1, null, null, 0, 1 };

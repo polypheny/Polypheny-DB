@@ -61,7 +61,7 @@ import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolySymbol;
 import org.polypheny.db.type.entity.PolyTime;
-import org.polypheny.db.type.entity.PolyTimeStamp;
+import org.polypheny.db.type.entity.PolyTimestamp;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyBlob;
 import org.polypheny.db.type.entity.document.PolyDocument;
@@ -107,7 +107,7 @@ public interface NeoUtil {
                 return v -> PolyTime.of( v.asInt() );
             case TIMESTAMP:
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                return v -> PolyTimeStamp.of( v.asLong() );
+                return v -> PolyTimestamp.of( v.asLong() );
             case BIGINT:
                 return v -> PolyBigDecimal.of( v.asLong() );
             case DECIMAL:

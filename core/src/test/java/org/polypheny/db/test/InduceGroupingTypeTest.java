@@ -34,12 +34,12 @@
 package org.polypheny.db.test;
 
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.Aggregate.Group;
 import org.polypheny.db.util.ImmutableBitSet;

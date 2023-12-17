@@ -17,6 +17,12 @@
 package org.polypheny.db.type.entity.graph;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.activej.serializer.BinaryInput;
+import io.activej.serializer.BinaryOutput;
+import io.activej.serializer.BinarySerializer;
+import io.activej.serializer.CompatibilityLevel;
+import io.activej.serializer.CorruptedDataException;
+import io.activej.serializer.SimpleSerializerDef;
 import java.util.List;
 import java.util.UUID;
 import lombok.EqualsAndHashCode;
@@ -35,6 +41,7 @@ import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
 
@@ -103,6 +110,11 @@ public class PolyEdge extends GraphPropertyHolder {
     }
 
 
+    private boolean isVariable() {
+        return variableName != null;
+    }
+
+
     public PolyEdge copyNamed( PolyString newName ) {
         if ( newName == null ) {
             // no copy needed
@@ -159,7 +171,6 @@ public class PolyEdge extends GraphPropertyHolder {
         return this.equals( o.asEdge() ) ? 0 : -1;
 
     }
-
 
 
     @Override
@@ -227,6 +238,47 @@ public class PolyEdge extends GraphPropertyHolder {
                 '}';
     }
 
+
+    public static class PolyEdgeSerializerDef extends SimpleSerializerDef<PolyEdge> {
+
+        @Override
+        protected BinarySerializer<PolyEdge> createSerializer( int version, CompatibilityLevel compatibilityLevel ) {
+            return new BinarySerializer<>() {
+                @Override
+                public void encode( BinaryOutput out, PolyEdge item ) {
+                    out.writeUTF8( item.id.value );
+                    out.writeUTF8( item.labels.serialize() );
+                    out.writeBoolean( item.isVariable() );
+                    if ( item.isVariable() ) {
+                        out.writeUTF8Nullable( item.variableName.value );
+                    }
+                    out.writeUTF8( item.direction.name() );
+                    out.writeUTF8( item.source.value );
+                    out.writeUTF8( item.target.value );
+                    out.writeUTF8( item.properties.serialize() );
+                }
+
+
+                @Override
+                public PolyEdge decode( BinaryInput in ) throws CorruptedDataException {
+                    String id = in.readUTF8();
+                    PolyList<PolyString> labels = PolyValue.deserialize( in.readUTF8() ).asList();
+                    boolean isVariable = in.readBoolean();
+                    PolyString variableName = null;
+                    if ( isVariable ) {
+                        variableName = PolyString.of( in.readUTF8Nullable() );
+                    }
+
+                    EdgeDirection direction = EdgeDirection.valueOf( in.readUTF8() );
+                    String source = in.readUTF8();
+                    String target = in.readUTF8();
+                    PolyMap<PolyValue, PolyValue> properties = PolyValue.deserialize( in.readUTF8() ).asMap();
+                    return new PolyEdge( PolyString.of( id ), properties.asDictionary(), labels, PolyString.of( source ), PolyString.of( target ), direction, variableName );
+                }
+            };
+        }
+
+    }
 
 
 }

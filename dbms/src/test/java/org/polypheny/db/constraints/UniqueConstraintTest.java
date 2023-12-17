@@ -24,31 +24,22 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaSqlException;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.polypheny.db.AdapterTestSuite;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.db.excluded.CottontailExcluded;
-import org.polypheny.db.excluded.FileExcluded;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
-@RunWith(Parameterized.class)
-@Category({ AdapterTestSuite.class, CottontailExcluded.class, FileExcluded.class })
+@Tag("adapter")
+@Tag("cottontailExclude")
+@Tag("fileExclude")
 public class UniqueConstraintTest {
-
-    @Parameters(name = "Create Indexes: {0}")
-    public static Object[] data() {
-        return new Object[]{ false, true };
-    }
 
 
     private static final String CREATE_TABLE_CONSTRAINT_STATEMENTS =
@@ -77,7 +68,7 @@ public class UniqueConstraintTest {
     }
 
 
-    @BeforeClass
+    @BeforeAll
     public static void start() throws SQLException {
         // Ensures that Polypheny-DB is running
         //noinspection ResultOfMethodCallIgnored
@@ -93,7 +84,7 @@ public class UniqueConstraintTest {
     }
 
 
-    @AfterClass
+    @AfterAll
     public static void shutdown() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -106,7 +97,8 @@ public class UniqueConstraintTest {
     }
 
 
-    @Test
+    @ParameterizedTest(name = "{index}: {0}")
+    @ValueSource(booleans = { false, true })
     public void insertNoConflictTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -137,7 +129,8 @@ public class UniqueConstraintTest {
     }
 
 
-    @Test
+    @ParameterizedTest(name = "{index}: {0}")
+    @ValueSource(booleans = { false, true })
     public void insertExternalConflictTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -157,7 +150,7 @@ public class UniqueConstraintTest {
                     try {
                         statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 2, 3, 4)" );
 
-                        Assert.fail( "Expected ConstraintViolationException was not thrown" );
+                        Assertions.fail( "Expected ConstraintViolationException was not thrown" );
                     } catch ( AvaticaSqlException e ) {
                         if ( !e.getMessage().contains( "Insert violates unique constraint" ) ) {
                             throw new RuntimeException( "Unexpected exception", e );
@@ -166,7 +159,7 @@ public class UniqueConstraintTest {
                     try {
                         statement.executeUpdate( "INSERT INTO constraint_test VALUES (2, 1, 1, 4)" );
 
-                        Assert.fail( "Expected ConstraintViolationException was not thrown" );
+                        Assertions.fail( "Expected ConstraintViolationException was not thrown" );
                     } catch ( AvaticaSqlException e ) {
                         if ( !e.getMessage().contains( "Insert violates unique constraint" ) ) {
                             throw new RuntimeException( "Unexpected exception", e );
@@ -185,7 +178,8 @@ public class UniqueConstraintTest {
     }
 
 
-    @Test
+    @ParameterizedTest(name = "{index}: {0}")
+    @ValueSource(booleans = { false, true })
     public void insertInternalConflictTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -205,7 +199,7 @@ public class UniqueConstraintTest {
                     try {
                         statement.executeUpdate( "INSERT INTO constraint_test VALUES (2, 2, 3, 4), (4, 2, 3, 1)" );
 
-                        Assert.fail( "Expected ConstraintViolationException was not thrown" );
+                        Assertions.fail( "Expected ConstraintViolationException was not thrown" );
                     } catch ( AvaticaSqlException e ) {
                         if ( !e.getMessage().contains( "Insert violates unique constraint" ) ) {
                             throw new RuntimeException( "Unexpected exception", e );
@@ -224,7 +218,8 @@ public class UniqueConstraintTest {
     }
 
 
-    @Test
+    @ParameterizedTest(name = "{index}: {0}")
+    @ValueSource(booleans = { false, true })
     public void insertSelectNoConflictTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -259,7 +254,8 @@ public class UniqueConstraintTest {
     }
 
 
-    @Test
+    @ParameterizedTest(name = "{index}: {0}")
+    @ValueSource(booleans = { false, true })
     public void insertSelectExternalConflictTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -279,7 +275,7 @@ public class UniqueConstraintTest {
                     try {
                         statement.executeUpdate( "INSERT INTO constraint_test SELECT * FROM constraint_test" );
                         connection.commit();
-                        Assert.fail( "Expected ConstraintViolationException was not thrown" );
+                        Assertions.fail( "Expected ConstraintViolationException was not thrown" );
                     } catch ( AvaticaSqlException e ) {
                         if ( !e.getMessage().contains( "Insert violates unique constraint" ) ) {
                             throw new RuntimeException( "Unexpected exception", e );
@@ -301,7 +297,8 @@ public class UniqueConstraintTest {
     }
 
 
-    @Test
+    @ParameterizedTest(name = "{index}: {0}")
+    @ValueSource(booleans = { false, true })
     public void insertSelectInternalConflictTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -321,7 +318,7 @@ public class UniqueConstraintTest {
                     try {
                         statement.executeUpdate( "INSERT INTO constraint_test SELECT c AS ctid, a + 2 AS a, b, c FROM constraint_test" );
                         connection.commit();
-                        Assert.fail( "Expected ConstraintViolationException was not thrown" );
+                        Assertions.fail( "Expected ConstraintViolationException was not thrown" );
                     } catch ( AvaticaSqlException e ) {
                         if ( !e.getMessage().contains( "Insert violates unique constraint" ) ) {
                             throw new RuntimeException( "Unexpected exception", e );
@@ -343,7 +340,8 @@ public class UniqueConstraintTest {
     }
 
 
-    @Test
+    @ParameterizedTest(name = "{index}: {0}")
+    @ValueSource(booleans = { false, true })
     public void batchInsertTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -374,7 +372,7 @@ public class UniqueConstraintTest {
                     try {
                         preparedStatement.executeBatch();
                         connection.commit();
-                        Assert.fail( "Expected ConstraintViolationException was not thrown" );
+                        Assertions.fail( "Expected ConstraintViolationException was not thrown" );
                     } catch ( AvaticaSqlException e ) {
                         if ( !e.getMessage().contains( "Insert violates unique constraint" ) ) {
                             throw new RuntimeException( "Unexpected exception", e );
@@ -404,7 +402,7 @@ public class UniqueConstraintTest {
                     try {
                         preparedStatement.executeBatch();
                         connection.commit();
-                        Assert.fail( "Expected ConstraintViolationException was not thrown" );
+                        Assertions.fail( "Expected ConstraintViolationException was not thrown" );
                     } catch ( AvaticaSqlException e ) {
                         if ( !e.getMessage().contains( "Insert violates unique constraint" ) ) {
                             throw new RuntimeException( "Unexpected exception", e );
@@ -428,7 +426,8 @@ public class UniqueConstraintTest {
     }
 
 
-    @Test
+    @ParameterizedTest(name = "{index}: {0}")
+    @ValueSource(booleans = { false, true })
     public void batchUpdateTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -459,7 +458,7 @@ public class UniqueConstraintTest {
                     try {
                         preparedStatement.executeBatch();
                         connection.commit();
-                        Assert.fail( "Expected ConstraintViolationException was not thrown" );
+                        Assertions.fail( "Expected ConstraintViolationException was not thrown" );
                     } catch ( AvaticaSqlException e ) {
                         if ( !e.getMessage().contains( "Update violates unique constraint" ) ) {
                             throw new RuntimeException( "Unexpected exception", e );
@@ -500,7 +499,7 @@ public class UniqueConstraintTest {
                     preparedStatement.addBatch();
                     try {
                         preparedStatement.executeBatch();
-                        Assert.fail( "Expected ConstraintViolationException was not thrown" );
+                        Assertions.fail( "Expected ConstraintViolationException was not thrown" );
                     } catch ( AvaticaSqlException e ) {
                         if ( !e.getMessage().contains( "Update violates unique constraint" ) ) {
                             throw new RuntimeException( "Unexpected exception", e );
@@ -515,7 +514,8 @@ public class UniqueConstraintTest {
     }
 
 
-    @Test
+    @ParameterizedTest(name = "{index}: {0}")
+    @ValueSource(booleans = { false, true })
     public void updateNoConflictTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -557,7 +557,8 @@ public class UniqueConstraintTest {
     }
 
 
-    @Test
+    @ParameterizedTest(name = "{index}: {0}")
+    @ValueSource(booleans = { false, true })
     public void updateConflictTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -577,7 +578,7 @@ public class UniqueConstraintTest {
                     try {
                         statement.executeUpdate( "UPDATE constraint_test SET ctid = 1" );
                         connection.commit();
-                        Assert.fail( "Expected ConstraintViolationException was not thrown" );
+                        Assertions.fail( "Expected ConstraintViolationException was not thrown" );
                     } catch ( AvaticaSqlException e ) {
                         if ( !e.getMessage().contains( "Update violates unique constraint" ) ) {
                             throw new RuntimeException( "Unexpected exception", e );
@@ -587,7 +588,7 @@ public class UniqueConstraintTest {
                     try {
                         statement.executeUpdate( "UPDATE constraint_test SET a = 42, b = 73" );
                         connection.commit();
-                        Assert.fail( "Expected ConstraintViolationException was not thrown" );
+                        Assertions.fail( "Expected ConstraintViolationException was not thrown" );
                     } catch ( AvaticaSqlException e ) {
                         if ( !e.getMessage().contains( "Update violates unique constraint" ) ) {
                             throw new RuntimeException( "Unexpected exception", e );
@@ -597,7 +598,7 @@ public class UniqueConstraintTest {
                     try {
                         statement.executeUpdate( "UPDATE constraint_test SET ctid = 4 WHERE a = 3" );
                         connection.commit();
-                        Assert.fail( "Expected ConstraintViolationException was not thrown" );
+                        Assertions.fail( "Expected ConstraintViolationException was not thrown" );
                     } catch ( AvaticaSqlException e ) {
                         if ( !e.getMessage().contains( "Update violates unique constraint" ) ) {
                             throw new RuntimeException( "Unexpected exception", e );

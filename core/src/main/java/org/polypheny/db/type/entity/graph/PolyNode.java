@@ -32,7 +32,6 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.type.PolySerializable;
@@ -40,12 +39,13 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.relational.PolyMap;
 
 
+@Setter
 @Getter
 public class PolyNode extends GraphPropertyHolder {
 
-    @Setter
     @Accessors(fluent = true)
     private boolean isVariable = false;
 
@@ -142,13 +142,27 @@ public class PolyNode extends GraphPropertyHolder {
             return new BinarySerializer<>() {
                 @Override
                 public void encode( BinaryOutput out, PolyNode item ) {
-                    throw new NotImplementedException();
+                    out.writeUTF8( item.id.value );
+                    out.writeUTF8( item.labels.serialize() );
+                    out.writeBoolean( item.isVariable );
+                    if ( item.isVariable ) {
+                        out.writeUTF8Nullable( item.variableName.value );
+                    }
+                    out.writeUTF8( item.properties.serialize() );
                 }
 
 
                 @Override
                 public PolyNode decode( BinaryInput in ) throws CorruptedDataException {
-                    throw new NotImplementedException();
+                    String id = in.readUTF8();
+                    PolyList<PolyString> labels = PolyValue.deserialize( in.readUTF8() ).asList();
+                    boolean isVariable = in.readBoolean();
+                    PolyString variableName = null;
+                    if ( isVariable ) {
+                        variableName = PolyString.of( in.readUTF8Nullable() );
+                    }
+                    PolyMap<PolyValue, PolyValue> properties = PolyValue.deserialize( in.readUTF8() ).asMap();
+                    return new PolyNode( PolyString.of( id ), properties.asDictionary(), labels, variableName );
                 }
             };
         }

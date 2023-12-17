@@ -16,8 +16,10 @@
 
 package org.polypheny.db.monitoring.statistics;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.catalog.Catalog;
@@ -33,35 +35,37 @@ import org.polypheny.db.util.Pair;
 @Getter
 public class DashboardInformation {
 
+    @JsonProperty
     @Setter
-    private int numberOfCommits;
+    private int numberOfCommits = 0;
 
+    @JsonProperty
     @Setter
-    private int numberOfRollbacks;
+    private int numberOfRollbacks = 0;
 
+    @JsonProperty
     @Setter
-    private int numberOfQueries;
+    private int numberOfQueries = 0;
 
+    @JsonProperty
     @Setter
-    private int numberOfWorkloads;
+    private int numberOfWorkloads = 0;
 
+    @JsonProperty
     @Setter
-    private long numberOfPendingEvents;
+    private long numberOfPendingEvents = 0;
 
-    private final Map<String, Pair<String, AdapterType>> availableAdapter = new HashMap<>();
+    @JsonProperty
+    private Map<String, Pair<String, AdapterType>> availableAdapter = new HashMap<>();
 
-    private final Map<Long, Pair<String, DataModel>> availableSchemas = new HashMap<>();
+    @JsonProperty
+    private Map<String, DataModel> availableNamespaces = new HashMap<>();
 
+    @JsonProperty
     private boolean catalogPersistent;
 
 
     public DashboardInformation() {
-        this.numberOfCommits = 0;
-        this.numberOfRollbacks = 0;
-        this.numberOfQueries = 0;
-        this.numberOfWorkloads = 0;
-        this.numberOfPendingEvents = 0;
-
         updatePolyphenyStatistic();
     }
 
@@ -74,12 +78,8 @@ public class DashboardInformation {
         this.numberOfWorkloads = MonitoringServiceProvider.getInstance().getAllDataPoints( DmlDataPoint.class ).size();
         this.numberOfPendingEvents = MonitoringServiceProvider.getInstance().getNumberOfElementsInQueue();
 
-        snapshot.getAdapters().forEach( v -> {
-            this.availableAdapter.put( v.uniqueName, Pair.of( v.adapterTypeName, v.type ) );
-        } );
-        snapshot.getNamespaces( null ).forEach( v -> {
-            availableSchemas.put( v.id, Pair.of( v.name, v.dataModel ) );
-        } );
+        this.availableAdapter = snapshot.getAdapters().stream().collect( Collectors.toMap( v -> v.uniqueName, v -> Pair.of( v.adapterTypeName, v.type ) ) );
+        this.availableNamespaces = snapshot.getNamespaces( null ).stream().collect( Collectors.toMap( v -> v.name, v -> v.dataModel ) );
     }
 
 }

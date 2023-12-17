@@ -16,6 +16,8 @@
 
 package org.polypheny.db.cql.utils;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.google.gson.JsonObject;
 import java.sql.Date;
 import java.time.LocalDate;
@@ -28,9 +30,8 @@ import kong.unirest.Unirest;
 import kong.unirest.json.JSONArray;
 import kong.unirest.json.JSONObject;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.cql.utils.helper.CqlTestHelper;
 
 
@@ -38,7 +39,7 @@ import org.polypheny.db.cql.utils.helper.CqlTestHelper;
 public class CqlInterfaceTest extends CqlTestHelper {
 
     @Test
-    @Ignore
+    @Disabled
     // todo rewrite in httpinterface test
     public void testRestCqlEmptyQueryReturnsException() {
         JsonNode expectedJsonNode = new JsonNode( "{\"Exception\":\"CQL query is an empty string!\"}" );
@@ -155,7 +156,7 @@ public class CqlInterfaceTest extends CqlTestHelper {
 
 
     @Test
-    @Ignore
+    @Disabled
     // todo rewrite in httpinterface test
     public void testRestCqlFiltersOnlyQueryWithPROXOperator() {
         JsonNode expectedJsonNode = new JsonNode( "{\"Exception\": \"'PROX' boolean operator not implemented.\"}" );
@@ -268,7 +269,7 @@ public class CqlInterfaceTest extends CqlTestHelper {
         HttpResponse<JsonNode> response = executeCQL( "relation test.dept or test.employee" );
         int actualSize = response.getBody().getArray().getJSONObject( 0 ).getJSONArray( "data" ).length();
 
-        Assert.assertEquals( 144, actualSize );
+        assertEquals( 144, actualSize );
     }
 
 
@@ -356,7 +357,7 @@ public class CqlInterfaceTest extends CqlTestHelper {
         // due to the reasoning above, we check only the amount of results for now - DL
         HttpResponse<JsonNode> response = executeCQL( "relation test.employee and test.dept project test.employee.empno/count test.employee.married test.dept.deptname" );
         int actualSize = response.getBody().getArray().getJSONObject( 0 ).getJSONArray( "data" ).length();
-        Assert.assertEquals( 12, actualSize );
+        assertEquals( 12, actualSize );
     }
 
 
@@ -428,18 +429,18 @@ public class CqlInterfaceTest extends CqlTestHelper {
         JSONArray expectedResults = expected.getJSONArray( "result" );
         JSONArray actualResults = actual.getJSONArray( "data" );
         // same amount of results
-        Assert.assertEquals( expectedResults.length(), actualResults.length() );
+        assertEquals( expectedResults.length(), actualResults.length() );
 
         int i = 0;
         for ( Object result : expectedResults ) {
             JSONObject object = (JSONObject) result;
-            Assert.assertEquals( actual.getJSONArray( "header" ).length(), object.length() );
+            assertEquals( actual.getJSONArray( "header" ).length(), object.length() );
             for ( String key : object.keySet() ) {
                 int keyIndex = keys.indexOf( key );
                 if ( actual.getJSONArray( "header" ).getJSONObject( keyIndex ).getString( "dataType" ).equals( "DATE" ) ) {
-                    Assert.assertEquals( LocalDate.ofEpochDay( ((JSONObject) result).getLong( key ) ), Date.valueOf( actualResults.getJSONArray( i ).getString( keyIndex ) ).toLocalDate() );
+                    assertEquals( LocalDate.ofEpochDay( ((JSONObject) result).getLong( key ) ), Date.valueOf( actualResults.getJSONArray( i ).getString( keyIndex ) ).toLocalDate() );
                 } else {
-                    Assert.assertEquals( ((JSONObject) result).get( key ).toString(), actualResults.getJSONArray( i ).get( keyIndex ) );
+                    assertEquals( ((JSONObject) result).get( key ).toString(), actualResults.getJSONArray( i ).get( keyIndex ) );
                 }
             }
             i++;

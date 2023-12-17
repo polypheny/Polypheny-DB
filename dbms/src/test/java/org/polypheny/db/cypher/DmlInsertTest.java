@@ -17,9 +17,9 @@
 package org.polypheny.db.cypher;
 
 import java.util.List;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.helper.TestEdge;
 import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.util.Pair;
@@ -42,7 +42,7 @@ public class DmlInsertTest extends CypherTestTemplate {
             "CREATE (adam:User {name: 'Adam'}), (pernilla:User {name: 'Pernilla'}), (david:User {name: 'David'}), (adam)-[:FRIEND]->(pernilla), (pernilla)-[:FRIEND]->(david), (david)-[:FRIEND]->(adam)";
 
 
-    @Before
+    @BeforeEach
     public void reset() {
         tearDown();
         createGraph();
@@ -104,7 +104,7 @@ public class DmlInsertTest extends CypherTestTemplate {
 
 
     @Test
-    @Ignore
+    @Disabled
     public void insertReturnNodeTest() {
         GraphResult res = execute(
                 "CREATE (p:Person {name: 'Max Muster'})\n"

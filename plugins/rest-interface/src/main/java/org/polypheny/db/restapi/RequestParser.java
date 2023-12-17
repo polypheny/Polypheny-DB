@@ -68,7 +68,7 @@ import org.polypheny.db.type.entity.PolyDouble;
 import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyTime;
-import org.polypheny.db.type.entity.PolyTimeStamp;
+import org.polypheny.db.type.entity.PolyTimestamp;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.Pair;
@@ -665,7 +665,7 @@ public class RequestParser {
                     case TIMESTAMP:
                         Instant instant = LocalDateTime.parse( literal ).toInstant( ZoneOffset.UTC );
                         long millisecondsSinceEpoch = instant.toEpochMilli();// * 1000L + instant.getNano() / 1000000L;
-                        parsedLiteral = PolyTimeStamp.of( millisecondsSinceEpoch );
+                        parsedLiteral = PolyTimestamp.of( millisecondsSinceEpoch );
                         break;
                     case TIME:
                         parsedLiteral = PolyTime.of( new TimeString( literal ).getMillisOfDay() - TimeZone.getDefault().getRawOffset() );

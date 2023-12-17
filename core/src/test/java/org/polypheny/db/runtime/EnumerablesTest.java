@@ -36,7 +36,7 @@ package org.polypheny.db.runtime;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import com.google.common.collect.Lists;
 import java.util.ArrayList;
@@ -48,7 +48,7 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Function2;
 import org.apache.calcite.linq4j.function.Functions;
 import org.apache.calcite.linq4j.function.Predicate2;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 
 /**

@@ -61,7 +61,7 @@ import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyTime;
-import org.polypheny.db.type.entity.PolyTimeStamp;
+import org.polypheny.db.type.entity.PolyTimestamp;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 
@@ -271,7 +271,7 @@ class MongoEnumerator implements Enumerator<PolyValue[]> {
             case DECIMAL:
                 return PolyBigDecimal.of( o.asNumber().decimal128Value().bigDecimalValue() );
             case TIMESTAMP:
-                return PolyTimeStamp.of( o.asNumber().longValue() );
+                return PolyTimestamp.of( o.asNumber().longValue() );
             case TIME:
                 return PolyTime.of( o.asNumber().longValue() );
             case DATE:
@@ -337,13 +337,13 @@ class MongoEnumerator implements Enumerator<PolyValue[]> {
             case BOOLEAN:
                 return PolyBoolean.of( value.asBoolean().getValue() );
             case DATE_TIME:
-                return PolyTimeStamp.of( value.asDateTime().getValue() );
+                return PolyTimestamp.of( value.asDateTime().getValue() );
             case NULL:
                 return PolyNull.NULL;
             case INT32:
                 return PolyInteger.of( value.asInt32().getValue() );
             case TIMESTAMP:
-                return PolyTimeStamp.of( value.asTimestamp().getValue() );
+                return PolyTimestamp.of( value.asTimestamp().getValue() );
             case INT64:
                 return PolyLong.of( value.asInt64().getValue() );
             case DECIMAL128:

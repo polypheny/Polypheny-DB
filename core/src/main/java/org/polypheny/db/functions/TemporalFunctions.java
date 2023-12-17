@@ -24,7 +24,7 @@ import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyTime;
-import org.polypheny.db.type.entity.PolyTimeStamp;
+import org.polypheny.db.type.entity.PolyTimestamp;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.category.PolyTemporal;
 
@@ -43,7 +43,7 @@ public class TemporalFunctions {
 
 
     @SuppressWarnings("unused")
-    public static PolyString unixTimestampToString( PolyTimeStamp timeStamp ) {
+    public static PolyString unixTimestampToString( PolyTimestamp timeStamp ) {
         return PolyString.of( DateTimeUtils.unixTimestampToString( timeStamp.milliSinceEpoch ) );
     }
 
@@ -79,14 +79,14 @@ public class TemporalFunctions {
 
 
     @SuppressWarnings("unused")
-    public static PolyTimeStamp unixTimestampFloor( TimeUnitRange unitRange, PolyTimeStamp timeStamp ) {
-        return PolyTimeStamp.of( DateTimeUtils.unixTimestampFloor( unitRange, timeStamp.milliSinceEpoch ) );
+    public static PolyTimestamp unixTimestampFloor( TimeUnitRange unitRange, PolyTimestamp timeStamp ) {
+        return PolyTimestamp.of( DateTimeUtils.unixTimestampFloor( unitRange, timeStamp.milliSinceEpoch ) );
     }
 
 
     @SuppressWarnings("unused")
-    public static PolyTimeStamp unixTimestampCeil( TimeUnitRange unitRange, PolyTimeStamp timeStamp ) {
-        return PolyTimeStamp.of( DateTimeUtils.unixTimestampFloor( unitRange, timeStamp.milliSinceEpoch ) );
+    public static PolyTimestamp unixTimestampCeil( TimeUnitRange unitRange, PolyTimestamp timeStamp ) {
+        return PolyTimestamp.of( DateTimeUtils.unixTimestampFloor( unitRange, timeStamp.milliSinceEpoch ) );
     }
 
 
@@ -94,10 +94,10 @@ public class TemporalFunctions {
      * Adds a given number of months to a timestamp, represented as the number of milliseconds since the epoch.
      */
     @SuppressWarnings("unused")
-    public static PolyTimeStamp addMonths( PolyTimeStamp timestamp, PolyNumber m ) {
+    public static PolyTimestamp addMonths( PolyTimestamp timestamp, PolyNumber m ) {
         final long millis = DateTimeUtils.floorMod( timestamp.milliSinceEpoch, DateTimeUtils.MILLIS_PER_DAY );
         final PolyDate x = addMonths( PolyDate.of( timestamp.milliSinceEpoch - millis / DateTimeUtils.MILLIS_PER_DAY ), m );
-        return PolyTimeStamp.of( x.milliSinceEpoch * DateTimeUtils.MILLIS_PER_DAY + millis );
+        return PolyTimestamp.of( x.milliSinceEpoch * DateTimeUtils.MILLIS_PER_DAY + millis );
     }
 
 
@@ -121,7 +121,7 @@ public class TemporalFunctions {
 
 
     @SuppressWarnings("unused")
-    public static PolyTimeStamp addMonths( PolyTimeStamp timeStamp, PolyInterval m ) {
+    public static PolyTimestamp addMonths( PolyTimestamp timeStamp, PolyInterval m ) {
         return addMonths( timeStamp, PolyLong.of( m.getMonths() ) );
     }
 
@@ -173,7 +173,7 @@ public class TemporalFunctions {
 
 
     @SuppressWarnings("unused")
-    public static PolyNumber subtractMonths( PolyTimeStamp t0, PolyTimeStamp t1 ) {
+    public static PolyNumber subtractMonths( PolyTimestamp t0, PolyTimestamp t1 ) {
         final long millis0 = floorMod( PolyLong.of( t0.milliSinceEpoch ), PolyInteger.of( DateTimeUtils.MILLIS_PER_DAY ) ).longValue();
         final int d0 = floorDiv( PolyLong.of( t0.milliSinceEpoch - millis0 ), PolyInteger.of( DateTimeUtils.MILLIS_PER_DAY ) ).intValue();
         final long millis1 = floorMod( PolyLong.of( t1.milliSinceEpoch ), PolyLong.of( DateTimeUtils.MILLIS_PER_DAY ) ).longValue();

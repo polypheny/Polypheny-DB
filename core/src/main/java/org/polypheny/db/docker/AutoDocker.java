@@ -36,6 +36,7 @@ import com.github.dockerjava.core.DockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
 import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
 import java.io.Closeable;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -312,6 +313,8 @@ public final class AutoDocker {
         ApacheDockerHttpClient httpClient = new ApacheDockerHttpClient.Builder()
                 .dockerHost( config.getDockerHost() )
                 .sslConfig( config.getSSLConfig() )
+                .responseTimeout( Duration.ofSeconds( RuntimeConfig.DOCKER_TIMEOUT.getInteger() ) )
+                .connectionTimeout( Duration.ofSeconds( RuntimeConfig.DOCKER_TIMEOUT.getInteger() ) )
                 .build();
 
         return DockerClientImpl.getInstance( config, httpClient );

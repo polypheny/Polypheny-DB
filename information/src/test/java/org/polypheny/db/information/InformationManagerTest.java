@@ -17,9 +17,11 @@
 package org.polypheny.db.information;
 
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.util.HashMap;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.information.InformationGraph.GraphData;
 import org.polypheny.db.information.InformationGraph.GraphType;
 
@@ -67,17 +69,19 @@ public class InformationManagerTest {
     @Test
     public void informationType() {
         Information i1 = new InformationHtml( "id", "group", "html" );
-        Assert.assertEquals( "InformationHtml", i1.type );
+        assertEquals( "InformationHtml", i1.type );
     }
 
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void graphThrowingError() {
-        String[] labels = { "Jan", "Feb", "März", "April", "Mail", "Juni" };
-        Integer[] graphData1 = { 5, 2, 7, 3, 2, 1 };
-        Integer[] graphData2 = { 7, 8, 2, 2, 7, 3 };
-        GraphData[] graphData = { new GraphData<>( "data1", graphData1 ), new GraphData<>( "data2", graphData2 ) };
-        Information i1 = new InformationGraph( g, GraphType.PIE, labels, graphData );
+        RuntimeException thrown = Assertions.assertThrows( RuntimeException.class, () -> {
+            String[] labels = { "Jan", "Feb", "März", "April", "Mail", "Juni" };
+            Integer[] graphData1 = { 5, 2, 7, 3, 2, 1 };
+            Integer[] graphData2 = { 7, 8, 2, 2, 7, 3 };
+            GraphData[] graphData = { new GraphData<>( "data1", graphData1 ), new GraphData<>( "data2", graphData2 ) };
+            Information i1 = new InformationGraph( g, GraphType.PIE, labels, graphData );
+        } );
     }
 
 
@@ -103,8 +107,8 @@ public class InformationManagerTest {
         HashMap<String, String> params = new HashMap<>();
         params.put( "param1", "b" );
         action.executeAction( params );
-        Assert.assertEquals( test[0], "a" );
-        Assert.assertEquals( test[1], "b" );
+        assertEquals( test[0], "a" );
+        assertEquals( test[1], "b" );
     }
 
 }

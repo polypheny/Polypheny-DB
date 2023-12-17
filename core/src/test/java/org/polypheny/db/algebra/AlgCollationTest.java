@@ -36,18 +36,18 @@ package org.polypheny.db.algebra;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 
 /**
  * Tests for {@link AlgCollation} and {@link AlgFieldCollation}.
  */
-public class RelCollationTest {
+public class AlgCollationTest {
 
     /**
      * Unit test for {@code RelCollations#contains}.

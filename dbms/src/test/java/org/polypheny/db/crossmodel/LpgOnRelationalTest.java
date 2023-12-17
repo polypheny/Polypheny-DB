@@ -20,9 +20,9 @@ import static java.lang.String.format;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.CypherTestTemplate.Row;
@@ -48,7 +48,7 @@ public class LpgOnRelationalTest extends CrossModelTestTemplate {
     );
 
 
-    @BeforeClass
+    @BeforeAll
     public static void init() {
         //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
@@ -56,7 +56,7 @@ public class LpgOnRelationalTest extends CrossModelTestTemplate {
     }
 
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() {
         destroyStructure();
     }

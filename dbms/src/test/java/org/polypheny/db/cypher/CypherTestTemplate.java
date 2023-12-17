@@ -17,7 +17,7 @@
 package org.polypheny.db.cypher;
 
 import static java.lang.String.format;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,8 +25,8 @@ import java.util.Locale;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.SneakyThrows;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.CypherConnection;
 import org.polypheny.db.cypher.helper.TestEdge;
@@ -64,7 +64,7 @@ public class CypherTestTemplate {
     protected final TestNode KIRA = TestNode.from( List.of( "Animal" ), Pair.of( "name", "Kira" ), Pair.of( "age", 3 ), Pair.of( "type", "dog" ) );
 
 
-    @BeforeClass
+    @BeforeAll
     public static void start() {
         //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
@@ -83,7 +83,7 @@ public class CypherTestTemplate {
     }
 
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() {
         deleteData( GRAPH_NAME );
     }

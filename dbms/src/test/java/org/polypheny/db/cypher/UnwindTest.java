@@ -16,15 +16,15 @@
 
 package org.polypheny.db.cypher;
 
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
 
 public class UnwindTest extends CypherTestTemplate {
 
-    @Before
+    @BeforeEach
     public void reset() {
         tearDown();
         createGraph();
@@ -72,7 +72,7 @@ public class UnwindTest extends CypherTestTemplate {
 
 
     @Test
-    @Ignore
+    @Disabled
     public void nodePropertyUnwind() {
         execute( "CREATE (n {key: [3,1]})" );
         GraphResult res = execute( "MATCH (n) UNWIND n.key AS x RETURN x" );

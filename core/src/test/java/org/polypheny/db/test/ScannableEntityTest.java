@@ -35,8 +35,9 @@ package org.polypheny.db.test;
 
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.SQLException;
 import java.util.Arrays;
@@ -45,8 +46,7 @@ import java.util.List;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -74,14 +74,14 @@ public class ScannableEntityTest {
     public void testTens() throws SQLException {
         final Enumerator<PolyValue[]> cursor = tens();
         assertTrue( cursor.moveNext() );
-        Assert.assertThat( cursor.current()[0], equalTo( (Object) 0 ) );
-        Assert.assertThat( cursor.current().length, equalTo( 1 ) );
+        assertThat( cursor.current()[0], equalTo( (Object) 0 ) );
+        assertThat( cursor.current().length, equalTo( 1 ) );
         assertTrue( cursor.moveNext() );
-        Assert.assertThat( cursor.current()[0], equalTo( (Object) 10 ) );
+        assertThat( cursor.current()[0], equalTo( (Object) 10 ) );
         assertTrue( cursor.moveNext() );
-        Assert.assertThat( cursor.current()[0], equalTo( (Object) 20 ) );
+        assertThat( cursor.current()[0], equalTo( (Object) 20 ) );
         assertTrue( cursor.moveNext() );
-        Assert.assertThat( cursor.current()[0], equalTo( (Object) 30 ) );
+        assertThat( cursor.current()[0], equalTo( (Object) 30 ) );
         assertFalse( cursor.moveNext() );
     }
 

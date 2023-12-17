@@ -34,9 +34,12 @@
 package org.polypheny.db.test;
 
 
+import org.junit.platform.suite.api.Suite;
+
 /**
  * Declares a JUnit category for slow tests to speedup CI.
  */
+@Suite
 public interface SlowTests {
 
 }

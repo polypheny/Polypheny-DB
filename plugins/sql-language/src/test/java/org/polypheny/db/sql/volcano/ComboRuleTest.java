@@ -17,7 +17,7 @@
 package org.polypheny.db.sql.volcano;
 
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.polypheny.db.sql.volcano.PlannerTests.GoodSingleRule;
 import static org.polypheny.db.sql.volcano.PlannerTests.PHYS_CALLING_CONVENTION;
 import static org.polypheny.db.sql.volcano.PlannerTests.PhysSingleAlg;
@@ -26,7 +26,7 @@ import static org.polypheny.db.sql.volcano.PlannerTests.newCluster;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.plan.AlgOptCluster;

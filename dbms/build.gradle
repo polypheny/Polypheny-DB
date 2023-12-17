@@ -28,6 +28,9 @@ apply plugin: "com.jaredsburrows.license"
 
 group "org.polypheny"
 
+test {
+    useJUnitPlatform()
+}
 
 dependencies {
     implementation project(":core")
@@ -49,7 +52,9 @@ dependencies {
     implementation group: "org.jetbrains", name: "annotations", version: jetbrains_annotations_version  // ISC
 
     // workaround to fix cottontail todo remove: when grpc-all is same in cottontail and for plugin
-    implementation group: "io.grpc", name: "grpc-all", version: cottontaildb_grpc_version
+    implementation(group: "io.grpc", name: "grpc-all", version: cottontaildb_grpc_version) {
+        exclude group: "junit"
+    } // Apache 2.0
 
     implementation group: "org.ow2.asm", name: "asm", version: asm_version  // Apache 2.0
 
@@ -68,11 +73,11 @@ dependencies {
         exclude(group: "com.fasterxml.jackson.databind")
     }  // Apache 2.0
 
-    testImplementation group: "junit", name: "junit", version: junit_version
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: junit_jupiter_version
+    testRuntimeOnly(group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: junit_jupiter_version)
     testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
 
     testImplementation group: "com.konghq", name: "unirest-java", version: unirest_version // MIT
-
 
     implementation group: "org.mongodb", name: "mongodb-driver-sync", version: mongodb_driver_sync_version  // Apache 2.0
 }

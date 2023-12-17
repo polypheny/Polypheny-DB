@@ -48,7 +48,7 @@ public interface PolyDefaults {
         put( PolyNumber.class, PolyNull.NULL.asNumber() );
         put( PolyBigDecimal.class, PolyNull.NULL.asBigDecimal() );
         put( PolyLong.class, PolyNull.NULL.asLong() );
-        put( PolyTimeStamp.class, PolyNull.NULL.asTimeStamp() );
+        put( PolyTimestamp.class, PolyNull.NULL.asTimestamp() );
         put( PolyInteger.class, PolyNull.NULL.asInteger() );
         put( PolyFloat.class, PolyNull.NULL.asFloat() );
         put( PolyDouble.class, PolyNull.NULL.asDouble() );
@@ -61,7 +61,7 @@ public interface PolyDefaults {
         put( PolyString.class, String.class );
         put( PolyDate.class, Long.class );
         put( PolyTime.class, Integer.class );
-        put( PolyTimeStamp.class, Long.class );
+        put( PolyTimestamp.class, Long.class );
     }};
 
 }
