@@ -134,4 +134,9 @@ public class PolyTimestamp extends PolyTemporal {
         return 16L;
     }
 
+
+    public String toHumanReadable() {
+        return dateFormat.format( new Date( milliSinceEpoch ) );
+    }
+
 }

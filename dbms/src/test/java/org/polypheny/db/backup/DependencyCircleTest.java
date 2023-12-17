@@ -16,6 +16,8 @@
 
 package org.polypheny.db.backup;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -23,12 +25,10 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.polypheny.db.AdapterTestSuite;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.transaction.TransactionManager;
@@ -36,14 +36,14 @@ import org.polypheny.db.transaction.TransactionManager;
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
-@Category({ AdapterTestSuite.class })
+@Tag("adapter")
 public class DependencyCircleTest {
 
     static TestHelper testHelper;
     BackupManager backupManager;
 
 
-    @BeforeClass
+    @BeforeAll
     public static void start() {
         // Ensures that Polypheny-DB is running
         //noinspection ResultOfMethodCallIgnored
@@ -57,7 +57,7 @@ public class DependencyCircleTest {
     }
 
 
-    @AfterClass
+    @AfterAll
     public static void stop() {
         deleteDependencyTestData();
     }
@@ -119,7 +119,7 @@ public class DependencyCircleTest {
 
         backupManager.startDataGathering();
 
-        Assert.assertEquals( 4, backupManager.getBackupInformationObject().getTables().get( 0 ).size() );
+        assertEquals( 4, backupManager.getBackupInformationObject().getTables().get( 0 ).size() );
     }
 
 
@@ -192,12 +192,12 @@ public class DependencyCircleTest {
 
             // Check number of columns
             int totalColumns = rsmd.getColumnCount();
-            Assert.assertEquals( "Wrong number of columns", 3, totalColumns );
+            assertEquals( 3, totalColumns, "Wrong number of columns" );
 
             // Check column names
-            Assert.assertEquals( "Wrong column name", "TABLE_CAT", rsmd.getColumnName( 1 ) );
-            Assert.assertEquals( "Wrong column name", "OWNER", rsmd.getColumnName( 2 ) );
-            Assert.assertEquals( "Wrong column name", "DEFAULT_SCHEMA", rsmd.getColumnName( 3 ) );
+            assertEquals( "TABLE_CAT", rsmd.getColumnName( 1 ), "Wrong column name" );
+            assertEquals( "OWNER", rsmd.getColumnName( 2 ), "Wrong column name" );
+            assertEquals( "DEFAULT_SCHEMA", rsmd.getColumnName( 3 ), "Wrong column name" );
 
             // Check data
             final Object[] databaseApp = new Object[]{ "APP", "system", "public" };
