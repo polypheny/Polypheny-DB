@@ -31,6 +31,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.logistic.DataModel;
 
@@ -94,6 +95,12 @@ public class AllocationTable extends AllocationEntity {
 
     public List<Long> getColumnIds() {
         return getColumns().stream().map( c -> c.columnId ).collect( Collectors.toList() );
+    }
+
+
+    @Override
+    public Entity withName( String name ) {
+        return toBuilder().name( name ).build();
     }
 
 }

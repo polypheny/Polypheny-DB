@@ -493,10 +493,11 @@ public enum BuiltInMethod {
     X_MODEL_TABLE_TO_NODE( CrossModelFunctions.class, "tableToNodes", Enumerable.class, PolyString.class, List.class ),
     X_MODEL_MERGE_NODE_COLLECTIONS( CrossModelFunctions.class, "mergeNodeCollections", List.class ),
     X_MODEL_COLLECTION_TO_NODE( CrossModelFunctions.class, "collectionToNodes", Enumerable.class, PolyString.class ),
-    X_MODEL_NODE_TO_COLLECTION( CrossModelFunctions.class, "nodesToCollection", Enumerable.class ),
+    X_MODEL_NODE_TO_COLLECTION( CrossModelFunctions.class, "nodesToCollection", Enumerable.class, PolyString.class ),
 
     X_MODEL_ITEM( CrossModelFunctions.class, "docItem", String.class, String.class ),
-    SINGLE_TO_ARRAY_ENUMERABLE( Functions.class, "singleToArray", Enumerable.class );
+    SINGLE_TO_ARRAY_ENUMERABLE( Functions.class, "singleToArray", Enumerable.class ),
+    X_MODEL_GRAPH_ONLY_LABEL( CrossModelFunctions.class, "cypherOnlyLabelGraph", PolyValue.class, PolyString.class );
 
     private static final String toIntOptional = "toIntOptional";
     public final Method method;

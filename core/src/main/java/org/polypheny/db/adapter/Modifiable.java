@@ -326,12 +326,12 @@ public interface Modifiable extends Scannable {
 
         if ( !modify.getInput().getTraitSet().contains( ModelTrait.RELATIONAL ) ) {
             // push a transform under the modify for collector(right side of Streamer)
-            builder.transform( ModelTrait.RELATIONAL, DocumentType.asRelational(), false );
+            builder.transform( ModelTrait.RELATIONAL, DocumentType.asRelational(), false, null );
         }
 
         if ( updates.left == null && modify.operation != Operation.UPDATE && modify.operation != Operation.DELETE ) {
             // Values require additional effort but less than updates
-            builder.transform( ModelTrait.RELATIONAL, DocumentType.asRelational(), false );
+            builder.transform( ModelTrait.RELATIONAL, DocumentType.asRelational(), false, null );
             AlgNode provider = builder.build();
             // right side prepared
             builder.push( LogicalValues.createOneRow( modify.getCluster() ) );
@@ -368,7 +368,7 @@ public interface Modifiable extends Scannable {
             builder.push( LogicalStreamer.create( provider, collector ) );
         }
 
-        return builder.transform( ModelTrait.DOCUMENT, modify.getRowType(), false ).build();
+        return builder.transform( ModelTrait.DOCUMENT, modify.getRowType(), false, null ).build();
     }
 
     static Pair<List<String>, List<RexNode>> replaceUpdates( Pair<List<String>, List<RexNode>> updates, AlgBuilder builder ) {

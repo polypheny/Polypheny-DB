@@ -17,6 +17,7 @@
 package org.polypheny.db.algebra.logical.document;
 
 import java.util.List;
+import lombok.experimental.SuperBuilder;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.document.DocumentScan;
@@ -29,7 +30,7 @@ import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.trait.ModelTrait;
 
-
+@SuperBuilder(toBuilder = true)
 public class LogicalDocumentScan extends DocumentScan<Entity> implements RelationalTransformable {
 
     /**

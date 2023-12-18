@@ -443,7 +443,7 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
         Type outputJavaType = physType.getJavaRowType();
         final Type enumeratorType = Types.of( Enumerator.class, outputJavaType );
 
-        MethodCallExpression call = Expressions.call( BuiltInMethod.X_MODEL_NODE_TO_COLLECTION.method, nodesExp );
+        MethodCallExpression call = Expressions.call( BuiltInMethod.X_MODEL_NODE_TO_COLLECTION.method, nodesExp, PolyString.of( names.get( 0 ) ).asExpression() );
         Expression body = Expressions.new_(
                 enumeratorType,
                 EnumUtils.NO_EXPRS,

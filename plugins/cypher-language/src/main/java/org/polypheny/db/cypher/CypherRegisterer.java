@@ -44,6 +44,8 @@ public class CypherRegisterer {
 
         register( OperatorName.CYPHER_HAS_LABEL, new LangFunctionOperator( OperatorName.CYPHER_HAS_LABEL.name(), Kind.CYPHER_FUNCTION ) );
 
+        register( OperatorName.CYPHER_GRAPH_ONLY_LABEL, new LangFunctionOperator( OperatorName.CYPHER_GRAPH_ONLY_LABEL.name(), Kind.CYPHER_FUNCTION ) );
+
         register( OperatorName.CYPHER_PATH_MATCH, new LangFunctionOperator( OperatorName.CYPHER_PATH_MATCH.name(), Kind.CYPHER_FUNCTION ) );
 
         register( OperatorName.CYPHER_NODE_EXTRACT, new LangFunctionOperator( OperatorName.CYPHER_NODE_EXTRACT.name(), Kind.CYPHER_FUNCTION ) );

@@ -1626,5 +1626,21 @@ public class RexBuilder {
                 List.of( makeInputRef( typeFactory.createPolyType( PolyType.NODE ), 0 ) ) );
     }
 
+
+    public RexCall makeHasLabel( String label ) {
+        return new RexCall(
+                typeFactory.createPolyType( PolyType.BOOLEAN ),
+                OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_HAS_LABEL ),
+                List.of( makeInputRef( typeFactory.createPolyType( PolyType.NODE ), 0 ), makeLiteral( label ) ) );
+    }
+
+
+    public RexCall makeLabelFilter( String label ) {
+        return new RexCall(
+                typeFactory.createPolyType( PolyType.BOOLEAN ),
+                OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_GRAPH_ONLY_LABEL ),
+                List.of( makeInputRef( typeFactory.createPolyType( PolyType.GRAPH ), 0 ), makeLiteral( label ) ) );
+    }
+
 }
 

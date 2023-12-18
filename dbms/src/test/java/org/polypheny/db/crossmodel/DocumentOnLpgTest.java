@@ -63,6 +63,8 @@ public class DocumentOnLpgTest extends CrossModelTestTemplate {
         TestHelper.MongoConnection.checkDocResultSet(
                 execute( format( "db.%s.find({})", DATA_LABEL.toUpperCase() ), GRAPH_NAME ),
                 ImmutableList.of( "{\"key\":\"5\"}" ), true, true );
+
+        CypherTestTemplate.execute( format( "MATCH (n:%s {key: 5}) DELETE n", DATA_LABEL.toUpperCase() ), GRAPH_NAME );
     }
 
 

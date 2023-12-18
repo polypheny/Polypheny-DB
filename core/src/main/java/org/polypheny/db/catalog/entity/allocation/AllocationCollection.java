@@ -21,14 +21,17 @@ import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
+import lombok.experimental.SuperBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.logistic.DataModel;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
 @NonFinal
+@SuperBuilder(toBuilder = true)
 public class AllocationCollection extends AllocationEntity {
 
     public AllocationCollection(
@@ -51,6 +54,12 @@ public class AllocationCollection extends AllocationEntity {
     @Override
     public Expression asExpression() {
         return Expressions.call( Catalog.CATALOG_EXPRESSION, "getAllocCollection", Expressions.constant( id ) );
+    }
+
+
+    @Override
+    public Entity withName( String name ) {
+        return toBuilder().name( name ).build();
     }
 
 }
