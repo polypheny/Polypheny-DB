@@ -21,7 +21,6 @@ import org.polypheny.db.protointerface.PIClient;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.polypheny.db.protointerface.utils.PropertyUtils;
 
 @Getter
