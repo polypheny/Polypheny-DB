@@ -19,6 +19,12 @@ package org.polypheny.db.backup.webui.models;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JacksonException;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -50,6 +56,7 @@ public class ElementModel {
     public List<ElementModel> children;
 
     @JsonProperty
+    @JsonDeserialize(using = JsonForceNullDeserializer.class)
     public List<Pair<String, String>> dependencies; // other element name / reason for dependency
 
     @JsonProperty
@@ -267,6 +274,16 @@ public class ElementModel {
                 BackupType.NONE,
                 null
         );
+    }
+
+
+    private static class JsonForceNullDeserializer extends JsonDeserializer<Object> {
+
+        @Override
+        public Object deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException, JacksonException {
+            return null;
+        }
+
     }
 
 }
