@@ -181,5 +181,7 @@ public interface Snapshot extends OperatorTable {
 
     AllocSnapshot alloc();
 
+    @NotNull
+    Optional<LogicalEntity> getLogicalEntity( long namespaceId, String entity );
 
 }
