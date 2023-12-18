@@ -74,6 +74,7 @@ public class PIClient {
         }
     }
 
+
     public void commitCurrentTransactionIfAuto() {
         if ( !isAutoCommit ) {
             return;

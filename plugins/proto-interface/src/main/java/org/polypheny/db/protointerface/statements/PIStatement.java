@@ -54,8 +54,9 @@ public abstract class PIStatement {
         this.namespace = namespace;
     }
 
+
     public void closeResults() {
-        if (iterator == null) {
+        if ( iterator == null ) {
             return;
         }
         try {
@@ -73,5 +74,7 @@ public abstract class PIStatement {
     public abstract Statement getStatement();
 
     public abstract String getQuery();
+
     public abstract Transaction getTransaction();
+
 }

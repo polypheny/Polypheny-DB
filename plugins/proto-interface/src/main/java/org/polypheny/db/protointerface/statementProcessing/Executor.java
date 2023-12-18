@@ -23,6 +23,7 @@ import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.protointerface.statements.PIStatement;
 
 public abstract class Executor {
+
     protected void startOrResumeStopwatch( StopWatch stopWatch ) {
         if ( stopWatch.isSuspended() ) {
             stopWatch.resume();
@@ -33,16 +34,17 @@ public abstract class Executor {
         }
     }
 
-    protected boolean hasInvalidNamespaceType(PIStatement piStatement) {
+
+    protected boolean hasInvalidNamespaceType( PIStatement piStatement ) {
         return piStatement.getLanguage().getDataModel() != getDataModel();
     }
 
 
     abstract DataModel getDataModel();
 
-    abstract StatementResult executeAndGetResult(PIStatement piStatement) throws Exception;
+    abstract StatementResult executeAndGetResult( PIStatement piStatement ) throws Exception;
 
-    abstract StatementResult executeAndGetResult(PIStatement piStatement, int fetchSize ) throws Exception;
+    abstract StatementResult executeAndGetResult( PIStatement piStatement, int fetchSize ) throws Exception;
 
     abstract Frame fetch( PIStatement piStatement, int fetchSize );
 

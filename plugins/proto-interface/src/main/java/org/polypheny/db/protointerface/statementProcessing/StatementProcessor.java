@@ -46,7 +46,7 @@ public class StatementProcessor {
                     .build();
 
 
-    public static void implement(PIStatement piStatement ) {
+    public static void implement( PIStatement piStatement ) {
         StatementImplementer statementImplementer = EXECUTORS.get( piStatement.getLanguage() );
         if ( statementImplementer == null ) {
             throw new PIServiceException( "No executor registered for language " + piStatement.getLanguage(),
@@ -57,7 +57,8 @@ public class StatementProcessor {
         statementImplementer.implement( piStatement );
     }
 
-    public static StatementResult executeAndGetResult(PIStatement piStatement) throws Exception {
+
+    public static StatementResult executeAndGetResult( PIStatement piStatement ) throws Exception {
         Executor executor = RESULT_RETRIEVERS.get( piStatement.getLanguage().getDataModel() );
         if ( executor == null ) {
             throw new PIServiceException( "No result retriever registered for namespace type "
@@ -66,10 +67,11 @@ public class StatementProcessor {
                     9004
             );
         }
-        return executor.executeAndGetResult( piStatement);
+        return executor.executeAndGetResult( piStatement );
     }
 
-    public static StatementResult executeAndGetResult(PIStatement piStatement, int fetchSize ) throws Exception {
+
+    public static StatementResult executeAndGetResult( PIStatement piStatement, int fetchSize ) throws Exception {
         Executor executor = RESULT_RETRIEVERS.get( piStatement.getLanguage().getDataModel() );
         if ( executor == null ) {
             throw new PIServiceException( "No result retriever registered for namespace type "
@@ -93,6 +95,7 @@ public class StatementProcessor {
         }
         return executor.fetch( piStatement, fetchSize );
     }
+
 
     public static void prepare( PIPreparedStatement piStatement ) {
         Transaction transaction = piStatement.getClient().getCurrentOrCreateNewTransaction();

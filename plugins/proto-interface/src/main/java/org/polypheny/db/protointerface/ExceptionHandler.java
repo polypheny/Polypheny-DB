@@ -77,10 +77,10 @@ public class ExceptionHandler implements ServerInterceptor {
         private void handleGenericExceptions( Exception exception, ServerCall<ReqT, RespT> serverCall, Metadata metadata ) {
             //serverCall.close(Status.fromThrowable(exception), metadata);
             ErrorDetails.Builder errorDetailsBuilder = ErrorDetails.newBuilder();
-            if (exception.getMessage() == null) {
+            if ( exception.getMessage() == null ) {
                 errorDetailsBuilder.setMessage( "No information provided. Returning stacktrace instead: " + Arrays.toString( exception.getStackTrace() ) );
             } else {
-                errorDetailsBuilder.setMessage(exception.getMessage());
+                errorDetailsBuilder.setMessage( exception.getMessage() );
             }
             metadata.put( ERROR_DETAILS_KEY, errorDetailsBuilder.build() );
             serverCall.close( Status.INTERNAL.withDescription( exception.getMessage() ), metadata );

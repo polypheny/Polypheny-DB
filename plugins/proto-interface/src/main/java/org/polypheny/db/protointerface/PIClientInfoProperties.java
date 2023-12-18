@@ -22,6 +22,7 @@ import java.util.Properties;
 import lombok.AllArgsConstructor;
 
 public class PIClientInfoProperties extends Properties {
+
     private static final int MAX_STRING_LENGTH = 2147483647;
     public static final List<ClientInfoPropertiesDefault> DEFAULTS = Arrays.asList(
             new ClientInfoPropertiesDefault(
@@ -44,23 +45,27 @@ public class PIClientInfoProperties extends Properties {
             ),
             new ClientInfoPropertiesDefault(
                     "ClientUser",
-                    "" ,
+                    "",
                     MAX_STRING_LENGTH,
                     "User name of the user under which the application interacting with the proto-interface via this user is running."
             )
     );
 
+
     public PIClientInfoProperties() {
         super();
-        DEFAULTS.forEach(p -> setProperty(p.key, p.default_value));
+        DEFAULTS.forEach( p -> setProperty( p.key, p.default_value ) );
     }
 
 
     @AllArgsConstructor
     public static class ClientInfoPropertiesDefault {
+
         String key;
         String default_value;
         int maxlength;
         String description;
+
     }
+
 }

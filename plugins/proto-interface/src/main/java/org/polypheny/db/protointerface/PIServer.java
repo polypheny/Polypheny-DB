@@ -32,12 +32,12 @@ public class PIServer {
     private final int port;
 
 
-    public PIServer(PIPlugin.ProtoInterface protoInterface) {
+    public PIServer( PIPlugin.ProtoInterface protoInterface ) {
         this.port = protoInterface.getPort();
         ServerBuilder<?> serverBuilder = Grpc.newServerBuilderForPort( port, InsecureServerCredentials.create() );
         server = serverBuilder
                 .addService( new PIService( protoInterface.getClientManager() ) )
-                .intercept( new ClientMetaInterceptor( ) )
+                .intercept( new ClientMetaInterceptor() )
                 .intercept( new ExceptionHandler() )
                 .build();
     }

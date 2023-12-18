@@ -91,8 +91,8 @@ public class PIPlugin extends PolyPlugin {
                 // Port is already in use
                 throw new RuntimeException( "Unable to start " + INTERFACE_NAME + " on port " + port + "! The port is already in use." );
             }
-            this.requiresHeartbeat = Boolean.getBoolean(settings.get("requires heartbeat"));
-            this.heartbeatIntervall = Long.parseLong(settings.get("heartbeat intervall"));
+            this.requiresHeartbeat = Boolean.getBoolean( settings.get( "requires heartbeat" ) );
+            this.heartbeatIntervall = Long.parseLong( settings.get( "heartbeat interval" ) );
         }
 
 

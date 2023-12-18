@@ -120,7 +120,7 @@ public class PolyValueSerializer {
                 // used by PolyInteger
                 return serializeAsProtoInteger( polyValue.asInteger() );
             case BIGINT:
-                //used by PolyLong
+                // used by PolyLong
                 return serializeAsProtoLong( polyValue.asLong() );
             case DECIMAL:
                 // used by PolyBigDecimal
@@ -136,37 +136,37 @@ public class PolyValueSerializer {
                 // used by PolyDate
                 return serializeAsProtoDate( polyValue.asDate() );
             case TIME:
-                //used by PolyTime
+                // used by PolyTime
             case TIME_WITH_LOCAL_TIME_ZONE:
                 return serializeAsProtoTime( polyValue.asTime() );
             case TIMESTAMP:
-                //used by PolyTimeStamp
+                // used by PolyTimeStamp
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                 return serializeAsProtoTimeStamp( polyValue.asTimeStamp() );
             case INTERVAL_SECOND:
-                //used by PolyInterval
+                // used by PolyInterval
             case INTERVAL_MINUTE_SECOND:
-                //used by PolyInterval
+                // used by PolyInterval
             case INTERVAL_MINUTE:
-                //used by PolyInterval
+                // used by PolyInterval
             case INTERVAL_HOUR_SECOND:
-                //used by PolyInterval
+                // used by PolyInterval
             case INTERVAL_HOUR_MINUTE:
-                //used by PolyInterval
+                // used by PolyInterval
             case INTERVAL_HOUR:
-                //used by PolyInterval
+                // used by PolyInterval
             case INTERVAL_DAY_SECOND:
-                //used by PolyInterval
+                // used by PolyInterval
             case INTERVAL_DAY_MINUTE:
-                //used by PolyInterval
+                // used by PolyInterval
             case INTERVAL_DAY_HOUR:
-                //used by PolyInterval
+                // used by PolyInterval
             case INTERVAL_DAY:
-                //used by PolyInterval
+                // used by PolyInterval
             case INTERVAL_MONTH:
-                //used by PolyInterval
+                // used by PolyInterval
             case INTERVAL_YEAR_MONTH:
-                //used by PolyInterval
+                // used by PolyInterval
             case INTERVAL_YEAR:
                 return serializeAsProtoInterval( polyValue.asInterval() );
             case CHAR:
@@ -185,22 +185,22 @@ public class PolyValueSerializer {
                 return serializeAsProtoList( polyValue.asList() );
             case MAP:
                 // used by PolyDictionary
-                //used by PolyMap
+                // used by PolyMap
                 return serializeAsProtoMap( polyValue.asMap() );
             case DOCUMENT:
-                //used by PolyDocument
+                // used by PolyDocument
                 return serializeAsProtoDocument( polyValue.asDocument() );
             case GRAPH:
-                //used by PolyGraph
+                // used by PolyGraph
                 return serializeAsProtoGraph( polyValue.asGraph() );
             case NODE:
-                //used by PolyNode
+                // used by PolyNode
                 return serializeAsProtoNode( polyValue.asNode() );
             case EDGE:
-                //used by PolyEdge
+                // used by PolyEdge
                 return serializeAsProtoEdge( polyValue.asEdge() );
             case PATH:
-                //used by PolyPath
+                // used by PolyPath
                 serializeAsProtoPath( polyValue.asPath() );
             case IMAGE:
             case VIDEO:

@@ -32,7 +32,7 @@ public class PIUnparameterizedStatementBatch {
     int batchId;
 
 
-    public PIUnparameterizedStatementBatch(int batchId, PIClient protoInterfaceClient, List<PIUnparameterizedStatement> statements ) {
+    public PIUnparameterizedStatementBatch( int batchId, PIClient protoInterfaceClient, List<PIUnparameterizedStatement> statements ) {
         this.statements = statements;
         this.protoInterfaceClient = protoInterfaceClient;
         this.batchId = batchId;
@@ -43,8 +43,9 @@ public class PIUnparameterizedStatementBatch {
         int fetchSize = PropertyUtils.DEFAULT_FETCH_SIZE;
         List<Long> updateCounts = new LinkedList<>();
         for ( PIUnparameterizedStatement statement : statements ) {
-            updateCounts.add( statement.execute(fetchSize).getScalar() );
+            updateCounts.add( statement.execute( fetchSize ).getScalar() );
         }
         return updateCounts;
     }
+
 }
