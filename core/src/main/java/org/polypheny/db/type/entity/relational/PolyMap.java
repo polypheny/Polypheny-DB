@@ -149,7 +149,7 @@ public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue
 
     @Override
     public Expression asExpression() {
-        return Expressions.new_( PolyMap.class, Expressions.call(
+        return Expressions.call( PolyMap.class, "of", Expressions.call(
                 BuiltInMethod.MAP_OF_ENTRIES.method,
                 EnumUtils.expressionList(
                         entrySet()

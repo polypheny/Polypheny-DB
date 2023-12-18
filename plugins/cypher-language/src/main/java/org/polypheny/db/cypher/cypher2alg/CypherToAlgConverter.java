@@ -53,7 +53,8 @@ import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph.SubstitutionGraph;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.cypher.CypherNode;
@@ -136,12 +137,12 @@ public class CypherToAlgConverter {
             return optionalGraph.get();
         }
 
-        Optional<LogicalTable> optionalTable = this.snapshot.rel().getTable( namespaceId );
-        if ( optionalTable.isPresent() ) {
-            return optionalTable.get();
+        Optional<LogicalNamespace> optionalNamespace = this.snapshot.getNamespace( namespaceId );
+        if ( optionalNamespace.isPresent() ) {
+            return new SubstitutionGraph( namespaceId, "substitute", false, optionalNamespace.get().caseSensitive );
         }
 
-        return this.snapshot.doc().getCollection( namespaceId ).orElseThrow();
+        throw new GenericRuntimeException( "Could not find namespace with id " + namespaceId );
     }
 
 
@@ -152,8 +153,6 @@ public class CypherToAlgConverter {
                 graph,
                 GraphType.of() );
     }
-
-
 
 
     private void convertQuery( CypherNode node, CypherContext context ) {

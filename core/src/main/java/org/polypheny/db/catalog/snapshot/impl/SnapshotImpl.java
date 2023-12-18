@@ -32,7 +32,9 @@ import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.LogicalQueryInterface;
 import org.polypheny.db.catalog.entity.LogicalUser;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.Pattern;
@@ -229,6 +231,24 @@ public class SnapshotImpl implements Snapshot {
     @Override
     public List<QueryInterfaceTemplate> getInterfaceTemplates() {
         return List.copyOf( interfaceTemplates.values() );
+    }
+
+
+    @Override
+    public @NotNull Optional<LogicalEntity> getLogicalEntity( long namespaceId, String entity ) {
+        Optional<LogicalTable> optionalTable = rel().getTable( namespaceId, entity );
+        if ( optionalTable.isPresent() ) {
+            return Optional.of( optionalTable.get() );
+        }
+        Optional<LogicalCollection> optionalCollection = doc().getCollection( namespaceId, entity );
+        if ( optionalCollection.isPresent() ) {
+            return Optional.of( optionalCollection.get() );
+        }
+        Optional<LogicalGraph> optionalGraph = graph().getGraph( namespaceId );
+        if ( optionalGraph.isPresent() ) {
+            return Optional.of( optionalGraph.get() );
+        }
+        return Optional.empty();
     }
 
 
