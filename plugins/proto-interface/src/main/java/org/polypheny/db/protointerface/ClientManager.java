@@ -53,7 +53,7 @@ public class ClientManager {
         this.authenticator = protoInterface.getAuthenticator();
         this.transactionManager = protoInterface.getTransactionManager();
         if ( protoInterface.isRequiresHeartbeat() ) {
-            this.heartbeatInterval = protoInterface.getHeartbeatIntervall();
+            this.heartbeatInterval = protoInterface.getHeartbeatInterval();
             this.cleanupTimer = new Timer();
             cleanupTimer.schedule( createNewCleanupTask(), 0, heartbeatInterval + HEARTBEAT_TOLERANCE );
         }

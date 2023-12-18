@@ -89,7 +89,7 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
             long index = 0;
             for ( PolyValue value : values ) {
                 if ( value != null ) {
-                    AlgDataType algDataType = statement.getTransaction().getTypeFactory().createPolyType(value.getType());
+                    AlgDataType algDataType = statement.getTransaction().getTypeFactory().createPolyType( value.getType() );
                     statement.getDataContext().addParameterValues( index++, algDataType, List.of( value ) );
                 }
             }

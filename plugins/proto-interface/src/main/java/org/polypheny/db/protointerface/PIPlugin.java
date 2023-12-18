@@ -72,7 +72,7 @@ public class PIPlugin extends PolyPlugin {
         @Getter
         private final boolean requiresHeartbeat;
         @Getter
-        private final long heartbeatIntervall;
+        private final long heartbeatInterval;
         @Getter
         private TransactionManager transactionManager;
         @Getter
@@ -92,7 +92,7 @@ public class PIPlugin extends PolyPlugin {
                 throw new RuntimeException( "Unable to start " + INTERFACE_NAME + " on port " + port + "! The port is already in use." );
             }
             this.requiresHeartbeat = Boolean.getBoolean( settings.get( "requires heartbeat" ) );
-            this.heartbeatIntervall = Long.parseLong( settings.get( "heartbeat interval" ) );
+            this.heartbeatInterval = Long.parseLong( settings.get( "heartbeat interval" ) );
         }
 
 
