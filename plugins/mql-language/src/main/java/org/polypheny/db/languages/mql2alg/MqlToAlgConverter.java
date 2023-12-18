@@ -68,6 +68,7 @@ import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph.SubstitutionGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -319,6 +320,10 @@ public class MqlToAlgConverter {
         }
 
         Optional<LogicalGraph> optionalGraph = snapshot.graph().getGraph( namespace.id );
+        if ( optionalGraph.isPresent() ) {
+            LogicalGraph graph = optionalGraph.get();
+            return new SubstitutionGraph( graph.id, query.getCollection(), false, graph.caseSensitive );
+        }
 
         return optionalGraph.orElseThrow();
     }

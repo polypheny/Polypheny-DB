@@ -232,9 +232,9 @@ public class AlgBuilder {
                 .orElse( AlgFactories.DEFAULT_DOCUMENTS_FACTORY );
 
         final RexExecutor executor = context.unwrap( RexExecutor.class ).orElse(
-                        Util.first(
-                                cluster.getPlanner().getExecutor(),
-                                RexUtil.EXECUTOR ) );
+                Util.first(
+                        cluster.getPlanner().getExecutor(),
+                        RexUtil.EXECUTOR ) );
         this.simplifier = new RexSimplify( cluster.getRexBuilder(), AlgOptPredicateList.EMPTY, executor );
 
     }
@@ -2494,7 +2494,7 @@ public class AlgBuilder {
     }
 
 
-    public AlgBuilder transform( ModelTrait model, AlgDataType rowType, boolean isCrossModel ) {
+    public AlgBuilder transform( ModelTrait model, AlgDataType rowType, boolean isCrossModel, String name ) {
         if ( peek().getTraitSet().contains( model ) ) {
             return this;
         }
@@ -2514,7 +2514,7 @@ public class AlgBuilder {
             return this;
         }
 
-        push( new LogicalTransformer( input.getCluster(), nodes, null, input.getTraitSet().getTrait( ModelTraitDef.INSTANCE ), model, rowType, isCrossModel ) );
+        push( new LogicalTransformer( input.getCluster(), nodes, name == null ? null : List.of( name ), input.getTraitSet().getTrait( ModelTraitDef.INSTANCE ), model, rowType, isCrossModel ) );
         return this;
     }
 

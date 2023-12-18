@@ -268,7 +268,7 @@ public abstract class BaseRouter implements Router {
             AllocationEntity allocation = snapshot.alloc().getAlloc( placement.id, partitions.get( 0 ).id ).orElseThrow();
 
             // a native placement was used, we go with that
-            return new LogicalDocumentScan( scan.getCluster(), scan.getTraitSet(), allocation );
+            return new LogicalDocumentScan( scan.getCluster(), scan.getTraitSet(), allocation.withName( scan.entity.name ) );
         }
 
         throw new GenericRuntimeException( "Error while routing graph query." );

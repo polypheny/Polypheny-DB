@@ -1703,6 +1703,8 @@ public enum OperatorName {
 
     CYPHER_LIKE( LangFunctionOperator.class ),
 
+    CYPHER_GRAPH_ONLY_LABEL( LangFunctionOperator.class ),
+
     // CROSS MODEL FUNCTION
 
     CROSS_MODEL_ITEM( LangFunctionOperator.class ),

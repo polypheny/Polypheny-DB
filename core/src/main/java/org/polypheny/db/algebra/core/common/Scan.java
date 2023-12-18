@@ -17,12 +17,14 @@
 package org.polypheny.db.algebra.core.common;
 
 import lombok.Getter;
+import lombok.experimental.SuperBuilder;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
 @Getter
+@SuperBuilder(toBuilder = true)
 public abstract class Scan<E extends Entity> extends AbstractAlgNode {
 
     public final E entity;

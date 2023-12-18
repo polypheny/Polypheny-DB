@@ -17,6 +17,7 @@
 package org.polypheny.db.algebra.logical.common;
 
 import java.util.List;
+import lombok.Setter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.common.Transformer;
@@ -27,6 +28,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.trait.ModelTrait;
 
 
+@Setter
 public class LogicalTransformer extends Transformer {
 
 

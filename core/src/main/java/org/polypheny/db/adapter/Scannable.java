@@ -105,7 +105,7 @@ public interface Scannable {
         builder.scan( physicals.get( 2 ) );//edge
         builder.scan( physicals.get( 3 ) );//edge Props
 
-        builder.transform( ModelTrait.GRAPH, GraphType.of(), false );
+        builder.transform( ModelTrait.GRAPH, GraphType.of(), false, null );
 
         return builder.build();
     }
@@ -128,7 +128,7 @@ public interface Scannable {
         PhysicalTable table = scannable.getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 ).unwrap( PhysicalTable.class ).orElseThrow();
         builder.scan( table );
         AlgDataType rowType = DocumentType.ofId();
-        builder.transform( ModelTrait.DOCUMENT, rowType, false );
+        builder.transform( ModelTrait.DOCUMENT, rowType, false, null );
         return builder.build();
     }
 
