@@ -242,7 +242,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         this.authCrud = new AuthCrud( this );
 
         Catalog.afterInit( () -> Catalog.getInstance().addObserver( this ) );
-
     }
 
 

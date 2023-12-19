@@ -58,7 +58,7 @@ subprojects {
         into('lib') {
             from configurations.runtimeClasspath
         }
-        extension('zip')
+        setArchiveExtension('zip')
     }
 
     task assemblePlugin(type: Copy) {

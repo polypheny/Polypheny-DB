@@ -180,4 +180,3 @@ class CsvStreamReader extends CSVReader implements Closeable {
     }
 
 }
-

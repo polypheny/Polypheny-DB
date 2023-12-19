@@ -71,7 +71,6 @@ sourceSets {
         java {
             //srcDirs = ["src/main/java","build/generated-sources"]
             srcDirs files("${buildDir}/generated-sources").builtBy(generateParser)
-            outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {
             srcDirs = ["src/main/resources"]
@@ -82,7 +81,7 @@ sourceSets {
     test {
         java {
             srcDirs = ["src/test/java"]
-            outputDir = file(project.buildDir.absolutePath + "/test-classes")
+            destinationDirectory.set(file(project.buildDir.absolutePath + "/test-classes"))
         }
         resources {
             // We need the main resources for the tests as well.
@@ -120,15 +119,15 @@ jar {
     }
 }
 task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier "sources"
+    archiveClassifier = "sources"
     from sourceSets.main.allSource
 }
 task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier "javadoc"
+    archiveClassifier = "javadoc"
     from javadoc.destinationDir
 }
 task testJar(type: Jar, dependsOn: testClasses) {
-    classifier 'tests'
+    archiveClassifier = 'tests'
     from sourceSets.test.output
 }
 artifacts {
@@ -140,6 +139,4 @@ artifacts {
 
 licensee {
     allow('Apache-2.0')
-
-    allowUrl('https://www.eclipse.org/org/documents/epl-v10.php') // EPL 1.0
 }

@@ -25,11 +25,11 @@ buildscript {
         // JavaCC (https://github.com/johnmartel/javaccPlugin)
         classpath group: "gradle.plugin.ca.coglinc2", name: "javacc-gradle-plugin", version: javacc_plugin_version
         // Fmpp
-        classpath group: "net.sourceforge.fmpp", name: "fmpp", version: fmpp_plugin_version
+        //classpath group: "net.sourceforge.fmpp", name: "fmpp", version: fmpp_plugin_version
         // Protobuf
         classpath group: "com.google.protobuf", name: "protobuf-gradle-plugin", version: protobuf_plugin_version
     }
-    ant.taskdef(name: "fmpp", classname: "fmpp.tools.AntTask", classpath: buildscript.configurations.classpath.asPath)
+    //ant.taskdef(name: "fmpp", classname: "fmpp.tools.AntTask", classpath: buildscript.configurations.classpath.asPath)
 }
 
 
@@ -101,16 +101,15 @@ protobuf {
     }
 }
 
-tasks.withType(JavaCompile) {
+/*tasks.withType(JavaCompile).configureEach {
     options.annotationProcessorGeneratedSourcesDirectory = file("${buildDir}/generated/sources/annotationProcessor")
-}
+}*/
 
 
 sourceSets {
     main {
         java {
-            srcDirs = ["src/main/java", "build/generated-sources", "build/generated/source/proto/main/java", "build/generated/sources/annotationProcessor"]
-            outputDir = file(project.buildDir.absolutePath + "/classes")
+            srcDirs = ["src/main/java", "build/generated/source/proto/main/java"] //  "build/generated/sources/annotationProcessor"
         }
         resources {
             srcDirs = ["src/main/resources"]
@@ -121,7 +120,7 @@ sourceSets {
     test {
         java {
             srcDirs = ["src/test/java"]
-            outputDir = file(project.buildDir.absolutePath + "/test-classes")
+            destinationDirectory.set(file(project.buildDir.absolutePath + "/test-classes"))
         }
         resources {
             // We need the main resources for the tests as well.
@@ -131,17 +130,17 @@ sourceSets {
     }
 }
 
-tasks.withType(JavaCompile) {
+/*tasks.withType(JavaCompile).configureEach {
     options.annotationProcessorPath = configurations.annotationProcessor
-}
+}*/
 
-task generateJdbcVersionProperties(type: Copy) {
+task generateVersionProperties(type: Copy) {
     from "src/main/resources/version"
     into project.buildDir.absolutePath + "/classes"
     expand(version: project.version, versionMajor: versionMajor, versionMinor: versionMinor, buildTimestamp: new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"))
 }
 compileJava {
-    dependsOn("generateJdbcVersionProperties")
+    dependsOn("generateVersionProperties")
     dependsOn(":config:processResources")
     dependsOn(":information:processResources")
     dependsOn("generateProto")
@@ -156,7 +155,9 @@ delombok {
 extractIncludeProto {
     dependsOn(":config:compileJava")
     dependsOn(":information:compileJava")
+    dependsOn(":util:compileJava")
 }
+
 
 
 /**
@@ -196,15 +197,15 @@ jar {
     }
 }
 task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier "sources"
+    archiveClassifier = "sources"
     from sourceSets.main.allSource
 }
 task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier "javadoc"
+    archiveClassifier = "javadoc"
     from javadoc.destinationDir
 }
 task testJar(type: Jar, dependsOn: testClasses) {
-    classifier "tests"
+    archiveClassifier = "tests"
     from sourceSets.test.output
 }
 artifacts {
