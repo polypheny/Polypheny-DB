@@ -445,7 +445,10 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 poly = Expressions.call( PolyBlob.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, byte[].class ) );
                 break;
             case GEOMETRY:
-                if ( dialect.supportsGeoJson() ) {
+                if ( dialect.supportsPostGIS() ) {
+                    // convert postgis geometry (net.postgres.PGgeometry) that is a wrapper of org.postgresql.util.PGobject has getValue() method to return string) into a string
+                    poly = Expressions.call( PolyGeometry.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( Expressions.call( Expressions.convert_( source, net.postgis.jdbc.PGgeometry.class), "getValue" ), String.class ) );
+                } else if ( dialect.supportsGeoJson() ) {
                     poly = Expressions.call( PolyGeometry.class, fieldType.isNullable() ? "fromNullableGeoJson": "fromGeoJson", Expressions.convert_( source, String.class ) );
                 } else {
                     poly = Expressions.call( PolyGeometry.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, String.class ) );

@@ -110,8 +110,12 @@ public class PostgresqlStore extends AbstractJdbcStore {
             DockerInstance instance = DockerManager.getInstance().getInstanceById( instanceId )
                     .orElseThrow( () -> new GenericRuntimeException( "No docker instance with id " + instanceId ) );
             try {
-                container = instance.newBuilder( "polypheny/postgres:latest", getUniqueName() )
+                // kartoza/postgis:14
+                // postgis/postgis:14-3.4-alpine
+                container = instance.newBuilder( "postgis/postgis:14-3.4-alpine", getUniqueName() )
                         .withEnvironmentVariable( "POSTGRES_PASSWORD", settings.get( "password" ) )
+                        .withEnvironmentVariable( "POSTGRES_USER", username )
+                        .withEnvironmentVariable( "POSTGRES_DBNAME", database )
                         .createAndStart();
             } catch ( IOException e ) {
                 throw new GenericRuntimeException( e );
@@ -373,6 +377,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
             case VARCHAR:
                 return "VARCHAR";
             case GEOMETRY:
+                return "GEOMETRY";
             case JSON:
                 return "TEXT";
             case DATE:

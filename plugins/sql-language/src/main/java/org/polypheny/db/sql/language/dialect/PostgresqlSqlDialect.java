@@ -96,6 +96,11 @@ public class PostgresqlSqlDialect extends SqlDialect {
         return true;
     }
 
+    @Override
+    public boolean supportsPostGIS() {
+        return true;
+    }
+
 
     @Override
     public SqlNode getCastSpec( AlgDataType type ) {
@@ -108,6 +113,9 @@ public class PostgresqlSqlDialect extends SqlDialect {
             case DOUBLE:
                 // Postgres has a double type but it is named differently
                 castSpec = "_double precision";
+                break;
+            case GEOMETRY:
+                castSpec = "_GEOMETRY";
                 break;
             case VARBINARY:
             case FILE:

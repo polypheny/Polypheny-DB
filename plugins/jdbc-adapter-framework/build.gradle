@@ -5,6 +5,8 @@ dependencies {
     compileOnly project(":core")
     compileOnly project(":plugins:sql-language")
 
+    implementation group: "net.postgis", name: "postgis-jdbc", version: postgis_version
+
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":core")

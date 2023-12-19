@@ -45,6 +45,8 @@ public class GeoFunctionsTest {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
+//                statement.executeUpdate( "CREATE TABLE TEST_GIS(ID INTEGER NOT NULL, WKT VARCHAR, PRIMARY KEY (ID))" );
+//                statement.executeUpdate( "INSERT INTO TEST_GIS VALUES (1, SUBSTRING('POINT (7.852923 47.998949)', 1, 3))" );
                 statement.executeUpdate( "CREATE TABLE TEST_GIS(ID INTEGER NOT NULL, WKT GEOMETRY, PRIMARY KEY (ID))" );
                 statement.executeUpdate( "INSERT INTO TEST_GIS VALUES (1, ST_GeomFromText('POINT (7.852923 47.998949)', 4326))" );
                 statement.executeUpdate( "INSERT INTO TEST_GIS VALUES (2, ST_GeomFromText('POINT (9.289382 48.741588)', 4326))" );

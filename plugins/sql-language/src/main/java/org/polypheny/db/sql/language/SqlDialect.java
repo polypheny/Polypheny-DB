@@ -19,7 +19,6 @@ package org.polypheny.db.sql.language;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Suppliers;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
@@ -783,6 +782,10 @@ public class SqlDialect {
     }
 
     public boolean supportsGeoJson() {
+        return false;
+    }
+
+    public boolean supportsPostGIS() {
         return false;
     }
 
