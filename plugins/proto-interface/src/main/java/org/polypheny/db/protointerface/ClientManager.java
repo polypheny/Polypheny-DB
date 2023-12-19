@@ -75,7 +75,7 @@ public class ClientManager {
         }
         // reject already connected user
         if ( isConnected( connectionRequest.getClientUuid() ) ) {
-            throw new PIServiceException( "A user with uid " + connectionRequest.getClientUuid() + "is already connected." );
+            throw new PIServiceException( "A user with uid " + connectionRequest.getClientUuid() + " is already connected." );
         }
         String username = connectionRequest.hasUsername() ? connectionRequest.getUsername() : Catalog.USER_NAME;
         String password = connectionRequest.hasPassword() ? connectionRequest.getPassword() : null;
