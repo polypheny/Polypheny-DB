@@ -125,7 +125,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
     @Override
     public void updateNamespace( String name, long id ) {
         if ( storeCatalog.getNamespace( id ) == null ) {
-            currentJdbcSchema = JdbcSchema.create( id, storeCatalog, getDefaultPhysicalNamespaceName(), connectionFactory, dialect, this );
+            currentJdbcSchema = JdbcSchema.create( id, getDefaultPhysicalNamespaceName(), connectionFactory, dialect, this );
             storeCatalog.addNamespace( id, currentJdbcSchema );
         }
         putNamespace( currentJdbcSchema );
@@ -164,7 +164,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
 
         executeCreateTable( context, table );
 
-        JdbcTable physical = this.currentJdbcSchema.createJdbcTable( storeCatalog, table );
+        JdbcTable physical = this.currentJdbcSchema.createJdbcTable( table );
         storeCatalog.replacePhysical( physical );
         return List.of( physical );
     }
@@ -382,7 +382,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
 
     private void updateNativePhysical( long allocId ) {
         PhysicalTable table = storeCatalog.fromAllocation( allocId );
-        storeCatalog.replacePhysical( this.currentJdbcSchema.createJdbcTable( storeCatalog, table ) );
+        storeCatalog.replacePhysical( this.currentJdbcSchema.createJdbcTable( table ) );
     }
 
 
@@ -477,12 +477,6 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
 
     protected String getPhysicalIndexName( long tableId, long indexId ) {
         return "idx" + tableId + "_" + indexId;
-    }
-
-
-    @Override
-    public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities ) {
-        storeCatalog.addPhysical( alloc, entities.get( 0 ) );
     }
 
 

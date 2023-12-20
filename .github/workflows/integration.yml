@@ -21,7 +21,7 @@ jobs:
                 uses: actions/setup-java@v3
                 with:
                     distribution: 'zulu'
-                    java-version: 11
+                    java-version: 17
             -   name: Set env variable
                 run: |
                     echo "POLYPHENY_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV

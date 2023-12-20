@@ -43,6 +43,7 @@ import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.Util;
 
 
+@SuppressWarnings("unused")
 public class AvaticaInterfacePlugin extends PolyPlugin {
 
     /**

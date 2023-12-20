@@ -42,6 +42,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.docker.DockerContainer;
@@ -245,8 +246,8 @@ public class PostgresqlStore extends AbstractJdbcStore {
         if ( index.unique ) {
             builder.append( "UNIQUE INDEX " );
         } else {
-                builder.append( "INDEX " );
-            }
+            builder.append( "INDEX " );
+        }
 
         builder.append( dialect.quoteIdentifier( physicalIndexName ) );//+ "_" + partitionPlacement.partitionId ) );
         builder.append( " ON " )
@@ -254,30 +255,29 @@ public class PostgresqlStore extends AbstractJdbcStore {
                 .append( "." )
                 .append( dialect.quoteIdentifier( physical.name ) );
 
-            builder.append( " USING " );
+        builder.append( " USING " );
         switch ( index.method ) {
-                case "btree":
-                case "btree_unique":
-                    builder.append( "btree" );
-                    break;
-                case "hash":
-                case "hash_unique":
-                    builder.append( "hash" );
-                    break;
-                case "gin":
-                case "gin_unique":
-                    builder.append( "gin" );
-                    break;
-                case "brin":
-                    builder.append( "brin" );
-                    break;
-                case "gist":
-                    builder.append( "gist" );
-                    break;
-            }
-
-            builder.append( "(" );
-            boolean first = true;
+            case "btree":
+            case "btree_unique":
+                builder.append( "btree" );
+                break;
+            case "hash":
+            case "hash_unique":
+                builder.append( "hash" );
+                break;
+            case "gin":
+            case "gin_unique":
+                builder.append( "gin" );
+                break;
+            case "brin":
+                builder.append( "brin" );
+                break;
+            case "gist":
+                builder.append( "gist" );
+                break;
+        }
+        builder.append( "(" );
+        boolean first = true;
         for ( long columnId : index.key.columnIds ) {
             if ( !first ) {
                 builder.append( ", " );
@@ -466,6 +466,14 @@ public class PostgresqlStore extends AbstractJdbcStore {
         }
 
         return false;
+    }
+
+
+    @Override
+    public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities ) {
+        PhysicalEntity table = entities.get( 0 );
+        updateNamespace( table.namespaceName, table.namespaceId );
+        storeCatalog.addPhysical( alloc, currentJdbcSchema.createJdbcTable( table.unwrap( PhysicalTable.class ).orElseThrow() ) );
     }
 
 }

@@ -110,7 +110,7 @@ public class PostgresqlSource extends AbstractJdbcSource {
                 logical.columns.stream().collect( Collectors.toMap( t -> t.id, t -> t ) ),
                 allocation );
 
-        storeCatalog.replacePhysical( currentJdbcSchema.createJdbcTable( storeCatalog, table ) );
+        storeCatalog.replacePhysical( currentJdbcSchema.createJdbcTable( table ) );
         return List.of( table );
     }
 
