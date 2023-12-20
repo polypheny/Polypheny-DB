@@ -190,7 +190,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
 
                 final AlgNode join = builder.join( JoinAlgType.LEFT, joinCondition ).build();
                 //builder.project( builder.fields() );
-                builder.push( LogicalFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NULL ), rexBuilder.makeInputRef( join, join.getRowType().getFieldCount() - 1 ) ) ) );
+                builder.push( LogicalFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NULL ), rexBuilder.makeInputRef( join, join.getTupleType().getFieldCount() - 1 ) ) ) );
                 builder.project( builder.field( foreignKey.getColumnNames().get( 0 ) ) );
                 builder.rename( Collections.singletonList( "count$" + pos ) );
                 builder.projectPlus( builder.literal( pos ) );
@@ -316,7 +316,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
 
                 final AlgNode join = builder.join( JoinAlgType.LEFT, joinCondition ).build();
                 //builder.project( builder.fields() );
-                builder.push( LogicalFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NULL ), rexBuilder.makeInputRef( join, join.getRowType().getFieldCount() - 1 ) ) ) );
+                builder.push( LogicalFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NULL ), rexBuilder.makeInputRef( join, join.getTupleType().getFieldCount() - 1 ) ) ) );
                 builder.project( builder.field( foreignKey.getColumnNames().get( 0 ) ) );
                 builder.rename( Collections.singletonList( "count$" + pos ) );
                 builder.projectPlus( builder.literal( pos ) );

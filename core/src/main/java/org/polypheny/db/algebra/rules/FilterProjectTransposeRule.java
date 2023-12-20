@@ -133,9 +133,9 @@ public class FilterProjectTransposeRule extends AlgOptRule {
 
         AlgNode newProjRel =
                 copyProject
-                        ? project.copy( project.getTraitSet(), newFilterRel, project.getProjects(), project.getRowType() )
+                        ? project.copy( project.getTraitSet(), newFilterRel, project.getProjects(), project.getTupleType() )
                         : algBuilder.push( newFilterRel )
-                                .project( project.getProjects(), project.getRowType().getFieldNames() )
+                                .project( project.getProjects(), project.getTupleType().getFieldNames() )
                                 .build();
 
         call.transformTo( newProjRel );

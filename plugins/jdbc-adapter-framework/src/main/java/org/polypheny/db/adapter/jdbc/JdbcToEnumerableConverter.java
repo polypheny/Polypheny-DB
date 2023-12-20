@@ -161,7 +161,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
         final PhysType physType =
                 PhysTypeImpl.of(
                         implementor.getTypeFactory(),
-                        getRowType(),
+                        getTupleType(),
                         pref.prefer( JavaRowFormat.CUSTOM ) );
         final JdbcConvention jdbcConvention = (JdbcConvention) child.getConvention();
         SqlString sqlString = generateSql( jdbcConvention.dialect, jdbcConvention.getJdbcSchema() );
@@ -171,7 +171,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
         }
         Hook.QUERY_PLAN.run( sql );
         final Expression sql_ = builder0.append( "sql", Expressions.constant( sql ) );
-        final int fieldCount = getRowType().getFieldCount();
+        final int fieldCount = getTupleType().getFieldCount();
         BlockBuilder builder = new BlockBuilder();
         final ParameterExpression resultSet_ = Expressions.parameter( Modifier.FINAL, ResultSet.class, builder.newName( "resultSet" ) );
         final CalendarPolicy calendarPolicy = jdbcConvention.dialect.getCalendarPolicy();

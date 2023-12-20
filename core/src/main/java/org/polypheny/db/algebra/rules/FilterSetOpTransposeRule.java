@@ -79,11 +79,11 @@ public class FilterSetOpTransposeRule extends AlgOptRule {
         // create filters on top of each setop child, modifying the filter condition to reference each setop child
         RexBuilder rexBuilder = filterAlg.getCluster().getRexBuilder();
         final AlgBuilder algBuilder = call.builder();
-        List<AlgDataTypeField> origFields = setOp.getRowType().getFields();
+        List<AlgDataTypeField> origFields = setOp.getTupleType().getFields();
         int[] adjustments = new int[origFields.size()];
         final List<AlgNode> newSetOpInputs = new ArrayList<>();
         for ( AlgNode input : setOp.getInputs() ) {
-            RexNode newCondition = condition.accept( new AlgOptUtil.RexInputConverter( rexBuilder, origFields, input.getRowType().getFields(), adjustments ) );
+            RexNode newCondition = condition.accept( new AlgOptUtil.RexInputConverter( rexBuilder, origFields, input.getTupleType().getFields(), adjustments ) );
             newSetOpInputs.add( algBuilder.push( input ).filter( newCondition ).build() );
         }
 

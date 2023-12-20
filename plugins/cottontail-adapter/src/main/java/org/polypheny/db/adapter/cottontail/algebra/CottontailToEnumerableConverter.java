@@ -98,14 +98,14 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
         cottontailContext.visitChild( 0, getInput() );
 
         final CottontailConvention convention = (CottontailConvention) getInput().getConvention();
-        final AlgDataType rowType = getRowType();
+        final AlgDataType rowType = getTupleType();
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), rowType, pref.prefer( JavaRowFormat.ARRAY ) );
         final Expression enumerable;
 
         switch ( cottontailContext.queryType ) {
             case SELECT:
                 // Row Parser
-                final int fieldCount = getRowType().getFieldCount();
+                final int fieldCount = getTupleType().getFieldCount();
                 BlockBuilder builder = new BlockBuilder();
 
                 final ParameterExpression resultMap_ = Expressions.parameter(

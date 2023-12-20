@@ -56,7 +56,7 @@ public class EnumerableCollect extends Collect implements EnumerableAlg {
         final BlockBuilder builder = new BlockBuilder();
         final EnumerableAlg child = (EnumerableAlg) getInput();
         final Result result = implementor.visitChild( this, 0, child, Prefer.ARRAY );
-        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getRowType(), JavaRowFormat.LIST );
+        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), JavaRowFormat.LIST );
 
         // final Enumerable<Employee> child = <<child adapter>>;
         // final List<Employee> list = child.toList();

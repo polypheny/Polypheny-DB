@@ -86,10 +86,10 @@ public class ProjectToCalcRule extends AlgOptRule {
     public static LogicalCalc from( LogicalProject project, AlgNode input ) {
         final RexProgram program =
                 RexProgram.create(
-                        input.getRowType(),
+                        input.getTupleType(),
                         project.getProjects(),
                         null,
-                        project.getRowType(),
+                        project.getTupleType(),
                         project.getCluster().getRexBuilder() );
         return LogicalCalc.create( input, program );
     }

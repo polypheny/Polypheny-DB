@@ -130,15 +130,15 @@ public abstract class Correlate extends BiAlg {
             case LEFT:
             case INNER:
                 return ValidatorUtil.deriveJoinRowType(
-                        left.getRowType(),
-                        right.getRowType(),
+                        left.getTupleType(),
+                        right.getTupleType(),
                         joinType.toJoinType(),
                         getCluster().getTypeFactory(),
                         null,
                         ImmutableList.of() );
             case ANTI:
             case SEMI:
-                return left.getRowType();
+                return left.getTupleType();
             default:
                 throw new IllegalStateException( "Unknown join type " + joinType );
         }

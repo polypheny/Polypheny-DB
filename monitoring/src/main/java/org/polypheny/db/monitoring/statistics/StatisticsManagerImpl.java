@@ -487,12 +487,12 @@ public class StatisticsManagerImpl extends StatisticsManager {
      * Queries the database with an aggregate query, to get the min value or max value.
      */
     private AlgNode getAggregateColumn( QueryResult queryResult, NodeType nodeType, RelScan<?> tableScan, RexBuilder rexBuilder, AlgOptCluster cluster ) {
-        for ( int i = 0; i < tableScan.getRowType().getFieldNames().size(); i++ ) {
-            if ( tableScan.getRowType().getFieldNames().get( i ).equals( queryResult.getColumn().name ) ) {
+        for ( int i = 0; i < tableScan.getTupleType().getFieldNames().size(); i++ ) {
+            if ( tableScan.getTupleType().getFieldNames().get( i ).equals( queryResult.getColumn().name ) ) {
                 LogicalProject logicalProject = LogicalProject.create(
                         tableScan,
                         Collections.singletonList( rexBuilder.makeInputRef( tableScan, i ) ),
-                        Collections.singletonList( tableScan.getRowType().getFieldNames().get( i ) ) );
+                        Collections.singletonList( tableScan.getTupleType().getFieldNames().get( i ) ) );
 
                 AggFunction operator;
                 if ( nodeType == NodeType.MAX ) {
@@ -503,7 +503,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
                     throw new GenericRuntimeException( "Unknown aggregate is used in Statistic Manager." );
                 }
 
-                AlgDataType relDataType = logicalProject.getRowType().getFields().get( 0 ).getType();
+                AlgDataType relDataType = logicalProject.getTupleType().getFields().get( 0 ).getType();
                 AlgDataType dataType;
                 if ( relDataType.getPolyType() == PolyType.DECIMAL ) {
                     dataType = cluster.getTypeFactory().createTypeWithNullability(
@@ -537,12 +537,12 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
 
     private AlgNode getUniqueValues( QueryResult queryResult, RelScan<?> tableScan, RexBuilder rexBuilder ) {
-        for ( int i = 0; i < tableScan.getRowType().getFieldNames().size(); i++ ) {
-            if ( tableScan.getRowType().getFieldNames().get( i ).equals( queryResult.getColumn().name ) ) {
+        for ( int i = 0; i < tableScan.getTupleType().getFieldNames().size(); i++ ) {
+            if ( tableScan.getTupleType().getFieldNames().get( i ).equals( queryResult.getColumn().name ) ) {
                 LogicalProject logicalProject = LogicalProject.create(
                         tableScan,
                         Collections.singletonList( rexBuilder.makeInputRef( tableScan, i ) ),
-                        Collections.singletonList( tableScan.getRowType().getFieldNames().get( i ) ) );
+                        Collections.singletonList( tableScan.getTupleType().getFieldNames().get( i ) ) );
 
                 LogicalAggregate logicalAggregate = LogicalAggregate.create(
                         logicalProject,
@@ -567,12 +567,12 @@ public class StatisticsManagerImpl extends StatisticsManager {
      * Gets the amount of entries for a column
      */
     private AlgNode getColumnCount( QueryResult queryResult, RelScan<?> tableScan, RexBuilder rexBuilder, AlgOptCluster cluster ) {
-        for ( int i = 0; i < tableScan.getRowType().getFieldNames().size(); i++ ) {
-            if ( queryResult.getColumn() != null && tableScan.getRowType().getFieldNames().get( i ).equals( queryResult.getColumn().name ) ) {
+        for ( int i = 0; i < tableScan.getTupleType().getFieldNames().size(); i++ ) {
+            if ( queryResult.getColumn() != null && tableScan.getTupleType().getFieldNames().get( i ).equals( queryResult.getColumn().name ) ) {
                 LogicalProject logicalProject = LogicalProject.create(
                         tableScan,
                         Collections.singletonList( rexBuilder.makeInputRef( tableScan, i ) ),
-                        Collections.singletonList( tableScan.getRowType().getFieldNames().get( i ) ) );
+                        Collections.singletonList( tableScan.getTupleType().getFieldNames().get( i ) ) );
 
                 AggregateCall aggregateCall = getRowCountAggregateCall( cluster );
 

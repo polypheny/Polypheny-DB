@@ -85,8 +85,8 @@ public class CypherUnwind extends CypherClause {
 
         AlgNode node = context.peek();
 
-        if ( node.getRowType().getFields().size() != 1 ) {
-            if ( !node.getRowType().getFieldNames().contains( namedNode.left ) ) {
+        if ( node.getTupleType().getFields().size() != 1 ) {
+            if ( !node.getTupleType().getFieldNames().contains( namedNode.left ) ) {
                 throw new UnsupportedOperationException();
             }
             node = new LogicalLpgProject(

@@ -75,7 +75,7 @@ public abstract class ConditionalExecute extends BiAlg {
 
     @Override
     protected AlgDataType deriveRowType() {
-        return right.getRowType();
+        return right.getTupleType();
     }
 
 

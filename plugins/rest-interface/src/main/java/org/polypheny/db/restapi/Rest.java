@@ -132,13 +132,13 @@ public class Rest {
         log.debug( "AlgNode was built." );
 
         // Wrap {@link AlgNode} into a RelRoot
-        final AlgDataType rowType = algNode.getRowType();
+        final AlgDataType rowType = algNode.getTupleType();
         final List<Pair<Integer, String>> fields = Pair.zip( PolyTypeUtil.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
         final AlgCollation collation =
                 algNode instanceof Sort
                         ? ((Sort) algNode).collation
                         : AlgCollations.EMPTY;
-        AlgRoot root = new AlgRoot( algNode, algNode.getRowType(), Kind.SELECT, fields, collation );
+        AlgRoot root = new AlgRoot( algNode, algNode.getTupleType(), Kind.SELECT, fields, collation );
         log.debug( "AlgRoot was built." );
 
         return executeAndTransformPolyAlg( root, statement, ctx );
@@ -191,7 +191,7 @@ public class Rest {
         );
 
         // Wrap {@link AlgNode} into a RelRoot
-        final AlgDataType rowType = modify.getRowType();
+        final AlgDataType rowType = modify.getTupleType();
         final List<Pair<Integer, String>> fields = Pair.zip( PolyTypeUtil.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
         final AlgCollation collation =
                 algNode instanceof Sort
@@ -242,7 +242,7 @@ public class Rest {
         );
 
         // Wrap {@link AlgNode} into a RelRoot
-        final AlgDataType rowType = modify.getRowType();
+        final AlgDataType rowType = modify.getTupleType();
         final List<Pair<Integer, String>> fields = Pair.zip( PolyTypeUtil.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
         final AlgCollation collation =
                 algNode instanceof Sort
@@ -295,7 +295,7 @@ public class Rest {
         );
 
         // Wrap {@link AlgNode} into a RelRoot
-        final AlgDataType rowType = modify.getRowType();
+        final AlgDataType rowType = modify.getTupleType();
         final List<Pair<Integer, String>> fields = Pair.zip( PolyTypeUtil.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
         final AlgCollation collation =
                 algNode instanceof Sort
@@ -333,7 +333,7 @@ public class Rest {
             }
             List<RexNode> filterNodes = new ArrayList<>();
             AlgNode baseNodeForFilters = algBuilder.peek();
-            AlgDataType filtersRowType = baseNodeForFilters.getRowType();
+            AlgDataType filtersRowType = baseNodeForFilters.getTupleType();
             List<AlgDataTypeField> filtersRows = filtersRowType.getFields();
             Map<String, AlgDataTypeField> filterMap = new HashMap<>();
             filtersRows.forEach( ( r ) -> filterMap.put( r.getName(), r ) );

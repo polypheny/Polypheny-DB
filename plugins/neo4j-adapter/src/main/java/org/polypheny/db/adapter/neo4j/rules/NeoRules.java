@@ -120,7 +120,7 @@ public interface NeoRules {
                     alg.getTraitSet().replace( NeoConvention.INSTANCE ),
                     convert( project.getInput(), NeoConvention.INSTANCE ),
                     project.getProjects(),
-                    project.getRowType() );
+                    project.getTupleType() );
         }
 
     }
@@ -164,7 +164,7 @@ public interface NeoRules {
             Values values = (Values) alg;
             return new NeoValues(
                     values.getCluster(),
-                    values.getRowType(),
+                    values.getTupleType(),
                     values.tuples,
                     values.getTraitSet().replace( NeoConvention.INSTANCE ) );
         }

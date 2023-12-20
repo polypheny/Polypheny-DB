@@ -180,17 +180,17 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
             projList.add( reduceAgg( oldAggAlg, oldCall, newCalls, aggCallMapping, inputExprs ) );
         }
 
-        final int extraArgCount = inputExprs.size() - algBuilder.peek().getRowType().getFieldCount();
+        final int extraArgCount = inputExprs.size() - algBuilder.peek().getTupleType().getFieldCount();
         if ( extraArgCount > 0 ) {
             algBuilder.project(
                     inputExprs,
                     CompositeList.of(
-                            algBuilder.peek().getRowType().getFieldNames(),
+                            algBuilder.peek().getTupleType().getFieldNames(),
                             Collections.nCopies( extraArgCount, null ) ) );
         }
         newAggregateAlg( algBuilder, oldAggAlg, newCalls );
 
-        newCalcAlg( algBuilder, oldAggAlg.getRowType(), projList );
+        newCalcAlg( algBuilder, oldAggAlg.getTupleType(), projList );
         ruleCall.transformTo( algBuilder.build() );
     }
 
@@ -261,7 +261,7 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
             // anything else:  preserve original call
             RexBuilder rexBuilder = oldAggAlg.getCluster().getRexBuilder();
             final int nGroups = oldAggAlg.getGroupCount();
-            List<AlgDataType> oldArgTypes = PolyTypeUtil.projectTypes( oldAggAlg.getInput().getRowType(), oldCall.getArgList() );
+            List<AlgDataType> oldArgTypes = PolyTypeUtil.projectTypes( oldAggAlg.getInput().getTupleType(), oldCall.getArgList() );
             return rexBuilder.addAggCall( oldCall, nGroups, oldAggAlg.indicator, newCalls, aggCallMapping, oldArgTypes );
         }
     }
@@ -725,7 +725,7 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
 
 
     private AlgDataType getFieldType( AlgNode algNode, int i ) {
-        final AlgDataTypeField inputField = algNode.getRowType().getFields().get( i );
+        final AlgDataTypeField inputField = algNode.getTupleType().getFields().get( i );
         return inputField.getType();
     }
 

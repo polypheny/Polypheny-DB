@@ -125,7 +125,7 @@ public abstract class Sort extends SingleAlg {
     public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
         // Higher cost if rows are wider discourages pushing a project through a sort.
         final double rowCount = mq.getRowCount( this );
-        final double bytesPerRow = getRowType().getFieldCount() * 4;
+        final double bytesPerRow = getTupleType().getFieldCount() * 4;
         final double cpu = Util.nLogN( rowCount ) * bytesPerRow;
         return planner.getCostFactory().makeCost( rowCount, cpu, 0 );
     }

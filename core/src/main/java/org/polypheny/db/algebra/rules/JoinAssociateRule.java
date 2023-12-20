@@ -101,9 +101,9 @@ public class JoinAssociateRule extends AlgOptRule {
         //    /    \
         //   A      B
 
-        final int aCount = algA.getRowType().getFieldCount();
-        final int bCount = algB.getRowType().getFieldCount();
-        final int cCount = algC.getRowType().getFieldCount();
+        final int aCount = algA.getTupleType().getFieldCount();
+        final int bCount = algB.getTupleType().getFieldCount();
+        final int cCount = algC.getTupleType().getFieldCount();
         final ImmutableBitSet aBitSet = ImmutableBitSet.range( 0, aCount );
         final ImmutableBitSet bBitSet = ImmutableBitSet.range( aCount, aCount + bCount );
 

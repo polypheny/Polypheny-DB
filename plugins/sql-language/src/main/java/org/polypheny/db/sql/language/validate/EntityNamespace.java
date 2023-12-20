@@ -27,6 +27,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.schema.types.ExtensibleEntity;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlNode;
@@ -58,6 +59,12 @@ class EntityNamespace extends AbstractNamespace {
 
     EntityNamespace( SqlValidatorImpl validator, Entity table ) {
         this( validator, table, ImmutableList.of() );
+    }
+
+
+    @Override
+    public DataModel getDataModel() {
+        return table.dataModel;
     }
 
 

@@ -107,6 +107,10 @@ public class PolyString extends PolyValue {
         if ( value instanceof PolyValue ) {
             if ( ((PolyValue) value).isString() ) {
                 return ((PolyValue) value).asString();
+            } else if ( ((PolyValue) value).isDocument() ) {
+                return PolyString.of( ((PolyValue) value).asDocument().toJson() );
+            } else {
+                return PolyString.of( ((PolyValue) value).toJson() );
             }
         }
         throw new NotImplementedException( "convert value to string" );

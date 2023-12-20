@@ -68,7 +68,7 @@ public class EnumerableTableFunctionScan extends TableFunctionScan implements En
         } else {
             format = JavaRowFormat.CUSTOM;
         }
-        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getRowType(), format, false );
+        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), format, false );
         RexToLixTranslator t = RexToLixTranslator.forAggregation( (JavaTypeFactory) getCluster().getTypeFactory(), bb, null, implementor.getConformance() );
         t = t.setCorrelates( implementor.allCorrelateVariables );
         bb.add( Expressions.return_( null, t.translate( getCall() ) ) );

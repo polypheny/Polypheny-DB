@@ -135,7 +135,7 @@ public class Uncollect extends SingleAlg {
      * Each column in the relational expression must be a multiset of structs or an array. The return type is the type of that column, plus an ORDINALITY column if {@code withOrdinality}.
      */
     public static AlgDataType deriveUncollectRowType( AlgNode alg, boolean withOrdinality ) {
-        AlgDataType inputType = alg.getRowType();
+        AlgDataType inputType = alg.getTupleType();
         assert inputType.isStruct() : inputType + " is not a struct";
         final List<AlgDataTypeField> fields = inputType.getFields();
         final AlgDataTypeFactory typeFactory = alg.getCluster().getTypeFactory();

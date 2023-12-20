@@ -184,7 +184,7 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
         final List<RexNode> projectPullUpPredicates = new ArrayList<>();
 
         ImmutableBitSet.Builder columnsMappedBuilder = ImmutableBitSet.builder();
-        Mapping m = Mappings.create( MappingType.PARTIAL_FUNCTION, input.getRowType().getFieldCount(), project.getRowType().getFieldCount() );
+        Mapping m = Mappings.create( MappingType.PARTIAL_FUNCTION, input.getTupleType().getFieldCount(), project.getTupleType().getFieldCount() );
 
         for ( Ord<RexNode> expr : Ord.zip( project.getProjects() ) ) {
             if ( expr.e instanceof RexIndexRef ) {
@@ -246,7 +246,7 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
         if ( columnsMapped.intersects( rCols ) ) {
             final List<RexNode> list = new ArrayList<>();
             for ( int c : columnsMapped.intersect( rCols ) ) {
-                if ( input.getRowType().getFields().get( c ).getType().isNullable() && Strong.isNull( r, ImmutableBitSet.of( c ) ) ) {
+                if ( input.getTupleType().getFields().get( c ).getType().isNullable() && Strong.isNull( r, ImmutableBitSet.of( c ) ) ) {
                     list.add( rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NOT_NULL ), rexBuilder.makeInputRef( input, c ) ) );
                 }
             }
@@ -323,7 +323,7 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
             // (trivially - there are no rows!) but not on the output (there is one row).
             return AlgOptPredicateList.EMPTY;
         }
-        Mapping m = Mappings.create( MappingType.PARTIAL_FUNCTION, input.getRowType().getFieldCount(), agg.getRowType().getFieldCount() );
+        Mapping m = Mappings.create( MappingType.PARTIAL_FUNCTION, input.getTupleType().getFieldCount(), agg.getTupleType().getFieldCount() );
 
         int i = 0;
         for ( int j : groupKeys ) {
@@ -475,8 +475,8 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
             this.joinRel = joinRel;
             this.isSemiJoin = isSemiJoin;
             this.simplify = simplify;
-            nFieldsLeft = joinRel.getLeft().getRowType().getFields().size();
-            nFieldsRight = joinRel.getRight().getRowType().getFields().size();
+            nFieldsLeft = joinRel.getLeft().getTupleType().getFields().size();
+            nFieldsRight = joinRel.getRight().getTupleType().getFields().size();
             nSysFields = joinRel.getSystemFieldList().size();
             leftFieldsBitSet = ImmutableBitSet.range( nSysFields, nSysFields + nFieldsLeft );
             rightFieldsBitSet = ImmutableBitSet.range( nSysFields + nFieldsLeft, nSysFields + nFieldsLeft + nFieldsRight );

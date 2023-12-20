@@ -64,7 +64,7 @@ public class EnumerableDocumentValues extends DocumentValues implements Enumerab
         final PhysType physType =
                 PhysTypeImpl.of(
                         implementor.getTypeFactory(),
-                        getRowType(),
+                        getTupleType(),
                         pref.preferCustom() );
 
         final List<Expression> expressions = new ArrayList<>();

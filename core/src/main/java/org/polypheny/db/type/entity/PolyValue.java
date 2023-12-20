@@ -253,6 +253,8 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
                 return o -> o.asBlob().asByteArray();
             case GEOMETRY:
                 return o -> o.asGeometry().toString();
+            case DOCUMENT:
+                return o -> o.asDocument().toJson();
             default:
                 throw new NotImplementedException( "meta: " + type.getFullTypeString() );
         }

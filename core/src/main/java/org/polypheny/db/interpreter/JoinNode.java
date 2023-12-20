@@ -68,9 +68,9 @@ public class JoinNode implements Node {
     @Override
     public void run() throws InterruptedException {
         List<Row<PolyValue>> rightList = null;
-        final int leftCount = alg.getLeft().getRowType().getFieldCount();
-        final int rightCount = alg.getRight().getRowType().getFieldCount();
-        context.values = new PolyValue[alg.getRowType().getFieldCount()];
+        final int leftCount = alg.getLeft().getTupleType().getFieldCount();
+        final int rightCount = alg.getRight().getTupleType().getFieldCount();
+        context.values = new PolyValue[alg.getTupleType().getFieldCount()];
         Row<PolyValue> left;
         Row<PolyValue> right;
         while ( (left = leftSource.receive()) != null ) {

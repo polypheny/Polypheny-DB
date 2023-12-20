@@ -75,7 +75,7 @@ public class CalcSplitRule extends AlgOptRule {
         final AlgBuilder algBuilder = call.builder();
         algBuilder.push( calc.getInput() );
         algBuilder.filter( projectFilter.right );
-        algBuilder.project( projectFilter.left, calc.getRowType().getFieldNames() );
+        algBuilder.project( projectFilter.left, calc.getTupleType().getFieldNames() );
         call.transformTo( algBuilder.build() );
     }
 

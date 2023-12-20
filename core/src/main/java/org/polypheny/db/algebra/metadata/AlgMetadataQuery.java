@@ -394,7 +394,7 @@ public class AlgMetadataQuery {
      */
     public Entity getTableOrigin( AlgNode alg ) {
         // Determine the simple origin of the first column in the/ AlgNode. If it's simple, then that means that the underlying table is also simple, even if the column itself is derived.
-        if ( alg.getRowType().getFieldCount() == 0 ) {
+        if ( alg.getTupleType().getFieldCount() == 0 ) {
             return null;
         }
         final Set<AlgColumnOrigin> colOrigins = getColumnOrigins( alg, 0 );
@@ -461,7 +461,7 @@ public class AlgMetadataQuery {
      * @return true or false depending on whether the rows are unique, or null if not enough information is available to make that determination
      */
     public Boolean areRowsUnique( AlgNode alg ) {
-        final ImmutableBitSet columns = ImmutableBitSet.range( alg.getRowType().getFieldCount() );
+        final ImmutableBitSet columns = ImmutableBitSet.range( alg.getTupleType().getFieldCount() );
         return areColumnsUnique( alg, columns, false );
     }
 
@@ -592,7 +592,7 @@ public class AlgMetadataQuery {
     public List<Double> getAverageColumnSizesNotNull( AlgNode alg ) {
         final List<Double> averageColumnSizes = getAverageColumnSizes( alg );
         return averageColumnSizes == null
-                ? Collections.nCopies( alg.getRowType().getFieldCount(), null )
+                ? Collections.nCopies( alg.getTupleType().getFieldCount(), null )
                 : averageColumnSizes;
     }
 

@@ -83,7 +83,7 @@ public class AggregateRemoveRule extends AlgOptRule {
         // If aggregate was projecting a subset of columns, add a project for the same effect.
         final AlgBuilder algBuilder = call.builder();
         algBuilder.push( newInput );
-        if ( newInput.getRowType().getFieldCount() > aggregate.getRowType().getFieldCount() ) {
+        if ( newInput.getTupleType().getFieldCount() > aggregate.getTupleType().getFieldCount() ) {
             algBuilder.project( algBuilder.fields( aggregate.getGroupSet().asList() ) );
         }
         call.transformTo( algBuilder.build() );

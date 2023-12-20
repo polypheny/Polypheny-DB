@@ -43,7 +43,7 @@ public class EnumerableProjectToCalcRule extends AlgOptRule {
     public void onMatch( AlgOptRuleCall call ) {
         final EnumerableProject project = call.alg( 0 );
         final AlgNode input = project.getInput();
-        final RexProgram program = RexProgram.create( input.getRowType(), project.getProjects(), null, project.getRowType(), project.getCluster().getRexBuilder() );
+        final RexProgram program = RexProgram.create( input.getTupleType(), project.getProjects(), null, project.getTupleType(), project.getCluster().getRexBuilder() );
         final EnumerableCalc calc = EnumerableCalc.create( input, program );
         call.transformTo( calc );
     }

@@ -104,7 +104,7 @@ public class FileProject extends Project implements FileAlg {
         if ( implementor.getOperation() == Operation.UPDATE ) {
             implementor.setUpdates( Value.getUpdates( exps, implementor ) );
         }
-        AlgRecordType rowType = (AlgRecordType) getRowType();
+        AlgRecordType rowType = (AlgRecordType) getTupleType();
         List<String> fields = new ArrayList<>();
 
         List<Integer> mapping = new ArrayList<>();

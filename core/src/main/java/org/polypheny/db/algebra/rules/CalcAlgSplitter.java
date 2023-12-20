@@ -207,7 +207,7 @@ public abstract class CalcAlgSplitter {
                     createProgramForLevel(
                             level,
                             levelCount,
-                            alg.getRowType(),
+                            alg.getTupleType(),
                             exprs,
                             exprLevels,
                             inputExprOrdinals,
@@ -515,7 +515,7 @@ public abstract class CalcAlgSplitter {
     private String deriveFieldName( RexNode expr, int ordinal ) {
         if ( expr instanceof RexIndexRef ) {
             int inputIndex = ((RexIndexRef) expr).getIndex();
-            String fieldName = child.getRowType().getFields().get( inputIndex ).getName();
+            String fieldName = child.getTupleType().getFields().get( inputIndex ).getName();
             // Don't inherit field names like '$3' from child: that's confusing.
             if ( !fieldName.startsWith( "$" ) || fieldName.startsWith( "$EXPR" ) ) {
                 return fieldName;

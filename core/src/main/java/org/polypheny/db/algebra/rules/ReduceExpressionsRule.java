@@ -235,7 +235,7 @@ public abstract class ReduceExpressionsRule extends AlgOptRule {
                 call.transformTo(
                         call.builder()
                                 .push( project.getInput() )
-                                .project( expList, project.getRowType().getFieldNames() )
+                                .project( expList, project.getTupleType().getFieldNames() )
                                 .build() );
 
                 // New plan is absolutely better than old plan.
@@ -260,7 +260,7 @@ public abstract class ReduceExpressionsRule extends AlgOptRule {
         public void onMatch( AlgOptRuleCall call ) {
             final Join join = call.alg( 0 );
             final List<RexNode> expList = Lists.newArrayList( join.getCondition() );
-            final int fieldCount = join.getLeft().getRowType().getFieldCount();
+            final int fieldCount = join.getLeft().getTupleType().getFieldCount();
             final AlgMetadataQuery mq = call.getMetadataQuery();
             final AlgOptPredicateList leftPredicates = mq.getPulledUpPredicates( join.getLeft() );
             final AlgOptPredicateList rightPredicates = mq.getPulledUpPredicates( join.getRight() );
@@ -321,7 +321,7 @@ public abstract class ReduceExpressionsRule extends AlgOptRule {
             }
             final AlgOptPredicateList predicates = AlgOptPredicateList.EMPTY;
             if ( reduceExpressions( calc, expandedExprList, predicates, false, matchNullability ) ) {
-                final RexProgramBuilder builder = new RexProgramBuilder( calc.getInput().getRowType(), calc.getCluster().getRexBuilder() );
+                final RexProgramBuilder builder = new RexProgramBuilder( calc.getInput().getTupleType(), calc.getCluster().getRexBuilder() );
                 final List<RexLocalRef> list = new ArrayList<>();
                 for ( RexNode expr : expandedExprList ) {
                     list.add( builder.registerInput( expr ) );

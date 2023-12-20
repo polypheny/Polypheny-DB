@@ -33,6 +33,7 @@ import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.util.Moniker;
 import org.polypheny.db.util.MonikerImpl;
@@ -87,6 +88,10 @@ public abstract class ListScope extends DelegatingScope {
 
     private ScopeChild findChild( List<String> names, NameMatcher nameMatcher ) {
         for ( ScopeChild child : children ) {
+            if ( child.namespace.resolve().getDataModel() != DataModel.RELATIONAL ) {
+                return child;
+            }
+
             String lastName = Util.last( names );
             if ( child.name != null ) {
                 if ( !nameMatcher.matches( child.name, lastName ) ) {

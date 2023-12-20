@@ -30,6 +30,7 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.NodeVisitor;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Litmus;
 
 @Getter
@@ -116,6 +117,11 @@ public abstract class CypherNode implements Node {
     @Override
     public @Nullable String getEntity() {
         return null;
+    }
+
+
+    public List<PolyString> getUnderlyingLabels() {
+        return List.of();
     }
 
 

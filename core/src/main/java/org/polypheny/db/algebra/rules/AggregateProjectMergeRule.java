@@ -116,8 +116,8 @@ public class AggregateProjectMergeRule extends AlgOptRule {
         }
 
         final ImmutableList.Builder<AggregateCall> aggCalls = ImmutableList.builder();
-        final int sourceCount = aggregate.getInput().getRowType().getFieldCount();
-        final int targetCount = project.getInput().getRowType().getFieldCount();
+        final int sourceCount = aggregate.getInput().getTupleType().getFieldCount();
+        final int targetCount = project.getInput().getTupleType().getFieldCount();
         final TargetMapping targetMapping = Mappings.target( map, sourceCount, targetCount );
         for ( AggregateCall aggregateCall : aggregate.getAggCallList() ) {
             aggCalls.add( aggregateCall.transform( targetMapping ) );
@@ -139,7 +139,7 @@ public class AggregateProjectMergeRule extends AlgOptRule {
                     posList.add( aggregate.getGroupCount() + newGroupSet.indexOf( newKey ) );
                 }
             }
-            for ( int i = newAggregate.getGroupCount() + newAggregate.getIndicatorCount(); i < newAggregate.getRowType().getFieldCount(); i++ ) {
+            for ( int i = newAggregate.getGroupCount() + newAggregate.getIndicatorCount(); i < newAggregate.getTupleType().getFieldCount(); i++ ) {
                 posList.add( i );
             }
             algBuilder.project( algBuilder.fields( posList ) );

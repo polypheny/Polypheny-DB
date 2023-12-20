@@ -100,7 +100,7 @@ public class MongoFilter extends Filter implements MongoAlg {
         /*if ( implementor.getStaticRowType() != null && implementor.getStaticRowType() instanceof MongoRowType ) {
             translator = new Translator( MongoRules.mongoFieldNames( getRowType() ), (MongoRowType) implementor.getStaticRowType(), implementor );
         } else {*/
-        translator = new Translator( MongoRules.mongoFieldNames( getRowType() ), getRowType(), implementor );
+        translator = new Translator( MongoRules.mongoFieldNames( getTupleType() ), getTupleType(), implementor );
         //}
         translator.translateMatch( condition, implementor );
     }

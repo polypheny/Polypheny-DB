@@ -84,7 +84,7 @@ public class ProjectMultiJoinMergeRule extends AlgOptRule {
         // Create a new MultiJoin that reflects the columns in the projection above the MultiJoin
         final AlgBuilder algBuilder = call.builder();
         MultiJoin newMultiJoin = AlgOptUtil.projectMultiJoin( multiJoin, project );
-        algBuilder.push( newMultiJoin ).project( project.getProjects(), project.getRowType().getFieldNames() );
+        algBuilder.push( newMultiJoin ).project( project.getProjects(), project.getTupleType().getFieldNames() );
 
         call.transformTo( algBuilder.build() );
     }

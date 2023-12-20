@@ -102,4 +102,5 @@ public abstract class BiAlg extends AbstractAlgNode {
                 .input( "right", right );
     }
 
+
 }

@@ -71,7 +71,7 @@ public class EnumerableLpgUnwind extends LpgUnwind implements EnumerableAlg {
         BlockBuilder builder = new BlockBuilder();
         Result res = implementor.visitChild( this, 0, (EnumerableAlg) input, pref );
 
-        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getRowType(), pref.prefer( res.format ) );
+        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.prefer( res.format ) );
 
         Type outputJavaType = physType.getJavaRowType();
         final Type enumeratorType = Types.of( Enumerator.class, outputJavaType );

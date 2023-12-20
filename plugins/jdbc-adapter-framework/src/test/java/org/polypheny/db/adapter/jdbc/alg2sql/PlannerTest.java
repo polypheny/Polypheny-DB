@@ -125,7 +125,7 @@ public class PlannerTest extends SqlLanguageDependent {
                     alg.getTraitSet().replace( getOutConvention() ),
                     convert( project.getInput(), project.getInput().getTraitSet().replace( getOutConvention() ) ),
                     project.getProjects(),
-                    project.getRowType() );
+                    project.getTupleType() );
         }
 
     }

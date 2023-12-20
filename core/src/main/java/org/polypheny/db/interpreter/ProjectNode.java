@@ -51,7 +51,7 @@ public class ProjectNode extends AbstractSingleNode<Project> {
     public ProjectNode( Compiler compiler, Project alg ) {
         super( compiler, alg );
         this.projectCount = alg.getProjects().size();
-        this.scalar = compiler.compile( alg.getProjects(), alg.getInput().getRowType() );
+        this.scalar = compiler.compile( alg.getProjects(), alg.getInput().getTupleType() );
         this.context = compiler.createContext();
     }
 

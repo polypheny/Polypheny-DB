@@ -87,7 +87,7 @@ public class FilterTableFunctionTransposeRule extends AlgOptRule {
             return;
         }
         // TODO:  support mappings other than 1-to-1
-        if ( funcRel.getRowType().getFieldCount() != funcInputs.get( 0 ).getRowType().getFieldCount() ) {
+        if ( funcRel.getTupleType().getFieldCount() != funcInputs.get( 0 ).getTupleType().getFieldCount() ) {
             return;
         }
         for ( AlgColumnMapping mapping : columnMappings ) {
@@ -104,11 +104,11 @@ public class FilterTableFunctionTransposeRule extends AlgOptRule {
 
         // create filters on top of each func input, modifying the filter condition to reference the child instead
         RexBuilder rexBuilder = filter.getCluster().getRexBuilder();
-        List<AlgDataTypeField> origFields = funcRel.getRowType().getFields();
+        List<AlgDataTypeField> origFields = funcRel.getTupleType().getFields();
         // TODO:  these need to be non-zero once we support arbitrary mappings
         int[] adjustments = new int[origFields.size()];
         for ( AlgNode funcInput : funcInputs ) {
-            RexNode newCondition = condition.accept( new RexInputConverter( rexBuilder, origFields, funcInput.getRowType().getFields(), adjustments ) );
+            RexNode newCondition = condition.accept( new RexInputConverter( rexBuilder, origFields, funcInput.getTupleType().getFields(), adjustments ) );
             newFuncInputs.add( LogicalFilter.create( funcInput, newCondition ) );
         }
 
@@ -119,7 +119,7 @@ public class FilterTableFunctionTransposeRule extends AlgOptRule {
                         newFuncInputs,
                         funcRel.getCall(),
                         funcRel.getElementType(),
-                        funcRel.getRowType(),
+                        funcRel.getTupleType(),
                         columnMappings );
         call.transformTo( newFuncRel );
     }

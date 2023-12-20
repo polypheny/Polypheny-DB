@@ -72,7 +72,7 @@ public abstract class SemiJoinRule extends AlgOptRule {
             };
 
     /* Tests if an Aggregate always produces 1 row and 0 columns. */
-    private static final Predicate<Aggregate> IS_EMPTY_AGGREGATE = aggregate -> aggregate.getRowType().getFieldCount() == 0;
+    private static final Predicate<Aggregate> IS_EMPTY_AGGREGATE = aggregate -> aggregate.getTupleType().getFieldCount() == 0;
 
 
     protected SemiJoinRule( Class<Project> projectClass, Class<Join> joinClass, Class<Aggregate> aggregateClass, AlgBuilderFactory algBuilderFactory, String description ) {
@@ -109,7 +109,7 @@ public abstract class SemiJoinRule extends AlgOptRule {
         final RexBuilder rexBuilder = cluster.getRexBuilder();
         if ( project != null ) {
             final ImmutableBitSet bits = AlgOptUtil.InputFinder.bits( project.getProjects(), null );
-            final ImmutableBitSet rightBits = ImmutableBitSet.range( left.getRowType().getFieldCount(), join.getRowType().getFieldCount() );
+            final ImmutableBitSet rightBits = ImmutableBitSet.range( left.getTupleType().getFieldCount(), join.getTupleType().getFieldCount() );
             if ( bits.intersects( rightBits ) ) {
                 return;
             }
@@ -145,7 +145,7 @@ public abstract class SemiJoinRule extends AlgOptRule {
                 throw new AssertionError( join.getJoinType() );
         }
         if ( project != null ) {
-            algBuilder.project( project.getProjects(), project.getRowType().getFieldNames() );
+            algBuilder.project( project.getProjects(), project.getTupleType().getFieldNames() );
         }
         call.transformTo( algBuilder.build() );
     }

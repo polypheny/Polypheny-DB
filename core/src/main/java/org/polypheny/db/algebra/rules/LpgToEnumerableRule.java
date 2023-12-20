@@ -78,7 +78,7 @@ public class LpgToEnumerableRule extends AlgOptRule {
             return;
         }
 
-        AlgNode node = EnumerableValues.create( values.getCluster(), values.getRowType(), values.getValues() );
+        AlgNode node = EnumerableValues.create( values.getCluster(), values.getTupleType(), values.getValues() );
         call.transformTo( node );
     }
 
@@ -128,7 +128,7 @@ public class LpgToEnumerableRule extends AlgOptRule {
         AlgTraitSet out = project.getTraitSet().replace( EnumerableConvention.INSTANCE );
         AlgNode input = AlgOptRule.convert( project.getInput(), EnumerableConvention.INSTANCE );
 
-        EnumerableProject enumerableProject = new EnumerableProject( project.getCluster(), out, input, project.getProjects(), project.getRowType() );
+        EnumerableProject enumerableProject = new EnumerableProject( project.getCluster(), out, input, project.getProjects(), project.getTupleType() );
         call.transformTo( enumerableProject );
     }
 

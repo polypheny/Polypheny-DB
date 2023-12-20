@@ -214,20 +214,20 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
         final RewriteAlgVisitor visitor = new RewriteAlgVisitor();
         visitor.visit( root, 0, null );
         AlgNode flattened = getNewForOldRel( root );
-        flattenedRootType = flattened.getRowType();
+        flattenedRootType = flattened.getTupleType();
 
         // If requested, add another projection which puts everything back into structured form for return to the client.
         restructured = false;
         List<RexNode> structuringExps = null;
 
-        if ( restructure && root.getRowType().getStructKind() != StructKind.SEMI ) {
+        if ( restructure && root.getTupleType().getStructKind() != StructKind.SEMI ) {
             iRestructureInput = 0;
-            structuringExps = restructureFields( root.getRowType() );
+            structuringExps = restructureFields( root.getTupleType() );
         }
         if ( restructured ) {
             // REVIEW jvs: How do we make sure that this implementation stays in Java?  Fennel can't handle structured types.
             return algBuilder.push( flattened )
-                    .projectNamed( structuringExps, root.getRowType().getFieldNames(), true )
+                    .projectNamed( structuringExps, root.getTupleType().getFieldNames(), true )
                     .build();
         } else {
             return flattened;
@@ -317,22 +317,22 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
         AlgNode newInput = null;
         for ( AlgNode oldInput1 : currentAlg.getInputs() ) {
             newInput = getNewForOldRel( oldInput1 );
-            AlgDataType oldInputType = oldInput1.getRowType();
+            AlgDataType oldInputType = oldInput1.getTupleType();
             int n = oldInputType.getFieldCount();
             if ( oldOrdinal < n ) {
                 oldInput = oldInput1;
                 break;
             }
-            newOrdinal += newInput.getRowType().getFieldCount();
+            newOrdinal += newInput.getTupleType().getFieldCount();
             oldOrdinal -= n;
         }
         assert oldInput != null;
         assert newInput != null;
 
-        AlgDataType oldInputType = oldInput.getRowType();
+        AlgDataType oldInputType = oldInput.getTupleType();
         final int newOffset = calculateFlattenedOffset( oldInputType, oldOrdinal );
         newOrdinal += newOffset;
-        final AlgDataTypeField field = newInput.getRowType().getFields().get( newOffset );
+        final AlgDataTypeField field = newInput.getTupleType().getFields().get( newOffset );
         return Ord.of( newOrdinal, field.getType() );
     }
 
@@ -347,8 +347,8 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
         final AlgNode newAlg = getNewForOldRel( oldRel );
         return Mappings.target(
                 this::getNewForOldInput,
-                oldRel.getRowType().getFieldCount(),
-                newAlg.getRowType().getFieldCount() );
+                oldRel.getTupleType().getFieldCount(),
+                newAlg.getTupleType().getFieldCount() );
     }
 
 
@@ -546,7 +546,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
 
     @SuppressWarnings("unused")
     public void rewriteAlg( LogicalAggregate alg ) {
-        AlgDataType inputType = alg.getInput().getRowType();
+        AlgDataType inputType = alg.getInput().getTupleType();
         for ( AlgDataTypeField field : inputType.getFields() ) {
             if ( field.getType().isStruct() ) {
                 // TODO jvs 10-Feb-2005
@@ -568,7 +568,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
         // validate
         for ( AlgFieldCollation field : oldCollation.getFieldCollations() ) {
             int oldInput = field.getFieldIndex();
-            AlgDataType sortFieldType = oldChild.getRowType().getFields().get( oldInput ).getType();
+            AlgDataType sortFieldType = oldChild.getTupleType().getFields().get( oldInput ).getType();
             if ( sortFieldType.isStruct() ) {
                 // TODO jvs 10-Feb-2005
                 throw Util.needToImplement( "sorting on structured types" );
@@ -608,7 +608,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     public void rewriteAlg( LogicalCorrelate alg ) {
         Builder newPos = ImmutableBitSet.builder();
         for ( int pos : alg.getRequiredColumns() ) {
-            AlgDataType corrFieldType = alg.getLeft().getRowType().getFields().get( pos ).getType();
+            AlgDataType corrFieldType = alg.getLeft().getTupleType().getFields().get( pos ).getType();
             if ( corrFieldType.isStruct() ) {
                 throw Util.needToImplement( "correlation on structured type" );
             }
@@ -687,7 +687,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
         flattenProjections(
                 new RewriteRexShuttle(),
                 alg.getProjects(),
-                alg.getRowType().getFieldNames(),
+                alg.getTupleType().getFieldNames(),
                 "",
                 flattenedExpList );
         algBuilder.push( getNewForOldRel( alg.getInput() ) );
@@ -707,7 +707,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
         final AlgOptCluster cluster = alg.getCluster();
         RexProgramBuilder programBuilder =
                 new RexProgramBuilder(
-                        newInput.getRowType(),
+                        newInput.getTupleType(),
                         cluster.getRexBuilder() );
 
         // Convert the common expressions.
@@ -719,7 +719,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
 
         // Convert the projections.
         final List<Pair<RexNode, String>> flattenedExpList = new ArrayList<>();
-        List<String> fieldNames = alg.getRowType().getFieldNames();
+        List<String> fieldNames = alg.getTupleType().getFieldNames();
         flattenProjections(
                 new RewriteRexShuttle(),
                 program.getProjectList(),
@@ -874,10 +874,10 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
             return;
         }
         AlgNode newAlg = alg.entity.unwrap( TranslatableEntity.class ).orElseThrow().toAlg( cluster, alg.traitSet );
-        if ( !PolyTypeUtil.isFlat( alg.getRowType() ) ) {
+        if ( !PolyTypeUtil.isFlat( alg.getTupleType() ) ) {
             final List<Pair<RexNode, String>> flattenedExpList = new ArrayList<>();
             flattenInputs(
-                    alg.getRowType().getFields(),
+                    alg.getTupleType().getFields(),
                     rexBuilder.makeRangeReference( newAlg ),
                     flattenedExpList );
             newAlg = algBuilder.push( newAlg )

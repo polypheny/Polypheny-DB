@@ -1519,7 +1519,7 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        AlgDataType fieldList = algNode.getRowType();
+        AlgDataType fieldList = algNode.getTupleType();
 
         List<FieldInformation> columns = getColumnInformation( projectedColumns, fieldList );
 
@@ -1584,7 +1584,7 @@ public class DdlManagerImpl extends DdlManager {
             stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewEntity();
         }
 
-        AlgDataType fieldList = algRoot.alg.getRowType();
+        AlgDataType fieldList = algRoot.alg.getTupleType();
 
         Map<Long, List<Long>> underlyingTables = new HashMap<>();
         Map<Long, List<Long>> underlying = findUnderlyingTablesOfView( algRoot.alg, underlyingTables, fieldList );

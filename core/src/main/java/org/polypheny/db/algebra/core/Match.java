@@ -227,7 +227,7 @@ public abstract class Match extends SingleAlg {
         return super.explainTerms( pw )
                 .item( "partition", getPartitionKeys() )
                 .item( "order", getOrderKeys() )
-                .item( "outputFields", getRowType().getFieldNames() )
+                .item( "outputFields", getTupleType().getFieldNames() )
                 .item( "allRows", isAllRows() )
                 .item( "after", getAfter() )
                 .item( "pattern", getPattern() )
@@ -236,7 +236,7 @@ public abstract class Match extends SingleAlg {
                 .itemIf( "interval", getInterval(), getInterval() != null )
                 .item( "subsets", getSubsets().values().asList() )
                 .item( "patternDefinitions", getPatternDefinitions().values().asList() )
-                .item( "inputFields", getInput().getRowType().getFieldNames() );
+                .item( "inputFields", getInput().getTupleType().getFieldNames() );
     }
 
 

@@ -75,7 +75,7 @@ public class ProjectionsTest extends AlgBuildTestHelper {
         projections.add( deptname, deptnameModifiers );
         algBuilder = projections.convert2Rel( tableScanOrdinalities, algBuilder, rexBuilder );
         AlgNode algNode = algBuilder.peek();
-        List<String> actualFieldNames = algNode.getRowType().getFieldNames();
+        List<String> actualFieldNames = algNode.getTupleType().getFieldNames();
         List<String> expectedFieldNames = new ArrayList<>();
         expectedFieldNames.add( "test.employee.empname" );
         expectedFieldNames.add( "test.dept.deptname" );
@@ -90,7 +90,7 @@ public class ProjectionsTest extends AlgBuildTestHelper {
         projections.add( empname, empnameModifiers );
         algBuilder = projections.convert2Rel( tableScanOrdinalities, algBuilder, rexBuilder );
         AlgNode algNode = algBuilder.peek();
-        List<String> actualFieldNames = algNode.getRowType().getFieldNames();
+        List<String> actualFieldNames = algNode.getTupleType().getFieldNames();
         String actualFieldName = actualFieldNames.get( 0 );
         String expectedFieldName = AggregationFunctions.COUNT.getAliasWithColumnName( empname.fullyQualifiedName );
 
@@ -106,7 +106,7 @@ public class ProjectionsTest extends AlgBuildTestHelper {
         projections.add( deptname, deptnameModifiers );
         algBuilder = projections.convert2Rel( tableScanOrdinalities, algBuilder, rexBuilder );
         AlgNode algNode = algBuilder.peek();
-        List<String> actualFieldNames = algNode.getRowType().getFieldNames();
+        List<String> actualFieldNames = algNode.getTupleType().getFieldNames();
         List<String> expectedFiledNames = new ArrayList<>();
         expectedFiledNames.add( AggregationFunctions.COUNT.getAliasWithColumnName( empname.fullyQualifiedName ) );
         expectedFiledNames.add( deptname.fullyQualifiedName );

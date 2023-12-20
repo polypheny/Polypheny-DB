@@ -110,7 +110,7 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
             return null;
         }
         double d = 0d;
-        final List<AlgDataTypeField> fields = alg.getRowType().getFields();
+        final List<AlgDataTypeField> fields = alg.getTupleType().getFields();
         for ( Pair<Double, AlgDataTypeField> p : Pair.zip( averageColumnSizes, fields ) ) {
             if ( p.left == null ) {
                 d += averageFieldValueSize( p.right );
@@ -158,7 +158,7 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
 
 
     public List<Double> averageColumnSizes( Values alg, AlgMetadataQuery mq ) {
-        final List<AlgDataTypeField> fields = alg.getRowType().getFields();
+        final List<AlgDataTypeField> fields = alg.getTupleType().getFields();
         final ImmutableList.Builder<Double> list = ImmutableList.builder();
         for ( int i = 0; i < fields.size(); i++ ) {
             AlgDataTypeField field = fields.get( i );
@@ -179,7 +179,7 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
 
 
     public List<Double> averageColumnSizes( RelScan alg, AlgMetadataQuery mq ) {
-        final List<AlgDataTypeField> fields = alg.getRowType().getFields();
+        final List<AlgDataTypeField> fields = alg.getTupleType().getFields();
         final ImmutableList.Builder<Double> list = ImmutableList.builder();
         for ( AlgDataTypeField field : fields ) {
             list.add( averageTypeValueSize( field.getType() ) );
@@ -219,13 +219,13 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
         if ( lefts == null && rights == null ) {
             return null;
         }
-        final int fieldCount = alg.getRowType().getFieldCount();
+        final int fieldCount = alg.getTupleType().getFieldCount();
         Double[] sizes = new Double[fieldCount];
         if ( lefts != null ) {
             lefts.toArray( sizes );
         }
         if ( rights != null ) {
-            final int leftCount = left.getRowType().getFieldCount();
+            final int leftCount = left.getTupleType().getFieldCount();
             for ( int i = 0; i < rights.size(); i++ ) {
                 sizes[leftCount + i] = rights.get( i );
             }
@@ -245,7 +245,7 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
 
 
     public List<Double> averageColumnSizes( Union alg, AlgMetadataQuery mq ) {
-        final int fieldCount = alg.getRowType().getFieldCount();
+        final int fieldCount = alg.getTupleType().getFieldCount();
         List<List<Double>> inputColumnSizeList = new ArrayList<>();
         for ( AlgNode input : alg.getInputs() ) {
             final List<Double> inputSizes = mq.getAverageColumnSizes( input );

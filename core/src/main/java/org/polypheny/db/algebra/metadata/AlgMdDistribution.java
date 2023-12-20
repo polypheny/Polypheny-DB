@@ -113,7 +113,7 @@ public class AlgMdDistribution implements MetadataHandler<BuiltInMetadata.Distri
 
 
     public AlgDistribution distribution( Values values, AlgMetadataQuery mq ) {
-        return values( values.getRowType(), values.getTuples() );
+        return values( values.getTupleType(), values.getTuples() );
     }
 
 
@@ -172,7 +172,7 @@ public class AlgMdDistribution implements MetadataHandler<BuiltInMetadata.Distri
      */
     public static AlgDistribution project( AlgMetadataQuery mq, AlgNode input, List<? extends RexNode> projects ) {
         final AlgDistribution inputDistribution = mq.distribution( input );
-        final Mappings.TargetMapping mapping = Project.getPartialMapping( input.getRowType().getFieldCount(), projects );
+        final Mappings.TargetMapping mapping = Project.getPartialMapping( input.getTupleType().getFieldCount(), projects );
         return inputDistribution.apply( mapping );
     }
 

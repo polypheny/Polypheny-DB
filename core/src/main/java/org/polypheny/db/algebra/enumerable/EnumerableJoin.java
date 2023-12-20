@@ -145,7 +145,7 @@ public class EnumerableJoin extends EquiJoin implements EnumerableAlg {
         Expression leftExpression = builder.append( "left" + System.nanoTime(), leftResult.block );
         final Result rightResult = implementor.visitChild( this, 1, (EnumerableAlg) right, pref );
         Expression rightExpression = builder.append( "right" + System.nanoTime(), rightResult.block );
-        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getRowType(), pref.preferArray() );
+        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.preferArray() );
         final PhysType keyPhysType = leftResult.physType.project( leftKeys, JavaRowFormat.LIST );
         return implementor.result(
                 physType,

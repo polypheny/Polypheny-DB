@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -63,6 +64,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph.SubstitutionGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -77,6 +79,7 @@ import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.mapping.Mappings;
 
@@ -243,10 +246,10 @@ public abstract class BaseRouter implements Router {
             throw new NotImplementedException();
         }
 
-        if ( table.getRowType().getFieldCount() == builder.peek().getRowType().getFieldCount() && !table.getRowType().equals( builder.peek().getRowType() ) ) {
+        if ( table.getRowType().getFieldCount() == builder.peek().getTupleType().getFieldCount() && !table.getRowType().equals( builder.peek().getTupleType() ) ) {
             // we adjust the
             Map<String, Integer> namesIndexMapping = table.getRowType().getFields().stream().collect( Collectors.toMap( AlgDataTypeField::getName, AlgDataTypeField::getIndex ) );
-            List<Integer> target = builder.peek().getRowType().getFields().stream().map( f -> namesIndexMapping.get( f.getName() ) ).collect( Collectors.toList() );
+            List<Integer> target = builder.peek().getTupleType().getFields().stream().map( f -> namesIndexMapping.get( f.getName() ) ).collect( Collectors.toList() );
             builder.permute( Mappings.bijection( target ) );
         }
 
@@ -277,17 +280,17 @@ public abstract class BaseRouter implements Router {
 
 
     public RoutedAlgBuilder handleValues( LogicalValues node, RoutedAlgBuilder builder ) {
-        return builder.values( node.tuples, node.getRowType() );
+        return builder.values( node.tuples, node.getTupleType() );
     }
 
 
     protected List<RoutedAlgBuilder> handleValues( LogicalValues node, List<RoutedAlgBuilder> builders ) {
-        return builders.stream().map( builder -> builder.values( node.tuples, node.getRowType() ) ).collect( Collectors.toList() );
+        return builders.stream().map( builder -> builder.values( node.tuples, node.getTupleType() ) ).collect( Collectors.toList() );
     }
 
 
     protected RoutedAlgBuilder handleDocuments( LogicalDocumentValues node, RoutedAlgBuilder builder ) {
-        return builder.documents( node.documents, node.getRowType() );
+        return builder.documents( node.documents, node.getTupleType() );
     }
 
 
@@ -436,7 +439,7 @@ public abstract class BaseRouter implements Router {
         // todo dl: remove after RowType refactor
         if ( catalog.getSnapshot().getNamespace( placement.namespaceId ).orElseThrow().dataModel == DataModel.DOCUMENT ) {
             AlgDataType rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( 1L, "d", 0, cluster.getTypeFactory().createPolyType( PolyType.DOCUMENT ) ) ) );
-            builder.push( new LogicalTransformer(
+            builder.push( LogicalTransformer.create(
                     node.getCluster(),
                     List.of( node ),
                     null,
@@ -485,23 +488,58 @@ public abstract class BaseRouter implements Router {
 
         LogicalGraph graph = alg.entity.unwrap( LogicalGraph.class ).orElseThrow();
 
-        List<AlgNode> scans = new ArrayList<>();
-
         List<Long> placements = snapshot.alloc().getFromLogical( graph.id ).stream().filter( p -> excludedPlacements == null || !excludedPlacements.contains( p.id ) ).map( p -> p.adapterId ).collect( Collectors.toList() );
         if ( targetAlloc != null ) {
-            return new LogicalLpgScan( alg.getCluster(), alg.getTraitSet(), targetAlloc, alg.getRowType() );
+            return new LogicalLpgScan( alg.getCluster(), alg.getTraitSet(), targetAlloc, alg.getTupleType() );
         }
 
         for ( long placement : placements ) {
             AllocationEntity entity = snapshot.alloc().getEntity( placement, graph.id ).orElseThrow();
 
             // a native placement was used, we go with that
-            return new LogicalLpgScan( alg.getCluster(), alg.getTraitSet(), entity, alg.getRowType() );
+            return new LogicalLpgScan( alg.getCluster(), alg.getTraitSet(), entity, alg.getTupleType() );
+        }
+
+        // cross-modal?
+        if ( namespace.dataModel == DataModel.DOCUMENT || namespace.dataModel == DataModel.RELATIONAL ) {
+            return handleGraphCrossModel( alg, statement, graph, namespace, snapshot );
         }
 
         throw new GenericRuntimeException( "Error while routing graph query." );
 
         // rather naive selection strategy
+    }
+
+
+    @NotNull
+    private LogicalTransformer handleGraphCrossModel( LogicalLpgScan alg, Statement statement, LogicalGraph graph, LogicalNamespace namespace, Snapshot snapshot ) {
+        if ( graph.unwrap( SubstitutionGraph.class ).isEmpty() ) {
+            throw new GenericRuntimeException( "Error while routing cross-model graph query." );
+        }
+        SubstitutionGraph substitutionGraph = graph.unwrap( SubstitutionGraph.class ).get();
+        List<Pair<String, AlgNode>> scans = new ArrayList<>();
+        List<PolyString> names = substitutionGraph.names;
+        if ( names.isEmpty() ) {
+            // no label means all entites
+            names = namespace.dataModel == DataModel.DOCUMENT ? snapshot.doc().getCollections( graph.namespaceId, null ).stream().map( c -> new PolyString( c.name ) ).collect( Collectors.toList() ) : snapshot.rel().getTables( graph.namespaceId, null ).stream().map( t -> new PolyString( t.name ) ).collect( Collectors.toList() );
+        }
+
+        for ( PolyString name : names ) {
+            if ( namespace.dataModel == DataModel.DOCUMENT ) {
+                snapshot.doc().getCollection( graph.id, name.value ).ifPresent( c -> {
+                    RoutedAlgBuilder algBuilder = RoutedAlgBuilder.create( statement, alg.getCluster() );
+                    AlgNode scan = algBuilder.documentScan( c ).build();
+                    routeDocument( algBuilder, scan, statement );
+                    scans.add( Pair.of( name.value, algBuilder.build() ) );
+                } );
+            } else if ( namespace.dataModel == DataModel.RELATIONAL ) {
+                snapshot.rel().getTable( graph.namespaceId, name.value )
+                        .ifPresent( t ->
+                                scans.add( Pair.of( name.value, handleRelScan( RoutedAlgBuilder.create( statement, alg.getCluster() ), statement, t ).build() ) ) );
+            }
+        }
+
+        return new LogicalTransformer( alg.getCluster(), alg.getTraitSet(), Pair.right( scans ), Pair.left( scans ), namespace.dataModel.getModelTrait(), ModelTrait.GRAPH, GraphType.of(), true );
     }
 
 
@@ -515,7 +553,7 @@ public abstract class BaseRouter implements Router {
         // Builder infoBuilder = cluster.getTypeFactory().builder();
         // infoBuilder.add( "g", null, PolyType.GRAPH );
 
-        return new LogicalTransformer( cluster, Pair.right( scans ), Pair.left( scans ), ModelTrait.RELATIONAL, ModelTrait.GRAPH, GraphType.of(), true );
+        return LogicalTransformer.create( cluster, Pair.right( scans ), Pair.left( scans ), ModelTrait.RELATIONAL, ModelTrait.GRAPH, GraphType.of(), true );
     }
 
 
@@ -534,7 +572,7 @@ public abstract class BaseRouter implements Router {
         // Builder infoBuilder = cluster.getTypeFactory().builder();
         // infoBuilder.add( "g", null, PolyType.GRAPH );
 
-        return new LogicalTransformer( cluster, Pair.right( scans ), Pair.left( scans ), ModelTrait.DOCUMENT, ModelTrait.GRAPH, GraphType.of(), true );
+        return LogicalTransformer.create( cluster, Pair.right( scans ), Pair.left( scans ), ModelTrait.DOCUMENT, ModelTrait.GRAPH, GraphType.of(), true );
     }
 
 

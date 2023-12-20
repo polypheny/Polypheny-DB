@@ -73,7 +73,7 @@ class EnumerableMergeJoinRule extends ConverterRule {
                 traits = traits.replace( collation );
             }
             newInputs.add( convert( ord.e, traits ) );
-            offset += ord.e.getRowType().getFieldCount();
+            offset += ord.e.getTupleType().getFieldCount();
         }
         final AlgNode left = newInputs.get( 0 );
         final AlgNode right = newInputs.get( 1 );

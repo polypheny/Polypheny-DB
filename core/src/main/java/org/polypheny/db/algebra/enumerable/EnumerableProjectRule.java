@@ -49,7 +49,7 @@ class EnumerableProjectRule extends ConverterRule {
         return EnumerableProject.create(
                 AlgOptRule.convert( project.getInput(), project.getInput().getTraitSet().replace( EnumerableConvention.INSTANCE ) ),
                 project.getProjects(),
-                project.getRowType() );
+                project.getTupleType() );
     }
 
 }

@@ -172,7 +172,7 @@ public interface NeoGraphRules {
                     values.getNodes(),
                     values.getEdges(),
                     values.getValues(),
-                    values.getRowType() );
+                    values.getTupleType() );
         }
 
     }

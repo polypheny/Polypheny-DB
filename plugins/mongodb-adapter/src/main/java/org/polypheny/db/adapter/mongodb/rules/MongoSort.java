@@ -66,7 +66,7 @@ public class MongoSort extends Sort implements MongoAlg {
         implementor.visitChild( 0, getInput() );
         if ( !collation.getFieldCollations().isEmpty() ) {
             final List<String> keys = new ArrayList<>();
-            final List<AlgDataTypeField> fields = getRowType().getFields();
+            final List<AlgDataTypeField> fields = getTupleType().getFields();
             for ( AlgFieldCollation fieldCollation : collation.getFieldCollations() ) {
                 // we can only sort by field not by db.collection.field
                 String name =

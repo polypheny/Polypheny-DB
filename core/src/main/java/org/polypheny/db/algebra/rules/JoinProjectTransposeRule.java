@@ -177,8 +177,8 @@ public class JoinProjectTransposeRule extends AlgOptRule {
         // actually been joined yet.
         AlgDataType joinChildrenRowType =
                 ValidatorUtil.deriveJoinRowType(
-                        leftJoinChild.getRowType(),
-                        rightJoinChild.getRowType(),
+                        leftJoinChild.getTupleType(),
+                        rightJoinChild.getTupleType(),
                         JoinAlgType.INNER,
                         joinRel.getCluster().getTypeFactory(),
                         null,
@@ -187,7 +187,7 @@ public class JoinProjectTransposeRule extends AlgOptRule {
         // Create projection expressions, combining the projection expressions from the projects that feed into the join.
         // For the RHS projection expressions, shift them to the right by the number of fields on the LHS.
         // If the join input was not a projection, simply create references to the inputs.
-        int nProjExprs = joinRel.getRowType().getFieldCount();
+        int nProjExprs = joinRel.getTupleType().getFieldCount();
         final List<Pair<RexNode, String>> projects = new ArrayList<>();
         final RexBuilder rexBuilder = joinRel.getCluster().getRexBuilder();
 
@@ -199,7 +199,7 @@ public class JoinProjectTransposeRule extends AlgOptRule {
                 joinChildrenRowType.getFields(),
                 projects );
 
-        List<AlgDataTypeField> leftFields = leftJoinChild.getRowType().getFields();
+        List<AlgDataTypeField> leftFields = leftJoinChild.getTupleType().getFields();
         int nFieldsLeft = leftFields.size();
         createProjectExprs(
                 rightProj,
@@ -242,7 +242,7 @@ public class JoinProjectTransposeRule extends AlgOptRule {
         // Expand out the new projection expressions; if the join is an outer join, modify the expressions to reference the join output
         final List<RexNode> newProjExprs = new ArrayList<>();
         List<RexLocalRef> projList = mergedProgram.getProjectList();
-        List<AlgDataTypeField> newJoinFields = newJoinRel.getRowType().getFields();
+        List<AlgDataTypeField> newJoinFields = newJoinRel.getTupleType().getFields();
         int nJoinFields = newJoinFields.size();
         int[] adjustments = new int[nJoinFields];
         for ( int i = 0; i < nProjExprs; i++ ) {
@@ -262,10 +262,10 @@ public class JoinProjectTransposeRule extends AlgOptRule {
         // Finally, create the projection on top of the join
         final AlgBuilder algBuilder = call.builder();
         algBuilder.push( newJoinRel );
-        algBuilder.project( newProjExprs, joinRel.getRowType().getFieldNames() );
+        algBuilder.project( newProjExprs, joinRel.getTupleType().getFieldNames() );
         // If the join was outer, we might need a cast after the projection to fix differences wrt nullability of fields
         if ( joinType != JoinAlgType.INNER ) {
-            algBuilder.convert( joinRel.getRowType(), false );
+            algBuilder.convert( joinRel.getTupleType(), false );
         }
 
         call.transformTo( algBuilder.build() );
@@ -324,7 +324,7 @@ public class JoinProjectTransposeRule extends AlgOptRule {
      * @param projects Projection expressions &amp; names to be created
      */
     protected void createProjectExprs( Project projRel, AlgNode joinChild, int adjustmentAmount, RexBuilder rexBuilder, List<AlgDataTypeField> joinChildrenFields, List<Pair<RexNode, String>> projects ) {
-        List<AlgDataTypeField> childFields = joinChild.getRowType().getFields();
+        List<AlgDataTypeField> childFields = joinChild.getTupleType().getFields();
         if ( projRel != null ) {
             List<Pair<RexNode, String>> namedProjects = projRel.getNamedProjects();
             int nChildFields = childFields.size();

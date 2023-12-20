@@ -211,7 +211,7 @@ public abstract class AbstractAlgNode implements AlgNode {
 
 
     @Override
-    public final AlgDataType getRowType() {
+    public final AlgDataType getTupleType() {
         if ( rowType == null ) {
             rowType = deriveRowType();
             assert rowType != null : this;
@@ -228,7 +228,7 @@ public abstract class AbstractAlgNode implements AlgNode {
 
     @Override
     public AlgDataType getExpectedInputRowType( int ordinalInParent ) {
-        return getRowType();
+        return getTupleType();
     }
 
 
@@ -343,9 +343,9 @@ public abstract class AbstractAlgNode implements AlgNode {
                 // TODO: change 'equal' to 'eq', which is stronger.
                 assert AlgOptUtil.equal(
                         "rowtype of alg before registration",
-                        input.getRowType(),
+                        input.getTupleType(),
                         "rowtype of alg after registration",
-                        e.getRowType(),
+                        e.getTupleType(),
                         Litmus.THROW );
             }
             inputs.add( e );

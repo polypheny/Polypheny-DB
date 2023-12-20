@@ -136,7 +136,7 @@ public class JoinToMultiJoinRule extends AlgOptRule {
         final ImmutableMap<Integer, ImmutableList<Integer>> newJoinFieldRefCountsMap =
                 addOnJoinFieldRefCounts(
                         newInputs,
-                        origJoin.getRowType().getFieldCount(),
+                        origJoin.getTupleType().getFieldCount(),
                         origJoin.getCondition(),
                         joinFieldRefCountsList );
 
@@ -148,7 +148,7 @@ public class JoinToMultiJoinRule extends AlgOptRule {
                         origJoin.getCluster(),
                         newInputs,
                         RexUtil.composeConjunction( rexBuilder, newJoinFilters ),
-                        origJoin.getRowType(),
+                        origJoin.getTupleType(),
                         origJoin.getJoinType() == JoinAlgType.FULL,
                         Pair.right( joinSpecs ),
                         Pair.left( joinSpecs ),
@@ -184,7 +184,7 @@ public class JoinToMultiJoinRule extends AlgOptRule {
         } else {
             newInputs.add( left );
             projFieldsList.add( null );
-            joinFieldRefCountsList.add( new int[left.getRowType().getFieldCount()] );
+            joinFieldRefCountsList.add( new int[left.getTupleType().getFieldCount()] );
         }
 
         if ( canCombine( right, join.getJoinType().generatesNullsOnRight() ) ) {
@@ -197,7 +197,7 @@ public class JoinToMultiJoinRule extends AlgOptRule {
         } else {
             newInputs.add( right );
             projFieldsList.add( null );
-            joinFieldRefCountsList.add( new int[right.getRowType().getFieldCount()] );
+            joinFieldRefCountsList.add( new int[right.getTupleType().getFieldCount()] );
         }
 
         return newInputs;
@@ -238,9 +238,9 @@ public class JoinToMultiJoinRule extends AlgOptRule {
                     copyOuterJoinInfo(
                             (MultiJoin) right,
                             joinSpecs,
-                            left.getRowType().getFieldCount(),
-                            right.getRowType().getFields(),
-                            joinRel.getRowType().getFields() );
+                            left.getTupleType().getFieldCount(),
+                            right.getTupleType().getFields(),
+                            joinRel.getTupleType().getFields() );
                 } else {
                     joinSpecs.add( Pair.of( JoinAlgType.INNER, (RexNode) null ) );
                 }
@@ -260,9 +260,9 @@ public class JoinToMultiJoinRule extends AlgOptRule {
                     copyOuterJoinInfo(
                             (MultiJoin) right,
                             joinSpecs,
-                            left.getRowType().getFieldCount(),
-                            right.getRowType().getFields(),
-                            joinRel.getRowType().getFields() );
+                            left.getTupleType().getFieldCount(),
+                            right.getTupleType().getFields(),
+                            joinRel.getTupleType().getFields() );
                 } else {
                     joinSpecs.add( Pair.of( JoinAlgType.INNER, (RexNode) null ) );
                 }
@@ -366,8 +366,8 @@ public class JoinToMultiJoinRule extends AlgOptRule {
             return null;
         }
 
-        int nFieldsOnLeft = left.getRowType().getFields().size();
-        int nFieldsOnRight = right.getRowType().getFields().size();
+        int nFieldsOnLeft = left.getTupleType().getFields().size();
+        int nFieldsOnRight = right.getTupleType().getFields().size();
         int[] adjustments = new int[nFieldsOnRight];
         for ( int i = 0; i < nFieldsOnRight; i++ ) {
             adjustments[i] = nFieldsOnLeft;
@@ -376,8 +376,8 @@ public class JoinToMultiJoinRule extends AlgOptRule {
                 rightFilter.accept(
                         new AlgOptUtil.RexInputConverter(
                                 joinRel.getCluster().getRexBuilder(),
-                                right.getRowType().getFields(),
-                                joinRel.getRowType().getFields(),
+                                right.getTupleType().getFields(),
+                                joinRel.getTupleType().getFields(),
                                 adjustments ) );
         return rightFilter;
     }
@@ -418,7 +418,7 @@ public class JoinToMultiJoinRule extends AlgOptRule {
                 startField += nFields;
                 currInput++;
                 assert currInput < nInputs;
-                nFields = multiJoinInputs.get( currInput ).getRowType().getFieldCount();
+                nFields = multiJoinInputs.get( currInput ).getTupleType().getFieldCount();
             }
             int[] refCounts = refCountsMap.get( currInput );
             refCounts[i - startField] += joinCondRefCounts[i];

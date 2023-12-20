@@ -81,7 +81,7 @@ public class FilterMultiJoinMergeRule extends AlgOptRule {
                         multiJoin.getCluster(),
                         multiJoin.getInputs(),
                         multiJoin.getJoinFilter(),
-                        multiJoin.getRowType(),
+                        multiJoin.getTupleType(),
                         multiJoin.isFullOuterJoin(),
                         multiJoin.getOuterJoinConditions(),
                         multiJoin.getJoinTypes(),

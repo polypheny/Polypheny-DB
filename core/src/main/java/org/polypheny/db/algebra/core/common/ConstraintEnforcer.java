@@ -35,7 +35,7 @@ public class ConstraintEnforcer extends BiAlg {
 
     @Override
     protected AlgDataType deriveRowType() {
-        return left.getRowType();
+        return left.getTupleType();
     }
 
 

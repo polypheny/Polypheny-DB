@@ -23,7 +23,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nullable;
-import org.apache.commons.lang3.NotImplementedException;
+import lombok.Getter;
+import lombok.experimental.Accessors;
 import org.polypheny.db.algebra.constant.Modality;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -59,6 +60,10 @@ public class IdentifierNamespace extends AbstractNamespace {
     private final SqlIdentifier id;
     private final SqlValidatorScope parentScope;
     public final SqlNodeList extendList;
+
+    @Getter
+    @Accessors(fluent = true)
+    public DataModel dataModel = DataModel.RELATIONAL;
 
     /**
      * The underlying namespace. Often a {@link EntityNamespace}. Set on validate.

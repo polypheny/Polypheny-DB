@@ -212,7 +212,7 @@ public class AlgSubset extends AbstractAlgNode {
 
     @Override
     protected AlgDataType deriveRowType() {
-        return set.alg.getRowType();
+        return set.alg.getTupleType();
     }
 
 
@@ -293,7 +293,7 @@ public class AlgSubset extends AbstractAlgNode {
 
         // If this isn't the first alg in the set, it must have compatible row type.
         if ( set.alg != null ) {
-            AlgOptUtil.equal( "rowtype of new alg", alg.getRowType(), "rowtype of set", getRowType(), Litmus.THROW );
+            AlgOptUtil.equal( "rowtype of new alg", alg.getTupleType(), "rowtype of set", getTupleType(), Litmus.THROW );
         }
         set.addInternal( alg );
         if ( false ) {

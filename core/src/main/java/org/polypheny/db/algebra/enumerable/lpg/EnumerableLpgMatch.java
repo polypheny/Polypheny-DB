@@ -130,7 +130,7 @@ public class EnumerableLpgMatch extends LpgMatch implements EnumerableAlg {
 
         builder.add( Expressions.return_( null, return_ ) );
 
-        return implementor.result( PhysTypeImpl.of( typeFactory, getRowType(), pref.prefer( res.format ) ), builder.toBlock() );
+        return implementor.result( PhysTypeImpl.of( typeFactory, getTupleType(), pref.prefer( res.format ) ), builder.toBlock() );
     }
 
 

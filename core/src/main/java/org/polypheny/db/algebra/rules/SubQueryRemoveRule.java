@@ -466,11 +466,11 @@ public abstract class SubQueryRemoveRule extends AlgOptRule {
     private RexIndexRef field( AlgBuilder builder, int inputCount, int offset ) {
         for ( int inputOrdinal = 0; ; ) {
             final AlgNode r = builder.peek( inputCount, inputOrdinal );
-            if ( offset < r.getRowType().getFieldCount() ) {
+            if ( offset < r.getTupleType().getFieldCount() ) {
                 return builder.field( inputCount, inputOrdinal, offset );
             }
             ++inputOrdinal;
-            offset -= r.getRowType().getFieldCount();
+            offset -= r.getTupleType().getFieldCount();
         }
     }
 
@@ -507,10 +507,10 @@ public abstract class SubQueryRemoveRule extends AlgOptRule {
             assert e != null;
             final AlgOptUtil.Logic logic = LogicVisitor.find( AlgOptUtil.Logic.TRUE_FALSE_UNKNOWN, project.getProjects(), e );
             builder.push( project.getInput() );
-            final int fieldCount = builder.peek().getRowType().getFieldCount();
+            final int fieldCount = builder.peek().getTupleType().getFieldCount();
             final RexNode target = apply( e, ImmutableSet.of(), logic, builder, 1, fieldCount );
             final RexShuttle shuttle = new ReplaceSubQueryShuttle( e, target );
-            builder.project( shuttle.apply( project.getProjects() ), project.getRowType().getFieldNames() );
+            builder.project( shuttle.apply( project.getProjects() ), project.getTupleType().getFieldNames() );
             call.transformTo( builder.build() );
         }
 
@@ -546,12 +546,12 @@ public abstract class SubQueryRemoveRule extends AlgOptRule {
                 ++count;
                 final AlgOptUtil.Logic logic = LogicVisitor.find( AlgOptUtil.Logic.TRUE, ImmutableList.of( c ), e );
                 final Set<CorrelationId> variablesSet = AlgOptUtil.getVariablesUsed( e.alg );
-                final RexNode target = apply( e, variablesSet, logic, builder, 1, builder.peek().getRowType().getFieldCount() );
+                final RexNode target = apply( e, variablesSet, logic, builder, 1, builder.peek().getTupleType().getFieldCount() );
                 final RexShuttle shuttle = new ReplaceSubQueryShuttle( e, target );
                 c = c.accept( shuttle );
             }
             builder.filter( c );
-            builder.project( fields( builder, filter.getRowType().getFieldCount() ) );
+            builder.project( fields( builder, filter.getTupleType().getFieldCount() ) );
             call.transformTo( builder.build() );
         }
 
@@ -580,11 +580,11 @@ public abstract class SubQueryRemoveRule extends AlgOptRule {
             final AlgOptUtil.Logic logic = LogicVisitor.find( AlgOptUtil.Logic.TRUE, ImmutableList.of( join.getCondition() ), e );
             builder.push( join.getLeft() );
             builder.push( join.getRight() );
-            final int fieldCount = join.getRowType().getFieldCount();
+            final int fieldCount = join.getTupleType().getFieldCount();
             final RexNode target = apply( e, ImmutableSet.of(), logic, builder, 2, fieldCount );
             final RexShuttle shuttle = new ReplaceSubQueryShuttle( e, target );
             builder.join( join.getJoinType(), shuttle.apply( join.getCondition() ) );
-            builder.project( fields( builder, join.getRowType().getFieldCount() ) );
+            builder.project( fields( builder, join.getTupleType().getFieldCount() ) );
             call.transformTo( builder.build() );
         }
 

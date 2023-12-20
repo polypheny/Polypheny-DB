@@ -186,7 +186,7 @@ public class AlgMdCollation implements MetadataHandler<BuiltInMetadata.Collation
 
 
     public ImmutableList<AlgCollation> collations( Values values, AlgMetadataQuery mq ) {
-        return ImmutableList.copyOf( values( mq, values.getRowType(), values.getTuples() ) );
+        return ImmutableList.copyOf( values( mq, values.getTupleType(), values.getTuples() ) );
     }
 
 
@@ -398,7 +398,7 @@ public class AlgMdCollation implements MetadataHandler<BuiltInMetadata.Collation
 
         final ImmutableList<AlgCollation> rightCollations = mq.collations( right );
         assert AlgCollations.contains( rightCollations, rightKeys ) : "cannot merge join: right input is not sorted on right keys";
-        final int leftFieldCount = left.getRowType().getFieldCount();
+        final int leftFieldCount = left.getTupleType().getFieldCount();
         for ( AlgCollation collation : rightCollations ) {
             builder.add( AlgCollations.shift( collation, leftFieldCount ) );
         }

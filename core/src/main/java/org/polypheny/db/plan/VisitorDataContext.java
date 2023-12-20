@@ -147,7 +147,7 @@ public class VisitorDataContext implements DataContext {
 
 
     public static DataContext of( AlgNode targetRel, LogicalFilter queryRel ) {
-        return of( targetRel.getRowType(), queryRel.getCondition() );
+        return of( targetRel.getTupleType(), queryRel.getCondition() );
     }
 
 

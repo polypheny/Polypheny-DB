@@ -200,12 +200,12 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
 
 
     public static NeoStatements.OperatorStatement create( Function1<ListStatement<?>, OperatorStatement> transformer, NeoProject neoProject, AlgNode last, NeoRelationalImplementor implementor ) {
-        List<AlgDataTypeField> fields = neoProject.getRowType().getFields();
+        List<AlgDataTypeField> fields = neoProject.getTupleType().getFields();
 
         List<NeoStatements.NeoStatement> nodes = new ArrayList<>();
         int i = 0;
         for ( RexNode project : neoProject.getProjects() ) {
-            Translator translator = new Translator( neoProject.getRowType(), last.getRowType(), new HashMap<>(), implementor, null, true );
+            Translator translator = new Translator( neoProject.getTupleType(), last.getTupleType(), new HashMap<>(), implementor, null, true );
             String res = project.accept( translator );
             assert res != null : "Unsupported operation encountered for projects in Neo4j.";
 
@@ -272,7 +272,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
 
 
     public void addFilter( NeoFilter filter ) {
-        Translator translator = new Translator( last.getRowType(), last.getRowType(), isDml ? getToPhysicalMapping( null ) : new HashMap<>(), this, null, true );
+        Translator translator = new Translator( last.getTupleType(), last.getTupleType(), isDml ? getToPhysicalMapping( null ) : new HashMap<>(), this, null, true );
         add( where_( literal_( filter.getCondition().accept( translator ) ) ) );
     }
 
@@ -285,9 +285,9 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
 
         if ( node instanceof NeoProject ) {
             NeoProject project = (NeoProject) node;
-            for ( AlgDataTypeField field : project.getRowType().getFields() ) {
+            for ( AlgDataTypeField field : project.getTupleType().getFields() ) {
                 if ( !mapping.containsKey( field.getName() ) ) {
-                    Translator translator = new Translator( project.getRowType(), project.getRowType(), new HashMap<>(), this, null, true );
+                    Translator translator = new Translator( project.getTupleType(), project.getTupleType(), new HashMap<>(), this, null, true );
                     mapping.put( field.getName(), project.getProjects().get( field.getIndex() ).accept( translator ) );
                 }
             }
@@ -308,7 +308,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
         List<NeoStatement> nodes = new ArrayList<>();
         int i = 0;
         for ( RexNode node : neoModify.getSourceExpressions() ) {
-            Translator translator = new Translator( last.getRowType(), last.getRowType(), mapping, this, null, true );
+            Translator translator = new Translator( last.getTupleType(), last.getTupleType(), mapping, this, null, true );
             nodes.add( assign_( literal_( mapping.get( neoModify.getUpdateColumns().get( i ) ) ), literal_( node.accept( translator ) ) ) );
             i++;
         }

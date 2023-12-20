@@ -226,7 +226,7 @@ public class ScanNode implements Node {
             final AlgDataType inputRowType;
             if ( acceptedProjects == null ) {
                 filter2 = filter;
-                inputRowType = alg.getRowType();
+                inputRowType = alg.getTupleType();
             } else {
                 final Mapping mapping = Mappings.target( acceptedProjects, alg.getEntity().getRowType().getFieldCount() );
                 filter2 = RexUtil.apply( mapping, filter );

@@ -55,7 +55,7 @@ public class ValuesNode implements Node {
 
     public ValuesNode( Compiler compiler, Values alg ) {
         this.sink = compiler.sink( alg );
-        this.fieldCount = alg.getRowType().getFieldCount();
+        this.fieldCount = alg.getTupleType().getFieldCount();
         this.rows = createRows( compiler, alg.getTuples() );
     }
 

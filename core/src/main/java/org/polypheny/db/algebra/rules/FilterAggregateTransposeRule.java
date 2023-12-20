@@ -91,7 +91,7 @@ public class FilterAggregateTransposeRule extends AlgOptRule {
 
         final List<RexNode> conditions = AlgOptUtil.conjunctions( filterRel.getCondition() );
         final RexBuilder rexBuilder = filterRel.getCluster().getRexBuilder();
-        final List<AlgDataTypeField> origFields = aggRel.getRowType().getFields();
+        final List<AlgDataTypeField> origFields = aggRel.getTupleType().getFields();
         final int[] adjustments = new int[origFields.size()];
         int j = 0;
         for ( int i : aggRel.getGroupSet() ) {
@@ -106,7 +106,7 @@ public class FilterAggregateTransposeRule extends AlgOptRule {
             if ( canPush( aggRel, rCols ) ) {
                 pushedConditions.add(
                         condition.accept(
-                                new AlgOptUtil.RexInputConverter( rexBuilder, origFields, aggRel.getInput( 0 ).getRowType().getFields(), adjustments ) ) );
+                                new AlgOptUtil.RexInputConverter( rexBuilder, origFields, aggRel.getInput( 0 ).getTupleType().getFields(), adjustments ) ) );
             } else {
                 remainingConditions.add( condition );
             }

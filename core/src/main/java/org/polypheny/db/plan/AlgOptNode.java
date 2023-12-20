@@ -75,7 +75,7 @@ public interface AlgOptNode extends Wrapper {
     AlgTraitSet getTraitSet();
 
     // TODO: We don't want to require that nodes have very detailed row type. It may not even be known at planning time.
-    AlgDataType getRowType();
+    AlgDataType getTupleType();
 
     /**
      * Returns a string which describes the relational expression and, unlike {@link #getDigest()}, also includes the identity. Typically returns

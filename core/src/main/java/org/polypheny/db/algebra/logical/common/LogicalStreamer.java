@@ -104,8 +104,8 @@ public class LogicalStreamer extends Streamer {
 
         // add all previous variables e.g. _id, _data(previous), _data(updated)
         // might only extract previous refs used in condition e.g. _data
-        List<String> update = new ArrayList<>( getOldFieldsNames( input.getRowType().getFieldNames() ) );
-        List<RexNode> source = new ArrayList<>( getOldFieldRefs( input.getRowType() ) );
+        List<String> update = new ArrayList<>( getOldFieldsNames( input.getTupleType().getFieldNames() ) );
+        List<RexNode> source = new ArrayList<>( getOldFieldRefs( input.getTupleType() ) );
 
         AlgNode query = input;
 
@@ -126,7 +126,7 @@ public class LogicalStreamer extends Streamer {
             // at the moment no data model is able to conditionally insert
             attachFilter( modify, algBuilder, rexBuilder );
         } else {
-            if ( input.getRowType().getFieldCount() != modify.getEntity().getRowType().getFieldCount() ) {
+            if ( input.getTupleType().getFieldCount() != modify.getEntity().getRowType().getFieldCount() ) {
                 return null;
             }
             // attach a projection, so the values can be inserted on execution
@@ -148,12 +148,12 @@ public class LogicalStreamer extends Streamer {
     public static LogicalProject getCollector( RexBuilder rexBuilder, AlgNode input ) {
         return LogicalProject.create(
                 LogicalValues.createOneRow( input.getCluster() ),
-                input.getRowType()
+                input.getTupleType()
                         .getFields()
                         .stream()
                         .map( f -> rexBuilder.makeDynamicParam( f.getType(), f.getIndex() ) )
                         .collect( Collectors.toList() ),
-                input.getRowType() );
+                input.getTupleType() );
     }
 
 
@@ -161,7 +161,7 @@ public class LogicalStreamer extends Streamer {
         return modify.getUpdateColumns()
                 .stream()
                 .map( name -> {
-                    int size = modify.getRowType().getFields().size();
+                    int size = modify.getTupleType().getFields().size();
                     int index = modify.getEntity().getRowType().getFieldNames().indexOf( name );
                     return rexBuilder.makeDynamicParam( modify.getEntity().getRowType().getFields().get( index ).getType(), size + index );
                 } ).collect( Collectors.toList() );
@@ -169,7 +169,7 @@ public class LogicalStreamer extends Streamer {
 
 
     public static void attachFilter( AlgNode modify, AlgBuilder algBuilder, RexBuilder rexBuilder ) {
-        attachFilter( modify.getEntity(), algBuilder, rexBuilder, IntStream.range( 0, modify.getRowType().getFieldCount() ).boxed().collect( Collectors.toList() ) );
+        attachFilter( modify.getEntity(), algBuilder, rexBuilder, IntStream.range( 0, modify.getTupleType().getFieldCount() ).boxed().collect( Collectors.toList() ) );
     }
 
 

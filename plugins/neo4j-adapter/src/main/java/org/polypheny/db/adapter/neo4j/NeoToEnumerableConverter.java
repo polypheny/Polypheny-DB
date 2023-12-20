@@ -97,7 +97,7 @@ public class NeoToEnumerableConverter extends ConverterImpl implements Enumerabl
 
         graphImplementor.visitChild( 0, getInput() );
 
-        final AlgDataType rowType = getRowType();
+        final AlgDataType rowType = getTupleType();
 
         // PhysType is Enumerable Adapter class that maps database types (getRowType) with physical Java types (getJavaTypes())
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), rowType, pref.prefer( JavaRowFormat.ARRAY ) );
@@ -157,7 +157,7 @@ public class NeoToEnumerableConverter extends ConverterImpl implements Enumerabl
 
         neoImplementor.visitChild( 0, getInput() );
 
-        final AlgDataType rowType = getRowType();
+        final AlgDataType rowType = getTupleType();
 
         // PhysType is Enumerable Adapter class that maps SQL types (getRowType) with physical Java types (getJavaTypes())
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), rowType, pref.prefer( JavaRowFormat.ARRAY ) );

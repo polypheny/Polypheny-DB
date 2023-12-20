@@ -728,7 +728,7 @@ public class RexBuilder {
      * @param input Input relational expression
      */
     public RexNode makeRangeReference( AlgNode input ) {
-        return new RexRangeRef( input.getRowType(), 0 );
+        return new RexRangeRef( input.getTupleType(), 0 );
     }
 
 
@@ -771,7 +771,7 @@ public class RexBuilder {
      * @see #identityProjects(AlgDataType)
      */
     public RexIndexRef makeInputRef( AlgNode input, int i ) {
-        return makeInputRef( input.getRowType().getFields().get( i ).getType(), i );
+        return makeInputRef( input.getTupleType().getFields().get( i ).getType(), i );
     }
 
 

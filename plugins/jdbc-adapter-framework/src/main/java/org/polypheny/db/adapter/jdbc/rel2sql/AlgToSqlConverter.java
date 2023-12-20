@@ -173,7 +173,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
                     e.getCondition(),
                     leftContext,
                     rightContext,
-                    e.getLeft().getRowType().getFieldCount() );
+                    e.getLeft().getTupleType().getFieldCount() );
         }
         SqlNode join =
                 new SqlJoin(
@@ -219,14 +219,14 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
     public Result visit( Project e ) {
         Result x = visitChild( 0, e.getInput() );
         parseCorrelTable( e, x );
-        if ( isStar( e.getChildExps(), e.getInput().getRowType(), e.getRowType() ) ) {
+        if ( isStar( e.getChildExps(), e.getInput().getTupleType(), e.getTupleType() ) ) {
             return x;
         }
         final Builder builder = x.builder( e, false, Clause.SELECT );
         final List<SqlNode> selectList = new ArrayList<>();
         for ( RexNode ref : e.getChildExps() ) {
             SqlNode sqlExpr = builder.context.toSql( null, ref );
-            addSelect( selectList, sqlExpr, e.getRowType() );
+            addSelect( selectList, sqlExpr, e.getTupleType() );
         }
 
         builder.setSelect( new SqlNodeList( selectList, POS ) );
@@ -251,7 +251,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
         final List<SqlNode> selectList = new ArrayList<>();
         for ( int group : e.getGroupSet() ) {
             final SqlNode field = builder.context.field( group );
-            addSelect( selectList, field, e.getRowType() );
+            addSelect( selectList, field, e.getTupleType() );
             groupByList.add( field );
         }
         for ( AggregateCall aggCall : e.getAggCallList() ) {
@@ -259,7 +259,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
             if ( aggCall.getAggregation() instanceof SqlSingleValueAggFunction ) {
                 aggCallSqlNode = dialect.rewriteSingleValueExpr( aggCallSqlNode );
             }
-            addSelect( selectList, aggCallSqlNode, e.getRowType() );
+            addSelect( selectList, aggCallSqlNode, e.getTupleType() );
         }
         builder.setSelect( new SqlNodeList( selectList, POS ) );
         if ( !groupByList.isEmpty() || e.getAggCallList().isEmpty() ) {
@@ -330,7 +330,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
             final List<SqlNode> selectList = new ArrayList<>();
             for ( RexLocalRef ref : program.getProjectList() ) {
                 SqlNode sqlExpr = builder.context.toSql( program, ref );
-                addSelect( selectList, sqlExpr, e.getRowType() );
+                addSelect( selectList, sqlExpr, e.getTupleType() );
             }
             builder.setSelect( new SqlNodeList( selectList, POS ) );
         }
@@ -351,7 +351,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
         final Context context = aliasContext( pairs, false );
         SqlNode query;
         final boolean rename = stack.size() <= 1 || !(Iterables.get( stack, 1 ).r instanceof RelModify);
-        final List<String> fieldNames = e.getRowType().getFieldNames();
+        final List<String> fieldNames = e.getTupleType().getFieldNames();
         if ( !dialect.supportsAliasedValues() && rename ) {
             // Oracle does not support "AS t (c1, c2)". So instead of
             //   (VALUES (v0, v1), (v2, v3)) AS t (c0, c1)
@@ -418,8 +418,8 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
         if ( stack.size() != 1 && builder.select.getSqlSelectList() == null ) {
             // Generates explicit column names instead of start(*) for non-root ORDER BY to avoid ambiguity.
             final List<SqlNode> selectList = Expressions.list();
-            for ( AlgDataTypeField field : e.getRowType().getFields() ) {
-                addSelect( selectList, builder.context.field( field.getIndex() ), e.getRowType() );
+            for ( AlgDataTypeField field : e.getTupleType().getFields() ) {
+                addSelect( selectList, builder.context.field( field.getIndex() ), e.getTupleType() );
             }
             builder.select.setSelectList( new SqlNodeList( selectList, POS ) );
         }
@@ -467,7 +467,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
                         sqlSource,
                         physicalIdentifierList(
                                 modify.getEntity().unwrap( JdbcTable.class ).orElseThrow(),
-                                modify.getInput().getRowType().getFieldNames() ) );
+                                modify.getInput().getTupleType().getFieldNames() ) );
                 return result( sqlInsert, ImmutableList.of(), modify, null );
             }
             case UPDATE: {

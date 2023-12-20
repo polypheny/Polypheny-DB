@@ -70,7 +70,7 @@ public class CottontailSort extends Sort implements CottontailAlg {
             context.offsetBuilder = numberBuilderBuilder( this.offset );
         }
         if ( this.collation != null && !this.collation.getFieldCollations().isEmpty() ) {
-            context.sortMap = sortMapBuilder( this.collation, context, getRowType().getFieldNames() );
+            context.sortMap = sortMapBuilder( this.collation, context, getTupleType().getFieldNames() );
         }
     }
 

@@ -95,7 +95,7 @@ public class ExcelTableScan extends RelScan<ExcelTable> implements EnumerableAlg
 
     @Override
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
-        PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getRowType(), pref.preferArray() );
+        PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.preferArray() );
 
         /*if ( table instanceof JsonTable ) {
             return implementor.result( physType, Blocks.toBlock( Expressions.call( table.getExpression( JsonTable.class ), "enumerable" ) ) );

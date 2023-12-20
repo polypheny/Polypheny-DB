@@ -140,7 +140,7 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
                 }
             } else {
                 // have to add
-                statements.add( return_( getFields( last.getRowType() ) ) );
+                statements.add( return_( getFields( last.getTupleType() ) ) );
             }
         }
     }

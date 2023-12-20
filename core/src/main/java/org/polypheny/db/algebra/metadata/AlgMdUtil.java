@@ -482,7 +482,7 @@ public class AlgMdUtil {
         AlgNode right = joinRel.getInputs().get( 1 );
 
         // separate the mask into masks for the left and right
-        AlgMdUtil.setLeftRightBitmaps( groupKey, leftMask, rightMask, left.getRowType().getFieldCount() );
+        AlgMdUtil.setLeftRightBitmaps( groupKey, leftMask, rightMask, left.getTupleType().getFieldCount() );
 
         Double population =
                 NumberUtil.multiply(
@@ -510,7 +510,7 @@ public class AlgMdUtil {
         AlgNode left = joinRel.getInputs().get( 0 );
         AlgNode right = joinRel.getInputs().get( 1 );
 
-        AlgMdUtil.setLeftRightBitmaps( groupKey, leftMask, rightMask, left.getRowType().getFieldCount() );
+        AlgMdUtil.setLeftRightBitmaps( groupKey, leftMask, rightMask, left.getTupleType().getFieldCount() );
 
         // determine which filters apply to the left vs right
         RexNode leftPred = null;

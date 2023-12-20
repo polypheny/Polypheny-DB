@@ -68,7 +68,7 @@ public class AllocationToPhysicalScanRule extends AlgOptRule {
             // cross-model queries need a transformer first, we let another rule handle that
             AlgBuilder builder = call.builder().push( alg );
 
-            alg = builder.transform( scan.getTraitSet().getTrait( ModelTraitDef.INSTANCE ), scan.getRowType(), true, alloc.name ).build();
+            alg = builder.transform( scan.getTraitSet().getTrait( ModelTraitDef.INSTANCE ), scan.getTupleType(), true, alloc.name ).build();
 
         }
         return alg;
@@ -80,7 +80,7 @@ public class AllocationToPhysicalScanRule extends AlgOptRule {
 
         if ( scan.getModel() != scan.entity.dataModel ) {
             // cross-model queries need a transformer first, we let another rule handle that
-            alg = call.builder().push( alg ).transform( scan.getTraitSet().getTrait( ModelTraitDef.INSTANCE ), scan.getRowType(), true, null ).build();
+            alg = call.builder().push( alg ).transform( scan.getTraitSet().getTrait( ModelTraitDef.INSTANCE ), scan.getTupleType(), true, null ).build();
         }
         return alg;
     }
@@ -94,18 +94,18 @@ public class AllocationToPhysicalScanRule extends AlgOptRule {
 
         if ( scan.getModel() != scan.entity.dataModel ) {
             // cross-model queries need a transformer first, we let another rule handle that
-            alg = call.builder().push( alg ).transform( scan.getTraitSet().getTrait( ModelTraitDef.INSTANCE ), scan.getRowType(), true, null ).build();
+            alg = call.builder().push( alg ).transform( scan.getTraitSet().getTrait( ModelTraitDef.INSTANCE ), scan.getTupleType(), true, null ).build();
         }
         return alg;
     }
 
 
     private AlgNode attachReorder( AlgNode newAlg, Scan<?> original, AlgBuilder builder ) {
-        if ( newAlg.getRowType().equals( original.getRowType() ) ) {
+        if ( newAlg.getTupleType().equals( original.getTupleType() ) ) {
             return newAlg;
         }
         builder.push( newAlg );
-        AlgDataType originalType = original.getRowType();
+        AlgDataType originalType = original.getTupleType();
         builder.reorder( originalType );
         return builder.build();
     }

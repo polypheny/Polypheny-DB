@@ -2404,13 +2404,13 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         }
 
         // Wrap {@link AlgNode} into a RelRoot
-        final AlgDataType rowType = result.getRowType();
+        final AlgDataType rowType = result.getTupleType();
         final List<Pair<Integer, String>> fields = Pair.zip( IntStream.range( 0, rowType.getFieldCount() ).boxed().collect( Collectors.toList() ), rowType.getFieldNames() );
         final AlgCollation collation =
                 result instanceof Sort
                         ? ((Sort) result).collation
                         : AlgCollations.EMPTY;
-        AlgRoot root = new AlgRoot( result, result.getRowType(), Kind.SELECT, fields, collation );
+        AlgRoot root = new AlgRoot( result, result.getTupleType(), Kind.SELECT, fields, collation );
 
         // Prepare
         PolyImplementation polyImplementation = statement.getQueryProcessor().prepareQuery( root, true );
@@ -2430,7 +2430,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 PlacementType placementType = store == null ? PlacementType.AUTOMATIC : PlacementType.MANUAL;
 
                 List<String> columns = new ArrayList<>();
-                root.alg.getRowType().getFields().forEach( f -> columns.add( f.getName() ) );
+                root.alg.getTupleType().getFields().forEach( f -> columns.add( f.getName() ) );
 
                 // Default Namespace
                 long namespaceId = transaction.getDefaultNamespace().id;
@@ -2472,7 +2472,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 PlacementType placementType = PlacementType.AUTOMATIC;
 
                 List<String> columns = new ArrayList<>();
-                root.alg.getRowType().getFields().forEach( f -> columns.add( f.getName() ) );
+                root.alg.getTupleType().getFields().forEach( f -> columns.add( f.getName() ) );
 
                 // Default Namespace
                 long namespaceId = transaction.getDefaultNamespace().id;

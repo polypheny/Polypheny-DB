@@ -78,7 +78,7 @@ public class EnumerableUncollect extends Uncollect implements EnumerableAlg {
         final BlockBuilder builder = new BlockBuilder();
         final EnumerableAlg child = (EnumerableAlg) getInput();
         final Result result = implementor.visitChild( this, 0, child, pref );
-        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getRowType(), JavaRowFormat.LIST );
+        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), JavaRowFormat.LIST );
 
         // final Enumerable<List<Employee>> child = <<child adapter>>;
         // return child.selectMany(FLAT_PRODUCT);
@@ -87,7 +87,7 @@ public class EnumerableUncollect extends Uncollect implements EnumerableAlg {
         final List<Integer> fieldCounts = new ArrayList<>();
         final List<FlatProductInputType> inputTypes = new ArrayList<>();
 
-        for ( AlgDataTypeField field : child.getRowType().getFields() ) {
+        for ( AlgDataTypeField field : child.getTupleType().getFields() ) {
             final AlgDataType type = field.getType();
             if ( type instanceof MapPolyType ) {
                 fieldCounts.add( 2 );

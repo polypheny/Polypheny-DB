@@ -104,7 +104,7 @@ public class Cql2AlgConverter {
         }
         AlgNode algNode = algBuilder.build();
 
-        final AlgDataType rowType = algNode.getRowType();
+        final AlgDataType rowType = algNode.getTupleType();
         final List<Pair<Integer, String>> fields =
                 Pair.zip( PolyTypeUtil.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
         final AlgCollation collation =
@@ -112,7 +112,7 @@ public class Cql2AlgConverter {
                         ? ((Sort) algNode).collation
                         : AlgCollations.EMPTY;
 
-        return new AlgRoot( algNode, algNode.getRowType(), Kind.SELECT, fields, collation );
+        return new AlgRoot( algNode, algNode.getTupleType(), Kind.SELECT, fields, collation );
     }
 
 
@@ -234,7 +234,7 @@ public class Cql2AlgConverter {
         AtomicReference<RexNode> lastRexNode = new AtomicReference<>();
         AtomicReference<RexNode> secondToLastRexNode = new AtomicReference<>();
 
-        AlgDataType filtersRowType = baseNode.getRowType();
+        AlgDataType filtersRowType = baseNode.getTupleType();
         List<AlgDataTypeField> filtersRows = filtersRowType.getFields();
         Map<String, AlgDataTypeField> filterMap = new HashMap<>();
         filtersRows.forEach( ( r ) -> filterMap.put( r.getName(), r ) );

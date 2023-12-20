@@ -731,7 +731,7 @@ public class AlgBuilderTest {
                         .rename( ImmutableList.of( "x", "y z" ) )
                         .build();
         assertThat( root, Matchers.hasTree( expected ) );
-        assertThat( root.getRowType().getFieldNames().toString(), is( "[x, y z]" ) );
+        assertThat( root.getTupleType().getFieldNames().toString(), is( "[x, y z]" ) );
     }
 
 
@@ -1528,7 +1528,7 @@ public class AlgBuilderTest {
                 + "      LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n"
                 + "      LogicalScan(model=[RELATIONAL], table=[[public, department]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
-        final AlgDataTypeField field = root.getRowType().getFields().get( 1 );
+        final AlgDataTypeField field = root.getTupleType().getFields().get( 1 );
         assertThat( field.getName(), is( "name" ) );
         assertThat( field.getType().isNullable(), is( true ) );
     }
@@ -1927,7 +1927,7 @@ public class AlgBuilderTest {
         final String expected = "LogicalValues(model=[RELATIONAL], tuples=[[]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
         final String expectedType = "RecordType(INTEGER NOT NULL deptno, BOOLEAN NOT NULL $f1) NOT NULL";
-        assertThat( root.getRowType().getFullTypeString(), is( expectedType ) );
+        assertThat( root.getTupleType().getFullTypeString(), is( expectedType ) );
     }
 
 
@@ -1940,7 +1940,7 @@ public class AlgBuilderTest {
         final String expected = "LogicalValues(model=[RELATIONAL], tuples=[[{ true, 1 }, { false, -50 }]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
         final String expectedType = "RecordType(BOOLEAN NOT NULL a, INTEGER NOT NULL b) NOT NULL";
-        assertThat( root.getRowType().getFullTypeString(), is( expectedType ) );
+        assertThat( root.getTupleType().getFullTypeString(), is( expectedType ) );
     }
 
 
@@ -1957,7 +1957,7 @@ public class AlgBuilderTest {
         final String expected = "LogicalValues(model=[RELATIONAL], tuples=[[{ null, 1, 'abc' }, { false, null, 'longer string' }]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
         final String expectedType = "RecordType(BOOLEAN a, INTEGER expr$1, CHAR(13) NOT NULL c) NOT NULL";
-        assertThat( root.getRowType().getFullTypeString(), is( expectedType ) );
+        assertThat( root.getTupleType().getFullTypeString(), is( expectedType ) );
     }
 
 
@@ -2033,7 +2033,7 @@ public class AlgBuilderTest {
         final String expected = "LogicalValues(model=[RELATIONAL], tuples=[[{ null, null }, { 1, null }]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
         final String expectedType = "RecordType(BIGINT NOT NULL a, VARCHAR(10) NOT NULL a) NOT NULL";
-        assertThat( root.getRowType().getFullTypeString(), is( expectedType ) );
+        assertThat( root.getTupleType().getFullTypeString(), is( expectedType ) );
     }
 
 
