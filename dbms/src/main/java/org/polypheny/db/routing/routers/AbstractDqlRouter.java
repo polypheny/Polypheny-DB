@@ -246,7 +246,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
         AlgNode built = routeGraph( RoutedAlgBuilder.create( statement, cluster ), (AlgNode & LpgAlg) algBuilder.build(), statement );
 
-        builders.get( 0 ).push( LogicalTransformer.create(
+        builders.get( 0 ).push( new LogicalTransformer(
                 node.getCluster(),
                 node.getTraitSet().replace( ModelTrait.RELATIONAL ),
                 List.of( built ),

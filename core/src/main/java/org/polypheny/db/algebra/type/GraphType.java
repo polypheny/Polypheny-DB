@@ -62,15 +62,6 @@ public class GraphType implements Serializable, AlgDataType, AlgDataTypeFamily {
     }
 
 
-    public static AlgDataType ofRelational() {
-        return new AlgRecordType( List.of(
-                new AlgDataTypeFieldImpl( -1L, GRAPH_ID, 0, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARBINARY, 2024 ) ),
-                new AlgDataTypeFieldImpl( -1L, GRAPH_PROPERTIES, 1, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARCHAR, 2024 ) ),
-                new AlgDataTypeFieldImpl( -1L, GRAPH_LABELS, 2, AlgDataTypeFactory.DEFAULT.createArrayType( AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARCHAR, 2024 ), -1 ) )
-        ) );
-    }
-
-
     private String computeDigest() {
         assert fixedFields != null;
         return getClass().getSimpleName() +

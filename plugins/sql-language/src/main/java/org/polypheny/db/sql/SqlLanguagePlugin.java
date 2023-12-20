@@ -2977,6 +2977,8 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         OperandTypes.GEOMETRY_INTEGER,
                         FunctionCategory.GEOMETRY ) );
 
+        register( OperatorName.TO_JSON, new LangFunctionOperator( OperatorName.TO_JSON.name(), Kind.OTHER ) );
+
         isInit = true;
     }
 
