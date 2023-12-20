@@ -50,7 +50,6 @@ sourceSets {
         java {
             //srcDirs = ["src/main/java","build/generated-sources"]
             srcDirs files("${buildDir}/generated-sources").builtBy(generateParser)
-            outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {
             srcDirs = ["src/main/resources"]
@@ -60,7 +59,7 @@ sourceSets {
     test {
         java {
             srcDirs = ["src/test/java"]
-            outputDir = file(project.buildDir.absolutePath + "/test-classes")
+            destinationDirectory.set(file(project.buildDir.absolutePath + "/test-classes"))
         }
         resources {
             srcDirs = ["src/test/resources"]
@@ -112,6 +111,4 @@ javadoc {
 
 licensee {
     allow('Apache-2.0')
-
-    allowUrl('https://www.eclipse.org/org/documents/epl-v10.php') // EPL 1.0
 }
