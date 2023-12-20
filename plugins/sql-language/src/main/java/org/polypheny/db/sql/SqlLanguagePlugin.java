@@ -2979,6 +2979,8 @@ public class SqlLanguagePlugin extends PolyPlugin {
 
         register( OperatorName.TO_JSON, new LangFunctionOperator( OperatorName.TO_JSON.name(), Kind.OTHER ) );
 
+        register( OperatorName.TO_JSON, new LangFunctionOperator( OperatorName.TO_JSON.name(), Kind.OTHER ) );
+
         isInit = true;
     }
 
