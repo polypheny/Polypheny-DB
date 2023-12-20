@@ -94,7 +94,10 @@ import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.numerical.PolyInteger.PolyIntegerSerializerDef;
 import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.type.entity.relational.PolyMap.PolyMapSerializerDef;
+<<<<<<< HEAD
 import org.polypheny.db.type.entity.spatial.PolyPoint;
+=======
+>>>>>>> fd6694f9f (minor adjustment to to polyvalues)
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
