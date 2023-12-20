@@ -322,6 +322,11 @@ public class SqlLiteral extends SqlNode implements Literal {
                     return clazz.cast( valTime.getIntervalQualifier().timeUnitRange );
                 }
                 break;
+            case SYMBOL:
+                if ( clazz == Enum.class ) {
+                    return clazz.cast( value.asSymbol().value );
+                }
+                break;
         }
         throw new AssertionError( "cannot cast " + value + " as " + clazz );
     }

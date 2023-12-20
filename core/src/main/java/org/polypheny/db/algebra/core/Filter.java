@@ -120,7 +120,7 @@ public abstract class Filter extends SingleAlg {
         if ( RexUtil.isNullabilityCast( getCluster().getTypeFactory(), condition ) ) {
             return litmus.fail( "Cast for just nullability not allowed" );
         }
-        final RexChecker checker = new RexChecker( getInput().getRowType(), context, litmus );
+        final RexChecker checker = new RexChecker( getInput().getTupleType(), context, litmus );
         condition.accept( checker );
         if ( checker.getFailureCount() > 0 ) {
             return litmus.fail( null );

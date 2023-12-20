@@ -239,7 +239,7 @@ public class MutableRelTest {
         Assert.assertTrue( msg1, mutableRelStr.contains( alg ) );
 
         // Check if the mutable rel's row-type is identical to the original rel's row-type.
-        final AlgDataType origRelType = origRel.getRowType();
+        final AlgDataType origRelType = origRel.getTupleType();
         final AlgDataType mutableRelType = mutableRel.rowType;
         final String msg2 = "Mutable rel's row type does not match with the original alg.\n"
                 + "Original alg type: " + origRelType + ";\nMutable alg type: " + mutableRelType;

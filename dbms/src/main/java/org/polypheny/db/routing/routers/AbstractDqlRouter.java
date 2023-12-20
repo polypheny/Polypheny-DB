@@ -200,6 +200,14 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
                 return handleRelationalOnGraphScan( node, statement, oLogicalEntity.get(), builders, cluster, queryInformation );
             }
 
+            if ( oLogicalEntity.get().getDataModel() == DataModel.DOCUMENT ) {
+                builders.forEach( b -> {
+                    LogicalRelScan scan = new LogicalRelScan( cluster, node.getTraitSet(), handleDocScan( new LogicalDocumentScan( cluster, node.getTraitSet(), oLogicalEntity.get() ), statement, List.of() ).entity );
+                    b.push( scan );
+                } );
+                return builders;
+            }
+
             Optional<LogicalTable> oLogicalTable = oLogicalEntity.get().unwrap( LogicalTable.class );
 
             if ( oLogicalTable.isEmpty() ) {
@@ -237,7 +245,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
         AlgNode built = routeGraph( RoutedAlgBuilder.create( statement, cluster ), (AlgNode & LpgAlg) algBuilder.build(), statement );
 
-        builders.get( 0 ).push( new LogicalTransformer(
+        builders.get( 0 ).push( LogicalTransformer.create(
                 node.getCluster(),
                 List.of( built ),
                 null,

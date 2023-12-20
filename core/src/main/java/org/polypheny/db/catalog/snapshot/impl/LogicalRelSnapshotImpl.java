@@ -298,7 +298,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     public @NotNull List<LogicalTable> getTables( long namespaceId, @Nullable Pattern name ) {
 
         LogicalNamespace namespace = namespaces.get( namespaceId );
-        if ( namespace == null || name == null ) {
+        if ( namespace == null ) {
             return List.of();
         }
 

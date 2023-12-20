@@ -159,7 +159,7 @@ public class EnumerableScan extends RelScan<PhysicalTable> implements Enumerable
     private Expression toRows( PhysType physType, Expression expression ) {
         if ( physType.getFormat() == JavaRowFormat.SCALAR
                 && Object[].class.isAssignableFrom( elementType )
-                && getRowType().getFieldCount() == 1
+                && getTupleType().getFieldCount() == 1
                 && (entity.unwrap( ScannableEntity.class ).isPresent()
                 || entity.unwrap( FilterableEntity.class ).isPresent()
                 || entity.unwrap( ProjectableFilterableEntity.class ).isPresent()) ) {
@@ -203,7 +203,7 @@ public class EnumerableScan extends RelScan<PhysicalTable> implements Enumerable
 
 
     private JavaRowFormat format() {
-        int fieldCount = getRowType().getFieldCount();
+        int fieldCount = getTupleType().getFieldCount();
         if ( fieldCount == 0 ) {
             return JavaRowFormat.LIST;
         }
@@ -247,7 +247,7 @@ public class EnumerableScan extends RelScan<PhysicalTable> implements Enumerable
         final PhysType physType =
                 PhysTypeImpl.of(
                         implementor.getTypeFactory(),
-                        getRowType(),
+                        getTupleType(),
                         format() );
         final Expression expression = getExpression( physType );
         return implementor.result( physType, Blocks.toBlock( expression ) );

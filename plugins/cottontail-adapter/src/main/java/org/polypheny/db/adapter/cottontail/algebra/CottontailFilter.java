@@ -87,7 +87,7 @@ public class CottontailFilter extends Filter implements CottontailAlg {
     public void implement( CottontailImplementContext context ) {
         context.visitChild( 0, getInput() );
         final BooleanPredicate predicate = convertToCnf( this.condition );
-        final Translator translator = new Translator( context, input.getRowType() );
+        final Translator translator = new Translator( context, input.getTupleType() );
         context.filterBuilder = translator.generateWhereBuilder( predicate, context.blockBuilder );
     }
 

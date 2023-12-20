@@ -190,7 +190,7 @@ public class SqlJsonValueFunction extends SqlFunction {
 
 
     private boolean isDefaultLiteral( SqlLiteral literal ) {
-        return literal.getValueAs( JsonValueEmptyOrErrorBehavior.class ) == JsonValueEmptyOrErrorBehavior.DEFAULT;
+        return literal.value.asSymbol().value == JsonValueEmptyOrErrorBehavior.DEFAULT;
     }
 
 

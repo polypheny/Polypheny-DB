@@ -393,7 +393,7 @@ public class Bindables {
                     alg.getTraitSet().replace( BindableConvention.INSTANCE ),
                     convert( project.getInput(), project.getInput().getTraitSet().replace( BindableConvention.INSTANCE ) ),
                     project.getProjects(),
-                    project.getRowType() );
+                    project.getTupleType() );
         }
 
     }
@@ -688,7 +688,7 @@ public class Bindables {
         @Override
         public AlgNode convert( AlgNode alg ) {
             LogicalValues values = (LogicalValues) alg;
-            return new BindableValues( values.getCluster(), values.getRowType(), values.getTuples(), values.getTraitSet().replace( BindableConvention.INSTANCE ) );
+            return new BindableValues( values.getCluster(), values.getTupleType(), values.getTuples(), values.getTraitSet().replace( BindableConvention.INSTANCE ) );
         }
 
     }
@@ -842,7 +842,7 @@ public class Bindables {
             final AlgTraitSet traitSet = winAgg.getTraitSet().replace( BindableConvention.INSTANCE );
             final AlgNode input = winAgg.getInput();
             final AlgNode convertedInput = convert( input, input.getTraitSet().replace( BindableConvention.INSTANCE ) );
-            return new BindableWindow( alg.getCluster(), traitSet, convertedInput, winAgg.getConstants(), winAgg.getRowType(), winAgg.groups );
+            return new BindableWindow( alg.getCluster(), traitSet, convertedInput, winAgg.getConstants(), winAgg.getTupleType(), winAgg.groups );
         }
 
     }

@@ -55,7 +55,7 @@ public class NeoLpgUnwind extends LpgUnwind implements NeoGraphAlg {
     @Override
     public void implement( NeoGraphImplementor implementor ) {
         implementor.visitChild( 0, getInput() ); // todo fix subfield
-        implementor.add( unwind_( as_( literal_( implementor.getLast().getRowType().getFieldNames().get( index ) ), literal_( alias ) ) ) );
+        implementor.add( unwind_( as_( literal_( implementor.getLast().getTupleType().getFieldNames().get( index ) ), literal_( alias ) ) ) );
     }
 
 

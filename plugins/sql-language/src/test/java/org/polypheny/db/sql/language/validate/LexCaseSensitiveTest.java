@@ -84,7 +84,7 @@ public class LexCaseSensitiveTest {
             AlgTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
             AlgNode transform = planner.transform( 0, traitSet, convert );
             assertThat( transform, instanceOf( EnumerableProject.class ) );
-            List<String> fieldNames = transform.getRowType().getFieldNames();
+            List<String> fieldNames = transform.getTupleType().getFieldNames();
             assertThat( fieldNames.size(), is( 2 ) );
             if ( lex.caseSensitive ) {
                 assertThat( fieldNames.get( 0 ), is( "EMPID" ) );

@@ -438,8 +438,8 @@ public class EnumUtils {
         final ParameterExpression right_ = Expressions.parameter( rightPhysType.getJavaRowType(), "right" );
         final RexProgramBuilder program = new RexProgramBuilder(
                 implementor.getTypeFactory().builder()
-                        .addAll( left.getRowType().getFields() )
-                        .addAll( right.getRowType().getFields() )
+                        .addAll( left.getTupleType().getFields() )
+                        .addAll( right.getTupleType().getFields() )
                         .build(),
                 rexBuilder );
         program.addCondition( condition );

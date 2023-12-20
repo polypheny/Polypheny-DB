@@ -270,11 +270,11 @@ public class MqlToAlgConverter {
         switch ( kind ) {
             case FIND:
                 AlgNode find = convertFind( (MqlFind) query, rowType, node );
-                root = AlgRoot.of( find, find.getRowType(), Kind.SELECT );
+                root = AlgRoot.of( find, find.getTupleType(), Kind.SELECT );
                 break;
             case COUNT:
                 AlgNode count = convertCount( (MqlCount) query, rowType, node );
-                root = AlgRoot.of( count, count.getRowType(), Kind.SELECT );
+                root = AlgRoot.of( count, count.getTupleType(), Kind.SELECT );
                 break;
             case AGGREGATE:
                 AlgNode aggregate = convertAggregate( (MqlAggregate) query, rowType, node );
@@ -317,7 +317,7 @@ public class MqlToAlgConverter {
         Optional<LogicalGraph> optionalGraph = snapshot.graph().getGraph( namespace.id );
         if ( optionalGraph.isPresent() ) {
             LogicalGraph graph = optionalGraph.get();
-            return new SubstitutionGraph( graph.id, query.getCollection(), false, graph.caseSensitive );
+            return new SubstitutionGraph( graph.id, query.getCollection(), false, graph.caseSensitive, List.of( PolyString.of( query.getCollection() ) ) );
         }
 
         return optionalGraph.orElseThrow();
@@ -788,7 +788,7 @@ public class MqlToAlgConverter {
             switch ( ((BsonDocument) value).getFirstKey() ) {
                 case "$match":
                     node = combineFilter( value.asDocument().getDocument( "$match" ), node, rowType );
-                    node.getRowType();
+                    node.getTupleType();
                     break;
                 case "$unset":
                     node = combineProjection( value.asDocument().get( "$unset" ), node, rowType, false, true );
@@ -805,7 +805,7 @@ public class MqlToAlgConverter {
                     break;
                 case "$group":
                     node = combineGroup( value.asDocument().get( "$group" ), node, rowType );
-                    node.getRowType();
+                    node.getTupleType();
                     break;
                 case "$sort":
                     node = combineSort( value.asDocument().get( "$sort" ), node, rowType );
@@ -830,7 +830,7 @@ public class MqlToAlgConverter {
                     throw new IllegalStateException( "Unexpected value: " + ((BsonDocument) value).getFirstKey() );
             }
             if ( rowType != null ) {
-                rowType = node.getRowType();
+                rowType = node.getTupleType();
             }
         }
 
@@ -880,7 +880,7 @@ public class MqlToAlgConverter {
         if ( newRoot.isDocument() ) {
             project = LogicalDocumentProject.create(
                     node,
-                    Collections.singletonList( translateDocument( newRoot.asDocument(), node.getRowType(), null ) ),
+                    Collections.singletonList( translateDocument( newRoot.asDocument(), node.getTupleType(), null ) ),
                     Collections.singletonList( DocumentType.DOCUMENT_DATA )
             );
         } else {
@@ -890,7 +890,7 @@ public class MqlToAlgConverter {
 
             BsonValue finalNewRoot = newRoot;
             Map<String, RexNode> nodes = new HashMap<>() {{
-                put( null, new RexCall( any, OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_REPLACE_ROOT ), List.of( getIdentifier( finalNewRoot.asString().getValue().substring( 1 ), node.getRowType() ) ) ) );
+                put( null, new RexCall( any, OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_REPLACE_ROOT ), List.of( getIdentifier( finalNewRoot.asString().getValue().substring( 1 ), node.getTupleType() ) ) ) );
             }};
 
             project = LogicalDocumentProject.create(
@@ -1096,7 +1096,7 @@ public class MqlToAlgConverter {
 
         //node = LogicalDocumentProject.create( node, nodes, names );
 
-        return groupBy( value, nameNodes, node, node.getRowType(), nameOps );
+        return groupBy( value, nameNodes, node, node.getTupleType(), nameOps );
     }
 
 

@@ -346,8 +346,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         if ( modify.getInput() instanceof LogicalValues ) {
             // Get fieldList and map columns to index since they could be in arbitrary order
             int partitionColumnIndex = -1;
-            for ( int j = 0; j < (modify.getInput()).getRowType().getFields().size(); j++ ) {
-                String columnFieldName = (modify.getInput()).getRowType().getFields().get( j ).getName();
+            for ( int j = 0; j < (modify.getInput()).getTupleType().getFields().size(); j++ ) {
+                String columnFieldName = (modify.getInput()).getTupleType().getFields().get( j ).getName();
 
                 // Retrieve columnId of fieldName and map it to its fieldList location of INSERT Stmt
                 int columnIndex = columns.stream().map( c -> c.name ).collect( Collectors.toList() ).indexOf( columnFieldName );
@@ -392,7 +392,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     LogicalValues newLogicalValues = new LogicalValues(
                             modify.getCluster(),
                             modify.getCluster().traitSet(),
-                            (modify.getInput()).getRowType(),
+                            (modify.getInput()).getTupleType(),
                             ImmutableList.copyOf( ImmutableList.of( row ) ) );
 
                     AllocationEntity allocation = catalog.getSnapshot().alloc().getAlloc( pkPlacement.id, currentPartitionId ).orElseThrow();
@@ -427,7 +427,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 && ((LogicalProject) modify.getInput()).getInput() instanceof LogicalValues ) {
 
             String partitionColumnName = catalog.getSnapshot().rel().getColumn( property.partitionColumnId ).orElseThrow().name;
-            List<String> fieldNames = modify.getInput().getRowType().getFieldNames();
+            List<String> fieldNames = modify.getInput().getTupleType().getFieldNames();
 
             LogicalRelModify ltm = modify;
             LogicalProject lproject = (LogicalProject) ltm.getInput();
@@ -854,7 +854,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 return super.handleGeneric( node, builder );
             }
         } else { // vertically partitioned, adjust project
-            if ( ((LogicalProject) node).getInput().getRowType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
+            if ( ((LogicalProject) node).getInput().getTupleType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
                 if ( property.isPartitioned && remapParameterValues ) {
                     builder = remapParameterizedDml( node, builder, statement, parameterValues );
                 }
@@ -888,7 +888,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         List<LogicalColumn> columns = Catalog.snapshot().rel().getColumns( table.id );
         if ( columns.size() == placements.size() ) { // full placement, no additional checks required
             return builder;
-        } else if ( node.getRowType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
+        } else if ( node.getTupleType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
             // This is a prepared statement. Actual values are in the project. Do nothing
             return builder;
         } else { // partitioned, add additional project
@@ -935,7 +935,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     private void dmlConditionCheck( LogicalFilter node, LogicalTable catalogTable, List<AllocationColumn> placements, RexNode operand ) {
         if ( operand instanceof RexIndexRef ) {
             int index = ((RexIndexRef) operand).getIndex();
-            AlgDataTypeField field = node.getInput().getRowType().getFields().get( index );
+            AlgDataTypeField field = node.getInput().getTupleType().getFields().get( index );
             LogicalColumn column;
             String columnName;
             String[] columnNames = field.getName().split( "\\." );
@@ -998,7 +998,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 node.getTraitSet(),
                 logicalValues,
                 projects,
-                node.getRowType()
+                node.getTupleType()
         );
         return super.handleGeneric( newProject, builder );
     }

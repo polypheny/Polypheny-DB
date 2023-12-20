@@ -106,7 +106,7 @@ public class SemiJoinProjectTransposeRule extends AlgOptRule {
         // Create the new projection.  Note that the projection expressions are the same as the original because they only reference the LHS of the semijoin and the semijoin only projects out the LHS
         final AlgBuilder algBuilder = call.builder();
         algBuilder.push( newSemiJoin );
-        algBuilder.project( projExprs, project.getRowType().getFieldNames() );
+        algBuilder.project( projExprs, project.getTupleType().getFieldNames() );
 
         call.transformTo( algBuilder.build() );
     }
@@ -130,8 +130,8 @@ public class SemiJoinProjectTransposeRule extends AlgOptRule {
         // for the bottom RexProgram, the input is a concatenation of the child of the project and the RHS of the semijoin
         AlgDataType bottomInputRowType =
                 ValidatorUtil.deriveJoinRowType(
-                        project.getInput().getRowType(),
-                        rightChild.getRowType(),
+                        project.getInput().getTupleType(),
+                        rightChild.getTupleType(),
                         JoinAlgType.INNER,
                         typeFactory,
                         null,
@@ -142,8 +142,8 @@ public class SemiJoinProjectTransposeRule extends AlgOptRule {
         for ( Pair<RexNode, String> pair : project.getNamedProjects() ) {
             bottomProgramBuilder.addProject( pair.left, pair.right );
         }
-        int nLeftFields = project.getInput().getRowType().getFieldCount();
-        List<AlgDataTypeField> rightFields = rightChild.getRowType().getFields();
+        int nLeftFields = project.getInput().getTupleType().getFieldCount();
+        List<AlgDataTypeField> rightFields = rightChild.getTupleType().getFields();
         int nRightFields = rightFields.size();
         for ( int i = 0; i < nRightFields; i++ ) {
             final AlgDataTypeField field = rightFields.get( i );
@@ -155,8 +155,8 @@ public class SemiJoinProjectTransposeRule extends AlgOptRule {
         // input rowtype into the top program is the concatenation of the project and the RHS of the semijoin
         AlgDataType topInputRowType =
                 ValidatorUtil.deriveJoinRowType(
-                        project.getRowType(),
-                        rightChild.getRowType(),
+                        project.getTupleType(),
+                        rightChild.getTupleType(),
                         JoinAlgType.INNER,
                         typeFactory,
                         null,

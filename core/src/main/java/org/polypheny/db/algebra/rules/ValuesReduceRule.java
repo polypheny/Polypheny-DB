@@ -176,7 +176,7 @@ public abstract class ValuesReduceRule extends AlgOptRule {
                     ++k;
                     RexNode e = projectExpr.accept( shuttle );
                     if ( RexLiteral.isNullLiteral( e ) ) {
-                        e = rexBuilder.makeAbstractCast( project.getRowType().getFields().get( k ).getType(), e );
+                        e = rexBuilder.makeAbstractCast( project.getTupleType().getFields().get( k ).getType(), e );
                     }
                     reducibleExps.add( e );
                 }
@@ -228,9 +228,9 @@ public abstract class ValuesReduceRule extends AlgOptRule {
         if ( changeCount > 0 ) {
             final AlgDataType rowType;
             if ( projectExprs != null ) {
-                rowType = project.getRowType();
+                rowType = project.getTupleType();
             } else {
-                rowType = values.getRowType();
+                rowType = values.getTupleType();
             }
             final AlgNode newRel = LogicalValues.create( values.getCluster(), rowType, tuplesBuilder.build() );
             call.transformTo( newRel );

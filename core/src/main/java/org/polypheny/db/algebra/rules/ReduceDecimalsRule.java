@@ -118,7 +118,7 @@ public class ReduceDecimalsRule extends AlgOptRule {
         RexProgramBuilder programBuilder =
                 RexProgramBuilder.create(
                         rexBuilder,
-                        calc.getInput().getRowType(),
+                        calc.getInput().getTupleType(),
                         program.getExprList(),
                         program.getProjectList(),
                         program.getCondition(),

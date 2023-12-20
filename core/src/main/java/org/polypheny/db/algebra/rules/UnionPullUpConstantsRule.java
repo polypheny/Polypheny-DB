@@ -80,7 +80,7 @@ public class UnionPullUpConstantsRule extends AlgOptRule {
     public void onMatch( AlgOptRuleCall call ) {
         final Union union = call.alg( 0 );
 
-        final int count = union.getRowType().getFieldCount();
+        final int count = union.getTupleType().getFieldCount();
         if ( count == 1 ) {
             // No room for optimization since we cannot create an empty Project operator. If we created a Project with one column, this rule would cycle.
             return;
@@ -106,7 +106,7 @@ public class UnionPullUpConstantsRule extends AlgOptRule {
         }
 
         // Create expressions for Project operators before and after the Union
-        List<AlgDataTypeField> fields = union.getRowType().getFields();
+        List<AlgDataTypeField> fields = union.getTupleType().getFields();
         List<RexNode> topChildExprs = new ArrayList<>();
         List<String> topChildExprsFields = new ArrayList<>();
         List<RexNode> refs = new ArrayList<>();
@@ -127,7 +127,7 @@ public class UnionPullUpConstantsRule extends AlgOptRule {
         ImmutableBitSet refsIndex = refsIndexBuilder.build();
 
         // Update top Project positions
-        final Mappings.TargetMapping mapping = AlgOptUtil.permutation( refs, union.getInput( 0 ).getRowType() ).inverse();
+        final Mappings.TargetMapping mapping = AlgOptUtil.permutation( refs, union.getInput( 0 ).getTupleType() ).inverse();
         topChildExprs = ImmutableList.copyOf( RexUtil.apply( mapping, topChildExprs ) );
 
         // Create new Project-Union-Project sequences
@@ -135,7 +135,7 @@ public class UnionPullUpConstantsRule extends AlgOptRule {
         for ( AlgNode input : union.getInputs() ) {
             List<Pair<RexNode, String>> newChildExprs = new ArrayList<>();
             for ( int j : refsIndex ) {
-                newChildExprs.add( Pair.of( rexBuilder.makeInputRef( input, j ), input.getRowType().getFields().get( j ).getName() ) );
+                newChildExprs.add( Pair.of( rexBuilder.makeInputRef( input, j ), input.getTupleType().getFields().get( j ).getName() ) );
             }
             if ( newChildExprs.isEmpty() ) {
                 // At least a single item in project is required.
@@ -148,7 +148,7 @@ public class UnionPullUpConstantsRule extends AlgOptRule {
         algBuilder.union( union.all, union.getInputs().size() );
         // Create top Project fixing nullability of fields
         algBuilder.project( topChildExprs, topChildExprsFields );
-        algBuilder.convert( union.getRowType(), false );
+        algBuilder.convert( union.getTupleType(), false );
 
         call.transformTo( algBuilder.build() );
     }

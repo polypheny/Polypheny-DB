@@ -160,7 +160,7 @@ public class AggregateJoinTransposeRule extends AlgOptRule {
         for ( int s = 0; s < 2; s++ ) {
             final Side side = new Side();
             final AlgNode joinInput = join.getInput( s );
-            int fieldCount = joinInput.getRowType().getFieldCount();
+            int fieldCount = joinInput.getTupleType().getFieldCount();
             final ImmutableBitSet fieldSet = ImmutableBitSet.range( offset, offset + fieldCount );
             final ImmutableBitSet belowAggregateKeyNotShifted = belowAggregateColumns.intersect( fieldSet );
             for ( Ord<Integer> c : Ord.zip( belowAggregateKeyNotShifted ) ) {
@@ -197,7 +197,7 @@ public class AggregateJoinTransposeRule extends AlgOptRule {
                     final AggFunction aggregation = aggCall.e.getAggregation();
                     final SplittableAggFunction splitter = aggregation.unwrap( SplittableAggFunction.class ).orElseThrow();
                     if ( !aggCall.e.getArgList().isEmpty() && fieldSet.contains( ImmutableBitSet.of( aggCall.e.getArgList() ) ) ) {
-                        final RexNode singleton = splitter.singleton( rexBuilder, joinInput.getRowType(), aggCall.e.transform( mapping ) );
+                        final RexNode singleton = splitter.singleton( rexBuilder, joinInput.getTupleType(), aggCall.e.transform( mapping ) );
 
                         if ( singleton instanceof RexIndexRef ) {
                             final int index = ((RexIndexRef) singleton).getIndex();
@@ -238,7 +238,7 @@ public class AggregateJoinTransposeRule extends AlgOptRule {
                         .build();
             }
             offset += fieldCount;
-            belowOffset += side.newInput.getRowType().getFieldCount();
+            belowOffset += side.newInput.getTupleType().getFieldCount();
             sides.add( side );
         }
 
@@ -248,7 +248,7 @@ public class AggregateJoinTransposeRule extends AlgOptRule {
         }
 
         // Update condition
-        final Mapping mapping = (Mapping) Mappings.target( map::get, join.getRowType().getFieldCount(), belowOffset );
+        final Mapping mapping = (Mapping) Mappings.target( map::get, join.getTupleType().getFieldCount(), belowOffset );
         final RexNode newCondition = RexUtil.apply( mapping, join.getCondition() );
 
         // Create new join
@@ -259,8 +259,8 @@ public class AggregateJoinTransposeRule extends AlgOptRule {
         // Aggregate above to sum up the sub-totals
         final List<AggregateCall> newAggCalls = new ArrayList<>();
         final int groupIndicatorCount = aggregate.getGroupCount() + aggregate.getIndicatorCount();
-        final int newLeftWidth = sides.get( 0 ).newInput.getRowType().getFieldCount();
-        final List<RexNode> projects = new ArrayList<>( rexBuilder.identityProjects( algBuilder.peek().getRowType() ) );
+        final int newLeftWidth = sides.get( 0 ).newInput.getTupleType().getFieldCount();
+        final List<RexNode> projects = new ArrayList<>( rexBuilder.identityProjects( algBuilder.peek().getTupleType() ) );
         for ( Ord<AggregateCall> aggCall : Ord.zip( aggregate.getAggCallList() ) ) {
             final AggFunction aggregation = aggCall.e.getAggregation();
             final SplittableAggFunction splitter = aggregation.unwrap( SplittableAggFunction.class ).orElseThrow();
@@ -271,7 +271,7 @@ public class AggregateJoinTransposeRule extends AlgOptRule {
                             rexBuilder,
                             registry( projects ),
                             groupIndicatorCount,
-                            algBuilder.peek().getRowType(),
+                            algBuilder.peek().getTupleType(),
                             aggCall.e,
                             leftSubTotal == null ? -1 : leftSubTotal,
                             rightSubTotal == null ? -1 : rightSubTotal + newLeftWidth ) );
@@ -289,7 +289,7 @@ public class AggregateJoinTransposeRule extends AlgOptRule {
             for ( AggregateCall newAggCall : newAggCalls ) {
                 Optional<SplittableAggFunction> oSplitter = newAggCall.getAggregation().unwrap( SplittableAggFunction.class );
                 if ( oSplitter.isPresent() ) {
-                    final AlgDataType rowType = algBuilder.peek().getRowType();
+                    final AlgDataType rowType = algBuilder.peek().getTupleType();
                     projects2.add( oSplitter.get().singleton( rexBuilder, rowType, newAggCall ) );
                 }
             }

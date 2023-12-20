@@ -94,7 +94,7 @@ public class FilterMergeRule extends AlgOptRule {
      * @return created RexProgram
      */
     private RexProgram createProgram( Filter filterRel ) {
-        RexProgramBuilder programBuilder = new RexProgramBuilder( filterRel.getRowType(), filterRel.getCluster().getRexBuilder() );
+        RexProgramBuilder programBuilder = new RexProgramBuilder( filterRel.getTupleType(), filterRel.getCluster().getRexBuilder() );
         programBuilder.addIdentity();
         programBuilder.addCondition( filterRel.getCondition() );
         return programBuilder.getProgram();

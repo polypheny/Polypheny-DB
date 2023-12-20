@@ -97,7 +97,7 @@ public class HepAlgVertex extends AbstractAlgNode {
 
     @Override
     protected AlgDataType deriveRowType() {
-        return currentAlg.getRowType();
+        return currentAlg.getTupleType();
     }
 
 

@@ -98,17 +98,17 @@ public abstract class DocumentProject extends SingleAlg implements DocumentAlg {
         nodes.addAll( includes.entrySet().stream().filter( o -> Objects.nonNull( o.getKey() ) ).map( Entry::getValue ).collect( Collectors.toList() ) );
 
         if ( !includes.isEmpty() ) {
-            doc = builder.makeCall( getRowType(), OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_MERGE ), nodes );
+            doc = builder.makeCall( getTupleType(), OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_MERGE ), nodes );
 
             List<Entry<String, ? extends RexNode>> root = includes.entrySet().stream().filter( obj -> Objects.isNull( obj.getKey() ) ).collect( Collectors.toList() );
             if ( !root.isEmpty() ) {
-                return builder.makeCall( getRowType(), OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_REPLACE_ROOT ), root.get( 0 ).getValue() );
+                return builder.makeCall( getTupleType(), OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_REPLACE_ROOT ), root.get( 0 ).getValue() );
             }
         }
 
         if ( !excludes.isEmpty() ) {
             doc = builder.makeCall(
-                    getRowType(),
+                    getTupleType(),
                     OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_REMOVE ),
                     doc,
                     builder.makeArray(

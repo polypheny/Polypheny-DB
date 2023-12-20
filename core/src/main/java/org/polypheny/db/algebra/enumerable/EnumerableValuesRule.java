@@ -43,7 +43,7 @@ public class EnumerableValuesRule extends ConverterRule {
     @Override
     public AlgNode convert( AlgNode alg ) {
         LogicalValues values = (LogicalValues) alg;
-        return EnumerableValues.create( values.getCluster(), values.getRowType(), values.getTuples() );
+        return EnumerableValues.create( values.getCluster(), values.getTupleType(), values.getTuples() );
     }
 
 }

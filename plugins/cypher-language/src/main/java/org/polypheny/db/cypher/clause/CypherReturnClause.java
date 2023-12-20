@@ -110,7 +110,7 @@ public class CypherReturnClause extends CypherClause {
             if ( namedAgg.left == null ) {
                 aggCalls.add( namedAgg.right );
             } else {
-                int i = node.getRowType().getFieldNames().indexOf( namedAgg.left );
+                int i = node.getTupleType().getFieldNames().indexOf( namedAgg.left );
                 aggCalls.add( namedAgg.right.adjustedCopy( List.of( i ) ) );
             }
         }
@@ -120,7 +120,7 @@ public class CypherReturnClause extends CypherClause {
                 .collect( Collectors.toList() );
 
         List<Integer> groupIndexes = node
-                .getRowType()
+                .getTupleType()
                 .getFields()
                 .stream()
                 .filter( f -> !aggNames.contains( f.getName() ) )
@@ -153,7 +153,7 @@ public class CypherReturnClause extends CypherClause {
                 Pair.left( nameAndProject )
         );
 
-        if ( node.getRowType().equals( project.getRowType() ) ) {
+        if ( node.getTupleType().equals( project.getTupleType() ) ) {
             return node;
         }
         return project;
@@ -170,7 +170,7 @@ public class CypherReturnClause extends CypherClause {
         List<AlgFieldCollation> collations = new ArrayList<>();
 
         for ( Pair<Direction, String> item : orders ) {
-            int index = node.getRowType().getFieldNames().indexOf( item.right );
+            int index = node.getTupleType().getFieldNames().indexOf( item.right );
             collations.add( new AlgFieldCollation( index, item.left ) );
         }
 

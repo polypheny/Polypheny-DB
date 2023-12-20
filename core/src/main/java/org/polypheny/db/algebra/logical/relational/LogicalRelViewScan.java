@@ -88,7 +88,7 @@ public class LogicalRelViewScan extends RelScan<Entity> {
     public AlgNode unfoldView( AlgOptCluster cluster ) {
         RexBuilder rexBuilder = this.getCluster().getRexBuilder();
         final List<RexNode> exprs = new ArrayList<>();
-        final AlgDataType rowType = this.getRowType();
+        final AlgDataType rowType = this.getTupleType();
         final int fieldCount = rowType.getFieldCount();
         for ( int i = 0; i < fieldCount; i++ ) {
             exprs.add( rexBuilder.makeInputRef( this, i ) );
@@ -96,7 +96,7 @@ public class LogicalRelViewScan extends RelScan<Entity> {
 
         algNode.replaceCluster( cluster );
 
-        return LogicalProject.create( algNode, exprs, this.getRowType().getFieldNames() );
+        return LogicalProject.create( algNode, exprs, this.getTupleType().getFieldNames() );
     }
 
 }

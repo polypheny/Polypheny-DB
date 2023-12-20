@@ -377,7 +377,7 @@ public abstract class SqlImplementor {
         final String alias3 = alias2 != null ? alias2 : "t";
         final String alias4 = ValidatorUtil.uniquify( alias3, aliasSet, ValidatorUtil.EXPR_SUGGESTER );
         if ( aliases != null && !aliases.isEmpty() && (!dialect.hasImplicitTableAlias() || aliases.size() > 1) ) {
-            return new Result( node, clauses, alias4, alg.getRowType(), aliases );
+            return new Result( node, clauses, alias4, alg.getTupleType(), aliases );
         }
         final String alias5;
         if ( alias2 == null || !alias2.equals( alias4 ) || !dialect.hasImplicitTableAlias() ) {
@@ -385,7 +385,7 @@ public abstract class SqlImplementor {
         } else {
             alias5 = null;
         }
-        return new Result( node, clauses, alias5, alg.getRowType(), ImmutableMap.of( alias4, alg.getRowType() ) );
+        return new Result( node, clauses, alias5, alg.getTupleType(), ImmutableMap.of( alias4, alg.getTupleType() ) );
     }
 
 
@@ -1171,7 +1171,7 @@ public abstract class SqlImplementor {
                 // Basically, we did a subSelect() since needNew is set and neededAlias is not null now, we need to make sure that we need to update the alias context.
                 // If our aliases map has a single element:  <neededAlias, rowType>, then we don't need to rewrite the alias but otherwise, it should be updated.
                 if ( needNew && neededAlias != null && (aliases.size() != 1 || !aliases.containsKey( neededAlias )) ) {
-                    final Map<String, AlgDataType> newAliases = ImmutableMap.of( neededAlias, alg.getInput( 0 ).getRowType() );
+                    final Map<String, AlgDataType> newAliases = ImmutableMap.of( neededAlias, alg.getInput( 0 ).getTupleType() );
                     newContext = aliasContext( newAliases, qualified );
                 } else {
                     newContext = aliasContext( aliases, qualified );

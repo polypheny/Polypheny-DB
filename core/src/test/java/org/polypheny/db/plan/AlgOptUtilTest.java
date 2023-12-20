@@ -85,8 +85,8 @@ public class AlgOptUtilTest {
     private static final AlgNode EMP_SCAN = REL_BUILDER.scan( "EMP" ).build();
     private static final AlgNode DEPT_SCAN = REL_BUILDER.scan( "DEPT" ).build();
 
-    private static final AlgDataType EMP_ROW = EMP_SCAN.getRowType();
-    private static final AlgDataType DEPT_ROW = DEPT_SCAN.getRowType();
+    private static final AlgDataType EMP_ROW = EMP_SCAN.getTupleType();
+    private static final AlgDataType DEPT_ROW = DEPT_SCAN.getTupleType();
 
     private static final List<AlgDataTypeField> EMP_DEPT_JOIN_REL_FIELDS = Lists.newArrayList( Iterables.concat( EMP_ROW.getFields(), DEPT_ROW.getFields() ) );
 
@@ -146,7 +146,7 @@ public class AlgOptUtilTest {
      */
     @Test
     public void testSplitJoinConditionEquals() {
-        int leftJoinIndex = EMP_SCAN.getRowType().getFieldNames().indexOf( "deptno" );
+        int leftJoinIndex = EMP_SCAN.getTupleType().getFieldNames().indexOf( "deptno" );
         int rightJoinIndex = DEPT_ROW.getFieldNames().indexOf( "deptno" );
 
         RexNode joinCond = REL_BUILDER.call(
@@ -169,7 +169,7 @@ public class AlgOptUtilTest {
      */
     @Test
     public void testSplitJoinConditionIsNotDistinctFrom() {
-        int leftJoinIndex = EMP_SCAN.getRowType().getFieldNames().indexOf( "deptno" );
+        int leftJoinIndex = EMP_SCAN.getTupleType().getFieldNames().indexOf( "deptno" );
         int rightJoinIndex = DEPT_ROW.getFieldNames().indexOf( "deptno" );
 
         RexNode joinCond = REL_BUILDER.call(
@@ -192,7 +192,7 @@ public class AlgOptUtilTest {
      */
     @Test
     public void testSplitJoinConditionExpandedIsNotDistinctFrom() {
-        int leftJoinIndex = EMP_SCAN.getRowType().getFieldNames().indexOf( "deptno" );
+        int leftJoinIndex = EMP_SCAN.getTupleType().getFieldNames().indexOf( "deptno" );
         int rightJoinIndex = DEPT_ROW.getFieldNames().indexOf( "deptno" );
 
         RexIndexRef leftKeyInputRef = RexIndexRef.of( leftJoinIndex, EMP_DEPT_JOIN_REL_FIELDS );

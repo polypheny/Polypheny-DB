@@ -108,8 +108,8 @@ public class Handler {
                 builder.clear();
                 input = map.get( foreachNested.source.value );
                 builder.push( input );
-                System.out.println( input.getRowType() );
-                for ( AlgDataTypeField field : input.getRowType().getFields() ) {
+                System.out.println( input.getTupleType() );
+                for ( AlgDataTypeField field : input.getTupleType().getFields() ) {
                     switch ( field.getType().getPolyType() ) {
                         case ARRAY:
                             System.out.println( field );

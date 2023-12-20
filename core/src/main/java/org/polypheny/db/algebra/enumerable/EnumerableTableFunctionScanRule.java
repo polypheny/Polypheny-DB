@@ -56,7 +56,7 @@ public class EnumerableTableFunctionScanRule extends ConverterRule {
                 traitSet,
                 tbl.getInputs(),
                 tbl.getElementType(),
-                tbl.getRowType(),
+                tbl.getTupleType(),
                 tbl.getCall(),
                 tbl.getColumnMappings() );
     }

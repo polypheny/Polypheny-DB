@@ -198,14 +198,14 @@ public class PushProjector {
             origProjExprs = origProj.getProjects();
         }
 
-        childFields = childRel.getRowType().getFields();
+        childFields = childRel.getTupleType().getFields();
         nChildFields = childFields.size();
 
         projRefs = new BitSet( nChildFields );
         if ( childRel instanceof Join ) {
             Join joinRel = (Join) childRel;
-            List<AlgDataTypeField> leftFields = joinRel.getLeft().getRowType().getFields();
-            List<AlgDataTypeField> rightFields = joinRel.getRight().getRowType().getFields();
+            List<AlgDataTypeField> leftFields = joinRel.getLeft().getTupleType().getFields();
+            List<AlgDataTypeField> rightFields = joinRel.getRight().getTupleType().getFields();
             nFields = leftFields.size();
             nFieldsRight = childRel instanceof SemiJoin ? 0 : rightFields.size();
             nSysFields = joinRel.getSystemFieldList().size();
@@ -229,8 +229,8 @@ public class PushProjector {
 
         } else if ( childRel instanceof Correlate ) {
             Correlate corrRel = (Correlate) childRel;
-            List<AlgDataTypeField> leftFields = corrRel.getLeft().getRowType().getFields();
-            List<AlgDataTypeField> rightFields = corrRel.getRight().getRowType().getFields();
+            List<AlgDataTypeField> leftFields = corrRel.getLeft().getTupleType().getFields();
+            List<AlgDataTypeField> rightFields = corrRel.getRight().getTupleType().getFields();
             nFields = leftFields.size();
             SemiJoinType joinType = corrRel.getJoinType();
             switch ( joinType ) {
@@ -330,7 +330,7 @@ public class PushProjector {
         // If a filter was passed in, convert it to reference the projected columns, placing it on top of the project just created
         AlgNode projChild;
         if ( origFilter != null ) {
-            RexNode newFilter = convertRefsAndExprs( origFilter, newProject.getRowType().getFields(), adjustments );
+            RexNode newFilter = convertRefsAndExprs( origFilter, newProject.getTupleType().getFields(), adjustments );
             algBuilder.push( newProject );
             algBuilder.filter( newFilter );
             projChild = algBuilder.build();
@@ -436,7 +436,7 @@ public class PushProjector {
         }
         int refIdx = offset - 1;
         List<Pair<RexNode, String>> newProjects = new ArrayList<>();
-        List<AlgDataTypeField> destFields = projChild.getRowType().getFields();
+        List<AlgDataTypeField> destFields = projChild.getTupleType().getFields();
 
         // add on the input references
         for ( int i = 0; i < nInputRefs; i++ ) {
@@ -535,7 +535,7 @@ public class PushProjector {
 
         if ( origProj != null ) {
             for ( Pair<RexNode, String> p : origProj.getNamedProjects() ) {
-                projects.add( Pair.of( convertRefsAndExprs( p.left, projChild.getRowType().getFields(), adjustments ), p.right ) );
+                projects.add( Pair.of( convertRefsAndExprs( p.left, projChild.getTupleType().getFields(), adjustments ), p.right ) );
             }
         } else {
             for ( Ord<AlgDataTypeField> field : Ord.zip( childFields ) ) {

@@ -70,7 +70,7 @@ public class EnumerableMinus extends Minus implements EnumerableAlg {
         }
 
         builder.add( minusExp );
-        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getRowType(), pref.prefer( JavaRowFormat.CUSTOM ) );
+        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.prefer( JavaRowFormat.CUSTOM ) );
         return implementor.result( physType, builder.toBlock() );
     }
 

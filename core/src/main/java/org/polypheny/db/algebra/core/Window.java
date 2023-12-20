@@ -106,7 +106,7 @@ public abstract class Window extends SingleAlg {
     @Override
     public boolean isValid( Litmus litmus, Context context ) {
         // In the window specifications, an aggregate call such as 'SUM(RexInputRef #10)' refers to expression #10 of inputProgram. (Not its projections.)
-        final AlgDataType childRowType = getInput().getRowType();
+        final AlgDataType childRowType = getInput().getTupleType();
 
         final int childFieldCount = childRowType.getFieldCount();
         final int inputSize = childFieldCount + constants.size();
@@ -337,7 +337,7 @@ public abstract class Window extends SingleAlg {
          * Presents a view of the {@link RexWinAggCall} list as a list of {@link AggregateCall}.
          */
         public List<AggregateCall> getAggregateCalls( Window windowRel ) {
-            final List<String> fieldNames = Util.skip( windowRel.getRowType().getFieldNames(), windowRel.getInput().getRowType().getFieldCount() );
+            final List<String> fieldNames = Util.skip( windowRel.getTupleType().getFieldNames(), windowRel.getInput().getTupleType().getFieldCount() );
             return new AbstractList<AggregateCall>() {
                 @Override
                 public int size() {

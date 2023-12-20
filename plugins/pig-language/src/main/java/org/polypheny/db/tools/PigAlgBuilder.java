@@ -181,7 +181,7 @@ public class PigAlgBuilder extends AlgBuilder {
             // Create a ROW to pass to COLLECT. Interestingly, this is not allowed by standard SQL; see [POLYPHENYDB-877] Allow ROW as argument to COLLECT.
             final RexNode row =
                     cluster.getRexBuilder().makeCall(
-                            peek( 1, 0 ).getRowType(),
+                            peek( 1, 0 ).getTupleType(),
                             OperatorRegistry.get( OperatorName.ROW ),
                             fields() );
             aggregate( groupKey.e, aggregateCall( OperatorRegistry.getAgg( OperatorName.COLLECT ), row ).as( getAlias() ) );

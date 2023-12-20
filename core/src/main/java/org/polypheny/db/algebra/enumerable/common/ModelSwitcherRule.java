@@ -18,7 +18,6 @@ package org.polypheny.db.algebra.enumerable.common;
 
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.common.Transformer;
 import org.polypheny.db.algebra.logical.common.LogicalTransformer;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
@@ -57,12 +56,13 @@ public class ModelSwitcherRule extends AlgOptRule {
 
         AlgNode parent = call.getParents().get( 0 );
 
-        LogicalTransformer transformer = new LogicalTransformer(
-                alg.getCluster(), List.of( alg ),
-                alg.getRowType().getFieldNames(),
+        LogicalTransformer transformer = LogicalTransformer.create(
+                alg.getCluster(),
+                List.of( alg ),
+                alg.getTupleType().getFieldNames(),
                 alg.getTraitSet().getTrait( ModelTraitDef.INSTANCE ),
                 parent.getTraitSet().getTrait( ModelTraitDef.INSTANCE ),
-                alg.getRowType(),
+                alg.getTupleType(),
                 false );
 
         AlgNode node = parent.copy( parent.getTraitSet(), List.of( transformer ) );

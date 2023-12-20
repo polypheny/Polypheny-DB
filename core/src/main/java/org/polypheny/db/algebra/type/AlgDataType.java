@@ -59,6 +59,19 @@ public interface AlgDataType {
      */
     boolean isStruct();
 
+    default AlgDataType asRelational() {
+        throw new UnsupportedOperationException();
+    }
+
+    default AlgDataType asDocument() {
+        throw new UnsupportedOperationException();
+    }
+
+    default AlgDataType asGraph() {
+        throw new UnsupportedOperationException();
+    }
+
+
     /**
      * Gets the fields in a struct type. The field count is equal to the size of the returned list.
      *

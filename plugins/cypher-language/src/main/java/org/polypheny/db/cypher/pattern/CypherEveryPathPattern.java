@@ -76,6 +76,12 @@ public class CypherEveryPathPattern extends CypherPattern {
     }
 
 
+    @Override
+    public List<PolyString> getUnderlyingLabels() {
+        return nodes.stream().flatMap( n -> n.getLabels().stream() ).collect( Collectors.toList() );
+    }
+
+
     private List<Pair<PolyString, PolyNode>> getPolyNodes( CypherContext context ) {
         List<Pair<PolyString, PolyNode>> nodes = new LinkedList<>();
         for ( CypherNodePattern node : this.nodes ) {

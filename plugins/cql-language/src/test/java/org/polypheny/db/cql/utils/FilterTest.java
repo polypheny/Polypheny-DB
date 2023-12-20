@@ -46,7 +46,7 @@ public class FilterTest extends AlgBuildTestHelper {
     public FilterTest() throws UnknownIndexException {
         super( AlgBuildLevel.INITIAL_PROJECTION );
         baseNode = algBuilder.peek();
-        AlgDataType filtersRowType = baseNode.getRowType();
+        AlgDataType filtersRowType = baseNode.getTupleType();
         List<AlgDataTypeField> filtersRows = filtersRowType.getFields();
         filtersRows.forEach( ( r ) -> filterMap.put( r.getName(), r ) );
     }

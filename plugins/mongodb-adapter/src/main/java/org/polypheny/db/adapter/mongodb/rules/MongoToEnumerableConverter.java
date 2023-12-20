@@ -78,7 +78,7 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
         final Implementor mongoImplementor = new Implementor();
         mongoImplementor.visitChild( 0, getInput() );
 
-        final AlgDataType rowType = getRowType();
+        final AlgDataType rowType = getTupleType();
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), rowType, pref.prefer( JavaRowFormat.ARRAY ) );
 
         if ( mongoImplementor.getEntity() == null ) {

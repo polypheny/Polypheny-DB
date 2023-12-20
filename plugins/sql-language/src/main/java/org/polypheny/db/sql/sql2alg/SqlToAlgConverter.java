@@ -405,8 +405,12 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             }
         }*/
 
-        final List<AlgDataTypeField> convertedFields = result.getRowType().getFields().subList( 0, validatedFields.size() );
+        final List<AlgDataTypeField> convertedFields = result.getTupleType().getFields().subList( 0, validatedFields.size() );
         final AlgDataType convertedRowType = validator.getTypeFactory().createStructType( convertedFields );
+
+        if ( result.isCrossModel() ) {
+            return;
+        }
 
         if ( !AlgOptUtil.equal( "validated row type", validatedRowType, "converted row type", convertedRowType, Litmus.IGNORE ) ) {
             throw new AssertionError( "Conversion to relational algebra failed to "
@@ -662,7 +666,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             }
 
             final Map<Integer, Integer> squished = new HashMap<>();
-            final List<AlgDataTypeField> fields = alg.getRowType().getFields();
+            final List<AlgDataTypeField> fields = alg.getTupleType().getFields();
             final List<Pair<RexNode, String>> newProjects = new ArrayList<>();
             for ( int i = 0; i < fields.size(); i++ ) {
                 if ( origins.get( i ) == i ) {
@@ -694,7 +698,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         }
 
         // Usual case: all of the expressions in the SELECT clause are different.
-        final ImmutableBitSet groupSet = ImmutableBitSet.range( alg.getRowType().getFieldCount() );
+        final ImmutableBitSet groupSet = ImmutableBitSet.range( alg.getTupleType().getFieldCount() );
         alg = createAggregate( bb, groupSet, ImmutableList.of( groupSet ), ImmutableList.of() );
 
         bb.setRoot( alg, false );
@@ -740,7 +744,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         // If it is the top node, use the real collation, but don't trim fields.
         if ( orderExprList.size() > 0 ) {//&& !bb.top ) {
             final List<RexNode> exprs = new ArrayList<>();
-            final AlgDataType rowType = bb.root.getRowType();
+            final AlgDataType rowType = bb.root.getTupleType();
             final int fieldCount = rowType.getFieldCount() - orderExprList.size();
             for ( int i = 0; i < fieldCount; i++ ) {
                 exprs.add( rexBuilder.makeInputRef( bb.root, i ) );
@@ -1200,11 +1204,11 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                 final Join join = (Join) root;
                 final Project left = (Project) join.getLeft();
                 final AlgNode leftLeft = ((Join) left.getInput()).getLeft();
-                final int leftLeftCount = leftLeft.getRowType().getFieldCount();
+                final int leftLeftCount = leftLeft.getTupleType().getFieldCount();
                 final AlgDataType longType = typeFactory.createPolyType( PolyType.BIGINT );
                 final RexNode cRef = rexBuilder.makeInputRef( root, leftLeftCount );
                 final RexNode ckRef = rexBuilder.makeInputRef( root, leftLeftCount + 1 );
-                final RexNode iRef = rexBuilder.makeInputRef( root, root.getRowType().getFieldCount() - 1 );
+                final RexNode iRef = rexBuilder.makeInputRef( root, root.getTupleType().getFieldCount() - 1 );
 
                 final RexLiteral zero = rexBuilder.makeExactLiteral( BigDecimal.ZERO, longType );
                 final RexLiteral trueLiteral = rexBuilder.makeLiteral( true );
@@ -2945,7 +2949,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
      * @return Converted INSERT statement
      */
     protected AlgNode convertColumnList( final SqlInsert call, AlgNode source ) {
-        AlgDataType sourceRowType = source.getRowType();
+        AlgDataType sourceRowType = source.getTupleType();
         final RexNode sourceRef = rexBuilder.makeRangeReference( sourceRowType, 0, false );
         final List<String> targetColumnNames = new ArrayList<>();
         final List<RexNode> columnExprs = new ArrayList<>();
@@ -3034,7 +3038,6 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         }
         return NullInitializerExpressionFactory.INSTANCE;
     }
-
 
 
     private RexNode castNullLiteralIfNeeded( RexNode node, AlgDataType type ) {
@@ -3222,7 +3225,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         }
 
         LogicalJoin join = (LogicalJoin) mergeSourceRel.getInput( 0 );
-        int nSourceFields = join.getLeft().getRowType().getFieldCount();
+        int nSourceFields = join.getLeft().getTupleType().getFieldCount();
         final List<RexNode> projects = new ArrayList<>();
         for ( int level1Idx = 0; level1Idx < nLevel1Exprs; level1Idx++ ) {
             if ( (level2InsertExprs != null) && (level1InsertExprs.get( level1Idx ) instanceof RexIndexRef) ) {
@@ -3339,7 +3342,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         AlgNode converted = convertQuery( query, false, false ).alg;
         int iCursor = bb.cursors.size();
         bb.cursors.add( converted );
-        subQuery.expr = new RexIndexRef( iCursor, converted.getRowType() );
+        subQuery.expr = new RexIndexRef( iCursor, converted.getTupleType() );
         return converted;
     }
 
@@ -3679,13 +3682,13 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                 assert leftKeys == null;
                 setRoot( alg, false );
                 return rexBuilder.makeRangeReference(
-                        root.getRowType(),
+                        root.getTupleType(),
                         0,
                         false );
             }
 
             final RexNode joinCond;
-            final int origLeftInputCount = root.getRowType().getFieldCount();
+            final int origLeftInputCount = root.getTupleType().getFieldCount();
             if ( leftKeys != null ) {
                 List<RexNode> newLeftInputExprs = new ArrayList<>();
                 for ( int i = 0; i < origLeftInputCount; i++ ) {
@@ -3717,7 +3720,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                 setRoot( newLeftInput, false );
 
                 // right fields appear after the LHS fields.
-                final int rightOffset = root.getRowType().getFieldCount() - newLeftInput.getRowType().getFieldCount();
+                final int rightOffset = root.getTupleType().getFieldCount() - newLeftInput.getTupleType().getFieldCount();
                 final List<Integer> rightKeys = Util.range( rightOffset, rightOffset + leftKeys.size() );
 
                 joinCond = AlgOptUtil.createEquiJoinCondition(
@@ -3730,7 +3733,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                 joinCond = rexBuilder.makeLiteral( true );
             }
 
-            int leftFieldCount = root.getRowType().getFieldCount();
+            int leftFieldCount = root.getTupleType().getFieldCount();
             final AlgNode join =
                     createJoin(
                             this,
@@ -3743,7 +3746,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
             if ( leftKeys != null && joinType == JoinAlgType.LEFT ) {
                 final int leftKeyCount = leftKeys.size();
-                int rightFieldLength = alg.getRowType().getFieldCount();
+                int rightFieldLength = alg.getTupleType().getFieldCount();
                 assert leftKeyCount == rightFieldLength - 1;
 
                 final int rexRangeRefLength = leftKeyCount + rightFieldLength;
@@ -3752,7 +3755,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                                 new AbstractList<>() {
                                     @Override
                                     public AlgDataTypeField get( int index ) {
-                                        return join.getRowType()
+                                        return join.getTupleType()
                                                 .getFields()
                                                 .get( origLeftInputCount + index );
                                     }
@@ -3766,7 +3769,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
                 return rexBuilder.makeRangeReference( returnType, origLeftInputCount, false );
             } else {
-                return rexBuilder.makeRangeReference( alg.getRowType(), leftFieldCount, joinType.generatesNullsOnRight() );
+                return rexBuilder.makeRangeReference( alg.getTupleType(), leftFieldCount, joinType.generatesNullsOnRight() );
             }
         }
 
@@ -3890,9 +3893,9 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
          * Creates an expression with which to reference the expression whose offset in its from-list is {@code offset}.
          */
         RexNode lookup( int offset, LookupContext lookupContext ) {
-            Pair<AlgNode, Integer> pair = lookupContext.findRel( offset );
+            Pair<AlgNode, Integer> pair = lookupContext.findAlg( offset );
             return rexBuilder.makeRangeReference(
-                    pair.left.getRowType(),
+                    pair.left.getTupleType().asRelational(),
                     pair.right,
                     false );
         }
@@ -3904,7 +3907,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             }
             int fieldOffset = inputRef.getIndex();
             for ( AlgNode input : inputs ) {
-                AlgDataType rowType = input.getRowType();
+                AlgDataType rowType = input.getTupleType();
                 if ( rowType == null ) {
                     // TODO:  remove this once leastRestrictive is correctly implemented
                     return null;
@@ -3922,7 +3925,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             for ( AlgNode alg : algs ) {
                 if ( leaves.contains( alg ) || alg instanceof LogicalMatch ) {
                     algOffsetList.add( Pair.of( alg, start[0] ) );
-                    start[0] += alg.getRowType().getFieldCount();
+                    start[0] += alg.getTupleType().getFieldCount();
                 } else {
                     if ( alg instanceof LogicalJoin || alg instanceof LogicalAggregate ) {
                         start[0] += systemFieldCount;
@@ -4466,7 +4469,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         private void addExpr( RexNode expr, String name ) {
             if ( (name == null) && (expr instanceof RexIndexRef) ) {
                 final int i = ((RexIndexRef) expr).getIndex();
-                name = bb.root.getRowType().getFields().get( i ).getName();
+                name = bb.root.getTupleType().getFields().get( i ).getName();
             }
             if ( Pair.right( convertedInputExprs ).contains( name ) ) {
                 // In case like 'SELECT ... GROUP BY x, y, x', don't add name 'x' twice.
@@ -4777,7 +4780,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
          * @param offset Offset of relational expression in FROM clause
          * @return Relational expression and the ordinal of its first field
          */
-        Pair<AlgNode, Integer> findRel( int offset ) {
+        Pair<AlgNode, Integer> findAlg( int offset ) {
             return algOffsetList.get( offset );
         }
 

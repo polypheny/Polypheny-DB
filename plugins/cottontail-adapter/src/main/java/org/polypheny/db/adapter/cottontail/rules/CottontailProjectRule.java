@@ -107,7 +107,7 @@ public class CottontailProjectRule extends CottontailConverterRule {
                 traitSet,
                 convert( project.getInput(), project.getInput().getTraitSet().replace( out ) ),
                 project.getProjects(),
-                project.getRowType(),
+                project.getTupleType(),
                 arrayValueProject
         );
     }

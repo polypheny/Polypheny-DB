@@ -158,7 +158,7 @@ public class CombinerTest extends AlgBuildTestHelper {
         );
         algBuilder = combiner.combine( algBuilder, rexBuilder );
         AlgNode algNode = algBuilder.peek();
-        List<String> actualFieldNames = algNode.getRowType().getFieldNames();
+        List<String> actualFieldNames = algNode.getTupleType().getFieldNames();
         List<String> expectedFieldNames = new ArrayList<>();
         expectedFieldNames.add( "empno" );
         expectedFieldNames.add( "empname" );
@@ -192,7 +192,7 @@ public class CombinerTest extends AlgBuildTestHelper {
         );
         algBuilder = combiner.combine( algBuilder, rexBuilder );
         AlgNode algNode = algBuilder.peek();
-        List<String> actualFieldNames = algNode.getRowType().getFieldNames();
+        List<String> actualFieldNames = algNode.getTupleType().getFieldNames();
         List<String> expectedFieldNames = new ArrayList<>();
         expectedFieldNames.add( "empno" );
         expectedFieldNames.add( "empname" );

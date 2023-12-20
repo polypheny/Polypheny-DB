@@ -124,7 +124,7 @@ public class ProjectCorrelateTransposeRule extends AlgOptRule {
         RexBuilder rexBuilder = call.builder().getRexBuilder();
 
         CorrelationId correlationId = corr.getCluster().createCorrel();
-        RexCorrelVariable rexCorrel = (RexCorrelVariable) rexBuilder.makeCorrel( leftProjRel.getRowType(), correlationId );
+        RexCorrelVariable rexCorrel = (RexCorrelVariable) rexBuilder.makeCorrel( leftProjRel.getTupleType(), correlationId );
 
         // updates RexCorrelVariable and sets actual RelDataType for RexFieldAccess
         rightProjRel = rightProjRel.accept( new RelNodesExprsHandler( new RexFieldAccessReplacer( corr.getCorrelationId(), rexCorrel, rexBuilder, requiredColsMap ) ) );

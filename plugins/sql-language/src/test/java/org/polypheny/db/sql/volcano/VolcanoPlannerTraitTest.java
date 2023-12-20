@@ -461,7 +461,7 @@ public class VolcanoPlannerTraitTest {
         // implement AlgNode
         @Override
         protected AlgDataType deriveRowType() {
-            return getInput().getRowType();
+            return getInput().getTupleType();
         }
 
         // TODO: SWZ Implement clone?

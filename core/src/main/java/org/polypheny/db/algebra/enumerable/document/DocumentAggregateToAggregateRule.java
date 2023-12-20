@@ -113,18 +113,18 @@ public class DocumentAggregateToAggregateRule extends AlgOptRule {
 
         LogicalProject project = (LogicalProject) LogicalProject.create( alg.getInput(), nodes, names ).copy( alg.getInput().getTraitSet().replace( ModelTrait.DOCUMENT ), alg.getInputs() );
 
-        EnumerableProject enumerableProject = new EnumerableProject( project.getCluster(), alg.getInput().getTraitSet().replace( ModelTrait.DOCUMENT ).replace( EnumerableConvention.INSTANCE ), convert( project.getInput(), EnumerableConvention.INSTANCE ), project.getProjects(), project.getRowType() );
+        EnumerableProject enumerableProject = new EnumerableProject( project.getCluster(), alg.getInput().getTraitSet().replace( ModelTrait.DOCUMENT ).replace( EnumerableConvention.INSTANCE ), convert( project.getInput(), EnumerableConvention.INSTANCE ), project.getProjects(), project.getTupleType() );
 
         builder.push( enumerableProject );
 
-        builder.push( LogicalAggregate.create( builder.build(), groupSet, null, alg.aggCalls.stream().map( a -> a.toAggCall( project.getRowType(), alg.getCluster() ) ).collect( Collectors.toList() ) ) );
+        builder.push( LogicalAggregate.create( builder.build(), groupSet, null, alg.aggCalls.stream().map( a -> a.toAggCall( project.getTupleType(), alg.getCluster() ) ).collect( Collectors.toList() ) ) );
 
         AlgNode aggregate = builder.build();
 
         AlgNode enumerableAggregate = aggregate.copy( aggregate.getTraitSet().replace( ModelTrait.DOCUMENT ), aggregate.getInputs() );
 
         //RexNode doc = builder.getRexBuilder().makeCall( DocumentType.ofId(), OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_MERGE ) );
-        Map<String, RexNode> docs = enumerableAggregate.getRowType().getFields().stream().collect( Collectors.toMap( AlgDataTypeField::getName, e -> e.getName().equals( DocumentType.DOCUMENT_ID )
+        Map<String, RexNode> docs = enumerableAggregate.getTupleType().getFields().stream().collect( Collectors.toMap( AlgDataTypeField::getName, e -> e.getName().equals( DocumentType.DOCUMENT_ID )
                 ? builder.getRexBuilder().makeCall( DocumentType.ofDoc(), OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_NOT_UNSET ), builder.getRexBuilder().makeInputRef( DocumentType.ofDoc(), e.getIndex() ) )
                 : builder.getRexBuilder().makeInputRef( DocumentType.ofDoc(), e.getIndex() ) ) );
 

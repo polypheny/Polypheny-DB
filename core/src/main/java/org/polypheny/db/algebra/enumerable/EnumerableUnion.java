@@ -67,7 +67,7 @@ public class EnumerableUnion extends Union implements EnumerableAlg {
         final PhysType physType =
                 PhysTypeImpl.of(
                         implementor.getTypeFactory(),
-                        getRowType(),
+                        getTupleType(),
                         pref.prefer( JavaRowFormat.CUSTOM ) );
         return implementor.result( physType, builder.toBlock() );
     }

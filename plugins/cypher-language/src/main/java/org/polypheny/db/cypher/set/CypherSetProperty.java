@@ -49,11 +49,11 @@ public class CypherSetProperty extends CypherSetItem {
     public void convertItem( CypherContext context ) {
         String nodeName = property.getSubjectName();
         AlgNode node = context.peek();
-        int index = node.getRowType().getFieldNames().indexOf( nodeName );
+        int index = node.getTupleType().getFieldNames().indexOf( nodeName );
         if ( index < 0 ) {
             throw new GenericRuntimeException( String.format( "Unknown variable with name %s", nodeName ) );
         }
-        AlgDataTypeField field = node.getRowType().getFields().get( index );
+        AlgDataTypeField field = node.getTupleType().getFields().get( index );
 
         RexNode ref = context.getRexNode( nodeName );
         if ( ref == null ) {

@@ -119,32 +119,36 @@ public class CrossModelFunctions {
 
     @SuppressWarnings("UnusedDeclaration")
     public static Enumerable<?> tableToNodes( Enumerable<?> enumerable, PolyString label, List<PolyString> keys ) {
-        return new AbstractEnumerable<PolyNode>() {
+        return new AbstractEnumerable<PolyNode[]>() {
             @Override
-            public Enumerator<PolyNode> enumerator() {
+            public Enumerator<PolyNode[]> enumerator() {
                 if ( keys.size() > 1 ) {
                     return Linq4j.transform( enumerable.enumerator(), r -> {
-                        Object[] row = (Object[]) r;
+                        PolyValue[] row = (PolyValue[]) r;
                         Map<PolyString, PolyValue> map = new HashMap<>();
                         for ( int i = 0; i < row.length; i++ ) {
-                            map.put( keys.get( i ), (PolyValue) row[i] );
+                            map.put( keys.get( i ), row[i] );
                         }
-                        return new PolyNode( new PolyDictionary( map ), PolyList.of( label ), PolyString.of( "n" ) );
+                        return new PolyNode[]{ new PolyNode( new PolyDictionary( map ), PolyList.of( label ), PolyString.of( "n" ) ) };
                     } );
                 }
-                return Linq4j.transform( enumerable.enumerator(), r -> new PolyNode( new PolyDictionary( Map.of( keys.get( 0 ), PolyString.of( r.toString() ) ) ), PolyList.of( label ), PolyString.of( "n" ) ) );
+                return Linq4j.transform(
+                        enumerable.enumerator(),
+                        r -> new PolyNode[]{
+                                new PolyNode(
+                                        new PolyDictionary( Map.of( keys.get( 0 ), PolyString.of( r.toString() ) ) ), PolyList.of( label ), PolyString.of( "n" ) ) } );
             }
         };
     }
 
 
     @SuppressWarnings("UnusedDeclaration")
-    public static Enumerable<?> collectionToNodes( Enumerable<?> enumerable, PolyString label ) {
-        return new AbstractEnumerable<PolyNode>() {
+    public static Enumerable<PolyNode[]> collectionToNodes( Enumerable<PolyValue[]> enumerable, PolyString label ) {
+        return new AbstractEnumerable<>() {
             @Override
-            public Enumerator<PolyNode> enumerator() {
+            public Enumerator<PolyNode[]> enumerator() {
                 return Linq4j.transform( enumerable.enumerator(), r -> {
-                    PolyDocument doc = PolyDocument.parse( r.toString() );
+                    PolyDocument doc = r[0].asDocument();
                     Map<PolyString, PolyValue> map = new HashMap<>();
                     for ( Entry<PolyString, PolyValue> entry : doc.entrySet() ) {
                         if ( entry.getKey().equals( PolyString.of( DocumentType.DOCUMENT_ID ) ) ) {
@@ -152,10 +156,12 @@ public class CrossModelFunctions {
                         }
                         map.put( entry.getKey(), entry.getValue() );
                     }
-                    return new PolyNode( doc.get( PolyString.of( DocumentType.DOCUMENT_ID ) ).asString(), new PolyDictionary( map ), PolyList.of( label ), PolyString.of( "n" ) );
+                    return new PolyNode[]{ new PolyNode( doc.get( PolyString.of( DocumentType.DOCUMENT_ID ) ).asString(), new PolyDictionary( map ), PolyList.of( label ), PolyString.of( "n" ) ) };
                 } );
             }
-        };
+        }
+
+                ;
     }
 
 

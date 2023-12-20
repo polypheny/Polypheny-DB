@@ -121,7 +121,7 @@ public final class LogicalWindow extends Window implements RelAlg {
         // Build a list of distinct groups, partitions and aggregate functions.
         final Multimap<WindowKey, RexOver> windowMap = LinkedListMultimap.create();
 
-        final int inputFieldCount = child.getRowType().getFieldCount();
+        final int inputFieldCount = child.getTupleType().getFieldCount();
 
         final Map<RexLiteral, RexIndexRef> constantPool = new HashMap<>();
         final List<RexLiteral> constants = new ArrayList<>();
@@ -186,7 +186,7 @@ public final class LogicalWindow extends Window implements RelAlg {
         // Figure out the type of the inputs to the output program.
         // They are: the inputs to this alg, followed by the outputs of each window.
         final List<Window.RexWinAggCall> flattenedAggCallList = new ArrayList<>();
-        final List<AlgDataTypeField> fieldList = new ArrayList<>( child.getRowType().getFields() );
+        final List<AlgDataTypeField> fieldList = new ArrayList<>( child.getTupleType().getFields() );
         final int offset = fieldList.size();
 
         // Use better field names for agg calls that are projected.

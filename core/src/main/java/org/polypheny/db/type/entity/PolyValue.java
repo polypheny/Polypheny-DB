@@ -236,6 +236,8 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case AUDIO:
             case VIDEO:
                 return o -> o.asBlob().asByteArray();
+            case DOCUMENT:
+                return o -> o.asDocument().toJson();
             default:
                 throw new NotImplementedException( "meta" );
         }

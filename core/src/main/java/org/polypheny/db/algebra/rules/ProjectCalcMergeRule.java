@@ -87,10 +87,10 @@ public class ProjectCalcMergeRule extends AlgOptRule {
         final AlgOptCluster cluster = project.getCluster();
         RexProgram program =
                 RexProgram.create(
-                        calc.getRowType(),
+                        calc.getTupleType(),
                         project.getProjects(),
                         null,
-                        project.getRowType(),
+                        project.getTupleType(),
                         cluster.getRexBuilder() );
         if ( RexOver.containsOver( program ) ) {
             LogicalCalc projectAsCalc = LogicalCalc.create( calc, program );
@@ -100,7 +100,7 @@ public class ProjectCalcMergeRule extends AlgOptRule {
 
         // Create a program containing the project node's expressions.
         final RexBuilder rexBuilder = cluster.getRexBuilder();
-        final RexProgramBuilder progBuilder = new RexProgramBuilder( calc.getRowType(), rexBuilder );
+        final RexProgramBuilder progBuilder = new RexProgramBuilder( calc.getTupleType(), rexBuilder );
         for ( Pair<RexNode, String> field : project.getNamedProjects() ) {
             progBuilder.addProject( field.left, field.right );
         }

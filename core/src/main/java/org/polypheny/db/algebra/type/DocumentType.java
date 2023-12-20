@@ -73,10 +73,10 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
     }
 
 
-    public static AlgDataType asRelational() {
+    public static AlgDataType ofRelational() {
         return new AlgRecordType( List.of(
-                new AlgDataTypeFieldImpl( -1L, DOCUMENT_ID, 0, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARBINARY, 2024 ) ),
-                new AlgDataTypeFieldImpl( -1L, DOCUMENT_DATA, 1, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARBINARY, 2024 ) )
+                new AlgDataTypeFieldImpl( -1L, DOCUMENT_ID, 0, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARBINARY, ID_SIZE ) ),
+                new AlgDataTypeFieldImpl( -1L, DOCUMENT_DATA, 1, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARBINARY, DATA_SIZE ) )
         ) );
     }
 
@@ -88,6 +88,13 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
 
     public static DocumentType ofIncludes( Map<String, ? extends RexNode> includes ) {
         return new DocumentType( Streams.mapWithIndex( includes.entrySet().stream(), ( e, i ) -> new AlgDataTypeFieldImpl( -1L, e.getKey() == null ? "" : e.getKey(), (int) i, e.getValue().getType() ) ).collect( Collectors.toList() ) );
+    }
+
+
+    public static AlgDataType ofCrossRelational() {
+        return new AlgRecordType( List.of(
+                new AlgDataTypeFieldImpl( -1L, "d", 0, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.DOCUMENT ) )
+        ) );
     }
 
 
@@ -107,6 +114,24 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
     @Override
     public boolean isStruct() {
         return true;
+    }
+
+
+    @Override
+    public AlgDataType asRelational() {
+        return ofRelational();
+    }
+
+
+    @Override
+    public AlgDataType asDocument() {
+        return this;
+    }
+
+
+    @Override
+    public AlgDataType asGraph() {
+        throw new UnsupportedOperationException();
     }
 
 

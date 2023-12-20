@@ -40,7 +40,7 @@ class EnumerableWindowRule extends ConverterRule {
         final AlgTraitSet traitSet = winAgg.getTraitSet().replace( EnumerableConvention.INSTANCE );
         final AlgNode child = winAgg.getInput();
         final AlgNode convertedChild = convert( child, child.getTraitSet().replace( EnumerableConvention.INSTANCE ) );
-        return new EnumerableWindow( alg.getCluster(), traitSet, convertedChild, winAgg.getConstants(), winAgg.getRowType(), winAgg.groups );
+        return new EnumerableWindow( alg.getCluster(), traitSet, convertedChild, winAgg.getConstants(), winAgg.getTupleType(), winAgg.groups );
     }
 
 }

@@ -56,7 +56,7 @@ public class NeoLpgFilter extends LpgFilter implements NeoGraphAlg {
     @Override
     public void implement( NeoGraphImplementor implementor ) {
         implementor.visitChild( 0, getInput() );
-        Translator translator = new Translator( getRowType(), implementor.getLast().getRowType(), new HashMap<>(), null, implementor.getGraph().mappingLabel, false );
+        Translator translator = new Translator( getTupleType(), implementor.getLast().getTupleType(), new HashMap<>(), null, implementor.getGraph().mappingLabel, false );
         implementor.add( where_( list_( List.of( literal_( getCondition().accept( translator ) ) ) ) ) );
     }
 

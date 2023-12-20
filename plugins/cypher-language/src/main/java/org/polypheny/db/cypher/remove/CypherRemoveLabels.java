@@ -49,11 +49,11 @@ public class CypherRemoveLabels extends CypherRemoveItem {
     @Override
     public void removeItem( CypherContext context ) {
         AlgNode node = context.peek();
-        int index = node.getRowType().getFieldNames().indexOf( variable.getName() );
+        int index = node.getTupleType().getFieldNames().indexOf( variable.getName() );
         if ( index < 0 ) {
             throw new GenericRuntimeException( String.format( "Unknown variable with name %s", variable ) );
         }
-        AlgDataTypeField field = node.getRowType().getFields().get( index );
+        AlgDataTypeField field = node.getTupleType().getFields().get( index );
 
         if ( field.getType().getPolyType() == PolyType.EDGE && labels.size() != 1 ) {
             throw new GenericRuntimeException( "Edges require exactly one label" );

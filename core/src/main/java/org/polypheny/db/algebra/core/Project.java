@@ -147,7 +147,7 @@ public abstract class Project extends SingleAlg {
      * @return List of (expression, name) pairs
      */
     public final List<Pair<RexNode, String>> getNamedProjects() {
-        return Pair.zip( getProjects(), getRowType().getFieldNames() );
+        return Pair.zip( getProjects(), getTupleType().getFieldNames() );
     }
 
 
@@ -159,10 +159,10 @@ public abstract class Project extends SingleAlg {
         if ( !super.isValid( litmus, context ) ) {
             return litmus.fail( null );
         }
-        if ( !RexUtil.compatibleTypes( exps, getRowType(), litmus ) ) {
+        if ( !RexUtil.compatibleTypes( exps, getTupleType(), litmus ) ) {
             return litmus.fail( "incompatible types" );
         }
-        RexChecker checker = new RexChecker( getInput().getRowType(), context, litmus );
+        RexChecker checker = new RexChecker( getInput().getTupleType(), context, litmus );
         for ( RexNode exp : exps ) {
             exp.accept( checker );
             if ( checker.getFailureCount() > 0 ) {
@@ -226,7 +226,7 @@ public abstract class Project extends SingleAlg {
      * @return Mapping, or null if this projection is not a mapping
      */
     public Mappings.TargetMapping getMapping() {
-        return getMapping( getInput().getRowType().getFieldCount(), exps );
+        return getMapping( getInput().getTupleType().getFieldCount(), exps );
     }
 
 
@@ -283,7 +283,7 @@ public abstract class Project extends SingleAlg {
      * @return Permutation, if this projection is merely a permutation of its input fields; otherwise null
      */
     public Permutation getPermutation() {
-        return getPermutation( getInput().getRowType().getFieldCount(), exps );
+        return getPermutation( getInput().getTupleType().getFieldCount(), exps );
     }
 
 

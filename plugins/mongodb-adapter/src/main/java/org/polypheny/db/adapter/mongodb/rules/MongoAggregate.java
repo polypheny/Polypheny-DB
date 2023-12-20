@@ -77,8 +77,8 @@ public class MongoAggregate extends Aggregate implements MongoAlg {
     public void implement( Implementor implementor ) {
         implementor.visitChild( 0, getInput() );
         List<String> list = new ArrayList<>();
-        final List<String> inNames = MongoRules.mongoFieldNames( getInput().getRowType() );
-        final List<String> outNames = MongoRules.mongoFieldNames( getRowType() );
+        final List<String> inNames = MongoRules.mongoFieldNames( getInput().getTupleType() );
+        final List<String> outNames = MongoRules.mongoFieldNames( getTupleType() );
         int i = 0;
         if ( groupSet.cardinality() == 1 ) {
             final String inName = inNames.get( groupSet.nth( 0 ) );

@@ -104,12 +104,12 @@ public class JoinToCorrelateRule extends AlgOptRule {
         final LogicalJoin join = call.alg( 0 );
         AlgNode right = join.getRight();
         final AlgNode left = join.getLeft();
-        final int leftFieldCount = left.getRowType().getFieldCount();
+        final int leftFieldCount = left.getTupleType().getFieldCount();
         final AlgOptCluster cluster = join.getCluster();
         final RexBuilder rexBuilder = cluster.getRexBuilder();
         final AlgBuilder algBuilder = call.builder();
         final CorrelationId correlationId = cluster.createCorrel();
-        final RexNode corrVar = rexBuilder.makeCorrel( left.getRowType(), correlationId );
+        final RexNode corrVar = rexBuilder.makeCorrel( left.getTupleType(), correlationId );
         final Builder requiredColumns = ImmutableBitSet.builder();
 
         // Replace all references of left input with FieldAccess(corrVar, field)

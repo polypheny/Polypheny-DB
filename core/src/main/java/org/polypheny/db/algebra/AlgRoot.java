@@ -135,7 +135,7 @@ public class AlgRoot {
      * Creates a simple AlgRoot.
      */
     public static AlgRoot of( AlgNode alg, Kind kind ) {
-        return of( alg, alg.getRowType(), kind );
+        return of( alg, alg.getTupleType(), kind );
     }
 
 
@@ -216,7 +216,7 @@ public class AlgRoot {
 
 
     public boolean isNameTrivial() {
-        final AlgDataType inputRowType = alg.getRowType();
+        final AlgDataType inputRowType = alg.getTupleType();
         return Pair.right( fields ).equals( inputRowType.getFieldNames() );
     }
 
@@ -229,7 +229,7 @@ public class AlgRoot {
         if ( getModel() != ModelTrait.RELATIONAL ) {
             return true;
         }
-        final AlgDataType inputRowType = alg.getRowType();
+        final AlgDataType inputRowType = alg.getTupleType();
         return Mappings.isIdentity( Pair.left( fields ), inputRowType.getFieldCount() );
     }
 

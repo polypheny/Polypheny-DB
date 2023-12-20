@@ -98,7 +98,7 @@ public class AggregateExtractProjectRule extends AlgOptRule {
         }
         final AlgBuilder algBuilder = call.builder().push( input );
         final List<RexNode> projects = new ArrayList<>();
-        final Mapping mapping = Mappings.create( MappingType.INVERSE_SURJECTION, aggregate.getInput().getRowType().getFieldCount(), inputFieldsUsed.cardinality() );
+        final Mapping mapping = Mappings.create( MappingType.INVERSE_SURJECTION, aggregate.getInput().getTupleType().getFieldCount(), inputFieldsUsed.cardinality() );
         int j = 0;
         for ( int i : inputFieldsUsed.build() ) {
             projects.add( algBuilder.field( i ) );

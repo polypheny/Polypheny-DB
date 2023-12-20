@@ -127,10 +127,12 @@ public interface AlgNode extends AlgOptNode, Cloneable {
      * Returns the type of the rows returned by this relational expression.
      */
     @Override
-    AlgDataType getRowType();
+    AlgDataType getTupleType();
+
+
 
     /**
-     * Returns the type of the rows expected for an input. Defaults to {@link #getRowType}.
+     * Returns the type of the rows expected for an input. Defaults to {@link #getTupleType}.
      *
      * @param ordinalInParent input's 0-based ordinal with respect to this parent rel
      * @return expected row type
@@ -369,6 +371,10 @@ public interface AlgNode extends AlgOptNode, Cloneable {
 
     default void replaceCluster( AlgOptCluster cluster ) {
         // empty on purpose
+    }
+
+    default boolean isCrossModel() {
+        return getInputs().stream().anyMatch( AlgNode::isCrossModel );
     }
 
     /**

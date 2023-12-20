@@ -29,6 +29,9 @@ import org.polypheny.db.util.Collation;
 public class GraphType implements Serializable, AlgDataType, AlgDataTypeFamily {
 
     public static final String GRAPH_ID = "_id";
+    public static final String GRAPH_PROPERTIES = "properties";
+    public static final String GRAPH_LABELS = "labels";
+
     public static final int ID_SIZE = 36;
     public static final int LABEL_SIZE = 255;
     public static final int KEY_SIZE = 2024;
@@ -50,6 +53,15 @@ public class GraphType implements Serializable, AlgDataType, AlgDataTypeFamily {
     }
 
 
+    public static AlgDataType ofRelational() {
+        return new AlgRecordType( List.of(
+                new AlgDataTypeFieldImpl( -1L, GRAPH_ID, 0, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARBINARY, 2024 ) ),
+                new AlgDataTypeFieldImpl( -1L, GRAPH_PROPERTIES, 1, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARCHAR, 2024 ) ),
+                new AlgDataTypeFieldImpl( -1L, GRAPH_LABELS, 2, AlgDataTypeFactory.DEFAULT.createArrayType( AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARCHAR, 2024 ), -1 ) )
+        ) );
+    }
+
+
     private String computeDigest() {
         assert fixedFields != null;
         return getClass().getSimpleName() +
@@ -60,6 +72,24 @@ public class GraphType implements Serializable, AlgDataType, AlgDataTypeFamily {
     @Override
     public boolean isStruct() {
         return true;
+    }
+
+
+    @Override
+    public AlgDataType asRelational() {
+        return ofRelational();
+    }
+
+
+    @Override
+    public AlgDataType asDocument() {
+        throw new UnsupportedOperationException();
+    }
+
+
+    @Override
+    public AlgDataType asGraph() {
+        return this;
     }
 
 

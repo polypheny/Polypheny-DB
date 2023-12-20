@@ -157,10 +157,10 @@ public abstract class ProjectToWindowRule extends AlgOptRule {
             final AlgNode input = project.getInput();
             final RexProgram program =
                     RexProgram.create(
-                            input.getRowType(),
+                            input.getTupleType(),
                             project.getProjects(),
                             null,
-                            project.getRowType(),
+                            project.getTupleType(),
                             project.getCluster().getRexBuilder() );
             // temporary LogicalCalc, never registered
             final LogicalCalc calc = LogicalCalc.create( input, program );
@@ -179,7 +179,7 @@ public abstract class ProjectToWindowRule extends AlgOptRule {
                     if ( !program.projectsOnlyIdentity() ) {
                         algBuilder.project(
                                 program.getProjectList().stream().map( program::expandLocalRef ).collect( Collectors.toList() ),
-                                calc.getRowType().getFieldNames() );
+                                calc.getTupleType().getFieldNames() );
                     }
                     return algBuilder.build();
                 }

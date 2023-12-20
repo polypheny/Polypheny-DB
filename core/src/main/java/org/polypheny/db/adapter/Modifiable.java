@@ -79,7 +79,7 @@ public interface Modifiable extends Scannable {
 
         List<AlgNode> inputs = new ArrayList<>();
         List<PolyType> sequence = new ArrayList<>();
-        for ( AlgDataTypeField field : project.getRowType().getFields() ) {
+        for ( AlgDataTypeField field : project.getTupleType().getFields() ) {
             sequence.add( field.getType().getPolyType() );
             if ( field.getType().getPolyType() == PolyType.EDGE ) {
                 inputs.addAll( attachPreparedGraphEdgeModifyDelete( modifiable, alg.getCluster(), edgesTable, edgePropertiesTable, builder ) );
@@ -102,7 +102,7 @@ public interface Modifiable extends Scannable {
 
         List<AlgNode> inputs = new ArrayList<>();
         List<PolyType> sequence = new ArrayList<>();
-        for ( AlgDataTypeField field : project.getRowType().getFields() ) {
+        for ( AlgDataTypeField field : project.getTupleType().getFields() ) {
             sequence.add( field.getType().getPolyType() );
             if ( field.getType().getPolyType() == PolyType.EDGE ) {
                 inputs.addAll( attachPreparedGraphEdgeModifyDelete( modifiable, alg.getCluster(), edgesTable, edgePropertiesTable, algBuilder ) );
@@ -151,7 +151,7 @@ public interface Modifiable extends Scannable {
 
         List<AlgNode> inputs = new ArrayList<>();
         List<PolyType> sequence = new ArrayList<>();
-        for ( AlgDataTypeField field : provider.getRowType().getFields() ) {
+        for ( AlgDataTypeField field : provider.getTupleType().getFields() ) {
             sequence.add( field.getType().getPolyType() );
             if ( field.getType().getPolyType() == PolyType.EDGE ) {
                 inputs.addAll( attachPreparedGraphEdgeModifyInsert( modifiable, alg.getCluster(), edgesTable, edgePropertiesTable, algBuilder ) );
@@ -326,17 +326,17 @@ public interface Modifiable extends Scannable {
 
         if ( !modify.getInput().getTraitSet().contains( ModelTrait.RELATIONAL ) ) {
             // push a transform under the modify for collector(right side of Streamer)
-            builder.transform( ModelTrait.RELATIONAL, DocumentType.asRelational(), false, null );
+            builder.transform( ModelTrait.RELATIONAL, DocumentType.ofRelational(), false, null );
         }
 
         if ( updates.left == null && modify.operation != Operation.UPDATE && modify.operation != Operation.DELETE ) {
             // Values require additional effort but less than updates
-            builder.transform( ModelTrait.RELATIONAL, DocumentType.asRelational(), false, null );
+            builder.transform( ModelTrait.RELATIONAL, DocumentType.ofRelational(), false, null );
             AlgNode provider = builder.build();
             // right side prepared
             builder.push( LogicalValues.createOneRow( modify.getCluster() ) );
 
-            builder.project( DocumentType.asRelational().getFields().stream().map( f -> new RexDynamicParam( f.getType(), f.getIndex() ) ).collect( Collectors.toList() ), DocumentType.asRelational().getFieldNames() );
+            builder.project( DocumentType.ofRelational().getFields().stream().map( f -> new RexDynamicParam( f.getType(), f.getIndex() ) ).collect( Collectors.toList() ), DocumentType.ofRelational().getFieldNames() );
 
             AlgNode collector = oTable.orElseThrow().unwrap( ModifiableTable.class ).orElseThrow().toModificationTable(
                     modify.getCluster(),
@@ -368,13 +368,13 @@ public interface Modifiable extends Scannable {
             builder.push( LogicalStreamer.create( provider, collector ) );
         }
 
-        return builder.transform( ModelTrait.DOCUMENT, modify.getRowType(), false, null ).build();
+        return builder.transform( ModelTrait.DOCUMENT, modify.getTupleType(), false, null ).build();
     }
 
     static Pair<List<String>, List<RexNode>> replaceUpdates( Pair<List<String>, List<RexNode>> updates, AlgBuilder builder ) {
         builder.documentProject( Pair.zip( updates.left, updates.right ).stream().collect( Collectors.toMap( e -> null, e -> e.right ) ), List.of() );
 
-        return Pair.of( updates.left, updates.right.stream().map( u -> new RexDynamicParam( DocumentType.asRelational().getFields().get( 1 ).getType(), 1 ) ).collect( Collectors.toList() ) );
+        return Pair.of( updates.left, updates.right.stream().map( u -> new RexDynamicParam( DocumentType.ofRelational().getFields().get( 1 ).getType(), 1 ) ).collect( Collectors.toList() ) );
     }
 
     static Pair<List<String>, List<RexNode>> getRelationalDocumentModify( DocumentModify<?> modify ) {
@@ -382,7 +382,7 @@ public interface Modifiable extends Scannable {
             return Pair.of( null, null );
         }
 
-        return DocumentUtil.transformUpdateRelational( modify.updates, modify.removes, modify.renames, DocumentType.asRelational(), modify.getInput() );
+        return DocumentUtil.transformUpdateRelational( modify.updates, modify.removes, modify.renames, DocumentType.ofRelational(), modify.getInput() );
     }
 
     default AlgNode getGraphModify( long allocId, LpgModify<?> modify, AlgBuilder builder ) {

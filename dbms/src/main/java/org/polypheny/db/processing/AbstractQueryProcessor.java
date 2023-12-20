@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -477,7 +478,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 continue;
             }
 
-            final AlgDataType rowType = plan.parameterizedRoot().alg.getRowType();
+            final AlgDataType rowType = plan.parameterizedRoot().alg.getTupleType();
             final List<Pair<Integer, String>> fields = Pair.zip( PolyTypeUtil.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
             AlgRoot optimalRoot = new AlgRoot( plan.optimalNode(), rowType, plan.parameterizedRoot().kind, fields, algCollation( plan.parameterizedRoot().alg ) );
 
@@ -602,13 +603,13 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                                     final List<PolyValue> targetRowValues = new ArrayList<>();
                                     for ( final String column : index.getColumns() ) {
                                         final RexLiteral fieldValue = row.get(
-                                                lvalues.getRowType().getField( column, false, false ).getIndex()
+                                                lvalues.getTupleType().getField( column, false, false ).getIndex()
                                         );
                                         rowValues.add( fieldValue.value );
                                     }
                                     for ( final String column : index.getTargetColumns() ) {
                                         final RexLiteral fieldValue = row.get(
-                                                lvalues.getRowType().getField( column, false, false ).getIndex()
+                                                lvalues.getTupleType().getField( column, false, false ).getIndex()
                                         );
                                         targetRowValues.add( fieldValue.value );
                                     }
@@ -616,7 +617,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                                 }
                                 index.insertAll( statement.getTransaction().getXid(), tuplesToInsert );
                             }
-                        } else if ( ltm.isInsert() && ltm.getInput() instanceof LogicalProject && ((LogicalProject) ltm.getInput()).getInput().getRowType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
+                        } else if ( ltm.isInsert() && ltm.getInput() instanceof LogicalProject && ((LogicalProject) ltm.getInput()).getInput().getTupleType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
                             final LogicalProject lproject = (LogicalProject) ltm.getInput().accept( new DeepCopyShuttle() );
                             for ( final Index index : indices ) {
                                 final Set<Pair<List<PolyValue>, List<PolyValue>>> tuplesToInsert = new HashSet<>( lproject.getProjects().size() );
@@ -624,7 +625,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                                 final List<PolyValue> targetRowValues = new ArrayList<>();
                                 for ( final String column : index.getColumns() ) {
                                     final RexNode fieldValue = lproject.getProjects().get(
-                                            lproject.getRowType().getField( column, false, false ).getIndex()
+                                            lproject.getTupleType().getField( column, false, false ).getIndex()
                                     );
                                     if ( fieldValue instanceof RexLiteral ) {
                                         rowValues.add( ((RexLiteral) fieldValue).value );
@@ -639,7 +640,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                                 }
                                 for ( final String column : index.getTargetColumns() ) {
                                     final RexNode fieldValue = lproject.getProjects().get(
-                                            lproject.getRowType().getField( column, false, false ).getIndex()
+                                            lproject.getTupleType().getField( column, false, false ).getIndex()
                                     );
                                     if ( fieldValue instanceof RexLiteral ) {
                                         targetRowValues.add( ((RexLiteral) fieldValue).value );
@@ -679,7 +680,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                                         }
                                     }
                                 } else if ( ltm.isInsert() ) {
-                                    int j = originalProject.getRowType().getField( np.right, true, false ).getIndex();
+                                    int j = originalProject.getTupleType().getField( np.right, true, false ).getIndex();
                                     if ( j >= 0 ) {
                                         RexNode newValue = rexBuilder.makeInputRef( originalProject, j );
                                         for ( int k = 0; k < originalProject.getNamedProjects().size(); ++k ) {
@@ -716,7 +717,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                             for ( final List<PolyValue> row : rows ) {
                                 final List<RexLiteral> record = new ArrayList<>();
                                 for ( int i = 0; i < row.size(); ++i ) {
-                                    AlgDataType fieldType = originalProject.getRowType().getFields().get( i ).getType();
+                                    AlgDataType fieldType = originalProject.getTupleType().getFields().get( i ).getType();
                                     Pair<PolyValue, PolyType> converted = RexLiteral.convertType( row.get( i ), fieldType );
                                     record.add( new RexLiteral(
                                             converted.left,
@@ -727,7 +728,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                                 records.add( ImmutableList.copyOf( record ) );
                             }
                             final ImmutableList<ImmutableList<RexLiteral>> values = ImmutableList.copyOf( records );
-                            final AlgNode newValues = LogicalValues.create( originalProject.getCluster(), originalProject.getRowType(), values );
+                            final AlgNode newValues = LogicalValues.create( originalProject.getCluster(), originalProject.getTupleType(), values );
                             final AlgNode newProject = LogicalProject.identity( newValues );
 //                            List<RexNode> sourceExpr = ltm.getSourceExpressionList();
 //                            if ( ltm.isUpdate() || ltm.isMerge() ) {
@@ -777,7 +778,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                                     if ( ltm.isUpdate() && index.getColumns().stream().noneMatch( ltm.getUpdateColumns()::contains ) ) {
                                         continue;
                                     }
-                                    if ( ltm.isInsert() && index.getColumns().stream().noneMatch( ltm.getInput().getRowType().getFieldNames()::contains ) ) {
+                                    if ( ltm.isInsert() && index.getColumns().stream().noneMatch( ltm.getInput().getTupleType().getFieldNames()::contains ) ) {
                                         continue;
                                     }
                                     final Set<Pair<List<PolyValue>, List<PolyValue>>> rowsToReinsert = new HashSet<>( rows.size() );
@@ -873,7 +874,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                             return super.visit( project );
                         }
                         final RexIndexRef rir = (RexIndexRef) expr;
-                        final AlgDataTypeField field = scan.getRowType().getFields().get( rir.getIndex() );
+                        final AlgDataTypeField field = scan.getTupleType().getFields().get( rir.getIndex() );
                         final String column = field.getName();
                         columns.add( column );
                         ctypes.add( field.getType() );
@@ -1131,7 +1132,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 for ( int field : Pair.left( root.fields ) ) {
                     projects.add( rexBuilder.makeInputRef( enumerable, field ) );
                 }
-                RexProgram program = RexProgram.create( enumerable.getRowType(), projects, null, root.validatedRowType, rexBuilder );
+                RexProgram program = RexProgram.create( enumerable.getTupleType(), projects, null, root.validatedRowType, rexBuilder );
                 enumerable = EnumerableCalc.create( enumerable, program );
             }
 
@@ -1150,7 +1151,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             statement.getDataContext().addAll( internalParameters );
         }
 
-        AlgDataType resultType = root.alg.getRowType();
+        AlgDataType resultType = root.alg.getTupleType();
         boolean isDml = root.kind.belongsTo( Kind.DML );
 
         return new PreparedResultImpl<>(
@@ -1283,11 +1284,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 long scanId = entity.id;
 
                 // Get placements of this table
-                LogicalTable table = entity.unwrap( LogicalTable.class ).orElseThrow();
+                Optional<LogicalTable> optionalTable = entity.unwrap( LogicalTable.class );
 
-                if ( table == null ) {
+                if ( optionalTable.isEmpty() ) {
                     return accessedPartitions;
                 }
+                LogicalTable table = optionalTable.get();
 
                 PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( table.id ).orElseThrow();
                 fallback = true;

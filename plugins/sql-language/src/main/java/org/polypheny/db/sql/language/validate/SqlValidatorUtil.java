@@ -603,7 +603,10 @@ public class SqlValidatorUtil {
             namespace = Catalog.defaultNamespaceName;
         }
 
-        return validator.snapshot.getNamespace( namespace ).orElseThrow().dataModel != DataModel.RELATIONAL;
+        if ( validator.snapshot.getNamespace( namespace ).map( n -> n.dataModel != DataModel.RELATIONAL ).orElse( false ) ) {
+            return true;
+        }
+        return validator.snapshot.getNamespace( id.names.get( 0 ) ).map( n -> n.dataModel != DataModel.RELATIONAL ).orElse( false );
     }
 
 

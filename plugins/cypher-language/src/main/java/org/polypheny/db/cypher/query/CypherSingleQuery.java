@@ -27,6 +27,7 @@ import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.type.entity.PolyString;
 
 @Getter
 public class CypherSingleQuery extends CypherQuery implements ExecutableStatement {
@@ -72,6 +73,12 @@ public class CypherSingleQuery extends CypherQuery implements ExecutableStatemen
             return false;
         }
         throw new GenericRuntimeException( "The mixed query is not supported" );
+    }
+
+
+    @Override
+    public List<PolyString> getUnderlyingLabels() {
+        return clauses.stream().map( CypherNode::getUnderlyingLabels ).flatMap( List::stream ).collect( java.util.stream.Collectors.toList() );
     }
 
 

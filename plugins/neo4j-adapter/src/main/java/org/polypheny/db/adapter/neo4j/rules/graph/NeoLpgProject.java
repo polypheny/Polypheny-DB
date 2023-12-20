@@ -60,7 +60,7 @@ public class NeoLpgProject extends LpgProject implements NeoGraphAlg {
             int i = 0;
             List<NeoStatement> statements = new ArrayList<>();
             for ( RexNode project : getProjects() ) {
-                Translator translator = new Translator( getRowType(), implementor.getLast().getRowType(), new HashMap<>(), null, implementor.getGraph().mappingLabel, false );
+                Translator translator = new Translator( getTupleType(), implementor.getLast().getTupleType(), new HashMap<>(), null, implementor.getGraph().mappingLabel, false );
                 String name = project.accept( translator );
                 if ( names.get( i ) != null && !name.equals( names.get( i ).value ) && !names.get( i ).value.contains( "." ) ) {
                     statements.add( as_( literal_( project.accept( translator ) ), literal_( names.get( i ) ) ) );
