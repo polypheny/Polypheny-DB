@@ -18,10 +18,10 @@ package org.polypheny.db.mql;
 
 import java.util.Arrays;
 import java.util.List;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.MongoConnection;
 import org.polypheny.db.webui.models.results.DocResult;
@@ -36,20 +36,20 @@ public class MqlTestTemplate {
     public static String database = "test";
 
 
-    @BeforeClass
+    @BeforeAll
     public static void start() {
         TestHelper.getInstance();
         initDatabase();
     }
 
 
-    @Before
+    @BeforeEach
     public void initCollection() {
         initCollection( database );
     }
 
 
-    @After
+    @AfterEach
     public void dropCollection() {
         dropCollection( database );
     }
@@ -65,7 +65,7 @@ public class MqlTestTemplate {
     }
 
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() {
         dropDatabase();
     }
@@ -76,7 +76,7 @@ public class MqlTestTemplate {
     }
 
 
-    @After
+    @AfterEach
     public void cleanDocuments() {
         deleteMany( "{}" );
     }

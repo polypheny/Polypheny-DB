@@ -204,7 +204,7 @@ public class FileRules {
                     traitSet,
                     convert( project.getInput(), project.getInput().getTraitSet().replace( convention ) ),
                     project.getProjects(),
-                    project.getRowType()
+                    project.getTupleType()
             );
         }
 
@@ -239,7 +239,7 @@ public class FileRules {
             Values values = (Values) alg;
             return new FileValues(
                     values.getCluster(),
-                    values.getRowType(),
+                    values.getTupleType(),
                     values.getTuples(),
                     values.getTraitSet().replace( convention ) );
         }

@@ -52,7 +52,7 @@ import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolySymbol;
 import org.polypheny.db.type.entity.PolyTime;
-import org.polypheny.db.type.entity.PolyTimeStamp;
+import org.polypheny.db.type.entity.PolyTimestamp;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.util.BitString;
@@ -183,7 +183,7 @@ public class SqlLiteral extends SqlNode implements Literal {
             case TIME:
                 return value instanceof PolyTime;
             case TIMESTAMP:
-                return value instanceof PolyTimeStamp;
+                return value instanceof PolyTimestamp;
             case INTERVAL_YEAR:
             case INTERVAL_YEAR_MONTH:
             case INTERVAL_MONTH:
@@ -320,6 +320,11 @@ public class SqlLiteral extends SqlNode implements Literal {
                     return clazz.cast( BigDecimal.valueOf( getValueAs( Long.class ) ) );
                 } else if ( clazz == TimeUnitRange.class ) {
                     return clazz.cast( valTime.getIntervalQualifier().timeUnitRange );
+                }
+                break;
+            case SYMBOL:
+                if ( clazz == Enum.class ) {
+                    return clazz.cast( value.asSymbol().value );
                 }
                 break;
         }
@@ -761,7 +766,7 @@ public class SqlLiteral extends SqlNode implements Literal {
     }
 
 
-    public static SqlTimestampLiteral createTimestamp( PolyTimeStamp ts, int precision, ParserPos pos ) {
+    public static SqlTimestampLiteral createTimestamp( PolyTimestamp ts, int precision, ParserPos pos ) {
         return new SqlTimestampLiteral( ts, precision, false, pos );
     }
 

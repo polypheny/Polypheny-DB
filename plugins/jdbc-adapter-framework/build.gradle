@@ -11,7 +11,7 @@ dependencies {
     testImplementation project(path: ":plugins:sql-language", configuration: "tests")
     testImplementation project(path: ":plugins:sql-language")
 
-    testImplementation group: "junit", name: "junit", version: junit_version
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: junit_jupiter_version
 }
 
 

@@ -103,7 +103,7 @@ public abstract class SingleAlg extends AbstractAlgNode {
 
     @Override
     protected AlgDataType deriveRowType() {
-        return input.getRowType();
+        return input.getTupleType();
     }
 
 }

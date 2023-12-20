@@ -98,7 +98,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
         final Result result = implementor.visitChild( this, 0, child, pref );
         Expression childExp = builder.append( "child", result.block );
 
-        final PhysType physType = PhysTypeImpl.of( typeFactory, getRowType(), pref.preferCustom() );
+        final PhysType physType = PhysTypeImpl.of( typeFactory, getTupleType(), pref.preferCustom() );
 
         // final Enumerable<Employee> child = <<child adapter>>;
         // Function1<Employee, Integer> keySelector =
@@ -334,7 +334,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
                                             Expressions.call( Expressions.call( lambdaFactory, BuiltInMethod.AGG_LAMBDA_FACTORY_ACC_INITIALIZER.method ), BuiltInMethod.FUNCTION0_APPLY.method ),
                                             Expressions.call( lambdaFactory, BuiltInMethod.AGG_LAMBDA_FACTORY_ACC_ADDER.method ),
                                             Expressions.call( lambdaFactory, BuiltInMethod.AGG_LAMBDA_FACTORY_ACC_SINGLE_GROUP_RESULT_SELECTOR.method, resultSelector ) ) ) ) );
-        } else if ( aggCalls.isEmpty() && groupSet.equals( ImmutableBitSet.range( child.getRowType().getFieldCount() ) ) ) {
+        } else if ( aggCalls.isEmpty() && groupSet.equals( ImmutableBitSet.range( child.getTupleType().getFieldCount() ) ) ) {
             builder.add(
                     Expressions.return_(
                             null,
@@ -460,7 +460,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
 
         @Override
         public List<? extends AlgDataType> parameterAlgTypes() {
-            return EnumUtils.fieldRowTypes( getInput().getRowType(), null, agg.call.getArgList() );
+            return EnumUtils.fieldRowTypes( getInput().getTupleType(), null, agg.call.getArgList() );
         }
 
 
@@ -484,7 +484,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
 
         @Override
         public List<? extends AlgDataType> keyAlgTypes() {
-            return EnumUtils.fieldRowTypes( getInput().getRowType(), null, groupSet.asList() );
+            return EnumUtils.fieldRowTypes( getInput().getTupleType(), null, groupSet.asList() );
         }
 
 

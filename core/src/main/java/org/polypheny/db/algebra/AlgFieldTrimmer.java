@@ -142,7 +142,7 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
      * @return Trimmed relational expression
      */
     public AlgNode trim( AlgNode root ) {
-        final int fieldCount = root.getRowType().getFieldCount();
+        final int fieldCount = root.getTupleType().getFieldCount();
         final ImmutableBitSet fieldsUsed = ImmutableBitSet.range( fieldCount );
         final Set<AlgDataTypeField> extraFields = Collections.emptySet();
         final TrimResult trimResult = dispatchTrimFields( root, fieldsUsed, extraFields );
@@ -217,7 +217,7 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
         if ( trimResult.right.isIdentity() ) {
             return trimResult;
         }
-        final AlgDataType rowType = input.getRowType();
+        final AlgDataType rowType = input.getTupleType();
         List<AlgDataTypeField> fieldList = rowType.getFields();
         final List<RexNode> exprList = new ArrayList<>();
         final List<String> nameList = rowType.getFieldNames();
@@ -247,9 +247,9 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
         final TrimResult trimResult = trimFieldsDispatcher.invoke( alg, fieldsUsed, extraFields );
         final AlgNode newRel = trimResult.left;
         final Mapping mapping = trimResult.right;
-        final int fieldCount = alg.getRowType().getFieldCount();
+        final int fieldCount = alg.getTupleType().getFieldCount();
         assert mapping.getSourceCount() == fieldCount : "source: " + mapping.getSourceCount() + " != " + fieldCount;
-        final int newFieldCount = newRel.getRowType().getFieldCount();
+        final int newFieldCount = newRel.getTupleType().getFieldCount();
         assert mapping.getTargetCount() + extraFields.size() == newFieldCount || Bug.TODO_FIXED
                 : "target: " + mapping.getTargetCount() + " + " + extraFields.size() + " != " + newFieldCount;
         if ( Bug.TODO_FIXED ) {
@@ -304,7 +304,7 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
     public TrimResult trimFields( AlgNode alg, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
         // We don't know how to trim this kind of relational expression, so give it back intact.
         Util.discard( fieldsUsed );
-        return result( alg, Mappings.createIdentity( alg.getRowType().getFieldCount() ) );
+        return result( alg, Mappings.createIdentity( alg.getTupleType().getFieldCount() ) );
     }
 
 
@@ -312,7 +312,7 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
      * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link LogicalProject}.
      */
     public TrimResult trimFields( Project project, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
-        final AlgDataType rowType = project.getRowType();
+        final AlgDataType rowType = project.getTupleType();
         final int fieldCount = rowType.getFieldCount();
         final AlgNode input = project.getInput();
 
@@ -375,7 +375,7 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
     protected TrimResult dummyProject( int fieldCount, AlgNode input ) {
         final AlgOptCluster cluster = input.getCluster();
         final Mapping mapping = Mappings.create( MappingType.INVERSE_SURJECTION, fieldCount, 1 );
-        if ( input.getRowType().getFieldCount() == 1 ) {
+        if ( input.getTupleType().getFieldCount() == 1 ) {
             // Input already has one field (and may in fact be a dummy project we created for the child). We can't do better.
             return result( input, mapping );
         }
@@ -390,7 +390,7 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
      * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link LogicalFilter}.
      */
     public TrimResult trimFields( Filter filter, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
-        final AlgDataType rowType = filter.getRowType();
+        final AlgDataType rowType = filter.getTupleType();
         final int fieldCount = rowType.getFieldCount();
         final RexNode conditionExpr = filter.getCondition();
         final AlgNode input = filter.getInput();
@@ -428,7 +428,7 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
      * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link Sort}.
      */
     public TrimResult trimFields( Sort sort, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
-        final AlgDataType rowType = sort.getRowType();
+        final AlgDataType rowType = sort.getTupleType();
         final int fieldCount = rowType.getFieldCount();
         final AlgCollation collation = sort.getCollation();
         final AlgNode input = sort.getInput();
@@ -476,7 +476,7 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
      * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link LogicalJoin}.
      */
     public TrimResult trimFields( Join join, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
-        final int fieldCount = join.getSystemFieldList().size() + join.getLeft().getRowType().getFieldCount() + join.getRight().getRowType().getFieldCount();
+        final int fieldCount = join.getSystemFieldList().size() + join.getLeft().getTupleType().getFieldCount() + join.getRight().getTupleType().getFieldCount();
         final RexNode conditionExpr = join.getCondition();
         final int systemFieldCount = join.getSystemFieldList().size();
 
@@ -508,7 +508,7 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
         final List<Mapping> inputMappings = new ArrayList<>();
         final List<Integer> inputExtraFieldCounts = new ArrayList<>();
         for ( AlgNode input : join.getInputs() ) {
-            final AlgDataType inputRowType = input.getRowType();
+            final AlgDataType inputRowType = input.getTupleType();
             final int inputFieldCount = inputRowType.getFieldCount();
 
             // Compute required mapping.
@@ -574,7 +574,7 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
             Mapping inputMapping = inputMappings.get( 0 );
             mapping = Mappings.create(
                     MappingType.INVERSE_SURJECTION,
-                    join.getRowType().getFieldCount(),
+                    join.getTupleType().getFieldCount(),
                     newSystemFieldCount + inputMapping.getTargetCount() );
             for ( int i = 0; i < newSystemFieldCount; ++i ) {
                 mapping.set( i, i );
@@ -596,7 +596,7 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
      * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link org.polypheny.db.algebra.core.SetOp} (including UNION and UNION ALL).
      */
     public TrimResult trimFields( SetOp setOp, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
-        final AlgDataType rowType = setOp.getRowType();
+        final AlgDataType rowType = setOp.getTupleType();
         final int fieldCount = rowType.getFieldCount();
         int changeCount = 0;
 
@@ -673,7 +673,7 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
         //
         // But group and indicator fields stay, even if they are not used.
 
-        final AlgDataType rowType = aggregate.getRowType();
+        final AlgDataType rowType = aggregate.getTupleType();
 
         // Compute which input fields are used.
         // 1. group fields are always used
@@ -770,12 +770,12 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
         // Ignore what consumer wants. We always project all columns.
         Util.discard( fieldsUsed );
 
-        final AlgDataType rowType = modifier.getRowType();
+        final AlgDataType rowType = modifier.getTupleType();
         final int fieldCount = rowType.getFieldCount();
         AlgNode input = modifier.getInput();
 
         // We want all fields from the child.
-        final int inputFieldCount = input.getRowType().getFieldCount();
+        final int inputFieldCount = input.getTupleType().getFieldCount();
         final ImmutableBitSet inputFieldsUsed = ImmutableBitSet.range( inputFieldCount );
 
         // Create input with trimmed columns.
@@ -807,12 +807,12 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
      * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link LogicalTableFunctionScan}.
      */
     public TrimResult trimFields( LogicalTableFunctionScan tabFun, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
-        final AlgDataType rowType = tabFun.getRowType();
+        final AlgDataType rowType = tabFun.getTupleType();
         final int fieldCount = rowType.getFieldCount();
         final List<AlgNode> newInputs = new ArrayList<>();
 
         for ( AlgNode input : tabFun.getInputs() ) {
-            final int inputFieldCount = input.getRowType().getFieldCount();
+            final int inputFieldCount = input.getTupleType().getFieldCount();
             ImmutableBitSet inputFieldsUsed = ImmutableBitSet.range( inputFieldCount );
 
             // Create input with trimmed columns.
@@ -829,7 +829,7 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
                     newInputs,
                     tabFun.getCall(),
                     tabFun.getElementType(),
-                    tabFun.getRowType(),
+                    tabFun.getTupleType(),
                     tabFun.getColumnMappings() );
         }
         assert newTabFun.getClass() == tabFun.getClass();
@@ -844,7 +844,7 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
      * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link LogicalValues}.
      */
     public TrimResult trimFields( LogicalValues values, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
-        final AlgDataType rowType = values.getRowType();
+        final AlgDataType rowType = values.getTupleType();
         final int fieldCount = rowType.getFieldCount();
 
         // If they are asking for no fields, we can't give them what they want, because zero-column records are illegal. Give them the last field, which is unlikely to be a system field.
@@ -892,7 +892,7 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
      * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link LogicalRelScan}.
      */
     public TrimResult trimFields( final RelScan tableAccessRel, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
-        final int fieldCount = tableAccessRel.getRowType().getFieldCount();
+        final int fieldCount = tableAccessRel.getTupleType().getFieldCount();
         if ( fieldsUsed.equals( ImmutableBitSet.range( fieldCount ) ) && extraFields.isEmpty() ) {
             // If there is nothing to project or if we are projecting everything then no need to introduce another AlgNode
             return trimFields( (AlgNode) tableAccessRel, fieldsUsed, extraFields );
@@ -905,7 +905,7 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
             if ( input instanceof Project ) {
                 // The table has implemented the project in the obvious way - by creating project with 0 fields. Strip it away, and create our own project with one field.
                 Project project = (Project) input;
-                if ( project.getRowType().getFieldCount() == 0 ) {
+                if ( project.getTupleType().getFieldCount() == 0 ) {
                     input = project.getInput();
                 }
             }
@@ -947,7 +947,7 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
          */
         public TrimResult( AlgNode left, Mapping right ) {
             super( left, right );
-            assert right.getTargetCount() == left.getRowType().getFieldCount() : "rowType: " + left.getRowType() + ", mapping: " + right;
+            assert right.getTargetCount() == left.getTupleType().getFieldCount() : "rowType: " + left.getTupleType() + ", mapping: " + right;
         }
 
     }

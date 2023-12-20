@@ -96,7 +96,7 @@ public class CoerceInputsRule extends AlgOptRule {
                 newInputs.set( i, newInput );
                 coerce = true;
             }
-            assert AlgOptUtil.areRowTypesEqual( newInputs.get( i ).getRowType(), expectedType, coerceNames );
+            assert AlgOptUtil.areRowTypesEqual( newInputs.get( i ).getTupleType(), expectedType, coerceNames );
         }
         if ( !coerce ) {
             return;

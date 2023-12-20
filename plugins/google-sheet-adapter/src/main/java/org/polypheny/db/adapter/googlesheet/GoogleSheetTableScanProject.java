@@ -96,7 +96,7 @@ public class GoogleSheetTableScanProject extends RelScan<GoogleSheetTable> imple
 
     @Override
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
-        PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getRowType(), pref.preferArray() );
+        PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.preferArray() );
 
         return implementor.result( physType, Blocks.toBlock( Expressions.call( entity.getExpression(), "project", implementor.getRootExpression(), Expressions.constant( fields ) ) ) );
     }

@@ -53,7 +53,8 @@ import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph.SubstitutionGraph;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.cypher.CypherNode;
@@ -110,7 +111,7 @@ public class CypherToAlgConverter {
     public AlgRoot convert( CypherNode query, ParsedQueryContext parsedContext, AlgOptCluster cluster ) {
         long namespaceId = parsedContext.getNamespaceId();
 
-        LogicalEntity entity = getEntity( namespaceId );
+        LogicalEntity entity = getEntity( namespaceId, query );
 
         if ( query.isFullScan() ) {
             // simple full graph scan
@@ -130,18 +131,18 @@ public class CypherToAlgConverter {
 
 
     @NotNull
-    private LogicalEntity getEntity( long namespaceId ) {
+    private LogicalEntity getEntity( long namespaceId, CypherNode query ) {
         Optional<LogicalGraph> optionalGraph = this.snapshot.graph().getGraph( namespaceId );
         if ( optionalGraph.isPresent() ) {
             return optionalGraph.get();
         }
 
-        Optional<LogicalTable> optionalTable = this.snapshot.rel().getTable( namespaceId );
-        if ( optionalTable.isPresent() ) {
-            return optionalTable.get();
+        Optional<LogicalNamespace> optionalNamespace = this.snapshot.getNamespace( namespaceId );
+        if ( optionalNamespace.isPresent() ) {
+            return new SubstitutionGraph( namespaceId, "sub", false, optionalNamespace.get().caseSensitive, query.getUnderlyingLabels() );
         }
 
-        return this.snapshot.doc().getCollection( namespaceId ).orElseThrow();
+        throw new GenericRuntimeException( "Could not find namespace with id " + namespaceId );
     }
 
 
@@ -152,8 +153,6 @@ public class CypherToAlgConverter {
                 graph,
                 GraphType.of() );
     }
-
-
 
 
     private void convertQuery( CypherNode node, CypherContext context ) {
@@ -243,7 +242,7 @@ public class CypherToAlgConverter {
         AlgNode node = clause.getGraphProject( context );
 
         if ( clause.getOrder() != null && !clause.getOrder().isEmpty() || clause.getLimit() != null || clause.getSkip() != null ) {
-            AlgDataType rowType = node.getRowType();
+            AlgDataType rowType = node.getTupleType();
             List<String> missingNames = clause
                     .getSortFields()
                     .stream().filter( n -> !rowType.getFieldNames().contains( n ) )
@@ -270,7 +269,7 @@ public class CypherToAlgConverter {
     private AlgNode removeHiddenRows( CypherContext context, AlgNode node, List<String> missingNames ) {
         List<RexNode> nodes = new ArrayList<>();
         List<PolyString> names = new ArrayList<>();
-        node.getRowType().getFields().forEach( f -> {
+        node.getTupleType().getFields().forEach( f -> {
             if ( !missingNames.contains( f.getName() ) ) {
                 nodes.add( context.rexBuilder.makeInputRef( f.getType(), f.getIndex() ) );
                 names.add( PolyString.of( f.getName() ) );
@@ -290,7 +289,7 @@ public class CypherToAlgConverter {
         }
 
         List<Pair<PolyString, RexNode>> additional = new ArrayList<>();
-        for ( AlgDataTypeField field : input.getRowType().getFields() ) {
+        for ( AlgDataTypeField field : input.getTupleType().getFields() ) {
             for ( String name : missingNames ) {
                 String[] split = name.split( "\\." );
                 if ( split.length > 1 && split[0].equals( field.getName() ) ) {
@@ -320,7 +319,7 @@ public class CypherToAlgConverter {
             nodes = new ArrayList<>();
             names = new ArrayList<>();
 
-            node.getRowType().getFields().forEach( f -> {
+            node.getTupleType().getFields().forEach( f -> {
                 nodes.add( context.rexBuilder.makeInputRef( f.getType(), f.getIndex() ) );
                 names.add( PolyString.of( f.getName() ) );
             } );
@@ -508,8 +507,8 @@ public class CypherToAlgConverter {
         private void addProjectIfNecessary() {
             if ( stack.size() >= 1 && rexQueue.size() > 0 ) {
                 AlgNode node = stack.peek();
-                if ( node.getRowType().getFields().size() == 1
-                        && node.getRowType().getFields().get( 0 ).getType().getPolyType() == PolyType.GRAPH ) {
+                if ( node.getTupleType().getFields().size() == 1
+                        && node.getTupleType().getFields().get( 0 ).getType().getPolyType() == PolyType.GRAPH ) {
                     node = stack.pop();
 
                     List<Pair<PolyString, RexNode>> rex = new ArrayList<>();
@@ -719,8 +718,8 @@ public class CypherToAlgConverter {
                 List<Pair<PolyString, RexNode>> newEdges = new LinkedList<>();
 
                 AlgNode node = stack.peek();
-                List<String> names = node.getRowType().getFieldNames();
-                List<AlgDataTypeField> fields = node.getRowType().getFields();
+                List<String> names = node.getTupleType().getFieldNames();
+                List<AlgDataTypeField> fields = node.getTupleType().getFields();
 
                 // nodes can be added as literals
                 for ( Pair<PolyString, PolyNode> namedNode : nodes ) {
@@ -819,11 +818,11 @@ public class CypherToAlgConverter {
 
         public RexNode getLabelUpdate( List<String> labels, String variable, boolean replace ) {
             AlgNode node = peek();
-            int index = node.getRowType().getFieldNames().indexOf( variable );
+            int index = node.getTupleType().getFieldNames().indexOf( variable );
             if ( index < 0 ) {
                 throw new GenericRuntimeException( String.format( "Unknown variable with name %s", variable ) );
             }
-            AlgDataTypeField field = node.getRowType().getFields().get( index );
+            AlgDataTypeField field = node.getTupleType().getFields().get( index );
 
             if ( field.getType().getPolyType() == PolyType.EDGE && labels.size() != 1 ) {
                 throw new GenericRuntimeException( "Edges require exactly one label" );

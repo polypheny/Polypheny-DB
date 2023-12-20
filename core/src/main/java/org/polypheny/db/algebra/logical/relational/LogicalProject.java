@@ -103,12 +103,12 @@ public final class LogicalProject extends Project implements RelAlg {
     public static LogicalProject identity( final AlgNode input ) {
         return create(
                 input,
-                IntStream.range( 0, input.getRowType().getFieldCount() )
+                IntStream.range( 0, input.getTupleType().getFieldCount() )
                         .mapToObj( i ->
-                                new RexIndexRef( i, input.getRowType().getFields().get( i ).getType() )
+                                new RexIndexRef( i, input.getTupleType().getFields().get( i ).getType() )
                         )
                         .collect( Collectors.toList() ),
-                input.getRowType()
+                input.getTupleType()
         );
     }
 

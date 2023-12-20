@@ -95,10 +95,10 @@ public class EnumerableInterpreter extends SingleAlg implements EnumerableAlg {
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         final JavaTypeFactory typeFactory = implementor.getTypeFactory();
         final BlockBuilder builder = new BlockBuilder();
-        final PhysType physType = PhysTypeImpl.of( typeFactory, getRowType(), JavaRowFormat.ARRAY );
+        final PhysType physType = PhysTypeImpl.of( typeFactory, getTupleType(), JavaRowFormat.ARRAY );
         final Expression interpreter_ = builder.append( builder.newName( "interpreter" + System.nanoTime() ), Expressions.new_( Interpreter.class, implementor.getRootExpression(), implementor.stash( getInput(), AlgNode.class ) ) );
         final Expression sliced_ =
-                getRowType().getFieldCount() == 1
+                getTupleType().getFieldCount() == 1
                         ? Expressions.call( BuiltInMethod.SLICE0.method, interpreter_ )
                         : interpreter_;
         builder.add( sliced_ );

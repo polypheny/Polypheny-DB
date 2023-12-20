@@ -169,9 +169,9 @@ public final class AggregateExpandDistinctAggregatesRule extends AlgOptRule {
         }
 
         // Create a list of the expressions which will yield the final result. Initially, the expressions point to the input field.
-        final List<AlgDataTypeField> aggFields = aggregate.getRowType().getFields();
+        final List<AlgDataTypeField> aggFields = aggregate.getTupleType().getFields();
         final List<RexIndexRef> refs = new ArrayList<>();
-        final List<String> fieldNames = aggregate.getRowType().getFieldNames();
+        final List<String> fieldNames = aggregate.getTupleType().getFieldNames();
         final ImmutableBitSet groupSet = aggregate.getGroupSet();
         final int groupAndIndicatorCount = aggregate.getGroupCount() + aggregate.getIndicatorCount();
         for ( int i : Util.range( groupAndIndicatorCount ) ) {
@@ -390,7 +390,7 @@ public final class AggregateExpandDistinctAggregatesRule extends AlgOptRule {
         }
 
         algBuilder.aggregate( algBuilder.groupKey( remap( fullGroupSet, aggregate.getGroupSet() ), remap( fullGroupSet, aggregate.getGroupSets() ) ), newCalls );
-        algBuilder.convert( aggregate.getRowType(), true );
+        algBuilder.convert( aggregate.getTupleType(), true );
         call.transformTo( algBuilder.build() );
     }
 
@@ -488,7 +488,7 @@ public final class AggregateExpandDistinctAggregatesRule extends AlgOptRule {
         if ( n == 0 ) {
             leftFields = null;
         } else {
-            leftFields = algBuilder.peek().getRowType().getFields();
+            leftFields = algBuilder.peek().getTupleType().getFields();
         }
 
         // Aggregate(
@@ -596,7 +596,7 @@ public final class AggregateExpandDistinctAggregatesRule extends AlgOptRule {
         // Create the join condition. It is of the form
         //  'left.f0 = right.f0 and left.f1 = right.f1 and ...'
         // where {f0, f1, ...} are the GROUP BY fields.
-        final List<AlgDataTypeField> distinctFields = algBuilder.peek().getRowType().getFields();
+        final List<AlgDataTypeField> distinctFields = algBuilder.peek().getTupleType().getFields();
         final List<RexNode> conditions = new ArrayList<>();
         for ( i = 0; i < groupAndIndicatorCount; ++i ) {
             // null values form its own group use "is not distinct from" so that the join condition allows null values to match.
@@ -673,7 +673,7 @@ public final class AggregateExpandDistinctAggregatesRule extends AlgOptRule {
     private AlgBuilder createSelectDistinct( AlgBuilder algBuilder, Aggregate aggregate, List<Integer> argList, int filterArg, Map<Integer, Integer> sourceOf ) {
         algBuilder.push( aggregate.getInput() );
         final List<Pair<RexNode, String>> projects = new ArrayList<>();
-        final List<AlgDataTypeField> childFields = algBuilder.peek().getRowType().getFields();
+        final List<AlgDataTypeField> childFields = algBuilder.peek().getTupleType().getFields();
         for ( int i : aggregate.getGroupSet() ) {
             sourceOf.put( i, projects.size() );
             projects.add( RexIndexRef.of2( i, childFields ) );

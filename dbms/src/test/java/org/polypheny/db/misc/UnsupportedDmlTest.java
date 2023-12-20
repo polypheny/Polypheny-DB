@@ -16,20 +16,22 @@
 
 package org.polypheny.db.misc;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.MongoConnection;
 import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.mql.MqlTestTemplate;
 import org.polypheny.db.webui.models.results.DocResult;
 
-@Category({ AdapterTestSuite.class, FileExcluded.class }) // todo fix error with filter in file
+@Tag("adapter")
+@Tag("fileExcluded") // todo fix error with filter in file
 public class UnsupportedDmlTest extends MqlTestTemplate {
 
     @Test

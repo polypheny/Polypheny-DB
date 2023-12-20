@@ -110,7 +110,7 @@ public abstract class PruneEmptyRules {
                             builder.push( union ).empty();
                             break;
                         case 1:
-                            builder.push( AlgOptUtil.createCastAlg( newInputs.get( 0 ), union.getRowType(), true ) );
+                            builder.push( AlgOptUtil.createCastAlg( newInputs.get( 0 ), union.getTupleType(), true ) );
                             break;
                         default:
                             builder.push( LogicalUnion.create( newInputs, union.all ) );
@@ -155,7 +155,7 @@ public abstract class PruneEmptyRules {
                             builder.push( minus ).empty();
                             break;
                         case 1:
-                            builder.push( AlgOptUtil.createCastAlg( newInputs.get( 0 ), minus.getRowType(), true ) );
+                            builder.push( AlgOptUtil.createCastAlg( newInputs.get( 0 ), minus.getTupleType(), true ) );
                             break;
                         default:
                             builder.push( LogicalMinus.create( newInputs, minus.all ) );

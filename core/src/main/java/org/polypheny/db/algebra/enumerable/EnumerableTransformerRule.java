@@ -44,13 +44,13 @@ public class EnumerableTransformerRule extends ConverterRule {
                 .collect( Collectors.toList() );
 
         return new EnumerableTransformer(
-                inputs.get( 0 ).getCluster(),
+                alg.getCluster(),
                 inputs,
                 transformer.names,
                 transformer.getTraitSet().replace( EnumerableConvention.INSTANCE ),
                 transformer.inModelTrait,
                 transformer.outModelTrait,
-                transformer.getRowType(),
+                transformer.getTupleType(),
                 transformer.isCrossModel );
     }
 

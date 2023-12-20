@@ -20,9 +20,9 @@ import static java.lang.String.format;
 import static org.polypheny.db.mql.MqlTestTemplate.execute;
 
 import com.google.common.collect.ImmutableList;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.cypher.CypherTestTemplate;
 
@@ -33,7 +33,7 @@ public class DocumentOnLpgTest extends CrossModelTestTemplate {
     private static final String DATA_LABEL = "label1";
 
 
-    @BeforeClass
+    @BeforeAll
     public static void init() {
         //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
@@ -42,7 +42,7 @@ public class DocumentOnLpgTest extends CrossModelTestTemplate {
     }
 
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() {
         CypherTestTemplate.deleteData( GRAPH_NAME );
     }
@@ -63,6 +63,8 @@ public class DocumentOnLpgTest extends CrossModelTestTemplate {
         TestHelper.MongoConnection.checkDocResultSet(
                 execute( format( "db.%s.find({})", DATA_LABEL.toUpperCase() ), GRAPH_NAME ),
                 ImmutableList.of( "{\"key\":\"5\"}" ), true, true );
+
+        CypherTestTemplate.execute( format( "MATCH (n:%s {key: 5}) DELETE n", DATA_LABEL.toUpperCase() ), GRAPH_NAME );
     }
 
 

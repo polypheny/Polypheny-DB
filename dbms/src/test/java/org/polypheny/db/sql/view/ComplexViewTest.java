@@ -16,6 +16,8 @@
 
 package org.polypheny.db.sql.view;
 
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
+
 import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -23,11 +25,10 @@ import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Statement;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
@@ -39,7 +40,7 @@ import org.polypheny.db.excluded.MonetdbExcluded;
  */
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
-@Category({ AdapterTestSuite.class })
+@Tag("adapter")
 public class ComplexViewTest {
 
     private final static String DROP_TABLES_NATION = "DROP TABLE IF EXISTS nation";
@@ -405,7 +406,7 @@ public class ComplexViewTest {
     };
 
 
-    @BeforeClass
+    @BeforeAll
     public static void start() {
         // Ensures that Polypheny-DB is running
         //noinspection ResultOfMethodCallIgnored
@@ -536,7 +537,7 @@ public class ComplexViewTest {
 
 
     @Test
-    @Category(FileExcluded.class)
+    @Tag("fileExcluded")
     public void testDecimal() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -615,7 +616,7 @@ public class ComplexViewTest {
 
 
     @Test
-    @Category(FileExcluded.class)
+    @Tag("fileExcluded")
     public void testDecimalDateInt() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -658,7 +659,7 @@ public class ComplexViewTest {
 
 
     @Test
-    @Category({ FileExcluded.class })
+    @Tag("fileExcluded")
     public void testDateOrderBy() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -707,7 +708,7 @@ public class ComplexViewTest {
 
 
     @Test
-    @Category(FileExcluded.class)
+    @Tag("fileExcluded")
     public void testTimeInterval() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -744,7 +745,7 @@ public class ComplexViewTest {
 
 
     @Test
-    @Category({ FileExcluded.class })
+    @Tag("fileExcluded")
     public void testQ1() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -820,7 +821,7 @@ public class ComplexViewTest {
     // SELECT NOT POSSIBLE
     // java.lang.AssertionError: type mismatch: ref: VARCHAR(55) NOT NULL input: INTEGER NOT NULL
     // new Object for result must be created correctly
-    @Ignore
+    @Disabled
     @Test
     public void testQ2() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -887,7 +888,8 @@ public class ComplexViewTest {
 
 
     @Test
-    @Category({ FileExcluded.class, MonetdbExcluded.class })
+    @Tag("fileExcluded")
+    @Tag("monetdbExcluded")
     public void testQ3() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -963,7 +965,7 @@ public class ComplexViewTest {
 
 
     @Test
-    @Category(FileExcluded.class)
+    @Tag("fileExcluded")
     public void testQ4() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -1038,7 +1040,7 @@ public class ComplexViewTest {
     // Original TPC-H query with l_discount between 20.15 - 0.01 and ? + 0.01 does not return a result
     // changed to and l_discount between 20.14 and 20.16
     @Test
-    @Category(FileExcluded.class)
+    @Tag("fileExcluded")
     public void testQ6() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -1087,7 +1089,8 @@ public class ComplexViewTest {
 
     // deleted "or (n1.n_name = ? and n2.n_name = ?) " because there is only one nation in this table
     @Test
-    @Category({ FileExcluded.class, MonetdbExcluded.class })
+    @Tag("fileExcluded")
+    @Tag("monetdbExcluded")
     public void testQ7() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -1189,9 +1192,10 @@ public class ComplexViewTest {
 
 
     @Test
-    @Category({ FileExcluded.class, MonetdbExcluded.class })
+    @Tag("fileExcluded")
+    @Tag("monetdbExcluded")
     public void testQ8() throws SQLException {
-        Assume.assumeFalse( System.getProperty( "java.version" ).startsWith( "1.8" ) ); // Out of memory error on Java 8
+        assumeFalse( System.getProperty( "java.version" ).startsWith( "1.8" ) ); // Out of memory error on Java 8
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -1294,7 +1298,8 @@ public class ComplexViewTest {
 
 
     @Test
-    @Category({ FileExcluded.class, MonetdbExcluded.class })
+    @Tag("fileExcluded")
+    @Tag("monetdbExcluded")
     public void testQ9() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -1388,7 +1393,8 @@ public class ComplexViewTest {
 
 
     @Test
-    @Category({ FileExcluded.class, MonetdbExcluded.class })
+    @Tag("fileExcluded")
+    @Tag("monetdbExcluded")
     public void testQ10() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -1484,7 +1490,7 @@ public class ComplexViewTest {
     // SELECT NOT POSSIBLE
     // Not possible to Select java.lang.AssertionError: type mismatch: ref: DECIMAL(19, 2) NOT NULL input: INTEGER NOT NULL
     // renamed value to valueAA
-    //@Ignore
+    //@Disabled
     @Test
     public void testQ11() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -1537,7 +1543,7 @@ public class ComplexViewTest {
     // Select not possible
     // Caused by: java.sql.SQLSyntaxErrorException: data type cast needed for parameter or null literal in statement [SELECT "t0"."l_shipmode", COALESCE(SUM(CASE WHEN "t1"."o_orderpriority" = ? OR "t1"."o_orderpriority" = ? THEN ? ELSE ? END), 0) AS "high_line_count", COALESCE(SUM(CASE WHEN "t1"."o_orderpriority" <> ? AND "t1"."o_orderpriority" <> ? THEN ? ELSE ? END), 0) AS "low_line_count"
     // changed and l_shipmode in (?,?) to and l_shipmode = 'mode'
-    //@Ignore
+    //@Disabled
     @Test
     public void testQ12() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -1590,7 +1596,7 @@ public class ComplexViewTest {
 
     @Test
     public void testQ13() throws SQLException {
-        Assume.assumeFalse( System.getProperty( "java.version" ).startsWith( "1.8" ) ); // Out of memory error on Java 8
+        assumeFalse( System.getProperty( "java.version" ).startsWith( "1.8" ) ); // Out of memory error on Java 8
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -1671,7 +1677,7 @@ public class ComplexViewTest {
 
 
     @Test
-    @Category(FileExcluded.class)
+    @Tag("fileExcluded")
     public void testQ14() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -1728,7 +1734,7 @@ public class ComplexViewTest {
 
     // changed max(total_revenue) to total_revenue // Not possible in normal to SELECT aggregate within inner query
     @Test
-    @Category(FileExcluded.class)
+    @Tag("fileExcluded")
     public void testQ15() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -1783,7 +1789,7 @@ public class ComplexViewTest {
 
     // Select not possible
     // Caused by: org.hsqldb.HsqlException: data type cast needed for parameter or null literal
-    //@Ignore
+    //@Disabled
     @Test
     public void testQ16() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -1904,7 +1910,7 @@ public class ComplexViewTest {
     // Select not possible
     // Caused by: org.hsqldb.HsqlException: data type of expression is not boolean
     // java.lang.RuntimeException: While executing SQL [SELECT "t8"."c_name", "t8"."c_custkey", "t8"."o_orderkey", "t8"."o_orderdate", "t8"."o_totalprice", COALESCE(SUM("t"."l_quantity"), 0) FROM (SELECT "t6"."c_custkey", "t6"."c_name", "t6"."o_orderkey", "t6"."o_totalprice", "t6"."o_orderdate", COALESCE(SUM("t"."l_quantity"), 0) FROM (SELECT "col72" AS "l_orderkey", "col76" AS "l_quantity" FROM "PUBLIC"."tab12") AS "t" INNER JOIN (SELECT "t5"."c_custkey", "t5"."c_name", "t4"."o_orderkey", "t4"."o_custkey", "t4"."o_totalprice", "t4"."o_orderdate", "t2"."col72" AS "l_orderkey" FROM (SELECT "col72" FROM (SELECT "col72", "col76" FROM "PUBLIC"."tab12" GROUP BY "col72", "col76" HAVING "col76" > ?) AS "t1" GROUP BY "col72") AS "t2" INNER JOIN (SELECT "col63" AS "o_orderkey", "col64" AS "o_custkey", "col66" AS "o_totalprice", "col67" AS "o_orderdate" FROM "PUBLIC"."tab11" WHERE ?) AS "t4" ON "t2"."col72" = "t4"."o_orderkey" INNER JOIN (SELECT "col55" AS "c_custkey", "col56" AS "c_name" FROM "PUBLIC"."tab10") AS "t5" ON "t4"."o_custkey" = "t5"."c_custkey") AS "t6" ON "t"."l_orderkey" = "t6"."o_orderkey" GROUP BY "t6"."c_custkey", "t6"."c_name", "t6"."o_orderkey", "t6"."o_totalprice", "t6"."o_orderdate" ORDER BY "t6"."o_totalprice" DESC, "t6"."o_orderdate") AS "t8"] on JDBC sub-schema
-    @Ignore
+    @Disabled
     @Test
     public void testQ18() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -2035,7 +2041,7 @@ public class ComplexViewTest {
 
     // SELECT NOT POSSIBLE
     // java.lang.AssertionError: type mismatch: ref: VARCHAR(25) NOT NULL input: INTEGER NOT NULL
-    @Ignore
+    @Disabled
     @Test
     public void testQ20() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -2094,7 +2100,7 @@ public class ComplexViewTest {
 
     // SELECT NOT POSSIBLE
     // java.lang.AssertionError: type mismatch: ref: INTEGER NOT NULL input: VARCHAR(1) NOT NULL
-    @Ignore
+    @Disabled
     @Test
     public void testQ21() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -2134,7 +2140,7 @@ public class ComplexViewTest {
 
     // SELECT NOT POSSIBLE
     // Caused by: java.sql.SQLException: General error
-    @Ignore
+    @Disabled
     @Test
     public void testQ22() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {

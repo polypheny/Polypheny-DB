@@ -128,7 +128,7 @@ public abstract class Join extends BiAlg {
         if ( !super.isValid( litmus, context ) ) {
             return false;
         }
-        if ( getRowType().getFieldCount() != getSystemFieldList().size() + left.getRowType().getFieldCount() + (this instanceof SemiJoin ? 0 : right.getRowType().getFieldCount()) ) {
+        if ( getTupleType().getFieldCount() != getSystemFieldList().size() + left.getTupleType().getFieldCount() + (this instanceof SemiJoin ? 0 : right.getTupleType().getFieldCount()) ) {
             return litmus.fail( "field count mismatch" );
         }
         if ( condition != null ) {
@@ -141,8 +141,8 @@ public abstract class Join extends BiAlg {
                     new RexChecker(
                             getCluster().getTypeFactory().builder()
                                     .addAll( getSystemFieldList() )
-                                    .addAll( getLeft().getRowType().getFields() )
-                                    .addAll( getRight().getRowType().getFields() )
+                                    .addAll( getLeft().getTupleType().getFields() )
+                                    .addAll( getRight().getTupleType().getFields() )
                                     .build(),
                             context, litmus );
             condition.accept( checker );
@@ -185,7 +185,7 @@ public abstract class Join extends BiAlg {
 
     @Override
     protected AlgDataType deriveRowType() {
-        return ValidatorUtil.deriveJoinRowType( left.getRowType(), right.getRowType(), joinType, getCluster().getTypeFactory(), null, getSystemFieldList() );
+        return ValidatorUtil.deriveJoinRowType( left.getTupleType(), right.getTupleType(), joinType, getCluster().getTypeFactory(), null, getSystemFieldList() );
     }
 
 

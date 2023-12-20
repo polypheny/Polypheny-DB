@@ -152,7 +152,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                 project.getTraitSet(),
                 project.getInput(),
                 newProjects,
-                project.getRowType() );
+                project.getTupleType() );
     }
 
 
@@ -275,7 +275,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                     } else {
                         idx = idxMapping.get( i );
                     }
-                    AlgDataType type = input.getRowType().getFields().get( i ).getType();
+                    AlgDataType type = input.getTupleType().getFields().get( i ).getType();
                     if ( firstRow ) {
                         projects.add( new RexDynamicParam( type, idx ) );
                     }
@@ -294,7 +294,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                     input.getTraitSet(),
                     logicalValues,
                     projects,
-                    input.getRowType()
+                    input.getTupleType()
             );
         }
         return new LogicalRelModify(
@@ -339,7 +339,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                     } else {
                         idx = idxMapping.get( i );
                     }
-                    AlgDataType type = input.getRowType().getFields().get( i ).getType();
+                    AlgDataType type = input.getTupleType().getFields().get( i ).getType();
                     if ( firstRow ) {
                         projects.add( new RexDynamicParam( type, idx ) );
                     }
@@ -361,7 +361,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                     input.getTraitSet(),
                     logicalValues,
                     projects,
-                    input.getRowType()
+                    input.getTupleType()
             );
         }
         return new LogicalRelModify(
@@ -403,7 +403,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                     idx = idxMapping.get( i );
                 }
 
-                AlgDataType type = input.getRowType().getFields().get( i ).getType();
+                AlgDataType type = input.getTupleType().getFields().get( i ).getType();
                 if ( firstRow ) {
                     projects.put( null, new RexDynamicParam( type, idx ) );
                 }

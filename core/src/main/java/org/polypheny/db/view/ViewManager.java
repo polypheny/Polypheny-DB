@@ -56,7 +56,7 @@ import org.polypheny.db.rex.RexNode;
 public class ViewManager {
 
     public static LogicalSort orderMaterialized( AlgNode other ) {
-        int positionPrimary = other.getRowType().getFields().size() - 1;
+        int positionPrimary = other.getTupleType().getFields().size() - 1;
         AlgFieldCollation algFieldCollation = new AlgFieldCollation( positionPrimary, Direction.ASCENDING );
         AlgCollations.of( algFieldCollation );
 
@@ -67,7 +67,7 @@ public class ViewManager {
     public static AlgNode expandViewNode( AlgNode other ) {
         RexBuilder rexBuilder = other.getCluster().getRexBuilder();
         final List<RexNode> exprs = new ArrayList<>();
-        final AlgDataType rowType = other.getRowType();
+        final AlgDataType rowType = other.getTupleType();
         final int fieldCount = rowType.getFieldCount();
         for ( int i = 0; i < fieldCount; i++ ) {
             exprs.add( rexBuilder.makeInputRef( other, i ) );
@@ -75,14 +75,14 @@ public class ViewManager {
 
         AlgNode algNode = ((LogicalRelViewScan) other).getAlgNode();
 
-        if ( algNode instanceof Project && algNode.getRowType().getFieldNames().equals( other.getRowType().getFieldNames() ) ) {
+        if ( algNode instanceof Project && algNode.getTupleType().getFieldNames().equals( other.getTupleType().getFieldNames() ) ) {
             return algNode;
-        } else if ( algNode instanceof LogicalSort && algNode.getRowType().getFieldNames().equals( other.getRowType().getFieldNames() ) ) {
+        } else if ( algNode instanceof LogicalSort && algNode.getTupleType().getFieldNames().equals( other.getTupleType().getFieldNames() ) ) {
             return algNode;
-        } else if ( algNode instanceof LogicalAggregate && algNode.getRowType().getFieldNames().equals( other.getRowType().getFieldNames() ) ) {
+        } else if ( algNode instanceof LogicalAggregate && algNode.getTupleType().getFieldNames().equals( other.getTupleType().getFieldNames() ) ) {
             return algNode;
         } else {
-            return LogicalProject.create( algNode, exprs, other.getRowType().getFieldNames() );
+            return LogicalProject.create( algNode, exprs, other.getTupleType().getFieldNames() );
         }
     }
 

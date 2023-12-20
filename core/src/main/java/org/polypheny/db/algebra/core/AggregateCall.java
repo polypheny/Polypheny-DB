@@ -117,7 +117,7 @@ public class AggregateCall {
             String name ) {
         if ( type == null ) {
             final AlgDataTypeFactory typeFactory = input.getCluster().getTypeFactory();
-            final List<AlgDataType> types = PolyTypeUtil.projectTypes( input.getRowType(), argList );
+            final List<AlgDataType> types = PolyTypeUtil.projectTypes( input.getTupleType(), argList );
             final Aggregate.AggCallBinding callBinding = new Aggregate.AggCallBinding(
                     typeFactory,
                     aggFunction,
@@ -292,7 +292,7 @@ public class AggregateCall {
      * which can then be used to infer the return type.
      */
     public Aggregate.AggCallBinding createBinding( Aggregate aggregateRelBase ) {
-        final AlgDataType rowType = aggregateRelBase.getInput().getRowType();
+        final AlgDataType rowType = aggregateRelBase.getInput().getTupleType();
         return new Aggregate.AggCallBinding(
                 aggregateRelBase.getCluster().getTypeFactory(),
                 aggFunction,

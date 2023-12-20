@@ -29,29 +29,37 @@ import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.polypheny.db.AdapterTestSuite;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
-@Category(AdapterTestSuite.class)
-public class FileTest {
+@Tag("adapter")
+public class MultimediaTest {
 
-    @BeforeClass
+    @BeforeAll
     public static void start() throws SQLException {
         // Ensures that Polypheny-DB is running
         // noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
+
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "ALTER ADAPTERS ADD \"mm\" USING 'Hsqldb' AS 'Store'"
+                        + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+                connection.commit();
+            }
+        }
     }
 
 
-    @AfterClass
+    @AfterAll
     public static void end() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
@@ -69,17 +77,17 @@ public class FileTest {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 try {
-                    statement.executeUpdate( "CREATE TABLE preparedTest (a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a)) ON STORE \"mm\"" );
+                    statement.executeUpdate( "CREATE TABLE preparedTest (a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a))" );
 
                     preparedTest( connection );
                     batchTest( connection );
 
                     // check inserts
                     int insertCount = statement.executeUpdate( "INSERT INTO preparedTest (a,b) VALUES (1,2),(3,4),(5,null)" );
-                    Assert.assertEquals( 3, insertCount );
+                    Assertions.assertEquals( 3, insertCount );
                     // insert only into one column
                     insertCount = statement.executeUpdate( "INSERT INTO preparedTest (a) VALUES (6)" );
-                    Assert.assertEquals( 1, insertCount );
+                    Assertions.assertEquals( 1, insertCount );
 
                     // test conditions
                     ResultSet rs = statement.executeQuery( "SELECT * FROM preparedTest  WHERE a = 3" );
@@ -138,7 +146,7 @@ public class FileTest {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 try {
-                    statement.executeUpdate( "CREATE TABLE testDateTime (a INTEGER NOT NULL, b DATE, c TIME, d TIMESTAMP, PRIMARY KEY (a)) ON STORE \"mm\"" );
+                    statement.executeUpdate( "CREATE TABLE testDateTime (a INTEGER NOT NULL, b DATE, c TIME, d TIMESTAMP, PRIMARY KEY (a))" );
 
                     PreparedStatement preparedStatement = connection.prepareStatement( "INSERT INTO testDateTime (a,b,c,d) VALUES (?,?,?,?)" );
                     preparedStatement.setInt( 1, 1 );
@@ -193,7 +201,7 @@ public class FileTest {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "CREATE TABLE public.bin (id INTEGER NOT NULL, blb FILE, PRIMARY KEY (id)) ON STORE \"mm\"" );
+                statement.executeUpdate( "CREATE TABLE public.bin (id INTEGER NOT NULL, blb FILE, PRIMARY KEY (id))" );
 
                 try {
                     PreparedStatement ps = connection.prepareStatement( "INSERT INTO public.bin VALUES (?,x'6869')" );
@@ -232,7 +240,7 @@ public class FileTest {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "CREATE TABLE public.partitioned ( id INTEGER NOT NULL, username VARCHAR(20), pic FILE, PRIMARY KEY(id)) ON STORE \"mm\"" );
+                statement.executeUpdate( "CREATE TABLE public.partitioned ( id INTEGER NOT NULL, username VARCHAR(20), pic FILE, PRIMARY KEY(id))" );
                 try {
                     statement.executeUpdate( "ALTER TABLE public.partitioned ADD PLACEMENT (username) ON STORE \"hsqldb\"" );
                     statement.executeUpdate( "ALTER TABLE public.partitioned MODIFY PLACEMENT (pic) ON STORE \"mm\"" );
@@ -270,7 +278,7 @@ public class FileTest {
             Connection connection = jdbcConnection.getConnection();
             Statement statement = connection.createStatement();
             try {
-                statement.executeUpdate( "CREATE TABLE testRollback (a INTEGER NOT NULL, b INTEGER NOT NULL, PRIMARY KEY(a)) ON STORE \"mm\"" );
+                statement.executeUpdate( "CREATE TABLE testRollback (a INTEGER NOT NULL, b INTEGER NOT NULL, PRIMARY KEY(a))" );
                 statement.executeUpdate( "INSERT INTO testRollback (a,b) VALUES (1,2)" );
                 connection.commit();
                 statement.close();

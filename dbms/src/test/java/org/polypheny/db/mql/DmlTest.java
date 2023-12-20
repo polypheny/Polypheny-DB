@@ -16,7 +16,7 @@
 
 package org.polypheny.db.mql;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.polypheny.db.TestHelper.MongoConnection.toDoc;
 
 import com.google.common.collect.ImmutableList;
@@ -25,9 +25,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
-import org.junit.After;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.MongoConnection;
 import org.polypheny.db.excluded.FileExcluded;
@@ -38,10 +38,10 @@ import org.polypheny.db.webui.models.results.DocResult;
  * Integration tests, which use the MongoQL-interface to observe
  * correctness of the MongoQL language and the document model
  */
-@Category({ AdapterTestSuite.class })
+@Tag("adapter")
 public class DmlTest extends MqlTestTemplate {
 
-    @After
+    @AfterEach
     public void deleteAll() {
         deleteMany( "{}" );
     }
@@ -79,7 +79,7 @@ public class DmlTest extends MqlTestTemplate {
 
 
     @Test
-    @Category(FileExcluded.class)
+    @Tag("fileExcluded")
     public void insertManyTest() {
         List<String> data = Arrays.asList( "{\"test\":1}", "{\"test\":2}", "{\"test\":3}" );
         insertMany( data );
@@ -96,7 +96,7 @@ public class DmlTest extends MqlTestTemplate {
 
 
     @Test
-    @Category(FileExcluded.class)
+    @Tag("fileExcluded")
     public void updateTest() {
         List<String> data = List.of( "{\"test\":1}", "{\"test\":2}", "{\"test\":3}" );
         insertMany( data );
@@ -117,7 +117,7 @@ public class DmlTest extends MqlTestTemplate {
 
 
     @Test
-    @Category(FileExcluded.class)
+    @Tag("fileExcluded")
     public void updateIdTest() {
         List<Object> data = Arrays.asList( 1, 2, 3 );
         insertMany( data.stream().map( d -> toDoc( "test", d ) ).collect( Collectors.toList() ) );

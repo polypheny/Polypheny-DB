@@ -53,12 +53,17 @@ public class PolyDictionary extends PolyMap<PolyString, PolyValue> {
 
 
     public PolyDictionary( @JsonProperty("map") Map<PolyString, PolyValue> map ) {
-        super( map );
+        super( map, MapType.DICTIONARY );
     }
 
 
     public PolyDictionary() {
         this( Map.of() );
+    }
+
+
+    public static PolyDictionary ofDict( Map<PolyString, PolyValue> map ) {
+        return new PolyDictionary( map );
     }
 
 

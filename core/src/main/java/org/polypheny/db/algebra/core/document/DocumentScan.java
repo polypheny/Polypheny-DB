@@ -16,6 +16,7 @@
 
 package org.polypheny.db.algebra.core.document;
 
+import lombok.experimental.SuperBuilder;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.common.Scan;
 import org.polypheny.db.algebra.type.DocumentType;
@@ -24,7 +25,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.trait.ModelTrait;
 
-
+@SuperBuilder(toBuilder = true)
 public abstract class DocumentScan<E extends Entity> extends Scan<E> implements DocumentAlg {
 
 

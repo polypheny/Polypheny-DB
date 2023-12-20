@@ -24,16 +24,19 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Function0;
+import org.apache.calcite.linq4j.function.Function1;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyInteger;
@@ -46,6 +49,7 @@ import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
+import org.polypheny.db.type.entity.relational.PolyMap;
 
 public class CrossModelFunctions {
 
@@ -115,71 +119,76 @@ public class CrossModelFunctions {
 
     @SuppressWarnings("UnusedDeclaration")
     public static Enumerable<?> tableToNodes( Enumerable<?> enumerable, PolyString label, List<PolyString> keys ) {
-        return new AbstractEnumerable<PolyNode>() {
+        return new AbstractEnumerable<PolyNode[]>() {
             @Override
-            public Enumerator<PolyNode> enumerator() {
+            public Enumerator<PolyNode[]> enumerator() {
                 if ( keys.size() > 1 ) {
                     return Linq4j.transform( enumerable.enumerator(), r -> {
-                        Object[] row = (Object[]) r;
+                        PolyValue[] row = (PolyValue[]) r;
                         Map<PolyString, PolyValue> map = new HashMap<>();
                         for ( int i = 0; i < row.length; i++ ) {
-                            map.put( keys.get( i ), (PolyValue) row[i] );
+                            map.put( keys.get( i ), row[i] );
                         }
-                        return new PolyNode( new PolyDictionary( map ), PolyList.of( label ), PolyString.of( "n" ) );
+                        return new PolyNode[]{ new PolyNode( new PolyDictionary( map ), PolyList.of( label ), PolyString.of( "n" ) ) };
                     } );
                 }
-                return Linq4j.transform( enumerable.enumerator(), r -> new PolyNode( new PolyDictionary( Map.of( keys.get( 0 ), PolyString.of( r.toString() ) ) ), PolyList.of( label ), PolyString.of( "n" ) ) );
+                return Linq4j.transform(
+                        enumerable.enumerator(),
+                        r -> new PolyNode[]{
+                                new PolyNode(
+                                        new PolyDictionary( Map.of( keys.get( 0 ), PolyString.of( r.toString() ) ) ), PolyList.of( label ), PolyString.of( "n" ) ) } );
             }
         };
     }
 
 
     @SuppressWarnings("UnusedDeclaration")
-    public static Enumerable<?> collectionToNodes( Enumerable<?> enumerable, PolyString label ) {
-        return new AbstractEnumerable<PolyNode>() {
+    public static Enumerable<PolyNode[]> collectionToNodes( Enumerable<PolyValue[]> enumerable, PolyString label ) {
+        return new AbstractEnumerable<>() {
             @Override
-            public Enumerator<PolyNode> enumerator() {
+            public Enumerator<PolyNode[]> enumerator() {
                 return Linq4j.transform( enumerable.enumerator(), r -> {
-                    PolyDocument doc = PolyDocument.parse( r.toString() );
+                    PolyDocument doc = r[0].asDocument();
                     Map<PolyString, PolyValue> map = new HashMap<>();
                     for ( Entry<PolyString, PolyValue> entry : doc.entrySet() ) {
-                        if ( entry.getKey().equals( PolyString.of( "_id" ) ) ) {
+                        if ( entry.getKey().equals( PolyString.of( DocumentType.DOCUMENT_ID ) ) ) {
                             continue;
                         }
                         map.put( entry.getKey(), entry.getValue() );
                     }
-                    return new PolyNode( doc.get( PolyString.of( "_id" ) ).asString(), new PolyDictionary( map ), PolyList.of( label ), PolyString.of( "n" ) );
+                    return new PolyNode[]{ new PolyNode( doc.get( PolyString.of( DocumentType.DOCUMENT_ID ) ).asString(), new PolyDictionary( map ), PolyList.of( label ), PolyString.of( "n" ) ) };
                 } );
             }
-        };
+        }
+
+                ;
     }
 
 
     @SuppressWarnings("UnusedDeclaration")
-    public static Enumerable<PolyDocument> nodesToCollection( Enumerable<PolyGraph> enumerable ) {
+    public static Enumerable<PolyValue[]> nodesToCollection( Enumerable<PolyValue[]> enumerable, @Nullable PolyString label ) {
         PolyGraph graph = null;
-        for ( PolyGraph g : enumerable ) {
-            graph = g;
+        for ( PolyValue[] value : enumerable ) {
+            graph = value[0].asGraph();
         }
-        return Linq4j.asEnumerable( Stream.concat( graph.getNodes().values().stream(), graph.getEdges().values().stream() ).map( n -> {
+        Function1<PolyMap<PolyString, PolyNode>, Stream<PolyNode>> node = elements -> elements.values().stream();
+        Function1<PolyMap<PolyString, PolyEdge>, Stream<PolyEdge>> edge = elements -> elements.values().stream();
+        if ( label != null ) {
+            node = elements -> elements.values().stream().filter( n -> n.labels.contains( label ) );
+            edge = elements -> elements.values().stream().filter( n -> n.labels.contains( label ) );
+        }
+
+        return Linq4j.asEnumerable( Stream.concat( node.apply( graph.getNodes() ), edge.apply( graph.getEdges() ) ).map( n -> {
             PolyDocument doc = new PolyDocument( n.properties.entrySet().stream().collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
-            doc.put( PolyString.of( "_id" ), PolyString.of( n.id.value.substring( 0, 23 ) ) );
-            return doc;
+            doc.put( PolyString.of( DocumentType.DOCUMENT_ID ), PolyString.of( n.id.value.substring( 0, 23 ) ) );
+            return new PolyValue[]{ doc };
         } ).collect( Collectors.toList() ) );
 
+    }
 
-        /*return new AbstractEnumerable<>() {
-            @Override
-            public Enumerator<PolyDocument> enumerator() {
-                return Linq4j.transform(
-                        enumerable.enumerator(),
-                        r -> {
-                            PolyDocument doc = new PolyDocument( r.properties.entrySet().stream().collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
-                            doc.put( PolyString.of( "_id" ), PolyString.of( r.id.value.substring( 0, 23 ) ) );
-                            return doc;
-                        } );
-            }
-        };*/
+
+    public static PolyValue cypherOnlyLabelGraph( PolyValue value, PolyString label ) {
+        return null;
     }
 
 

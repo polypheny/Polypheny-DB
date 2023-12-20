@@ -152,7 +152,7 @@ public class AlgMdUniqueKeys implements MetadataHandler<BuiltInMetadata.UniqueKe
         Set<ImmutableBitSet> rightSet = null;
 
         final Set<ImmutableBitSet> tmpRightSet = mq.getUniqueKeys( right, ignoreNulls );
-        int nFieldsOnLeft = left.getRowType().getFieldCount();
+        int nFieldsOnLeft = left.getTupleType().getFieldCount();
 
         if ( tmpRightSet != null ) {
             rightSet = new HashSet<>();
@@ -208,7 +208,7 @@ public class AlgMdUniqueKeys implements MetadataHandler<BuiltInMetadata.UniqueKe
 
     public Set<ImmutableBitSet> getUniqueKeys( SetOp alg, AlgMetadataQuery mq, boolean ignoreNulls ) {
         if ( !alg.all ) {
-            return ImmutableSet.of( ImmutableBitSet.range( alg.getRowType().getFieldCount() ) );
+            return ImmutableSet.of( ImmutableBitSet.range( alg.getTupleType().getFieldCount() ) );
         }
         return ImmutableSet.of();
     }

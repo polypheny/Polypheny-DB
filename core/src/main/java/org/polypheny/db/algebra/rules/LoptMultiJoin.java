@@ -191,12 +191,12 @@ public class LoptMultiJoin {
         }
 
         int start = 0;
-        nTotalFields = multiJoin.getRowType().getFieldCount();
+        nTotalFields = multiJoin.getTupleType().getFieldCount();
         joinStart = new int[nJoinFactors];
         nFieldsInJoinFactor = new int[nJoinFactors];
         for ( int i = 0; i < nJoinFactors; i++ ) {
             joinStart[i] = start;
-            nFieldsInJoinFactor[i] = joinFactors.get( i ).getRowType().getFieldCount();
+            nFieldsInJoinFactor[i] = joinFactors.get( i ).getTupleType().getFieldCount();
             start += nFieldsInJoinFactor[i];
         }
 
@@ -289,7 +289,7 @@ public class LoptMultiJoin {
      * Returns array of fields contained within the multi-join
      */
     public List<AlgDataTypeField> getMultiJoinFields() {
-        return multiJoin.getRowType().getFields();
+        return multiJoin.getTupleType().getFields();
     }
 
 
@@ -597,8 +597,8 @@ public class LoptMultiJoin {
     public List<AlgDataTypeField> getJoinFields( LoptJoinTree left, LoptJoinTree right ) {
         AlgDataType rowType =
                 factory.createJoinType(
-                        left.getJoinTree().getRowType(),
-                        right.getJoinTree().getRowType() );
+                        left.getJoinTree().getTupleType(),
+                        right.getJoinTree().getTupleType() );
         return rowType.getFields();
     }
 
@@ -648,7 +648,7 @@ public class LoptMultiJoin {
         final AlgNode left = getJoinFactor( leftFactor );
         final AlgMetadataQuery mq = left.getCluster().getMetadataQuery();
         final Map<Integer, Integer> leftFactorColMapping = new HashMap<>();
-        for ( int i = 0; i < left.getRowType().getFieldCount(); i++ ) {
+        for ( int i = 0; i < left.getTupleType().getFieldCount(); i++ ) {
             final AlgColumnOrigin colOrigin = mq.getColumnOrigin( left, i );
             if ( colOrigin != null ) {
                 leftFactorColMapping.put( colOrigin.getOriginColumnOrdinal(), i );
@@ -658,7 +658,7 @@ public class LoptMultiJoin {
         // Then, see if the right factor references any of the same columns by locating their originating columns.
         // If there are matches, then we want to store the corresponding offset into the left factor.
         AlgNode right = getJoinFactor( rightFactor );
-        for ( int i = 0; i < right.getRowType().getFieldCount(); i++ ) {
+        for ( int i = 0; i < right.getTupleType().getFieldCount(); i++ ) {
             final AlgColumnOrigin colOrigin = mq.getColumnOrigin( right, i );
             if ( colOrigin == null ) {
                 continue;

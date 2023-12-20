@@ -21,9 +21,9 @@ import static java.lang.String.format;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.CypherTestTemplate.Row;
@@ -50,7 +50,7 @@ public class LpgOnDocumentTest extends CrossModelTestTemplate {
     } ).collect( Collectors.joining( ",", "{", "}" ) );
 
 
-    @BeforeClass
+    @BeforeAll
     public static void init() {
         //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
@@ -60,7 +60,7 @@ public class LpgOnDocumentTest extends CrossModelTestTemplate {
     }
 
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() {
         MqlTestTemplate.dropDatabase( DATABASE_NAME );
     }

@@ -331,7 +331,7 @@ public abstract class MutableAlgs {
         if ( alg instanceof Project ) {
             final Project project = (Project) alg;
             final MutableAlg input = toMutable( project.getInput() );
-            return MutableProject.of( input, project.getProjects(), project.getRowType().getFieldNames() );
+            return MutableProject.of( input, project.getProjects(), project.getTupleType().getFieldNames() );
         }
         if ( alg instanceof Filter ) {
             final Filter filter = (Filter) alg;
@@ -361,23 +361,23 @@ public abstract class MutableAlgs {
         if ( alg instanceof Collect ) {
             final Collect collect = (Collect) alg;
             final MutableAlg input = toMutable( collect.getInput() );
-            return MutableCollect.of( collect.getRowType(), input, collect.getFieldName() );
+            return MutableCollect.of( collect.getTupleType(), input, collect.getFieldName() );
         }
         if ( alg instanceof Uncollect ) {
             final Uncollect uncollect = (Uncollect) alg;
             final MutableAlg input = toMutable( uncollect.getInput() );
-            return MutableUncollect.of( uncollect.getRowType(), input, uncollect.withOrdinality );
+            return MutableUncollect.of( uncollect.getTupleType(), input, uncollect.withOrdinality );
         }
         if ( alg instanceof Window ) {
             final Window window = (Window) alg;
             final MutableAlg input = toMutable( window.getInput() );
-            return MutableWindow.of( window.getRowType(), input, window.groups, window.getConstants() );
+            return MutableWindow.of( window.getTupleType(), input, window.groups, window.getConstants() );
         }
         if ( alg instanceof RelModify ) {
             final RelModify modify = (RelModify) alg;
             final MutableAlg input = toMutable( modify.getInput() );
             return MutableTableModify.of(
-                    modify.getRowType(),
+                    modify.getTupleType(),
                     input,
                     modify.getEntity(),
                     modify.getOperation(),
@@ -395,7 +395,7 @@ public abstract class MutableAlgs {
             final List<MutableAlg> inputs = toMutables( tableFunctionScan.getInputs() );
             return MutableTableFunctionScan.of(
                     tableFunctionScan.getCluster(),
-                    tableFunctionScan.getRowType(),
+                    tableFunctionScan.getTupleType(),
                     inputs,
                     tableFunctionScan.getCall(),
                     tableFunctionScan.getElementType(),
@@ -407,7 +407,7 @@ public abstract class MutableAlgs {
             final MutableAlg left = toMutable( semiJoin.getLeft() );
             final MutableAlg right = toMutable( semiJoin.getRight() );
             return MutableSemiJoin.of(
-                    semiJoin.getRowType(),
+                    semiJoin.getTupleType(),
                     left, right,
                     semiJoin.getCondition(),
                     semiJoin.getLeftKeys(),
@@ -418,7 +418,7 @@ public abstract class MutableAlgs {
             final MutableAlg left = toMutable( join.getLeft() );
             final MutableAlg right = toMutable( join.getRight() );
             return MutableJoin.of(
-                    join.getRowType(),
+                    join.getTupleType(),
                     left,
                     right,
                     join.getCondition(),
@@ -430,7 +430,7 @@ public abstract class MutableAlgs {
             final MutableAlg left = toMutable( correlate.getLeft() );
             final MutableAlg right = toMutable( correlate.getRight() );
             return MutableCorrelate.of(
-                    correlate.getRowType(),
+                    correlate.getTupleType(),
                     left,
                     right,
                     correlate.getCorrelationId(),
@@ -440,17 +440,17 @@ public abstract class MutableAlgs {
         if ( alg instanceof Union ) {
             final Union union = (Union) alg;
             final List<MutableAlg> inputs = toMutables( union.getInputs() );
-            return MutableUnion.of( union.getRowType(), inputs, union.all );
+            return MutableUnion.of( union.getTupleType(), inputs, union.all );
         }
         if ( alg instanceof Minus ) {
             final Minus minus = (Minus) alg;
             final List<MutableAlg> inputs = toMutables( minus.getInputs() );
-            return MutableMinus.of( minus.getRowType(), inputs, minus.all );
+            return MutableMinus.of( minus.getTupleType(), inputs, minus.all );
         }
         if ( alg instanceof Intersect ) {
             final Intersect intersect = (Intersect) alg;
             final List<MutableAlg> inputs = toMutables( intersect.getInputs() );
-            return MutableIntersect.of( intersect.getRowType(), inputs, intersect.all );
+            return MutableIntersect.of( intersect.getTupleType(), inputs, intersect.all );
         }
         throw new RuntimeException( "cannot translate " + alg + " to MutableRel" );
     }

@@ -45,7 +45,7 @@ public class NeoProject extends Project implements NeoRelAlg {
     public void implement( NeoRelationalImplementor implementor ) {
         implementor.visitChild( 0, getInput() );
 
-        if ( AlgOptUtil.areRowTypesEqual( implementor.getLast().getRowType(), this.rowType, false )
+        if ( AlgOptUtil.areRowTypesEqual( implementor.getLast().getTupleType(), this.rowType, false )
                 && getProjects().stream().allMatch( p -> p.isA( Kind.INPUT_REF ) ) ) {
             return;
         }

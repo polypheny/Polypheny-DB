@@ -117,7 +117,7 @@ public class FilterCorrelateRule extends AlgOptRule {
 
         // Create a Filter on top of the join if needed
         algBuilder.push( newCorrRel );
-        algBuilder.filter( RexUtil.fixUp( rexBuilder, aboveFilters, AlgOptUtil.getFieldTypeList( algBuilder.peek().getRowType() ) ) );
+        algBuilder.filter( RexUtil.fixUp( rexBuilder, aboveFilters, AlgOptUtil.getFieldTypeList( algBuilder.peek().getTupleType() ) ) );
 
         call.transformTo( algBuilder.build() );
     }

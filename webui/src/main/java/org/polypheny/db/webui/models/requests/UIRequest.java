@@ -86,9 +86,9 @@ public class UIRequest extends RequestModel {
     public String selectInterval;
 
 
-    public UIRequest() {
+    protected UIRequest() {
         super( null, null, null );
-        // empty on purpose
+        currentPage = 1;
     }
 
 

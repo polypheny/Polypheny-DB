@@ -36,8 +36,8 @@ package org.polypheny.db.misc;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -51,10 +51,10 @@ import java.util.List;
 import java.util.TreeSet;
 import lombok.extern.slf4j.Slf4j;
 import org.hamcrest.Matcher;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.adapter.DataContext.SlimDataContext;
@@ -103,7 +103,7 @@ public class AlgBuilderTest {
     private static Transaction transaction;
 
 
-    @BeforeClass
+    @BeforeAll
     public static void start() throws SQLException {
         // Ensures that Polypheny-DB is running
         //noinspection ResultOfMethodCallIgnored
@@ -113,7 +113,7 @@ public class AlgBuilderTest {
     }
 
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws SQLException {
         try {
             dropTestSchema();
@@ -248,7 +248,7 @@ public class AlgBuilderTest {
 
 
     @Test
-    @Ignore
+    @Disabled
     public void testScanValidTableWrongCase() {
         // Equivalent SQL:
         //   SELECT *
@@ -516,7 +516,7 @@ public class AlgBuilderTest {
      * Tests each method that creates a scalar expression.
      */
     @Test
-    @Ignore
+    @Disabled
     public void testProject2() {
         final AlgBuilder builder = createAlgBuilder();
         AlgNode root =
@@ -731,7 +731,7 @@ public class AlgBuilderTest {
                         .rename( ImmutableList.of( "x", "y z" ) )
                         .build();
         assertThat( root, Matchers.hasTree( expected ) );
-        assertThat( root.getRowType().getFieldNames().toString(), is( "[x, y z]" ) );
+        assertThat( root.getTupleType().getFieldNames().toString(), is( "[x, y z]" ) );
     }
 
 
@@ -1129,7 +1129,7 @@ public class AlgBuilderTest {
 
 
     @Test
-    @Ignore
+    @Disabled
     public void testDistinctAlready() {
         // department is already distinct
         final AlgBuilder builder = createAlgBuilder();
@@ -1528,7 +1528,7 @@ public class AlgBuilderTest {
                 + "      LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n"
                 + "      LogicalScan(model=[RELATIONAL], table=[[public, department]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
-        final AlgDataTypeField field = root.getRowType().getFields().get( 1 );
+        final AlgDataTypeField field = root.getTupleType().getFields().get( 1 );
         assertThat( field.getName(), is( "name" ) );
         assertThat( field.getType().isNullable(), is( true ) );
     }
@@ -1927,7 +1927,7 @@ public class AlgBuilderTest {
         final String expected = "LogicalValues(model=[RELATIONAL], tuples=[[]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
         final String expectedType = "RecordType(INTEGER NOT NULL deptno, BOOLEAN NOT NULL $f1) NOT NULL";
-        assertThat( root.getRowType().getFullTypeString(), is( expectedType ) );
+        assertThat( root.getTupleType().getFullTypeString(), is( expectedType ) );
     }
 
 
@@ -1940,7 +1940,7 @@ public class AlgBuilderTest {
         final String expected = "LogicalValues(model=[RELATIONAL], tuples=[[{ true, 1 }, { false, -50 }]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
         final String expectedType = "RecordType(BOOLEAN NOT NULL a, INTEGER NOT NULL b) NOT NULL";
-        assertThat( root.getRowType().getFullTypeString(), is( expectedType ) );
+        assertThat( root.getTupleType().getFullTypeString(), is( expectedType ) );
     }
 
 
@@ -1957,7 +1957,7 @@ public class AlgBuilderTest {
         final String expected = "LogicalValues(model=[RELATIONAL], tuples=[[{ null, 1, 'abc' }, { false, null, 'longer string' }]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
         final String expectedType = "RecordType(BOOLEAN a, INTEGER expr$1, CHAR(13) NOT NULL c) NOT NULL";
-        assertThat( root.getRowType().getFullTypeString(), is( expectedType ) );
+        assertThat( root.getTupleType().getFullTypeString(), is( expectedType ) );
     }
 
 
@@ -2033,7 +2033,7 @@ public class AlgBuilderTest {
         final String expected = "LogicalValues(model=[RELATIONAL], tuples=[[{ null, null }, { 1, null }]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
         final String expectedType = "RecordType(BIGINT NOT NULL a, VARCHAR(10) NOT NULL a) NOT NULL";
-        assertThat( root.getRowType().getFullTypeString(), is( expectedType ) );
+        assertThat( root.getTupleType().getFullTypeString(), is( expectedType ) );
     }
 
 

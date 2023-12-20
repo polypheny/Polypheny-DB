@@ -55,16 +55,16 @@ public class CypherVariable extends CypherExpression {
     public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
         AlgNode node = context.peek();
 
-        int index = node.getRowType().getFieldNames().indexOf( name );
+        int index = node.getTupleType().getFieldNames().indexOf( name );
 
         if ( index >= 0 ) {
             // search r  -> RowType(r:Edge)
             return Pair.of(
                     PolyString.of( name ),
-                    context.rexBuilder.makeInputRef( node.getRowType().getFields().get( index ).getType(), index ) );
+                    context.rexBuilder.makeInputRef( node.getTupleType().getFields().get( index ).getType(), index ) );
         }
 
-        for ( AlgDataTypeField field : node.getRowType().getFields() ) {
+        for ( AlgDataTypeField field : node.getTupleType().getFields() ) {
             if ( field.getType() instanceof PathType ) {
                 for ( AlgDataTypeField pathField : field.getType().getFields() ) {
                     if ( pathField.getName().equals( name ) ) {

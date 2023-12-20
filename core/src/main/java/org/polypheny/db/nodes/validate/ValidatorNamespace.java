@@ -17,6 +17,7 @@
 package org.polypheny.db.nodes.validate;
 
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.logistic.DataModel;
 
 public interface ValidatorNamespace {
 
@@ -27,5 +28,15 @@ public interface ValidatorNamespace {
      * @return Row type of this namespace, never null, always a struct
      */
     AlgDataType getRowType();
+
+
+    default DataModel getDataModel() {
+        return DataModel.RELATIONAL;
+    }
+
+    default ValidatorNamespace setDataModel( DataModel dataModel ) {
+        throw new UnsupportedOperationException( "This namespace does not support setting the data model." );
+    }
+
 
 }

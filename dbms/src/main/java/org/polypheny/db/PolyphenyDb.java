@@ -302,6 +302,7 @@ public class PolyphenyDb {
         log.info( "Polypheny UUID: " + uuid );
         RuntimeConfig.INSTANCE_UUID.setString( uuid );
 
+
         class ShutdownHelper implements Runnable {
 
             private final Serializable[] joinOnNotStartedLock = new Serializable[0];
@@ -375,6 +376,8 @@ public class PolyphenyDb {
 
         StatusService.initialize( transactionManager, server.getServer() );
 
+        log.debug( "Setting Docker Timeouts" );
+        RuntimeConfig.DOCKER_TIMEOUT.setInteger( mode == PolyMode.DEVELOPMENT || mode == PolyMode.TEST ? 5 : RuntimeConfig.DOCKER_TIMEOUT.getInteger() );
         if ( initializeDockerManager() ) {
             return;
         }

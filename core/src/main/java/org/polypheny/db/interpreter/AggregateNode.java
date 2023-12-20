@@ -199,7 +199,7 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
             int stateSize = agg.state.size();
 
             final BlockBuilder builder2 = new BlockBuilder();
-            final PhysType inputPhysType = PhysTypeImpl.of( typeFactory, alg.getInput().getRowType(), JavaRowFormat.ARRAY );
+            final PhysType inputPhysType = PhysTypeImpl.of( typeFactory, alg.getInput().getTupleType(), JavaRowFormat.ARRAY );
             final Builder builder = typeFactory.builder();
             for ( Expression expression : agg.state ) {
                 builder.add( null, "a", null, typeFactory.createJavaType( (Class) expression.getType() ) );
@@ -251,7 +251,7 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
             final ParameterExpression context_ = Expressions.parameter( Context.class, "context" );
             final ParameterExpression outputValues_ = Expressions.parameter( Object[].class, "outputValues" );
             Scalar addScalar = JaninoRexCompiler.baz( context_, outputValues_, builder2.toBlock(), dataContext );
-            return new ScalarAccumulatorDef( null, addScalar, null, alg.getInput().getRowType().getFieldCount(), stateSize, dataContext );
+            return new ScalarAccumulatorDef( null, addScalar, null, alg.getInput().getTupleType().getFieldCount(), stateSize, dataContext );
         }
     }
 

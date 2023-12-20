@@ -33,5 +33,6 @@ public enum JsonValueEmptyOrErrorBehavior {
     public String toString() {
         return String.format( Locale.ROOT, "SqlJsonValueEmptyOrErrorBehavior[%s]", name() );
     }
+
 }
 

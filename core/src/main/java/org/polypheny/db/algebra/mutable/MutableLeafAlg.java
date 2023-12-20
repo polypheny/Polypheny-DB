@@ -48,7 +48,7 @@ abstract class MutableLeafAlg extends MutableAlg {
 
 
     protected MutableLeafAlg( MutableAlgType type, AlgNode alg ) {
-        super( alg.getCluster(), alg.getRowType(), type );
+        super( alg.getCluster(), alg.getTupleType(), type );
         this.alg = alg;
     }
 

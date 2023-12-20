@@ -99,7 +99,7 @@ public abstract class Calc extends SingleAlg {
 
     @Override
     public boolean isValid( Litmus litmus, Context context ) {
-        if ( !AlgOptUtil.equal( "program's input type", program.getInputRowType(), "child's output type", getInput().getRowType(), litmus ) ) {
+        if ( !AlgOptUtil.equal( "program's input type", program.getInputRowType(), "child's output type", getInput().getTupleType(), litmus ) ) {
             return litmus.fail( null );
         }
         if ( !program.isValid( litmus, context ) ) {

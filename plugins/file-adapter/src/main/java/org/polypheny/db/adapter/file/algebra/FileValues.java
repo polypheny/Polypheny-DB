@@ -49,7 +49,7 @@ public class FileValues extends Values implements FileAlg {
 
     @Override
     public void implement( final FileImplementor implementor ) {
-        AlgRecordType recordType = (AlgRecordType) getRowType();
+        AlgRecordType recordType = (AlgRecordType) getTupleType();
         if ( recordType.toString().equals( "RecordType(INTEGER ZERO)" ) ) {
             implementor.setBatchInsert( true );
             return;

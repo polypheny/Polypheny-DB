@@ -381,7 +381,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
 
 
     private void handlePreparedInsert( Implementor implementor, MongoProject input ) {
-        if ( !(input.getInput() instanceof MongoValues || input.getInput() instanceof MongoDocuments) && input.getInput().getRowType().getFields().size() == 1 ) {
+        if ( !(input.getInput() instanceof MongoValues || input.getInput() instanceof MongoDocuments) && input.getInput().getTupleType().getFields().size() == 1 ) {
             return;
         }
 
@@ -389,12 +389,12 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
         MongoEntity entity = implementor.getEntity();
         GridFSBucket bucket = implementor.getBucket();
         //noinspection AssertWithSideEffects
-        assert input.getRowType().getFieldCount() == this.getEntity().getRowType().getFieldCount();
+        assert input.getTupleType().getFieldCount() == this.getEntity().getRowType().getFieldCount();
         implementor.setEntity( entity );
 
         int pos = 0;
         for ( RexNode rexNode : input.getChildExps() ) {
-            String physicalName = entity.getPhysicalName( input.getRowType().getFields().get( pos ).getName() );
+            String physicalName = entity.getPhysicalName( input.getTupleType().getFields().get( pos ).getName() );
             if ( rexNode instanceof RexDynamicParam ) {
                 // preparedInsert
                 doc.append( physicalName, new BsonDynamic( (RexDynamicParam) rexNode ) );
@@ -456,7 +456,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
         AlgDataType valRowType = rowType;
 
         if ( valRowType == null ) {
-            valRowType = values.getRowType();
+            valRowType = values.getTupleType();
         }
 
         List<String> columnNames = entity.getRowType().getFieldNames();

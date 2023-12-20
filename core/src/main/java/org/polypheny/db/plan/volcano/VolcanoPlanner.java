@@ -770,9 +770,9 @@ public class VolcanoPlanner extends AbstractAlgOptPlanner {
         } else {
             assert AlgOptUtil.equal(
                     "alg rowtype",
-                    alg.getRowType(),
+                    alg.getTupleType(),
                     "equivAlg rowtype",
-                    equivAlg.getRowType(),
+                    equivAlg.getTupleType(),
                     Litmus.THROW );
             set = getSet( equivAlg );
         }
@@ -1076,7 +1076,7 @@ public class VolcanoPlanner extends AbstractAlgOptPlanner {
         pw.println( "Sets:" );
         Ordering<AlgSet> ordering = Ordering.from( Comparator.comparingInt( o -> o.id ) );
         for ( AlgSet set : ordering.immutableSortedCopy( allSets ) ) {
-            pw.println( "Set#" + set.id + ", type: " + set.subsets.get( 0 ).getRowType() );
+            pw.println( "Set#" + set.id + ", type: " + set.subsets.get( 0 ).getTupleType() );
             int j = -1;
             for ( AlgSubset subset : set.subsets ) {
                 ++j;
@@ -1141,9 +1141,9 @@ public class VolcanoPlanner extends AbstractAlgOptPlanner {
 
                 assert AlgOptUtil.equal(
                         "alg rowtype",
-                        alg.getRowType(),
+                        alg.getTupleType(),
                         "equivAlg rowtype",
-                        equivAlg.getRowType(),
+                        equivAlg.getTupleType(),
                         Litmus.THROW );
 
                 mapDigestToAlg.put( newDigest, equivAlg );
@@ -1189,9 +1189,9 @@ public class VolcanoPlanner extends AbstractAlgOptPlanner {
             assert equivRel.getTraitSet().equals( alg.getTraitSet() );
             assert AlgOptUtil.equal(
                     "alg rowtype",
-                    alg.getRowType(),
+                    alg.getTupleType(),
                     "equivAlg rowtype",
-                    equivRel.getRowType(),
+                    equivRel.getTupleType(),
                     Litmus.THROW );
 
             AlgSubset equivAlgSubset = getSubset( equivRel );
@@ -1412,8 +1412,8 @@ public class VolcanoPlanner extends AbstractAlgOptPlanner {
             return getSubset( alg );
         } else {
             assert AlgOptUtil.equal(
-                    "left", equivExp.getRowType(),
-                    "right", alg.getRowType(),
+                    "left", equivExp.getTupleType(),
+                    "right", alg.getTupleType(),
                     Litmus.THROW );
             AlgSet equivSet = getSet( equivExp );
             if ( equivSet != null ) {
@@ -1440,9 +1440,9 @@ public class VolcanoPlanner extends AbstractAlgOptPlanner {
                     if ( (equivAlg != alg) && (equivAlg != null) ) {
                         assert AlgOptUtil.equal(
                                 "alg rowtype",
-                                alg.getRowType(),
+                                alg.getTupleType(),
                                 "equivAlg rowtype",
-                                equivAlg.getRowType(),
+                                equivAlg.getTupleType(),
                                 Litmus.THROW );
 
                         // Make sure this bad alg didn't get into the set in any way (fixupInputs will do this but it

@@ -112,7 +112,7 @@ public class AggregateFilterTransposeRule extends AlgOptRule {
                 aggregate.getAggCallList() );
         final TargetMapping mapping = Mappings.target(
                 newGroupSet::indexOf,
-                input.getRowType().getFieldCount(),
+                input.getTupleType().getFieldCount(),
                 newGroupSet.cardinality() );
         final RexNode newCondition =
                 RexUtil.apply( mapping, filter.getCondition() );

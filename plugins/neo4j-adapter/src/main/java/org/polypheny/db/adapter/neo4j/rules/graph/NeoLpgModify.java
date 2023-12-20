@@ -127,7 +127,7 @@ public class NeoLpgModify extends LpgModify<NeoGraph> implements NeoGraphAlg {
         // match -> project -> create
         List<NeoStatement> statements = new ArrayList<>();
         for ( RexNode projectProject : project.getProjects() ) {
-            Translator translator = new Translator( project.getRowType(), project.getInput().getRowType(), new HashMap<>(), null, mappingLabel, true );
+            Translator translator = new Translator( project.getTupleType(), project.getInput().getTupleType(), new HashMap<>(), null, mappingLabel, true );
             statements.add( literal_( projectProject.accept( translator ) ) );
         }
         return statements;
@@ -180,7 +180,7 @@ public class NeoLpgModify extends LpgModify<NeoGraph> implements NeoGraphAlg {
     private void handleUpdate( NeoGraphImplementor implementor ) {
         List<NeoStatement> ops = new ArrayList<>();
         for ( RexNode rexNode : operations ) {
-            Translator translator = new Translator( getRowType(), implementor.getLast().getRowType(), new HashMap<>(), null, implementor.getGraph().mappingLabel, false );
+            Translator translator = new Translator( getTupleType(), implementor.getLast().getTupleType(), new HashMap<>(), null, implementor.getGraph().mappingLabel, false );
             ops.add( literal_( rexNode.accept( translator ) ) );
         }
 

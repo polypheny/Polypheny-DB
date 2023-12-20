@@ -127,7 +127,7 @@ class PlannerTests {
 
         @Override
         protected AlgDataType deriveRowType() {
-            return getInput().getRowType();
+            return getInput().getTupleType();
         }
 
 

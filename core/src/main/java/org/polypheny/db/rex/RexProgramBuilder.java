@@ -42,6 +42,7 @@ import java.util.Objects;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptPredicateList;
 import org.polypheny.db.plan.AlgOptUtil;
@@ -754,6 +755,11 @@ public class RexProgramBuilder {
      */
     public void addIdentity() {
         assert projectRefList.isEmpty();
+        if ( inputRowType instanceof GraphType ) {
+            addProject( 0, "graph" );
+            return;
+        }
+
         for ( AlgDataTypeField field : inputRowType.getFields() ) {
             addProject(
                     new RexIndexRef( field.getIndex(), field.getType() ),

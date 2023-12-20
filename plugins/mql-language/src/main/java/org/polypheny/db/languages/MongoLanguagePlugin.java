@@ -26,7 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
@@ -104,7 +104,7 @@ public class MongoLanguagePlugin extends PolyPlugin {
             if ( queryNode.getEntity() == null ) {
                 continue;
             }
-            Optional<LogicalCollection> collection = snapshot.doc().getCollection( context.getNamespaceId(), queryNode.getEntity() );
+            Optional<LogicalEntity> collection = snapshot.getLogicalEntity( context.getNamespaceId(), queryNode.getEntity() );
             if ( collection.isEmpty() && !created.contains( Pair.of( context.getNamespaceId(), queryNode.getEntity() ) ) ) {
                 if ( queryNode instanceof MqlCreateCollection || queryNode instanceof MqlCreateView ) {
                     // entity was created during this query

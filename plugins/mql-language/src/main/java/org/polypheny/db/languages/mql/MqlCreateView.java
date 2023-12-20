@@ -70,7 +70,7 @@ public class MqlCreateView extends MqlNode implements ExecutableStatement {
                 true,
                 statement,
                 placementType,
-                algRoot.alg.getRowType().getFieldNames(),
+                algRoot.alg.getTupleType().getFieldNames(),
                 buildQuery(),
                 QueryLanguage.from( "mongo" ) );
 

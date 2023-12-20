@@ -112,7 +112,7 @@ public class MultiJoinOptimizeBushyRule extends AlgOptRule {
             final AlgNode alg = multiJoin.getJoinFactor( i );
             double cost = mq.getRowCount( alg );
             vertexes.add( new LeafVertex( i, alg, cost, x ) );
-            x += alg.getRowType().getFieldCount();
+            x += alg.getTupleType().getFieldCount();
         }
         assert x == multiJoin.getNumTotalFields();
 
@@ -227,7 +227,7 @@ public class MultiJoinOptimizeBushyRule extends AlgOptRule {
                 LeafVertex leafVertex = (LeafVertex) vertex;
                 final Mappings.TargetMapping mapping =
                         Mappings.offsetSource(
-                                Mappings.createIdentity( leafVertex.alg.getRowType().getFieldCount() ),
+                                Mappings.createIdentity( leafVertex.alg.getTupleType().getFieldCount() ),
                                 leafVertex.fieldOffset,
                                 multiJoin.getNumTotalFields() );
                 algNodes.add( Pair.of( leafVertex.alg, mapping ) );
@@ -239,7 +239,7 @@ public class MultiJoinOptimizeBushyRule extends AlgOptRule {
                 final Pair<AlgNode, Mappings.TargetMapping> rightPair = algNodes.get( joinVertex.rightFactor );
                 AlgNode right = rightPair.left;
                 final Mappings.TargetMapping rightMapping = rightPair.right;
-                final Mappings.TargetMapping mapping = Mappings.merge( leftMapping, Mappings.offsetTarget( rightMapping, left.getRowType().getFieldCount() ) );
+                final Mappings.TargetMapping mapping = Mappings.merge( leftMapping, Mappings.offsetTarget( rightMapping, left.getTupleType().getFieldCount() ) );
                 if ( pw != null ) {
                     pw.println( "left: " + leftMapping );
                     pw.println( "right: " + rightMapping );

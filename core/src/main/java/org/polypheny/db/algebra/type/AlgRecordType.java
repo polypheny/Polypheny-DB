@@ -80,6 +80,12 @@ public class AlgRecordType extends AlgDataTypeImpl implements Serializable {
 
 
     @Override
+    public AlgDataType asRelational() {
+        return this;
+    }
+
+
+    @Override
     public int getPrecision() {
         // REVIEW angel: Put in fake implementation for precision
         return 0;

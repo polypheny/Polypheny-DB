@@ -100,7 +100,7 @@ public class SortProjectTransposeRule extends AlgOptRule {
         }
 
         // Determine mapping between project input and output fields. If sort relies on non-trivial expressions, we can't push.
-        final TargetMapping map = AlgOptUtil.permutationIgnoreCast( project.getProjects(), project.getInput().getRowType() );
+        final TargetMapping map = AlgOptUtil.permutationIgnoreCast( project.getProjects(), project.getInput().getTupleType() );
         for ( AlgFieldCollation fc : sort.getCollation().getFieldCollations() ) {
             if ( map.getTargetOpt( fc.getFieldIndex() ) < 0 ) {
                 return;

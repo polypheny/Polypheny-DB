@@ -94,7 +94,7 @@ public class AlgMdDistinctRowCount implements MetadataHandler<BuiltInMetadata.Di
 
     public Double getDistinctRowCount( Union alg, AlgMetadataQuery mq, ImmutableBitSet groupKey, RexNode predicate ) {
         double rowCount = 0.0;
-        int[] adjustments = new int[alg.getRowType().getFieldCount()];
+        int[] adjustments = new int[alg.getTupleType().getFieldCount()];
         RexBuilder rexBuilder = alg.getCluster().getRexBuilder();
         for ( AlgNode input : alg.getInputs() ) {
             // convert the predicate to reference the types of the union child
@@ -107,7 +107,7 @@ public class AlgMdDistinctRowCount implements MetadataHandler<BuiltInMetadata.Di
                                 new AlgOptUtil.RexInputConverter(
                                         rexBuilder,
                                         null,
-                                        input.getRowType().getFields(),
+                                        input.getTupleType().getFields(),
                                         adjustments ) );
             }
             Double partialRowCount = mq.getDistinctRowCount( input, groupKey, modifiedPred );
@@ -226,7 +226,7 @@ public class AlgMdDistinctRowCount implements MetadataHandler<BuiltInMetadata.Di
 
         final List<RexNode> notPushable = new ArrayList<>();
         final List<RexNode> pushable = new ArrayList<>();
-        AlgOptUtil.splitFilters( ImmutableBitSet.range( alg.getRowType().getFieldCount() ), predicate, pushable, notPushable );
+        AlgOptUtil.splitFilters( ImmutableBitSet.range( alg.getTupleType().getFieldCount() ), predicate, pushable, notPushable );
         final RexBuilder rexBuilder = alg.getCluster().getRexBuilder();
 
         // get the distinct row count of the child input, passing in the columns and filters that only reference the child; convert the filter to reference the children projection expressions

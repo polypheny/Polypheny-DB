@@ -82,7 +82,7 @@ public class ProjectRemoveRule extends AlgOptRule {
                     childProject.getTraitSet(),
                     childProject.getInput(),
                     childProject.getProjects(),
-                    project.getRowType() );
+                    project.getTupleType() );
         }
         AlgNode child = call.getPlanner().register( stripped, project );
         call.transformTo( child );
@@ -98,7 +98,7 @@ public class ProjectRemoveRule extends AlgOptRule {
 
 
     public static boolean isTrivial( Project project ) {
-        return RexUtil.isIdentity( project.getProjects(), project.getInput().getRowType() );
+        return RexUtil.isIdentity( project.getProjects(), project.getInput().getTupleType() );
     }
 
 }

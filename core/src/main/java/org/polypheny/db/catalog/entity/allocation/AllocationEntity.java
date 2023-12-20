@@ -33,7 +33,7 @@ import org.polypheny.db.catalog.logistic.PartitionType;
 @Value
 @NonFinal
 @Slf4j
-@SuperBuilder
+@SuperBuilder(toBuilder = true)
 @SerializeClass(subclasses = { AllocationTable.class, AllocationGraph.class, AllocationCollection.class })
 public abstract class AllocationEntity extends Entity {
 
@@ -77,5 +77,8 @@ public abstract class AllocationEntity extends Entity {
         log.warn( "change me" );
         return PartitionType.NONE;
     }
+
+
+    public abstract Entity withName( String name );
 
 }

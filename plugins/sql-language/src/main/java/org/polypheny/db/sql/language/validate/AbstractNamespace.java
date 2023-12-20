@@ -24,6 +24,8 @@ import org.polypheny.db.algebra.constant.Modality;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.DocumentType;
+import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.util.Pair;
@@ -112,6 +114,12 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
 
     @Override
     public AlgDataType getRowType() {
+        if ( rowType instanceof GraphType ) {
+            return GraphType.ofRelational();
+        }
+        if ( rowType instanceof DocumentType ) {
+            return DocumentType.ofCrossRelational();
+        }
         if ( rowType == null ) {
             validator.validateNamespace( this, validator.unknownType );
             Preconditions.checkArgument( rowType != null, "validate must set rowType" );

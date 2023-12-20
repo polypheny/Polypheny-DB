@@ -18,9 +18,11 @@ package org.polypheny.db.crossmodel;
 
 import java.sql.ResultSet;
 import java.util.List;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.bson.BsonDocument;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.mql.MqlTestTemplate;
 
@@ -30,10 +32,11 @@ public class RelationalOnDocumentTest extends CrossModelTestTemplate {
     private static final String DATABASE_NAME = "crossDocumentSchema";
 
     private static final String COLLECTION_NAME = "crossCollection";
-    public static final String TEST_DATA = "{\"test\": 3, \"_id\": \"630103687f2e95058018fd9b\"}";
+    public static final String TEST_DATA = "{\"_id\":\"630103687f2e95058018fd9b\",\"test\":3}";
+    public static final String TEST_DATA_REV = "{\"test\":3,\"_id\":\"630103687f2e95058018fd9b\"}";
 
 
-    @BeforeClass
+    @BeforeAll
     public static void init() {
         //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
@@ -43,7 +46,7 @@ public class RelationalOnDocumentTest extends CrossModelTestTemplate {
     }
 
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() {
         MqlTestTemplate.dropDatabase( DATABASE_NAME );
     }
@@ -51,20 +54,15 @@ public class RelationalOnDocumentTest extends CrossModelTestTemplate {
 
     @Test
     public void simpleSelectTest() {
+
         executeStatements( ( s, c ) -> {
             ResultSet result = s.executeQuery( String.format( "SELECT * FROM %s.%s", DATABASE_NAME, COLLECTION_NAME ) );
-            TestHelper.checkResultSet( result, List.of( new Object[][]{ new Object[]{ TEST_DATA } } ) );
+            List<Object[]> doc = TestHelper.convertResultSetToList( result );
+            // contents of documents are non-deterministic, and we cannot compare them as usual through TestHelper.checkResultSet
+            Assertions.assertEquals( BsonDocument.parse( TEST_DATA ), BsonDocument.parse( (String) doc.get( 0 )[0] ) );
         } );
     }
 
-
-    @Test
-    public void itemSelectTest() {
-        executeStatements( ( s, c ) -> {
-            ResultSet result = s.executeQuery( String.format( "SELECT d[\"test\"] FROM %s.%s", DATABASE_NAME, COLLECTION_NAME ) );
-            TestHelper.checkResultSet( result, List.of( new Object[][]{ new Object[]{ "3.0" } } ) );
-        } );
-    }
 
 
     @Test

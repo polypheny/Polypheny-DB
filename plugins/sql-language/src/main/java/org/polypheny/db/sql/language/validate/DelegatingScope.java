@@ -251,6 +251,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                             throw validator.newValidationError( identifier, Static.RESOURCE.columnNotFoundDidYouMean( columnName, Util.sepList( list, "', '" ) ) );
                         }
                     } else if ( SqlValidatorUtil.isNotRelational( validator ) ) {
+
                         // todo dl, check if this does not lead to problems
                         return SqlQualified.create( this, 0, validator.getSqlNamespace( identifier ), identifier );
                     }
@@ -411,7 +412,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                 break;
             default:
                 final Comparator<Resolve> c =
-                        new Comparator<Resolve>() {
+                        new Comparator<>() {
                             @Override
                             public int compare( Resolve o1, Resolve o2 ) {
                                 // Name resolution that uses fewer implicit steps wins.

@@ -46,7 +46,7 @@ public class DocumentProjectToCalcRule extends ConverterRule {
         final AlgNode input = project.getInput();
         NameRefReplacer replacer = new NameRefReplacer( project.getCluster(), false );
         List<RexNode> adjustedProjects = List.of( project.asSingleProject().accept( replacer ) );
-        final RexProgram program = RexProgram.create( input.getRowType(), adjustedProjects, null, DocumentType.ofId(), project.getCluster().getRexBuilder() );
+        final RexProgram program = RexProgram.create( input.getTupleType(), adjustedProjects, null, DocumentType.ofId(), project.getCluster().getRexBuilder() );
         return EnumerableCalc.create( convert( input, input.getTraitSet().replace( EnumerableConvention.INSTANCE ) ), program );
     }
 

@@ -81,7 +81,7 @@ public class FilterCalcMergeRule extends AlgOptRule {
 
         // Create a program containing the filter.
         final RexBuilder rexBuilder = filter.getCluster().getRexBuilder();
-        final RexProgramBuilder progBuilder = new RexProgramBuilder( calc.getRowType(), rexBuilder );
+        final RexProgramBuilder progBuilder = new RexProgramBuilder( calc.getTupleType(), rexBuilder );
         progBuilder.addIdentity();
         progBuilder.addCondition( filter.getCondition() );
         RexProgram topProgram = progBuilder.getProgram();

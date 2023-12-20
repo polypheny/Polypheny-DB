@@ -23,20 +23,16 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.polypheny.db.AdapterTestSuite;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.db.excluded.FileExcluded;
-import org.polypheny.db.excluded.HsqldbExcluded;
-import org.polypheny.db.excluded.MonetdbExcluded;
 
 
 @SuppressWarnings({ "SqlNoDataSourceInspection", "SqlDialectInspection" })
 @Slf4j
-@Category(AdapterTestSuite.class)
+@Tag("adapter")
 public class JdbcArrayTest {
 
 
@@ -80,7 +76,7 @@ public class JdbcArrayTest {
             new Object[]{ "foo", "bar" } };
 
 
-    @BeforeClass
+    @BeforeAll
     public static void start() throws SQLException {
         // Ensures that Polypheny-DB is running
         //noinspection ResultOfMethodCallIgnored
@@ -181,7 +177,7 @@ public class JdbcArrayTest {
 
 
     @Test
-    @Category({ FileExcluded.class })
+    @Tag("fileExcluded")
     public void arrayTypesViewTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -243,7 +239,7 @@ public class JdbcArrayTest {
 
 
     @Test
-    @Category({ FileExcluded.class })
+    @Tag("fileExcluded")
     public void arrayTypesMaterializedTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -305,7 +301,7 @@ public class JdbcArrayTest {
 
 
     @Test
-    @Category({ FileExcluded.class })
+    @Tag("fileExcluded")
     public void itemOperatorTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -340,7 +336,9 @@ public class JdbcArrayTest {
 
     @Test
     //@Ignore
-    @Category({ FileExcluded.class, HsqldbExcluded.class, MonetdbExcluded.class })
+    @Tag("fileExcluded")
+    @Tag("hsqldbExcluded")
+    @Tag("monetdbExcluded")
     public void itemOperatorTest2() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -370,7 +368,7 @@ public class JdbcArrayTest {
 
 
     @Test
-    @Category({ FileExcluded.class })
+    @Tag("fileExcluded")
     public void nullTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -394,7 +392,7 @@ public class JdbcArrayTest {
 
 
     @Test
-    @Category({ FileExcluded.class })
+    @Tag("fileExcluded")
     public void arrayFilterTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

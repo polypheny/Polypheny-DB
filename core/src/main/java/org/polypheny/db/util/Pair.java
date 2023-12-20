@@ -35,8 +35,13 @@ package org.polypheny.db.util;
 
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.AbstractList;
 import java.util.Collections;
@@ -48,6 +53,7 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 import lombok.Value;
 import lombok.experimental.NonFinal;
+import org.polypheny.db.util.Pair.PairSerializer;
 
 
 /**
@@ -60,11 +66,13 @@ import lombok.experimental.NonFinal;
  */
 @Value
 @NonFinal
+@JsonSerialize(using = PairSerializer.class)
 public class Pair<T1, T2> implements Comparable<Pair<T1, T2>>, Map.Entry<T1, T2>, Serializable {
 
     @Serialize
     @JsonProperty
     public T1 left;
+
     @Serialize
     @JsonProperty
     public T2 right;
@@ -583,6 +591,19 @@ public class Pair<T1, T2> implements Comparable<Pair<T1, T2>>, Map.Entry<T1, T2>
         @Override
         public void remove() {
             throw new UnsupportedOperationException( "remove" );
+        }
+
+    }
+
+
+    static class PairSerializer extends JsonSerializer<Pair<?, ?>> {
+
+        @Override
+        public void serialize( Pair<?, ?> value, JsonGenerator gen, SerializerProvider serializers ) throws IOException {
+            gen.writeStartObject();
+            gen.writeObjectField( "left", value.left );
+            gen.writeObjectField( "right", value.right );
+            gen.writeEndObject();
         }
 
     }

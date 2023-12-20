@@ -85,7 +85,7 @@ import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolySymbol;
 import org.polypheny.db.type.entity.PolyTime;
-import org.polypheny.db.type.entity.PolyTimeStamp;
+import org.polypheny.db.type.entity.PolyTimestamp;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.util.BsonUtil;
@@ -728,7 +728,7 @@ public class RexBuilder {
      * @param input Input relational expression
      */
     public RexNode makeRangeReference( AlgNode input ) {
-        return new RexRangeRef( input.getRowType(), 0 );
+        return new RexRangeRef( input.getTupleType(), 0 );
     }
 
 
@@ -771,7 +771,7 @@ public class RexBuilder {
      * @see #identityProjects(AlgDataType)
      */
     public RexIndexRef makeInputRef( AlgNode input, int i ) {
-        return makeInputRef( input.getRowType().getFields().get( i ).getType(), i );
+        return makeInputRef( input.getTupleType().getFields().get( i ).getType(), i );
     }
 
 
@@ -1112,15 +1112,15 @@ public class RexBuilder {
      */
     public RexLiteral makeTimestampLiteral( TimestampString timestamp, int precision ) {
         return makeLiteral(
-                PolyTimeStamp.of( timestamp.getMillisSinceEpoch() ),
+                PolyTimestamp.of( timestamp.getMillisSinceEpoch() ),
                 typeFactory.createPolyType( PolyType.TIMESTAMP, precision ),
                 PolyType.TIMESTAMP );
     }
 
 
-    public RexLiteral makeTimestampLiteral( PolyTimeStamp timestamp, int precision ) {
+    public RexLiteral makeTimestampLiteral( PolyTimestamp timestamp, int precision ) {
         return makeLiteral(
-                PolyTimeStamp.of( timestamp.milliSinceEpoch ),
+                PolyTimestamp.of( timestamp.milliSinceEpoch ),
                 typeFactory.createPolyType( PolyType.TIMESTAMP, precision ),
                 PolyType.TIMESTAMP );
     }
@@ -1131,13 +1131,13 @@ public class RexBuilder {
      */
     public RexLiteral makeTimestampWithLocalTimeZoneLiteral( TimestampString timestamp, int precision ) {
         return makeLiteral(
-                PolyTimeStamp.of( timestamp.getMillisSinceEpoch() ),
+                PolyTimestamp.of( timestamp.getMillisSinceEpoch() ),
                 typeFactory.createPolyType( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE, precision ),
                 PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE );
     }
 
 
-    private RexNode makeTimestampWithLocalTimeZoneLiteral( PolyTimeStamp timeStamp, int precision ) {
+    private RexNode makeTimestampWithLocalTimeZoneLiteral( PolyTimestamp timeStamp, int precision ) {
         return makeLiteral(
                 timeStamp,
                 typeFactory.createPolyType( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE, precision ),
@@ -1325,9 +1325,9 @@ public class RexBuilder {
             case DATE:
                 return makeDateLiteral( poly.asDate() );
             case TIMESTAMP:
-                return makeTimestampLiteral( poly.asTimeStamp(), type.getPrecision() );
+                return makeTimestampLiteral( poly.asTimestamp(), type.getPrecision() );
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                return makeTimestampWithLocalTimeZoneLiteral( poly.asTimeStamp(), type.getPrecision() );
+                return makeTimestampWithLocalTimeZoneLiteral( poly.asTimestamp(), type.getPrecision() );
             case INTERVAL_YEAR:
             case INTERVAL_YEAR_MONTH:
             case INTERVAL_MONTH:
@@ -1450,7 +1450,7 @@ public class RexBuilder {
             case TIME:
 
             case TIME_WITH_LOCAL_TIME_ZONE:
-                if ( o instanceof PolyTimeStamp ) {
+                if ( o instanceof PolyTimestamp ) {
                     return (PolyValue) o;
                 } else if ( o instanceof Calendar ) {
                     if ( !((Calendar) o).getTimeZone().equals( DateTimeUtils.UTC_ZONE ) ) {
@@ -1477,26 +1477,26 @@ public class RexBuilder {
                 return PolyDate.of( DateString.fromDaysSinceEpoch( (Integer) o ).getMillisSinceEpoch() );
 
             case TIMESTAMP:
-                if ( o instanceof PolyTimeStamp ) {
+                if ( o instanceof PolyTimestamp ) {
                     return (PolyValue) o;
                 } else if ( o instanceof Calendar ) {
                     if ( !((Calendar) o).getTimeZone().equals( DateTimeUtils.UTC_ZONE ) ) {
                         // we have to shift it to utc
-                        return PolyTimeStamp.of( ((Calendar) o).getTimeInMillis() - ((Calendar) o).getTimeZone().getRawOffset() );
+                        return PolyTimestamp.of( ((Calendar) o).getTimeInMillis() - ((Calendar) o).getTimeZone().getRawOffset() );
                     }
                     // we want UTC and but don't want to shift automatically as it is done with the Calendar impl
-                    return PolyTimeStamp.of( ((Calendar) o).getTimeInMillis() );
+                    return PolyTimestamp.of( ((Calendar) o).getTimeInMillis() );
                 } else if ( o instanceof TimestampString ) {
-                    return PolyTimeStamp.of( ((TimestampString) o).getMillisSinceEpoch() );
+                    return PolyTimestamp.of( ((TimestampString) o).getMillisSinceEpoch() );
                 }
-                return PolyTimeStamp.of( TimestampString.fromMillisSinceEpoch( (Long) o ).getMillisSinceEpoch() );
+                return PolyTimestamp.of( TimestampString.fromMillisSinceEpoch( (Long) o ).getMillisSinceEpoch() );
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                if ( o instanceof PolyTimeStamp ) {
+                if ( o instanceof PolyTimestamp ) {
                     return (PolyValue) o;
                 } else if ( o instanceof TimestampString ) {
-                    return PolyTimeStamp.of( ((TimestampString) o).getMillisSinceEpoch() );
+                    return PolyTimestamp.of( ((TimestampString) o).getMillisSinceEpoch() );
                 }
-                return PolyTimeStamp.of( TimestampString.fromMillisSinceEpoch( (Long) o ).getMillisSinceEpoch() );
+                return PolyTimestamp.of( TimestampString.fromMillisSinceEpoch( (Long) o ).getMillisSinceEpoch() );
             case ARRAY:
                 ArrayType arrayType = (ArrayType) type;
                 List<PolyValue> list = new ArrayList<>();
@@ -1624,6 +1624,22 @@ public class RexBuilder {
                 typeFactory.createArrayType( typeFactory.createPolyType( PolyType.VARCHAR, 255 ), -1 ),
                 OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_EXTRACT_LABELS ),
                 List.of( makeInputRef( typeFactory.createPolyType( PolyType.NODE ), 0 ) ) );
+    }
+
+
+    public RexCall makeHasLabel( String label ) {
+        return new RexCall(
+                typeFactory.createPolyType( PolyType.BOOLEAN ),
+                OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_HAS_LABEL ),
+                List.of( makeInputRef( typeFactory.createPolyType( PolyType.NODE ), 0 ), makeLiteral( label ) ) );
+    }
+
+
+    public RexCall makeLabelFilter( String label ) {
+        return new RexCall(
+                typeFactory.createPolyType( PolyType.BOOLEAN ),
+                OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_GRAPH_ONLY_LABEL ),
+                List.of( makeInputRef( typeFactory.createPolyType( PolyType.GRAPH ), 0 ), makeLiteral( label ) ) );
     }
 
 }

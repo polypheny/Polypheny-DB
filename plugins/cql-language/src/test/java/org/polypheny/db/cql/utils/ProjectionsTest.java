@@ -16,13 +16,14 @@
 
 package org.polypheny.db.cql.utils;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.cql.ColumnIndex;
 import org.polypheny.db.cql.Modifier;
@@ -74,12 +75,12 @@ public class ProjectionsTest extends AlgBuildTestHelper {
         projections.add( deptname, deptnameModifiers );
         algBuilder = projections.convert2Rel( tableScanOrdinalities, algBuilder, rexBuilder );
         AlgNode algNode = algBuilder.peek();
-        List<String> actualFieldNames = algNode.getRowType().getFieldNames();
+        List<String> actualFieldNames = algNode.getTupleType().getFieldNames();
         List<String> expectedFieldNames = new ArrayList<>();
         expectedFieldNames.add( "test.employee.empname" );
         expectedFieldNames.add( "test.dept.deptname" );
 
-        Assert.assertEquals( expectedFieldNames, actualFieldNames );
+        assertEquals( expectedFieldNames, actualFieldNames );
     }
 
 
@@ -89,12 +90,12 @@ public class ProjectionsTest extends AlgBuildTestHelper {
         projections.add( empname, empnameModifiers );
         algBuilder = projections.convert2Rel( tableScanOrdinalities, algBuilder, rexBuilder );
         AlgNode algNode = algBuilder.peek();
-        List<String> actualFieldNames = algNode.getRowType().getFieldNames();
+        List<String> actualFieldNames = algNode.getTupleType().getFieldNames();
         String actualFieldName = actualFieldNames.get( 0 );
         String expectedFieldName = AggregationFunctions.COUNT.getAliasWithColumnName( empname.fullyQualifiedName );
 
-        Assert.assertEquals( 1, actualFieldNames.size() );
-        Assert.assertEquals( expectedFieldName, actualFieldName );
+        assertEquals( 1, actualFieldNames.size() );
+        assertEquals( expectedFieldName, actualFieldName );
     }
 
 
@@ -105,12 +106,12 @@ public class ProjectionsTest extends AlgBuildTestHelper {
         projections.add( deptname, deptnameModifiers );
         algBuilder = projections.convert2Rel( tableScanOrdinalities, algBuilder, rexBuilder );
         AlgNode algNode = algBuilder.peek();
-        List<String> actualFieldNames = algNode.getRowType().getFieldNames();
+        List<String> actualFieldNames = algNode.getTupleType().getFieldNames();
         List<String> expectedFiledNames = new ArrayList<>();
         expectedFiledNames.add( AggregationFunctions.COUNT.getAliasWithColumnName( empname.fullyQualifiedName ) );
         expectedFiledNames.add( deptname.fullyQualifiedName );
 
-        Assert.assertEquals( expectedFiledNames, actualFieldNames );
+        assertEquals( expectedFiledNames, actualFieldNames );
     }
 
 
@@ -118,7 +119,7 @@ public class ProjectionsTest extends AlgBuildTestHelper {
         Map<String, Modifier> modifiers = new TreeMap<>( String.CASE_INSENSITIVE_ORDER );
         modifiers.put( modifierName, new Modifier( modifierName ) );
         String actual = Projections.getAggregationFunction( columnIndex, modifiers );
-        Assert.assertEquals( expected, actual );
+        assertEquals( expected, actual );
     }
 
 }

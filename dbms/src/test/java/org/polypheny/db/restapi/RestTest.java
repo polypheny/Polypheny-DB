@@ -39,21 +39,21 @@ import kong.unirest.RequestBodyEntity;
 import kong.unirest.Unirest;
 import kong.unirest.UnirestException;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
 @SuppressWarnings("SqlDialectInspection")
 @Slf4j
-@Category(AdapterTestSuite.class)
+@Tag("adapter")
 public class RestTest {
 
-    @BeforeClass
+    @BeforeAll
     public static void start() throws SQLException {
         // Ensures that Polypheny-DB is running
         //noinspection ResultOfMethodCallIgnored
@@ -62,7 +62,7 @@ public class RestTest {
     }
 
 
-    @AfterClass
+    @AfterAll
     public static void stop() {
         deleteOldData();
     }
@@ -184,7 +184,7 @@ public class RestTest {
     public void testOperations() {
         // Insert
         HttpRequest<?> request = buildRestInsert( "restschema.resttest", ImmutableList.of( getTestRow() ) );
-        Assert.assertEquals(
+        Assertions.assertEquals(
                 "{\"result\":[{\"ROWCOUNT\":1}],\"size\":1}",
                 executeRest( request ).getBody() );
 
@@ -192,7 +192,7 @@ public class RestTest {
         Map<String, String> where = new LinkedHashMap<>();
         where.put( "restschema.resttest.tsmallint", "=" + 45 );
         request = buildRestUpdate( "restschema.resttest", getTestRow( 1 ), where );
-        Assert.assertEquals(
+        Assertions.assertEquals(
                 "{\"result\":[{\"ROWCOUNT\":1}],\"size\":1}",
                 executeRest( request ).getBody() );
 
@@ -200,7 +200,7 @@ public class RestTest {
         Map<String, String> where2 = new LinkedHashMap<>();
         where2.put( "restschema.resttest.tsmallint", "=" + 46 );
         request = buildRestUpdate( "restschema.resttest", getTestRow( 0 ), where2 );
-        Assert.assertEquals(
+        Assertions.assertEquals(
                 "{\"result\":[{\"ROWCOUNT\":1}],\"size\":1}",
                 executeRest( request ).getBody() );
 
@@ -211,31 +211,31 @@ public class RestTest {
         String expected = "{\"result\":[{\"restschema.resttest.tsmallint\":45,\"restschema.resttest.tdecimal\":123.45,\"restschema.resttest.ttinyint\":22,\"restschema.resttest.treal\":0.3333,\"restschema.resttest.tinteger\":9876,\"restschema.resttest.ttime\":43505000,\"restschema.resttest.tbigint\":1234,\"restschema.resttest.tboolean\":true,\"restschema.resttest.tdate\":18466,\"restschema.resttest.tdouble\":1.999999,\"restschema.resttest.tvarchar\":\"hallo\",\"restschema.resttest.ttimestamp\":\"2020-07-23T12:05:05\"}],\"size\":1}";
         JsonElement jsonExpected = JsonParser.parseString( expected );
         JsonElement jsonResult = JsonParser.parseString( executeRest( request ).getBody() );
-        Assert.assertEquals( jsonExpected, jsonResult );
+        Assertions.assertEquals( jsonExpected, jsonResult );
 
         // Delete
         where = new LinkedHashMap<>();
         where.put( "restschema.resttest.tvarchar", "=" + "hallo" );
         request = buildRestDelete( "restschema.resttest", where );
-        Assert.assertEquals(
+        Assertions.assertEquals(
                 "{\"result\":[{\"ROWCOUNT\":1}],\"size\":1}",
                 executeRest( request ).getBody() );
 
         // Select
         request = Unirest.get( "{protocol}://{host}:{port}/restapi/v1/res/restschema.resttest" )
                 .queryString( "restschema.resttest.tinteger", "=" + 9876 );
-        Assert.assertEquals(
+        Assertions.assertEquals(
                 "{\"result\":[],\"size\":0}",
                 executeRest( request ).getBody() );
 
         //Select View
         request = Unirest.get( "{protocol}://{host}:{port}/restapi/v1/res/restschema.viewtest" ).
                 queryString( "restschema.viewtest.tinteger", "=" + 9876 );
-        Assert.assertEquals( "{\"result\":[],\"size\":0}",
+        Assertions.assertEquals( "{\"result\":[],\"size\":0}",
                 executeRest( request ).getBody() );
 
         request = Unirest.get( "{protocol}://{host}:{port}/restapi/v1/res/restschema.materializedtest" ).queryString( "restschema.materializedtest.tinteger", "=" + 9876 );
-        Assert.assertEquals( "{\"result\":[],\"size\":0}",
+        Assertions.assertEquals( "{\"result\":[],\"size\":0}",
                 executeRest( request ).getBody() );
     }
 

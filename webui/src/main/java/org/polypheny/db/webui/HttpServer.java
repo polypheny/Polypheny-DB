@@ -366,7 +366,7 @@ public class HttpServer implements Runnable {
 
 
     public void addSerializedRoute( String route, Consumer<Context> action, HandlerType type ) {
-        log.info( "Added route: {}", route );
+        log.debug( "Added route: {}", route );
         switch ( type ) {
             case GET:
                 server.get( route, action::accept );

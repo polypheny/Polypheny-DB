@@ -68,7 +68,7 @@ import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyTimeStamp;
+import org.polypheny.db.type.entity.PolyTimestamp;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.util.Pair;
 
@@ -124,7 +124,7 @@ public class DocumentUtil {
             case 16:
                 return new Pair<>( BsonInt32.class, PolyInteger.class );
             case 17:
-                return new Pair<>( BsonTimestamp.class, PolyTimeStamp.class );
+                return new Pair<>( BsonTimestamp.class, PolyTimestamp.class );
             case 18:
                 return new Pair<>( BsonInt64.class, PolyLong.class );
             case 19:

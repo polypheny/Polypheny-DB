@@ -113,8 +113,8 @@ public class ProjectJoinTransposeRule extends AlgOptRule {
         if ( join.getCondition() != null ) {
             List<AlgDataTypeField> projJoinFieldList = new ArrayList<>();
             projJoinFieldList.addAll( join.getSystemFieldList() );
-            projJoinFieldList.addAll( leftProjAlg.getRowType().getFields() );
-            projJoinFieldList.addAll( rightProjAlg.getRowType().getFields() );
+            projJoinFieldList.addAll( leftProjAlg.getTupleType().getFields() );
+            projJoinFieldList.addAll( rightProjAlg.getTupleType().getFields() );
             newJoinFilter = pushProject.convertRefsAndExprs( join.getCondition(), projJoinFieldList, adjustments );
         }
 

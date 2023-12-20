@@ -105,8 +105,8 @@ public class JoinCommuteRule extends AlgOptRule {
             return null;
         }
         final RexBuilder rexBuilder = join.getCluster().getRexBuilder();
-        final AlgDataType leftRowType = join.getLeft().getRowType();
-        final AlgDataType rightRowType = join.getRight().getRowType();
+        final AlgDataType leftRowType = join.getLeft().getTupleType();
+        final AlgDataType rightRowType = join.getRight().getTupleType();
         final VariableReplacer variableReplacer = new VariableReplacer( rexBuilder, leftRowType, rightRowType );
         final RexNode oldCondition = join.getCondition();
         RexNode condition = variableReplacer.go( oldCondition );
@@ -116,7 +116,7 @@ public class JoinCommuteRule extends AlgOptRule {
         Join newJoin = join.copy( join.getTraitSet(), condition, join.getRight(), join.getLeft(), joinType.swap(), join.isSemiJoinDone() );
         final List<RexNode> exps = AlgOptUtil.createSwappedJoinExprs( newJoin, join, true );
         return algBuilder.push( newJoin )
-                .project( exps, join.getRowType().getFieldNames() )
+                .project( exps, join.getTupleType().getFieldNames() )
                 .build();
     }
 
@@ -147,7 +147,7 @@ public class JoinCommuteRule extends AlgOptRule {
         // same as 'b join a'. If we didn't do this, the swap join rule would fire on the new join, ad infinitum.
         final AlgBuilder algBuilder = call.builder();
         final List<RexNode> exps = AlgOptUtil.createSwappedJoinExprs( newJoin, join, false );
-        algBuilder.push( swapped ).project( exps, newJoin.getRowType().getFieldNames() );
+        algBuilder.push( swapped ).project( exps, newJoin.getTupleType().getFieldNames() );
 
         call.getPlanner().ensureRegistered( algBuilder.build(), newJoin );
     }

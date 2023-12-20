@@ -155,7 +155,7 @@ public class PolyPluginManager extends DefaultPluginManager {
 
     public static void init( boolean resetPluginsOnStartup ) {
         if ( resetPluginsOnStartup ) {
-            deletePluginFolder();
+            //deletePluginFolder(); we cannot delete the folder, we can only reset the plugins, because we need the folder for the plugins
             RuntimeConfig.AVAILABLE_PLUGINS.getList( ConfigPlugin.class ).clear();
             RuntimeConfig.BLOCKED_PLUGINS.getList( ConfigString.class ).clear();
         }

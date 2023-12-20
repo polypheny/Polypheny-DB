@@ -139,7 +139,7 @@ import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyTime;
-import org.polypheny.db.type.entity.PolyTimeStamp;
+import org.polypheny.db.type.entity.PolyTimestamp;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.category.PolyTemporal;
@@ -275,28 +275,28 @@ public enum BuiltInMethod {
     UPPER( Functions.class, "upper", PolyString.class ),
     LOWER( Functions.class, "lower", PolyString.class ),
     JSONIZE( Functions.class, "jsonize", Object.class ),
-    JSON_VALUE_EXPRESSION( Functions.class, "jsonValueExpression", String.class ),
-    JSON_VALUE_EXPRESSION_EXCLUDE( Functions.class, "jsonValueExpressionExclude", String.class, List.class ),
+    JSON_VALUE_EXPRESSION( Functions.class, "jsonValueExpression", PolyString.class ),
+    JSON_VALUE_EXPRESSION_EXCLUDE( Functions.class, "jsonValueExpressionExclude", PolyString.class, List.class ),
     JSON_STRUCTURED_VALUE_EXPRESSION( Functions.class, "jsonStructuredValueExpression", Object.class ),
-    JSON_API_COMMON_SYNTAX( Functions.class, "jsonApiCommonSyntax", Object.class, String.class ),
-    JSON_EXISTS( Functions.class, "jsonExists", Object.class ),
-    JSON_VALUE_ANY( Functions.class, "jsonValueAny", Object.class, JsonValueEmptyOrErrorBehavior.class, Object.class, JsonValueEmptyOrErrorBehavior.class, Object.class ),
-    JSON_QUERY( Functions.class, "jsonQuery", Object.class, JsonQueryWrapperBehavior.class, JsonQueryEmptyOrErrorBehavior.class, JsonQueryEmptyOrErrorBehavior.class ),
+    JSON_API_COMMON_SYNTAX( Functions.class, "jsonApiCommonSyntax", PolyValue.class, PolyString.class ),
+    JSON_EXISTS( Functions.class, "jsonExists", PolyValue.class ),
+    JSON_VALUE_ANY( Functions.class, "jsonValueAny", PolyValue.class, JsonValueEmptyOrErrorBehavior.class, PolyValue.class, JsonValueEmptyOrErrorBehavior.class, PolyValue.class ),
+    JSON_QUERY( Functions.class, "jsonQuery", PolyValue.class, JsonQueryWrapperBehavior.class, JsonQueryEmptyOrErrorBehavior.class, JsonQueryEmptyOrErrorBehavior.class ),
     JSON_OBJECT( Functions.class, "jsonObject", JsonConstructorNullClause.class ),
-    JSON_OBJECTAGG_ADD( Functions.class, "jsonObjectAggAdd", Map.class, String.class, Object.class, JsonConstructorNullClause.class ),
+    JSON_OBJECTAGG_ADD( Functions.class, "jsonObjectAggAdd", Map.class, String.class, PolyValue.class, JsonConstructorNullClause.class ),
     JSON_ARRAY( Functions.class, "jsonArray", JsonConstructorNullClause.class ),
-    JSON_ARRAYAGG_ADD( Functions.class, "jsonArrayAggAdd", List.class, Object.class, JsonConstructorNullClause.class ),
-    IS_JSON_VALUE( Functions.class, "isJsonValue", String.class ),
-    IS_JSON_OBJECT( Functions.class, "isJsonObject", String.class ),
-    IS_JSON_ARRAY( Functions.class, "isJsonArray", String.class ),
-    IS_JSON_SCALAR( Functions.class, "isJsonScalar", String.class ),
+    JSON_ARRAYAGG_ADD( Functions.class, "jsonArrayAggAdd", List.class, PolyValue.class, JsonConstructorNullClause.class ),
+    IS_JSON_VALUE( Functions.class, "isJsonValue", PolyString.class ),
+    IS_JSON_OBJECT( Functions.class, "isJsonObject", PolyString.class ),
+    IS_JSON_ARRAY( Functions.class, "isJsonArray", PolyString.class ),
+    IS_JSON_SCALAR( Functions.class, "isJsonScalar", PolyString.class ),
     INITCAP( Functions.class, "initcap", String.class ),
     SUBSTRING( Functions.class, "substring", PolyString.class, PolyNumber.class, PolyNumber.class ),
     CHAR_LENGTH( Functions.class, "charLength", PolyString.class ),
     STRING_CONCAT( Functions.class, "concat", PolyString.class, PolyString.class ),
     FLOOR_DIV( TemporalFunctions.class, "floorDiv", PolyNumber.class, PolyNumber.class ),
     FLOOR_MOD( TemporalFunctions.class, "floorMod", PolyNumber.class, PolyNumber.class ),
-    ADD_MONTHS( TemporalFunctions.class, "addMonths", PolyTimeStamp.class, PolyNumber.class ),
+    ADD_MONTHS( TemporalFunctions.class, "addMonths", PolyTimestamp.class, PolyNumber.class ),
     ADD_MONTHS_INT( TemporalFunctions.class, "addMonths", PolyDate.class, PolyNumber.class ),
     SUBTRACT_MONTHS( TemporalFunctions.class, "subtractMonths", PolyDate.class, PolyDate.class ),
     FLOOR( Functions.class, "floor", PolyNumber.class, PolyNumber.class ),
@@ -347,14 +347,14 @@ public enum BuiltInMethod {
     TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_STRING( Functions.class, "timestampWithLocalTimeZoneToString", long.class, TimeZone.class ),
     UNIX_DATE_TO_STRING( TemporalFunctions.class, "unixDateToString", PolyDate.class ),
     UNIX_TIME_TO_STRING( TemporalFunctions.class, "unixTimeToString", PolyTime.class ),
-    UNIX_TIMESTAMP_TO_STRING( TemporalFunctions.class, "unixTimestampToString", PolyTimeStamp.class ),
+    UNIX_TIMESTAMP_TO_STRING( TemporalFunctions.class, "unixTimestampToString", PolyTimestamp.class ),
     INTERVAL_YEAR_MONTH_TO_STRING( TemporalFunctions.class, "intervalYearMonthToString", PolyInterval.class, TimeUnitRange.class ),
     INTERVAL_DAY_TIME_TO_STRING( TemporalFunctions.class, "intervalDayTimeToString", PolyInterval.class, TimeUnitRange.class, PolyNumber.class ),
     UNIX_DATE_EXTRACT( TemporalFunctions.class, "unixDateExtract", TimeUnitRange.class, PolyTemporal.class ),
     UNIX_DATE_FLOOR( TemporalFunctions.class, "unixDateFloor", TimeUnitRange.class, PolyDate.class ),
     UNIX_DATE_CEIL( TemporalFunctions.class, "unixDateCeil", TimeUnitRange.class, PolyDate.class ),
-    UNIX_TIMESTAMP_FLOOR( TemporalFunctions.class, "unixTimestampFloor", TimeUnitRange.class, PolyTimeStamp.class ),
-    UNIX_TIMESTAMP_CEIL( TemporalFunctions.class, "unixTimestampCeil", TimeUnitRange.class, PolyTimeStamp.class ),
+    UNIX_TIMESTAMP_FLOOR( TemporalFunctions.class, "unixTimestampFloor", TimeUnitRange.class, PolyTimestamp.class ),
+    UNIX_TIMESTAMP_CEIL( TemporalFunctions.class, "unixTimestampCeil", TimeUnitRange.class, PolyTimestamp.class ),
     CURRENT_TIMESTAMP( Functions.class, "currentTimestamp", DataContext.class ),
     CURRENT_TIME( Functions.class, "currentTime", DataContext.class ),
     CURRENT_DATE( Functions.class, "currentDate", DataContext.class ),
@@ -493,10 +493,11 @@ public enum BuiltInMethod {
     X_MODEL_TABLE_TO_NODE( CrossModelFunctions.class, "tableToNodes", Enumerable.class, PolyString.class, List.class ),
     X_MODEL_MERGE_NODE_COLLECTIONS( CrossModelFunctions.class, "mergeNodeCollections", List.class ),
     X_MODEL_COLLECTION_TO_NODE( CrossModelFunctions.class, "collectionToNodes", Enumerable.class, PolyString.class ),
-    X_MODEL_NODE_TO_COLLECTION( CrossModelFunctions.class, "nodesToCollection", Enumerable.class ),
+    X_MODEL_NODE_TO_COLLECTION( CrossModelFunctions.class, "nodesToCollection", Enumerable.class, PolyString.class ),
 
     X_MODEL_ITEM( CrossModelFunctions.class, "docItem", String.class, String.class ),
-    SINGLE_TO_ARRAY_ENUMERABLE( Functions.class, "singleToArray", Enumerable.class );
+    SINGLE_TO_ARRAY_ENUMERABLE( Functions.class, "singleToArray", Enumerable.class ),
+    X_MODEL_GRAPH_ONLY_LABEL( CrossModelFunctions.class, "cypherOnlyLabelGraph", PolyValue.class, PolyString.class );
 
     private static final String toIntOptional = "toIntOptional";
     public final Method method;

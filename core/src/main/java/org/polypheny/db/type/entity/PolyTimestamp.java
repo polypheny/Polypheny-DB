@@ -38,51 +38,51 @@ import org.polypheny.db.util.TimestampString;
 @Getter
 @Value
 @EqualsAndHashCode(callSuper = true)
-public class PolyTimeStamp extends PolyTemporal {
+public class PolyTimestamp extends PolyTemporal {
 
     public static final DateFormat dateFormat = new SimpleDateFormat( "yyyy-MM-dd HH:mm:ss" );
 
     public Long milliSinceEpoch; // normalized to UTC
 
 
-    public PolyTimeStamp( Long milliSinceEpoch ) {
+    public PolyTimestamp( Long milliSinceEpoch ) {
         super( PolyType.TIMESTAMP );
         this.milliSinceEpoch = milliSinceEpoch;
     }
 
 
-    public static PolyTimeStamp of( Number number ) {
-        return new PolyTimeStamp( number.longValue() );
+    public static PolyTimestamp of( Number number ) {
+        return new PolyTimestamp( number.longValue() );
     }
 
 
-    public static PolyTimeStamp ofNullable( Number number ) {
+    public static PolyTimestamp ofNullable( Number number ) {
         return number == null ? null : of( number );
     }
 
 
-    public static PolyTimeStamp ofNullable( Time value ) {
-        return value == null ? null : PolyTimeStamp.of( value );
+    public static PolyTimestamp ofNullable( Time value ) {
+        return value == null ? null : PolyTimestamp.of( value );
     }
 
 
-    public static PolyTimeStamp of( long value ) {
-        return new PolyTimeStamp( value );
+    public static PolyTimestamp of( long value ) {
+        return new PolyTimestamp( value );
     }
 
 
-    public static PolyTimeStamp of( Long value ) {
-        return new PolyTimeStamp( value );
+    public static PolyTimestamp of( Long value ) {
+        return new PolyTimestamp( value );
     }
 
 
-    public static PolyTimeStamp of( Timestamp value ) {
-        return new PolyTimeStamp( Functions.toLongOptional( value ) );
+    public static PolyTimestamp of( Timestamp value ) {
+        return new PolyTimestamp( Functions.toLongOptional( value ) );
     }
 
 
-    public static PolyTimeStamp of( Date date ) {
-        return new PolyTimeStamp( date.getTime() );
+    public static PolyTimestamp of( Date date ) {
+        return new PolyTimestamp( date.getTime() );
     }
 
 
@@ -103,29 +103,29 @@ public class PolyTimeStamp extends PolyTemporal {
             return -1;
         }
 
-        return Long.compare( milliSinceEpoch, o.asTimeStamp().milliSinceEpoch );
+        return Long.compare( milliSinceEpoch, o.asTimestamp().milliSinceEpoch );
     }
 
 
     @Override
     public Expression asExpression() {
-        return Expressions.new_( PolyTimeStamp.class, Expressions.constant( milliSinceEpoch ) );
+        return Expressions.new_( PolyTimestamp.class, Expressions.constant( milliSinceEpoch ) );
     }
 
 
     @Override
     public PolySerializable copy() {
-        return PolySerializable.deserialize( serialize(), PolyTimeStamp.class );
+        return PolySerializable.deserialize( serialize(), PolyTimestamp.class );
     }
 
 
-    public static PolyTimeStamp convert( PolyValue value ) {
+    public static PolyTimestamp convert( PolyValue value ) {
         if ( value.isNumber() ) {
-            return PolyTimeStamp.of( value.asNumber().longValue() );
+            return PolyTimestamp.of( value.asNumber().longValue() );
         } else if ( value.isTemporal() ) {
-            return PolyTimeStamp.of( value.asTemporal().getMilliSinceEpoch() );
+            return PolyTimestamp.of( value.asTemporal().getMilliSinceEpoch() );
         }
-        throw new NotImplementedException( "convert " + PolyTimeStamp.class.getSimpleName() );
+        throw new NotImplementedException( "convert " + PolyTimestamp.class.getSimpleName() );
     }
 
 

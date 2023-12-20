@@ -87,7 +87,7 @@ public class SortJoinTransposeRule extends AlgOptRule {
         if ( join.getJoinType() == JoinAlgType.LEFT ) {
             if ( sort.getCollation() != AlgCollations.EMPTY ) {
                 for ( AlgFieldCollation algFieldCollation : sort.getCollation().getFieldCollations() ) {
-                    if ( algFieldCollation.getFieldIndex() >= join.getLeft().getRowType().getFieldCount() ) {
+                    if ( algFieldCollation.getFieldIndex() >= join.getLeft().getTupleType().getFieldCount() ) {
                         return false;
                     }
                 }
@@ -98,7 +98,7 @@ public class SortJoinTransposeRule extends AlgOptRule {
         } else if ( join.getJoinType() == JoinAlgType.RIGHT ) {
             if ( sort.getCollation() != AlgCollations.EMPTY ) {
                 for ( AlgFieldCollation algFieldCollation : sort.getCollation().getFieldCollations() ) {
-                    if ( algFieldCollation.getFieldIndex() < join.getLeft().getRowType().getFieldCount() ) {
+                    if ( algFieldCollation.getFieldIndex() < join.getLeft().getTupleType().getFieldCount() ) {
                         return false;
                     }
                 }
@@ -131,7 +131,7 @@ public class SortJoinTransposeRule extends AlgOptRule {
             newLeftInput = sort.copy( sort.getTraitSet(), join.getLeft(), sort.getCollation(), null, sort.offset, sort.fetch );
             newRightInput = join.getRight();
         } else {
-            final AlgCollation rightCollation = AlgCollationTraitDef.INSTANCE.canonize( AlgCollations.shift( sort.getCollation(), -join.getLeft().getRowType().getFieldCount() ) );
+            final AlgCollation rightCollation = AlgCollationTraitDef.INSTANCE.canonize( AlgCollations.shift( sort.getCollation(), -join.getLeft().getTupleType().getFieldCount() ) );
             // If the input is already sorted and we are not reducing the number of tuples, we bail out
             if ( AlgMdUtil.checkInputForCollationAndLimit( mq, join.getRight(), rightCollation, sort.offset, sort.fetch ) ) {
                 return;

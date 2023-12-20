@@ -115,7 +115,7 @@ public class IntersectToDistinctRule extends AlgOptRule {
         final AlgNode union = algBuilder.peek();
 
         // 2nd level GB: create a GB (col0, col1, count(c)) for each branch the index of c is union.getRowType().getFieldList().size() - 1
-        final int fieldCount = union.getRowType().getFieldCount();
+        final int fieldCount = union.getTupleType().getFieldCount();
 
         final ImmutableBitSet groupSet = ImmutableBitSet.range( fieldCount - 1 );
         algBuilder.aggregate( algBuilder.groupKey( groupSet ), algBuilder.countStar( null ) );

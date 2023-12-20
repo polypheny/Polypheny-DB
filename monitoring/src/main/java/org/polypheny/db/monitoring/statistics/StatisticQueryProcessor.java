@@ -29,8 +29,8 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
@@ -155,7 +155,7 @@ public class StatisticQueryProcessor {
         List<List<PolyValue>> rows;
 
         try {
-            implementation = statement.getQueryProcessor().prepareQuery( AlgRoot.of( node, Kind.SELECT ), node.getRowType(), false );
+            implementation = statement.getQueryProcessor().prepareQuery( AlgRoot.of( node, Kind.SELECT ), node.getTupleType(), false );
             ResultIterator iterator = implementation.execute( statement, getPageSize() );
             rows = iterator.getNextBatch();
             iterator.close();

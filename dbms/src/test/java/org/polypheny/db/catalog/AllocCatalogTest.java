@@ -17,11 +17,11 @@
 package org.polypheny.db.catalog;
 
 import static java.lang.String.format;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.polypheny.db.cypher.CypherTestTemplate.execute;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 
 public class AllocCatalogTest {
@@ -29,7 +29,7 @@ public class AllocCatalogTest {
     public static String name = "allocCatalogTest";
 
 
-    @Before
+    @BeforeEach
     public void buildUp() {
         TestHelper.getInstance();
     }

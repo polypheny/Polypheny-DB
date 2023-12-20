@@ -52,7 +52,7 @@ public abstract class LpgUnwind extends SingleAlg implements LpgAlg {
      */
     protected LpgUnwind( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, int index, @Nullable String alias ) {
         super( cluster, traits, adjustInputIfNecessary( input, index ) );
-        assert this.input.getRowType().getFieldCount() == 1 : "Unwind is for now only able on a single field.";
+        assert this.input.getTupleType().getFieldCount() == 1 : "Unwind is for now only able on a single field.";
 
         this.index = 0; //adjustIfNecessary( target );
         this.alias = alias;
@@ -60,10 +60,10 @@ public abstract class LpgUnwind extends SingleAlg implements LpgAlg {
 
 
     private static AlgNode adjustInputIfNecessary( AlgNode input, int index ) {
-        if ( input.getRowType().getFields().get( index ).getType().getPolyType() == PolyType.ARRAY ) {
+        if ( input.getTupleType().getFields().get( index ).getType().getPolyType() == PolyType.ARRAY ) {
             return input;
         }
-        AlgDataTypeField field = input.getRowType().getFields().get( index );
+        AlgDataTypeField field = input.getTupleType().getFields().get( index );
         RexNode ref = input.getCluster().getRexBuilder().makeInputRef( field.getType(), field.getIndex() );
         // we wrap the field in a to-list operation, which wraps single values as list, leaves lists and replaces null with an empty list
         AlgDataType arrayType = input.getCluster().getTypeFactory().createArrayType( ref.getType(), -1 );
@@ -84,7 +84,7 @@ public abstract class LpgUnwind extends SingleAlg implements LpgAlg {
     @Override
     protected AlgDataType deriveRowType() {
         List<AlgDataTypeField> fields = new ArrayList<>();
-        fields.add( new AlgDataTypeFieldImpl( -1L, alias, 0, input.getRowType().getFields().get( index ).getType().getComponentType() ) );
+        fields.add( new AlgDataTypeFieldImpl( -1L, alias, 0, input.getTupleType().getFields().get( index ).getType().getComponentType() ) );
         return new AlgRecordType( fields );
     }
 

@@ -34,6 +34,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.prepare.Prepare.PreparedResult;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.ExtraPolyTypes;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyDefaults;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Util;
@@ -130,8 +131,14 @@ public class QueryProcessorHelpers {
             return ColumnMetaData.array( componentType, typeName, rep );
         } else {
             int typeOrdinal = QueryProcessorHelpers.getTypeOrdinal( type );
+
             switch ( typeOrdinal ) {
                 case Types.STRUCT:
+                    if ( type.getPolyType() == PolyType.DOCUMENT ) {
+                        final ColumnMetaData.Rep rep = ColumnMetaData.Rep.of( PolyDefaults.MAPPINGS.get( String.class ) );
+                        assert rep != null;
+                        return ColumnMetaData.scalar( PolyType.VARCHAR.getJdbcOrdinal(), typeName, rep );
+                    }
                     final List<ColumnMetaData> columns = new ArrayList<>();
                     for ( AlgDataTypeField field : type.getFields() ) {
                         columns.add( metaData( typeFactory, field.getIndex(), field.getName(), field.getType(), null, null ) );

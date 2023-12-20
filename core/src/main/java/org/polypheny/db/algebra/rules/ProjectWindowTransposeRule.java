@@ -85,7 +85,7 @@ public class ProjectWindowTransposeRule extends AlgOptRule {
         final LogicalProject project = call.alg( 0 );
         final LogicalWindow window = call.alg( 1 );
         final AlgOptCluster cluster = window.getCluster();
-        final List<AlgDataTypeField> rowTypeWindowInput = window.getInput().getRowType().getFields();
+        final List<AlgDataTypeField> rowTypeWindowInput = window.getInput().getTupleType().getFields();
         final int windowInputColumn = rowTypeWindowInput.size();
 
         // Record the window input columns which are actually referred either in the LogicalProject above LogicalWindow or LogicalWindow itself
@@ -145,7 +145,7 @@ public class ProjectWindowTransposeRule extends AlgOptRule {
 
         int aggCallIndex = windowInputColumn;
         final AlgDataTypeFactory.Builder outputBuilder = cluster.getTypeFactory().builder();
-        outputBuilder.addAll( projectBelowWindow.getRowType().getFields() );
+        outputBuilder.addAll( projectBelowWindow.getTupleType().getFields() );
         for ( Group group : window.groups ) {
             final ImmutableBitSet.Builder keys = ImmutableBitSet.builder();
             final List<AlgFieldCollation> orderKeys = new ArrayList<>();
@@ -166,7 +166,7 @@ public class ProjectWindowTransposeRule extends AlgOptRule {
             for ( RexWinAggCall rexWinAggCall : group.aggCalls ) {
                 aggCalls.add( (RexWinAggCall) rexWinAggCall.accept( indexAdjustment ) );
 
-                final AlgDataTypeField algDataTypeField = window.getRowType().getFields().get( aggCallIndex );
+                final AlgDataTypeField algDataTypeField = window.getTupleType().getFields().get( aggCallIndex );
                 outputBuilder.add( algDataTypeField );
                 ++aggCallIndex;
             }
@@ -186,7 +186,7 @@ public class ProjectWindowTransposeRule extends AlgOptRule {
                 newLogicalWindow.getTraitSet(),
                 newLogicalWindow,
                 topProjExps,
-                project.getRowType() );
+                project.getTupleType() );
 
         if ( ProjectRemoveRule.isTrivial( newTopProj ) ) {
             call.transformTo( newLogicalWindow );
@@ -197,7 +197,7 @@ public class ProjectWindowTransposeRule extends AlgOptRule {
 
 
     private ImmutableBitSet findReference( final LogicalProject project, final LogicalWindow window ) {
-        final int windowInputColumn = window.getInput().getRowType().getFieldCount();
+        final int windowInputColumn = window.getInput().getTupleType().getFieldCount();
         final ImmutableBitSet.Builder beReferred = ImmutableBitSet.builder();
 
         final RexShuttle referenceFinder = new RexShuttle() {

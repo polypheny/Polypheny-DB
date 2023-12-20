@@ -146,7 +146,7 @@ public class RestResult {
                 } else {
                     switch ( type.getType().getPolyType() ) {
                         case TIMESTAMP:
-                            LocalDateTime localDateTime = o.asTimeStamp().asSqlTimestamp().toInstant().atOffset( ZoneOffset.UTC ).toLocalDateTime();//.toLocalDateTime(); //LocalDateTime.ofEpochSecond( nanoSeconds / 1000L, (int) ((nanoSeconds % 1000) * 1000), ZoneOffset.UTC );
+                            LocalDateTime localDateTime = o.asTimestamp().asSqlTimestamp().toInstant().atOffset( ZoneOffset.UTC ).toLocalDateTime();//.toLocalDateTime(); //LocalDateTime.ofEpochSecond( nanoSeconds / 1000L, (int) ((nanoSeconds % 1000) * 1000), ZoneOffset.UTC );
                             temp.put( columnName, localDateTime.toString() );
                             break;
                         case TIME:

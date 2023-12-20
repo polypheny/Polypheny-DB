@@ -112,7 +112,7 @@ public class AggregateValuesRule extends AlgOptRule {
             }
         }
 
-        call.transformTo( algBuilder.values( ImmutableList.of( literals ), aggregate.getRowType() ).build() );
+        call.transformTo( algBuilder.values( ImmutableList.of( literals ), aggregate.getTupleType() ).build() );
 
         // New plan is absolutely better than old plan.
         call.getPlanner().setImportance( aggregate, 0.0 );

@@ -66,7 +66,7 @@ public class NeoLpgSort extends LpgSort implements NeoGraphAlg {
         implementor.addReturnIfNecessary();
         implementor.setSorted( true );
 
-        List<String> lastNames = implementor.getLast().getRowType().getFieldNames();
+        List<String> lastNames = implementor.getLast().getTupleType().getFieldNames();
 
         List<String> groups = new ArrayList<>();
         for ( AlgFieldCollation fieldCollation : collation.getFieldCollations() ) {

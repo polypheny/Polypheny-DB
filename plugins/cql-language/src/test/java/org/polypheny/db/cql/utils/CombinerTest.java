@@ -16,12 +16,14 @@
 
 package org.polypheny.db.cql.utils;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.cql.BooleanGroup;
 import org.polypheny.db.cql.BooleanGroup.TableOpsBooleanOperator;
@@ -156,7 +158,7 @@ public class CombinerTest extends AlgBuildTestHelper {
         );
         algBuilder = combiner.combine( algBuilder, rexBuilder );
         AlgNode algNode = algBuilder.peek();
-        List<String> actualFieldNames = algNode.getRowType().getFieldNames();
+        List<String> actualFieldNames = algNode.getTupleType().getFieldNames();
         List<String> expectedFieldNames = new ArrayList<>();
         expectedFieldNames.add( "empno" );
         expectedFieldNames.add( "empname" );
@@ -168,9 +170,9 @@ public class CombinerTest extends AlgBuildTestHelper {
         expectedFieldNames.add( "deptno0" );
         expectedFieldNames.add( "deptname" );
 
-        Assert.assertEquals( CombinerType.JOIN_INNER, combiner.combinerType );
-        Assert.assertArrayEquals( expectedJoinOnColumns, combiner.joinOnColumns );
-        Assert.assertEquals( expectedFieldNames, actualFieldNames );
+        assertEquals( CombinerType.JOIN_INNER, combiner.combinerType );
+        assertArrayEquals( expectedJoinOnColumns, combiner.joinOnColumns );
+        assertEquals( expectedFieldNames, actualFieldNames );
     }
 
 
@@ -190,7 +192,7 @@ public class CombinerTest extends AlgBuildTestHelper {
         );
         algBuilder = combiner.combine( algBuilder, rexBuilder );
         AlgNode algNode = algBuilder.peek();
-        List<String> actualFieldNames = algNode.getRowType().getFieldNames();
+        List<String> actualFieldNames = algNode.getTupleType().getFieldNames();
         List<String> expectedFieldNames = new ArrayList<>();
         expectedFieldNames.add( "empno" );
         expectedFieldNames.add( "empname" );
@@ -202,9 +204,9 @@ public class CombinerTest extends AlgBuildTestHelper {
         expectedFieldNames.add( "deptno0" );
         expectedFieldNames.add( "deptname" );
 
-        Assert.assertEquals( expectedCombinerType, combiner.combinerType );
-        Assert.assertArrayEquals( expectedJoinOnColumns, combiner.joinOnColumns );
-        Assert.assertEquals( expectedFieldNames, actualFieldNames );
+        assertEquals( expectedCombinerType, combiner.combinerType );
+        assertArrayEquals( expectedJoinOnColumns, combiner.joinOnColumns );
+        assertEquals( expectedFieldNames, actualFieldNames );
     }
 
 }

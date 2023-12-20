@@ -144,7 +144,7 @@ public abstract class Aggregate extends SingleAlg {
                 assert groupSet.contains( set );
             }
         }
-        assert groupSet.length() <= child.getRowType().getFieldCount();
+        assert groupSet.length() <= child.getTupleType().getFieldCount();
         for ( AggregateCall aggCall : aggCalls ) {
             assert typeMatchesInferred( aggCall, Litmus.THROW );
             Preconditions.checkArgument( aggCall.filterArg < 0 || isPredicate( child, aggCall.filterArg ), "filter must be BOOLEAN NOT NULL" );
@@ -163,7 +163,7 @@ public abstract class Aggregate extends SingleAlg {
 
 
     private boolean isPredicate( AlgNode input, int index ) {
-        final AlgDataType type = input.getRowType().getFields().get( index ).getType();
+        final AlgDataType type = input.getTupleType().getFields().get( index ).getType();
         return type.getPolyType() == PolyType.BOOLEAN && !type.isNullable();
     }
 
@@ -206,7 +206,7 @@ public abstract class Aggregate extends SingleAlg {
      */
     public List<Pair<AggregateCall, String>> getNamedAggCalls() {
         final int offset = getGroupCount() + getIndicatorCount();
-        return Pair.zip( aggCalls, Util.skip( getRowType().getFieldNames(), offset ) );
+        return Pair.zip( aggCalls, Util.skip( getTupleType().getFieldNames(), offset ) );
     }
 
 
@@ -308,7 +308,7 @@ public abstract class Aggregate extends SingleAlg {
 
     @Override
     protected AlgDataType deriveRowType() {
-        return deriveRowType( getCluster().getTypeFactory(), getInput().getRowType(), indicator, groupSet, groupSets, aggCalls );
+        return deriveRowType( getCluster().getTypeFactory(), getInput().getTupleType(), indicator, groupSet, groupSets, aggCalls );
     }
 
 
@@ -381,7 +381,7 @@ public abstract class Aggregate extends SingleAlg {
 
     @Override
     public boolean isValid( Litmus litmus, Context context ) {
-        return super.isValid( litmus, context ) && litmus.check( Util.isDistinct( getRowType().getFieldNames() ), "distinct field names: {}", getRowType() );
+        return super.isValid( litmus, context ) && litmus.check( Util.isDistinct( getTupleType().getFieldNames() ), "distinct field names: {}", getTupleType() );
     }
 
 

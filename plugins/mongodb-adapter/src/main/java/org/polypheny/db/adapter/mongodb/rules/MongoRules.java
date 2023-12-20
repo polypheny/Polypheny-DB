@@ -388,7 +388,7 @@ public class MongoRules {
                     traitSet,
                     convert( project.getInput(), out ),
                     project.getProjects(),
-                    project.getRowType() );
+                    project.getTupleType() );
         }
 
     }
@@ -490,7 +490,7 @@ public class MongoRules {
 
             return new MongoValues(
                     values.getCluster(),
-                    values.getRowType(),
+                    values.getTupleType(),
                     values.getTuples(),
                     values.getTraitSet().replace( out ) );
         }

@@ -121,7 +121,7 @@ public abstract class SetOp extends AbstractAlgNode {
 
     @Override
     protected AlgDataType deriveRowType() {
-        final List<AlgDataType> inputRowTypes = Lists.transform( inputs, AlgNode::getRowType );
+        final List<AlgDataType> inputRowTypes = Lists.transform( inputs, AlgNode::getTupleType );
         final AlgDataType rowType = getCluster().getTypeFactory().leastRestrictive( inputRowTypes );
         if ( rowType == null ) {
             throw new IllegalArgumentException( "Cannot compute compatible row type for arguments to set op: " + Util.sepList( inputRowTypes, ", " ) );
@@ -137,9 +137,9 @@ public abstract class SetOp extends AbstractAlgNode {
      * @return Whether all the inputs of this set operator have the same row type as its output row
      */
     public boolean isHomogeneous( boolean compareNames ) {
-        AlgDataType unionType = getRowType();
+        AlgDataType unionType = getTupleType();
         for ( AlgNode input : getInputs() ) {
-            if ( !AlgOptUtil.areRowTypesEqual( input.getRowType(), unionType, compareNames ) ) {
+            if ( !AlgOptUtil.areRowTypesEqual( input.getTupleType(), unionType, compareNames ) ) {
                 return false;
             }
         }

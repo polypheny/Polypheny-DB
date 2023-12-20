@@ -117,7 +117,7 @@ public class AlgMdColumnUniqueness implements MetadataHandler<BuiltInMetadata.Co
 
     public Boolean areColumnsUnique( SetOp alg, AlgMetadataQuery mq, ImmutableBitSet columns, boolean ignoreNulls ) {
         // If not ALL then the rows are distinct. Therefore the set of all columns is a key.
-        return !alg.all && columns.nextClearBit( 0 ) >= alg.getRowType().getFieldCount();
+        return !alg.all && columns.nextClearBit( 0 ) >= alg.getTupleType().getFieldCount();
     }
 
 
@@ -160,7 +160,7 @@ public class AlgMdColumnUniqueness implements MetadataHandler<BuiltInMetadata.Co
                 return mq.areColumnsUnique( alg.getLeft(), columns, ignoreNulls );
             case LEFT:
             case INNER:
-                final Pair<ImmutableBitSet, ImmutableBitSet> leftAndRightColumns = splitLeftAndRightColumns( alg.getLeft().getRowType().getFieldCount(), columns );
+                final Pair<ImmutableBitSet, ImmutableBitSet> leftAndRightColumns = splitLeftAndRightColumns( alg.getLeft().getTupleType().getFieldCount(), columns );
                 final ImmutableBitSet leftColumns = leftAndRightColumns.left;
                 final ImmutableBitSet rightColumns = leftAndRightColumns.right;
                 final AlgNode left = alg.getLeft();
@@ -235,7 +235,7 @@ public class AlgMdColumnUniqueness implements MetadataHandler<BuiltInMetadata.Co
         final AlgNode right = alg.getRight();
 
         // Divide up the input column mask into column masks for the left and right sides of the join
-        final Pair<ImmutableBitSet, ImmutableBitSet> leftAndRightColumns = splitLeftAndRightColumns( alg.getLeft().getRowType().getFieldCount(), columns );
+        final Pair<ImmutableBitSet, ImmutableBitSet> leftAndRightColumns = splitLeftAndRightColumns( alg.getLeft().getTupleType().getFieldCount(), columns );
         final ImmutableBitSet leftColumns = leftAndRightColumns.left;
         final ImmutableBitSet rightColumns = leftAndRightColumns.right;
 

@@ -1655,7 +1655,7 @@ public class SubstitutionVisitor {
             final AlgOptCluster cluster = filter.getCluster();
             AlgDataType newRowType =
                     cluster.getTypeFactory().builder()
-                            .addAll( project.getRowType().getFields() )
+                            .addAll( project.getTupleType().getFields() )
                             .add( null, "condition", null, Util.last( newProjects ).getType() )
                             .build();
             final AlgNode newProject =

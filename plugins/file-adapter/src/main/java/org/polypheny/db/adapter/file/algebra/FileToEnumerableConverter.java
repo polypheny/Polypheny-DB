@@ -77,7 +77,7 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         final BlockBuilder list = new BlockBuilder();
         FileConvention convention = (FileConvention) getInput().getConvention();
-        PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getRowType(), pref.preferArray() );
+        PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.preferArray() );
 
         FileImplementor fileImplementor = new FileImplementor();
         fileImplementor.visitChild( 0, getInput() );

@@ -16,8 +16,8 @@
 
 package org.polypheny.db.catalog;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 
@@ -42,7 +42,7 @@ public class RestoreTest {
             + "FOREIGN KEY (a) REFERENCES public.constraint_test(a))";
 
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() {
         //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();

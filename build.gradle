@@ -20,6 +20,11 @@ plugins {
 }
 
 
+test {
+    useJUnitPlatform()
+}
+
+
 allprojects {
 
     version = versionMajor + "." + versionMinor + "." + versionMicro
@@ -39,6 +44,7 @@ allprojects {
             }
         }
     }
+
 
     apply plugin: "java-library"
     apply plugin: "io.freefair.lombok"
@@ -96,9 +102,9 @@ allprojects {
         description = 'Runs integration tests.'
         group = 'verification'
         systemProperty 'store.default', storeName
-        useJUnit {
-            includeCategories 'org.polypheny.db.AdapterTestSuite'
-            excludeCategories 'org.polypheny.db.excluded.' + storeName.capitalize() + "Excluded"
+        useJUnitPlatform {
+            includeTags("adapter")
+            excludeTags(storeName.capitalize() + "Excluded")
         }
         shouldRunAfter(tasks.named('test'))
     }
@@ -133,6 +139,8 @@ allprojects {
         testCompileOnly(group: 'org.pf4j', name: 'pf4j', version: pf4j_version) {
             exclude group: "org.slf4j"
         }
+        testImplementation(group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: junit_jupiter_version)
+        testRuntimeOnly(group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: junit_jupiter_version)
     }
 
     idea {
@@ -162,7 +170,6 @@ build {
 allprojects {
     test.dependsOn(":plugins:assemblePlugins")
 }
-
 
 
 idea {

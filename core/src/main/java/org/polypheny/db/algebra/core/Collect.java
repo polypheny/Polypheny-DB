@@ -123,7 +123,7 @@ public class Collect extends SingleAlg {
      * @return output type of a collect relational expression
      */
     public static AlgDataType deriveCollectRowType( SingleAlg alg, String fieldName ) {
-        AlgDataType childType = alg.getInput().getRowType();
+        AlgDataType childType = alg.getInput().getTupleType();
         assert childType.isStruct();
         final AlgDataTypeFactory typeFactory = alg.getCluster().getTypeFactory();
         AlgDataType ret = PolyTypeUtil.createMultisetType( typeFactory, childType, false );

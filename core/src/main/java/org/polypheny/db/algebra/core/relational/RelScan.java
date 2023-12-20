@@ -33,7 +33,9 @@ import org.polypheny.db.algebra.core.common.Scan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
@@ -80,7 +82,10 @@ public abstract class RelScan<E extends Entity> extends Scan<E> implements RelAl
 
     @Override
     public AlgDataType deriveRowType() {
-        return entity.getRowType();
+        if ( entity.dataModel == DataModel.DOCUMENT ) {
+            return DocumentType.ofCrossRelational();
+        }
+        return entity.getRowType().asRelational();
     }
 
 
@@ -122,14 +127,14 @@ public abstract class RelScan<E extends Entity> extends Scan<E> implements RelAl
      * @return Relational expression that projects the desired fields
      */
     public AlgNode project( ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields, AlgBuilder algBuilder ) {
-        final int fieldCount = getRowType().getFieldCount();
+        final int fieldCount = getTupleType().getFieldCount();
         if ( fieldsUsed.equals( ImmutableBitSet.range( fieldCount ) ) && extraFields.isEmpty() ) {
             return this;
         }
         final List<RexNode> exprList = new ArrayList<>();
         final List<String> nameList = new ArrayList<>();
         final RexBuilder rexBuilder = getCluster().getRexBuilder();
-        final List<AlgDataTypeField> fields = getRowType().getFields();
+        final List<AlgDataTypeField> fields = getTupleType().getFields();
 
         // Project the subset of fields.
         for ( int i : fieldsUsed ) {
@@ -158,6 +163,12 @@ public abstract class RelScan<E extends Entity> extends Scan<E> implements RelAl
     public String algCompareString() {
         return this.getClass().getSimpleName() + "$" +
                 entity.id + "&";
+    }
+
+
+    @Override
+    public boolean isCrossModel() {
+        return entity.dataModel != DataModel.RELATIONAL;
     }
 
 }

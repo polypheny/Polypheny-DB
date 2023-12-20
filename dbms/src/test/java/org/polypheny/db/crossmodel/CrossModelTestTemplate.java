@@ -21,11 +21,10 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import java.util.function.BiConsumer;
-import org.junit.experimental.categories.Category;
-import org.polypheny.db.AdapterTestSuite;
+import org.junit.jupiter.api.Tag;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
-@Category({ AdapterTestSuite.class })
+@Tag("adapter")
 public class CrossModelTestTemplate {
 
     public static void executeStatements( SqlConsumer... statementConsumers ) {

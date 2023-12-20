@@ -68,7 +68,7 @@ public class MongoProject extends Project implements MongoAlg {
             fieldInfo.add(
                     pair.left.getName(),
                     pair.right instanceof RexIndexRef
-                            ? input.getRowType().getFields().get( ((RexIndexRef) pair.right).getIndex() ).getPhysicalName()
+                            ? input.getTupleType().getFields().get( ((RexIndexRef) pair.right).getIndex() ).getPhysicalName()
                             : pair.left.getPhysicalName(),
                     pair.right.getType() );
         }
@@ -91,7 +91,7 @@ public class MongoProject extends Project implements MongoAlg {
     @Override
     public void implement( Implementor implementor ) {
         implementor.visitChild( 0, getInput() );
-        final RexToMongoTranslator translator = new RexToMongoTranslator( getCluster().getTypeFactory(), MongoRules.mongoFieldNames( getInput().getRowType() ), implementor, DataModel.RELATIONAL );
+        final RexToMongoTranslator translator = new RexToMongoTranslator( getCluster().getTypeFactory(), MongoRules.mongoFieldNames( getInput().getTupleType() ), implementor, DataModel.RELATIONAL );
         final List<String> items = new ArrayList<>();
         final List<String> excludes = new ArrayList<>();
         final List<String> unwinds = new ArrayList<>();

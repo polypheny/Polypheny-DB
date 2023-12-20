@@ -749,7 +749,7 @@ public class DataMigratorImpl implements DataMigrator {
             }*/
             int columIndex = 0;
             if ( partitionColumn != null && partitionColumn.tableId == table.id ) {
-                columIndex = source.sourceAlg.alg.getRowType().getField( partitionColumn.name, true, false ).getIndex();
+                columIndex = source.sourceAlg.alg.getTupleType().getField( partitionColumn.name, true, false ).getIndex();
             }
 
             //int partitionColumnIndex = -1;

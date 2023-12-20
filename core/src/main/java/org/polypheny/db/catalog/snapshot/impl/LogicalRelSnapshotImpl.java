@@ -275,7 +275,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
         List<LogicalTable> tables = this.tables.values().asList();
         if ( name != null ) {
-            tables = tables.stream()
+            tables = tables.stream().filter( t -> this.namespaces.get( t.namespaceId ) != null )
                     .filter( t ->
                             this.namespaces.get( t.namespaceId ).caseSensitive
                                     ? t.name.matches( name.toRegex() )
@@ -289,15 +289,22 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
         if ( namespaceName == null ) {
             return this.namespaces.values().asList();
         }
-        return this.namespaces.values().stream().filter( n -> n.caseSensitive ? n.name.matches( namespaceName.toRegex() ) : n.name.matches( namespaceName.toRegex().toLowerCase() ) ).collect( Collectors.toList() );
+        return this.namespaces.values().stream().filter( n -> n.caseSensitive ? n.name.matches( namespaceName.toRegex() ) : n.name.toLowerCase().matches( namespaceName.toRegex().toLowerCase() ) ).collect( Collectors.toList() );
 
     }
 
 
     @Override
     public @NotNull List<LogicalTable> getTables( long namespaceId, @Nullable Pattern name ) {
-        boolean caseSensitive = namespaces.get( namespaceId ).caseSensitive;
-        return Optional.of( tablesNamespace.get( namespaceId ).stream().filter( e -> (name == null || (e.name.matches( caseSensitive ? name.toRegex() : name.toRegex().toLowerCase() ))) ).collect( Collectors.toList() ) ).orElse( List.of() );
+
+        LogicalNamespace namespace = namespaces.get( namespaceId );
+        if ( namespace == null ) {
+            return List.of();
+        }
+
+        return Optional.of( tablesNamespace.get( namespaceId ).stream().filter( e -> (name == null || (namespace.caseSensitive
+                ? e.name.toLowerCase().matches( name.toRegex() )
+                : e.name.toLowerCase().matches( name.toRegex().toLowerCase() ))) ).collect( Collectors.toList() ) ).orElse( List.of() );
     }
 
 
@@ -325,6 +332,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     public @NonNull List<LogicalConstraint> getConstraints() {
         return constraints.values().asList();
     }
+
 
     @Override
     public @NonNull List<LogicalKey> getKeys() {

@@ -110,7 +110,7 @@ public class StreamRules {
             Util.discard( delta );
             final Project project = call.alg( 1 );
             final LogicalDelta newDelta = LogicalDelta.create( project.getInput() );
-            final LogicalProject newProject = LogicalProject.create( newDelta, project.getProjects(), project.getRowType().getFieldNames() );
+            final LogicalProject newProject = LogicalProject.create( newDelta, project.getProjects(), project.getTupleType().getFieldNames() );
             call.transformTo( newProject );
         }
 
@@ -310,7 +310,7 @@ public class StreamRules {
             Optional<StreamableEntity> oStreamableTable = scan.getEntity().unwrap( StreamableEntity.class );
             final AlgBuilder builder = call.builder();
             if ( oStreamableTable.isEmpty() ) {
-                call.transformTo( builder.values( delta.getRowType() ).build() );
+                call.transformTo( builder.values( delta.getTupleType() ).build() );
             }
         }
 

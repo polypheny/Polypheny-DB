@@ -90,7 +90,7 @@ public class EnumerableValues extends Values implements EnumerableAlg {
         final PhysType physType =
                 PhysTypeImpl.of(
                         implementor.getTypeFactory(),
-                        getRowType(),
+                        getTupleType(),
                         pref.preferCustom() );
         final Type rowClass = physType.getJavaRowType();
 

@@ -51,7 +51,7 @@ import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyTime;
-import org.polypheny.db.type.entity.PolyTimeStamp;
+import org.polypheny.db.type.entity.PolyTimestamp;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Source;
 
@@ -408,7 +408,7 @@ class ExcelEnumerator implements Enumerator<PolyValue[]> {
                         try {
                             Date date = TIME_FORMAT_TIMESTAMP.parse( cell
                                     .getStringCellValue() );
-                            return PolyTimeStamp.of( date.getTime() );
+                            return PolyTimestamp.of( date.getTime() );
                         } catch ( Exception e ) {
                             throw new GenericRuntimeException( "Could not read the timestamp field from the document." );
                         }

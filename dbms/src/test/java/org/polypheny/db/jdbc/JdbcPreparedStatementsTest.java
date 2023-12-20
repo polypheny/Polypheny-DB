@@ -31,10 +31,10 @@ import org.apache.calcite.avatica.ColumnMetaData.Rep;
 import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.avatica.util.ArrayFactoryImpl;
 import org.apache.calcite.avatica.util.Unsafe;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
@@ -42,7 +42,7 @@ import org.polypheny.db.excluded.CottontailExcluded;
 import org.polypheny.db.excluded.FileExcluded;
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
-@Category({ AdapterTestSuite.class })
+@Tag("adapter")
 public class JdbcPreparedStatementsTest {
 
 
@@ -76,7 +76,7 @@ public class JdbcPreparedStatementsTest {
             "hallo" };
 
 
-    @BeforeClass
+    @BeforeAll
     public static void start() {
         // Ensures that Polypheny-DB is running
         //noinspection ResultOfMethodCallIgnored
@@ -158,7 +158,7 @@ public class JdbcPreparedStatementsTest {
                         exceptionThrown = true;
                     }
 
-                    Assert.assertTrue( "Excepted null value for a non-nullable column", exceptionThrown );
+                    Assertions.assertTrue( exceptionThrown, "Excepted null value for a non-nullable column" );
 
                     connection.commit();
                 } finally {
@@ -280,8 +280,8 @@ public class JdbcPreparedStatementsTest {
                                     + "tsmallint = ? AND "
                                     + "ttime = ? AND "
                                     + "ttimestamp = ? AND "
-                            + "ttinyint = ? AND "
-                            + "tvarchar = ?" );
+                                    + "ttinyint = ? AND "
+                                    + "tvarchar = ?" );
                     preparedSelect.setLong( 1, (long) TEST_DATA[0] );
                     preparedSelect.setBoolean( 2, (boolean) TEST_DATA[1] );
                     preparedSelect.setDate( 3, (Date) TEST_DATA[2] );
@@ -417,7 +417,8 @@ public class JdbcPreparedStatementsTest {
 
 
     @Test
-    @Category({ CottontailExcluded.class, FileExcluded.class })
+    @Tag("cottontailExcluded")
+    @Tag("fileExcluded")
     public void updateTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -475,7 +476,8 @@ public class JdbcPreparedStatementsTest {
 
 
     @Test
-    @Category({ CottontailExcluded.class, FileExcluded.class })
+    @Tag("cottontailExcluded")
+    @Tag("fileExcluded")
     public void batchUpdateTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -585,7 +587,7 @@ public class JdbcPreparedStatementsTest {
 
 
     @Test
-    @Category(FileExcluded.class)
+    @Tag("fileExcluded")
     public void arrayTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -631,7 +633,7 @@ public class JdbcPreparedStatementsTest {
 
 
     @Test
-    @Category(FileExcluded.class)
+    @Tag("fileExcluded")
     public void arrayBatchTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

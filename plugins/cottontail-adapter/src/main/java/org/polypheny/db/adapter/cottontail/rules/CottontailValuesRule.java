@@ -37,7 +37,7 @@ public class CottontailValuesRule extends CottontailConverterRule {
 
         return new CottontailValues(
                 values.getCluster(),
-                values.getRowType(),
+                values.getTupleType(),
                 values.getTuples(),
                 values.getTraitSet().replace( out ) );
     }

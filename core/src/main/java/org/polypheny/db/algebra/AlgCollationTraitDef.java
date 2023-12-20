@@ -113,7 +113,7 @@ public class AlgCollationTraitDef extends AlgTraitDef<AlgCollation> {
         // Returns true only if we can convert.  In this case, we can only convert if the fromTrait (the input) has fields that the toTrait wants to sort.
         for ( AlgFieldCollation field : toTrait.getFieldCollations() ) {
             int index = field.getFieldIndex();
-            if ( index >= fromRel.getRowType().getFieldCount() ) {
+            if ( index >= fromRel.getTupleType().getFieldCount() ) {
                 return false;
             }
         }

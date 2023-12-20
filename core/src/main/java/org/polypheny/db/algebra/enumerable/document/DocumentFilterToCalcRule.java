@@ -57,7 +57,7 @@ public class DocumentFilterToCalcRule extends ConverterRule {
 
         // Create a program containing a filter.
         final RexBuilder rexBuilder = filter.getCluster().getRexBuilder();
-        final AlgDataType inputRowType = input.getRowType();
+        final AlgDataType inputRowType = input.getTupleType();
         final RexProgramBuilder programBuilder = new RexProgramBuilder( inputRowType, rexBuilder );
         NameRefReplacer replacer = new NameRefReplacer( filter.getCluster(), false );
         programBuilder.addIdentity();

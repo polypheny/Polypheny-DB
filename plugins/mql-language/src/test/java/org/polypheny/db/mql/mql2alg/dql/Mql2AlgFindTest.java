@@ -16,9 +16,9 @@
 
 package org.polypheny.db.mql.mql2alg.dql;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,8 +26,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Project;
@@ -43,7 +43,7 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.entity.PolyValue;
 
-@Ignore // this test is an extreme time sink, use integration tests
+@Disabled // this test is an extreme time sink, use integration tests
 public class Mql2AlgFindTest extends Mql2AlgTest {
 
 
@@ -393,7 +393,7 @@ public class Mql2AlgFindTest extends Mql2AlgTest {
 
         DocumentScan scan = (DocumentScan) root.alg;
         //assertTrue( scan.getRowType().getFieldNames().contains( "_id" ) );
-        assertTrue( scan.getRowType().getFieldNames().contains( "d" ) );
+        assertTrue( scan.getTupleType().getFieldNames().contains( "d" ) );
     }
 
 

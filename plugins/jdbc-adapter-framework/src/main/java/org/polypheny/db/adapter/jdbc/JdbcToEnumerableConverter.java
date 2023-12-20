@@ -95,7 +95,7 @@ import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyTime;
-import org.polypheny.db.type.entity.PolyTimeStamp;
+import org.polypheny.db.type.entity.PolyTimestamp;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyBlob;
 import org.polypheny.db.util.BuiltInMethod;
@@ -161,7 +161,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
         final PhysType physType =
                 PhysTypeImpl.of(
                         implementor.getTypeFactory(),
-                        getRowType(),
+                        getTupleType(),
                         pref.prefer( JavaRowFormat.CUSTOM ) );
         final JdbcConvention jdbcConvention = (JdbcConvention) child.getConvention();
         SqlString sqlString = generateSql( jdbcConvention.dialect, jdbcConvention.getJdbcSchema() );
@@ -171,7 +171,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
         }
         Hook.QUERY_PLAN.run( sql );
         final Expression sql_ = builder0.append( "sql", Expressions.constant( sql ) );
-        final int fieldCount = getRowType().getFieldCount();
+        final int fieldCount = getTupleType().getFieldCount();
         BlockBuilder builder = new BlockBuilder();
         final ParameterExpression resultSet_ = Expressions.parameter( Modifier.FINAL, ResultSet.class, builder.newName( "resultSet" ) );
         final CalendarPolicy calendarPolicy = jdbcConvention.dialect.getCalendarPolicy();
@@ -419,7 +419,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 poly = Expressions.call( PolyTime.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Long.class ) );
                 break;
             case TIMESTAMP:
-                poly = Expressions.call( PolyTimeStamp.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Long.class ) );
+                poly = Expressions.call( PolyTimestamp.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Long.class ) );
                 break;
             case DATE:
                 poly = Expressions.call( PolyDate.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Long.class ) );

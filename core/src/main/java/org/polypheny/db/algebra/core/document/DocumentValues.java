@@ -131,7 +131,7 @@ public abstract class DocumentValues extends AbstractAlgNode implements Document
         AlgTraitSet out = traitSet.replace( ModelTrait.RELATIONAL );
         AlgOptCluster cluster = AlgOptCluster.create( getCluster().getPlanner(), getCluster().getRexBuilder(), traitSet, getCluster().getSnapshot() );
 
-        return new LogicalValues( cluster, out, DocumentType.asRelational(), relationalize( documents, cluster.getRexBuilder() ) );
+        return new LogicalValues( cluster, out, DocumentType.ofRelational(), relationalize( documents, cluster.getRexBuilder() ) );
     }
 
 

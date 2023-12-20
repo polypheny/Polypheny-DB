@@ -19,16 +19,20 @@ package org.polypheny.db.catalog.entity.logical;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
+import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import lombok.experimental.NonFinal;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.type.entity.PolyString;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
+@NonFinal
 public class LogicalGraph extends LogicalEntity {
 
     private static final long serialVersionUID = 7343856827901459672L;
@@ -58,10 +62,23 @@ public class LogicalGraph extends LogicalEntity {
     }
 
 
-
     @Override
     public Expression asExpression() {
         return Expressions.call( Catalog.CATALOG_EXPRESSION, "getCollection", Expressions.constant( id ) );
+    }
+
+
+    public static class SubstitutionGraph extends LogicalGraph {
+
+        private static final long serialVersionUID = 7343856827901459672L;
+        public final List<PolyString> names;
+
+
+        public SubstitutionGraph( long id, String name, boolean modifiable, boolean caseSensitive, List<PolyString> names ) {
+            super( id, name, modifiable, caseSensitive );
+            this.names = names;
+        }
+
     }
 
 

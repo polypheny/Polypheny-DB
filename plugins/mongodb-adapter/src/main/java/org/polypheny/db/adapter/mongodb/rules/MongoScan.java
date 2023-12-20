@@ -78,7 +78,7 @@ public class MongoScan extends Scan<MongoEntity> implements MongoAlg {
     @Override
     public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
         // scans with a small project list are cheaper
-        final float f = getRowType().getFieldCount() / 100f;
+        final float f = getTupleType().getFieldCount() / 100f;
         return super.computeSelfCost( planner, mq ).multiplyBy( .1 * f );
     }
 

@@ -16,8 +16,8 @@
 
 package org.polypheny.db.catalog;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -30,7 +30,7 @@ import org.polypheny.db.type.PolyType;
 public class CatalogTransactionTest {
 
 
-    @BeforeClass
+    @BeforeAll
     public static void initClass() {
         TestHelper.getInstance();
     }

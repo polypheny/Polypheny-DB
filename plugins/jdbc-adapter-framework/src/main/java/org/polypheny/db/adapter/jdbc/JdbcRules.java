@@ -501,7 +501,7 @@ public class JdbcRules {
                     alg.getTraitSet().replace( out ),
                     convert( project.getInput(), project.getInput().getTraitSet().replace( out ) ),
                     project.getProjects(),
-                    project.getRowType() );
+                    project.getTupleType() );
         }
 
     }
@@ -604,7 +604,7 @@ public class JdbcRules {
 
 
         private static boolean isStringComparableArrayType( Filter filter ) {
-            for ( AlgDataTypeField dataTypeField : filter.getRowType().getFields() ) {
+            for ( AlgDataTypeField dataTypeField : filter.getTupleType().getFields() ) {
                 if ( dataTypeField.getType().getPolyType() == PolyType.ARRAY ) {
                     switch ( dataTypeField.getType().getComponentType().getPolyType() ) {
                         case BOOLEAN:
@@ -1110,7 +1110,7 @@ public class JdbcRules {
         @Override
         public AlgNode convert( AlgNode alg ) {
             Values values = (Values) alg;
-            return new JdbcValues( values.getCluster(), values.getRowType(), values.getTuples(), values.getTraitSet().replace( out ) );
+            return new JdbcValues( values.getCluster(), values.getTupleType(), values.getTuples(), values.getTraitSet().replace( out ) );
         }
 
     }

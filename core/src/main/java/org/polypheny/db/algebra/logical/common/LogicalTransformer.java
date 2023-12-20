@@ -17,6 +17,7 @@
 package org.polypheny.db.algebra.logical.common;
 
 import java.util.List;
+import lombok.Setter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.common.Transformer;
@@ -27,18 +28,19 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.trait.ModelTrait;
 
 
+@Setter
 public class LogicalTransformer extends Transformer {
 
 
     /**
      * Subclass of {@link Transformer} not targeted at any particular engine or calling convention.
      */
-    public LogicalTransformer( AlgOptCluster cluster, List<AlgNode> inputs, List<String> names, ModelTrait inTraitSet, ModelTrait outTraitSet, AlgDataType rowType, boolean isCrossModel ) {
+    public LogicalTransformer( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, List<String> names, ModelTrait inTraitSet, ModelTrait outTraitSet, AlgDataType rowType, boolean isCrossModel ) {
         super(
                 cluster,
                 inputs,
                 names,
-                inputs.get( 0 ).getTraitSet().replace( EnumerableConvention.NONE ),
+                traitSet.replace( EnumerableConvention.NONE ),
                 inTraitSet,
                 outTraitSet,
                 rowType,
@@ -46,16 +48,19 @@ public class LogicalTransformer extends Transformer {
     }
 
 
-
-
     public static AlgNode create( List<AlgNode> inputs, ModelTrait inTraitSet, ModelTrait outTraitSet, AlgDataType rowType ) {
-        return new LogicalTransformer( inputs.get( 0 ).getCluster(), inputs, null, inTraitSet, outTraitSet, rowType, false );
+        return LogicalTransformer.create( inputs.get( 0 ).getCluster(), inputs, null, inTraitSet, outTraitSet, rowType, false );
+    }
+
+
+    public static LogicalTransformer create( AlgOptCluster cluster, List<AlgNode> inputs, List<String> names, ModelTrait inTraitSet, ModelTrait outTraitSet, AlgDataType rowType, boolean isCrossModel ) {
+        return new LogicalTransformer( cluster, inputs.get( 0 ).getTraitSet(), inputs, names, inTraitSet, outTraitSet, rowType, isCrossModel );
     }
 
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalTransformer( inputs.get( 0 ).getCluster(), inputs, names, inModelTrait, outModelTrait, rowType, isCrossModel );
+        return new LogicalTransformer( getCluster(), traitSet, inputs, names, inModelTrait, outModelTrait, rowType, isCrossModel );
     }
 
 

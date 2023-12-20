@@ -49,7 +49,7 @@ public class EnumerableFilterToCalcRule extends AlgOptRule {
 
         // Create a program containing a filter.
         final RexBuilder rexBuilder = filter.getCluster().getRexBuilder();
-        final AlgDataType inputRowType = input.getRowType();
+        final AlgDataType inputRowType = input.getTupleType();
         final RexProgramBuilder programBuilder = new RexProgramBuilder( inputRowType, rexBuilder );
         programBuilder.addIdentity();
         programBuilder.addCondition( filter.getCondition() );

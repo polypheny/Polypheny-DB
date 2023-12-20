@@ -112,7 +112,7 @@ public class EnumerableCorrelate extends Correlate implements EnumerableAlg {
         final PhysType physType =
                 PhysTypeImpl.of(
                         implementor.getTypeFactory(),
-                        getRowType(),
+                        getTupleType(),
                         pref.prefer( JavaRowFormat.CUSTOM ) );
 
         Expression selector =

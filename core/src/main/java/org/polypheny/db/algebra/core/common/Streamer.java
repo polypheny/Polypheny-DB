@@ -65,7 +65,7 @@ public abstract class Streamer extends BiAlg {
 
     @Override
     protected AlgDataType deriveRowType() {
-        return right.getRowType();
+        return right.getTupleType();
     }
 
 

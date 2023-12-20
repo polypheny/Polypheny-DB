@@ -36,8 +36,8 @@ package org.polypheny.db.runtime;
 
 import com.google.common.collect.Ordering;
 import java.util.Arrays;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 
 /**
@@ -46,8 +46,8 @@ import org.junit.Test;
 public class BinarySearchTest {
 
     private void search( int key, int lower, int upper, Integer... array ) {
-        Assert.assertEquals( "lower bound of " + key + " in " + Arrays.toString( array ), lower, BinarySearch.lowerBound( array, key, Ordering.natural() ) );
-        Assert.assertEquals( "upper bound of " + key + " in " + Arrays.toString( array ), upper, BinarySearch.upperBound( array, key, Ordering.natural() ) );
+        Assertions.assertEquals( lower, BinarySearch.lowerBound( array, key, Ordering.natural() ), "lower bound of " + key + " in " + Arrays.toString( array ) );
+        Assertions.assertEquals( upper, BinarySearch.upperBound( array, key, Ordering.natural() ), "upper bound of " + key + " in " + Arrays.toString( array ) );
     }
 
 
@@ -95,4 +95,5 @@ public class BinarySearchTest {
         search( 0, -1, -1, 1, 1, 1, 1 );
         search( 2, 4, 4, 1, 1, 1, 1 );
     }
+
 }

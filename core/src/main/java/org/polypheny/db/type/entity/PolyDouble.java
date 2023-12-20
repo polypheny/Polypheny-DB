@@ -16,6 +16,8 @@
 
 package org.polypheny.db.type.entity;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonToken;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
@@ -41,10 +43,12 @@ import org.polypheny.db.type.entity.category.PolyNumber;
 public class PolyDouble extends PolyNumber {
 
     @Serialize
+    @JsonProperty
     public Double value;
 
 
-    public PolyDouble( @Deserialize("value") Double value ) {
+    @JsonCreator
+    public PolyDouble( @Deserialize("value") @JsonProperty("value") Double value ) {
         super( PolyType.DOUBLE );
         this.value = value;
     }

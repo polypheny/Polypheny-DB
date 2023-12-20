@@ -186,11 +186,11 @@ public class TraitPropagationTest {
                             continue;
                         } else {
                             AlgTraitSet outcome = child.getTraitSet().replace( PHYSICAL );
-                            call.transformTo( new PhysProj( alg.getCluster(), outcome, convert( child, outcome ), alg.getChildExps(), alg.getRowType() ) );
+                            call.transformTo( new PhysProj( alg.getCluster(), outcome, convert( child, outcome ), alg.getChildExps(), alg.getTupleType() ) );
                         }
                     }
                 } else {
-                    call.transformTo( PhysProj.create( input, alg.getChildExps(), alg.getRowType() ) );
+                    call.transformTo( PhysProj.create( input, alg.getChildExps(), alg.getTupleType() ) );
                 }
             }
 

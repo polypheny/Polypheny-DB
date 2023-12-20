@@ -114,7 +114,7 @@ public class SemiJoin extends EquiJoin {
     @Override
     public AlgDataType deriveRowType() {
         return ValidatorUtil.deriveJoinRowType(
-                left.getRowType(),
+                left.getTupleType(),
                 null,
                 JoinAlgType.INNER,
                 getCluster().getTypeFactory(),
