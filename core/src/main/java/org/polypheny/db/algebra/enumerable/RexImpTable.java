@@ -390,7 +390,7 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( OperatorName.ST_REVERSE ), BuiltInMethod.ST_REVERSE.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( OperatorName.ST_BUFFER ), BuiltInMethod.ST_BUFFER.method, NullPolicy.STRICT );
         // Spatial relationships
-        defineMethod( OperatorRegistry.get( OperatorName.ST_WITHINDISTANCE ), BuiltInMethod.ST_WITHINDISTANCE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_DWITHIN ), BuiltInMethod.ST_DWITHIN.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( OperatorName.ST_DISJOINT ), BuiltInMethod.ST_DISJOINT.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( OperatorName.ST_TOUCHES ), BuiltInMethod.ST_TOUCHES.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( OperatorName.ST_INTERSECTS ), BuiltInMethod.ST_INTERSECTS.method, NullPolicy.STRICT );

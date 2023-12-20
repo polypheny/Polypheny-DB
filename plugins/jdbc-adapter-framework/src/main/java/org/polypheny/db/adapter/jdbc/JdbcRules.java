@@ -435,12 +435,11 @@ public class JdbcRules {
                     && !userDefinedFunctionInProject( project )
                     && !knnFunctionInProject( project )
                     && !multimediaFunctionInProject( project )
-                    && !geoFunctionInProject( project )
+                    && (!geoFunctionInProject( project ) || supportsGeoFunction( out.dialect, project ))
                     && !DocumentRules.containsJson( project )
                     && !DocumentRules.containsDocument( project )
                     && !UnsupportedRexCallVisitor.containsModelItem( project.getProjects() )
                     && (out.dialect.supportsNestedArrays() || !itemOperatorInProject( project ));
-
         }
 
 
@@ -474,6 +473,18 @@ public class JdbcRules {
             for ( RexNode node : project.getChildExps() ) {
                 node.accept( visitor );
                 if ( visitor.containsMultimediaFunction() ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
+        private static boolean supportsGeoFunction( SqlDialect dialect, Project project ) {
+            CheckingGeoFunctionSupportVisitor visitor = new CheckingGeoFunctionSupportVisitor( dialect );
+            for ( RexNode node : project.getChildExps() ) {
+                node.accept( visitor );
+                if ( visitor.supportsGeoFunction() ) {
                     return true;
                 }
             }
@@ -1258,6 +1269,35 @@ public class JdbcRules {
             Operator operator = call.getOperator();
             if ( operator instanceof Function && ((SqlFunction) operator).getFunctionCategory().isGeo() ) {
                 containsGeoFunction = true;
+            }
+            return super.visitCall( call );
+        }
+
+    }
+
+
+    private static class CheckingGeoFunctionSupportVisitor extends RexVisitorImpl<Void> {
+
+        private boolean supportsGeoFunction = false;
+        private SqlDialect dialect;
+
+
+        CheckingGeoFunctionSupportVisitor(SqlDialect dialect) {
+            super( true );
+            this.dialect = dialect;
+        }
+
+
+        public boolean supportsGeoFunction() {
+            return supportsGeoFunction;
+        }
+
+
+        @Override
+        public Void visitCall( RexCall call ) {
+            Operator operator = call.getOperator();
+            if ( operator instanceof Function && ((SqlFunction) operator).getFunctionCategory().isGeo() && dialect.supportedGeoFunctions().contains( operator.getOperatorName() ) ) {
+                supportsGeoFunction = true;
             }
             return super.visitCall( call );
         }

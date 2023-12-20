@@ -238,7 +238,7 @@ public class GeoFunctionsTest {
             try ( Statement statement = connection.createStatement() ) {
                 // check that geo are within the distance
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT ST_WithinDistance(ST_GeomFromText('POINT (7.852923 47.998949)', 4326), ST_GeomFromText('POINT (9.289382 48.741588)', 4326), 135000)" ),
+                        statement.executeQuery( "SELECT ST_DWithin(ST_GeomFromText('POINT (7.852923 47.998949)', 4326), ST_GeomFromText('POINT (9.289382 48.741588)', 4326), 135000)" ),
                         ImmutableList.of(
                                 new Object[]{ true }
                         ) );

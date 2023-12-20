@@ -2668,9 +2668,9 @@ public class SqlLanguagePlugin extends PolyPlugin {
         // Spatial relationships
 
         register(
-                OperatorName.ST_WITHINDISTANCE,
+                OperatorName.ST_DWITHIN,
                 new SqlFunction(
-                        "ST_WITHINDISTANCE",
+                        "ST_DWITHIN",
                         Kind.GEO,
                         ReturnTypes.BOOLEAN,
                         InferTypes.GEOMETRY,

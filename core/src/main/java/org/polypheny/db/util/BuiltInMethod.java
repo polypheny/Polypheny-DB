@@ -120,7 +120,6 @@ import org.polypheny.db.functions.TemporalFunctions;
 import org.polypheny.db.interpreter.Context;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.interpreter.Scalar;
-import org.polypheny.db.nodes.Function;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.ArrayBindable;
 import org.polypheny.db.runtime.BinarySearch;
@@ -137,7 +136,6 @@ import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyDate;
-import org.polypheny.db.type.entity.PolyFloat;
 import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyList;
@@ -468,7 +466,7 @@ public enum BuiltInMethod {
     ST_REVERSE( GeoFunctions.class, "stReverse", PolyGeometry.class ),
     ST_BUFFER( GeoFunctions.class, "stBuffer", PolyGeometry.class, PolyNumber.class ),
     // Spatial relationships
-    ST_WITHINDISTANCE( GeoFunctions.class, "stWithinDistance", PolyGeometry.class, PolyGeometry.class, PolyNumber.class ),
+    ST_DWITHIN( GeoFunctions.class, "stDWithin", PolyGeometry.class, PolyGeometry.class, PolyNumber.class ),
     ST_DISJOINT( GeoFunctions.class, "stDisjoint", PolyGeometry.class, PolyGeometry.class ),
     ST_TOUCHES( GeoFunctions.class, "stTouches", PolyGeometry.class, PolyGeometry.class ),
     ST_INTERSECTS( GeoFunctions.class, "stIntersects", PolyGeometry.class, PolyGeometry.class ),

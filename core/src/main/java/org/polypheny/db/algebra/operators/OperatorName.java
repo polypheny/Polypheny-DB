@@ -1413,9 +1413,9 @@ public enum OperatorName {
     // Spatial relationships
 
     /**
-     * The <code>ST_WithinDistance</code> operator function: check if two {@link org.polypheny.db.type.entity.spatial.PolyGeometry} are withing the given distance
+     * The <code>ST_DWithin</code> operator function: check if two {@link org.polypheny.db.type.entity.spatial.PolyGeometry} are withing the given distance
      */
-    ST_WITHINDISTANCE( Function.class ),
+    ST_DWITHIN( Function.class ),
 
     /**
      * The <code>ST_Disjoint</code> operator function: check if two {@link org.polypheny.db.type.entity.spatial.PolyGeometry} are disjoint

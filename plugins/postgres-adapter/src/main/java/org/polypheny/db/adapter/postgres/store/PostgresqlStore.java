@@ -271,6 +271,9 @@ public class PostgresqlStore extends AbstractJdbcStore {
                 case "brin":
                     builder.append( "brin" );
                     break;
+                case "gist":
+                    builder.append( "gist" );
+                    break;
             }
 
             builder.append( "(" );
@@ -309,7 +312,8 @@ public class PostgresqlStore extends AbstractJdbcStore {
                 new IndexMethodModel( "btree", "B-TREE" ),
                 new IndexMethodModel( "hash", "HASH" ),
                 new IndexMethodModel( "gin", "GIN (Generalized Inverted Index)" ),
-                new IndexMethodModel( "brin", "BRIN (Block Range index)" )
+                new IndexMethodModel( "brin", "BRIN (Block Range index)" ),
+                new IndexMethodModel( "gist", "GiST (Generalized Search Tree)" )
         );
     }
 
