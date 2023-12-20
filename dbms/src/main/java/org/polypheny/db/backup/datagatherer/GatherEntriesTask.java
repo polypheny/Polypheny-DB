@@ -310,6 +310,8 @@ public class GatherEntriesTask implements Runnable {
                         for ( List<PolyValue> entry : graphPerNamespace ) {
                             for ( PolyValue polyValue : entry ) {
                                 PolyGraph polyGraph = polyValue.asGraph();
+
+                                /*
                                 PolyMap<PolyString, PolyNode> nodes = polyGraph.getNodes();
                                 PolyMap<PolyString, PolyEdge> edges = polyGraph.getEdges();
                                 String edgejson = edges.get( 0 ).toTypedJson();
@@ -321,7 +323,7 @@ public class GatherEntriesTask implements Runnable {
                                 PolyEdge edge = PolyNode.fromTypedJson( edgejson, PolyEdge.class );
                                 PolyValue node1 = PolyNode.deserialize( nodeByte );
                                 PolyValue edge1 = PolyEdge.deserialize( edgeByte );
-
+                                 */
 
 
                                 String typedJson = polyValue.asGraph().toTypedJson();
