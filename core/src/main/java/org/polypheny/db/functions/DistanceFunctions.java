@@ -19,8 +19,8 @@ package org.polypheny.db.functions;
 
 import java.util.List;
 import java.util.stream.Collectors;
-import org.polypheny.db.type.entity.PolyDouble;
 import org.polypheny.db.type.entity.category.PolyNumber;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.util.Pair;
 
 

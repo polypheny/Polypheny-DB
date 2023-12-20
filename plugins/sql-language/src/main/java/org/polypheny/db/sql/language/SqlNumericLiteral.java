@@ -22,8 +22,8 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.NumericLiteral;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.category.PolyNumber;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.util.Util;
 
 

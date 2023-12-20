@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.type.entity;
+package org.polypheny.db.type.entity.temporal;
 
 import com.fasterxml.jackson.core.JsonToken;
 import java.text.DateFormat;
@@ -30,6 +30,8 @@ import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyTemporal;
 
 @Getter

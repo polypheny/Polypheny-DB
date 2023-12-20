@@ -34,7 +34,6 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.functions.spatial.GeoDistanceFunctions;
 import org.polypheny.db.schema.document.DocumentUtil;
 import org.polypheny.db.type.entity.PolyBoolean;
-import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
@@ -44,6 +43,7 @@ import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.spatial.GeometryTopologicalException;
 import org.polypheny.db.type.entity.spatial.InvalidGeometryException;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.util.Pair;
 
 

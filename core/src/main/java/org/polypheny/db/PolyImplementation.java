@@ -52,9 +52,9 @@ import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
 
 
 @Getter

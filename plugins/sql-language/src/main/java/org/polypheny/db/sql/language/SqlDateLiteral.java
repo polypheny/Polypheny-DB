@@ -21,7 +21,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyDate;
+import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.util.DateString;
 
 

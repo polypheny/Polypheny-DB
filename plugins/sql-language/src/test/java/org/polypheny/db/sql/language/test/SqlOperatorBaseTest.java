@@ -80,7 +80,7 @@ import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
-import org.polypheny.db.type.entity.PolyTimestamp;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.Holder;
 import org.polypheny.db.util.Pair;
