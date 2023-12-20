@@ -121,7 +121,7 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
 
     @Override
     public void updateNamespace( String name, long id ) {
-        currentJdbcSchema = JdbcSchema.create( id, storeCatalog, name, connectionFactory, dialect, this );
+        currentJdbcSchema = JdbcSchema.create( id, name, connectionFactory, dialect, this );
         putNamespace( currentJdbcSchema );
     }
 

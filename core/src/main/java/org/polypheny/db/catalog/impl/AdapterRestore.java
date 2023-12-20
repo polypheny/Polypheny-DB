@@ -71,16 +71,9 @@ public class AdapterRestore {
         physicals.forEach( ( allocId, physicals ) -> {
             AllocationEntity entity = allocations.get( allocId );
             switch ( entity.dataModel ) {
-
-                case RELATIONAL:
-                    adapter.restoreTable( entity.unwrap( AllocationTable.class ).orElseThrow(), physicals );
-                    break;
-                case DOCUMENT:
-                    adapter.restoreCollection( entity.unwrap( AllocationCollection.class ).orElseThrow(), physicals );
-                    break;
-                case GRAPH:
-                    adapter.restoreGraph( entity.unwrap( AllocationGraph.class ).orElseThrow(), physicals );
-                    break;
+                case RELATIONAL -> adapter.restoreTable( entity.unwrap( AllocationTable.class ).orElseThrow(), physicals );
+                case DOCUMENT -> adapter.restoreCollection( entity.unwrap( AllocationCollection.class ).orElseThrow(), physicals );
+                case GRAPH -> adapter.restoreGraph( entity.unwrap( AllocationGraph.class ).orElseThrow(), physicals );
             }
 
         } );

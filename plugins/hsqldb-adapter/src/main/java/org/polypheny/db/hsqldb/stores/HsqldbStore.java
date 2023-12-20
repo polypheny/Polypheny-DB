@@ -36,6 +36,7 @@ import org.polypheny.db.adapter.jdbc.stores.AbstractJdbcStore;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
@@ -197,48 +198,38 @@ public class HsqldbStore extends AbstractJdbcStore {
         if ( type.getFamily() == PolyTypeFamily.MULTIMEDIA ) {
             return "BLOB(" + RuntimeConfig.UI_UPLOAD_SIZE_MB.getInteger() + "M)";
         }
-        switch ( type ) {
-            case BOOLEAN:
-                return "BOOLEAN";
-            case VARBINARY:
-                return "VARBINARY";
-            case TINYINT:
-                return "TINYINT";
-            case SMALLINT:
-                return "SMALLINT";
-            case INTEGER:
-                return "INT";
-            case BIGINT:
-                return "BIGINT";
-            case REAL:
-                return "REAL";
-            case DOUBLE:
-                return "FLOAT";
-            case DECIMAL:
-                return "DECIMAL";
-            case VARCHAR:
-                return "VARCHAR";
-            case DATE:
-                return "DATE";
-            case TIME:
-                return "TIME";
-            case TIMESTAMP:
-                return "TIMESTAMP";
-            case ARRAY:
-                return "LONGVARCHAR";
-            case JSON:
-            case NODE:
-            case EDGE:
-            case DOCUMENT:
-                return "LONGVARCHAR";
-        }
-        throw new GenericRuntimeException( "Unknown type: " + type.name() );
+        return switch ( type ) {
+            case BOOLEAN -> "BOOLEAN";
+            case VARBINARY -> "VARBINARY";
+            case TINYINT -> "TINYINT";
+            case SMALLINT -> "SMALLINT";
+            case INTEGER -> "INT";
+            case BIGINT -> "BIGINT";
+            case REAL -> "REAL";
+            case DOUBLE -> "FLOAT";
+            case DECIMAL -> "DECIMAL";
+            case VARCHAR -> "VARCHAR";
+            case DATE -> "DATE";
+            case TIME -> "TIME";
+            case TIMESTAMP -> "TIMESTAMP";
+            case ARRAY -> "LONGVARCHAR";
+            case JSON, NODE, EDGE, DOCUMENT -> "LONGVARCHAR";
+            default -> throw new GenericRuntimeException( "Unknown type: " + type.name() );
+        };
     }
 
 
     @Override
     public String getDefaultPhysicalNamespaceName() {
         return "PUBLIC";
+    }
+
+
+    @Override
+    public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities ) {
+        PhysicalEntity table = entities.get( 0 );
+        updateNamespace( table.namespaceName, table.namespaceId );
+        storeCatalog.addPhysical( alloc, currentJdbcSchema.createJdbcTable( table.unwrap( PhysicalTable.class ).orElseThrow() ) );
     }
 
 }

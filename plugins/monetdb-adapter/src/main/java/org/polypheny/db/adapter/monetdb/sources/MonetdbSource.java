@@ -120,7 +120,7 @@ public class MonetdbSource extends AbstractJdbcSource {
                 logical.columns.stream().collect( Collectors.toMap( t -> t.id, t -> t ) ),
                 allocation );
 
-        JdbcTable physical = currentJdbcSchema.createJdbcTable( storeCatalog, table );
+        JdbcTable physical = currentJdbcSchema.createJdbcTable( table );
 
         storeCatalog.replacePhysical( physical );
 

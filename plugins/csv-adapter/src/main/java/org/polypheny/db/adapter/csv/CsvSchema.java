@@ -114,16 +114,11 @@ public class CsvSchema extends AbstractNamespace implements Schema {
      * Creates different subtype of table based on the "flavor" attribute.
      */
     private CsvTable createTable( long id, Source source, PhysicalTable table, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
-        switch ( flavor ) {
-            case TRANSLATABLE:
-                return new CsvTranslatableTable( id, source, table, fieldTypes, fields, csvSource );
-            case SCANNABLE:
-                return new CsvScannableTable( id, source, table, fieldTypes, fields, csvSource );
-            case FILTERABLE:
-                return new CsvFilterableTable( id, source, table, fieldTypes, fields, csvSource );
-            default:
-                throw new AssertionError( "Unknown flavor " + this.flavor );
-        }
+        return switch ( flavor ) {
+            case TRANSLATABLE -> new CsvTranslatableTable( id, source, table, fieldTypes, fields, csvSource );
+            case SCANNABLE -> new CsvScannableTable( id, source, table, fieldTypes, fields, csvSource );
+            case FILTERABLE -> new CsvFilterableTable( id, source, table, fieldTypes, fields, csvSource );
+        };
     }
 
 

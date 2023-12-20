@@ -55,6 +55,7 @@ import org.polypheny.db.catalog.entity.LogicalQueryInterface;
 import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.impl.allocation.PolyAllocDocCatalog;
 import org.polypheny.db.catalog.impl.allocation.PolyAllocGraphCatalog;
@@ -110,7 +111,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     public final Map<String, QueryInterfaceTemplate> interfaceTemplates;
 
     @Getter
-    public final Map<Long, AdapterCatalog> storeCatalogs;
+    public final Map<Long, AdapterCatalog> adapterCatalogs;
 
     @Serialize
     public final Map<Long, AdapterRestore> adapterRestore;
@@ -157,7 +158,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
         // temporary data
         this.adapterTemplates = new ConcurrentHashMap<>();
-        this.storeCatalogs = new ConcurrentHashMap<>();
+        this.adapterCatalogs = new ConcurrentHashMap<>();
         this.interfaceTemplates = new ConcurrentHashMap<>();
 
         this.persister = new Persister();
@@ -221,6 +222,13 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         }
 
         log.debug( "commit" );
+
+        this.adapterRestore.clear();
+        adapterCatalogs.forEach( ( id, catalog ) -> {
+            Map<Long, List<PhysicalEntity>> restore = catalog.allocToPhysicals.entrySet().stream().map( a -> Pair.of( a, a.getValue().stream().map( key -> catalog.physicals.get( key ).normalize() ).collect( Collectors.toList() ) ) ).collect( Collectors.toMap( a -> a.getKey().getKey(), Pair::getValue ) );
+            this.adapterRestore.put( id, new AdapterRestore( id, restore, catalog.allocations ) );
+        } );
+
         this.backup = serialize();
 
         updateSnapshot();
@@ -309,13 +317,13 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
     @Override
     public <S extends AdapterCatalog> Optional<S> getStoreSnapshot( long id ) {
-        return Optional.ofNullable( (S) storeCatalogs.get( id ) );
+        return Optional.ofNullable( (S) adapterCatalogs.get( id ) );
     }
 
 
     @Override
     public void addStoreSnapshot( AdapterCatalog snapshot ) {
-        storeCatalogs.put( snapshot.adapterId, snapshot );
+        adapterCatalogs.put( snapshot.adapterId, snapshot );
     }
 
 
