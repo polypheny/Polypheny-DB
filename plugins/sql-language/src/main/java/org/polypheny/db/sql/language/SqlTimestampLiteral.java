@@ -20,7 +20,7 @@ package org.polypheny.db.sql.language;
 import com.google.common.base.Preconditions;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyTimestamp;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.TimestampString;
 
 

@@ -46,10 +46,10 @@ import org.polypheny.db.algebra.json.JsonValueEmptyOrErrorBehavior;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.functions.Functions.PathContext;
 import org.polypheny.db.runtime.PolyphenyDbException;
-import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
 
 
 /**

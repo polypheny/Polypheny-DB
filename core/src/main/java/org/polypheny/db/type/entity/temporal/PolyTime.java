@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.type.entity;
+package org.polypheny.db.type.entity.temporal;
 
 import com.fasterxml.jackson.core.JsonToken;
 import java.sql.Time;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
-import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyTemporal;
 import org.polypheny.db.util.TimeString;
 
@@ -36,18 +36,15 @@ public class PolyTime extends PolyTemporal {
 
     public Integer ofDay;
 
-    public TimeUnit timeUnit;
 
-
-    public PolyTime( int ofDay, TimeUnit timeUnit ) {
+    public PolyTime( int ofDay ) {
         super( PolyType.TIME );
         this.ofDay = ofDay;
-        this.timeUnit = timeUnit;
     }
 
 
     public static PolyTime of( Number value ) {
-        return new PolyTime( value.intValue(), TimeUnit.MILLISECOND );
+        return new PolyTime( value.intValue() );
     }
 
 
@@ -62,12 +59,12 @@ public class PolyTime extends PolyTemporal {
 
 
     public static PolyTime of( Integer value ) {
-        return new PolyTime( value, TimeUnit.MILLISECOND );
+        return new PolyTime( value );
     }
 
 
     public static PolyTime of( Time value ) {
-        return new PolyTime( (int) Functions.timeToLong( value ), TimeUnit.MILLISECOND );
+        return new PolyTime( (int) Functions.timeToLong( value ) );
     }
 
 
@@ -112,7 +109,7 @@ public class PolyTime extends PolyTemporal {
 
     @Override
     public @NotNull Long deriveByteSize() {
-        return 16L + timeUnit.name().getBytes().length;
+        return 16L;
     }
 
 

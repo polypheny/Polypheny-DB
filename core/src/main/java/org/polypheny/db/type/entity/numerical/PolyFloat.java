@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.type.entity;
+package org.polypheny.db.type.entity.numerical;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -37,35 +37,53 @@ import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 
 @EqualsAndHashCode(callSuper = true)
-public class PolyDouble extends PolyNumber {
+public class PolyFloat extends PolyNumber {
 
     @Serialize
     @JsonProperty
-    public Double value;
+    public Float value;
 
 
     @JsonCreator
-    public PolyDouble( @Deserialize("value") @JsonProperty("value") Double value ) {
-        super( PolyType.DOUBLE );
+    public PolyFloat( @Deserialize("value") @JsonProperty("value") Float value ) {
+        super( PolyType.FLOAT );
         this.value = value;
     }
 
 
-    public static PolyDouble of( Double value ) {
-        return new PolyDouble( value );
+    public static PolyFloat of( Float value ) {
+        return new PolyFloat( value );
     }
 
 
-    public static PolyDouble of( Number value ) {
-        return new PolyDouble( value.doubleValue() );
+    public static PolyFloat of( Number value ) {
+        return new PolyFloat( value.floatValue() );
     }
 
 
-    public static PolyDouble ofNullable( Number value ) {
+    public static PolyFloat ofNullable( Number value ) {
         return value == null ? null : of( value );
+    }
+
+
+    public static PolyFloat convert( @Nullable Object object ) {
+        if ( object == null ) {
+            return null;
+        }
+
+        if ( object instanceof PolyValue ) {
+            if ( ((PolyValue) object).isFloat() ) {
+                return ((PolyValue) object).asFloat();
+            } else if ( ((PolyValue) object).isNumber() ) {
+                return PolyFloat.ofNullable( ((PolyValue) object).asNumber().FloatValue() );
+            }
+        }
+
+        throw new GenericRuntimeException( "Could not convert Integer" );
     }
 
 
@@ -80,37 +98,19 @@ public class PolyDouble extends PolyNumber {
         if ( !o.isNumber() ) {
             return -1;
         }
-
-        return ObjectUtils.compare( value, o.asNumber().DoubleValue() );
-    }
-
-
-    public static PolyDouble convert( @Nullable Object object ) {
-        if ( object == null ) {
-            return null;
-        }
-
-        if ( object instanceof PolyValue ) {
-            if ( ((PolyValue) object).isDouble() ) {
-                return ((PolyValue) object).asDouble();
-            } else if ( ((PolyValue) object).isNumber() ) {
-                return PolyDouble.of( ((PolyValue) object).asNumber().DoubleValue() );
-            }
-        }
-
-        throw new GenericRuntimeException( "Could not convert Integer" );
+        return ObjectUtils.compare( value, o.asFloat().value );
     }
 
 
     @Override
     public Expression asExpression() {
-        return Expressions.new_( PolyDouble.class, Expressions.constant( value ) );
+        return Expressions.new_( PolyFloat.class, Expressions.constant( value ) );
     }
 
 
     @Override
     public PolySerializable copy() {
-        return PolySerializable.deserialize( serialize(), PolyDouble.class );
+        return PolySerializable.deserialize( serialize(), PolyFloat.class );
     }
 
 
@@ -128,13 +128,13 @@ public class PolyDouble extends PolyNumber {
 
     @Override
     public float floatValue() {
-        return value.floatValue();
+        return value;
     }
 
 
     @Override
     public double doubleValue() {
-        return value;
+        return value.doubleValue();
     }
 
 
@@ -145,62 +145,62 @@ public class PolyDouble extends PolyNumber {
 
 
     @Override
-    public PolyDouble increment() {
-        return PolyDouble.of( value + 1 );
+    public PolyNumber increment() {
+        return PolyFloat.of( value + 1 );
     }
 
 
     @Override
-    public @NotNull PolyDouble divide( @NotNull PolyNumber other ) {
-        return PolyDouble.of( value / other.doubleValue() );
+    public @NotNull PolyNumber divide( @NotNull PolyNumber other ) {
+        return PolyFloat.of( value / other.floatValue() );
     }
 
 
     @Override
-    public @NotNull PolyDouble multiply( @NotNull PolyNumber other ) {
-        return PolyDouble.of( value * other.doubleValue() );
+    public @NotNull PolyNumber multiply( @NotNull PolyNumber other ) {
+        return PolyFloat.of( value * other.floatValue() );
     }
 
 
     @Override
     public @NotNull PolyNumber plus( @NotNull PolyNumber b1 ) {
-        return PolyDouble.of( value + b1.doubleValue() );
+        return PolyFloat.of( value + b1.floatValue() );
     }
 
 
     @Override
     public @NotNull PolyNumber subtract( @NotNull PolyNumber b1 ) {
-        return PolyDouble.of( value - b1.doubleValue() );
+        return PolyFloat.of( value - b1.floatValue() );
     }
 
 
     @Override
     public PolyNumber negate() {
-        return PolyDouble.of( -value );
+        return PolyFloat.of( -value );
     }
 
 
     @Override
     public @Nullable Long deriveByteSize() {
-        return 8L;
+        return 4L;
     }
 
 
-    public static class PolyDoubleSerializerDef extends SimpleSerializerDef<PolyDouble> {
+    public static class PolyFloatSerializerDef extends SimpleSerializerDef<PolyFloat> {
 
         @Override
-        protected BinarySerializer<PolyDouble> createSerializer( int version, CompatibilityLevel compatibilityLevel ) {
+        protected BinarySerializer<PolyFloat> createSerializer( int version, CompatibilityLevel compatibilityLevel ) {
             return new BinarySerializer<>() {
                 @Override
-                public void encode( BinaryOutput out, PolyDouble item ) {
-                    out.writeUTF8Nullable( item.value == null ? null : item.value.toString() );
+                public void encode( BinaryOutput out, PolyFloat item ) {
+                    out.writeUTF8Nullable( item == null ? null : item.value.toString() );
                 }
 
 
                 @Override
-                public PolyDouble decode( BinaryInput in ) throws CorruptedDataException {
-                    @Nullable String d = in.readUTF8Nullable();
-                    return new PolyDouble( d == null ? null : Double.valueOf( d ) );
+                public PolyFloat decode( BinaryInput in ) throws CorruptedDataException {
+                    String readUTF8Nullable = in.readUTF8Nullable();
+                    return new PolyFloat( readUTF8Nullable == null ? null : Float.valueOf( readUTF8Nullable ) );
                 }
             };
         }

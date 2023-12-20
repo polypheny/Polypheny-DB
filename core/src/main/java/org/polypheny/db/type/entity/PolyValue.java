@@ -61,13 +61,9 @@ import org.polypheny.db.schema.types.Expressible;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyBigDecimal.PolyBigDecimalSerializerDef;
 import org.polypheny.db.type.entity.PolyBinary.ByteStringDeserializer;
 import org.polypheny.db.type.entity.PolyBinary.ByteStringSerializer;
 import org.polypheny.db.type.entity.PolyBoolean.PolyBooleanSerializerDef;
-import org.polypheny.db.type.entity.PolyDouble.PolyDoubleSerializerDef;
-import org.polypheny.db.type.entity.PolyFloat.PolyFloatSerializerDef;
-import org.polypheny.db.type.entity.PolyInteger.PolyIntegerSerializerDef;
 import org.polypheny.db.type.entity.PolyList.PolyListSerializerDef;
 import org.polypheny.db.type.entity.PolyLong.PolyLongSerializerDef;
 import org.polypheny.db.type.entity.PolyNull.PolyNullSerializerDef;
@@ -86,8 +82,19 @@ import org.polypheny.db.type.entity.graph.PolyGraph.PolyGraphSerializerDef;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyNode.PolyNodeSerializerDef;
 import org.polypheny.db.type.entity.graph.PolyPath;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal.PolyBigDecimalSerializerDef;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyDouble.PolyDoubleSerializerDef;
+import org.polypheny.db.type.entity.numerical.PolyFloat;
+import org.polypheny.db.type.entity.numerical.PolyFloat.PolyFloatSerializerDef;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyInteger.PolyIntegerSerializerDef;
 import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.type.entity.relational.PolyMap.PolyMapSerializerDef;
+import org.polypheny.db.type.entity.temporal.PolyDate;
+import org.polypheny.db.type.entity.temporal.PolyTime;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 
 @Value
 @Slf4j

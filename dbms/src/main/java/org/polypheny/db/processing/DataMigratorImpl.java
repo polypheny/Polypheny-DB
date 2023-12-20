@@ -91,10 +91,10 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
-import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.PolyGraph;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
 
