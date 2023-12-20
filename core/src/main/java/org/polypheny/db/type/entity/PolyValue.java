@@ -249,7 +249,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case GEOMETRY:
                 return o -> o.asGeometry().toString();
             default:
-                throw new NotImplementedException( "meta" );
+                throw new NotImplementedException( "meta: " + type.getFullTypeString() );
         }
     }
 
@@ -283,6 +283,37 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             return null;
         }
     }
+
+
+    public String toJson() {
+        // fallback serializer
+        try {
+            return JSON_WRAPPER.writeValueAsString( this );
+        } catch ( JsonProcessingException e ) {
+            log.warn( "Error on deserialize JSON." );
+            return null;
+        }
+    }
+
+
+    // used by code generation
+    @SuppressWarnings("unused")
+    public PolyString toPolyJson() {
+        return PolyString.of( toJson() );
+    }
+
+
+    @NotNull
+    public Optional<Long> getByteSize() {
+        if ( byteSize == null ) {
+            byteSize = deriveByteSize();
+        }
+        return Optional.ofNullable( byteSize );
+    }
+
+
+    @Nullable
+    public abstract Long deriveByteSize();
 
 
     public static Expression getInitialExpression( Type type ) {
@@ -442,30 +473,6 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             return null;
         }
     }
-
-
-    public String toJson() {
-        // fallback serializer
-        try {
-            return JSON_WRAPPER.writeValueAsString( this );
-        } catch ( JsonProcessingException e ) {
-            log.warn( "Error on deserialize JSON." );
-            return null;
-        }
-    }
-
-
-    @NotNull
-    public Optional<Long> getByteSize() {
-        if ( byteSize == null ) {
-            byteSize = deriveByteSize();
-        }
-        return Optional.ofNullable( byteSize );
-    }
-
-
-    @Nullable
-    public abstract Long deriveByteSize();
 
 
     @Override

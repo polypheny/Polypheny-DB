@@ -563,7 +563,8 @@ public enum BuiltInMethod {
 
     X_MODEL_ITEM( CrossModelFunctions.class, "docItem", String.class, String.class ),
     SINGLE_TO_ARRAY_ENUMERABLE( Functions.class, "singleToArray", Enumerable.class ),
-    X_MODEL_GRAPH_ONLY_LABEL( CrossModelFunctions.class, "cypherOnlyLabelGraph", PolyValue.class, PolyString.class );
+    X_MODEL_GRAPH_ONLY_LABEL( CrossModelFunctions.class, "cypherOnlyLabelGraph", PolyValue.class, PolyString.class ),
+    TO_JSON( PolyValue.class, "toPolyJson" );
 
     private static final String toIntOptional = "toIntOptional";
     public final Method method;

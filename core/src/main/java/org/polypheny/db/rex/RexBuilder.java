@@ -1613,7 +1613,7 @@ public class RexBuilder {
 
     public RexCall makeLpgPropertiesExtract() {
         return new RexCall(
-                typeFactory.createPolyType( PolyType.VARCHAR, 255 ),
+                typeFactory.createPolyType( PolyType.DOCUMENT ),
                 OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_EXTRACT_PROPERTIES ),
                 List.of( makeInputRef( typeFactory.createPolyType( PolyType.NODE ), 0 ) ) );
     }
@@ -1640,6 +1640,14 @@ public class RexBuilder {
                 typeFactory.createPolyType( PolyType.BOOLEAN ),
                 OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_GRAPH_ONLY_LABEL ),
                 List.of( makeInputRef( typeFactory.createPolyType( PolyType.GRAPH ), 0 ), makeLiteral( label ) ) );
+    }
+
+
+    public RexCall makeToJson( RexNode node ) {
+        return new RexCall(
+                typeFactory.createPolyType( PolyType.VARCHAR, 2024 ),
+                OperatorRegistry.get( OperatorName.TO_JSON ),
+                List.of( node ) );
     }
 
 }

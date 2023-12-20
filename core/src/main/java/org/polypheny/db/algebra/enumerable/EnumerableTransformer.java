@@ -91,6 +91,10 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
         }
 
         if ( outModelTrait == ModelTrait.RELATIONAL ) {
+            if ( isCrossModel && inModelTrait == ModelTrait.GRAPH ) {
+                return implementRelationalOnGraph( implementor, pref );
+            }
+
             return implementRelationalOnDocument( implementor, pref );
         }
 
@@ -106,6 +110,12 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
         }
 
         throw new GenericRuntimeException( "Transformation of the given data models is not yet supported." );
+    }
+
+
+    private Result implementRelationalOnGraph( EnumerableAlgImplementor implementor, Prefer pref ) {
+        Result impl = implementor.visitChild( this, 0, (EnumerableAlg) getInputs().get( 0 ), pref );
+        return impl;
     }
 
 

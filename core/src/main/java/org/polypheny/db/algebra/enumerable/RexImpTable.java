@@ -317,7 +317,8 @@ public class RexImpTable {
 
         // Cross Model Sql
         defineMethod( OperatorRegistry.get( OperatorName.CROSS_MODEL_ITEM ), BuiltInMethod.X_MODEL_ITEM.method, NullPolicy.NONE );
-
+        defineMethod( OperatorRegistry.get( OperatorName.TO_JSON ), BuiltInMethod.TO_JSON.method, NullPolicy.NONE );
+        
         // System functions
         final SystemFunctionImplementor systemFunctionImplementor = new SystemFunctionImplementor();
         map.put( OperatorRegistry.get( OperatorName.USER ), systemFunctionImplementor );

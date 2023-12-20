@@ -1709,6 +1709,8 @@ public enum OperatorName {
 
     CROSS_MODEL_ITEM( LangFunctionOperator.class ),
 
+    TO_JSON( LangFunctionOperator.class ),
+
     OF_LIST( LangFunctionOperator.class ),
 
     REMOVE_NAMES( LangFunctionOperator.class ),

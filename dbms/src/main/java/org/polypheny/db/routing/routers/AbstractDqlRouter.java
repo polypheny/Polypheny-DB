@@ -40,6 +40,7 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -232,18 +233,20 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
         algBuilder.lpgScan( logicalTable.id );
         algBuilder.lpgMatch( List.of( algBuilder.lpgNodeMatch( List.of( PolyString.of( logicalTable.name ) ) ) ), List.of( PolyString.of( "n" ) ) );
         algBuilder.lpgProject(
-                List.of( rexBuilder.makeLpgGetId(), rexBuilder.makeLpgPropertiesExtract(), rexBuilder.makeLpgLabels() ),
+                List.of( rexBuilder.makeToJson( rexBuilder.makeLpgGetId() ), rexBuilder.makeToJson( rexBuilder.makeLpgPropertiesExtract() ), rexBuilder.makeLpgLabels() ),
                 List.of( PolyString.of( "id" ), PolyString.of( "properties" ), PolyString.of( "labels" ) ) );
 
         AlgNode built = routeGraph( RoutedAlgBuilder.create( statement, cluster ), (AlgNode & LpgAlg) algBuilder.build(), statement );
 
         builders.get( 0 ).push( new LogicalTransformer(
                 node.getCluster(),
+                node.getTraitSet().replace( ModelTrait.RELATIONAL ),
                 List.of( built ),
                 null,
                 ModelTrait.GRAPH,
                 ModelTrait.RELATIONAL,
-                logicalTable.getRowType(), false ) );
+                GraphType.ofRelational(),
+                true ) );
         return builders;
     }
 

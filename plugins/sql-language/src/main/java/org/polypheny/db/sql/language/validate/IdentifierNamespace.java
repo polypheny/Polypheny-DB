@@ -30,6 +30,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph.SubstitutionGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -41,6 +42,7 @@ import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlNodeList;
 import org.polypheny.db.sql.language.SqlUtil;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.CyclicDefinitionException;
 import org.polypheny.db.util.NameMatcher;
 import org.polypheny.db.util.NameMatchers;
@@ -175,7 +177,8 @@ public class IdentifierNamespace extends AbstractNamespace {
             } else if ( namespace.dataModel == DataModel.DOCUMENT ) {
                 entity = validator.snapshot.doc().getCollection( namespace.id, ns.get( 1 ) ).orElse( null );
             } else if ( namespace.dataModel == DataModel.GRAPH ) {
-                throw new NotImplementedException();
+                // we use a subgraph to define label which is used as table
+                entity = validator.snapshot.graph().getGraph( namespace.id ).map( g -> new SubstitutionGraph( g.id, ns.get( 1 ), false, g.caseSensitive, List.of( PolyString.of( ns.get( 1 ) ) ) ) ).orElse( null );
             }
 
             return new EntityNamespace( validator, entity );
