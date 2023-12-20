@@ -2492,6 +2492,8 @@ public class SqlLanguagePlugin extends PolyPlugin {
 
         register( OperatorName.UNWRAP_INTERVAL, new LangFunctionOperator( OperatorName.UNWRAP_INTERVAL.name(), Kind.OTHER_FUNCTION ) );
 
+        register( OperatorName.TO_JSON, new LangFunctionOperator( OperatorName.TO_JSON.name(), Kind.OTHER ) );
+
         isInit = true;
     }
 

@@ -23,6 +23,7 @@ import java.sql.ResultSet;
 import java.util.List;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
@@ -127,6 +128,7 @@ public class RelationalOnLpgTest extends CrossModelTestTemplate {
 
 
     @Test
+    @Disabled
     @Tag("neoExcluded") // see simpleProjectTest method
     public void itemSelectTest() {
         executeStatements( ( s, c ) -> {

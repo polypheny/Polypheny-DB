@@ -239,7 +239,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case DOCUMENT:
                 return o -> o.asDocument().toJson();
             default:
-                throw new NotImplementedException( "meta" );
+                throw new NotImplementedException( "meta: " + type.getFullTypeString() );
         }
     }
 
@@ -294,6 +294,13 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             log.warn( "Error on deserialize JSON." );
             return null;
         }
+    }
+
+
+    // used by code generation
+    @SuppressWarnings("unused")
+    public PolyString toPolyJson() {
+        return PolyString.of( toJson() );
     }
 
 

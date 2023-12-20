@@ -956,7 +956,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 } catch ( Throwable e ) {
                     log.warn( String.format( "Router: %s was not able to route the query.", router.getClass().getSimpleName() ) ); // this should not be necessary but some of the routers fail loudly, which makes this necessary todo dl
                 }
-
             }
 
             if ( proposedPlans.isEmpty() ) {

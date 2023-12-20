@@ -49,15 +49,15 @@ public class GraphType implements Serializable, AlgDataType, AlgDataTypeFamily {
 
 
     public static GraphType of() {
-        return new GraphType( List.of( new AlgDataTypeFieldImpl( -1L, GRAPH_ID, 0, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.CHAR, 255 ) ) ) );
+        return new GraphType( List.of( new AlgDataTypeFieldImpl( -1L, GRAPH_ID, 0, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.CHAR, ID_SIZE ) ) ) );
     }
 
 
     public static AlgDataType ofRelational() {
         return new AlgRecordType( List.of(
-                new AlgDataTypeFieldImpl( -1L, GRAPH_ID, 0, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARBINARY, 2024 ) ),
+                new AlgDataTypeFieldImpl( -1L, GRAPH_ID, 0, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARCHAR, ID_SIZE ) ),
                 new AlgDataTypeFieldImpl( -1L, GRAPH_PROPERTIES, 1, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARCHAR, 2024 ) ),
-                new AlgDataTypeFieldImpl( -1L, GRAPH_LABELS, 2, AlgDataTypeFactory.DEFAULT.createArrayType( AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARCHAR, 2024 ), -1 ) )
+                new AlgDataTypeFieldImpl( -1L, GRAPH_LABELS, 2, AlgDataTypeFactory.DEFAULT.createArrayType( AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARCHAR, LABEL_SIZE ), -1 ) )
         ) );
     }
 
