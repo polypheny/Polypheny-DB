@@ -11,7 +11,7 @@ import "namespace_meta_responses.proto";
 import "statement_requests.proto";
 import "statement_responses.proto";
 import "transaction_requests.proto";
-import "transactions_responses.proto";
+import "transaction_responses.proto";
 
 option java_multiple_files = true;
 option java_package = "org.polypheny.db.protointerface.proto";
