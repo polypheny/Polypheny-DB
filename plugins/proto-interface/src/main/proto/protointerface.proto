@@ -1,17 +1,16 @@
 syntax = "proto3";
 
-// Can we drop this?  Causes warnings
-import "value.proto";
-import "meta_requests.proto";
-import "meta_responses.proto";
 import "connection_requests.proto";
 import "connection_responses.proto";
+import "meta_requests.proto";
+import "meta_responses.proto";
 import "namespace_meta_requests.proto";
 import "namespace_meta_responses.proto";
 import "statement_requests.proto";
 import "statement_responses.proto";
 import "transaction_requests.proto";
 import "transaction_responses.proto";
+import "value.proto";
 
 option java_multiple_files = true;
 option java_package = "org.polypheny.db.protointerface.proto";
