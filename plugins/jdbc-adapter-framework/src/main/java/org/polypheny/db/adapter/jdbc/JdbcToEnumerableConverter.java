@@ -43,7 +43,6 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Objects;
 import java.util.TimeZone;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
@@ -267,7 +266,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
     private List<ConstantExpression> toIndexesTableExpression( SqlString sqlString ) {
         return sqlString.getDynamicParameters().stream()
                 .map( Expressions::constant )
-                .collect( Collectors.toList() );
+                .toList();
     }
 
 

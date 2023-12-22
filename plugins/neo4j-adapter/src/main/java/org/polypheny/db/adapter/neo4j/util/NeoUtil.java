@@ -181,8 +181,8 @@ public interface NeoUtil {
         }
 
         return PolyPath.create(
-                nodes.stream().map( n -> Pair.of( (PolyString) null, n ) ).collect( Collectors.toList() ),
-                edges.stream().map( e -> Pair.of( (PolyString) null, e ) ).collect( Collectors.toList() ) );
+                nodes.stream().map( n -> Pair.of( (PolyString) null, n ) ).toList(),
+                edges.stream().map( e -> Pair.of( (PolyString) null, e ) ).toList() );
     }
 
     static PolyNode asPolyNode( Node node ) {
@@ -573,7 +573,7 @@ public interface NeoUtil {
             return value.asNumber().doubleValue();
         }
         if ( value.isList() ) {
-            return value.asList().value.stream().map( e -> fixParameterValue( e, Pair.of( type.right, type.right ) ) ).collect( Collectors.toList() );
+            return value.asList().value.stream().map( e -> fixParameterValue( e, Pair.of( type.right, type.right ) ) ).toList();
         }
 
         switch ( type.left ) {

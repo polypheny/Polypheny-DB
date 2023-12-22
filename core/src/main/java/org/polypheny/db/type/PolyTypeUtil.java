@@ -48,7 +48,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.reflect.TypeUtils;
@@ -92,7 +91,7 @@ public abstract class PolyTypeUtil {
      * @see Mappings#isIdentity(List, int)
      */
     public static ImmutableList<Integer> identity( int count ) {
-        return ImmutableList.copyOf( IntStream.range( 0, count ).boxed().collect( Collectors.toList() ) );
+        return ImmutableList.copyOf( IntStream.range( 0, count ).boxed().toList() );
     }
 
 
@@ -973,7 +972,7 @@ public abstract class PolyTypeUtil {
                 .map( Number::intValue )
                 .map( fields::get )
                 .map( AlgDataTypeField::getType )
-                .collect( Collectors.toList() );
+                .toList();
     }
 
 

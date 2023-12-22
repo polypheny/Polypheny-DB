@@ -22,7 +22,6 @@ import static org.polypheny.db.adapter.neo4j.util.NeoStatements.with_;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import org.polypheny.db.adapter.neo4j.NeoGraphImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements;
@@ -84,14 +83,14 @@ public class NeoLpgAggregate extends LpgAggregate implements NeoGraphAlg {
                 finalRow.set( currentNames.indexOf( name ), name );
             }
             for ( AggregateCall agg : aggCalls ) {
-                List<String> refs = agg.getArgList().stream().map( lastNames::get ).collect( Collectors.toList() );
+                List<String> refs = agg.getArgList().stream().map( lastNames::get ).toList();
                 if ( refs.isEmpty() ) {
                     refs.add( "*" );
                 }
                 finalRow.set( currentNames.indexOf( agg.name ), Objects.requireNonNull( NeoUtil.getOpAsNeo( agg.getAggregation().getOperatorName(), List.of(), agg.type ) ).apply( refs ) );
             }
 
-            implementor.add( with_( list_( finalRow.stream().map( NeoStatements::literal_ ).collect( Collectors.toList() ) ) ) );
+            implementor.add( with_( list_( finalRow.stream().map( NeoStatements::literal_ ).toList() ) ) );
 
         }
 

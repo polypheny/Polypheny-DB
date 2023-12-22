@@ -159,7 +159,7 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
 
     @Override
     public Expression asExpression() {
-        return Expressions.call( PolyList.class, "ofExpression", value.stream().map( e -> e == null ? Expressions.constant( null ) : e.asExpression() ).collect( Collectors.toList() ) );
+        return Expressions.call( PolyList.class, "ofExpression", value.stream().map( e -> e == null ? Expressions.constant( null ) : e.asExpression() ).toList() );
     }
 
 

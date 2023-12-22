@@ -271,7 +271,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
     @Override
     public @NonNull List<LogicalTable> getTables( @Nullable Pattern namespaceName, Pattern name ) {
-        List<Long> namespaceIds = getNamespaces( namespaceName ).stream().map( n -> n.id ).collect( Collectors.toList() );
+        List<Long> namespaceIds = getNamespaces( namespaceName ).stream().map( n -> n.id ).toList();
 
         List<LogicalTable> tables = this.tables.values().asList();
         if ( name != null ) {
@@ -279,9 +279,9 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
                     .filter( t ->
                             this.namespaces.get( t.namespaceId ).caseSensitive
                                     ? t.name.matches( name.toRegex() )
-                                    : t.name.matches( name.toRegex().toLowerCase() ) ).collect( Collectors.toList() );
+                                    : t.name.matches( name.toRegex().toLowerCase() ) ).toList();
         }
-        return Optional.of( tables.stream().filter( t -> namespaceIds.contains( t.namespaceId ) ).collect( Collectors.toList() ) ).orElse( List.of() );
+        return Optional.of( tables.stream().filter( t -> namespaceIds.contains( t.namespaceId ) ).toList() ).orElse( List.of() );
     }
 
 
@@ -289,7 +289,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
         if ( namespaceName == null ) {
             return this.namespaces.values().asList();
         }
-        return this.namespaces.values().stream().filter( n -> n.caseSensitive ? n.name.matches( namespaceName.toRegex() ) : n.name.toLowerCase().matches( namespaceName.toRegex().toLowerCase() ) ).collect( Collectors.toList() );
+        return this.namespaces.values().stream().filter( n -> n.caseSensitive ? n.name.matches( namespaceName.toRegex() ) : n.name.toLowerCase().matches( namespaceName.toRegex().toLowerCase() ) ).toList();
 
     }
 
@@ -304,7 +304,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
         return Optional.of( tablesNamespace.get( namespaceId ).stream().filter( e -> (name == null || (namespace.caseSensitive
                 ? e.name.toLowerCase().matches( name.toRegex() )
-                : e.name.toLowerCase().matches( name.toRegex().toLowerCase() ))) ).collect( Collectors.toList() ) ).orElse( List.of() );
+                : e.name.toLowerCase().matches( name.toRegex().toLowerCase() ))) ).toList() ).orElse( List.of() );
     }
 
 
@@ -362,7 +362,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     public @NonNull List<LogicalColumn> getColumns( Pattern tableName, Pattern columnName ) {
         List<LogicalTable> tables = getTables( null, tableName );
         if ( columnName == null ) {
-            return tables.stream().flatMap( t -> tableColumns.get( t.id ).stream() ).collect( Collectors.toList() );
+            return tables.stream().flatMap( t -> tableColumns.get( t.id ).stream() ).toList();
         }
 
         return tables
@@ -370,7 +370,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
                 .flatMap( t -> tableColumns.get( t.id ).stream().filter(
                         c -> namespaces.get( t.namespaceId ).caseSensitive
                                 ? c.name.matches( columnName.toRegex() )
-                                : c.name.toLowerCase().matches( columnName.toLowerCase().toRegex() ) ) ).collect( Collectors.toList() );
+                                : c.name.toLowerCase().matches( columnName.toLowerCase().toRegex() ) ) ).toList();
 
     }
 

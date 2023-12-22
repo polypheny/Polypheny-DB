@@ -414,7 +414,7 @@ public class Neo4jPlugin extends PolyPlugin {
 
         @Override
         public List<IndexMethodModel> getAvailableIndexMethods() {
-            return Arrays.stream( IndexTypes.values() ).map( IndexTypes::asMethod ).collect( Collectors.toList() );
+            return Arrays.stream( IndexTypes.values() ).map( IndexTypes::asMethod ).toList();
         }
 
 

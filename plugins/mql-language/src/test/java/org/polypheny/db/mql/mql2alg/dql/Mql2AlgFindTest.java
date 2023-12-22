@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.AlgRoot;
@@ -585,7 +584,7 @@ public class Mql2AlgFindTest extends Mql2AlgTest {
         List<List<String>> excludedKeys = excludes
                 .stream()
                 .map( e -> Arrays.asList( e.split( "\\." ) ) )
-                .collect( Collectors.toList() );
+                .toList();
 
         int pos = 0;
         for ( RexNode array : arrayArray.operands ) {
@@ -631,7 +630,7 @@ public class Mql2AlgFindTest extends Mql2AlgTest {
                         .operands
                         .stream()
                         .map( e -> ((RexLiteral) e).getValue() )
-                        .collect( Collectors.toList() ) );
+                        .toList() );
     }
 
 
@@ -696,7 +695,7 @@ public class Mql2AlgFindTest extends Mql2AlgTest {
         assertEquals( excludes.size(), excluded.operands.size() );
         List<PolyValue> names = excluded.operands.stream()
                 .map( e -> ((RexLiteral) e).getValue() )
-                .collect( Collectors.toList() );
+                .toList();
         assertEquals( names, excludes );
     }
 

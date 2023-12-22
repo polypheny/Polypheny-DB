@@ -124,7 +124,7 @@ class MongoEnumerator implements Enumerator<PolyValue[]> {
             return temp.toArray();
         } else {
             if ( current instanceof List ) {
-                return PolyList.of((List<Bson>) current).stream().map( this::handleTransforms ).collect( Collectors.toList() );
+                return PolyList.of((List<Bson>) current).stream().map( this::handleTransforms ).toList();
             } else if ( current instanceof Document ) {
                 return handleDocument( (Document) current );
             }

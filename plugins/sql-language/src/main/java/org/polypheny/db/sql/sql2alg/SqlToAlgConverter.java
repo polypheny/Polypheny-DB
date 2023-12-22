@@ -395,9 +395,9 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         List<AlgDataTypeField> validatedFields = validator.getValidatedNodeType( query ).getFields(); // TODO DL read final
         final AlgDataType validatedRowType =
                 validator.getTypeFactory().createStructType(
-                        validatedFields.stream().map( AlgDataTypeField::getId ).collect( Collectors.toList() ),
-                        validatedFields.stream().map( AlgDataTypeField::getType ).collect( Collectors.toList() ),
-                        ValidatorUtil.uniquify( validatedFields.stream().map( AlgDataTypeField::getName ).collect( Collectors.toList() ), false ) );
+                        validatedFields.stream().map( AlgDataTypeField::getId ).toList(),
+                        validatedFields.stream().map( AlgDataTypeField::getType ).toList(),
+                        ValidatorUtil.uniquify( validatedFields.stream().map( AlgDataTypeField::getName ).toList(), false ) );
         /*int diff = validatedFields.size() - result.getRowType().getFieldList().size();
         if ( diff > 0 ) {
             for ( int i = 0; i < diff; i++ ) {
@@ -1030,7 +1030,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                     final AlgDataType longType = typeFactory.createPolyType( PolyType.BIGINT );
                     final AlgNode seek = converted.r.getInput( 0 ); // fragile
                     final int keyCount = leftKeys.size();
-                    final List<Integer> args = IntStream.range( 0, keyCount ).boxed().collect( Collectors.toList() );
+                    final List<Integer> args = IntStream.range( 0, keyCount ).boxed().toList();
                     LogicalAggregate aggregate =
                             LogicalAggregate.create( seek, ImmutableBitSet.of(), null,
                                     ImmutableList.of(

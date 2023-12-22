@@ -15,13 +15,13 @@
  */
 
 package org.polypheny.db.cypher.helper;
+
 import static org.polypheny.db.functions.Functions.toBigDecimal;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
@@ -66,7 +66,7 @@ public class TestGraphObject implements TestObject {
 
 
     static List<PolyString> getLabels( List<String> labels ) {
-        return labels.stream().map( PolyString::of ).collect( Collectors.toList() );
+        return labels.stream().map( PolyString::of ).toList();
     }
 
 

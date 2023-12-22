@@ -18,7 +18,6 @@ package org.polypheny.db.rex;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.jetbrains.annotations.NotNull;
@@ -46,7 +45,7 @@ public class RexNameRef extends RexVariable {
      */
     public RexNameRef( List<String> names, @Nullable Integer index, AlgDataType type ) {
         super( String.join( ".", names ), type );
-        this.names = names.stream().filter( n -> !n.isEmpty() ).collect( Collectors.toList() );
+        this.names = names.stream().filter( n -> !n.isEmpty() ).toList();
         this.index = index;
     }
 

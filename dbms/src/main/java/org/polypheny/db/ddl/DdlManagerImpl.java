@@ -607,7 +607,7 @@ public class DdlManagerImpl extends DdlManager {
         // Check if all required columns are present on this storeId
         AllocationTable alloc = catalog.getSnapshot().alloc().getEntity( location.getAdapterId(), catalogTable.id ).orElseThrow().unwrap( AllocationTable.class ).orElseThrow();
 
-        if ( !new HashSet<>( alloc.getColumns().stream().map( c -> c.columnId ).collect( Collectors.toList() ) ).containsAll( columnIds ) ) {
+        if ( !new HashSet<>( alloc.getColumns().stream().map( c -> c.columnId ).toList() ).containsAll( columnIds ) ) {
             throw new GenericRuntimeException( "Not all required columns for this index are placed on this storeId." );
         }
 
@@ -719,7 +719,7 @@ public class DdlManagerImpl extends DdlManager {
                 adjustedColumns.add( catalog.getSnapshot().rel().getColumn( cId ).orElseThrow() );
             }
         }
-        adjustedColumns = adjustedColumns.stream().sorted( Comparator.comparingLong( c -> c.position ) ).collect( Collectors.toList() );
+        adjustedColumns = adjustedColumns.stream().sorted( Comparator.comparingLong( c -> c.position ) ).toList();
 
         AllocationPlacement placement = catalog.getAllocRel( table.namespaceId ).addPlacement( table.id, table.namespaceId, dataStore.adapterId );
         PartitionProperty property = catalog.getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow();
@@ -758,7 +758,7 @@ public class DdlManagerImpl extends DdlManager {
         // long pkColumnId = oldPk.columnIds.get( 0 ); // It is sufficient to check for one because all get replicated on all stores
         List<AllocationPlacement> placements = catalog.getSnapshot().alloc().getPlacementsFromLogical( table.id );
         for ( AllocationPlacement placement : placements ) {
-            List<Long> pColumnIds = catalog.getSnapshot().alloc().getColumns( placement.id ).stream().map( c -> c.columnId ).collect( Collectors.toList() );
+            List<Long> pColumnIds = catalog.getSnapshot().alloc().getColumns( placement.id ).stream().map( c -> c.columnId ).toList();
             for ( long columnId : columnIds ) {
                 if ( !pColumnIds.contains( columnId ) ) {
                     catalog.getAllocRel( table.namespaceId ).addColumn(
@@ -1146,7 +1146,7 @@ public class DdlManagerImpl extends DdlManager {
                 .getColumns( placementOptional.get().id )
                 .stream()
                 .map( c -> c.columnId )
-                .collect( Collectors.toList() );
+                .toList();
 
         // all
         List<Long> toRemove = currentColumns
@@ -1727,6 +1727,9 @@ public class DdlManagerImpl extends DdlManager {
 
         }
 
+        // Reset plan cache implementation cache & routing cache
+        statement.getQueryProcessor().resetCaches();
+
         return graphId;
     }
 
@@ -1791,6 +1794,9 @@ public class DdlManagerImpl extends DdlManager {
         catalog.getLogicalGraph( graphId ).deleteGraph( graphId );
 
         catalog.dropNamespace( graphId );
+
+        // Reset plan cache implementation cache & routing cache
+        statement.getQueryProcessor().resetCaches();
     }
 
 
@@ -1916,7 +1922,7 @@ public class DdlManagerImpl extends DdlManager {
         List<Long> pkIds = new ArrayList<>();
 
         // create foreign keys later on
-        for ( ConstraintInformation constraint : constraints.stream().filter( c -> c.getType() != ConstraintType.FOREIGN ).collect( Collectors.toList() ) ) {
+        for ( ConstraintInformation constraint : constraints.stream().filter( c -> c.getType() != ConstraintType.FOREIGN ).toList() ) {
             List<Long> columnIds = constraint.columnNames.stream().map( key -> ids.get( key ).id ).collect( Collectors.toList() );
             createConstraint( constraint, namespaceId, columnIds, logical.id );
 
@@ -2082,6 +2088,9 @@ public class DdlManagerImpl extends DdlManager {
         catalog.getLogicalDoc( collection.namespaceId ).deleteCollection( collection.id );
 
         catalog.updateSnapshot();
+
+        // Reset plan cache implementation cache & routing cache
+        statement.getQueryProcessor().resetCaches();
     }
 
 
@@ -2124,7 +2133,6 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void dropCollectionPlacement( long namespaceId, LogicalCollection collection, List<DataStore<?>> dataStores, Statement statement ) {
-
         for ( DataStore<?> store : dataStores ) {
             AllocationCollection alloc = catalog.getSnapshot()
                     .alloc()
@@ -2137,6 +2145,9 @@ public class DdlManagerImpl extends DdlManager {
             catalog.getAllocDoc( namespaceId ).removeAllocation( alloc.id );
 
         }
+
+        // Reset plan cache implementation cache & routing cache
+        statement.getQueryProcessor().resetCaches();
 
     }
 
@@ -2680,6 +2691,9 @@ public class DdlManagerImpl extends DdlManager {
         // Drop schema
         catalog.dropNamespace( logicalNamespace.id );
 
+        // Reset plan cache implementation cache & routing cache
+        statement.getQueryProcessor().resetCaches();
+
     }
 
 
@@ -2793,6 +2807,7 @@ public class DdlManagerImpl extends DdlManager {
 
         catalog.updateSnapshot();
 
+
     }
 
 
@@ -2801,6 +2816,9 @@ public class DdlManagerImpl extends DdlManager {
         manager.getStore( allocation.adapterId ).dropTable( statement.getPrepareContext(), allocation.id );
 
         catalog.getAllocRel( allocation.namespaceId ).deleteAllocation( allocation.id );
+
+        // Reset plan cache implementation cache & routing cache
+        statement.getQueryProcessor().resetCaches();
     }
 
 

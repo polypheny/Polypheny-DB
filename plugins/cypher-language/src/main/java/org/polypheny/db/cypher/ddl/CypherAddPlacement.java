@@ -65,7 +65,7 @@ public class CypherAddPlacement extends CypherAdminCommand implements Executable
 
         AdapterManager adapterManager = AdapterManager.getInstance();
 
-        List<LogicalGraph> graphs = statement.getTransaction().getSnapshot().getNamespaces( new Pattern( this.database ) ).stream().map( g -> statement.getTransaction().getSnapshot().graph().getGraph( g.id ).orElseThrow() ).collect( Collectors.toList() );
+        List<LogicalGraph> graphs = statement.getTransaction().getSnapshot().getNamespaces( new Pattern( this.database ) ).stream().map( g -> statement.getTransaction().getSnapshot().graph().getGraph( g.id ).orElseThrow() ).toList();
 
         List<DataStore<?>> dataStores = Stream.of( store )
                 .map( store -> (DataStore<?>) adapterManager.getAdapter( store ) )
@@ -79,7 +79,7 @@ public class CypherAddPlacement extends CypherAdminCommand implements Executable
             throw new GenericRuntimeException( "Error while adding graph placement." );
         }
 
-        if ( Catalog.snapshot().alloc().getFromLogical( graphs.get( 0 ).id ).stream().anyMatch( p -> dataStores.stream().map( Adapter::getAdapterId ).collect( Collectors.toList() ).contains( p.adapterId ) ) ) {
+        if ( Catalog.snapshot().alloc().getFromLogical( graphs.get( 0 ).id ).stream().anyMatch( p -> dataStores.stream().map( Adapter::getAdapterId ).toList().contains( p.adapterId ) ) ) {
             throw new GenericRuntimeException( "Could not create placement of graph as it already exists." );
         }
 

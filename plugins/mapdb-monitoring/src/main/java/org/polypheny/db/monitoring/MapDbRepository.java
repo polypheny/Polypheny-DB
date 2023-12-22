@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -75,7 +74,7 @@ public class MapDbRepository implements PersistentMonitoringRepository {
                     .map( monitoringPersistentData -> (TPersistent) monitoringPersistentData )
                     .filter( elem -> elem != null && elem.timestamp() != null )
                     .sorted( Comparator.comparing( MonitoringDataPoint::timestamp ).reversed() )
-                    .collect( Collectors.toList() );
+                    .toList();
         }
 
         return Collections.emptyList();
@@ -101,7 +100,7 @@ public class MapDbRepository implements PersistentMonitoringRepository {
                     .map( monitoringPersistentData -> (T) monitoringPersistentData )
                     .sorted( Comparator.comparing( MonitoringDataPoint::timestamp ).reversed() )
                     .filter( elem -> elem.timestamp().before( timestamp ) )
-                    .collect( Collectors.toList() );
+                    .toList();
         }
 
         return Collections.emptyList();
@@ -117,7 +116,7 @@ public class MapDbRepository implements PersistentMonitoringRepository {
                     .map( monitoringPersistentData -> (T) monitoringPersistentData )
                     .sorted( Comparator.comparing( MonitoringDataPoint::timestamp ).reversed() )
                     .filter( elem -> elem.timestamp().after( timestamp ) )
-                    .collect( Collectors.toList() );
+                    .toList();
         }
 
         return Collections.emptyList();

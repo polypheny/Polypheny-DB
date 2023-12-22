@@ -479,7 +479,7 @@ public class MongoPlugin extends PolyPlugin {
         public List<IndexMethodModel> getAvailableIndexMethods() {
             return Arrays.stream( IndexTypes.values() )
                     .map( IndexTypes::asMethod )
-                    .collect( Collectors.toList() );
+                    .toList();
         }
 
 

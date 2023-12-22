@@ -20,7 +20,6 @@ import com.google.common.annotations.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.constant.Kind;
@@ -125,7 +124,7 @@ public class MongoLanguagePlugin extends PolyPlugin {
                         .transactionManager( context.getTransactionManager() )
                         .origin( context.getOrigin() )
                         .informationTarget( context.getInformationTarget() )
-                        .build() ).map( LanguageManager::toQueryNodes ).collect( Collectors.toList() );
+                        .build() ).map( LanguageManager::toQueryNodes ).toList();
 
         for ( List<ParsedQueryContext> toCreateQuery : toCreateQueries ) {
             for ( int i = toCreateQueries.size() - 1; i >= 0; i-- ) {

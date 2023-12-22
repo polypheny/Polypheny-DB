@@ -24,7 +24,6 @@ import static org.polypheny.db.adapter.neo4j.util.NeoStatements.skip_;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.polypheny.db.adapter.neo4j.NeoGraphImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements;
@@ -74,7 +73,7 @@ public class NeoLpgSort extends LpgSort implements NeoGraphAlg {
         }
 
         if ( !groups.isEmpty() ) {
-            implementor.add( orderBy_( list_( groups.stream().map( NeoStatements::literal_ ).collect( Collectors.toList() ) ) ) );
+            implementor.add( orderBy_( list_( groups.stream().map( NeoStatements::literal_ ).toList() ) ) );
         }
 
         if ( offset != null ) {

@@ -231,7 +231,7 @@ public class NeoToEnumerableConverter extends ConverterImpl implements Enumerabl
                         .getFields()
                         .stream()
                         .map( f -> typeGetter.apply( f.getType() ) )
-                        .collect( Collectors.toList() ), PolyType.class ) );
+                        .toList(), PolyType.class ) );
     }
 
 
