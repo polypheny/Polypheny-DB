@@ -42,6 +42,7 @@ import org.polypheny.db.protointerface.proto.ProtoMap;
 import org.polypheny.db.protointerface.proto.ProtoNode;
 import org.polypheny.db.protointerface.proto.ProtoNull;
 import org.polypheny.db.protointerface.proto.ProtoPath;
+import org.polypheny.db.protointerface.proto.ProtoPolyType;
 import org.polypheny.db.protointerface.proto.ProtoSegment;
 import org.polypheny.db.protointerface.proto.ProtoString;
 import org.polypheny.db.protointerface.proto.ProtoTime;
@@ -88,7 +89,7 @@ public class PolyValueSerializer {
     }
 
 
-    public static Map<String, ProtoValue.ProtoValueType> convertTypeMap( Map<String, PolyType> typeMap ) {
+    public static Map<String, ProtoPolyType> convertTypeMap( Map<String, PolyType> typeMap ) {
         return typeMap.entrySet().stream().collect( Collectors.toMap( Entry::getKey, e -> getType( e.getValue() ) ) );
     }
 
@@ -339,7 +340,6 @@ public class PolyValueSerializer {
     private static ProtoValue serializeAsProtoDocument( PolyDocument polyDocument ) {
         return ProtoValue.newBuilder()
                 .setDocument( buildProtoDocument( polyDocument ) )
-                .setType( getType( polyDocument.getType() ) )
                 .build();
     }
 
@@ -347,7 +347,6 @@ public class PolyValueSerializer {
     private static ProtoValue serializeAsProtoMap( PolyMap<PolyValue, PolyValue> polyMap ) {
         return ProtoValue.newBuilder()
                 .setMap( serializeToProtoMap( polyMap ) )
-                .setType( getType( polyMap.getType() ) )
                 .build();
     }
 
@@ -362,7 +361,6 @@ public class PolyValueSerializer {
     private static ProtoValue serializeAsProtoList( PolyList<PolyValue> polyList ) {
         return ProtoValue.newBuilder()
                 .setList( serializeToProtoList( polyList ) )
-                .setType( getType( polyList.type ) )
                 .build();
 
     }
@@ -381,7 +379,6 @@ public class PolyValueSerializer {
                 .build();
         return ProtoValue.newBuilder()
                 .setBinary( protoBinary )
-                .setType( getType( polyBlob ) )
                 .build();
     }
 
@@ -393,7 +390,6 @@ public class PolyValueSerializer {
                 .build();
         return ProtoValue.newBuilder()
                 .setUserDefinedType( protoUserDefinedType )
-                .setType( getType( userDefinedValue ) )
                 .build();
     }
 
@@ -404,18 +400,17 @@ public class PolyValueSerializer {
                 .build();
         return ProtoValue.newBuilder()
                 .setInterval( protoInterval )
-                .setType( getType( polyInterval ) )
                 .build();
     }
 
 
-    private static ProtoValue.ProtoValueType getType( PolyValue polyValue ) {
+    private static ProtoPolyType getType( PolyValue polyValue ) {
         return getType( polyValue.getType() );
     }
 
 
-    private static ProtoValue.ProtoValueType getType( PolyType polyType ) {
-        return ProtoValue.ProtoValueType.valueOf( polyType.getName() );
+    private static ProtoPolyType getType( PolyType polyType ) {
+        return ProtoPolyType.valueOf( polyType.getName() );
     }
 
 
@@ -425,7 +420,6 @@ public class PolyValueSerializer {
                 .build();
         return ProtoValue.newBuilder()
                 .setBoolean( protoBoolean )
-                .setType( getType( polyBoolean ) )
                 .build();
     }
 
@@ -436,7 +430,6 @@ public class PolyValueSerializer {
                 .build();
         return ProtoValue.newBuilder()
                 .setInteger( protoInteger )
-                .setType( getType( polyInteger ) )
                 .build();
     }
 
@@ -447,7 +440,6 @@ public class PolyValueSerializer {
                 .build();
         return ProtoValue.newBuilder()
                 .setLong( protoLong )
-                .setType( getType( polyLong ) )
                 .build();
     }
 
@@ -458,7 +450,6 @@ public class PolyValueSerializer {
                 .build();
         return ProtoValue.newBuilder()
                 .setBinary( protoBinary )
-                .setType( getType( polyBinary ) )
                 .build();
     }
 
@@ -469,7 +460,6 @@ public class PolyValueSerializer {
                 .build();
         return ProtoValue.newBuilder()
                 .setDate( protoDate )
-                .setType( getType( polyDate ) )
                 .build();
     }
 
@@ -480,7 +470,6 @@ public class PolyValueSerializer {
                 .build();
         return ProtoValue.newBuilder()
                 .setDouble( protoDouble )
-                .setType( getType( polyDouble ) )
                 .build();
     }
 
@@ -491,7 +480,6 @@ public class PolyValueSerializer {
                 .build();
         return ProtoValue.newBuilder()
                 .setFloat( protoFloat )
-                .setType( getType( polyFloat ) )
                 .build();
     }
 
@@ -499,7 +487,6 @@ public class PolyValueSerializer {
     public static ProtoValue serializeAsProtoString( PolyString polyString ) {
         return ProtoValue.newBuilder()
                 .setString( serializeToProtoString( polyString ) )
-                .setType( getType( polyString ) )
                 .build();
     }
 
@@ -518,7 +505,6 @@ public class PolyValueSerializer {
                 .build();
         return ProtoValue.newBuilder()
                 .setTime( protoTime )
-                .setType( getType( polyTime ) )
                 .build();
     }
 
@@ -529,7 +515,6 @@ public class PolyValueSerializer {
                 .build();
         return ProtoValue.newBuilder()
                 .setTimeStamp( protoTimeStamp )
-                .setType( getType( polyTimeStamp ) )
                 .build();
     }
 
@@ -537,7 +522,6 @@ public class PolyValueSerializer {
     public static ProtoValue serializeAsProtoNull( PolyNull polyNull ) {
         return ProtoValue.newBuilder()
                 .setNull( ProtoNull.newBuilder().build() )
-                .setType( getType( polyNull ) )
                 .build();
     }
 
@@ -545,7 +529,6 @@ public class PolyValueSerializer {
     private static ProtoValue serializeAsProtoNull() {
         return ProtoValue.newBuilder()
                 .setNull( ProtoNull.newBuilder().build() )
-                .setType( ProtoValue.ProtoValueType.NULL )
                 .build();
     }
 
@@ -554,7 +537,6 @@ public class PolyValueSerializer {
         ProtoBigDecimal protoBigDecimal = serializeBigDecimal( polyBigDecimal.getValue() );
         return ProtoValue.newBuilder()
                 .setBigDecimal( protoBigDecimal )
-                .setType( getType( polyBigDecimal ) )
                 .build();
     }
 

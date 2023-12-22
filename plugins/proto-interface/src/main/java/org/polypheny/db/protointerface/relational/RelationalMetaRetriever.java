@@ -33,8 +33,7 @@ import org.polypheny.db.protointerface.proto.ArrayMeta;
 import org.polypheny.db.protointerface.proto.ColumnMeta;
 import org.polypheny.db.protointerface.proto.FieldMeta;
 import org.polypheny.db.protointerface.proto.ParameterMeta;
-import org.polypheny.db.protointerface.proto.ProtoValue;
-import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
+import org.polypheny.db.protointerface.proto.ProtoPolyType;
 import org.polypheny.db.protointerface.proto.StructMeta;
 import org.polypheny.db.protointerface.proto.TypeMeta;
 import org.polypheny.db.type.PolyType;
@@ -80,8 +79,8 @@ public class RelationalMetaRetriever {
     }
 
 
-    private static ProtoValue.ProtoValueType getFromPolyType( PolyType polyType ) {
-        return ProtoValue.ProtoValueType.valueOf( polyType.getName() );
+    private static ProtoPolyType getFromPolyType( PolyType polyType ) {
+        return ProtoPolyType.valueOf( polyType.getName() );
     }
 
 
@@ -142,7 +141,6 @@ public class RelationalMetaRetriever {
                     .build();
             return TypeMeta.newBuilder()
                     .setArrayMeta( arrayMeta )
-                    .setProtoValueType( ProtoValueType.COLUMN_LIST )
                     .build();
         } else {
             PolyType polyType = algDataType.getPolyType();

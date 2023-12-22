@@ -6,92 +6,92 @@ option java_outer_classname = "ProtoValueProto";
 
 package polypheny.protointerface;
 
+enum ProtoPolyType {
+  UNSPECIFIED = 0;
+  BOOLEAN = 1;
+  TINYINT = 2;
+  SMALLINT = 3;
+  INTEGER = 4;
+  BIGINT = 5;
+  DECIMAL = 6;
+  REAL = 7;
+  FLOAT = 8;
+  DOUBLE = 9;
+  DATE = 10;
+  TIME = 11;
+  TIME_WITH_LOCAL_TIME_ZONE = 12;
+  TIMESTAMP = 13;
+  TIMESTAMP_WITH_LOCAL_TIME_ZONE = 14;
+  INTERVAL_SECOND = 15;
+  INTERVAL_MINUTE_SECOND = 16;
+  INTERVAL_MINUTE = 17;
+  INTERVAL_HOUR_SECOND = 18;
+  INTERVAL_HOUR_MINUTE = 19;
+  INTERVAL_HOUR = 20;
+  INTERVAL_DAY_SECOND = 21;
+  INTERVAL_DAY_MINUTE = 22;
+  INTERVAL_DAY_HOUR = 23;
+  INTERVAL_DAY = 24;
+  INTERVAL_MONTH = 25;
+  INTERVAL_YEAR_MONTH = 26;
+  INTERVAL_YEAR = 27;
+  CHAR = 28;
+  VARCHAR = 29;
+  BINARY = 30;
+  VARBINARY = 31;
+  NULL = 32;
+  ARRAY = 33;
+  MAP = 34;
+  DOCUMENT = 35;
+  GRAPH = 36;
+  NODE = 37;
+  EDGE = 38;
+  PATH = 39;
+  IMAGE = 40;
+  VIDEO = 41;
+  AUDIO = 42;
+  FILE = 43;
+  DISTINCT = 44;
+  STRUCTURED = 45;
+  ROW = 46;
+  OTHER = 47;
+  CURSOR = 48;
+  COLUMN_LIST = 49;
+  DYNAMIC_STAR = 50;
+  GEOMETRY= 51;
+  SYMBOL = 52;
+  JSON = 53;
+  MULTISET = 54;
+  ANY = 55;
+  USER_DEFINED_TYPE = 56;
+  ROW_ID = 57;
+}
+
 message ProtoValue {
-  ProtoValueType type = 1;
   oneof value {
-    ProtoBoolean boolean = 2;
-    ProtoInteger integer = 3;
-    ProtoLong long = 4;
-    ProtoBinary binary = 5;
-    ProtoDate date = 6;
-    ProtoDouble double = 7;
-    ProtoFloat float = 8;
-    ProtoString string = 9;
-    ProtoTime time = 10;
-    ProtoTimeStamp time_stamp = 11;
-    ProtoNull null = 12;
-    ProtoBigDecimal big_decimal = 13;
-    ProtoInterval interval = 14;
-    ProtoUserDefinedType user_defined_type = 15;
-    ProtoFile file = 16;
-    ProtoList list = 17;
-    ProtoMap map = 18;
-    ProtoDocument document = 19;
-    ProtoNode node = 20;
-    ProtoEdge edge = 21;
-    ProtoPath path = 22;
-    ProtoGraph graph = 23;
-    ProtoRowId row_id= 25;
-  }
-  enum ProtoValueType {
-    UNSPECIFIED = 0;
-    BOOLEAN = 1;
-    TINYINT = 2;
-    SMALLINT = 3;
-    INTEGER = 4;
-    BIGINT = 5;
-    DECIMAL = 6;
-    REAL = 7;
-    FLOAT = 8;
-    DOUBLE = 9;
-    DATE = 10;
-    TIME = 11;
-    TIME_WITH_LOCAL_TIME_ZONE = 12;
-    TIMESTAMP = 13;
-    TIMESTAMP_WITH_LOCAL_TIME_ZONE = 14;
-    INTERVAL_SECOND = 15;
-    INTERVAL_MINUTE_SECOND = 16;
-    INTERVAL_MINUTE = 17;
-    INTERVAL_HOUR_SECOND = 18;
-    INTERVAL_HOUR_MINUTE = 19;
-    INTERVAL_HOUR = 20;
-    INTERVAL_DAY_SECOND = 21;
-    INTERVAL_DAY_MINUTE = 22;
-    INTERVAL_DAY_HOUR = 23;
-    INTERVAL_DAY = 24;
-    INTERVAL_MONTH = 25;
-    INTERVAL_YEAR_MONTH = 26;
-    INTERVAL_YEAR = 27;
-    CHAR = 28;
-    VARCHAR = 29;
-    BINARY = 30;
-    VARBINARY = 31;
-    NULL = 32;
-    ARRAY = 33;
-    MAP = 34;
-    DOCUMENT = 35;
-    GRAPH = 36;
-    NODE = 37;
-    EDGE = 38;
-    PATH = 39;
-    IMAGE = 40;
-    VIDEO = 41;
-    AUDIO = 42;
-    FILE = 43;
-    DISTINCT = 44;
-    STRUCTURED = 45;
-    ROW = 46;
-    OTHER = 47;
-    CURSOR = 48;
-    COLUMN_LIST = 49;
-    DYNAMIC_STAR = 50;
-    GEOMETRY= 51;
-    SYMBOL = 52;
-    JSON = 53;
-    MULTISET = 54;
-    ANY = 55;
-    USER_DEFINED_TYPE = 56;
-    ROW_ID = 57;
+    ProtoBoolean boolean = 1;
+    ProtoInteger integer = 2;
+    ProtoLong long = 3;
+    ProtoBinary binary = 4;
+    ProtoDate date = 5;
+    ProtoDouble double = 6;
+    ProtoFloat float = 7;
+    ProtoString string = 8;
+    ProtoTime time = 9;
+    ProtoTimeStamp time_stamp = 10;
+    ProtoNull null = 11;
+    ProtoBigDecimal big_decimal = 12;
+    ProtoInterval interval = 13;
+    ProtoUserDefinedType user_defined_type = 14;
+    ProtoFile file = 15;
+    ProtoList list = 16;
+    ProtoMap map = 17;
+    ProtoDocument document = 18;
+    ProtoNode node = 19;
+    ProtoEdge edge = 20;
+    ProtoPath path = 21; // This is Graph!
+    ProtoGraph graph = 22;
+    ProtoRowId row_id= 23;
   }
 }
 
@@ -176,7 +176,7 @@ message ProtoInterval {
 }
 
 message ProtoUserDefinedType {
-  map<string, ProtoValue.ProtoValueType> template = 2;
+  map<string, ProtoPolyType> template = 2;
   map<string, ProtoValue> value = 3;
 }
 

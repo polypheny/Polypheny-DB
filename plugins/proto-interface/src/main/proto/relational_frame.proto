@@ -38,7 +38,7 @@ message FieldMeta {
 }
 
 message TypeMeta {
-  ProtoValue.ProtoValueType proto_value_type = 1;
+  ProtoPolyType proto_value_type = 1;
   optional StructMeta struct_meta = 2;
   optional ArrayMeta array_meta = 3;
 }
