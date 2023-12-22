@@ -64,6 +64,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
 import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
@@ -680,6 +681,12 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     public AlgNode routeGraphDml( LogicalLpgModify alg, Statement statement, @Nullable AllocationEntity target, @Nullable List<Long> excludedPlacements ) {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
         List<AlgNode> modifies = new ArrayList<>();
+
+        if ( alg.entity.unwrap( AllocationGraph.class ).isPresent() ) {
+            // we already selected an allocation entity to execute on
+            return alg;
+        }
+
         LogicalGraph graph = alg.entity.unwrap( LogicalGraph.class ).orElseThrow();
 
         if ( target != null ) {
