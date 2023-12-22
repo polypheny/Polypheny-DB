@@ -1764,7 +1764,10 @@ CypherClause MatchClause() :
     CypherWhere where = null;
 }
 {
-    ( optionalT=<OPTIONAL> { optional = true; } )? t=<MATCH> ("(*)" {fullScan = true;} | patterns=PatternList() hints=Hints()) ( where=WhereClause() )?
+    ( optionalT=<OPTIONAL> { optional = true; } )? t=<MATCH> (
+    LOOKAHEAD( 3 ) <LPAREN> <TIMES> <RPAREN> {fullScan = true;} |
+    ( patterns=PatternList() hints=Hints() ))
+    ( where=WhereClause() )?
     {
         return CypherFactory.createMatch( pos( optionalT != null ? optionalT : t ), optional, patterns, pos( t.next ), hints, where, fullScan );
     }
