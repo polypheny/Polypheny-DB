@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaSeverity;
@@ -110,7 +109,7 @@ public class SqlProcessor extends Processor {
     @Override
     public List<? extends Node> parse( String query ) {
         // todo we should not split the query here, but rather in the parser
-        return Arrays.stream( query.split( ";\n" ) ).filter( s -> !s.trim().isEmpty() ).map( this::parseSingle ).collect( Collectors.toList() );
+        return Arrays.stream( query.split( ";\n" ) ).filter( s -> !s.trim().isEmpty() ).map( this::parseSingle ).toList();
     }
 
 

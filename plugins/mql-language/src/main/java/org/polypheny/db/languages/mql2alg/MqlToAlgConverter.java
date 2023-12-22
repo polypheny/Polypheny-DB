@@ -507,7 +507,7 @@ public class MqlToAlgConverter {
                                     .entrySet()
                                     .stream()
                                     .map( k -> new Pair<>( k.getKey(), k.getValue() ) )
-                                    .collect( Collectors.toList() ) );
+                                    .toList() );
         }
 
     }

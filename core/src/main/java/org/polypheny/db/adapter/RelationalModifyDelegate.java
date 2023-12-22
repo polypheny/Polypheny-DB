@@ -121,7 +121,7 @@ public class RelationalModifyDelegate extends RelationalScanDelegate implements 
 
     @Override
     public void dropCollection( Context context, AllocationCollection allocation ) {
-        Modifiable.dropCollectionSubstitute( modifiable, allocation.id );
+        Scannable.dropCollectionSubstitute( modifiable, context, allocation );
     }
 
 

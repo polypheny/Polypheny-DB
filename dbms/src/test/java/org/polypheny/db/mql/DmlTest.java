@@ -22,15 +22,12 @@ import static org.polypheny.db.TestHelper.MongoConnection.toDoc;
 import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.MongoConnection;
-import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.webui.models.results.DocResult;
 
 
@@ -120,7 +117,7 @@ public class DmlTest extends MqlTestTemplate {
     @Tag("fileExcluded")
     public void updateIdTest() {
         List<Object> data = Arrays.asList( 1, 2, 3 );
-        insertMany( data.stream().map( d -> toDoc( "test", d ) ).collect( Collectors.toList() ) );
+        insertMany( data.stream().map( d -> toDoc( "test", d ) ).toList() );
 
         DocResult result = find( "{}", "{}" );
 
@@ -144,7 +141,7 @@ public class DmlTest extends MqlTestTemplate {
                                     return d;
                                 } )
                                 .map( d -> toDoc( "test", d ) )
-                                .collect( Collectors.toList() ), true, true ) );
+                                .toList(), true, true ) );
     }
 
 

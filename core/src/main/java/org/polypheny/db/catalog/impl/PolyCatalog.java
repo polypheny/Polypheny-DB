@@ -214,7 +214,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
                 .stream()
                 .map( c -> Pair.of( c.left.get(), c.right ) )
                 .filter( c -> !c.left )
-                .collect( Collectors.toList() );
+                .toList();
 
         if ( !fails.isEmpty() ) {
             commitConstraints.clear();
@@ -225,7 +225,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
         this.adapterRestore.clear();
         adapterCatalogs.forEach( ( id, catalog ) -> {
-            Map<Long, List<PhysicalEntity>> restore = catalog.allocToPhysicals.entrySet().stream().map( a -> Pair.of( a, a.getValue().stream().map( key -> catalog.physicals.get( key ).normalize() ).collect( Collectors.toList() ) ) ).collect( Collectors.toMap( a -> a.getKey().getKey(), Pair::getValue ) );
+            Map<Long, List<PhysicalEntity>> restore = catalog.allocToPhysicals.entrySet().stream().map( a -> Pair.of( a, a.getValue().stream().map( key -> catalog.physicals.get( key ).normalize() ).toList() ) ).collect( Collectors.toMap( a -> a.getKey().getKey(), Pair::getValue ) );
             this.adapterRestore.put( id, new AdapterRestore( id, restore, catalog.allocations ) );
         } );
 

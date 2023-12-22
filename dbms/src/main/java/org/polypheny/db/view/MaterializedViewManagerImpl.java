@@ -356,7 +356,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                 List<LogicalColumn> logicalColumns = new ArrayList<>();
 
                 int localAdapterIndex = dataPlacements.indexOf( placement );
-                snapshot.alloc().getPlacement( dataPlacements.stream().map( p -> p.adapterId ).collect( Collectors.toList() ).get( localAdapterIndex ), catalogMaterializedView.id )
+                snapshot.alloc().getPlacement( dataPlacements.stream().map( p -> p.adapterId ).toList().get( localAdapterIndex ), catalogMaterializedView.id )
                         .columnPlacementsOnAdapter.forEach( col ->
                                 logicalColumns.add( snapshot.rel().getColumn( col ) ) );
                 columns.put( placement.adapterId, logicalColumns );

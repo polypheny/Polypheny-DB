@@ -24,10 +24,8 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.TestHelper.MongoConnection;
 import org.polypheny.db.catalog.Catalog;
@@ -76,7 +74,7 @@ public class DdlTest extends MqlTestTemplate {
         try {
             LogicalNamespace namespace = Catalog.snapshot().getNamespace( database ).orElseThrow();
 
-            List<String> collectionNames = Catalog.snapshot().doc().getCollections( namespace.id, null ).stream().map( c -> c.name ).collect( Collectors.toList() );
+            List<String> collectionNames = Catalog.snapshot().doc().getCollections( namespace.id, null ).stream().map( c -> c.name ).toList();
             collectionNames.forEach( n -> execute( String.format( "db.%s.drop()", n ) ) );
 
             execute( "db.createCollection(\"" + collectionName + "\")" );

@@ -161,7 +161,7 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
     public AlgProtoDataType buildProto() {
         final AlgDataTypeFactory.Builder fieldInfo = AlgDataTypeFactory.DEFAULT.builder();
 
-        for ( PhysicalColumn column : fields.stream().map( f -> f.unwrap( PhysicalColumn.class ).orElseThrow() ).sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() ) ) {
+        for ( PhysicalColumn column : fields.stream().map( f -> f.unwrap( PhysicalColumn.class ).orElseThrow() ).sorted( Comparator.comparingInt( a -> a.position ) ).toList() ) {
             AlgDataType sqlType = column.getAlgDataType( AlgDataTypeFactory.DEFAULT );
             fieldInfo.add( column.id, column.logicalName, column.name, sqlType ).nullable( column.nullable );
         }
@@ -196,12 +196,12 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
                     return t.getType().getComponentType().getPolyType();
                 }
                 return null;
-            } ).collect( Collectors.toList() );
+            } ).toList();
         }
 
 
         private List<PolyType> getTypes() {
-            return rowType.getFields().stream().map( t -> t.getType().getPolyType() ).collect( Collectors.toList() );
+            return rowType.getFields().stream().map( t -> t.getType().getPolyType() ).toList();
         }
 
 
@@ -252,7 +252,7 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
          */
         private Map<String, Object> toParameters( Map<Long, PolyValue> values, Map<Long, Pair<PolyType, PolyType>> parameterTypes ) {
             Map<String, Object> parameters = new HashMap<>();
-            for ( Entry<Long, PolyValue> entry : values.entrySet().stream().filter( e -> parameterTypes.containsKey( e.getKey() ) ).collect( Collectors.toList() ) ) {
+            for ( Entry<Long, PolyValue> entry : values.entrySet().stream().filter( e -> parameterTypes.containsKey( e.getKey() ) ).toList() ) {
                 parameters.put(
                         NeoUtil.asParameter( entry.getKey(), false ),
                         NeoUtil.fixParameterValue( entry.getValue(), parameterTypes.get( entry.getKey() ) ) );

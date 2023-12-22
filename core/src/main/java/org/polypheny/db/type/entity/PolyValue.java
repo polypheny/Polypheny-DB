@@ -236,7 +236,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
                 return o -> o == null
                         ? null
                         : arrayAsList
-                                ? (o.asList().stream().map( elTrans::apply ).collect( Collectors.toList() ))
+                                ? (o.asList().stream().map( elTrans::apply ).toList())
                                 : o.asList().stream().map( elTrans::apply ).collect( Collectors.toList() ).toArray();
             case FILE:
             case IMAGE:

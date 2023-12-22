@@ -34,7 +34,6 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -377,7 +376,7 @@ public class RequestParser {
 
 
     private List<RequestColumn> getAggregateColumns( List<RequestColumn> requestColumns ) {
-        return requestColumns.stream().filter( RequestColumn::isAggregateColumn ).collect( Collectors.toList() );
+        return requestColumns.stream().filter( RequestColumn::isAggregateColumn ).toList();
     }
 
 

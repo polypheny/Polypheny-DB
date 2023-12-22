@@ -40,7 +40,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.Converter;
@@ -537,7 +536,7 @@ public abstract class AlgOptRule {
      * @return List of converted relational expressions, never null
      */
     protected static List<AlgNode> convertList( List<AlgNode> algs, final AlgTrait<?> trait ) {
-        return algs.stream().map( alg -> convert( alg, alg.getTraitSet().replace( trait ) ) ).collect( Collectors.toList() );
+        return algs.stream().map( alg -> convert( alg, alg.getTraitSet().replace( trait ) ) ).toList();
     }
 
 

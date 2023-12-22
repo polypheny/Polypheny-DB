@@ -341,7 +341,7 @@ public class DbmsMeta implements ProtobufMeta {
             final List<LogicalColumn> columns = getLogicalTables( schemaPattern, tablePattern ).stream().flatMap( t -> catalog.getSnapshot().rel().getColumns(
                     (tablePattern == null || tablePattern.s == null) ? null : new Pattern( tablePattern.s ),
                     (columnPattern == null || columnPattern.s == null) ? null : new Pattern( columnPattern.s )
-            ).stream() ).collect( Collectors.toList() );
+            ).stream() ).toList();
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
                     ch,

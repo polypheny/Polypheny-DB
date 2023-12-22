@@ -149,7 +149,7 @@ public class TestHelper {
         } else if ( value instanceof String ) {
             return PolyString.of( (String) value );
         } else if ( value instanceof Collection ) {
-            return PolyList.of( ((List<?>) value).stream().map( TestHelper::toPolyValue ).collect( Collectors.toList() ) );
+            return PolyList.of( ((List<?>) value).stream().map( TestHelper::toPolyValue ).toList() );
         }
 
         throw new NotImplementedException();

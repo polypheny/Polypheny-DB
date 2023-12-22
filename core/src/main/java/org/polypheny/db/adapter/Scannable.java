@@ -73,6 +73,7 @@ public interface Scannable {
         return scannable.getCatalog().getPhysicalsFromAllocs( allocSubTable.id ).get( 0 ).unwrap( PhysicalTable.class ).orElseThrow();
     }
 
+
     AdapterCatalog getCatalog();
 
     static void restoreGraphSubstitute( Scannable scannable, AllocationGraph alloc, List<PhysicalEntity> entities ) {
@@ -188,7 +189,7 @@ public interface Scannable {
         List<PhysicalEntity> physicals = scannable.getCatalog().getPhysicalsFromAllocs( allocation.id );
 
         for ( PhysicalEntity physical : physicals ) {
-            scannable.dropTable( context, physical.id );
+            scannable.dropTable( context, physical.allocationId );
         }
     }
 
@@ -216,7 +217,11 @@ public interface Scannable {
     void dropCollection( Context context, AllocationCollection allocation );
 
     static void dropCollectionSubstitute( Scannable scannable, Context context, AllocationCollection allocation ) {
-        scannable.dropTable( context, allocation.id );
+        List<PhysicalEntity> entities = scannable.getCatalog().getPhysicalsFromAllocs( allocation.id );
+        for ( PhysicalEntity entity : entities ) {
+            scannable.dropTable( context, entity.allocationId );
+        }
+        scannable.getCatalog().removeAllocAndPhysical( allocation.id );
     }
 
 

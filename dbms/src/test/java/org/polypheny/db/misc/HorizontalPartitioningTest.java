@@ -23,13 +23,11 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.apache.calcite.avatica.AvaticaSqlException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
@@ -41,7 +39,6 @@ import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.ConfigManager;
-import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
@@ -781,7 +778,7 @@ public class HorizontalPartitioningTest {
                     long targetId = partitionManager.getTargetPartitionId( table, partitionProperty, partitionValue );
 
                     List<AllocationPartition> hotPartitionsAfterChange = Catalog.snapshot().alloc().getPartitionsFromGroup( ((TemperaturePartitionProperty) updatedProperty).getHotPartitionGroupId() );
-                    Assertions.assertTrue( hotPartitionsAfterChange.stream().map( p -> p.id ).collect( Collectors.toList() ).contains( targetId ) );
+                    Assertions.assertTrue( hotPartitionsAfterChange.stream().map( p -> p.id ).toList().contains( targetId ) );
 
                     //Todo @Hennlo check number of access
                 } finally {

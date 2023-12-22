@@ -48,7 +48,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.function.Predicate1;
@@ -1754,7 +1753,7 @@ public class RexUtil {
                             } );
                 }
         }
-        return composeConjunction( rexBuilder, Iterables.concat( ImmutableList.of( e ), StreamSupport.stream( notTerms.spliterator(), false ).map( e2 -> not( rexBuilder, e2 ) ).collect( Collectors.toList() ) ) );
+        return composeConjunction( rexBuilder, Iterables.concat( ImmutableList.of( e ), StreamSupport.stream( notTerms.spliterator(), false ).map( e2 -> not( rexBuilder, e2 ) ).toList() ) );
     }
 
 

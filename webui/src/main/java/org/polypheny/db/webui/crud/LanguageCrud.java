@@ -166,7 +166,7 @@ public class LanguageCrud {
     public static void commitAndFinish( List<ExecutedContext> executedContexts, InformationManager queryAnalyzer, List<Result<?, ?>> results, long executionTime ) {
         executionTime = System.nanoTime() - executionTime;
         String commitStatus = "Error on starting committing";
-        for ( Transaction transaction : executedContexts.stream().flatMap( c -> c.getQuery().getTransactions().stream() ).collect( Collectors.toList() ) ) {
+        for ( Transaction transaction : executedContexts.stream().flatMap( c -> c.getQuery().getTransactions().stream() ).toList() ) {
             // this has a lot of unnecessary no-op commits atm
             try {
                 transaction.commit();
