@@ -65,9 +65,3 @@ include 'plugins:excel-adapter'
 // other plugins
 include 'plugins:notebooks'
 
-// disabled adapter plugins
-//include 'plugins:pig-adapter'
-//include 'plugins:html-adapter'
-//include 'plugins:druid-adapter'
-//include 'plugins:elasticsearch-adapter'
-//include 'plugins:geode-adapter'
