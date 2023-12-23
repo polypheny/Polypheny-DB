@@ -163,6 +163,12 @@ public class RexVisitorImpl<R> implements RexVisitor<R> {
     }
 
 
+    @Override
+    public R visitElementRef( RexElementRef rexElementRef ) {
+        return null;
+    }
+
+
     /**
      * Visits an array of expressions, returning the logical 'and' of their results.
      *

@@ -1326,7 +1326,7 @@ public enum Kind {
     /*
      * CYPHER function
      */
-    CYPHER_FUNCTION;
+    CYPHER_FUNCTION, ELEMENT_REF;
 
     // Most of the static fields are categories, aggregating several kinds into a set.
 

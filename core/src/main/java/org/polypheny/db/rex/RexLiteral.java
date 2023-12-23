@@ -588,7 +588,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
                 pw.print( value.asInterval().getValue().toString() );
                 break;
             case ARRAY:
-                pw.print( value.asList().stream().map( PolyValue::toString ).toList() );
+                pw.print( value.asList().stream().map( Object::toString ).toList() );
                 break;
             case MULTISET:
             case ROW:

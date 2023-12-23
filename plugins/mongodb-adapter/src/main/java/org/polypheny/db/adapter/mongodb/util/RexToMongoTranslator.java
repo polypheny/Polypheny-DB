@@ -258,7 +258,7 @@ public class RexToMongoTranslator extends RexVisitorImpl<String> {
     public String handleSpecialCases( RexCall call ) {
         if ( call.getType().getPolyType() == PolyType.ARRAY ) {
             BsonArray array = new BsonArray();
-            array.addAll( translateList( call.operands ).stream().map( BsonString::new ).collect( Collectors.toList() ) );
+            array.addAll( translateList( call.operands ).stream().map( BsonString::new ).toList() );
             return array.toString();
         } else if ( call.isA( Kind.MQL_ITEM ) ) {
             RexNode leftPre = call.operands.get( 0 );

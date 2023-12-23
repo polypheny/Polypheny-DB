@@ -24,19 +24,16 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 /**
  * Context, which holds the Expressions used for unwinding
  */
+@Getter
 public class UnwindContext {
 
-    @Getter
     @Setter
     boolean useUnwind = false;
 
-    @Getter
     ParameterExpression _i;
 
-    @Getter
     ParameterExpression _list;
 
-    @Getter
     ParameterExpression _unset;
 
 
