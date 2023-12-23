@@ -933,7 +933,13 @@ public class RexSimplify {
 
         @Override
         public Boolean visitNameRef( RexNameRef nameRef ) {
-            return true;
+            return false;
+        }
+
+
+        @Override
+        public Boolean visitElementRef( RexElementRef rexElementRef ) {
+            return false;
         }
 
     }

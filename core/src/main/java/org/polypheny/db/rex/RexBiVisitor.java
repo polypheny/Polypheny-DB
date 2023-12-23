@@ -69,5 +69,7 @@ public interface RexBiVisitor<R, P> {
 
     R visitNameRef( RexNameRef ref, P arg );
 
+    R visitElementRef( RexElementRef rexElementRef, P arg );
+
 }
 

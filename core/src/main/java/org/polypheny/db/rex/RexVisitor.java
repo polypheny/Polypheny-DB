@@ -74,4 +74,6 @@ public interface RexVisitor<R> {
     R visitNameRef( RexNameRef nameRef );
 
 
+    R visitElementRef( RexElementRef rexElementRef );
+
 }
