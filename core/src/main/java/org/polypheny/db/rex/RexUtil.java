@@ -513,6 +513,12 @@ public class RexUtil {
 
 
         @Override
+        public Boolean visitElementRef( RexElementRef rexElementRef ) {
+            return false;
+        }
+
+
+        @Override
         public Boolean visitCorrelVariable( RexCorrelVariable correlVariable ) {
             // Correlating variables change when there is an internal restart. Not good enough for our purposes.
             return false;

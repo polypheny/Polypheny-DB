@@ -122,6 +122,12 @@ public class RexShuttle implements RexVisitor<RexNode> {
 
 
     @Override
+    public RexNode visitElementRef( RexElementRef rexElementRef ) {
+        return rexElementRef;
+    }
+
+
+    @Override
     public RexNode visitCall( final RexCall call ) {
         boolean[] update = { false };
         List<RexNode> clonedOperands = visitList( call.operands, update );

@@ -89,6 +89,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexElementRef;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNameRef;
@@ -211,7 +212,7 @@ public class MqlToAlgConverter {
     }
 
 
-    private boolean elemMatchActive = false;
+    private Optional<RexNode> subElement = Optional.empty();
     private long namespaceId;
     private boolean notActive = false;
     private boolean usesDocumentModel;
@@ -235,7 +236,7 @@ public class MqlToAlgConverter {
      */
     private void resetDefaults() {
         notActive = false;
-        elemMatchActive = false;
+        subElement = Optional.empty();
         entity = null;
     }
 
@@ -1843,12 +1844,12 @@ public class MqlToAlgConverter {
         if ( !bsonValue.isDocument() ) {
             throw new GenericRuntimeException( "After $elemMatch there needs to follow a document" );
         }
-        this.elemMatchActive = true;
+        this.subElement = Optional.of( new RexElementRef( new RexNameRef( parentKey, null, DocumentType.ofDoc() ), DocumentType.ofDoc() ) );
         List<RexNode> nodes = new ArrayList<>();
         for ( Entry<String, BsonValue> entry : bsonValue.asDocument().entrySet() ) {
-            nodes.add( convertEntry( entry.getKey(), parentKey, entry.getValue(), rowType ) );
+            nodes.add( convertEntry( entry.getKey(), "", entry.getValue(), rowType ) );
         }
-        this.elemMatchActive = false;
+        this.subElement = Optional.empty();
 
         RexNode op = getFixedCall( nodes, OperatorRegistry.get( OperatorName.AND ), PolyType.BOOLEAN );
 
@@ -2095,7 +2096,7 @@ public class MqlToAlgConverter {
         }*/
         //filter = getStringArray( names );
 
-        return new RexNameRef( names, index, DocumentType.ofDoc() );
+        return this.subElement.orElseGet( () -> new RexNameRef( names, index, DocumentType.ofDoc() ) );
 
         /*return new RexCall(
                 new DocumentType(),

@@ -36,12 +36,14 @@ package org.polypheny.db.rex;
 
 import java.util.AbstractList;
 import java.util.concurrent.CopyOnWriteArrayList;
+import lombok.Getter;
 import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
  * Abstract base class for {@link RexIndexRef} and {@link RexLocalRef}.
  */
+@Getter
 public abstract class RexSlot extends RexVariable {
 
     protected final int index;
@@ -57,11 +59,6 @@ public abstract class RexSlot extends RexVariable {
         super( name, type );
         assert index >= 0;
         this.index = index;
-    }
-
-
-    public int getIndex() {
-        return index;
     }
 
 

@@ -631,14 +631,11 @@ public class RexImpTable {
 
 
                     private NullAs negate( NullAs nullAs ) {
-                        switch ( nullAs ) {
-                            case FALSE:
-                                return NullAs.TRUE;
-                            case TRUE:
-                                return NullAs.FALSE;
-                            default:
-                                return nullAs;
-                        }
+                        return switch ( nullAs ) {
+                            case FALSE -> NullAs.TRUE;
+                            case TRUE -> NullAs.FALSE;
+                            default -> nullAs;
+                        };
                     }
                 };
             case NONE:
@@ -971,19 +968,11 @@ public class RexImpTable {
             switch ( Primitive.flavor( x.getType() ) ) {
                 case PRIMITIVE:
                     // Expression cannot be null. We can skip any runtime checks.
-                    switch ( this ) {
-                        case NULL:
-                        case NOT_POSSIBLE:
-                        case FALSE:
-                        case TRUE:
-                            return x;
-                        case IS_NULL:
-                            return FALSE_EXPR;
-                        case IS_NOT_NULL:
-                            return TRUE_EXPR;
-                        default:
-                            throw new AssertionError();
-                    }
+                    return switch ( this ) {
+                        case NULL, NOT_POSSIBLE, FALSE, TRUE -> x;
+                        case IS_NULL -> FALSE_EXPR;
+                        case IS_NOT_NULL -> TRUE_EXPR;
+                    };
                 case BOX:
                     if ( this == NullAs.NOT_POSSIBLE ) {
                         return RexToLixTranslator.convert( x, Objects.requireNonNull( Primitive.ofBox( x.getType() ) ).primitiveClass );
@@ -995,21 +984,13 @@ public class RexImpTable {
                     }
                     // fall through
             }
-            switch ( this ) {
-                case NULL:
-                case NOT_POSSIBLE:
-                    return x;
-                case FALSE:
-                    return Expressions.call( BuiltInMethod.IS_TRUE.method, x );
-                case TRUE:
-                    return Expressions.call( BuiltInMethod.IS_NOT_FALSE.method, x );
-                case IS_NULL:
-                    return Expressions.equal( x, NULL_EXPR );
-                case IS_NOT_NULL:
-                    return Expressions.notEqual( x, NULL_EXPR );
-                default:
-                    throw new AssertionError();
-            }
+            return switch ( this ) {
+                case NULL, NOT_POSSIBLE -> x;
+                case FALSE -> Expressions.call( BuiltInMethod.IS_TRUE.method, x );
+                case TRUE -> Expressions.call( BuiltInMethod.IS_NOT_FALSE.method, x );
+                case IS_NULL -> Expressions.equal( x, NULL_EXPR );
+                case IS_NOT_NULL -> Expressions.notEqual( x, NULL_EXPR );
+            };
         }
     }
 
@@ -1040,18 +1021,14 @@ public class RexImpTable {
             return Expressions.divide( e, Expressions.constant( divider.intValueExact() ) );
         }
         final BigDecimal x = multiplier.divide( divider, RoundingMode.UNNECESSARY );
-        switch ( x.compareTo( BigDecimal.ONE ) ) {
-            case 0:
-                return e;
-            case 1:
-                return EnumUtils.wrapPolyValue( e.type, Expressions.multiply(
-                        EnumUtils.unwrapPolyValue( e, "longValue" ),
-                        Expressions.constant( x.intValueExact() ) ) );
-            case -1:
-                return multiplyDivide( e, BigDecimal.ONE, x );
-            default:
-                throw new AssertionError();
-        }
+        return switch ( x.compareTo( BigDecimal.ONE ) ) {
+            case 0 -> e;
+            case 1 -> EnumUtils.wrapPolyValue( e.type, Expressions.multiply(
+                    EnumUtils.unwrapPolyValue( e, "longValue" ),
+                    Expressions.constant( x.intValueExact() ) ) );
+            case -1 -> multiplyDivide( e, BigDecimal.ONE, x );
+            default -> throw new AssertionError();
+        };
     }
 
 
@@ -2088,14 +2065,7 @@ public class RexImpTable {
     }
 
 
-    private static class MqlMethodNameImplementor implements NotNullImplementor {
-
-        protected final String methodName;
-
-
-        MqlMethodNameImplementor( String methodName ) {
-            this.methodName = methodName;
-        }
+    private record MqlMethodNameImplementor(String methodName) implements NotNullImplementor {
 
 
         @Override
@@ -2109,7 +2079,7 @@ public class RexImpTable {
     /**
      * Implementor for binary operators.
      */
-    private static class BinaryImplementor implements NotNullImplementor {
+    private record BinaryImplementor(ExpressionType expressionType, String backupMethodName) implements NotNullImplementor {
 
         /**
          * Types that can be arguments to comparison operators such as {@code <}.
@@ -2123,15 +2093,6 @@ public class RexImpTable {
                         OperatorRegistry.get( OperatorName.GREATER_THAN, BinaryOperator.class ),
                         OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL, BinaryOperator.class ) );
         public static final String METHOD_POSTFIX_FOR_ANY_TYPE = "Any";
-
-        private final ExpressionType expressionType;
-        private final String backupMethodName;
-
-
-        BinaryImplementor( ExpressionType expressionType, String backupMethodName ) {
-            this.expressionType = expressionType;
-            this.backupMethodName = backupMethodName;
-        }
 
 
         @Override
@@ -2211,18 +2172,11 @@ public class RexImpTable {
     /**
      * Implementor for unary operators.
      */
-    private static class UnaryImplementor implements NotNullImplementor {
-
-        private final ExpressionType expressionType;
-
-
-        UnaryImplementor( ExpressionType expressionType ) {
-            this.expressionType = expressionType;
-        }
+    private record UnaryImplementor(ExpressionType expressionType) implements NotNullImplementor {
 
 
         @Override
-        public Expression implement( RexToLixTranslator translator, RexCall call, List<Expression> translatedOperands ) {
+            public Expression implement( RexToLixTranslator translator, RexCall call, List<Expression> translatedOperands ) {
             final Expression operand = translatedOperands.get( 0 );
             //final UnaryExpression e = Expressions.makeUnary( expressionType, operand );
             final Expression e = Expressions.call( operand, "negate" );
@@ -2365,29 +2319,17 @@ public class RexImpTable {
 
 
     private static long getFactor( TimeUnit unit ) {
-        switch ( unit ) {
-            case DAY:
-                return 1L;
-            case HOUR:
-                return TimeUnit.DAY.multiplier.longValue();
-            case MINUTE:
-                return TimeUnit.HOUR.multiplier.longValue();
-            case SECOND:
-                return TimeUnit.MINUTE.multiplier.longValue();
-            case MILLISECOND:
-                return TimeUnit.SECOND.multiplier.longValue();
-            case MONTH:
-                return TimeUnit.YEAR.multiplier.longValue();
-            case QUARTER:
-                return TimeUnit.YEAR.multiplier.longValue();
-            case YEAR:
-            case DECADE:
-            case CENTURY:
-            case MILLENNIUM:
-                return 1L;
-            default:
-                throw Util.unexpected( unit );
-        }
+        return switch ( unit ) {
+            case DAY -> 1L;
+            case HOUR -> TimeUnit.DAY.multiplier.longValue();
+            case MINUTE -> TimeUnit.HOUR.multiplier.longValue();
+            case SECOND -> TimeUnit.MINUTE.multiplier.longValue();
+            case MILLISECOND -> TimeUnit.SECOND.multiplier.longValue();
+            case MONTH -> TimeUnit.YEAR.multiplier.longValue();
+            case QUARTER -> TimeUnit.YEAR.multiplier.longValue();
+            case YEAR, DECADE, CENTURY, MILLENNIUM -> 1L;
+            default -> throw Util.unexpected( unit );
+        };
     }
 
 
@@ -2569,14 +2511,11 @@ public class RexImpTable {
 
 
         private MethodImplementor getImplementor( PolyType polyType ) {
-            switch ( polyType ) {
-                case ARRAY:
-                    return new MethodImplementor( BuiltInMethod.ARRAY_ITEM.method );
-                case MAP:
-                    return new MethodImplementor( BuiltInMethod.MAP_ITEM.method );
-                default:
-                    return new MethodImplementor( BuiltInMethod.ANY_ITEM.method );
-            }
+            return switch ( polyType ) {
+                case ARRAY -> new MethodImplementor( BuiltInMethod.ARRAY_ITEM.method );
+                case MAP -> new MethodImplementor( BuiltInMethod.MAP_ITEM.method );
+                default -> new MethodImplementor( BuiltInMethod.ANY_ITEM.method );
+            };
         }
 
     }
@@ -2592,37 +2531,27 @@ public class RexImpTable {
             final ParameterExpression predicate = Expressions.parameter( boolean.class, "predicate" );
             final ParameterExpression _list = Expressions.parameter( Types.of( List.class, PolyValue.class ), "_list" );
             final ParameterExpression par = Expressions.parameter( PolyValue.class, "_arr" );
-            final ParameterExpression get_ = Expressions.parameter( PolyValue.class, "_get" );
+            final ParameterExpression get_ = Expressions.parameter( PolyValue.class, "_elem$" );
             builder.add( Expressions.declare( 0, par, translator.translate( call.getOperands().get( 0 ), NullAs.NOT_POSSIBLE, null ) ) );
             builder.add(
                     Expressions.declare( 0, predicate, Expressions.constant( false ) ) );
             builder.add(
                     Expressions.declare( 0, _list, Expressions.call( BuiltInMethod.MQL_GET_ARRAY.method, Expressions.convert_( par, PolyValue.class ) ) )
             );
-            BlockStatement then = Expressions.block(
+            BlockStatement _do = Expressions.block(
                     Expressions.declare( 0, get_, Expressions.convert_( Expressions.call( _list, "get", i_ ), PolyValue.class ) ),
                     EnumUtils.ifThen(
-                            startSubstitute( translator, call.getOperands().get( 1 ), 0, get_ ),
+                            translator.translate( call.getOperands().get( 1 ), NullAs.NOT_POSSIBLE, null ),
                             Expressions.block( Expressions.return_( null, Expressions.constant( true ) ) ) )
             );
 
-            builder.add( EnumUtils.for_( i_, _list, then ) );
+            builder.add( EnumUtils.for_( i_, _list, _do ) );
 
             builder.add( Expressions.return_( null, predicate ) );
             translator.getList().append( "forLoop", builder.toBlock() );
             return predicate;
         }
 
-
-        private Expression startSubstitute( RexToLixTranslator translator, RexNode node, int pos, Expression el ) {
-            RexNode n = substitute( translator, node, pos );
-            translator.setDoSubstitute( true );
-            translator.getReplace().put( n, el );
-            Expression expr = translator.translate( node, NullAs.NOT_POSSIBLE, null );
-            translator.setDoSubstitute( false );
-            translator.getReplace().clear();
-            return expr;
-        }
 
 
         private RexNode substitute( RexToLixTranslator translator, RexNode node, int pos ) {
@@ -2791,27 +2720,18 @@ public class RexImpTable {
 
 
     /**
-     * Implements "IS XXX" operations such as "IS NULL" or "IS NOT TRUE".
+         * Implements "IS XXX" operations such as "IS NULL" or "IS NOT TRUE".
      *
      * What these operators have in common:
      * 1. They return TRUE or FALSE, never NULL.
      * 2. Of the 3 input values (TRUE, FALSE, NULL) they return TRUE for 1 or 2,
      * FALSE for the other 2 or 1.
      */
-    private static class IsXxxImplementor implements CallImplementor {
-
-        private final Boolean seek;
-        private final boolean negate;
-
-
-        IsXxxImplementor( Boolean seek, boolean negate ) {
-            this.seek = seek;
-            this.negate = negate;
-        }
+    private record IsXxxImplementor(Boolean seek, boolean negate) implements CallImplementor {
 
 
         @Override
-        public Expression implement( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
+            public Expression implement( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
             List<RexNode> operands = call.getOperands();
             assert operands.size() == 1;
             switch ( nullAs ) {
@@ -2839,14 +2759,7 @@ public class RexImpTable {
     /**
      * Implementor for the {@code NOT} operator.
      */
-    private static class NotImplementor implements NotNullImplementor {
-
-        private final NotNullImplementor implementor;
-
-
-        NotImplementor( NotNullImplementor implementor ) {
-            this.implementor = implementor;
-        }
+    private record NotImplementor(NotNullImplementor implementor) implements NotNullImplementor {
 
 
         static NotNullImplementor of( NotNullImplementor implementor ) {
@@ -2884,19 +2797,10 @@ public class RexImpTable {
                                     long.class );
                             break;
                         default:
-                            switch ( typeName1 ) {
-                                case INTERVAL_DAY:
-                                case INTERVAL_DAY_HOUR:
-                                case INTERVAL_DAY_MINUTE:
-                                case INTERVAL_DAY_SECOND:
-                                case INTERVAL_HOUR:
-                                case INTERVAL_HOUR_MINUTE:
-                                case INTERVAL_HOUR_SECOND:
-                                case INTERVAL_MINUTE:
-                                case INTERVAL_MINUTE_SECOND:
-                                case INTERVAL_SECOND:
-                                    trop1 = Expressions.convert_( Expressions.divide( trop1, Expressions.constant( DateTimeUtils.MILLIS_PER_DAY ) ), int.class );
-                            }
+                            trop1 = switch ( typeName1 ) {
+                                case INTERVAL_DAY, INTERVAL_DAY_HOUR, INTERVAL_DAY_MINUTE, INTERVAL_DAY_SECOND, INTERVAL_HOUR, INTERVAL_HOUR_MINUTE, INTERVAL_HOUR_SECOND, INTERVAL_MINUTE, INTERVAL_MINUTE_SECOND, INTERVAL_SECOND -> Expressions.convert_( Expressions.divide( trop1, Expressions.constant( DateTimeUtils.MILLIS_PER_DAY ) ), int.class );
+                                default -> trop1;
+                            };
                     }
                     break;
                 case TIME:
@@ -2932,30 +2836,28 @@ public class RexImpTable {
                 case INTERVAL_MINUTE:
                 case INTERVAL_MINUTE_SECOND:
                 case INTERVAL_SECOND:
-                    switch ( call.getKind() ) {
-                        case MINUS:
-                            return normalize( typeName, Expressions.subtract( trop0, trop1 ) );
-                        default:
-                            return normalize( typeName, Expressions.add( trop0, trop1 ) );
-                    }
+                    return switch ( call.getKind() ) {
+                        case MINUS -> normalize( typeName, Expressions.subtract( trop0, trop1 ) );
+                        default -> normalize( typeName, Expressions.add( trop0, trop1 ) );
+                    };
 
                 default:
-                    switch ( call.getKind() ) {
-                        case MINUS:
+                    return switch ( call.getKind() ) {
+                        case MINUS -> {
                             switch ( typeName ) {
                                 case INTERVAL_YEAR:
                                 case INTERVAL_YEAR_MONTH:
                                 case INTERVAL_MONTH:
-                                    return Expressions.call( BuiltInMethod.SUBTRACT_MONTHS.method, trop0, trop1 );
+                                    yield Expressions.call( BuiltInMethod.SUBTRACT_MONTHS.method, trop0, trop1 );
                             }
                             TimeUnit fromUnit = typeName1 == PolyType.DATE ? TimeUnit.DAY : TimeUnit.MILLISECOND;
                             TimeUnit toUnit = TimeUnit.MILLISECOND;
-                            return multiplyDivide(
+                            yield multiplyDivide(
                                     Expressions.convert_( Expressions.subtract( trop0, trop1 ), long.class ),
                                     fromUnit.multiplier, toUnit.multiplier );
-                        default:
-                            throw new AssertionError( call );
-                    }
+                        }
+                        default -> throw new AssertionError( call );
+                    };
             }
         }
 

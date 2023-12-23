@@ -176,6 +176,12 @@ public class RexInterpreter implements RexVisitor<Comparable<?>> {
 
 
     @Override
+    public Comparable<?> visitElementRef( RexElementRef rexElementRef ) {
+        throw unbound( rexElementRef );
+    }
+
+
+    @Override
     public Comparable<?> visitCall( RexCall call ) {
         final List<Comparable<?>> values = new ArrayList<>( call.operands.size() );
         for ( RexNode operand : call.operands ) {
