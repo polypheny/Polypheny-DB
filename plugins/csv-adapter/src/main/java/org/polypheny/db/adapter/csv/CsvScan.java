@@ -127,4 +127,3 @@ public class CsvScan extends RelScan<CsvTable> implements EnumerableAlg {
     }
 
 }
-

@@ -14,7 +14,7 @@ dependencies {
         exclude(module: "jetty-server")
     }
 
-    implementation group: "net.sf.opencsv", name: "opencsv", version: opencsv_version  // Apache 2.0
+    //implementation group: "com.opencsv", name: "opencsv", version: opencsv_version  // Apache 2.0
     implementation group: "commons-io", name: "commons-io", version: commons_io_version  // Apache 2.0
 
 
