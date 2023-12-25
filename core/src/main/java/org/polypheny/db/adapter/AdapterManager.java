@@ -196,7 +196,6 @@ public class AdapterManager {
             adapterByName.put( adapter.getUniqueName(), adapter );
             adapterById.put( adapter.getAdapterId(), adapter );
             return adapter;
-
         } catch ( Exception e ) {
             Catalog.getInstance().dropAdapter( adapterId );
             throw new GenericRuntimeException( "Something went wrong while adding a new adapter", e );
@@ -285,6 +284,5 @@ public class AdapterManager {
         R get( P1 p1, P2 p2, P3 p3 );
 
     }
-
 
 }

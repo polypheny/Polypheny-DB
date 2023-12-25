@@ -95,11 +95,11 @@ public class PolyphenyHomeDirManager {
 
         switch ( mode ) {
             case PRODUCTION:
-                return collector.version;
+                return collector.getVersion();
             case BENCHMARK:
-                return String.format( "%s-%s", collector.version, collector.hash );
+                return String.format( "%s-%s", collector.getVersion(), collector.getHash() );
             default:
-                return String.format( "%s-%s", collector.version, collector.branch );
+                return String.format( "%s-%s", collector.getVersion(), collector.getHash() );
         }
     }
 

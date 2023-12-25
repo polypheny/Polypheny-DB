@@ -71,8 +71,8 @@ import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 
-public interface Modifiable extends Scannable {
 
+public interface Modifiable extends Scannable {
 
     static AlgNode attachRelationalGraphUpdate( Modifiable modifiable, AlgNode provider, LogicalLpgModify alg, AlgBuilder builder, Entity nodesTable, Entity nodePropertiesTable, Entity edgesTable, Entity edgePropertiesTable ) {
         AlgNode project = new LogicalLpgProject( alg.getCluster(), alg.getTraitSet(), alg.getInput(), alg.operations, alg.ids );
@@ -94,8 +94,8 @@ public interface Modifiable extends Scannable {
         AlgRecordType updateRowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( -1L, "ROWCOUNT", 0, alg.getCluster().getTypeFactory().createPolyType( PolyType.BIGINT ) ) ) );
         LogicalLpgTransformer transformer = new LogicalLpgTransformer( alg.getCluster(), alg.getTraitSet(), inputs, updateRowType, sequence, Modify.Operation.UPDATE );
         return new LogicalStreamer( alg.getCluster(), alg.getTraitSet(), project, transformer );
-
     }
+
 
     static AlgNode attachRelationalGraphDelete( Modifiable modifiable, AlgNode provider, LogicalLpgModify alg, AlgBuilder algBuilder, Entity nodesTable, Entity nodePropertiesTable, Entity edgesTable, Entity edgePropertiesTable ) {
         AlgNode project = new LogicalLpgProject( alg.getCluster(), alg.getTraitSet(), alg.getInput(), alg.operations, alg.ids );
@@ -115,8 +115,8 @@ public interface Modifiable extends Scannable {
         AlgRecordType updateRowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( -1L, "ROWCOUNT", 0, alg.getCluster().getTypeFactory().createPolyType( PolyType.BIGINT ) ) ) );
         LogicalLpgTransformer transformer = new LogicalLpgTransformer( alg.getCluster(), alg.getTraitSet(), inputs, updateRowType, sequence, Modify.Operation.DELETE );
         return new LogicalStreamer( alg.getCluster(), alg.getTraitSet(), project, transformer );
-
     }
+
 
     static List<AlgNode> attachPreparedGraphNodeModifyDelete( Modifiable modifiable, AlgOptCluster cluster, Entity nodesTable, Entity nodePropertiesTable, AlgBuilder algBuilder ) {
         RexBuilder rexBuilder = algBuilder.getRexBuilder();
@@ -147,8 +147,8 @@ public interface Modifiable extends Scannable {
         return inputs;
     }
 
-    static AlgNode attachRelationalRelatedInsert( Modifiable modifiable, AlgNode provider, LogicalLpgModify alg, AlgBuilder algBuilder, Entity nodesTable, Entity nodePropertiesTable, Entity edgesTable, Entity edgePropertiesTable ) {
 
+    static AlgNode attachRelationalRelatedInsert( Modifiable modifiable, AlgNode provider, LogicalLpgModify alg, AlgBuilder algBuilder, Entity nodesTable, Entity nodePropertiesTable, Entity edgesTable, Entity edgePropertiesTable ) {
         List<AlgNode> inputs = new ArrayList<>();
         List<PolyType> sequence = new ArrayList<>();
         for ( AlgDataTypeField field : provider.getRowType().getFields() ) {
@@ -193,6 +193,7 @@ public interface Modifiable extends Scannable {
         return inputs;
     }
 
+
     static List<AlgNode> attachPreparedGraphEdgeModifyDelete( Modifiable modifiable, AlgOptCluster cluster, Entity edgesTable, Entity edgePropertiesTable, AlgBuilder algBuilder ) {
         RexBuilder rexBuilder = algBuilder.getRexBuilder();
         AlgDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
@@ -218,6 +219,7 @@ public interface Modifiable extends Scannable {
 
         return inputs;
     }
+
 
     static List<AlgNode> attachPreparedGraphEdgeModifyInsert( Modifiable modifiable, AlgOptCluster cluster, Entity edgesTable, Entity edgePropertiesTable, AlgBuilder algBuilder ) {
         RexBuilder rexBuilder = algBuilder.getRexBuilder();
@@ -246,21 +248,24 @@ public interface Modifiable extends Scannable {
         inputs.add( getModify( edgePropertiesTable, preparedEProperties, Modify.Operation.INSERT, null, null ) );
 
         return inputs;
-
     }
+
 
     static Modify<?> getModify( Entity table, AlgNode input, Operation operation, List<String> updateList, List<RexNode> sourceList ) {
         return table.unwrap( ModifiableTable.class ).orElseThrow().toModificationTable( input.getCluster(), input.getTraitSet(), table, input, operation, updateList, sourceList );
     }
+
 
     static void dropGraphSubstitute( Modifiable modifiable, long allocation ) {
         // we can drop the direct link
         modifiable.getCatalog().removeAllocAndPhysical( allocation );
     }
 
+
     static void dropCollectionSubstitute( Modifiable modifiable, long allocation ) {
         modifiable.getCatalog().removeAllocAndPhysical( allocation );
     }
+
 
     default AlgNode getModify( long allocId, Modify<?> modify, AlgBuilder builder ) {
         if ( modify.getEntity().unwrap( AllocationTable.class ).isPresent() ) {
@@ -272,6 +277,7 @@ public interface Modifiable extends Scannable {
         }
         throw new NotImplementedException();
     }
+
 
     default AlgNode getRelModify( long allocId, RelModify<?> modify, AlgBuilder builder ) {
         PhysicalEntity table = getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 );
@@ -288,6 +294,7 @@ public interface Modifiable extends Scannable {
                 modify.getSourceExpressions() );
     }
 
+
     default AlgNode getDocModify( long allocId, DocumentModify<?> modify, AlgBuilder builder ) {
         PhysicalEntity entity = getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 );
         if ( entity.unwrap( ModifiableCollection.class ).isEmpty() ) {
@@ -303,6 +310,7 @@ public interface Modifiable extends Scannable {
                 modify.renames,
                 modify.removes );
     }
+
 
     @Nullable
     static AlgNode getDocModifySubstitute( Modifiable modifiable, long allocId, DocumentModify<?> modify, AlgBuilder builder ) {
@@ -371,11 +379,13 @@ public interface Modifiable extends Scannable {
         return builder.transform( ModelTrait.DOCUMENT, modify.getRowType(), false, null ).build();
     }
 
+
     static Pair<List<String>, List<RexNode>> replaceUpdates( Pair<List<String>, List<RexNode>> updates, AlgBuilder builder ) {
         builder.documentProject( Pair.zip( updates.left, updates.right ).stream().collect( Collectors.toMap( e -> null, e -> e.right ) ), List.of() );
 
         return Pair.of( updates.left, updates.right.stream().map( u -> new RexDynamicParam( DocumentType.asRelational().getFields().get( 1 ).getType(), 1 ) ).collect( Collectors.toList() ) );
     }
+
 
     static Pair<List<String>, List<RexNode>> getRelationalDocumentModify( DocumentModify<?> modify ) {
         if ( modify.isInsert() || modify.isDelete() ) {
@@ -384,6 +394,7 @@ public interface Modifiable extends Scannable {
 
         return DocumentUtil.transformUpdateRelational( modify.updates, modify.removes, modify.renames, DocumentType.asRelational(), modify.getInput() );
     }
+
 
     default AlgNode getGraphModify( long allocId, LpgModify<?> modify, AlgBuilder builder ) {
         PhysicalEntity entity = getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 );
@@ -399,6 +410,7 @@ public interface Modifiable extends Scannable {
                 modify.ids,
                 modify.operations );
     }
+
 
     @NotNull
     static AlgNode getGraphModifySubstitute( Modifiable modifiable, long allocId, LpgModify<?> alg, AlgBuilder builder ) {
@@ -460,20 +472,25 @@ public interface Modifiable extends Scannable {
         return new LogicalModifyCollect( alg.getCluster(), alg.getTraitSet().replace( ModelTrait.GRAPH ), modifies, true );
     }
 
+
     static AlgNode switchContext( AlgNode node ) {
         return new LogicalContextSwitcher( node );
     }
+
 
     void addColumn( Context context, long allocId, LogicalColumn column );
 
 
     void dropColumn( Context context, long allocId, long columnId );
 
+
     default String addIndex( Context context, LogicalIndex index, List<AllocationTable> allocations ) {
         return allocations.stream().map( a -> addIndex( context, index, a ) ).collect( Collectors.toList() ).get( 0 );
     }
 
+
     String addIndex( Context context, LogicalIndex index, AllocationTable allocation );
+
 
     default void dropIndex( Context context, LogicalIndex index, List<Long> allocIds ) {
         for ( Long allocId : allocIds ) {
@@ -481,9 +498,10 @@ public interface Modifiable extends Scannable {
         }
     }
 
+
     void dropIndex( Context context, LogicalIndex index, long allocId );
 
-    void updateColumnType( Context context, long allocId, LogicalColumn column );
 
+    void updateColumnType( Context context, long allocId, LogicalColumn column );
 
 }
