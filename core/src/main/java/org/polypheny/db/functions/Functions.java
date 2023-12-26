@@ -84,8 +84,12 @@ import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.function.Function2;
 import org.apache.calcite.linq4j.function.NonDeterministic;
 import org.apache.calcite.linq4j.function.Predicate2;
+import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
+import org.bson.BsonDocument;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.enumerable.JavaRowFormat;
 import org.polypheny.db.algebra.exceptions.ConstraintViolationException;
@@ -97,9 +101,11 @@ import org.polypheny.db.algebra.json.JsonValueEmptyOrErrorBehavior;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.runtime.ComparableList;
 import org.polypheny.db.runtime.Like;
+import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.PolyBinary;
@@ -601,7 +607,7 @@ public class Functions {
 
         for ( int i = 0; i < len; i++ ) {
             char curCh = s.charAt( i );
-            final int c = (int) curCh;
+            final int c = curCh;
             if ( start ) {  // curCh is whitespace or first character of word.
                 if ( c > 47 && c < 58 ) { // 0-9
                     start = false;
@@ -2897,7 +2903,7 @@ public class Functions {
      * Helper for CAST(... AS VARCHAR(maxLength)).
      */
     public static PolyString truncate( PolyString s, int maxLength ) {
-        if ( s == null ) {
+        if ( s == null || s.value == null ) {
             return null;
         } else if ( s.value.length() > maxLength ) {
             return PolyString.of( s.value.substring( 0, maxLength ) );
@@ -2912,7 +2918,7 @@ public class Functions {
      */
     @SuppressWarnings("unused")
     public static PolyString truncateOrPad( PolyString s, int maxLength ) {
-        if ( s == null ) {
+        if ( s == null || s.value == null ) {
             return null;
         } else {
             final int length = s.value.length();
@@ -3050,7 +3056,7 @@ public class Functions {
     @NonDeterministic
     public static long currentTimestamp( DataContext root ) {
         // Cast required for JDK 1.6.
-        return (Long) DataContext.Variable.CURRENT_TIMESTAMP.get( root );
+        return DataContext.Variable.CURRENT_TIMESTAMP.get( root );
     }
 
 
@@ -3540,7 +3546,7 @@ public class Functions {
                     Map<Comparable<Object>, Comparable<Object>> map = (Map<Comparable<Object>, Comparable<Object>>) inputObject;
                     Enumerator<Entry<Comparable<Object>, Comparable<Object>>> enumerator = Linq4j.enumerator( map.entrySet() );
 
-                    Enumerator<List<E>> transformed = Linq4j.transform( enumerator, e -> ComparableList.of( (Comparable) e.getKey(), (Comparable) e.getValue() ) );
+                    Enumerator<List<E>> transformed = Linq4j.transform( enumerator, e -> ComparableList.of( e.getKey(), e.getValue() ) );
                     enumerators.add( transformed );
                     break;
                 default:
@@ -3615,7 +3621,7 @@ public class Functions {
     }
 
 
-    public static Object jsonValueExpression( String input ) {
+    public static Object jsonValueExpression( PolyString input ) {
         try {
             return dejsonize( input );
         } catch ( Exception e ) {
@@ -3625,11 +3631,11 @@ public class Functions {
 
 
     @SuppressWarnings("unused")
-    public static Object jsonValueExpressionExclude( String input, List<String> excluded ) {
+    public static Object jsonValueExpressionExclude( PolyString input, List<PolyString> excluded ) {
         try {
-            List<List<String>> collect = excluded.stream().map( e -> Arrays.asList( e.split( "\\." ) ) ).collect( Collectors.toList() );
+            PolyList<PolyList<PolyString>> collect = PolyList.copyOf( excluded.stream().map( e -> PolyList.of( Arrays.stream( e.value.split( "\\." ) ).map( PolyString::of ).collect( Collectors.toList() ) ) ).collect( Collectors.toList() ) );
 
-            Map<String, ?> map = (Map<String, ?>) dejsonize( input );
+            PolyMap<PolyString, PolyValue> map = (PolyMap<PolyString, PolyValue>) dejsonize( input );
             return rebuildMap( map, collect ); // TODO DL: exchange with a direct filter on deserialization
         } catch ( Exception e ) {
             return e;
@@ -3637,23 +3643,23 @@ public class Functions {
     }
 
 
-    private static Map<String, ?> rebuildMap( Map<String, ?> map, List<List<String>> collect ) {
-        Map<String, Object> newMap = new HashMap<>();
-        List<String> firsts = collect.stream().map( c -> c.get( 0 ) ).collect( Collectors.toList() );
-        for ( Entry<String, ?> entry : map.entrySet() ) {
+    private static PolyMap<PolyString, PolyValue> rebuildMap( PolyMap<PolyString, PolyValue> map, PolyList<PolyList<PolyString>> collect ) {
+        Map<PolyString, PolyValue> newMap = new HashMap<>();
+        List<PolyValue> firsts = collect.stream().map( c -> c.get( 0 ) ).collect( Collectors.toList() );
+        for ( Entry<PolyString, PolyValue> entry : map.entrySet() ) {
             if ( firsts.contains( entry.getKey() ) ) {
-                List<List<String>> entries = new ArrayList<>();
-                for ( List<String> excludes : collect ) {
+                List<PolyList<PolyString>> entries = new ArrayList<>();
+                for ( PolyList<PolyString> excludes : collect ) {
                     if ( excludes.get( 0 ).equals( entry.getKey() ) && entry.getValue() instanceof Map ) {
                         // if it matches but has more child-keys we have to go deeper
                         if ( excludes.size() > 1 ) {
-                            entries.add( excludes.subList( 1, excludes.size() ) );
+                            entries.add( PolyList.copyOf( excludes.subList( 1, excludes.size() ) ) );
                         }
                     }
                 }
-                if ( entries.size() > 0 ) {
-                    Map rebuild = rebuildMap( (Map<String, ?>) entry.getValue(), entries );
-                    if ( rebuild.size() > 0 ) {
+                if ( !entries.isEmpty() ) {
+                    PolyMap<PolyString, PolyValue> rebuild = rebuildMap( (PolyMap) entry.getValue().asMap(), PolyList.copyOf( entries ) );
+                    if ( !rebuild.isEmpty() ) {
                         newMap.put( entry.getKey(), rebuild );
                     }
                 }
@@ -3662,7 +3668,7 @@ public class Functions {
                 newMap.put( entry.getKey(), entry.getValue() );
             }
         }
-        return newMap;
+        return PolyMap.of( newMap );
     }
 
 
@@ -3682,20 +3688,20 @@ public class Functions {
     }
 
 
-    public static PathContext jsonApiCommonSyntax( Object input, String pathSpec ) {
+    public static PathContext jsonApiCommonSyntax( PolyValue input, PolyString pathSpec ) {
         try {
-            Matcher matcher = JSON_PATH_BASE.matcher( pathSpec );
+            Matcher matcher = JSON_PATH_BASE.matcher( pathSpec.value );
             if ( !matcher.matches() ) {
-                throw Static.RESOURCE.illegalJsonPathSpec( pathSpec ).ex();
+                throw Static.RESOURCE.illegalJsonPathSpec( pathSpec.value ).ex();
             }
             PathMode mode = PathMode.valueOf( matcher.group( 1 ).toUpperCase( Locale.ROOT ) );
             String pathWff = matcher.group( 2 );
             DocumentContext ctx;
             switch ( mode ) {
                 case STRICT:
-                    if ( input instanceof Exception ) {
+                    /*if ( input.asSymbol().value instanceof Exception ) {
                         return PathContext.withStrictException( (Exception) input );
-                    }
+                    }*/
                     ctx = JsonPath.parse(
                             input,
                             Configuration
@@ -3705,11 +3711,11 @@ public class Functions {
                                     .build() );
                     break;
                 case LAX:
-                    if ( input instanceof Exception ) {
+                    /*if ( input instanceof Exception ) {
                         return PathContext.withReturned( PathMode.LAX, null );
-                    }
+                    }*/
                     ctx = JsonPath.parse(
-                            input,
+                            input.toJson(),
                             Configuration
                                     .builder()
                                     .options( Option.SUPPRESS_EXCEPTIONS )
@@ -3718,10 +3724,10 @@ public class Functions {
                                     .build() );
                     break;
                 default:
-                    throw Static.RESOURCE.illegalJsonPathModeInPathSpec( mode.toString(), pathSpec ).ex();
+                    throw Static.RESOURCE.illegalJsonPathModeInPathSpec( mode.toString(), pathSpec.value ).ex();
             }
             try {
-                return PathContext.withReturned( mode, ctx.read( pathWff ) );
+                return PathContext.withReturned( mode, BsonUtil.toPolyValue( BsonDocument.parse( "{key:" + ctx.read( pathWff ) + "}" ) ).asMap().get( PolyString.of( "key" ) ) );
             } catch ( Exception e ) {
                 return PathContext.withStrictException( e );
             }
@@ -3731,12 +3737,13 @@ public class Functions {
     }
 
 
-    public static Boolean jsonExists( Object input ) {
+    @SuppressWarnings("unused")
+    public static Boolean jsonExists( PolyValue input ) {
         return jsonExists( input, JsonExistsErrorBehavior.FALSE );
     }
 
 
-    public static Boolean jsonExists( Object input, JsonExistsErrorBehavior errorBehavior ) {
+    public static Boolean jsonExists( PolyValue input, JsonExistsErrorBehavior errorBehavior ) {
         PathContext context = (PathContext) input;
         if ( context.exc != null ) {
             switch ( errorBehavior ) {
@@ -3757,13 +3764,13 @@ public class Functions {
     }
 
 
-    public static Object jsonValueAny( Object input, JsonValueEmptyOrErrorBehavior emptyBehavior, Object defaultValueOnEmpty, JsonValueEmptyOrErrorBehavior errorBehavior, Object defaultValueOnError ) {
+    public static PolyValue jsonValueAny( PolyValue input, JsonValueEmptyOrErrorBehavior emptyBehavior, PolyValue defaultValueOnEmpty, JsonValueEmptyOrErrorBehavior errorBehavior, PolyValue defaultValueOnError ) {
         final PathContext context = (PathContext) input;
         final Exception exc;
         if ( context.exc != null ) {
             exc = context.exc;
         } else {
-            Object value = context.pathReturned;
+            PolyValue value = context.pathReturned;
             if ( value == null || context.mode == PathMode.LAX && !isScalarObject( value ) ) {
                 switch ( emptyBehavior ) {
                     case ERROR:
@@ -3794,7 +3801,7 @@ public class Functions {
     }
 
 
-    public static String jsonQuery( Object input, JsonQueryWrapperBehavior wrapperBehavior, JsonQueryEmptyOrErrorBehavior emptyBehavior, JsonQueryEmptyOrErrorBehavior errorBehavior ) {
+    public static String jsonQuery( PolyValue input, JsonQueryWrapperBehavior wrapperBehavior, JsonQueryEmptyOrErrorBehavior emptyBehavior, JsonQueryEmptyOrErrorBehavior errorBehavior ) {
         final PathContext context = (PathContext) input;
         final Exception exc;
         if ( context.exc != null ) {
@@ -3865,8 +3872,13 @@ public class Functions {
     }
 
 
-    public static Object dejsonize( String input ) {
-        return JSON_PATH_JSON_PROVIDER.parse( input );
+    public static PolyMap<PolyString, PolyValue> dejsonize( PolyString input ) {
+        return mapFromBson( BsonDocument.parse( input.value ) );
+    }
+
+
+    private static PolyMap<PolyString, PolyValue> mapFromBson( BsonDocument document ) {
+        return BsonUtil.toPolyValue( document ).asDocument();
     }
 
 
@@ -3931,7 +3943,7 @@ public class Functions {
     }
 
 
-    public static boolean isJsonValue( String input ) {
+    public static boolean isJsonValue( PolyString input ) {
         try {
             dejsonize( input );
             return true;
@@ -3941,7 +3953,7 @@ public class Functions {
     }
 
 
-    public static boolean isJsonObject( String input ) {
+    public static boolean isJsonObject( PolyString input ) {
         try {
             Object o = dejsonize( input );
             return o instanceof Map;
@@ -3951,7 +3963,7 @@ public class Functions {
     }
 
 
-    public static boolean isJsonArray( String input ) {
+    public static boolean isJsonArray( PolyString input ) {
         try {
             Object o = dejsonize( input );
             return o instanceof Collection;
@@ -3961,7 +3973,7 @@ public class Functions {
     }
 
 
-    public static boolean isJsonScalar( String input ) {
+    public static boolean isJsonScalar( PolyString input ) {
         try {
             Object o = dejsonize( input );
             return !(o instanceof Map) && !(o instanceof Collection);
@@ -3985,21 +3997,22 @@ public class Functions {
         if ( e instanceof RuntimeException ) {
             return (RuntimeException) e;
         }
-        return new RuntimeException( e );
+        return new GenericRuntimeException( e );
     }
 
 
     /**
      * Returned path context of JsonApiCommonSyntax, public for testing.
      */
-    public static class PathContext {
+    public static class PathContext extends PolyValue {
 
         public final PathMode mode;
-        public final Object pathReturned;
+        public final PolyValue pathReturned;
         public final Exception exc;
 
 
-        private PathContext( PathMode mode, Object pathReturned, Exception exc ) {
+        private PathContext( PathMode mode, PolyValue pathReturned, Exception exc ) {
+            super( PolyType.JSON );
             this.mode = mode;
             this.pathReturned = pathReturned;
             this.exc = exc;
@@ -4016,7 +4029,7 @@ public class Functions {
         }
 
 
-        public static PathContext withReturned( PathMode mode, Object pathReturned ) {
+        public static PathContext withReturned( PathMode mode, PolyValue pathReturned ) {
             if ( mode == PathMode.UNKNOWN ) {
                 throw Static.RESOURCE.illegalJsonPathMode( mode.toString() ).ex();
             }
@@ -4034,6 +4047,30 @@ public class Functions {
                     + ", pathReturned=" + pathReturned
                     + ", exc=" + exc
                     + '}';
+        }
+
+
+        @Override
+        public @Nullable Long deriveByteSize() {
+            throw new RuntimeException( "Not implemented" );
+        }
+
+
+        @Override
+        public int compareTo( @NotNull PolyValue o ) {
+            throw new RuntimeException( "Not implemented" );
+        }
+
+
+        @Override
+        public Expression asExpression() {
+            throw new RuntimeException( "Not implemented" );
+        }
+
+
+        @Override
+        public PolySerializable copy() {
+            throw new RuntimeException( "Not implemented" );
         }
 
     }
@@ -4103,4 +4140,3 @@ public class Functions {
     }
 
 }
-
