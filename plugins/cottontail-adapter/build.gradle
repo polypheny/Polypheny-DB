@@ -1,3 +1,7 @@
+plugins {
+    id "org.jetbrains.kotlin.jvm" version "1.7.22"
+}
+
 group "org.polypheny"
 
 apply plugin: "kotlin"
@@ -84,7 +88,6 @@ jar {
         attributes "Version": "$project.version"
     }
     dependsOn(":plugins:cottontail-adapter:compileTestKotlin")
-
 }
 java {
     withJavadocJar()

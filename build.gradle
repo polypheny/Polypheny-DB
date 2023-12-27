@@ -10,12 +10,13 @@ buildscript {
         classpath group: "io.freefair.gradle", name: "lombok-plugin", version: lombok_version
         classpath group: "com.adarshr", name: "gradle-test-logger-plugin", version: gradle_test_logger_version
         classpath group: "org.reflections", name: "reflections", version: reflections_version
+        classpath group: "com.jaredsburrows", name: "gradle-license-plugin", version: license_report_version
     }
 }
 
 
 plugins {
-    id "org.jetbrains.kotlin.jvm" version "1.6.21"
+    id 'java'
     id "org.jetbrains.gradle.plugin.idea-ext" version "1.1.7"
 }
 
@@ -48,6 +49,7 @@ allprojects {
     apply plugin: "java-library"
     apply plugin: "io.freefair.lombok"
     apply plugin: "com.adarshr.test-logger"
+    apply plugin: "com.jaredsburrows.license"
 
     compileJava.options.encoding = "UTF-8"
     compileTestJava.options.encoding = "UTF-8"
@@ -57,14 +59,6 @@ allprojects {
         toolchain {
             languageVersion = JavaLanguageVersion.of(17)
         }
-    }
-
-    tasks.withType(JavaCompile).configureEach {
-        options.encoding = "UTF-8"
-    }
-
-    tasks.withType(JavaCompile).configureEach {
-        options.encoding = "UTF-8"
     }
 
     tasks.withType(JavaCompile).configureEach {
@@ -148,6 +142,13 @@ allprojects {
         testRuntimeOnly(group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: junit_jupiter_version)
     }
 
+    licenseReport {
+        generateJsonReport = true
+        generateCsvReport = false
+        generateHtmlReport = false
+        generateTextReport = false
+    }
+
     idea {
         module {
             downloadJavadoc = true
@@ -162,6 +163,28 @@ allprojects {
         }
     }
 
+}
+
+task gatherLicenseReports(type: Copy) {
+    // Define the destination directory for the reports
+    def destinationDir = "${rootProject.buildDir}/reports/licenses"
+
+    // Go through each subproject
+    subprojects.each { subproject ->
+        from("${subproject.buildDir}/reports/licenses") {
+            include 'licenseReport.json'
+            // Rename the report file to include the module name
+            rename { String fileName ->
+                "${subproject.name}-$fileName"
+            }
+        }
+    }
+
+    // Set the destination for the copied files
+    into destinationDir
+}
+gradle.projectsEvaluated { // Make sure the task runs after all projects are evaluated
+    gatherLicenseReports.dependsOn subprojects*.tasks*.findByName('licenseReport')
 }
 
 // plugin location
