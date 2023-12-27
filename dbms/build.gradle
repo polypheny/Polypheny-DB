@@ -9,7 +9,6 @@ buildscript {
     }
     dependencies {
         classpath group: "app.cash.licensee", name: "licensee-gradle-plugin", version: licensee_version
-        classpath group: "com.jaredsburrows", name: "gradle-license-plugin", version: license_report_version
     }
 }
 
@@ -24,7 +23,6 @@ run {
 }
 
 apply plugin: "app.cash.licensee"
-apply plugin: "com.jaredsburrows.license"
 
 group "org.polypheny"
 
