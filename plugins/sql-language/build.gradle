@@ -48,6 +48,7 @@ dependencies {
     testImplementation group: "com.jayway.jsonpath", name: "json-path", version: json_path_version  // Apache 2.0
 
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: junit_jupiter_version
+    testRuntimeOnly(group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: junit_jupiter_version)
     testImplementation group: "org.incava", name: "java-diff", version: java_diff_version  // Apache 2.0
 }
 

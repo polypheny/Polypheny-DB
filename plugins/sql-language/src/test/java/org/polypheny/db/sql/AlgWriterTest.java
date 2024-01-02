@@ -17,8 +17,8 @@
 package org.polypheny.db.sql;
 
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.externalize.AlgJson;
 import org.polypheny.db.algebra.externalize.AlgJsonReader;
 import org.polypheny.db.algebra.externalize.AlgJsonWriter;
@@ -29,44 +29,45 @@ import org.polypheny.db.algebra.externalize.AlgJsonWriter;
  */
 public class AlgWriterTest extends SqlLanguageDependent {
 
-    private static final String XX = "{\n"
-            + "  \"Plan\": {\n"
-            + "    \"id\": \"2\",\n"
-            + "    \"relOp\": \"LogicalAggregate\",\n"
-            + "    \"model\": \"RELATIONAL\",\n"
-            + "    \"group\": \"{0}\",\n"
-            + "    \"aggs\": \"[COUNT(DISTINCT deptno), COUNT()]\",\n"
-            + "    \"rowcount\": 1.5,\n"
-            + "    \"rows cost\": 116.875,\n"
-            + "    \"cpu cost\": 201.0,\n"
-            + "    \"io cost\": 0.0,\n"
-            + "    \"inputs\": [\n"
-            + "      {\n"
-            + "        \"id\": \"1\",\n"
-            + "        \"relOp\": \"LogicalFilter\",\n"
-            + "        \"model\": \"RELATIONAL\",\n"
-            + "        \"condition\": \"=(deptno, 10)\",\n"
-            + "        \"rowcount\": 15.0,\n"
-            + "        \"rows cost\": 115.0,\n"
-            + "        \"cpu cost\": 201.0,\n"
-            + "        \"io cost\": 0.0,\n"
-            + "        \"inputs\": [\n"
-            + "          {\n"
-            + "            \"id\": \"0\",\n"
-            + "            \"relOp\": \"LogicalScan\",\n"
-            + "            \"model\": \"RELATIONAL\",\n"
-            + "            \"table\": \"[hr, emps]\",\n"
-            + "            \"rowcount\": 100.0,\n"
-            + "            \"rows cost\": 100.0,\n"
-            + "            \"cpu cost\": 101.0,\n"
-            + "            \"io cost\": 0.0,\n"
-            + "            \"inputs\": []\n"
-            + "          }\n"
-            + "        ]\n"
-            + "      }\n"
-            + "    ]\n"
-            + "  }\n"
-            + "}";
+    private static final String XX = """
+            {
+              "Plan": {
+                "id": "2",
+                "relOp": "LogicalAggregate",
+                "model": "RELATIONAL",
+                "group": "{0}",
+                "aggs": "[COUNT(DISTINCT deptno), COUNT()]",
+                "rowcount": 1.5,
+                "rows cost": 116.875,
+                "cpu cost": 201.0,
+                "io cost": 0.0,
+                "inputs": [
+                  {
+                    "id": "1",
+                    "relOp": "LogicalFilter",
+                    "model": "RELATIONAL",
+                    "condition": "=(deptno, 10)",
+                    "rowcount": 15.0,
+                    "rows cost": 115.0,
+                    "cpu cost": 201.0,
+                    "io cost": 0.0,
+                    "inputs": [
+                      {
+                        "id": "0",
+                        "relOp": "LogicalScan",
+                        "model": "RELATIONAL",
+                        "table": "[hr, emps]",
+                        "rowcount": 100.0,
+                        "rows cost": 100.0,
+                        "cpu cost": 101.0,
+                        "io cost": 0.0,
+                        "inputs": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            }""";
 
 
     /**
@@ -107,7 +108,7 @@ public class AlgWriterTest extends SqlLanguageDependent {
      * Unit test for {@link AlgJsonReader}.
      */
     @Test
-    @Ignore // TODO MV: The test if working if you put " around the table names in the JSON ( instead of \"table\": \"[hr, emps]\",\n" --> \"table\": \"[\"hr\", \"emps\"]\",\n" )
+    @Disabled // TODO MV: The test if working if you put " around the table names in the JSON ( instead of \"table\": \"[hr, emps]\",\n" --> \"table\": \"[\"hr\", \"emps\"]\",\n" )
     public void testReader() {
         /*String s =
                 Frameworks.withPlanner( ( cluster, algOptSchema, rootSchema ) -> {

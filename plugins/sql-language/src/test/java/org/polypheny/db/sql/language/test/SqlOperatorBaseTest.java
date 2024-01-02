@@ -18,10 +18,10 @@ package org.polypheny.db.sql.language.test;
 
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import com.google.common.base.Throwables;
 import java.math.BigDecimal;
@@ -39,9 +39,9 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.Linq4j;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.constant.ConformanceEnum;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -255,7 +255,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
     }
 
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         tester.setFor( null );
     }
@@ -1835,7 +1835,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Ignore
+    @Disabled
     public void testModOperator() {
         // "%" is allowed under MYSQL_5 SQL conformance level
         final SqlTester tester1 = tester.withConformance( ConformanceEnum.MYSQL_5 );
@@ -1865,7 +1865,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Ignore
+    @Disabled
     public void testModPrecedence() {
         // "%" is allowed under MYSQL_5 SQL conformance level
         final SqlTester tester1 = tester.withConformance( ConformanceEnum.MYSQL_5 );
@@ -1876,7 +1876,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Ignore
+    @Disabled
     public void testModOperatorNull() {
         // "%" is allowed under MYSQL_5 SQL conformance level
         final SqlTester tester1 = tester.withConformance( ConformanceEnum.MYSQL_5 );
@@ -2803,7 +2803,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Ignore
+    @Disabled
     public void testNotEqualsOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.NOT_EQUALS ) );
         tester.checkBoolean( "1<>1", Boolean.FALSE );
@@ -3389,7 +3389,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
     }
 
 
-    @Ignore("[POLYPHENYDB-525] Exception-handling in built-in functions")
+    @Disabled("[POLYPHENYDB-525] Exception-handling in built-in functions")
     @Test
     public void testLikeEscape2() {
         tester.checkBoolean( "'x' not like 'x' escape 'x'", Boolean.TRUE );
@@ -3701,7 +3701,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
     /*
     @Test
-    @Ignore
+    @Disabled
     public void testTranslate3Func() {
         final SqlTester tester1 = oracleTester();
         tester1.setFor( OracleSqlOperatorTable.TRANSLATE3 );
@@ -5201,7 +5201,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Ignore
+    @Disabled
     public void testCurrentDateFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.CURRENT_DATE ), VM_FENNEL );
 
@@ -5368,7 +5368,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Ignore
+    @Disabled
     public void testTrimFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.TRIM ) );
 
@@ -5422,7 +5422,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
     /*
     @Test
-    @Ignore
+    @Disabled
     public void testRtrimFunc() {
         tester.setFor( OracleSqlOperatorTable.RTRIM );
         final SqlTester tester1 = oracleTester();
@@ -5432,7 +5432,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Ignore
+    @Disabled
     public void testLtrimFunc() {
         tester.setFor( OracleSqlOperatorTable.LTRIM );
         final SqlTester tester1 = oracleTester();
@@ -5442,7 +5442,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Ignore
+    @Disabled
     public void testGreatestFunc() {
         tester.setFor( OracleSqlOperatorTable.GREATEST );
         final SqlTester tester1 = oracleTester();
@@ -5458,7 +5458,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Ignore
+    @Disabled
     public void testLeastFunc() {
         tester.setFor( OracleSqlOperatorTable.LEAST );
         final SqlTester tester1 = oracleTester();
@@ -5474,7 +5474,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Ignore
+    @Disabled
     public void testNvlFunc() {
         tester.setFor( OracleSqlOperatorTable.NVL );
         final SqlTester tester1 = oracleTester();
@@ -5498,7 +5498,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Ignore
+    @Disabled
     public void testDecodeFunc() {
         tester.setFor( OracleSqlOperatorTable.DECODE );
         final SqlTester tester1 = oracleTester();
@@ -7873,7 +7873,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
         @Override
-        public void checkResult( ResultSet result ) throws Exception {
+        public void checkResult( ResultSet result ) {
             Throwable thrown = null;
             try {
                 result.next();
@@ -7898,20 +7898,11 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
      *
      * Sounds peculiar, but is necessary when eager and lazy behaviors are both valid.
      */
-    private static class ValueOrExceptionResultChecker implements SqlTester.ResultChecker {
-
-        private final Object expected;
-        private final Pattern[] patterns;
-
-
-        ValueOrExceptionResultChecker( Object expected, Pattern... patterns ) {
-            this.expected = expected;
-            this.patterns = patterns;
-        }
+    private record ValueOrExceptionResultChecker(Object expected, Pattern... patterns) implements SqlTester.ResultChecker {
 
 
         @Override
-        public void checkResult( ResultSet result ) throws Exception {
+        public void checkResult( ResultSet result ) {
             Throwable thrown = null;
             try {
                 if ( !result.next() ) {
@@ -8011,23 +8002,16 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
                         ParserPos.ZERO, SqlLiteral.createNull( ParserPos.ZERO ),
                         new SqlDataTypeSpec( new SqlIdentifier( type.getPolyType().getName(), ParserPos.ZERO ), precision, scale, null, null, ParserPos.ZERO ) );
             }
-            switch ( type.getPolyType() ) {
-                case BOOLEAN:
-                    return SqlLiteral.createBoolean( (Boolean) value, ParserPos.ZERO );
-                case TINYINT:
-                case SMALLINT:
-                case INTEGER:
-                case BIGINT:
-                    return SqlLiteral.createExactNumeric( value.toString(), ParserPos.ZERO );
-                case CHAR:
-                case VARCHAR:
-                    return SqlLiteral.createCharString( value.toString(), ParserPos.ZERO );
-                case TIMESTAMP:
+            return switch ( type.getPolyType() ) {
+                case BOOLEAN -> SqlLiteral.createBoolean( (Boolean) value, ParserPos.ZERO );
+                case TINYINT, SMALLINT, INTEGER, BIGINT -> SqlLiteral.createExactNumeric( value.toString(), ParserPos.ZERO );
+                case CHAR, VARCHAR -> SqlLiteral.createCharString( value.toString(), ParserPos.ZERO );
+                case TIMESTAMP -> {
                     TimestampString ts = TimestampString.fromMillisSinceEpoch( (Long) value );
-                    return SqlLiteral.createTimestamp( PolyTimestamp.of( ts.getMillisSinceEpoch() ), type.getPrecision(), ParserPos.ZERO );
-                default:
-                    throw new AssertionError( type );
-            }
+                    yield SqlLiteral.createTimestamp( PolyTimestamp.of( ts.getMillisSinceEpoch() ), type.getPrecision(), ParserPos.ZERO );
+                }
+                default -> throw new AssertionError( type );
+            };
         }
 
     }

@@ -18,7 +18,7 @@ package org.polypheny.db.sql;
 
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,9 +26,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.calcite.linq4j.QueryProvider;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
@@ -146,7 +145,7 @@ public class InterpreterTest extends SqlLanguageDependent {
     }
 
 
-    @Before
+    @BeforeEach
     public void setUp() {
         snapshot = Frameworks.createSnapshot( true );//.add( "hr", new ReflectiveSchema( new HrSchema(), -1 ), NamespaceType.RELATIONAL );
 
@@ -169,7 +168,7 @@ public class InterpreterTest extends SqlLanguageDependent {
     }
 
 
-    @After
+    @BeforeEach
     public void tearDown() {
         snapshot = null;
         planner = null;
@@ -182,7 +181,10 @@ public class InterpreterTest extends SqlLanguageDependent {
      */
     @Test
     public void testInterpretProjectFilterValues() throws Exception {
-        Node parse = planner.parse( "select y, x\n" + "from (values (1, 'a'), (2, 'b'), (3, 'c')) as t(x, y)\n" + "where x > 1" );
+        Node parse = planner.parse( """
+                select y, x
+                from (values (1, 'a'), (2, 'b'), (3, 'c')) as t(x, y)
+                where x > 1""" );
 
         Node validate = planner.validate( parse );
         AlgNode convert = planner.alg( validate ).alg;
@@ -197,7 +199,10 @@ public class InterpreterTest extends SqlLanguageDependent {
      */
     @Test
     public void testInterpretOrder() throws Exception {
-        final String sql = "select y\n" + "from (values (1, 'a'), (2, 'b'), (3, 'c')) as t(x, y)\n" + "order by -x";
+        final String sql = """
+                select y
+                from (values (1, 'a'), (2, 'b'), (3, 'c')) as t(x, y)
+                order by -x""";
         Node parse = planner.parse( sql );
         Node validate = planner.validate( parse );
         AlgNode convert = planner.alg( validate ).project();
@@ -317,7 +322,10 @@ public class InterpreterTest extends SqlLanguageDependent {
     @Test
     public void testAggregateGroupFilter() throws Exception {
         // rootSchema.add( "beatles", new BeatlesEntity() );
-        final String sql = "select \"j\",\n" + "  count(*) filter (where char_length(\"j\") > 4)\n" + "from \"beatles\" group by \"j\"";
+        final String sql = """
+                select "j",
+                  count(*) filter (where char_length("j") > 4)
+                from "beatles" group by "j\"""";
         Node parse = planner.parse( sql );
         Node validate = planner.validate( parse );
         AlgNode convert = planner.alg( validate ).alg;
@@ -349,7 +357,11 @@ public class InterpreterTest extends SqlLanguageDependent {
     @Test
     public void testInterpretUnionAll() throws Exception {
         // rootSchema.add( "simple", new SimpleEntity() );
-        Node parse = planner.parse( "select * from \"simple\"\n" + "union all\n" + "select * from \"simple\"\n" );
+        Node parse = planner.parse( """
+                select * from "simple"
+                union all
+                select * from "simple"
+                """ );
 
         Node validate = planner.validate( parse );
         AlgNode convert = planner.alg( validate ).alg;
@@ -365,7 +377,11 @@ public class InterpreterTest extends SqlLanguageDependent {
     @Test
     public void testInterpretUnion() throws Exception {
         // rootSchema.add( "simple", new SimpleEntity() );
-        Node parse = planner.parse( "select * from \"simple\"\n" + "union\n" + "select * from \"simple\"\n" );
+        Node parse = planner.parse( """
+                select * from "simple"
+                union
+                select * from "simple"
+                """ );
 
         Node validate = planner.validate( parse );
         AlgNode convert = planner.alg( validate ).alg;

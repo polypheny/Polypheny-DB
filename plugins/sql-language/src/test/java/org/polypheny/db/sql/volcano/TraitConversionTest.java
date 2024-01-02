@@ -17,10 +17,11 @@
 package org.polypheny.db.sql.volcano;
 
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.AlgDistributionTraitDef;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
@@ -68,17 +69,17 @@ public class TraitConversionTest {
         planner.setRoot( convertedRel );
         final AlgNode result = planner.chooseDelegate().findBestExp();
 
-        assertTrue( result instanceof RandomSingleRel );
+        assertInstanceOf( RandomSingleRel.class, result );
         assertTrue( result.getTraitSet().contains( PlannerTests.PHYS_CALLING_CONVENTION ) );
         assertTrue( result.getTraitSet().contains( SIMPLE_DISTRIBUTION_RANDOM ) );
 
         final AlgNode input = result.getInput( 0 );
-        assertTrue( input instanceof BridgeRel );
+        assertInstanceOf( BridgeRel.class, input );
         assertTrue( input.getTraitSet().contains( PlannerTests.PHYS_CALLING_CONVENTION ) );
         assertTrue( input.getTraitSet().contains( SIMPLE_DISTRIBUTION_RANDOM ) );
 
         final AlgNode input2 = input.getInput( 0 );
-        assertTrue( input2 instanceof SingletonLeafRel );
+        assertInstanceOf( SingletonLeafRel.class, input2 );
         assertTrue( input2.getTraitSet().contains( PlannerTests.PHYS_CALLING_CONVENTION ) );
         assertTrue( input2.getTraitSet().contains( SIMPLE_DISTRIBUTION_SINGLETON ) );
     }

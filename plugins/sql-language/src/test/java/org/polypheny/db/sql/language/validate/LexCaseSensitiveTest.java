@@ -19,11 +19,12 @@ package org.polypheny.db.sql.language.validate;
 
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Lex;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
@@ -105,11 +106,13 @@ public class LexCaseSensitiveTest {
     }
 
 
-    @Test(expected = ValidationException.class)
-    public void testPolyphenyDbCaseOracleException() throws NodeParseException, ValidationException, AlgConversionException {
-        // Oracle is case sensitive, so EMPID should not be found.
-        String sql = "select EMPID, \"empid\" from\n (select \"empid\" from \"emps\" order by \"emps\".\"deptno\")";
-        runProjectQueryWithLex( Lex.ORACLE, sql );
+    @Test
+    public void testPolyphenyDbCaseOracleException() {
+        assertThrows( ValidationException.class, () -> {
+            // Oracle is case sensitive, so EMPID should not be found.
+            String sql = "select EMPID, \"empid\" from\n (select \"empid\" from \"emps\" order by \"emps\".\"deptno\")";
+            runProjectQueryWithLex( Lex.ORACLE, sql );
+        } );
     }
 
 
@@ -162,56 +165,63 @@ public class LexCaseSensitiveTest {
     }
 
 
-    @Test(expected = ValidationException.class)
-    public void testPolyphenyDbCaseJavaException() throws NodeParseException, ValidationException, AlgConversionException {
-        // JAVA is case sensitive, so EMPID should not be found.
-        String sql = "select EMPID, empid from\n (select empid from emps order by emps.deptno)";
-        runProjectQueryWithLex( Lex.JAVA, sql );
+    @Test
+    public void testPolyphenyDbCaseJavaException() {
+        assertThrows( ValidationException.class, () -> {
+            // JAVA is case sensitive, so EMPID should not be found.
+            String sql = "select EMPID, empid from\n (select empid from emps order by emps.deptno)";
+            runProjectQueryWithLex( Lex.JAVA, sql );
+        } );
     }
 
 
     @Test
     public void testPolyphenyDbCaseJoinOracle() throws NodeParseException, ValidationException, AlgConversionException {
-        String sql = "select t.\"empid\" as EMPID, s.\"empid\" from\n"
-                + "(select * from \"emps\" where \"emps\".\"deptno\" > 100) t join\n"
-                + "(select * from \"emps\" where \"emps\".\"deptno\" < 200) s\n"
-                + "on t.\"empid\" = s.\"empid\"";
+        String sql = """
+                select t."empid" as EMPID, s."empid" from
+                (select * from "emps" where "emps"."deptno" > 100) t join
+                (select * from "emps" where "emps"."deptno" < 200) s
+                on t."empid" = s."empid\"""";
         runProjectQueryWithLex( Lex.ORACLE, sql );
     }
 
 
     @Test
     public void testPolyphenyDbCaseJoinMySql() throws NodeParseException, ValidationException, AlgConversionException {
-        String sql = "select t.empid as EMPID, s.empid from\n"
-                + "(select * from emps where emps.deptno > 100) t join\n"
-                + "(select * from emps where emps.deptno < 200) s on t.empid = s.empid";
+        String sql = """
+                select t.empid as EMPID, s.empid from
+                (select * from emps where emps.deptno > 100) t join
+                (select * from emps where emps.deptno < 200) s on t.empid = s.empid""";
         runProjectQueryWithLex( Lex.MYSQL, sql );
     }
 
 
     @Test
     public void testPolyphenyDbCaseJoinMySqlAnsi() throws NodeParseException, ValidationException, AlgConversionException {
-        String sql = "select t.empid as EMPID, s.empid from\n"
-                + "(select * from emps where emps.deptno > 100) t join\n"
-                + "(select * from emps where emps.deptno < 200) s on t.empid = s.empid";
+        String sql = """
+                select t.empid as EMPID, s.empid from
+                (select * from emps where emps.deptno > 100) t join
+                (select * from emps where emps.deptno < 200) s on t.empid = s.empid""";
         runProjectQueryWithLex( Lex.MYSQL_ANSI, sql );
     }
 
 
     @Test
     public void testPolyphenyDbCaseJoinSqlServer() throws NodeParseException, ValidationException, AlgConversionException {
-        String sql = "select t.empid as EMPID, s.empid from\n"
-                + "(select * from emps where emps.deptno > 100) t join\n"
-                + "(select * from emps where emps.deptno < 200) s on t.empid = s.empid";
+        String sql = """
+                select t.empid as EMPID, s.empid from
+                (select * from emps where emps.deptno > 100) t join
+                (select * from emps where emps.deptno < 200) s on t.empid = s.empid""";
         runProjectQueryWithLex( Lex.SQL_SERVER, sql );
     }
 
 
     @Test
     public void testPolyphenyDbCaseJoinJava() throws NodeParseException, ValidationException, AlgConversionException {
-        String sql = "select t.empid as EMPID, s.empid from\n"
-                + "(select * from emps where emps.deptno > 100) t join\n"
-                + "(select * from emps where emps.deptno < 200) s on t.empid = s.empid";
+        String sql = """
+                select t.empid as EMPID, s.empid from
+                (select * from emps where emps.deptno > 100) t join
+                (select * from emps where emps.deptno < 200) s on t.empid = s.empid""";
         runProjectQueryWithLex( Lex.JAVA, sql );
     }
 

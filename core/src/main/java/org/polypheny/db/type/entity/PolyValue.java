@@ -41,7 +41,6 @@ import io.activej.serializer.annotations.SerializeClass;
 import java.lang.reflect.Type;
 import java.sql.Timestamp;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
@@ -212,50 +211,30 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
 
 
     public static Function1<PolyValue, Object> getPolyToJava( AlgDataType type, boolean arrayAsList ) {
-        switch ( type.getPolyType() ) {
-            case VARCHAR:
-            case CHAR:
-                return o -> o.asString().value;
-            case INTEGER:
-            case TINYINT:
-            case SMALLINT:
-                return o -> o.asNumber().IntValue();
-            case FLOAT:
-            case REAL:
-                return o -> o.asNumber().FloatValue();
-            case DOUBLE:
-                return o -> o.asNumber().DoubleValue();
-            case BIGINT:
-                return o -> o.asNumber().LongValue();
-            case DECIMAL:
-                return o -> o.asNumber().BigDecimalValue();
-            case DATE:
-                return o -> o.asDate().milliSinceEpoch / DateTimeUtils.MILLIS_PER_DAY;
-            case TIME:
-                return o -> o.asTime().ofDay % DateTimeUtils.MILLIS_PER_DAY;
-            case TIMESTAMP:
-                return o -> o.asTimestamp().milliSinceEpoch;
-            case BOOLEAN:
-                return o -> o.asBoolean().value;
-            case ARRAY:
+        return switch ( type.getPolyType() ) {
+            case VARCHAR, CHAR -> o -> o.asString().value;
+            case INTEGER, TINYINT, SMALLINT -> o -> o.asNumber().IntValue();
+            case FLOAT, REAL -> o -> o.asNumber().FloatValue();
+            case DOUBLE -> o -> o.asNumber().DoubleValue();
+            case BIGINT -> o -> o.asNumber().LongValue();
+            case DECIMAL -> o -> o.asNumber().BigDecimalValue();
+            case DATE -> o -> o.asDate().millisSinceEpoch / DateTimeUtils.MILLIS_PER_DAY;
+            case TIME -> o -> o.asTime().ofDay % DateTimeUtils.MILLIS_PER_DAY;
+            case TIMESTAMP -> o -> o.asTimestamp().millisSinceEpoch;
+            case BOOLEAN -> o -> o.asBoolean().value;
+            case ARRAY -> {
                 Function1<PolyValue, Object> elTrans = getPolyToJava( getAndDecreaseArrayDimensionIfNecessary( (ArrayType) type ), arrayAsList );
-                return o -> o == null
+                yield o -> o == null
                         ? null
                         : arrayAsList
-                                ? (o.asList().stream().map( elTrans::apply ).toList())
-                                : o.asList().stream().map( elTrans::apply ).collect( Collectors.toList() ).toArray();
-            case FILE:
-            case IMAGE:
-            case AUDIO:
-            case VIDEO:
-                return o -> o.asBlob().asByteArray();
-            case GEOMETRY:
-                return o -> o.asGeometry().toString();
-            case DOCUMENT:
-                return o -> o.asDocument().toJson();
-            default:
-                throw new NotImplementedException( "meta: " + type.getFullTypeString() );
-        }
+                                ? (o.asList().value.stream().map( elTrans::apply ).toList())
+                                : o.asList().value.stream().map( elTrans::apply ).toList().toArray();
+            }
+            case FILE, IMAGE, AUDIO, VIDEO -> o -> o.asBlob().asByteArray();
+            case DOCUMENT -> o -> o.asDocument().toJson();
+            case GEOMETRY -> o -> o.asGeometry().toString();
+            default -> throw new NotImplementedException( "meta: " + type.getFullTypeString() );
+        };
     }
 
 
@@ -353,114 +332,61 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
 
 
     public static Class<? extends PolyValue> classFrom( PolyType polyType ) {
-        switch ( polyType ) {
-            case BOOLEAN:
-                return PolyBoolean.class;
-            case TINYINT:
-            case INTEGER:
-                return PolyInteger.class;
-            case SMALLINT:
-                return PolyInteger.class;
-            case BIGINT:
-                return PolyLong.class;
-            case DECIMAL:
-                return PolyBigDecimal.class;
-            case FLOAT:
-            case REAL:
-                return PolyFloat.class;
-            case DOUBLE:
-                return PolyDouble.class;
-            case DATE:
-                return PolyDate.class;
-            case TIME:
-                return PolyTime.class;
-            case TIME_WITH_LOCAL_TIME_ZONE:
-                return PolyTime.class;
-            case TIMESTAMP:
-                return PolyTimestamp.class;
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                return PolyTimestamp.class;
-            case INTERVAL_YEAR:
-                return PolyInterval.class;
-            case INTERVAL_YEAR_MONTH:
-                return PolyInterval.class;
-            case INTERVAL_MONTH:
-                return PolyInterval.class;
-            case INTERVAL_DAY:
-                return PolyInterval.class;
-            case INTERVAL_DAY_HOUR:
-                return PolyInterval.class;
-            case INTERVAL_DAY_MINUTE:
-                return PolyInterval.class;
-            case INTERVAL_DAY_SECOND:
-                return PolyInterval.class;
-            case INTERVAL_HOUR:
-                return PolyInterval.class;
-            case INTERVAL_HOUR_MINUTE:
-                return PolyInterval.class;
-            case INTERVAL_HOUR_SECOND:
-                return PolyInterval.class;
-            case INTERVAL_MINUTE:
-                return PolyInterval.class;
-            case INTERVAL_MINUTE_SECOND:
-                return PolyInterval.class;
-            case INTERVAL_SECOND:
-                return PolyInterval.class;
-            case CHAR:
-                return PolyString.class;
-            case VARCHAR:
-                return PolyString.class;
-            case BINARY:
-                return PolyBinary.class;
-            case VARBINARY:
-                return PolyBinary.class;
-            case NULL:
-                return PolyNull.class;
-            case ANY:
-                return PolyValue.class;
-            case SYMBOL:
-                return PolySymbol.class;
-            case MULTISET:
-                return PolyList.class;
-            case ARRAY:
-                return PolyList.class;
-            case MAP:
-                return PolyMap.class;
-            case DOCUMENT:
-                return PolyDocument.class;
-            case GRAPH:
-                return PolyGraph.class;
-            case NODE:
-                return PolyNode.class;
-            case EDGE:
-                return PolyEdge.class;
-            case PATH:
-                return PolyPath.class;
-            case DISTINCT:
-                return PolyValue.class;
-            case STRUCTURED:
-                return PolyValue.class;
-            case ROW:
-                return PolyList.class;
-            case OTHER:
-                return PolyValue.class;
-            case CURSOR:
-                return PolyValue.class;
-            case COLUMN_LIST:
-                return PolyList.class;
-            case DYNAMIC_STAR:
-                return PolyValue.class;
-            case GEOMETRY:
-                return PolyGeometry.class;
-            case FILE:
-            case IMAGE:
-            case VIDEO:
-            case AUDIO:
-                return PolyBlob.class;
-            case JSON:
-                return PolyString.class;
-        }
-        throw new NotImplementedException( "value" );
+        return switch ( polyType ) {
+            case BOOLEAN -> PolyBoolean.class;
+            case TINYINT -> PolyInteger.class;
+            case SMALLINT -> PolyInteger.class;
+            case INTEGER -> PolyInteger.class;
+            case BIGINT -> PolyLong.class;
+            case DECIMAL -> PolyBigDecimal.class;
+            case FLOAT -> PolyFloat.class;
+            case REAL -> PolyFloat.class;
+            case DOUBLE -> PolyDouble.class;
+            case DATE -> PolyDate.class;
+            case TIME -> PolyTime.class;
+            case TIME_WITH_LOCAL_TIME_ZONE -> PolyTime.class;
+            case TIMESTAMP -> PolyTimestamp.class;
+            case TIMESTAMP_WITH_LOCAL_TIME_ZONE -> PolyTimestamp.class;
+            case INTERVAL_YEAR -> PolyInterval.class;
+            case INTERVAL_YEAR_MONTH -> PolyInterval.class;
+            case INTERVAL_MONTH -> PolyInterval.class;
+            case INTERVAL_DAY -> PolyInterval.class;
+            case INTERVAL_DAY_HOUR -> PolyInterval.class;
+            case INTERVAL_DAY_MINUTE -> PolyInterval.class;
+            case INTERVAL_DAY_SECOND -> PolyInterval.class;
+            case INTERVAL_HOUR -> PolyInterval.class;
+            case INTERVAL_HOUR_MINUTE -> PolyInterval.class;
+            case INTERVAL_HOUR_SECOND -> PolyInterval.class;
+            case INTERVAL_MINUTE -> PolyInterval.class;
+            case INTERVAL_MINUTE_SECOND -> PolyInterval.class;
+            case INTERVAL_SECOND -> PolyInterval.class;
+            case CHAR -> PolyString.class;
+            case VARCHAR -> PolyString.class;
+            case BINARY -> PolyBinary.class;
+            case VARBINARY -> PolyBinary.class;
+            case NULL -> PolyNull.class;
+            case ANY -> PolyValue.class;
+            case SYMBOL -> PolySymbol.class;
+            case MULTISET -> PolyList.class;
+            case ARRAY -> PolyList.class;
+            case MAP -> PolyMap.class;
+            case DOCUMENT -> PolyDocument.class;
+            case GRAPH -> PolyGraph.class;
+            case NODE -> PolyNode.class;
+            case EDGE -> PolyEdge.class;
+            case PATH -> PolyPath.class;
+            case DISTINCT -> PolyValue.class;
+            case STRUCTURED -> PolyValue.class;
+            case ROW -> PolyList.class;
+            case OTHER -> PolyValue.class;
+            case CURSOR -> PolyValue.class;
+            case COLUMN_LIST -> PolyList.class;
+            case DYNAMIC_STAR -> PolyValue.class;
+            case GEOMETRY -> PolyValue.class;
+            case FILE, IMAGE, VIDEO, AUDIO -> PolyBlob.class;
+            case JSON -> PolyString.class;
+            default -> throw new NotImplementedException( "value" );
+        };
     }
 
 

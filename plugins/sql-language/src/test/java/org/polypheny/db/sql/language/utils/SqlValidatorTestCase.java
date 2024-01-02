@@ -17,28 +17,31 @@
 package org.polypheny.db.sql.language.utils;
 
 
-import org.junit.rules.MethodRule;
-import org.junit.runners.model.FrameworkMethod;
-import org.junit.runners.model.Statement;
+import java.lang.reflect.Method;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.ParameterContext;
+import org.junit.jupiter.api.extension.ParameterResolver;
+import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlTestFactory;
 import org.polypheny.db.sql.language.parser.SqlParserUtil;
+import org.polypheny.db.sql.language.utils.SqlValidatorTestCase.TesterConfigurationExtension;
 import org.polypheny.db.sql.language.validate.SqlValidator;
 import org.polypheny.db.util.Conformance;
 
 
 /**
  * An abstract base class for implementing tests against {@link SqlValidator}.
- *
+ * <p>
  * A derived class can refine this test in two ways. First, it can add <code>testXxx()</code> methods, to test more functionality.
- *
+ * <p>
  * Second, it can override the {@link #getTester} method to return a different implementation of the {@link Tester} object. This encapsulates the differences between test environments, for example, which SQL parser or validator to use.
  */
+@ExtendWith(TesterConfigurationExtension.class)
 public class SqlValidatorTestCase {
-
-    public static final MethodRule TESTER_CONFIGURATION_RULE = new TesterConfigurationRule();
 
     protected SqlTester tester;
 
@@ -96,7 +99,7 @@ public class SqlValidatorTestCase {
 
     /**
      * Encapsulates differences between test environments, for example, which SQL parser or validator to use.
-     *
+     * <p>
      * It contains a mock schema with <code>EMP</code> and <code>DEPT</code> tables, which can run without having to start up Farrago.
      */
     public interface Tester {
@@ -109,9 +112,9 @@ public class SqlValidatorTestCase {
 
         /**
          * Checks that a query is valid, or, if invalid, throws the right message at the right location.
-         *
+         * <p>
          * If <code>expectedMsgPattern</code> is null, the query must succeed.
-         *
+         * <p>
          * If <code>expectedMsgPattern</code> is not null, the query must fail, and give an error location of (expectedLine, expectedColumn) through (expectedEndLine, expectedEndColumn).
          *
          * @param sql SQL statement
@@ -121,9 +124,9 @@ public class SqlValidatorTestCase {
 
         /**
          * Returns the data type of the sole column of a SQL query.
-         *
+         * <p>
          * For example, <code>getResultType("VALUES (1")</code> returns <code>INTEGER</code>.
-         *
+         * <p>
          * Fails if query returns more than one column.
          *
          * @see #getResultType(String)
@@ -132,7 +135,7 @@ public class SqlValidatorTestCase {
 
         /**
          * Returns the data type of the row returned by a SQL query.
-         *
+         * <p>
          * For example, <code>getResultType("VALUES (1, 'foo')")</code> returns <code>RecordType(INTEGER EXPR$0, CHAR(3) EXPR#1)</code>.
          */
         AlgDataType getResultType( String sql );
@@ -203,26 +206,39 @@ public class SqlValidatorTestCase {
     /**
      * Enables to configure {@link #tester} behavior on a per-test basis. {@code tester} object is created in the test object constructor, and there's no trivial way to override its features.
      * This JUnit rule enables post-process test object on a per test method basis
+     * // note dl not sure if it was even used  before
      */
-    private static class TesterConfigurationRule implements MethodRule {
+    public static class TesterConfigurationExtension implements ParameterResolver, TestExecutionExceptionHandler {
 
         @Override
-        public Statement apply( Statement statement, FrameworkMethod frameworkMethod, Object o ) {
-            return new Statement() {
-                @Override
-                public void evaluate() throws Throwable {
-                    SqlValidatorTestCase tc = (SqlValidatorTestCase) o;
-                    SqlTester tester = tc.tester;
-                    WithLex lex = frameworkMethod.getAnnotation( WithLex.class );
-                    if ( lex != null ) {
-                        tester = tester.withLex( lex.value() );
-                    }
-                    tc.tester = tester;
-                    statement.evaluate();
-                }
-            };
+        public void handleTestExecutionException( ExtensionContext context, Throwable throwable ) throws Throwable {
+            throw throwable;
+        }
+
+
+        @Override
+        public boolean supportsParameter( ParameterContext parameterContext, ExtensionContext extensionContext ) {
+            return parameterContext.getParameter().getType().equals( SqlValidatorTestCase.class );
+        }
+
+
+        @Override
+        public Object resolveParameter( ParameterContext parameterContext, ExtensionContext extensionContext ) {
+            SqlValidatorTestCase testCase = (SqlValidatorTestCase) extensionContext.getTestInstance().orElseThrow();
+            SqlTester tester = testCase.tester;
+
+            Method testMethod = extensionContext.getRequiredTestMethod();
+            WithLex lex = testMethod.getAnnotation( WithLex.class );
+
+            if ( lex != null ) {
+                tester = tester.withLex( lex.value() );
+            }
+
+            testCase.tester = tester;
+            return testCase;
         }
 
     }
+
 
 }

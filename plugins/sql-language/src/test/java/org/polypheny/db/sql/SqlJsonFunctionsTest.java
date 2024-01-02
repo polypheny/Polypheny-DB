@@ -93,11 +93,11 @@ public class SqlJsonFunctionsTest {
         assertJsonApiCommonSyntax(
                 PolyList.of( PolyString.of( "foo" ), PolyString.of( "bar" ) ),
                 PolyString.of( "lax $.foo" ),
-                contextMatches( PathContext.withReturned( Functions.PathMode.LAX, "bar" ) ) );
+                contextMatches( PathContext.withReturned( Functions.PathMode.LAX, PolyString.of( "bar" ) ) ) );
         assertJsonApiCommonSyntax(
                 PolyList.of( PolyString.of( "foo" ), PolyString.of( "bar" ) ),
                 PolyString.of( "strict $.foo" ),
-                contextMatches( PathContext.withReturned( Functions.PathMode.STRICT, "bar" ) ) );
+                contextMatches( PathContext.withReturned( Functions.PathMode.STRICT, PolyString.of( "bar" ) ) ) );
         assertJsonApiCommonSyntax(
                 PolyList.of( PolyString.of( "foo" ), PolyString.of( "bar" ) ),
                 PolyString.of( "lax $.foo1" ),
@@ -109,29 +109,29 @@ public class SqlJsonFunctionsTest {
         assertJsonApiCommonSyntax(
                 PolyList.of( PolyString.of( "foo" ), PolyInteger.of( 100 ) ),
                 PolyString.of( "lax $.foo" ),
-                contextMatches( PathContext.withReturned( Functions.PathMode.LAX, 100 ) ) );
+                contextMatches( PathContext.withReturned( Functions.PathMode.LAX, PolyInteger.of( 100 ) ) ) );
     }
 
 
     @Test
     public void testJsonExists() {
         assertJsonExists(
-                PathContext.withReturned( Functions.PathMode.STRICT, "bar" ),
+                PathContext.withReturned( Functions.PathMode.STRICT, PolyString.of( "bar" ) ),
                 JsonExistsErrorBehavior.FALSE,
                 is( true ) );
 
         assertJsonExists(
-                PathContext.withReturned( Functions.PathMode.STRICT, "bar" ),
+                PathContext.withReturned( Functions.PathMode.STRICT, PolyString.of( "bar" ) ),
                 JsonExistsErrorBehavior.TRUE,
                 is( true ) );
 
         assertJsonExists(
-                PathContext.withReturned( Functions.PathMode.STRICT, "bar" ),
+                PathContext.withReturned( Functions.PathMode.STRICT, PolyString.of( "bar" ) ),
                 JsonExistsErrorBehavior.UNKNOWN,
                 is( true ) );
 
         assertJsonExists(
-                PathContext.withReturned( Functions.PathMode.STRICT, "bar" ),
+                PathContext.withReturned( Functions.PathMode.STRICT, PolyString.of( "bar" ) ),
                 JsonExistsErrorBehavior.ERROR,
                 is( true ) );
 
@@ -180,7 +180,7 @@ public class SqlJsonFunctionsTest {
     @Test
     public void testJsonValueAny() {
         assertJsonValueAny(
-                PathContext.withReturned( Functions.PathMode.LAX, "bar" ),
+                PathContext.withReturned( Functions.PathMode.LAX, PolyString.of( "bar" ) ),
                 JsonValueEmptyOrErrorBehavior.NULL,
                 null,
                 JsonValueEmptyOrErrorBehavior.NULL,
@@ -208,21 +208,21 @@ public class SqlJsonFunctionsTest {
                 null,
                 errorMatches( new PolyphenyDbException( "Empty result of JSON_VALUE function is not allowed", null ) ) );
         assertJsonValueAny(
-                PathContext.withReturned( Functions.PathMode.LAX, Collections.emptyList() ),
+                PathContext.withReturned( Functions.PathMode.LAX, PolyList.EMPTY_LIST ),
                 JsonValueEmptyOrErrorBehavior.NULL,
                 null,
                 JsonValueEmptyOrErrorBehavior.NULL,
                 null,
                 nullValue() );
         assertJsonValueAny(
-                PathContext.withReturned( Functions.PathMode.LAX, Collections.emptyList() ),
+                PathContext.withReturned( Functions.PathMode.LAX, PolyList.EMPTY_LIST ),
                 JsonValueEmptyOrErrorBehavior.DEFAULT,
                 PolyString.of( "empty" ),
                 JsonValueEmptyOrErrorBehavior.NULL,
                 null,
                 is( "empty" ) );
         assertJsonValueAnyFailed(
-                PathContext.withReturned( Functions.PathMode.LAX, Collections.emptyList() ),
+                PathContext.withReturned( Functions.PathMode.LAX, PolyList.EMPTY_LIST ),
                 JsonValueEmptyOrErrorBehavior.ERROR,
                 null,
                 JsonValueEmptyOrErrorBehavior.NULL,
@@ -240,7 +240,7 @@ public class SqlJsonFunctionsTest {
                 JsonValueEmptyOrErrorBehavior.NULL,
                 null,
                 JsonValueEmptyOrErrorBehavior.DEFAULT,
-                "empty",
+                PolyString.of( "empty" ),
                 is( "empty" ) );
         assertJsonValueAnyFailed(
                 PathContext.withStrictException( new Exception( "test message" ) ),
@@ -250,21 +250,21 @@ public class SqlJsonFunctionsTest {
                 null,
                 errorMatches( new RuntimeException( "java.lang.Exception: test message" ) ) );
         assertJsonValueAny(
-                PathContext.withReturned( Functions.PathMode.STRICT, Collections.emptyList() ),
+                PathContext.withReturned( Functions.PathMode.STRICT, PolyList.EMPTY_LIST ),
                 JsonValueEmptyOrErrorBehavior.NULL,
                 null,
                 JsonValueEmptyOrErrorBehavior.NULL,
                 null,
                 nullValue() );
         assertJsonValueAny(
-                PathContext.withReturned( Functions.PathMode.STRICT, Collections.emptyList() ),
+                PathContext.withReturned( Functions.PathMode.STRICT, PolyList.EMPTY_LIST ),
                 JsonValueEmptyOrErrorBehavior.NULL,
                 null,
                 JsonValueEmptyOrErrorBehavior.DEFAULT,
-                "empty",
+                PolyString.of( "empty" ),
                 is( "empty" ) );
         assertJsonValueAnyFailed(
-                PathContext.withReturned( Functions.PathMode.STRICT, Collections.emptyList() ),
+                PathContext.withReturned( Functions.PathMode.STRICT, PolyList.EMPTY_LIST ),
                 JsonValueEmptyOrErrorBehavior.NULL,
                 null,
                 JsonValueEmptyOrErrorBehavior.ERROR,
@@ -277,7 +277,7 @@ public class SqlJsonFunctionsTest {
     @Test
     public void testJsonQuery() {
         assertJsonQuery(
-                PathContext.withReturned( Functions.PathMode.LAX, Collections.singletonList( "bar" ) ),
+                PathContext.withReturned( Functions.PathMode.LAX, PolyList.of( PolyString.of( "bar" ) ) ),
                 JsonQueryWrapperBehavior.WITHOUT_ARRAY,
                 JsonQueryEmptyOrErrorBehavior.NULL,
                 JsonQueryEmptyOrErrorBehavior.NULL,
@@ -308,25 +308,25 @@ public class SqlJsonFunctionsTest {
                 errorMatches( new PolyphenyDbException( "Empty result of JSON_QUERY function is not allowed", null ) ) );
 
         assertJsonQuery(
-                PathContext.withReturned( Functions.PathMode.LAX, "bar" ),
+                PathContext.withReturned( Functions.PathMode.LAX, PolyString.of( "bar" ) ),
                 JsonQueryWrapperBehavior.WITHOUT_ARRAY,
                 JsonQueryEmptyOrErrorBehavior.NULL,
                 JsonQueryEmptyOrErrorBehavior.NULL,
                 nullValue() );
         assertJsonQuery(
-                PathContext.withReturned( Functions.PathMode.LAX, "bar" ),
+                PathContext.withReturned( Functions.PathMode.LAX, PolyString.of( "bar" ) ),
                 JsonQueryWrapperBehavior.WITHOUT_ARRAY,
                 JsonQueryEmptyOrErrorBehavior.EMPTY_ARRAY,
                 JsonQueryEmptyOrErrorBehavior.NULL,
                 is( "[]" ) );
         assertJsonQuery(
-                PathContext.withReturned( Functions.PathMode.LAX, "bar" ),
+                PathContext.withReturned( Functions.PathMode.LAX, PolyString.of( "bar" ) ),
                 JsonQueryWrapperBehavior.WITHOUT_ARRAY,
                 JsonQueryEmptyOrErrorBehavior.EMPTY_OBJECT,
                 JsonQueryEmptyOrErrorBehavior.NULL,
                 is( "{}" ) );
         assertJsonQueryFailed(
-                PathContext.withReturned( Functions.PathMode.LAX, "bar" ),
+                PathContext.withReturned( Functions.PathMode.LAX, PolyString.of( "bar" ) ),
                 JsonQueryWrapperBehavior.WITHOUT_ARRAY,
                 JsonQueryEmptyOrErrorBehavior.ERROR,
                 JsonQueryEmptyOrErrorBehavior.NULL,
@@ -350,19 +350,19 @@ public class SqlJsonFunctionsTest {
                 JsonQueryEmptyOrErrorBehavior.ERROR,
                 errorMatches( new RuntimeException( "java.lang.Exception: test message" ) ) );
         assertJsonQuery(
-                PathContext.withReturned( Functions.PathMode.STRICT, "bar" ),
+                PathContext.withReturned( Functions.PathMode.STRICT, PolyString.of( "bar" ) ),
                 JsonQueryWrapperBehavior.WITHOUT_ARRAY,
                 JsonQueryEmptyOrErrorBehavior.NULL,
                 JsonQueryEmptyOrErrorBehavior.NULL,
                 nullValue() );
         assertJsonQuery(
-                PathContext.withReturned( Functions.PathMode.STRICT, "bar" ),
+                PathContext.withReturned( Functions.PathMode.STRICT, PolyString.of( "bar" ) ),
                 JsonQueryWrapperBehavior.WITHOUT_ARRAY,
                 JsonQueryEmptyOrErrorBehavior.NULL,
                 JsonQueryEmptyOrErrorBehavior.EMPTY_ARRAY,
                 is( "[]" ) );
         assertJsonQueryFailed(
-                PathContext.withReturned( Functions.PathMode.STRICT, "bar" ),
+                PathContext.withReturned( Functions.PathMode.STRICT, PolyString.of( "bar" ) ),
                 JsonQueryWrapperBehavior.WITHOUT_ARRAY,
                 JsonQueryEmptyOrErrorBehavior.NULL,
                 JsonQueryEmptyOrErrorBehavior.ERROR,
@@ -371,28 +371,28 @@ public class SqlJsonFunctionsTest {
         // wrapper behavior test
 
         assertJsonQuery(
-                PathContext.withReturned( Functions.PathMode.STRICT, "bar" ),
+                PathContext.withReturned( Functions.PathMode.STRICT, PolyString.of( "bar" ) ),
                 JsonQueryWrapperBehavior.WITH_UNCONDITIONAL_ARRAY,
                 JsonQueryEmptyOrErrorBehavior.NULL,
                 JsonQueryEmptyOrErrorBehavior.NULL,
                 is( "[\"bar\"]" ) );
 
         assertJsonQuery(
-                PathContext.withReturned( Functions.PathMode.STRICT, "bar" ),
+                PathContext.withReturned( Functions.PathMode.STRICT, PolyString.of( "bar" ) ),
                 JsonQueryWrapperBehavior.WITH_CONDITIONAL_ARRAY,
                 JsonQueryEmptyOrErrorBehavior.NULL,
                 JsonQueryEmptyOrErrorBehavior.NULL,
                 is( "[\"bar\"]" ) );
 
         assertJsonQuery(
-                PathContext.withReturned( Functions.PathMode.STRICT, Collections.singletonList( "bar" ) ),
+                PathContext.withReturned( Functions.PathMode.STRICT, PolyList.of( PolyString.of( "bar" ) ) ),
                 JsonQueryWrapperBehavior.WITH_UNCONDITIONAL_ARRAY,
                 JsonQueryEmptyOrErrorBehavior.NULL,
                 JsonQueryEmptyOrErrorBehavior.NULL,
                 is( "[[\"bar\"]]" ) );
 
         assertJsonQuery(
-                PathContext.withReturned( Functions.PathMode.STRICT, Collections.singletonList( "bar" ) ),
+                PathContext.withReturned( Functions.PathMode.STRICT, PolyList.of( PolyString.of( "bar" ) ) ),
                 JsonQueryWrapperBehavior.WITH_CONDITIONAL_ARRAY,
                 JsonQueryEmptyOrErrorBehavior.NULL,
                 JsonQueryEmptyOrErrorBehavior.NULL,
@@ -495,7 +495,7 @@ public class SqlJsonFunctionsTest {
     private void assertJsonValueExpression( String input, Matcher<Object> matcher ) {
         assertThat(
                 invocationDesc( INVOC_DESC_JSON_VALUE_EXPRESSION, input ),
-                Functions.jsonValueExpression( input ), matcher );
+                Functions.jsonValueExpression( PolyString.of( input ) ), matcher );
     }
 
 
@@ -523,7 +523,7 @@ public class SqlJsonFunctionsTest {
     }
 
 
-    private void assertJsonValueAny( PathContext input, JsonValueEmptyOrErrorBehavior emptyBehavior, PolyValue defaultValueOnEmpty, JsonValueEmptyOrErrorBehavior errorBehavior, Object defaultValueOnError, Matcher<Object> matcher ) {
+    private void assertJsonValueAny( PathContext input, JsonValueEmptyOrErrorBehavior emptyBehavior, PolyValue defaultValueOnEmpty, JsonValueEmptyOrErrorBehavior errorBehavior, PolyValue defaultValueOnError, Matcher<Object> matcher ) {
         assertThat(
                 invocationDesc( INVOC_DESC_JSON_VALUE_ANY, input, emptyBehavior, defaultValueOnEmpty, errorBehavior, defaultValueOnError ),
                 Functions.jsonValueAny( input, emptyBehavior, defaultValueOnEmpty, errorBehavior, defaultValueOnError ),
@@ -531,7 +531,7 @@ public class SqlJsonFunctionsTest {
     }
 
 
-    private void assertJsonValueAnyFailed( PathContext input, JsonValueEmptyOrErrorBehavior emptyBehavior, PolyValue defaultValueOnEmpty, JsonValueEmptyOrErrorBehavior errorBehavior, Object defaultValueOnError, Matcher<? super Throwable> matcher ) {
+    private void assertJsonValueAnyFailed( PathContext input, JsonValueEmptyOrErrorBehavior emptyBehavior, PolyValue defaultValueOnEmpty, JsonValueEmptyOrErrorBehavior errorBehavior, PolyValue defaultValueOnError, Matcher<? super Throwable> matcher ) {
         assertFailed(
                 invocationDesc( INVOC_DESC_JSON_VALUE_ANY, input, emptyBehavior, defaultValueOnEmpty, errorBehavior, defaultValueOnError ),
                 () -> Functions.jsonValueAny( input, emptyBehavior, defaultValueOnEmpty, errorBehavior, defaultValueOnError ),
@@ -561,12 +561,12 @@ public class SqlJsonFunctionsTest {
 
 
     private void assertDejsonize( String input, Matcher<Object> matcher ) {
-        assertThat( invocationDesc( INVOC_DESC_DEJSONIZE, input ), Functions.dejsonize( input ), matcher );
+        assertThat( invocationDesc( INVOC_DESC_DEJSONIZE, input ), Functions.dejsonize( PolyString.of( input ) ), matcher );
     }
 
 
     private void assertDejsonizeFailed( String input, Matcher<? super Throwable> matcher ) {
-        assertFailed( invocationDesc( INVOC_DESC_DEJSONIZE, input ), () -> Functions.dejsonize( input ), matcher );
+        assertFailed( invocationDesc( INVOC_DESC_DEJSONIZE, input ), () -> Functions.dejsonize( PolyString.of( input ) ), matcher );
     }
 
 
@@ -575,7 +575,7 @@ public class SqlJsonFunctionsTest {
     }
 
 
-    private void assertJsonObjectAggAdd( Map map, String k, Object v, JsonConstructorNullClause nullClause, Matcher<? super Map> matcher ) {
+    private void assertJsonObjectAggAdd( Map<?, ?> map, String k, Object v, JsonConstructorNullClause nullClause, Matcher<? super Map<?, ?>> matcher ) {
         Functions.jsonObjectAggAdd( map, k, v, nullClause );
         assertThat(
                 invocationDesc( INVOC_DESC_JSON_OBJECT_AGG_ADD, map, k, v, nullClause ), map, matcher );
@@ -587,7 +587,7 @@ public class SqlJsonFunctionsTest {
     }
 
 
-    private void assertJsonArrayAggAdd( List list, Object element, JsonConstructorNullClause nullClause, Matcher<? super List> matcher ) {
+    private void assertJsonArrayAggAdd( List<?> list, Object element, JsonConstructorNullClause nullClause, Matcher<? super List<?>> matcher ) {
         Functions.jsonArrayAggAdd( list, element, nullClause );
         assertThat(
                 invocationDesc( INVOC_DESC_JSON_ARRAY_AGG_ADD, list, element, nullClause ),
@@ -598,7 +598,7 @@ public class SqlJsonFunctionsTest {
     private void assertIsJsonValue( String input, Matcher<? super Boolean> matcher ) {
         assertThat(
                 invocationDesc( INVOC_DESC_IS_JSON_VALUE, input ),
-                Functions.isJsonValue( input ),
+                Functions.isJsonValue( PolyString.of( input ) ),
                 matcher );
     }
 
@@ -606,7 +606,7 @@ public class SqlJsonFunctionsTest {
     private void assertIsJsonScalar( String input, Matcher<? super Boolean> matcher ) {
         assertThat(
                 invocationDesc( INVOC_DESC_IS_JSON_SCALAR, input ),
-                Functions.isJsonScalar( input ),
+                Functions.isJsonScalar( PolyString.of( input ) ),
                 matcher );
     }
 
@@ -614,7 +614,7 @@ public class SqlJsonFunctionsTest {
     private void assertIsJsonArray( String input, Matcher<? super Boolean> matcher ) {
         assertThat(
                 invocationDesc( INVOC_DESC_IS_JSON_ARRAY, input ),
-                Functions.isJsonArray( input ),
+                Functions.isJsonArray( PolyString.of( input ) ),
                 matcher );
     }
 
@@ -622,7 +622,7 @@ public class SqlJsonFunctionsTest {
     private void assertIsJsonObject( String input, Matcher<? super Boolean> matcher ) {
         assertThat(
                 invocationDesc( INVOC_DESC_IS_JSON_OBJECT, input ),
-                Functions.isJsonObject( input ),
+                Functions.isJsonObject( PolyString.of( input ) ),
                 matcher );
     }
 

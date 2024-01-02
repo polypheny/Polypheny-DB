@@ -20,10 +20,10 @@ package org.polypheny.db.sql;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.Arrays;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgCollation;
@@ -99,7 +99,7 @@ public final class SortRemoveRuleTest extends SqlLanguageDependent {
 
     /**
      * Test case for "Enrich enumerable join operators with order preserving information".
-     *
+     * <p>
      * Since join inputs are sorted, and this join preserves the order of the left input, there shouldn't be any sort operator above the join.
      */
     @Test
@@ -123,7 +123,7 @@ public final class SortRemoveRuleTest extends SqlLanguageDependent {
 
     /**
      * Test case for "Enrich enumerable join operators with order preserving information".
-     *
+     * <p>
      * Since join inputs are sorted, and this join preserves the order of the left input, there shouldn't be any sort operator above the join.
      */
     @Test
@@ -148,7 +148,7 @@ public final class SortRemoveRuleTest extends SqlLanguageDependent {
 
     /**
      * Test case for "Enrich enumerable join operators with order preserving information".
-     *
+     * <p>
      * Since join inputs are sorted, and this join preserves the order of the left input, there shouldn't be any sort operator above the join.
      */
     @Test
@@ -174,7 +174,7 @@ public final class SortRemoveRuleTest extends SqlLanguageDependent {
 
     /**
      * Test case for "Enrich enumerable join operators with order preserving information".
-     *
+     * <p>
      * Since join inputs are sorted, and this join preserves the order of the left input, there shouldn't be any sort operator above the join.
      */
     @Test
@@ -189,9 +189,10 @@ public final class SortRemoveRuleTest extends SqlLanguageDependent {
                         EnumerableRules.ENUMERABLE_SEMI_JOIN_RULE,
                         EnumerableRules.ENUMERABLE_FILTER_RULE,
                         EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE );
-        String sql = "select e.\"deptno\", e.\"empid\" from \"hr\".\"emps\" e\n"
-                + " where e.\"deptno\" in (select d.\"deptno\" from \"hr\".\"depts\" d)\n"
-                + " order by e.\"empid\"";
+        String sql = """
+                select e."deptno", e."empid" from "hr"."emps" e
+                 where e."deptno" in (select d."deptno" from "hr"."depts" d)
+                 order by e."empid\"""";
         AlgNode actualPlan = transform( sql, prepareRules );
         assertThat(
                 toString( actualPlan ),

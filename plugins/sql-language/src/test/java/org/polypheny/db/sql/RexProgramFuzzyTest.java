@@ -17,8 +17,8 @@
 package org.polypheny.db.sql;
 
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -33,9 +33,9 @@ import java.util.Random;
 import java.util.Set;
 import javax.annotation.Nonnull;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
@@ -59,7 +59,7 @@ import org.polypheny.db.util.ImmutableBitSet;
  *
  * Note: The test is ignored since it would fail every build (there are lots of issues with {@link RexSimplify})
  */
-@Ignore
+@Disabled
 @Slf4j
 public class RexProgramFuzzyTest extends RexProgramBuilderBase {
 
@@ -119,7 +119,7 @@ public class RexProgramFuzzyTest extends RexProgramBuilderBase {
 
 
     @Override
-    @Before
+    @BeforeEach
     public void setUp() {
         super.setUp();
     }
@@ -217,12 +217,12 @@ public class RexProgramFuzzyTest extends RexProgramBuilderBase {
         }
         if ( node.isAlwaysTrue() ) {
             if ( !trueLiteral.equals( opt ) ) {
-                assertEquals( nodeToString( node ) + " isAlwaysTrue, so it should simplify to TRUE " + uaf, trueLiteral, opt );
+                assertEquals( trueLiteral, opt, nodeToString( node ) + " isAlwaysTrue, so it should simplify to TRUE " + uaf );
             }
         }
         if ( node.isAlwaysFalse() ) {
             if ( !falseLiteral.equals( opt ) ) {
-                assertEquals( nodeToString( node ) + " isAlwaysFalse, so it should simplify to FALSE " + uaf, falseLiteral, opt );
+                assertEquals( falseLiteral, opt, nodeToString( node ) + " isAlwaysFalse, so it should simplify to FALSE " + uaf );
             }
         }
         if ( STRONG.isNull( node ) ) {
@@ -230,28 +230,28 @@ public class RexProgramFuzzyTest extends RexProgramBuilderBase {
                 case FALSE:
                     if ( node.getType().getPolyType() == PolyType.BOOLEAN ) {
                         if ( !falseLiteral.equals( opt ) ) {
-                            assertEquals( nodeToString( node ) + " is always null boolean, so it should simplify to FALSE " + uaf, falseLiteral, opt );
+                            assertEquals( falseLiteral, opt, nodeToString( node ) + " is always null boolean, so it should simplify to FALSE " + uaf );
                         }
                     } else {
                         if ( !RexLiteral.isNullLiteral( opt ) ) {
-                            assertEquals( nodeToString( node ) + " is always null (non boolean), so it should simplify to NULL " + uaf, rexBuilder.makeNullLiteral( node.getType() ), opt );
+                            assertEquals( rexBuilder.makeNullLiteral( node.getType() ), opt, nodeToString( node ) + " is always null (non boolean), so it should simplify to NULL " + uaf );
                         }
                     }
                     break;
                 case TRUE:
                     if ( node.getType().getPolyType() == PolyType.BOOLEAN ) {
                         if ( !trueLiteral.equals( opt ) ) {
-                            assertEquals( nodeToString( node ) + " is always null boolean, so it should simplify to TRUE " + uaf, trueLiteral, opt );
+                            assertEquals( trueLiteral, opt, nodeToString( node ) + " is always null boolean, so it should simplify to TRUE " + uaf );
                         }
                     } else {
                         if ( !RexLiteral.isNullLiteral( opt ) ) {
-                            assertEquals( nodeToString( node ) + " is always null (non boolean), so it should simplify to NULL " + uaf, rexBuilder.makeNullLiteral( node.getType() ), opt );
+                            assertEquals( rexBuilder.makeNullLiteral( node.getType() ), opt, nodeToString( node ) + " is always null (non boolean), so it should simplify to NULL " + uaf );
                         }
                     }
                     break;
                 case UNKNOWN:
                     if ( !RexUtil.isNull( opt ) ) {
-                        assertEquals( nodeToString( node ) + " is always null, so it should simplify to NULL " + uaf, nullBool, opt );
+                        assertEquals( nullBool, opt, nodeToString( node ) + " is always null, so it should simplify to NULL " + uaf );
                     }
             }
         }
@@ -259,22 +259,18 @@ public class RexProgramFuzzyTest extends RexProgramBuilderBase {
             fail( nodeToString( node ) + " had non-nullable type " + opt.getType() + ", and it was optimized to " + nodeToString( opt ) + " that has nullable type " + opt.getType() + ", " + uaf );
         }
         if ( !PolyTypeUtil.equalSansNullability( typeFactory, node.getType(), opt.getType() ) ) {
-            assertEquals( nodeToString( node ) + " has different type after simplification to " + nodeToString( opt ), node.getType(), opt.getType() );
+            assertEquals( node.getType(), opt.getType(), nodeToString( node ) + " has different type after simplification to " + nodeToString( opt ) );
         }
     }
 
 
     @Nonnull
     private String unknownAsString( RexUnknownAs unknownAs ) {
-        switch ( unknownAs ) {
-            case UNKNOWN:
-            default:
-                return "";
-            case FALSE:
-                return "unknownAsFalse";
-            case TRUE:
-                return "unknownAsTrue";
-        }
+        return switch ( unknownAs ) {
+            default -> "";
+            case FALSE -> "unknownAsFalse";
+            case TRUE -> "unknownAsTrue";
+        };
     }
 
 
@@ -405,7 +401,7 @@ public class RexProgramFuzzyTest extends RexProgramBuilderBase {
     }
 
 
-    @Ignore("This is just a scaffold for quick investigation of a single fuzz test")
+    @Disabled("This is just a scaffold for quick investigation of a single fuzz test")
     @Test
     public void singleFuzzyTest() {
         Random r = new Random();

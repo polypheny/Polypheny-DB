@@ -29,8 +29,6 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import org.apache.calcite.avatica.util.Spaces;
-import org.junit.Assert;
-import org.junit.ComparisonFailure;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Sources;
 import org.polypheny.db.util.Util;
@@ -377,8 +375,8 @@ public class DiffRepository {
                 // TODO jvs 25-Apr-2006:  reuse bulk of DiffTestCase.diffTestLog here; besides newline insensitivity, it can report on the line at which the first diff occurs, which is useful for largish snippets
                 String expected2Canonical = expected2.replace( Util.LINE_SEPARATOR, "\n" );
                 String actualCanonical = actual.replace( Util.LINE_SEPARATOR, "\n" );
-                Assert.assertEquals( tag, expected2Canonical, actualCanonical );
-            } catch ( ComparisonFailure e ) {
+                assertEquals( tag, expected2Canonical, actualCanonical );
+            } catch ( Exception e ) {
                 amend( expected, actual );
                 throw e;
             }

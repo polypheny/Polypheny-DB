@@ -34,7 +34,11 @@
 package org.polypheny.db.sql.language;
 
 
-import org.junit.Test;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
@@ -42,10 +46,6 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.sql.language.parser.SqlAbstractParserImpl;
 import org.polypheny.db.sql.language.parser.SqlParser;
 import org.polypheny.db.util.SourceStringReader;
-
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
 
 
 /**
@@ -76,9 +76,8 @@ public class SqlSetOptionOperatorTest {
 
     private static void checkSqlSetOptionSame( Node node ) {
         SqlSetOption opt = (SqlSetOption) node;
-        SqlNode[] sqlNodes = new SqlNode[opt.getOperandList().size()];
-        SqlCall returned = (SqlCall) opt.getOperator().createCall( opt.getFunctionQuantifier(), opt.getPos(), opt.getOperandList().toArray( sqlNodes ) );
-        assertThat( opt.getClass(), equalTo( (Class) returned.getClass() ) );
+        SqlCall returned = (SqlCall) opt.getOperator().createCall( opt.getFunctionQuantifier(), opt.getPos(), opt.getOperandList().toArray( Node[]::new ) );
+        assertThat( opt.getClass(), equalTo( (Class<?>) returned.getClass() ) );
         SqlSetOption optRet = (SqlSetOption) returned;
         assertThat( optRet.getScope(), is( opt.getScope() ) );
         assertThat( optRet.getName(), is( opt.getName() ) );

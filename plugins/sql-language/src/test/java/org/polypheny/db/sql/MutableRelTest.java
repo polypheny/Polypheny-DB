@@ -17,10 +17,12 @@
 package org.polypheny.db.sql;
 
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.AlgDecorrelator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
@@ -158,10 +160,11 @@ public class MutableRelTest {
 
     @Test
     public void testConvertSemiJoin() {
-        final String sql = "select * from dept where exists (\n"
-                + "  select * from emp\n"
-                + "  where emp.deptno = dept.deptno\n"
-                + "  and emp.sal > 100)";
+        final String sql = """
+                select * from dept where exists (
+                  select * from emp
+                  where emp.deptno = dept.deptno
+                  and emp.sal > 100)""";
         checkConvertMutableAlg(
                 "SemiJoin",
                 sql,
@@ -172,10 +175,11 @@ public class MutableRelTest {
 
     @Test
     public void testConvertCorrelate() {
-        final String sql = "select * from dept where exists (\n"
-                + "  select * from emp\n"
-                + "  where emp.deptno = dept.deptno\n"
-                + "  and emp.sal > 100)";
+        final String sql = """
+                select * from dept where exists (
+                  select * from emp
+                  where emp.deptno = dept.deptno
+                  and emp.sal > 100)""";
         checkConvertMutableAlg( "Correlate", sql );
     }
 
@@ -236,23 +240,23 @@ public class MutableRelTest {
         // Check if the mutable alg digest contains the target alg.
         final String mutableRelStr = mutableRel.deep();
         final String msg1 = "Mutable rel: " + mutableRelStr + " does not contain target rel: " + alg;
-        Assert.assertTrue( msg1, mutableRelStr.contains( alg ) );
+        assertTrue( mutableRelStr.contains( alg ), msg1 );
 
         // Check if the mutable rel's row-type is identical to the original rel's row-type.
         final AlgDataType origRelType = origRel.getTupleType();
         final AlgDataType mutableRelType = mutableRel.rowType;
         final String msg2 = "Mutable rel's row type does not match with the original alg.\n"
                 + "Original alg type: " + origRelType + ";\nMutable alg type: " + mutableRelType;
-        Assert.assertTrue(
-                msg2,
-                AlgOptUtil.equal( "origRelType", origRelType, "mutableRelType", mutableRelType, Litmus.IGNORE ) );
+        assertTrue(
+                AlgOptUtil.equal( "origRelType", origRelType, "mutableRelType", mutableRelType, Litmus.IGNORE ),
+                msg2 );
 
         // Check if the new alg converted from the mutable alg is identical to the original alg.
         final String origRelStr = AlgOptUtil.toString( origRel );
         final String newRelStr = AlgOptUtil.toString( newRel );
         final String msg3 = "The converted new alg is different from the original alg.\n"
                 + "Original rel: " + origRelStr + ";\nNew rel: " + newRelStr;
-        Assert.assertEquals( msg3, origRelStr, newRelStr );
+        assertEquals( msg3, origRelStr, newRelStr );
     }
 
 }

@@ -142,6 +142,10 @@ allprojects {
         testRuntimeOnly(group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: junit_jupiter_version)
     }
 
+    test {
+        useJUnitPlatform()
+    }
+
     licenseReport {
         generateJsonReport = true
         generateCsvReport = false

@@ -16,8 +16,9 @@
 
 package org.polypheny.db.sql;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
 import java.sql.Date;
@@ -280,13 +281,13 @@ public class TestFixture {
 
     void checkImplies( RexNode node1, RexNode node2 ) {
         final String message = node1 + " does not imply " + node2 + " when it should";
-        assertTrue( message, checker.implies( node1, node2 ) );
+        assertTrue( checker.implies( node1, node2 ), message );
     }
 
 
     void checkNotImplies( RexNode node1, RexNode node2 ) {
         final String message = node1 + " does implies " + node2 + " when it should not";
-        assertFalse( message, checker.implies( node1, node2 ) );
+        assertFalse( checker.implies( node1, node2 ), message );
     }
 
 }

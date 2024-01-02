@@ -65,6 +65,11 @@ public class PolyDate extends PolyTemporal {
     }
 
 
+    public static PolyValue ofDays( int days ) {
+        return new PolyDate( days * 24L * 60 * 60 * 1000 );
+    }
+
+
     public Date asDefaultDate() {
         return new Date( milliSinceEpoch );
     }
