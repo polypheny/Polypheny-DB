@@ -39,7 +39,9 @@ public class CowHashIndexTest {
 
     @BeforeAll
     public static void init() {
-        PolyphenyHomeDirManager.setModeAndGetInstance( PolyMode.TEST );
+        if ( PolyphenyHomeDirManager.getMode() == null ) {
+            PolyphenyHomeDirManager.setModeAndGetInstance( PolyMode.TEST );
+        }
     }
 
     @Test

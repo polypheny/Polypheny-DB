@@ -381,9 +381,9 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
             setTimeoutIfPossible( preparedStatement );
             if ( preparedStatementEnricher.enrich( preparedStatement, connectionHandler ) ) {
                 // batch
-                preparedStatement.executeBatch();
-                int updateCount = preparedStatement.getUpdateCount();
-                return Linq4j.singletonEnumerator( new PolyValue[]{ PolyLong.of( updateCount ) } );
+                int[] count = preparedStatement.executeBatch();
+                //int updateCount = preparedStatement.getUpdateCount();
+                return Linq4j.singletonEnumerator( new PolyValue[]{ PolyLong.of( count.length ) } );
             } else {
                 if ( preparedStatement.execute() ) {
                     final ResultSet resultSet = preparedStatement.getResultSet();
@@ -488,11 +488,7 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                     final Statement statement = savedResultSet.getStatement();
                     savedResultSet.close();
                     if ( statement != null ) {
-                        //final Connection connection = statement.getConnection();
                         statement.close();
-                        /*if ( connection != null ) {
-                            connection.close();
-                        }*/
                     }
                 } catch ( SQLException e ) {
                     // ignore
@@ -516,7 +512,6 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
             assert columnCount == primitives.length;
             if ( columnCount == 1 ) {
                 return () -> {
-                    //return metaData.getColumnType( 0 ) resultSet.getObject( 1 );
                     throw new NotImplementedException();
                 };
             }

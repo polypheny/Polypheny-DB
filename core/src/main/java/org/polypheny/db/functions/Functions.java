@@ -73,7 +73,6 @@ import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.linq4j.AbstractEnumerable;
-import org.apache.calcite.linq4j.CartesianProductEnumerator;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
@@ -84,12 +83,9 @@ import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.function.Function2;
 import org.apache.calcite.linq4j.function.NonDeterministic;
 import org.apache.calcite.linq4j.function.Predicate2;
-import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.bson.BsonDocument;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.enumerable.JavaRowFormat;
 import org.polypheny.db.algebra.exceptions.ConstraintViolationException;
@@ -102,10 +98,10 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.functions.util.ProductPolyListEnumerator;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.runtime.ComparableList;
 import org.polypheny.db.runtime.Like;
-import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.PolyBinary;
@@ -3511,7 +3507,8 @@ public class Functions {
     }
 
 
-    public static <T extends Comparable<T>> Function1<?, Enumerable<?>> flatProduct( final int[] fieldCounts, final boolean withOrdinality, final FlatProductInputType[] inputTypes ) {
+    @SuppressWarnings("unused")
+    public static Function1<?, Enumerable<?>> flatProduct( final int[] fieldCounts, final boolean withOrdinality, final FlatProductInputType[] inputTypes ) {
         if ( fieldCounts.length == 1 ) {
             if ( !withOrdinality && inputTypes[0] == FlatProductInputType.SCALAR ) {
                 return LIST_AS_ENUMERABLE;
@@ -3523,8 +3520,8 @@ public class Functions {
     }
 
 
-    private static <E extends Comparable<E>> Enumerable<ComparableList<E>> p2( Object[] lists, int[] fieldCounts, boolean withOrdinality, FlatProductInputType[] inputTypes ) {
-        final List<Enumerator<List<E>>> enumerators = new ArrayList<>();
+    private static <E extends PolyValue> Enumerable<PolyList<E>> p2( Object[] lists, int[] fieldCounts, boolean withOrdinality, FlatProductInputType[] inputTypes ) {
+        final List<Enumerator<PolyList<E>>> enumerators = new ArrayList<>();
         int totalFieldCount = 0;
         for ( int i = 0; i < lists.length; i++ ) {
             int fieldCount = fieldCounts[i];
@@ -3534,19 +3531,19 @@ public class Functions {
                 case SCALAR:
                     @SuppressWarnings("unchecked")
                     List<E> list = (List<E>) inputObject;
-                    enumerators.add( Linq4j.transform( Linq4j.enumerator( list ), ComparableList::of ) );
+                    enumerators.add( Linq4j.transform( Linq4j.enumerator( list ), PolyList::of ) );
                     break;
                 case LIST:
                     @SuppressWarnings("unchecked")
-                    ComparableList<ComparableList<E>> listList = ComparableList.copyOf( (List<ComparableList<E>>) inputObject );
+                    PolyList<PolyList<E>> listList = PolyList.copyOf( (List<PolyList<E>>) inputObject );
                     enumerators.add( Linq4j.enumerator( listList ) );
                     break;
                 case MAP:
                     @SuppressWarnings("unchecked")
-                    Map<Comparable<Object>, Comparable<Object>> map = (Map<Comparable<Object>, Comparable<Object>>) inputObject;
-                    Enumerator<Entry<Comparable<Object>, Comparable<Object>>> enumerator = Linq4j.enumerator( map.entrySet() );
+                    Map<E, E> map = (Map<E, E>) inputObject;
+                    Enumerator<Entry<E, E>> enumerator = Linq4j.enumerator( map.entrySet() );
 
-                    Enumerator<List<E>> transformed = Linq4j.transform( enumerator, e -> ComparableList.of( e.getKey(), e.getValue() ) );
+                    Enumerator<PolyList<E>> transformed = Linq4j.transform( enumerator, e -> PolyList.of( List.of( e.getKey(), e.getValue() ) ) );
                     enumerators.add( transformed );
                     break;
                 default:
@@ -3573,11 +3570,11 @@ public class Functions {
     /**
      * Similar to {@link Linq4j#product(Iterable)} but each resulting list implements {@link ComparableList}.
      */
-    public static <E extends Comparable<E>> Enumerable<ComparableList<E>> product( final List<Enumerator<List<E>>> enumerators, final int fieldCount, final boolean withOrdinality ) {
+    public static <E extends PolyValue> Enumerable<PolyList<E>> product( final List<Enumerator<PolyList<E>>> enumerators, final int fieldCount, final boolean withOrdinality ) {
         return new AbstractEnumerable<>() {
             @Override
-            public Enumerator<ComparableList<E>> enumerator() {
-                return new ProductComparableListEnumerator<>( enumerators, fieldCount, withOrdinality );
+            public Enumerator<PolyList<E>> enumerator() {
+                return new ProductPolyListEnumerator<>( enumerators, fieldCount, withOrdinality );
             }
         };
     }
@@ -3635,7 +3632,7 @@ public class Functions {
         try {
             PolyList<PolyList<PolyString>> collect = PolyList.copyOf( excluded.stream().map( e -> PolyList.of( Arrays.stream( e.value.split( "\\." ) ).map( PolyString::of ).collect( Collectors.toList() ) ) ).collect( Collectors.toList() ) );
 
-            PolyMap<PolyString, PolyValue> map = (PolyMap<PolyString, PolyValue>) dejsonize( input );
+            PolyMap<PolyString, PolyValue> map = dejsonize( input );
             return rebuildMap( map, collect ); // TODO DL: exchange with a direct filter on deserialization
         } catch ( Exception e ) {
             return e;
@@ -3699,9 +3696,6 @@ public class Functions {
             DocumentContext ctx;
             switch ( mode ) {
                 case STRICT:
-                    /*if ( input.asSymbol().value instanceof Exception ) {
-                        return PathContext.withStrictException( (Exception) input );
-                    }*/
                     ctx = JsonPath.parse(
                             input,
                             Configuration
@@ -3711,9 +3705,6 @@ public class Functions {
                                     .build() );
                     break;
                 case LAX:
-                    /*if ( input instanceof Exception ) {
-                        return PathContext.withReturned( PathMode.LAX, null );
-                    }*/
                     ctx = JsonPath.parse(
                             input.toJson(),
                             Configuration
@@ -4001,81 +3992,6 @@ public class Functions {
     }
 
 
-    /**
-     * Returned path context of JsonApiCommonSyntax, public for testing.
-     */
-    public static class PathContext extends PolyValue {
-
-        public final PathMode mode;
-        public final PolyValue pathReturned;
-        public final Exception exc;
-
-
-        private PathContext( PathMode mode, PolyValue pathReturned, Exception exc ) {
-            super( PolyType.JSON );
-            this.mode = mode;
-            this.pathReturned = pathReturned;
-            this.exc = exc;
-        }
-
-
-        public static PathContext withUnknownException( Exception exc ) {
-            return new PathContext( PathMode.UNKNOWN, null, exc );
-        }
-
-
-        public static PathContext withStrictException( Exception exc ) {
-            return new PathContext( PathMode.STRICT, null, exc );
-        }
-
-
-        public static PathContext withReturned( PathMode mode, PolyValue pathReturned ) {
-            if ( mode == PathMode.UNKNOWN ) {
-                throw Static.RESOURCE.illegalJsonPathMode( mode.toString() ).ex();
-            }
-            if ( mode == PathMode.STRICT && pathReturned == null ) {
-                throw Static.RESOURCE.strictPathModeRequiresNonEmptyValue().ex();
-            }
-            return new PathContext( mode, pathReturned, null );
-        }
-
-
-        @Override
-        public String toString() {
-            return "PathContext{"
-                    + "mode=" + mode
-                    + ", pathReturned=" + pathReturned
-                    + ", exc=" + exc
-                    + '}';
-        }
-
-
-        @Override
-        public @Nullable Long deriveByteSize() {
-            throw new RuntimeException( "Not implemented" );
-        }
-
-
-        @Override
-        public int compareTo( @NotNull PolyValue o ) {
-            throw new RuntimeException( "Not implemented" );
-        }
-
-
-        @Override
-        public Expression asExpression() {
-            throw new RuntimeException( "Not implemented" );
-        }
-
-
-        @Override
-        public PolySerializable copy() {
-            throw new RuntimeException( "Not implemented" );
-        }
-
-    }
-
-
     @SuppressWarnings("unused")
     public static Enumerable<PolyValue[]> singletonEnumerable( Object value ) {
         return Linq4j.singletonEnumerable( (PolyValue[]) value );
@@ -4090,45 +4006,6 @@ public class Functions {
         LAX,
         STRICT,
         UNKNOWN
-    }
-
-
-    /**
-     * Enumerates over the cartesian product of the given lists, returning a comparable list for each row.
-     *
-     * @param <E> element type
-     */
-    private static class ProductComparableListEnumerator<E extends Comparable<E>> extends CartesianProductEnumerator<List<E>, ComparableList<E>> {
-
-        final E[] flatElements;
-        final List<E> list;
-        private final boolean withOrdinality;
-        private int ordinality;
-
-
-        ProductComparableListEnumerator( List<Enumerator<List<E>>> enumerators, int fieldCount, boolean withOrdinality ) {
-            super( enumerators );
-            this.withOrdinality = withOrdinality;
-            flatElements = (E[]) new Comparable[fieldCount];
-            list = Arrays.asList( flatElements );
-        }
-
-
-        @Override
-        public ComparableList<E> current() {
-            int i = 0;
-            for ( Object element : elements ) {
-                final List<?> list2 = (List<E>) element;
-                Object[] a = list2.toArray();
-                System.arraycopy( a, 0, flatElements, i, a.length );
-                i += a.length;
-            }
-            if ( withOrdinality ) {
-                flatElements[i] = (E) Integer.valueOf( ++ordinality ); // 1-based
-            }
-            return ComparableList.copyOf( list.iterator() );
-        }
-
     }
 
 

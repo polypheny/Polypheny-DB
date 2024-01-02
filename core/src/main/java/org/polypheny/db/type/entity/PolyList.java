@@ -34,6 +34,7 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.jsontype.TypeDeserializer;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.google.common.collect.Lists;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -46,6 +47,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
@@ -65,16 +67,16 @@ import org.polypheny.db.util.Pair;
 
 @Slf4j
 @EqualsAndHashCode(callSuper = true)
-@Value(staticConstructor = "copyOf")
+@Value
 @JsonSerialize(using = PolyListSerializer.class)
 @JsonDeserialize(using = PolyListDeserializer.class)
 public class PolyList<E extends PolyValue> extends PolyValue implements List<E> {
 
     public static final PolyList<?> EMPTY_LIST = new PolyList<>();
 
-    @Delegate
     @Serialize
     @JsonIgnore
+    @Delegate
     public List<E> value;
 
 
@@ -82,6 +84,21 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
     public PolyList( @JsonProperty("value") @Deserialize("value") List<E> value ) {
         super( PolyType.ARRAY );
         this.value = new ArrayList<>( value );
+    }
+
+
+    public static <E extends PolyValue> PolyList<E> copyOf( List<E> value ) {
+        return new PolyList<>( value );
+    }
+
+
+    public static <E extends PolyValue> PolyList<E> copyOf( Iterable<E> value ) {
+        return copyOf( Lists.newArrayList( value ) );
+    }
+
+
+    public static <E extends PolyValue> PolyList<E> copyOf( Iterator<E> iterator ) {
+        return copyOf( Lists.newArrayList( iterator ) );
     }
 
 
@@ -261,7 +278,6 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
                 return new PolyList<>( (List<PolyValue>) null );
             }
 
-
             List<PolyValue> values = new ArrayList<>();
             ArrayNode elements = node.withArray( "_es" );
             for ( JsonNode element : elements ) {
@@ -299,7 +315,6 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
                 return;
             }
             gen.writeBoolean( false );
-
 
             gen.writeFieldName( "@class" );
             gen.writeString( PolyList.class.getCanonicalName() );

@@ -30,7 +30,6 @@ import org.apache.calcite.avatica.remote.Service;
 public class DbmsService implements Service {
 
     private LocalService delegate;
-    private RpcMetadataResponse rpcMetaData;
 
 
     public DbmsService( DbmsMeta meta, MetricsSystem metrics ) {
@@ -268,7 +267,6 @@ public class DbmsService implements Service {
         if ( log.isTraceEnabled() ) {
             log.trace( "setRpcMetadata( RpcMetadataResponse {} )", metadata );
         }
-        this.rpcMetaData = metadata;
         delegate.setRpcMetadata( metadata );
     }
 

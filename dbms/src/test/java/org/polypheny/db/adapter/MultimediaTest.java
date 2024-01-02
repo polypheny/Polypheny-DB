@@ -72,8 +72,8 @@ public class MultimediaTest {
 
 
     @Test
-    public void testFileStore() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
+    public void testMultimediaFiles() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 try {

@@ -53,13 +53,13 @@ public class AlgTraitTest {
 
 
     private void assertCanonical( String message, Supplier<List<AlgCollation>> collation ) {
-        AlgTrait trait1 = AlgCompositeTrait.of( COLLATION, collation.get() );
-        AlgTrait trait2 = AlgCompositeTrait.of( COLLATION, collation.get() );
+        AlgTrait<?> trait1 = AlgCompositeTrait.of( COLLATION, collation.get() );
+        AlgTrait<?> trait2 = AlgCompositeTrait.of( COLLATION, collation.get() );
 
         Assertions.assertEquals(
-                "RelCompositeTrait.of should return the same instance for " + message,
                 trait1 + " @" + Integer.toHexString( System.identityHashCode( trait1 ) ),
-                trait2 + " @" + Integer.toHexString( System.identityHashCode( trait2 ) ) );
+                trait2 + " @" + Integer.toHexString( System.identityHashCode( trait2 ) ),
+                "AlgCompositeTrait.of should return the same instance for " + message );
     }
 
 
