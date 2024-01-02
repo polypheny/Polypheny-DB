@@ -262,7 +262,7 @@ public class AlgBuilderTest {
                             .build();
             fail( "Expected error (table names are case-sensitive), but got " + root );
         } catch ( Exception e ) {
-            assertThat( e.getMessage(), is( "Table 'EMPLOYEE' not found" ) );
+            assertThat( e.getMessage(), is( "Entity 'EMPLOYEE' not found" ) );
         } finally {
             RuntimeConfig.RELATIONAL_CASE_SENSITIVE.setBoolean( oldCaseSensitiveValue );
         }

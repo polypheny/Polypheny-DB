@@ -20,12 +20,11 @@ package org.polypheny.db.sql;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -38,8 +37,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import org.apache.calcite.avatica.util.ByteString;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.metadata.NullSentinel;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -87,12 +86,6 @@ public class RexProgramTest extends RexProgramBuilderBase {
      */
     public RexProgramTest() {
         super();
-    }
-
-
-    @Override
-    @Before
-    public void setUp() {
         super.setUp();
     }
 
@@ -652,7 +645,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
     public void testNoCommonReturnTypeFails() {
         try {
             final RexNode node = coalesce( vVarchar( 1 ), vInt( 2 ) );
-            fail( "expected exception, got " + node );
+            Assertions.fail( "expected exception, got " + node );
         } catch ( IllegalArgumentException e ) {
             final String expected = "Cannot infer return type for COALESCE; operand types: [VARCHAR, INTEGER]";
             assertThat( e.getMessage(), is( expected ) );
@@ -1559,10 +1552,10 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
     @Test
     public void fieldAccessEqualsHashCode() {
-        assertEquals( "vBool() instances should be equal", vBool(), vBool() );
-        assertEquals( "vBool().hashCode()", vBool().hashCode(), vBool().hashCode() );
-        assertNotSame( "vBool() is expected to produce new RexFieldAccess", vBool(), vBool() );
-        assertNotEquals( "vBool(0) != vBool(1)", vBool( 0 ), vBool( 1 ) );
+        assertEquals( vBool(), vBool(), "vBool() instances should be equal" );
+        assertEquals( vBool().hashCode(), vBool().hashCode(), "vBool().hashCode()" );
+        assertNotSame( vBool(), vBool(), "vBool() is expected to produce new RexFieldAccess" );
+        assertNotEquals( vBool( 0 ), vBool( 1 ), "vBool(0) != vBool(1)" );
     }
 
 

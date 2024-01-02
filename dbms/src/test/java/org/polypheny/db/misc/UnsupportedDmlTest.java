@@ -24,9 +24,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.MongoConnection;
-import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.mql.MqlTestTemplate;
 import org.polypheny.db.webui.models.results.DocResult;
 

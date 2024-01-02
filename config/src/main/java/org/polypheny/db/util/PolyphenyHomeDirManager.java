@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
@@ -42,6 +43,7 @@ public class PolyphenyHomeDirManager {
     private File home;
     private final List<File> dirs = new ArrayList<>();
     private final List<File> deleteOnExit = new ArrayList<>();
+    @Getter
     private static PolyMode mode;
 
 
