@@ -18,17 +18,17 @@ package org.polypheny.db.sql;
 
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
@@ -76,7 +76,7 @@ public class RexTransformerTest {
     }
 
 
-    @Before
+    @BeforeEach
     public void setUp() {
         typeFactory = new JavaTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         rexBuilder = new RexBuilder( typeFactory );
@@ -96,7 +96,7 @@ public class RexTransformerTest {
     }
 
 
-    @After
+    @AfterEach
     public void testDown() {
         typeFactory = null;
         rexBuilder = null;
@@ -348,10 +348,11 @@ public class RexTransformerTest {
      */
     @Test
     public void testSplitJoinCondition() {
-        final String sql = "select * \n"
-                + "from emp a \n"
-                + "INNER JOIN dept b \n"
-                + "ON CAST(a.empno AS int) <> b.deptno";
+        final String sql = """
+                select *\s
+                from emp a\s
+                INNER JOIN dept b\s
+                ON CAST(a.empno AS int) <> b.deptno""";
 
         final AlgNode algNode = toAlg( sql );
         final LogicalProject project = (LogicalProject) algNode;

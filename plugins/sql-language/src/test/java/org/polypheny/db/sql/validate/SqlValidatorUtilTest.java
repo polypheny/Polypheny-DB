@@ -38,8 +38,8 @@ import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.sameInstance;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -47,8 +47,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.sql.language.SqlIdentifier;
@@ -147,9 +147,8 @@ public class SqlValidatorUtilTest {
     }
 
 
-    @Ignore // todo dl why is this happening
+    @Disabled // todo dl why is this happening
     @SuppressWarnings("resource")
-
     @Test
     public void testCheckingDuplicatesWithCompoundIdentifiers() {
         final List<SqlNode> newList = new ArrayList<>( 2 );

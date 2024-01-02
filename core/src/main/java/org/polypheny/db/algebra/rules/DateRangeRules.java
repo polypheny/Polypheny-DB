@@ -230,7 +230,7 @@ public abstract class DateRangeRules {
             switch ( call.getKind() ) {
                 case EXTRACT:
                     final RexLiteral operand = (RexLiteral) call.getOperands().get( 0 );
-                    timeUnits.add( operand.value.asInterval().qualifier.getTimeUnitRange() );
+                    timeUnits.add( (TimeUnitRange) operand.value.asSymbol().value );
                     break;
                 case FLOOR:
                 case CEIL:
@@ -288,42 +288,40 @@ public abstract class DateRangeRules {
                 case LESS_THAN:
                     final RexNode op0 = call.operands.get( 0 );
                     final RexNode op1 = call.operands.get( 1 );
-                    switch ( op0.getKind() ) {
-                        case LITERAL:
-                            assert op0 instanceof RexLiteral;
-                            if ( isExtractCall( op1 ) ) {
-                                assert op1 instanceof RexCall;
-                                final RexCall subCall = (RexCall) op1;
-                                RexNode operand = subCall.getOperands().get( 1 );
-                                if ( canRewriteExtract( operand ) ) {
-                                    return compareExtract( call.getKind().reverse(), operand, (RexLiteral) op0 );
-                                }
+                    if ( Objects.requireNonNull( op0.getKind() ) == Kind.LITERAL ) {
+                        assert op0 instanceof RexLiteral;
+                        if ( isExtractCall( op1 ) ) {
+                            assert op1 instanceof RexCall;
+                            final RexCall subCall = (RexCall) op1;
+                            RexNode operand = subCall.getOperands().get( 1 );
+                            if ( canRewriteExtract( operand ) ) {
+                                return compareExtract( call.getKind().reverse(), operand, (RexLiteral) op0 );
                             }
-                            if ( isFloorCeilCall( op1 ) ) {
-                                assert op1 instanceof RexCall;
-                                final RexCall subCall = (RexCall) op1;
-                                final RexLiteral flag = (RexLiteral) subCall.operands.get( 1 );
-                                final TimeUnitRange timeUnit = flag.value.asInterval().qualifier.getTimeUnitRange();
-                                return compareFloorCeil( call.getKind().reverse(), subCall.getOperands().get( 0 ), (RexLiteral) op0, timeUnit, op1.getKind() == Kind.FLOOR );
-                            }
+                        }
+                        if ( isFloorCeilCall( op1 ) ) {
+                            assert op1 instanceof RexCall;
+                            final RexCall subCall = (RexCall) op1;
+                            final RexLiteral flag = (RexLiteral) subCall.operands.get( 1 );
+                            final TimeUnitRange timeUnit = (TimeUnitRange) flag.value.asSymbol().value;
+                            return compareFloorCeil( call.getKind().reverse(), subCall.getOperands().get( 0 ), (RexLiteral) op0, timeUnit, op1.getKind() == Kind.FLOOR );
+                        }
                     }
-                    switch ( op1.getKind() ) {
-                        case LITERAL:
-                            assert op1 instanceof RexLiteral;
-                            if ( isExtractCall( op0 ) ) {
-                                assert op0 instanceof RexCall;
-                                final RexCall subCall = (RexCall) op0;
-                                RexNode operand = subCall.operands.get( 1 );
-                                if ( canRewriteExtract( operand ) ) {
-                                    return compareExtract( call.getKind(), subCall.operands.get( 1 ), (RexLiteral) op1 );
-                                }
+                    if ( Objects.requireNonNull( op1.getKind() ) == Kind.LITERAL ) {
+                        assert op1 instanceof RexLiteral;
+                        if ( isExtractCall( op0 ) ) {
+                            assert op0 instanceof RexCall;
+                            final RexCall subCall = (RexCall) op0;
+                            RexNode operand = subCall.operands.get( 1 );
+                            if ( canRewriteExtract( operand ) ) {
+                                return compareExtract( call.getKind(), subCall.operands.get( 1 ), (RexLiteral) op1 );
                             }
-                            if ( isFloorCeilCall( op0 ) ) {
-                                final RexCall subCall = (RexCall) op0;
-                                final RexLiteral flag = (RexLiteral) subCall.operands.get( 1 );
-                                final TimeUnitRange timeUnit = flag.value.asInterval().qualifier.getTimeUnitRange();
-                                return compareFloorCeil( call.getKind(), subCall.getOperands().get( 0 ), (RexLiteral) op1, timeUnit, op0.getKind() == Kind.FLOOR );
-                            }
+                        }
+                        if ( isFloorCeilCall( op0 ) ) {
+                            final RexCall subCall = (RexCall) op0;
+                            final RexLiteral flag = (RexLiteral) subCall.operands.get( 1 );
+                            final TimeUnitRange timeUnit = (TimeUnitRange) flag.value.asSymbol().value;
+                            return compareFloorCeil( call.getKind(), subCall.getOperands().get( 0 ), (RexLiteral) op1, timeUnit, op0.getKind() == Kind.FLOOR );
+                        }
                     }
                     // fall through
                 default:
@@ -399,15 +397,15 @@ public abstract class DateRangeRules {
 
 
         boolean isExtractCall( RexNode e ) {
-            switch ( e.getKind() ) {
-                case EXTRACT:
+            return switch ( e.getKind() ) {
+                case EXTRACT -> {
                     final RexCall call = (RexCall) e;
                     final RexLiteral flag = (RexLiteral) call.operands.get( 0 );
-                    final TimeUnitRange timeUnit = flag.value.asInterval().qualifier.getTimeUnitRange();
-                    return timeUnit == this.timeUnit;
-                default:
-                    return false;
-            }
+                    final TimeUnitRange timeUnit = (TimeUnitRange) flag.value.asSymbol().value;
+                    yield timeUnit == this.timeUnit;
+                }
+                default -> false;
+            };
         }
 
 
@@ -418,7 +416,7 @@ public abstract class DateRangeRules {
             }
             final RangeSet<Calendar> s2 = TreeRangeSet.create();
             // Calendar.MONTH is 0-based
-            final int v = literal.value.asInterval().value.intValue() - (timeUnit == TimeUnitRange.MONTH ? 1 : 0);
+            final int v = literal.value.asNumber().intValue() - (timeUnit == TimeUnitRange.MONTH ? 1 : 0);
 
             if ( !isValid( v, timeUnit ) ) {
                 // Comparison with an invalid value for timeUnit, always false.

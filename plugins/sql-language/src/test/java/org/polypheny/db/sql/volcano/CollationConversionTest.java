@@ -17,13 +17,14 @@
 package org.polypheny.db.sql.volcano;
 
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import lombok.Getter;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollationImpl;
@@ -54,7 +55,7 @@ import org.polypheny.db.sql.volcano.PlannerTests.TestSingleAlg;
  */
 public class CollationConversionTest {
 
-    @BeforeClass
+    @BeforeAll
     public static void init() {
         TestHelper.getInstance();
     }
@@ -83,17 +84,17 @@ public class CollationConversionTest {
         final AlgNode convertedRel = planner.changeTraits( singleRel, cluster.traitSetOf( PlannerTests.PHYS_CALLING_CONVENTION ).plus( ROOT_COLLATION ) );
         planner.setRoot( convertedRel );
         AlgNode result = planner.chooseDelegate().findBestExp();
-        assertTrue( result instanceof RootSingleRel );
+        assertInstanceOf( RootSingleRel.class, result );
         assertTrue( result.getTraitSet().contains( ROOT_COLLATION ) );
         assertTrue( result.getTraitSet().contains( PlannerTests.PHYS_CALLING_CONVENTION ) );
 
         final AlgNode input = result.getInput( 0 );
-        assertTrue( input instanceof PhysicalSort );
+        assertInstanceOf( PhysicalSort.class, input );
         assertTrue( result.getTraitSet().contains( ROOT_COLLATION ) );
         assertTrue( input.getTraitSet().contains( PlannerTests.PHYS_CALLING_CONVENTION ) );
 
         final AlgNode input2 = input.getInput( 0 );
-        assertTrue( input2 instanceof LeafRel );
+        assertInstanceOf( LeafRel.class, input2 );
         assertTrue( input2.getTraitSet().contains( LEAF_COLLATION ) );
         assertTrue( input.getTraitSet().contains( PlannerTests.PHYS_CALLING_CONVENTION ) );
     }

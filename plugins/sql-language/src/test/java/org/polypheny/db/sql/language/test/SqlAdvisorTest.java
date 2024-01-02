@@ -17,8 +17,7 @@
 package org.polypheny.db.sql.language.test;
 
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
@@ -31,11 +30,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.MethodRule;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.constant.Lex;
 import org.polypheny.db.algebra.constant.MonikerType;
 import org.polypheny.db.languages.Parser.ParserConfig;
@@ -59,8 +56,6 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
 
     public static final SqlTestFactory ADVISOR_TEST_FACTORY = SqlTestFactory.INSTANCE.withValidator( null );// SqlAdvisorValidator );
 
-    @Rule
-    public MethodRule configureTester = SqlValidatorTestCase.TESTER_CONFIGURATION_RULE;
 
     private static final List<String> STAR_KEYWORD =
             Arrays.asList(
@@ -365,7 +360,10 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
                     "KEYWORD(ORDER)",
                     "KEYWORD(UNION)" );
 
-    private static final String EMPNO_EMP = "COLUMN(EMPNO)\n" + "TABLE(EMP)\n";
+    private static final String EMPNO_EMP = """
+            COLUMN(EMPNO)
+            TABLE(EMP)
+            """;
 
 
     public SqlAdvisorTest() {
@@ -408,7 +406,7 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
             }
             buf.append( token ).append( "\n" );
         }
-        Assert.assertEquals( expected, buf.toString() );
+        Assertions.assertEquals( expected, buf.toString() );
     }
 
 
@@ -424,15 +422,14 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
      *
      * @param sql SQL statement
      * @param expectedResults Expected list of hints
-     * @throws Exception on error
      */
-    protected void assertHint( String sql, String expectedResults ) throws Exception {
+    protected void assertHint( String sql, String expectedResults ) {
         SqlAdvisor advisor = tester.getFactory().createAdvisor();
 
         StringAndPos sap = SqlParserUtil.findPos( sql );
 
         List<Moniker> results = advisor.getCompletionHints( sap.sql, sap.pos );
-        Assert.assertEquals( expectedResults, convertCompletionHints( results ) );
+        Assertions.assertEquals( expectedResults, convertCompletionHints( results ) );
     }
 
 
@@ -447,7 +444,7 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
 
         SqlParserUtil.StringAndPos sap = SqlParserUtil.findPos( sql );
         String actual = advisor.simplifySql( sap.sql, sap.cursor );
-        Assert.assertEquals( expected, actual );
+        Assertions.assertEquals( expected, actual );
     }
 
 
@@ -481,9 +478,9 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
         SqlParserUtil.StringAndPos sap = SqlParserUtil.findPos( sql );
         final String[] replaced = { null };
         List<Moniker> results = advisor.getCompletionHints( sap.sql, sap.cursor, replaced );
-        Assert.assertEquals( "Completion hints for " + sql, expectedResults, convertCompletionHints( results ) );
+        Assertions.assertEquals( "Completion hints for " + sql, expectedResults, convertCompletionHints( results ) );
         if ( expectedWord != null ) {
-            Assert.assertEquals( "replaced[0] for " + sql, expectedWord, replaced[0] );
+            Assertions.assertEquals( "replaced[0] for " + sql, expectedWord, replaced[0] );
         } else {
             assertNotNull( replaced[0] );
         }
@@ -504,12 +501,12 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
             }
             missingReplacemenets.remove( id );
             String actualReplacement = advisor.getReplacement( result, word );
-            Assert.assertEquals( sql + ", replacement of " + word + " with " + id, expectedReplacement, actualReplacement );
+            Assertions.assertEquals( sql + ", replacement of " + word + " with " + id, expectedReplacement, actualReplacement );
         }
         if ( missingReplacemenets.isEmpty() ) {
             return;
         }
-        Assert.fail( "Sql " + sql + " did not produce replacement hints " + missingReplacemenets );
+        Assertions.fail( "Sql " + sql + " did not produce replacement hints " + missingReplacemenets );
 
     }
 
@@ -521,7 +518,7 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
             uniqueResults.put( actualResult, actualResult );
         }
         if ( !(expectedList.containsAll( uniqueResults.values() ) && (expectedList.size() == uniqueResults.values().size())) ) {
-            fail( "SqlAdvisorTest: completion hints results not as salesTables:\n" + uniqueResults.values() + "\nExpected:\n" + expectedList );
+            Assertions.fail( "SqlAdvisorTest: completion hints results not as salesTables:\n" + uniqueResults.values() + "\nExpected:\n" + expectedList );
         }
     }
 
@@ -814,7 +811,11 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
         sql = "select emp.empno from sales.emp where empno=1 order by ^";
         assertComplete( sql, EXPR_KEYWORDS, EMP_COLUMNS, EMP_TABLE );
 
-        sql = "select emp.empno\n" + "from sales.emp as e(\n  mpno,name,ob,gr,iredate,al,omm,eptno,lacker)\n" + "where e.mpno=1 order by ^";
+        sql = """
+                select emp.empno
+                from sales.emp as e(
+                  mpno,name,ob,gr,iredate,al,omm,eptno,lacker)
+                where e.mpno=1 order by ^""";
         assertComplete(
                 sql,
                 EXPR_KEYWORDS,
@@ -887,69 +888,40 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
     @Test
     public void testSimpleParserTokenizer() {
         String sql =
-                "select"
-                        + " 12"
-                        + " "
-                        + "*"
-                        + " 1.23e45"
-                        + " "
-                        + "("
-                        + "\"an id\""
-                        + ","
-                        + " "
-                        + "\"an id with \"\"quotes' inside\""
-                        + ","
-                        + " "
-                        + "/* a comment, with 'quotes', over\nmultiple lines\nand select keyword */"
-                        + "\n "
-                        + "("
-                        + " "
-                        + "a"
-                        + " "
-                        + "different"
-                        + " "
-                        + "// comment\n\r"
-                        + "//and a comment /* containing comment */ and then some more\r"
-                        + ")"
-                        + " "
-                        + "from"
-                        + " "
-                        + "t"
-                        + ")"
-                        + ")"
-                        + "/* a comment after close paren */"
-                        + " "
-                        + "("
-                        + "'quoted'"
-                        + " "
-                        + "'string with ''single and \"double\"\" quote'"
-                        + ")";
+                """
+                        select 12 * 1.23e45 ("an id", "an id with ""quotes' inside", /* a comment, with 'quotes', over
+                        multiple lines
+                        and select keyword */
+                         ( a different // comment
+                        \r//and a comment /* containing comment */ and then some more\r) from t))/* a comment after close paren */ ('quoted' 'string with ''single and "double"" quote')""";
         String expected =
-                "SELECT\n"
-                        + "ID(12)\n"
-                        + "ID(*)\n"
-                        + "ID(1.23e45)\n"
-                        + "LPAREN\n"
-                        + "DQID(\"an id\")\n"
-                        + "COMMA\n"
-                        + "DQID(\"an id with \"\"quotes' inside\")\n"
-                        + "COMMA\n"
-                        + "COMMENT\n"
-                        + "LPAREN\n"
-                        + "ID(a)\n"
-                        + "ID(different)\n"
-                        + "COMMENT\n"
-                        + "COMMENT\n"
-                        + "RPAREN\n"
-                        + "FROM\n"
-                        + "ID(t)\n"
-                        + "RPAREN\n"
-                        + "RPAREN\n"
-                        + "COMMENT\n"
-                        + "LPAREN\n"
-                        + "SQID('quoted')\n"
-                        + "SQID('string with ''single and \"double\"\" quote')\n"
-                        + "RPAREN\n";
+                """
+                        SELECT
+                        ID(12)
+                        ID(*)
+                        ID(1.23e45)
+                        LPAREN
+                        DQID("an id")
+                        COMMA
+                        DQID("an id with ""quotes' inside")
+                        COMMA
+                        COMMENT
+                        LPAREN
+                        ID(a)
+                        ID(different)
+                        COMMENT
+                        COMMENT
+                        RPAREN
+                        FROM
+                        ID(t)
+                        RPAREN
+                        RPAREN
+                        COMMENT
+                        LPAREN
+                        SQID('quoted')
+                        SQID('string with ''single and "double"" quote')
+                        RPAREN
+                        """;
         assertTokenizesTo( sql, expected );
 
         // Tokenizer should be lenient if input ends mid-token
@@ -1170,35 +1142,41 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
     public void testPartialIdentifier() {
         String sql = "select * from emp where e^ and emp.deptno = 10";
         String expected =
-                "COLUMN(EMPNO)\n"
-                        + "COLUMN(ENAME)\n"
-                        + "KEYWORD(ELEMENT)\n"
-                        + "KEYWORD(EXISTS)\n"
-                        + "KEYWORD(EXP)\n"
-                        + "KEYWORD(EXTRACT)\n"
-                        + "TABLE(EMP)\n";
+                """
+                        COLUMN(EMPNO)
+                        COLUMN(ENAME)
+                        KEYWORD(ELEMENT)
+                        KEYWORD(EXISTS)
+                        KEYWORD(EXP)
+                        KEYWORD(EXTRACT)
+                        TABLE(EMP)
+                        """;
         assertComplete( sql, expected, "e", ImmutableMap.of( "KEYWORD(EXISTS)", "exists", "TABLE(EMP)", "emp" ) );
 
         sql = "select * from emp where \"e^ and emp.deptno = 10";
         expected =
-                "COLUMN(EMPNO)\n"
-                        + "COLUMN(ENAME)\n"
-                        + "KEYWORD(ELEMENT)\n"
-                        + "KEYWORD(EXISTS)\n"
-                        + "KEYWORD(EXP)\n"
-                        + "KEYWORD(EXTRACT)\n"
-                        + "TABLE(EMP)\n";
+                """
+                        COLUMN(EMPNO)
+                        COLUMN(ENAME)
+                        KEYWORD(ELEMENT)
+                        KEYWORD(EXISTS)
+                        KEYWORD(EXP)
+                        KEYWORD(EXTRACT)
+                        TABLE(EMP)
+                        """;
         assertComplete( sql, expected, "\"e", ImmutableMap.of( "KEYWORD(EXISTS)", "exists", "TABLE(EMP)", "\"EMP\"" ) );
 
         sql = "select * from emp where E^ and emp.deptno = 10";
         expected =
-                "COLUMN(EMPNO)\n"
-                        + "COLUMN(ENAME)\n"
-                        + "KEYWORD(ELEMENT)\n"
-                        + "KEYWORD(EXISTS)\n"
-                        + "KEYWORD(EXP)\n"
-                        + "KEYWORD(EXTRACT)\n"
-                        + "TABLE(EMP)\n";
+                """
+                        COLUMN(EMPNO)
+                        COLUMN(ENAME)
+                        KEYWORD(ELEMENT)
+                        KEYWORD(EXISTS)
+                        KEYWORD(EXP)
+                        KEYWORD(EXTRACT)
+                        TABLE(EMP)
+                        """;
         assertComplete( sql, expected, "E", ImmutableMap.of( "KEYWORD(EXISTS)", "EXISTS", "TABLE(EMP)", "EMP" ) );
 
         // cursor in middle of word and at end
@@ -1279,9 +1257,9 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
     }
 
 
-    @Ignore("Inserts are not supported by SimpleParser yet")
+    @Disabled("Inserts are not supported by SimpleParser yet")
     @Test
-    public void testInsert() throws Exception {
+    public void testInsert() {
         String sql;
         sql = "insert into emp(empno, mgr) select ^ from dept a";
         assertComplete( sql, getSelectKeywords(), EXPR_KEYWORDS, A_TABLE, DEPT_COLUMNS, SETOPS, FETCH_OFFSET );
@@ -1296,7 +1274,7 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
 
 
     @Test
-    public void testNestSchema() throws Exception {
+    public void testNestSchema() {
         String sql;
         sql = "select * from sales.n^";
         assertComplete( sql, "SCHEMA(CATALOG.SALES.NEST)\n", "n", ImmutableMap.of( "SCHEMA(CATALOG.SALES.NEST)", "nest" ) );
@@ -1312,9 +1290,9 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
     }
 
 
-    @Ignore("The set of completion results is empty")
+    @Disabled("The set of completion results is empty")
     @Test
-    public void testNestTable1() throws Exception {
+    public void testNestTable1() {
         String sql;
         // select scott.emp.deptno from scott.emp; # valid
         sql = "select catalog.sales.emp.em^ from catalog.sales.emp";
@@ -1334,7 +1312,7 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
 
 
     @Test
-    public void testNestTable2() throws Exception {
+    public void testNestTable2() {
         String sql;
         // select scott.emp.deptno from scott.emp as e; # not valid
         sql = "select catalog.sales.emp.em^ from catalog.sales.emp as e";
@@ -1345,9 +1323,9 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
     }
 
 
-    @Ignore("The set of completion results is empty")
+    @Disabled("The set of completion results is empty")
     @Test
-    public void testNestTable3() throws Exception {
+    public void testNestTable3() {
         String sql;
         // select scott.emp.deptno from emp; # valid
         sql = "select catalog.sales.emp.em^ from emp";
@@ -1367,7 +1345,7 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
 
 
     @Test
-    public void testNestTable4() throws Exception {
+    public void testNestTable4() {
         String sql;
         // select scott.emp.deptno from emp as emp; # not valid
         sql = "select catalog.sales.emp.em^ from catalog.sales.emp as emp";
@@ -1379,7 +1357,7 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
 
 
     @Test
-    public void testNestTableSchemaMustMatch() throws Exception {
+    public void testNestTableSchemaMustMatch() {
         String sql;
         // select foo.emp.deptno from emp; # not valid
         sql = "select sales.nest.em^ from catalog.sales.emp_r";
@@ -1392,7 +1370,7 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
 
     @WithLex(Lex.SQL_SERVER)
     @Test
-    public void testNestSchemaSqlServer() throws Exception {
+    public void testNestSchemaSqlServer() {
         String sql;
         sql = "select * from SALES.N^";
         assertComplete(

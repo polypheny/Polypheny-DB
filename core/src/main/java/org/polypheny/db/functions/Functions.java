@@ -3642,7 +3642,7 @@ public class Functions {
 
     private static PolyMap<PolyString, PolyValue> rebuildMap( PolyMap<PolyString, PolyValue> map, PolyList<PolyList<PolyString>> collect ) {
         Map<PolyString, PolyValue> newMap = new HashMap<>();
-        List<PolyValue> firsts = collect.stream().map( c -> c.get( 0 ) ).collect( Collectors.toList() );
+        List<PolyValue> firsts = collect.value.stream().map( c -> c.get( 0 ) ).collect( Collectors.toList() );
         for ( Entry<PolyString, PolyValue> entry : map.entrySet() ) {
             if ( firsts.contains( entry.getKey() ) ) {
                 List<PolyList<PolyString>> entries = new ArrayList<>();

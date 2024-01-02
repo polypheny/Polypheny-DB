@@ -20,12 +20,12 @@ package org.polypheny.db.sql.language;
 import static org.apache.calcite.avatica.util.DateTimeUtils.ymdToUnixDate;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.AnyOf.anyOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.polypheny.db.functions.Functions.charLength;
 import static org.polypheny.db.functions.Functions.concat;
 import static org.polypheny.db.functions.Functions.greater;
@@ -46,8 +46,8 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.runtime.PolyphenyDbException;
@@ -66,15 +66,15 @@ import org.polypheny.db.type.entity.temporal.PolyDate;
  */
 public class FunctionsTest {
 
-    @Before
-    public void before() {
+    @BeforeAll
+    public static void before() {
         TestHelper.getInstance();
     }
 
 
     @Test
     public void testCharLength() {
-        assertEquals( 3, charLength( PolyString.of( "xyz" ) ) );
+        assertEquals( 3, charLength( PolyString.of( "xyz" ) ).intValue() );
     }
 
 

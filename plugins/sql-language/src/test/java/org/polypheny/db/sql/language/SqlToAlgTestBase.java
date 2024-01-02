@@ -17,12 +17,12 @@
 package org.polypheny.db.sql.language;
 
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.List;
 import java.util.function.Function;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.BeforeAll;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.algebra.AlgFieldTrimmer;
 import org.polypheny.db.algebra.AlgNode;
@@ -37,10 +37,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.languages.NodeToAlgConverter.Config;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Node;
-import org.polypheny.db.nodes.validate.ValidatorCatalogReader;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptSchema;
-import org.polypheny.db.plan.AlgOptSchemaWithSampling;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.Contexts;
@@ -65,7 +62,7 @@ import org.polypheny.db.util.Pair;
 
 /**
  * SqlToAlgTestBase is an abstract base for tests which involve conversion from SQL to relational algebra.
- *
+ * <p>
  * SQL statements to be translated can use the schema defined in note that this is slightly different from Farrago's SALES schema. If you get a parser or validator
  * error from your test SQL, look down in the stack until you see "Caused by", which will usually tell you the real error.
  */
@@ -74,13 +71,13 @@ public abstract class SqlToAlgTestBase extends SqlLanguageDependent {
     private static TestHelper testHelper;
 
 
-    @BeforeClass
+    @BeforeAll
     public static void start() {
         testHelper = TestHelper.getInstance();
     }
 
 
-    protected static final String NL = System.getProperty( "line.separator" );
+    protected static final String NL = System.lineSeparator();
 
     protected final Tester tester = createTester();
 
@@ -97,11 +94,11 @@ public abstract class SqlToAlgTestBase extends SqlLanguageDependent {
 
     /**
      * Returns the default diff repository for this test, or null if there is no repository.
-     *
+     * <p>
      * The default implementation returns null.
-     *
+     * <p>
      * Sub-classes that want to use a diff repository can override. Sub-sub-classes can override again, inheriting test cases and overriding selected test results.
-     *
+     * <p>
      * And individual test cases can override by providing a different tester object.
      *
      * @return Diff repository
@@ -182,19 +179,6 @@ public abstract class SqlToAlgTestBase extends SqlLanguageDependent {
         Tester withConformance( Conformance conformance );
 
         boolean isLateDecorrelate();
-
-    }
-
-
-    /**
-     * Mock implementation of {@link AlgOptSchema}.
-     */
-    protected static class MockRelOptSchema implements AlgOptSchemaWithSampling {
-
-
-        public MockRelOptSchema( ValidatorCatalogReader catalogReader, AlgDataTypeFactory typeFactory ) {
-        }
-
 
     }
 

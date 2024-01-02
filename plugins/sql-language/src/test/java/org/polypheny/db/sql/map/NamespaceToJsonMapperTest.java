@@ -17,9 +17,10 @@
 package org.polypheny.db.sql.map;
 
 
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
@@ -34,7 +35,7 @@ public class NamespaceToJsonMapperTest extends SqlLanguageDependent {
 
 
     // TODO DL rewrite
-    @Ignore
+    @Disabled
     @Test
     public void exportTest() {
         LogicalTable catalogTable = new LogicalTable(
@@ -70,15 +71,15 @@ public class NamespaceToJsonMapperTest extends SqlLanguageDependent {
     public void getStatementTest() {
         String statement = SchemaToJsonMapper.getCreateTableStatementFromJson( mockJson, true, true, "foo", null, "hsqldb1" );
         final String expected1 = "CREATE TABLE \"foo\".\"stores\" (\"sid\" INTEGER NOT NULL, \"name\" VARCHAR(50) NOT NULL, \"location\" VARCHAR(30) DEFAULT 'Basel', PRIMARY KEY(\"sid\", \"name\")) ON STORE \"hsqldb1\"";
-        Assert.assertEquals( statement, expected1 );
+        assertEquals( statement, expected1 );
 
         statement = SchemaToJsonMapper.getCreateTableStatementFromJson( mockJson, false, false, "foo", null, null );
         final String expected2 = "CREATE TABLE \"foo\".\"stores\" (\"sid\" INTEGER NOT NULL, \"name\" VARCHAR(50) NOT NULL, \"location\" VARCHAR(30))";
-        Assert.assertEquals( statement, expected2 );
+        assertEquals( statement, expected2 );
 
         statement = SchemaToJsonMapper.getCreateTableStatementFromJson( mockJson, false, false, "foo", "bar", null );
         final String expected3 = "CREATE TABLE \"foo\".\"bar\" (\"sid\" INTEGER NOT NULL, \"name\" VARCHAR(50) NOT NULL, \"location\" VARCHAR(30))";
-        Assert.assertEquals( statement, expected3 );
+        assertEquals( statement, expected3 );
     }
 
 
@@ -86,7 +87,7 @@ public class NamespaceToJsonMapperTest extends SqlLanguageDependent {
     public void getTableNameTest() {
         String name = SchemaToJsonMapper.getTableNameFromJson( mockJson );
         final String expected = "stores";
-        Assert.assertEquals( name, expected );
+        assertEquals( name, expected );
     }
 
 }
