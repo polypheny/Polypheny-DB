@@ -130,7 +130,7 @@ public final class DockerInstance {
 
         if ( first ) {
             List<ContainerInfo> containers = this.client.listContainers();
-            for ( String uuid : containers.stream().map( ContainerInfo::getUuid ).collect( Collectors.toList() ) ) {
+            for ( String uuid : containers.stream().map( ContainerInfo::getUuid ).toList() ) {
                 try {
                     this.client.deleteContainer( uuid );
                 } catch ( IOException e ) {
@@ -245,7 +245,11 @@ public final class DockerInstance {
                 uuids.remove( container.getContainerId() );
                 client.deleteContainer( container.getContainerId() );
             } catch ( IOException e ) {
-                log.error( "Failed to delete container with UUID " + container.getContainerId(), e );
+                if ( e.getMessage().startsWith( "No such container" ) ) {
+                    log.info( "Cannot delete container: No container with UUID " + container.getContainerId() );
+                } else {
+                    log.error( "Failed to delete container with UUID " + container.getContainerId(), e );
+                }
             }
         }
     }
