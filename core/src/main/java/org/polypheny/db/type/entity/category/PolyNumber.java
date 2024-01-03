@@ -51,7 +51,7 @@ public abstract class PolyNumber extends PolyValue {
 
     @Override
     public boolean equals( Object o ) {
-        return super.equals( o );
+        return this == o || o instanceof PolyNumber && compareTo( this, (PolyNumber) o ) == 0;
     }
 
 

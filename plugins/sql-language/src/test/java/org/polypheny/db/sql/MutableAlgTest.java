@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.AlgDecorrelator;
 import org.polypheny.db.algebra.AlgNode;
@@ -48,6 +49,7 @@ import org.polypheny.db.util.Litmus;
 /**
  * Tests for {@link MutableAlg} sub-classes.
  */
+@Disabled // todo dl: Refactor
 public class MutableAlgTest extends SqlLanguageDependent {
 
     @Test

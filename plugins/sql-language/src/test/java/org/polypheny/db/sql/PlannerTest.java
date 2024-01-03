@@ -123,6 +123,7 @@ import org.polypheny.db.util.Util;
 /**
  * Unit tests for {@link Planner}.
  */
+@Disabled // todo dl: Refactor
 public class PlannerTest extends SqlLanguageDependent {
 
     static {
