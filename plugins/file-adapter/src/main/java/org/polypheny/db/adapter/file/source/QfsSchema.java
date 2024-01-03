@@ -101,7 +101,7 @@ public class QfsSchema extends AbstractNamespace implements FileSchema, Schema {
             final Integer[] projectionMapping,
             final Condition condition,
             final Value[] updates ) {
-        dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getAdapter( adapterId ) );
+        dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getAdapter( adapterId ).orElseThrow() );
         return new AbstractEnumerable<>() {
             @Override
             public Enumerator<Object[]> enumerator() {

@@ -75,7 +75,7 @@ public class MqlCreateCollection extends MqlNode implements ExecutableStatement 
 
         List<DataStore<?>> dataStores = stores
                 .stream()
-                .map( store -> (DataStore<?>) adapterManager.getAdapter( store ) )
+                .map( store -> adapterManager.getStore( store ).orElseThrow() )
                 .collect( Collectors.toList() );
         DdlManager.getInstance().createCollection(
                 namespaceId,

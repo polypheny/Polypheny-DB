@@ -96,7 +96,7 @@ public class FileStoreSchema extends AbstractNamespace implements FileSchema, Sc
             final Integer[] projectionMapping,
             final Condition condition,
             final Value[] updates ) {
-        dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getAdapter( adapterId ) );
+        dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getAdapter( adapterId ).orElseThrow() );
         return new AbstractEnumerable<>() {
             @Override
             public Enumerator<PolyValue[]> enumerator() {
@@ -124,7 +124,7 @@ public class FileStoreSchema extends AbstractNamespace implements FileSchema, Sc
             final Boolean isBatch,
             final Object[] insertValues,
             final Condition condition ) {
-        dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getAdapter( adapterId ) );
+        dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getAdapter( adapterId ).orElseThrow() );
         final Object[] insert;
 
         List<Object[]> rows = new ArrayList<>();

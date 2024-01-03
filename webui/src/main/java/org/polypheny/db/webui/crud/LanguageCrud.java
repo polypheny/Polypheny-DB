@@ -483,7 +483,7 @@ public class LanguageCrud {
         } else {
             List<AllocationPlacement> placements = catalog.getSnapshot().alloc().getPlacementsFromLogical( graph.id );
             for ( AllocationPlacement placement : placements ) {
-                Adapter<?> adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
+                Adapter<?> adapter = AdapterManager.getInstance().getAdapter( placement.adapterId ).orElseThrow();
                 p.addAdapter( new PlacementModel.GraphStore(
                         adapter.getUniqueName(),
                         adapter.getUniqueName(),
@@ -518,7 +518,7 @@ public class LanguageCrud {
         List<AllocationEntity> allocs = catalog.getSnapshot().alloc().getFromLogical( collection.id );
 
         for ( AllocationEntity allocation : allocs ) {
-            Adapter<?> adapter = AdapterManager.getInstance().getAdapter( allocation.adapterId );
+            Adapter<?> adapter = AdapterManager.getInstance().getAdapter( allocation.adapterId ).orElseThrow();
             p.addAdapter( new DocumentStore(
                     adapter.getUniqueName(),
                     adapter.getUniqueName(),

@@ -20,9 +20,11 @@ package org.polypheny.db.sql.language;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeAll;
+import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.algebra.AlgFieldTrimmer;
 import org.polypheny.db.algebra.AlgNode;
@@ -34,6 +36,11 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.logistic.ConstraintType;
+import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
+import org.polypheny.db.ddl.DdlManager.ConstraintInformation;
+import org.polypheny.db.ddl.DdlManager.FieldInformation;
 import org.polypheny.db.languages.NodeToAlgConverter.Config;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Node;
@@ -54,10 +61,14 @@ import org.polypheny.db.test.MockAlgOptPlanner;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.PolyMode;
+import org.polypheny.db.util.PolyphenyHomeDirManager;
 
 
 /**
@@ -67,15 +78,6 @@ import org.polypheny.db.util.Pair;
  * error from your test SQL, look down in the stack until you see "Caused by", which will usually tell you the real error.
  */
 public abstract class SqlToAlgTestBase extends SqlLanguageDependent {
-
-    private static TestHelper testHelper;
-
-
-    @BeforeAll
-    public static void start() {
-        testHelper = TestHelper.getInstance();
-    }
-
 
     protected static final String NL = System.lineSeparator();
 
@@ -250,6 +252,8 @@ public abstract class SqlToAlgTestBase extends SqlLanguageDependent {
             this.config = config;
             this.conformance = conformance;
             this.context = context;
+
+
         }
 
 
@@ -270,7 +274,12 @@ public abstract class SqlToAlgTestBase extends SqlLanguageDependent {
                 Pair<Node, AlgDataType> validated = processor.validate( transaction, node, true );
 
                 Statement statement = transaction.createStatement();
-                root = processor.translate( statement, ParsedQueryContext.builder().origin( "Sql Test" ).query( sql ).queryNode( validated.left ).build() );
+                root = processor.translate( statement, ParsedQueryContext.builder()
+                        .origin( "Sql Test" )
+                        .query( sql )
+                        .language( QueryLanguage.from( "sql" ) )
+                        .queryNode( validated.left )
+                        .build() );
             }
             return root;
         }

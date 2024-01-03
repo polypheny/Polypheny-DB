@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -175,20 +176,31 @@ public class IdentifierNamespace extends AbstractNamespace {
                 return new EntityNamespace( validator, validator.snapshot.rel().getTables( null, Pattern.of( ns.get( 0 ) ) ).get( 0 ) );
             }
         } else if ( ns.size() == 2 ) {
-            LogicalNamespace namespace = validator.snapshot.getNamespace( ns.get( 0 ) ).orElseThrow();
+            String entityName = ns.get( 1 );
+
+            Optional<LogicalNamespace> optionalNamespace = validator.snapshot.getNamespace( ns.get( 0 ) );
+            if ( optionalNamespace.isEmpty() ) {
+                // we might have [entity].[column] not [namespace].[entity]
+                optionalNamespace = validator.snapshot.getNamespace( Catalog.defaultNamespaceId );
+                entityName = ns.get( 0 );
+            }
+
+            LogicalNamespace namespace = optionalNamespace.orElseThrow();
+
             Entity entity = null;
             if ( namespace.dataModel == DataModel.RELATIONAL ) {
-                entity = validator.snapshot.rel().getTable( namespace.id, ns.get( 1 ) ).orElse( null );
+                entity = validator.snapshot.rel().getTable( namespace.id, entityName ).orElse( null );
             } else if ( namespace.dataModel == DataModel.DOCUMENT ) {
-                entity = validator.snapshot.doc().getCollection( namespace.id, ns.get( 1 ) ).orElse( null );
+                entity = validator.snapshot.doc().getCollection( namespace.id, entityName ).orElse( null );
             } else if ( namespace.dataModel == DataModel.GRAPH ) {
                 // we use a subgraph to define label which is used as table
-                entity = validator.snapshot.graph().getGraph( namespace.id ).map( g -> new SubstitutionGraph( g.id, ns.get( 1 ), false, g.caseSensitive, List.of( PolyString.of( ns.get( 1 ) ) ) ) ).orElse( null );
+                final String finalEntityName = entityName;
+                entity = validator.snapshot.graph().getGraph( namespace.id ).map( g -> new SubstitutionGraph( g.id, ns.get( 1 ), false, g.caseSensitive, List.of( PolyString.of( finalEntityName ) ) ) ).orElse( null );
             }
 
             return new EntityNamespace( validator, entity );
         }
-        throw new GenericRuntimeException( "Table not found" );
+        throw new GenericRuntimeException( "Entity not found" );
     }
 
 

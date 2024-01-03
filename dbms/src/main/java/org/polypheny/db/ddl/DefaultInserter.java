@@ -23,6 +23,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
+import org.polypheny.db.util.PolyMode;
 
 @Deterministic
 public class DefaultInserter {
@@ -34,7 +35,7 @@ public class DefaultInserter {
     /**
      * Fills the catalog database with default data, skips if data is already inserted
      */
-    public static void resetData( DdlManager ddlManager ) {
+    public static void resetData( DdlManager ddlManager, PolyMode mode ) {
         final Catalog catalog = Catalog.getInstance();
         restoreUsers( catalog );
 
@@ -48,14 +49,14 @@ public class DefaultInserter {
         //////////////
         // init adapters
 
-        restoreAdapters( ddlManager, catalog );
+        restoreAdapters( ddlManager, catalog, mode );
 
         catalog.commit();
 
     }
 
 
-    private static void restoreAdapters( DdlManager ddlManager, Catalog catalog ) {
+    private static void restoreAdapters( DdlManager ddlManager, Catalog catalog, PolyMode mode ) {
         if ( !catalog.getAdapters().isEmpty() ) {
             catalog.commit();
             return;
@@ -66,9 +67,16 @@ public class DefaultInserter {
         // Deploy default storeId
         Map<String, String> defaultStore = Catalog.snapshot().getAdapterTemplate( Catalog.defaultStore.getAdapterName(), AdapterType.STORE ).orElseThrow().getDefaultSettings();
         ddlManager.createAdapter( "hsqldb", Catalog.defaultStore.getAdapterName(), AdapterType.STORE, defaultStore, DeployMode.EMBEDDED );
+
+        if ( mode == PolyMode.TEST ) {
+            return; // source adapters create schema structure, which we do not want for testing
+        }
+
         // Deploy default CSV view
         Map<String, String> defaultSource = Catalog.snapshot().getAdapterTemplate( Catalog.defaultSource.getAdapterName(), AdapterType.SOURCE ).orElseThrow().getDefaultSettings();
         ddlManager.createAdapter( "hr", Catalog.defaultSource.getAdapterName(), AdapterType.SOURCE, defaultSource, DeployMode.REMOTE );
+
+
     }
 
 

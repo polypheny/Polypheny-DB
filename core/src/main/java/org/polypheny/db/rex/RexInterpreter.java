@@ -419,8 +419,8 @@ public class RexInterpreter implements RexVisitor<PolyValue> {
         FALSE, UNKNOWN, TRUE;
 
 
-        static Truthy of( Comparable<?> c ) {
-            return c.equals( true ) ? TRUE : c.equals( false ) ? FALSE : UNKNOWN;
+        static Truthy of( PolyValue c ) {
+            return c.isNull() || !c.isBoolean() ? UNKNOWN : (c.asBoolean().value ? TRUE : FALSE);
         }
 
 

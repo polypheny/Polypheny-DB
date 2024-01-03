@@ -19,7 +19,9 @@ package org.polypheny.db.webui.models.catalog;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
+import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.snapshot.Snapshot;
@@ -38,25 +40,20 @@ import org.polypheny.db.webui.models.catalog.schema.KeyModel;
 import org.polypheny.db.webui.models.catalog.schema.NamespaceModel;
 import org.polypheny.db.webui.models.catalog.schema.TableModel;
 
-@Value
-public class SnapshotModel {
-
-    public long id;
-
-    public List<NamespaceModel> namespaces;
-
-    public List<EntityModel> entities;
-
-    public List<FieldModel> fields;
-    public List<KeyModel> keys;
-    public List<ConstraintModel> constraints;
-    public List<AllocationEntityModel> allocations;
-    public List<AllocationPlacementModel> placements;
-    public List<AllocationPartitionModel> partitions;
-    public List<AllocationColumnModel> allocColumns;
-    public List<AdapterModel> adapters;
-    public List<AdapterTemplateModel> adapterTemplates;
-
+public record SnapshotModel(
+        long id,
+        List<NamespaceModel> namespaces,
+        List<EntityModel> entities,
+        List<FieldModel> fields,
+        List<KeyModel> keys,
+        List<ConstraintModel> constraints,
+        List<AllocationEntityModel> allocations,
+        List<AllocationPlacementModel> placements,
+        List<AllocationPartitionModel> partitions,
+        List<AllocationColumnModel> allocColumns,
+        List<AdapterModel> adapters,
+        List<AdapterTemplateModel> adapterTemplates
+) {
 
     public SnapshotModel(
             long id,
@@ -89,15 +86,15 @@ public class SnapshotModel {
     public static SnapshotModel from( Snapshot snapshot ) {
         List<NamespaceModel> namespaces = snapshot.getNamespaces( null ).stream().map( NamespaceModel::from ).collect( Collectors.toList() );
         List<EntityModel> entities = new ArrayList<>();
-        entities.addAll( snapshot.rel().getTables( (Pattern) null, null ).stream().map( TableModel::from ).collect( Collectors.toList() ) );
-        entities.addAll( snapshot.doc().getCollections( null, null ).stream().map( CollectionModel::from ).collect( Collectors.toList() ) );
-        entities.addAll( snapshot.graph().getGraphs( null ).stream().map( GraphModel::from ).collect( Collectors.toList() ) );
+        entities.addAll( snapshot.rel().getTables( (Pattern) null, null ).stream().map( TableModel::from ).toList() );
+        entities.addAll( snapshot.doc().getCollections( null, null ).stream().map( CollectionModel::from ).toList() );
+        entities.addAll( snapshot.graph().getGraphs( null ).stream().map( GraphModel::from ).toList() );
 
         List<FieldModel> fields = snapshot.rel().getColumns( null, null ).stream().map( ColumnModel::from ).collect( Collectors.toList() );
 
         List<KeyModel> keys = new ArrayList<>();
-        keys.addAll( snapshot.rel().getKeys().stream().map( KeyModel::from ).collect( Collectors.toList() ) );
-        keys.addAll( snapshot.rel().getPrimaryKeys().stream().map( KeyModel::from ).collect( Collectors.toList() ) );
+        keys.addAll( snapshot.rel().getKeys().stream().map( KeyModel::from ).toList() );
+        keys.addAll( snapshot.rel().getPrimaryKeys().stream().map( KeyModel::from ).toList() );
 
         List<ConstraintModel> constraints = snapshot.rel().getConstraints().stream().map( ConstraintModel::from ).collect( Collectors.toList() );
 
@@ -109,7 +106,7 @@ public class SnapshotModel {
 
         List<AllocationColumnModel> allocationColumns = snapshot.alloc().getColumns().stream().map( AllocationColumnModel::from ).collect( Collectors.toList() );
 
-        List<AdapterModel> adapters = snapshot.getAdapters().stream().map( AdapterModel::from ).collect( Collectors.toList() );
+        List<AdapterModel> adapters = snapshot.getAdapters().stream().map( AdapterModel::from ).filter( Objects::nonNull ).collect( Collectors.toList() );
 
         List<AdapterTemplateModel> adapterTemplates = snapshot.getAdapterTemplates().stream().map( AdapterTemplateModel::from ).collect( Collectors.toList() );
 

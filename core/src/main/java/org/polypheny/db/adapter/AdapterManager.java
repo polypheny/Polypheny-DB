@@ -27,10 +27,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.Catalog;
@@ -81,14 +83,15 @@ public class AdapterManager {
         return Catalog.snapshot().getAdapterTemplate( name, adapterType ).orElseThrow();
     }
 
-
-    public Adapter<?> getAdapter( String uniqueName ) {
-        return adapterByName.get( uniqueName.toLowerCase() );
+    @NotNull
+    public Optional<Adapter<?>> getAdapter( String uniqueName ) {
+        return Optional.ofNullable( adapterByName.get( uniqueName.toLowerCase() ) );
     }
 
 
-    public Adapter<?> getAdapter( long id ) {
-        return adapterById.get( id );
+    @NotNull
+    public Optional<Adapter<?>> getAdapter( long id ) {
+        return Optional.ofNullable( adapterById.get( id ) );
     }
 
 
@@ -97,21 +100,15 @@ public class AdapterManager {
     }
 
 
-    public DataStore<?> getStore( String uniqueName ) {
-        Adapter<?> adapter = getAdapter( uniqueName );
-        if ( adapter instanceof DataStore ) {
-            return (DataStore<?>) adapter;
-        }
-        return null;
+    @NotNull
+    public Optional<DataStore<?>> getStore( String uniqueName ) {
+        return getAdapter( uniqueName ).filter( a -> a instanceof DataStore<?> ).map( a -> (DataStore<?>) a );
+
     }
 
-
-    public DataStore<?> getStore( long id ) {
-        Adapter<?> adapter = getAdapter( id );
-        if ( adapter instanceof DataStore ) {
-            return (DataStore<?>) adapter;
-        }
-        return null;
+    @NotNull
+    public Optional<DataStore<?>> getStore( long id ) {
+        return getAdapter( id ).filter( a -> a instanceof DataStore<?> ).map( a -> (DataStore<?>) a );
     }
 
 
@@ -126,21 +123,15 @@ public class AdapterManager {
     }
 
 
-    public DataSource<?> getSource( String uniqueName ) {
-        Adapter<?> adapter = getAdapter( uniqueName );
-        if ( adapter instanceof DataSource<?> ) {
-            return (DataSource<?>) adapter;
-        }
-        return null;
+    @NotNull
+    public Optional<DataSource<?>> getSource( String uniqueName ) {
+        return getAdapter( uniqueName ).filter( a -> a instanceof DataSource<?> ).map( a -> (DataSource<?>) a );
     }
 
 
-    public DataSource<?> getSource( long id ) {
-        Adapter<?> adapter = getAdapter( id );
-        if ( adapter instanceof DataSource<?> ) {
-            return (DataSource<?>) adapter;
-        }
-        return null;
+    @NotNull
+    public Optional<DataSource<?>> getSource( long id ) {
+        return getAdapter( id ).filter( a -> a instanceof DataSource<?> ).map( a -> (DataSource<?>) a );
     }
 
 
@@ -204,10 +195,12 @@ public class AdapterManager {
 
 
     public void removeAdapter( long adapterId ) {
-        Adapter<?> adapterInstance = getAdapter( adapterId );
-        if ( adapterInstance == null ) {
+        Optional<Adapter<?>> optionalAdapter = getAdapter( adapterId );
+        if ( optionalAdapter.isEmpty() ) {
             throw new GenericRuntimeException( "Unknown adapter instance with id: %s", adapterId );
         }
+        Adapter<?> adapterInstance = optionalAdapter.get();
+
         LogicalAdapter logicalAdapter = Catalog.getInstance().getSnapshot().getAdapter( adapterId ).orElseThrow();
 
         // Check if the store has any placements

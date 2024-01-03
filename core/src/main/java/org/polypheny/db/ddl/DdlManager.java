@@ -421,7 +421,7 @@ public abstract class DdlManager {
      * @param placementType which placement type should be used for the initial placements
      * @param statement the used statement
      */
-    public abstract void createTable( long namespaceId, String tableName, List<FieldInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore<?>> stores, PlacementType placementType, Statement statement );
+    public abstract void createTable( long namespaceId, String tableName, List<FieldInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, @Nullable List<DataStore<?>> stores, PlacementType placementType, Statement statement );
 
     /**
      * Create a new view
@@ -619,6 +619,7 @@ public abstract class DdlManager {
     public static class ColumnTypeInformation {
 
         public PolyType type;
+        @Nullable
         public PolyType collectionType;
         public Integer precision;
         public Integer scale;
@@ -629,7 +630,7 @@ public abstract class DdlManager {
 
         public ColumnTypeInformation(
                 PolyType type,
-                PolyType collectionType,
+                @Nullable PolyType collectionType,
                 Integer precision,
                 Integer scale,
                 Integer dimension,

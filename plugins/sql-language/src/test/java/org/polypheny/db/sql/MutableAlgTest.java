@@ -48,7 +48,7 @@ import org.polypheny.db.util.Litmus;
 /**
  * Tests for {@link MutableAlg} sub-classes.
  */
-public class MutableRelTest {
+public class MutableAlgTest extends SqlLanguageDependent {
 
     @Test
     public void testConvertAggregate() {

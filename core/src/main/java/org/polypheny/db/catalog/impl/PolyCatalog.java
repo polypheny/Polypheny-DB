@@ -184,7 +184,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     private void addNamespaceIfNecessary( AllocationEntity entity ) {
-        Adapter<?> adapter = AdapterManager.getInstance().getAdapter( entity.adapterId );
+        Adapter<?> adapter = AdapterManager.getInstance().getAdapter( entity.adapterId ).orElseThrow();
 
         if ( adapter.getCurrentNamespace() == null || adapter.getCurrentNamespace().getId() != entity.namespaceId ) {
             adapter.updateNamespace( entity.name, entity.namespaceId );
@@ -201,6 +201,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     public void change() {
         // empty for now
         this.dirty.set( true );
+        updateSnapshot();
     }
 
 
@@ -467,7 +468,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         AdapterManager.getInstance().restoreAdapters( List.copyOf( adapters.values() ) );
 
         adapterRestore.forEach( ( id, restore ) -> {
-            Adapter<?> adapter = AdapterManager.getInstance().getAdapter( id );
+            Adapter<?> adapter = AdapterManager.getInstance().getAdapter( id ).orElseThrow();
             restore.activate( adapter );
         } );
 

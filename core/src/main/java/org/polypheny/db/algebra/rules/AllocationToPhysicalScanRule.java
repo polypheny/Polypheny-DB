@@ -62,7 +62,7 @@ public class AllocationToPhysicalScanRule extends AlgOptRule {
 
 
     private static AlgNode handleGraphEntity( AlgOptRuleCall call, Scan<?> scan, AllocationEntity alloc ) {
-        AlgNode alg = AdapterManager.getInstance().getAdapter( alloc.adapterId ).getGraphScan( alloc.id, call.builder() );
+        AlgNode alg = AdapterManager.getInstance().getAdapter( alloc.adapterId ).orElseThrow().getGraphScan( alloc.id, call.builder() );
 
         if ( scan.getModel() != scan.entity.dataModel ) {
             // cross-model queries need a transformer first, we let another rule handle that
@@ -76,7 +76,7 @@ public class AllocationToPhysicalScanRule extends AlgOptRule {
 
 
     private static AlgNode handleDocumentEntity( AlgOptRuleCall call, Scan<?> scan, AllocationEntity alloc ) {
-        AlgNode alg = AdapterManager.getInstance().getAdapter( alloc.adapterId ).getDocumentScan( alloc.id, call.builder() );
+        AlgNode alg = AdapterManager.getInstance().getAdapter( alloc.adapterId ).orElseThrow().getDocumentScan( alloc.id, call.builder() );
 
         if ( scan.getModel() != scan.entity.dataModel ) {
             // cross-model queries need a transformer first, we let another rule handle that
@@ -87,7 +87,7 @@ public class AllocationToPhysicalScanRule extends AlgOptRule {
 
 
     private AlgNode handleRelationalEntity( AlgOptRuleCall call, Scan<?> scan, AllocationEntity alloc ) {
-        AlgNode alg = AdapterManager.getInstance().getAdapter( alloc.adapterId ).getRelScan( alloc.id, call.builder() );
+        AlgNode alg = AdapterManager.getInstance().getAdapter( alloc.adapterId ).orElseThrow().getRelScan( alloc.id, call.builder() );
         if ( scan.getModel() == scan.entity.dataModel ) {
             alg = attachReorder( alg, scan, call.builder() );
         }

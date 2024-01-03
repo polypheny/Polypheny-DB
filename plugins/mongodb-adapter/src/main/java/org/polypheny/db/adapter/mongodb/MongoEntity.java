@@ -445,7 +445,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
         @SuppressWarnings("UnusedDeclaration")
         public Enumerable<PolyValue[]> aggregate( MongoTupleType tupleType, List<String> operations, List<String> preProjections, List<String> logicalCols ) {
             ClientSession session = getEntity().getTransactionProvider().getSession( dataContext.getStatement().getTransaction().getXid() );
-            dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( (int) this.getEntity().getStoreId() ) );
+            dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( (int) this.getEntity().getStoreId() ).orElseThrow() );
 
             Map<Long, PolyValue> values = new HashMap<>();
             if ( dataContext.getParameterValues().size() == 1 ) {
@@ -490,7 +490,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
         @SuppressWarnings("UnusedDeclaration")
         public Enumerable<Object> handleDirectDML( Operation operation, String filter, List<String> operations, boolean onlyOne, boolean needsDocument ) {
             PolyXid xid = dataContext.getStatement().getTransaction().getXid();
-            dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( entity.getAdapterId() ) );
+            dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( entity.getAdapterId() ).orElseThrow() );
             GridFSBucket bucket = entity.getMongoNamespace().getBucket();
 
             try {

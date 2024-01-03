@@ -113,7 +113,7 @@ public abstract class Adapter<S extends AdapterCatalog> implements Scannable, Ex
 
     @Override
     public Expression asExpression() {
-        return Expressions.call( AdapterManager.ADAPTER_MANAGER_EXPRESSION, "getAdapter", Expressions.constant( adapterId ) );
+        return Expressions.convert_( Expressions.call( Expressions.call( AdapterManager.ADAPTER_MANAGER_EXPRESSION, "getAdapter", Expressions.constant( adapterId ) ), "orElseThrow" ), Adapter.class );
     }
 
 

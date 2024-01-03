@@ -115,10 +115,10 @@ public class PolyphenyDb {
     public boolean resetPlugins = false;
 
     @Option(name = { "-memoryCatalog" }, description = "Store catalog only in-memory")
-    public boolean memoryCatalog = false;
+    public static boolean memoryCatalog = false;
 
     @Option(name = { "-mode" }, description = "Special system configuration for running tests", typeConverterProvider = PolyModesConverter.class)
-    public PolyMode mode = PolyMode.PRODUCTION;
+    public static PolyMode mode = PolyMode.PRODUCTION;
 
     @Option(name = { "-gui" }, description = "Show splash screen on startup and add taskbar gui")
     public boolean desktopMode = false;
@@ -300,7 +300,6 @@ public class PolyphenyDb {
 
         log.info( "Polypheny UUID: " + uuid );
         RuntimeConfig.INSTANCE_UUID.setString( uuid );
-
 
         class ShutdownHelper implements Runnable {
 
@@ -518,6 +517,7 @@ public class PolyphenyDb {
         } );
     }
 
+
     private void initializeIndexManager() {
         try {
             IndexManager.getInstance().initialize( transactionManager );
@@ -594,7 +594,7 @@ public class PolyphenyDb {
 
         Catalog.defaultStore = AdapterTemplate.fromString( defaultStoreName, AdapterType.STORE );
         Catalog.defaultSource = AdapterTemplate.fromString( defaultSourceName, AdapterType.SOURCE );
-        restoreDefaults( catalog );
+        restoreDefaults( catalog, mode );
 
         QueryInterfaceManager.getInstance().restoreInterfaces( catalog.getSnapshot() );
 
@@ -622,9 +622,9 @@ public class PolyphenyDb {
     }
 
 
-    private static void restoreDefaults( Catalog catalog ) {
+    private static void restoreDefaults( Catalog catalog, PolyMode mode ) {
         catalog.updateSnapshot();
-        DefaultInserter.resetData( DdlManager.getInstance() );
+        DefaultInserter.resetData( DdlManager.getInstance(), mode );
         DefaultInserter.restoreInterfacesIfNecessary();
     }
 

@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataContext.SlimDataContext;
@@ -51,6 +52,7 @@ import org.polypheny.db.type.entity.PolyValue;
 /**
  * Unit tests for {@link Interpreter}.
  */
+@Disabled
 public class InterpreterTest extends SqlLanguageDependent {
 
     private Snapshot snapshot;

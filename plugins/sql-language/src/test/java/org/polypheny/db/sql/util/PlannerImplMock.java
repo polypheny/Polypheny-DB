@@ -19,6 +19,7 @@ package org.polypheny.db.sql.util;
 
 import com.google.common.collect.ImmutableList;
 import java.io.Reader;
+import java.util.Objects;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgDecorrelator;
 import org.polypheny.db.algebra.AlgNode;
@@ -40,6 +41,7 @@ import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Context;
+import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexExecutor;
 import org.polypheny.db.schema.SchemaPlus;
@@ -51,6 +53,7 @@ import org.polypheny.db.sql.language.validate.SqlValidator;
 import org.polypheny.db.sql.sql2alg.SqlRexConvertletTable;
 import org.polypheny.db.sql.sql2alg.SqlToAlgConverter;
 import org.polypheny.db.sql.sql2alg.StandardConvertletTable;
+import org.polypheny.db.test.MockAlgOptPlanner;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgConversionException;
 import org.polypheny.db.tools.FrameworkConfig;
@@ -82,7 +85,7 @@ public class PlannerImplMock implements Planner {
     private final ImmutableList<AlgTraitDef<?>> traitDefs;
 
     private final ParserConfig parserConfig;
-    private final NodeToAlgConverter.Config sqlToRelConverterConfig;
+    private final NodeToAlgConverter.Config sqlToAlgConverterConfig;
     private final OperatorTable operatorTable;
     //private final RexConvertletTable convertletTable;
 
@@ -112,9 +115,10 @@ public class PlannerImplMock implements Planner {
     public PlannerImplMock( FrameworkConfig config ) {
         this.config = config;
         this.defaultSchema = config.getSnapshot();
+        this.typeFactory = new JavaTypeFactoryImpl();
         this.programs = config.getPrograms();
         this.parserConfig = config.getParserConfig();
-        this.sqlToRelConverterConfig = config.getSqlToRelConverterConfig();
+        this.sqlToAlgConverterConfig = config.getSqlToRelConverterConfig();
         this.state = State.STATE_0_CLOSED;
         this.traitDefs = config.getTraitDefs();
         this.operatorTable = config.getOperatorTable();
@@ -161,9 +165,8 @@ public class PlannerImplMock implements Planner {
 
 
     private void ready() {
-        switch ( state ) {
-            case STATE_0_CLOSED:
-                reset();
+        if ( Objects.requireNonNull( state ) == State.STATE_0_CLOSED ) {
+            reset();
         }
         ensure( State.STATE_1_RESET );
         /*Frameworks.withPlanner(
@@ -250,18 +253,19 @@ public class PlannerImplMock implements Planner {
     @Override
     public AlgRoot alg( Node sql ) throws AlgConversionException {
         ensure( State.STATE_4_VALIDATED );
+        planner = new MockAlgOptPlanner( config.getContext() );
         assert validatedSqlNode != null;
         final RexBuilder rexBuilder = createRexBuilder();
         final AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder, planner.emptyTraitSet(), Catalog.snapshot() );
         final NodeToAlgConverter.Config config =
                 new NodeToAlgConverter.ConfigBuilder()
-                        .config( sqlToRelConverterConfig )
+                        .config( sqlToAlgConverterConfig )
                         .trimUnusedFields( false )
                         .convertTableAccess( false )
                         .build();
-        final NodeToAlgConverter sqlToRelConverter = getSqlToRelConverter( (SqlValidator) validator, cluster, StandardConvertletTable.INSTANCE, config );
-        root = sqlToRelConverter.convertQuery( validatedSqlNode, false, true );
-        root = root.withAlg( sqlToRelConverter.flattenTypes( root.alg, true ) );
+        final NodeToAlgConverter sqlToAlgConverter = getSqlToRelConverter( (SqlValidator) validator, cluster, StandardConvertletTable.INSTANCE, config );
+        root = sqlToAlgConverter.convertQuery( validatedSqlNode, false, true );
+        root = root.withAlg( sqlToAlgConverter.flattenTypes( root.alg, true ) );
         final AlgBuilder algBuilder = config.getAlgBuilderFactory().create( cluster, null );
         root = root.withAlg( AlgDecorrelator.decorrelateQuery( root.alg, algBuilder ) );
         state = State.STATE_5_CONVERTED;

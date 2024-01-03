@@ -32,6 +32,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.sql.language.SqlNode;
@@ -107,7 +108,7 @@ public abstract class ListScope extends DelegatingScope {
             // Look up the 2 tables independently, in case one is qualified with catalog & schema and the other is not.
             final Entity table = child.namespace.getTable();
             if ( table != null ) {
-                Optional<? extends org.polypheny.db.catalog.entity.logical.LogicalEntity> optionalEntity = getEntity( names );
+                Optional<? extends LogicalEntity> optionalEntity = getEntity( names );
                 if ( optionalEntity.isPresent()
                         && optionalEntity.get().name.equals( table.name )
                         && optionalEntity.get().namespaceId == table.namespaceId ) {
