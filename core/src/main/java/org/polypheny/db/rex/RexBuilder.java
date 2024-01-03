@@ -162,7 +162,7 @@ public class RexBuilder {
      * Creates a list of {@link RexIndexRef} expressions, projecting the fields of a given record type.
      */
     public List<? extends RexNode> identityProjects( final AlgDataType rowType ) {
-        return rowType.getFields().stream().map( input -> new RexIndexRef( input.getIndex(), input.getType() ) ).collect( Collectors.toList() );
+        return rowType.getFields().stream().map( input -> new RexIndexRef( input.getIndex(), input.getType() ) ).toList();
     }
 
 
@@ -1060,7 +1060,7 @@ public class RexBuilder {
      * Creates a Date literal.
      */
     public RexLiteral makeDateLiteral( DateString date ) {
-        return makeLiteral( PolyDate.of( (long) date.getDaysSinceEpoch() ), typeFactory.createPolyType( PolyType.DATE ), PolyType.DATE );
+        return makeLiteral( PolyDate.ofDays( date.getDaysSinceEpoch() ), typeFactory.createPolyType( PolyType.DATE ), PolyType.DATE );
     }
 
 

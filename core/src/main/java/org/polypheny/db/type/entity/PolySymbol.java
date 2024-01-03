@@ -78,4 +78,9 @@ public class PolySymbol extends PolyValue {
     }
 
 
+    @Override
+    public String toString() {
+        return value.name();
+    }
+
 }

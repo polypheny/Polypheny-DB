@@ -26,9 +26,9 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 import org.apache.calcite.avatica.util.DateTimeUtils;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
@@ -46,7 +46,7 @@ import org.polypheny.db.util.Util;
 /**
  * Unit test for SQL limits.
  */
-@Ignore // TODO MV: This test sometimes fails
+@Disabled // TODO MV: This test sometimes fails
 public class SqlLimitsTest {
 
 
@@ -90,7 +90,7 @@ public class SqlLimitsTest {
     }
 
 
-    @BeforeClass
+    @BeforeAll
     public static void setUSLocale() {
         // This ensures numbers in exceptions are printed as in asserts. For example, 1,000 vs 1 000
         Locale.setDefault( Locale.US );
@@ -192,8 +192,7 @@ public class SqlLimitsTest {
             }
             buf.append( "}" );
             s = buf.toString();
-        } else if ( o instanceof Calendar ) {
-            Calendar calendar = (Calendar) o;
+        } else if ( o instanceof Calendar calendar ) {
             DateFormat dateFormat = getDateFormat( type.getPolyType() );
             dateFormat.setTimeZone( DateTimeUtils.UTC_ZONE );
             s = dateFormat.format( calendar.getTime() );
@@ -209,52 +208,34 @@ public class SqlLimitsTest {
 
 
     public SqlLiteral createLiteral( PolyType polyType, PolyValue o, ParserPos pos ) {
-        switch ( polyType ) {
-            case BOOLEAN:
-                return SqlLiteral.createBoolean( o.asBoolean(), pos );
-            case TINYINT:
-            case SMALLINT:
-            case INTEGER:
-            case BIGINT:
-            case DECIMAL:
-                return SqlLiteral.createExactNumeric( o.toString(), pos );
-            case JSON:
-            case VARCHAR:
-            case CHAR:
-                return SqlLiteral.createCharString( o.asString(), pos );
-            case VARBINARY:
-            case BINARY:
-                return SqlLiteral.createBinaryString( o.asBinary(), pos );
-            case DATE:
-                return SqlLiteral.createDate(
-                        o.asDate(),
-                        pos );
-            case TIME:
-                return SqlLiteral.createTime(
-                        o.asTime(),
-                        0 /* todo */,
-                        pos );
-            case TIMESTAMP:
-                return SqlLiteral.createTimestamp(
-                        o.asTimestamp(),
-                        0 /* todo */,
-                        pos );
-            default:
-                throw Util.unexpected( polyType );
-        }
+        return switch ( polyType ) {
+            case BOOLEAN -> SqlLiteral.createBoolean( o.asBoolean(), pos );
+            case TINYINT, SMALLINT, INTEGER, BIGINT, DECIMAL -> SqlLiteral.createExactNumeric( o.toString(), pos );
+            case JSON, VARCHAR, CHAR -> SqlLiteral.createCharString( o.asString(), pos );
+            case VARBINARY, BINARY -> SqlLiteral.createBinaryString( o.asBinary(), pos );
+            case DATE -> SqlLiteral.createDate(
+                    o.asDate(),
+                    pos );
+            case TIME -> SqlLiteral.createTime(
+                    o.asTime(),
+                    0 /* todo */,
+                    pos );
+            case TIMESTAMP -> SqlLiteral.createTimestamp(
+                    o.asTimestamp(),
+                    0 /* todo */,
+                    pos );
+            default -> throw Util.unexpected( polyType );
+        };
 
     }
 
 
     private DateFormat getDateFormat( PolyType typeName ) {
-        switch ( typeName ) {
-            case DATE:
-                return new SimpleDateFormat( "MMM d, yyyy", Locale.ROOT );
-            case TIME:
-                return new SimpleDateFormat( "hh:mm:ss a", Locale.ROOT );
-            default:
-                return new SimpleDateFormat( "MMM d, yyyy hh:mm:ss a", Locale.ROOT );
-        }
+        return switch ( typeName ) {
+            case DATE -> new SimpleDateFormat( "MMM d, yyyy", Locale.ROOT );
+            case TIME -> new SimpleDateFormat( "hh:mm:ss a", Locale.ROOT );
+            default -> new SimpleDateFormat( "MMM d, yyyy hh:mm:ss a", Locale.ROOT );
+        };
     }
 
 }

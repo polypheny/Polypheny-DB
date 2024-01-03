@@ -17,16 +17,15 @@
 package org.polypheny.db.sql;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.List;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.sql.language.SqlUtil;
 import org.polypheny.db.sql.language.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.sql.language.util.SqlBuilder;
@@ -102,15 +101,17 @@ public class SqlUtilTest {
         String diff = DiffTestCase.diffLines( Arrays.asList( before ), Arrays.asList( after ) );
         assertThat(
                 Util.toLinux( diff ),
-                equalTo( "1a2\n"
-                        + "> (they call her \"Polythene Pam\")\n"
-                        + "3c4,5\n"
-                        + "< She's the kind of a girl that makes The News of The World\n"
-                        + "---\n"
-                        + "> She's the kind of a girl that makes The Sunday Times\n"
-                        + "> seem more interesting.\n"
-                        + "5d6\n"
-                        + "< Yeah yeah yeah.\n" ) );
+                equalTo( """
+                        1a2
+                        > (they call her "Polythene Pam")
+                        3c4,5
+                        < She's the kind of a girl that makes The News of The World
+                        ---
+                        > She's the kind of a girl that makes The Sunday Times
+                        > seem more interesting.
+                        5d6
+                        < Yeah yeah yeah.
+                        """ ) );
     }
 
 
@@ -195,15 +196,12 @@ public class SqlUtilTest {
     }
 
 
-    @Rule
-    public ExpectedException unterminatedQuoteRuntimeException = ExpectedException.none();
-
-
     @Test
     public void unterminatedQuote() {
-        String statement = "SELECT '";
-        unterminatedQuoteRuntimeException.expect( RuntimeException.class );
-        SqlUtil.splitStatements( statement );
+        Assertions.assertThrows( RuntimeException.class, () -> {
+            String statement = "SELECT '";
+            SqlUtil.splitStatements( statement );
+        } );
     }
 
 
@@ -312,51 +310,48 @@ public class SqlUtilTest {
     }
 
 
-    @Rule
-    public ExpectedException unterminatedComment = ExpectedException.none();
-
-
     @Test
     public void unterminatedComment() {
-        String statement = "SELECT /*/";
-        unterminatedComment.expect( RuntimeException.class );
-        SqlUtil.splitStatements( statement );
+        Assertions.assertThrows( RuntimeException.class, () -> {
+            String statement = "SELECT /* Only a comment ";
+            SqlUtil.splitStatements( statement );
+        } );
     }
 
 
     @Test
     public void unterminatedComment2() {
-        String statement = "SELECT /**";
-        unterminatedComment.expect( RuntimeException.class );
-        SqlUtil.splitStatements( statement );
+        Assertions.assertThrows( RuntimeException.class, () -> {
+            String statement = "SELECT /**";
+            SqlUtil.splitStatements( statement );
+        } );
     }
-
-
-    @Rule
-    public ExpectedException unbalancedBrackets = ExpectedException.none();
 
 
     @Test
     public void unbalancedBrackets() {
-        String statement = "SELECT (";
-        unterminatedComment.expect( RuntimeException.class );
-        SqlUtil.splitStatements( statement );
+        Assertions.assertThrows( RuntimeException.class, () -> {
+            String statement = "SELECT (";
+            SqlUtil.splitStatements( statement );
+        } );
     }
 
 
     @Test
     public void unbalancedBrackets2() {
-        String statement = "SELECT ([)";
-        unterminatedComment.expect( RuntimeException.class );
-        SqlUtil.splitStatements( statement );
+        Assertions.assertThrows( RuntimeException.class, () -> {
+            String statement = "SELECT ([)";
+            SqlUtil.splitStatements( statement );
+        } );
     }
 
 
     @Test
     public void unbalancedBrackets3() {
-        String statement = "SELECT (3 * 4;)";
-        unterminatedComment.expect( RuntimeException.class );
-        SqlUtil.splitStatements( statement );
+        Assertions.assertThrows( RuntimeException.class, () -> {
+            String statement = "SELECT (3 * 4;)";
+            SqlUtil.splitStatements( statement );
+        } );
     }
 
 
@@ -374,10 +369,13 @@ public class SqlUtilTest {
 
     @Test
     public void multipleStatements2() {
-        String statement = "SEL/**/ECT \"id/*\"\"\", 'O''Reily--' FROM emp; -- Comment\n\n\n"
-                + "COMMIT;\n"
-                + "/**/SEL--\n"
-                + "ECT \"\", username FROM emp--";
+        String statement = """
+                SEL/**/ECT "id/*""\", 'O''Reily--' FROM emp; -- Comment
+
+
+                COMMIT;
+                /**/SEL--
+                ECT "", username FROM emp--""";
         List<String> statements = SqlUtil.splitStatements( statement );
         assertEquals( 3, statements.size() );
         assertEquals( "SEL ECT \"id/*\"\"\", 'O''Reily--' FROM emp", statements.get( 0 ) );

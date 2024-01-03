@@ -50,6 +50,7 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCorrelVariable;
 import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexElementRef;
 import org.polypheny.db.rex.RexFieldAccess;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
@@ -557,6 +558,12 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
     @Override
     public RexNode visitNameRef( RexNameRef nameRef ) {
         return nameRef;
+    }
+
+
+    @Override
+    public RexNode visitElementRef( RexElementRef rexElementRef ) {
+        return rexElementRef;
     }
 
 }

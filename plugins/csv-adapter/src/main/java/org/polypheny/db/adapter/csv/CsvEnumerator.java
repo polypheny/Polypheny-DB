@@ -34,7 +34,8 @@
 package org.polypheny.db.adapter.csv;
 
 
-import au.com.bytecode.opencsv.CSVReader;
+import com.opencsv.CSVReader;
+import com.opencsv.exceptions.CsvValidationException;
 import java.io.IOException;
 import java.io.Reader;
 import java.text.ParseException;
@@ -114,7 +115,7 @@ class CsvEnumerator implements Enumerator<PolyValue[]> {
                 this.reader = openCsv( source );
             }
             this.reader.readNext(); // skip header row
-        } catch ( IOException e ) {
+        } catch ( IOException | CsvValidationException e ) {
             throw new GenericRuntimeException( e );
         }
     }
@@ -182,7 +183,7 @@ class CsvEnumerator implements Enumerator<PolyValue[]> {
                     fieldTypes.add( fieldType );
                 }
             }
-        } catch ( IOException e ) {
+        } catch ( IOException | CsvValidationException e ) {
             // ignore
         }
         if ( names.isEmpty() ) {
@@ -240,7 +241,7 @@ class CsvEnumerator implements Enumerator<PolyValue[]> {
                 current = rowConverter.convertRow( strings );
                 return true;
             }
-        } catch ( IOException e ) {
+        } catch ( IOException | CsvValidationException e ) {
             throw new GenericRuntimeException( e );
         }
     }
@@ -417,4 +418,3 @@ class CsvEnumerator implements Enumerator<PolyValue[]> {
     }
 
 }
-

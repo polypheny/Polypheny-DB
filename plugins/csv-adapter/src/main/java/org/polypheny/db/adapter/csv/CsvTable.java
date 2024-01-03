@@ -91,4 +91,3 @@ public abstract class CsvTable extends PhysicalTable {
     }
 
 }
-

@@ -21,8 +21,9 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
@@ -33,8 +34,7 @@ import java.util.Random;
 import java.util.function.Function;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.QueryProvider;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
@@ -136,11 +136,11 @@ public class RexExecutorTest extends SqlLanguageDependent {
             exec.setDataContext( testContext );
             values[0] = "Hello World";
             Object[] result = exec.execute();
-            assertTrue( result[0] instanceof String );
+            assertInstanceOf( String.class, result[0] );
             assertThat( (String) result[0], equalTo( "llo World" ) );
             values[0] = "Polypheny";
             result = exec.execute();
-            assertTrue( result[0] instanceof String );
+            assertInstanceOf( String.class, result[0] );
             assertThat( (String) result[0], equalTo( "lypheny" ) );
         } );
     }
@@ -369,7 +369,7 @@ public class RexExecutorTest extends SqlLanguageDependent {
             if ( name.equals( "inputRecord" ) ) {
                 return values;
             } else {
-                Assert.fail( "Wrong DataContext access" );
+                fail( "Wrong DataContext access" );
                 return null;
             }
         }

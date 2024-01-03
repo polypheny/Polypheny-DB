@@ -60,7 +60,6 @@ import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.metadata.NullSentinel;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -70,6 +69,8 @@ import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.Strong;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.Pair;
@@ -538,17 +539,15 @@ public class RexSimplify {
                 }
                 break;
         }
-        switch ( a.getKind() ) {
-            case NOT:
-                // (NOT x) IS TRUE ==> x IS FALSE
-                // Similarly for IS NOT TRUE, IS FALSE, etc.
-                //
-                // Note that
-                //   (NOT x) IS TRUE !=> x IS FALSE
-                // because of null values.
-                final Operator notKind = RexUtil.op( kind.negateNullSafe() );
-                final RexNode arg = ((RexCall) a).operands.get( 0 );
-                return simplify( rexBuilder.makeCall( notKind, arg ), UNKNOWN );
+        if ( Objects.requireNonNull( a.getKind() ) == Kind.NOT ) {// (NOT x) IS TRUE ==> x IS FALSE
+            // Similarly for IS NOT TRUE, IS FALSE, etc.
+            //
+            // Note that
+            //   (NOT x) IS TRUE !=> x IS FALSE
+            // because of null values.
+            final Operator notKind = RexUtil.op( kind.negateNullSafe() );
+            final RexNode arg = ((RexCall) a).operands.get( 0 );
+            return simplify( rexBuilder.makeCall( notKind, arg ), UNKNOWN );
         }
         RexNode a2 = simplify( a, UNKNOWN );
         if ( a != a2 ) {
@@ -933,7 +932,13 @@ public class RexSimplify {
 
         @Override
         public Boolean visitNameRef( RexNameRef nameRef ) {
-            return true;
+            return false;
+        }
+
+
+        @Override
+        public Boolean visitElementRef( RexElementRef rexElementRef ) {
+            return false;
         }
 
     }
@@ -1473,18 +1478,18 @@ public class RexSimplify {
             throw new AssertionError( "variable mismatch: " + before + " has " + foo0.variables + ", " + simplified + " has " + foo1.variables );
         }
         assignment_loop:
-        for ( Map<RexNode, Comparable<?>> map : foo0.assignments() ) {
+        for ( Map<RexNode, PolyValue> map : foo0.assignments() ) {
             for ( RexNode predicate : predicates.pulledUpPredicates ) {
-                final Comparable<?> v = RexInterpreter.evaluate( predicate, map );
-                if ( !v.equals( true ) ) {
+                final PolyValue v = RexInterpreter.evaluate( predicate, map );
+                if ( !v.asBoolean().value.equals( true ) ) {
                     continue assignment_loop;
                 }
             }
-            Comparable<?> v0 = RexInterpreter.evaluate( foo0.e, map );
+            PolyValue v0 = RexInterpreter.evaluate( foo0.e, map );
             if ( v0 == null ) {
                 throw new AssertionError( "interpreter returned null for " + foo0.e );
             }
-            Comparable<?> v1 = RexInterpreter.evaluate( foo1.e, map );
+            PolyValue v1 = RexInterpreter.evaluate( foo1.e, map );
             if ( v1 == null ) {
                 throw new AssertionError( "interpreter returned null for " + foo1.e );
             }
@@ -1492,11 +1497,11 @@ public class RexSimplify {
                 switch ( unknownAs ) {
                     case FALSE:
                     case TRUE:
-                        if ( v0 == NullSentinel.INSTANCE ) {
-                            v0 = unknownAs.toBoolean();
+                        if ( v0 == PolyNull.NULL ) {
+                            v0 = PolyBoolean.of( unknownAs.toBoolean() );
                         }
-                        if ( v1 == NullSentinel.INSTANCE ) {
-                            v1 = unknownAs.toBoolean();
+                        if ( v1 == PolyNull.NULL ) {
+                            v1 = PolyBoolean.of( unknownAs.toBoolean() );
                         }
                 }
             }
@@ -1514,36 +1519,31 @@ public class RexSimplify {
         if ( sameTypeOrNarrowsNullability( e.getType(), operand.getType() ) ) {
             return operand;
         }
-        switch ( operand.getKind() ) {
-            case LITERAL:
-                final RexLiteral literal = (RexLiteral) operand;
-                final PolyValue value = literal.getValue();
-                final PolyType typeName = literal.getPolyType();
+        if ( Objects.requireNonNull( operand.getKind() ) == Kind.LITERAL ) {
+            final RexLiteral literal = (RexLiteral) operand;
+            final PolyValue value = literal.getValue();
+            final PolyType typeName = literal.getPolyType();
 
-                // First, try to remove the cast without changing the value.
-                // makeCast and canRemoveCastFromLiteral have the same logic, so we are sure to be able to remove the cast.
-                if ( rexBuilder.canRemoveCastFromLiteral( e.getType(), value, typeName ) ) {
-                    return rexBuilder.makeCast( e.getType(), operand );
-                }
+            // First, try to remove the cast without changing the value.
+            // makeCast and canRemoveCastFromLiteral have the same logic, so we are sure to be able to remove the cast.
+            if ( rexBuilder.canRemoveCastFromLiteral( e.getType(), value, typeName ) ) {
+                return rexBuilder.makeCast( e.getType(), operand );
+            }
 
-                // Next, try to convert the value to a different type, e.g. CAST('123' as integer)
-                switch ( literal.getPolyType() ) {
-                    case TIME:
-                        switch ( e.getType().getPolyType() ) {
-                            case TIMESTAMP:
-                                return e;
-                        }
-                        break;
-                }
-                final List<RexNode> reducedValues = new ArrayList<>();
-                executor.reduce( rexBuilder, ImmutableList.of( e ), reducedValues );
-                return Objects.requireNonNull( Iterables.getOnlyElement( reducedValues ) );
-            default:
-                if ( operand == e.getOperands().get( 0 ) ) {
+            // Next, try to convert the value to a different type, e.g. CAST('123' as integer)
+            if ( Objects.requireNonNull( literal.getPolyType() ) == PolyType.TIME ) {
+                if ( Objects.requireNonNull( e.getType().getPolyType() ) == PolyType.TIMESTAMP ) {
                     return e;
-                } else {
-                    return rexBuilder.makeCast( e.getType(), operand );
                 }
+            }
+            final List<RexNode> reducedValues = new ArrayList<>();
+            executor.reduce( rexBuilder, ImmutableList.of( e ), reducedValues );
+            return Objects.requireNonNull( Iterables.getOnlyElement( reducedValues ) );
+        }
+        if ( operand == e.getOperands().get( 0 ) ) {
+            return e;
+        } else {
+            return rexBuilder.makeCast( e.getType(), operand );
         }
     }
 

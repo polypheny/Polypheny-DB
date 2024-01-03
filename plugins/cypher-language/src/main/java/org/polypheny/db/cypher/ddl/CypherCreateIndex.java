@@ -18,7 +18,6 @@ package org.polypheny.db.cypher.ddl;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.cypher.CypherSimpleEither;
 import org.polypheny.db.cypher.expression.CypherExpression;
@@ -108,7 +107,7 @@ public class CypherCreateIndex extends CypherSchemaCommand {
         this.indexName = stringPos.getImage();
         this.properties = properties.stream()
                 .map( p -> new CypherProperty( new CypherExpression( p.getPos() ), p ) )
-                .collect( Collectors.toList() );
+                .toList();
 
         this.replace = false;
         this.variable = null;

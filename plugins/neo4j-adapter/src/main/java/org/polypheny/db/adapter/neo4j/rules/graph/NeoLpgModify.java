@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.polypheny.db.adapter.neo4j.NeoGraph;
 import org.polypheny.db.adapter.neo4j.NeoGraphImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
@@ -189,7 +188,7 @@ public class NeoLpgModify extends LpgModify<NeoGraph> implements NeoGraphAlg {
 
 
     private void handleDelete( NeoGraphImplementor implementor ) {
-        List<LiteralStatement> fieldNames = ids.stream().map( NeoStatements::literal_ ).collect( Collectors.toList() );
+        List<LiteralStatement> fieldNames = ids.stream().map( NeoStatements::literal_ ).toList();
         implementor.add( delete_( true, list_( fieldNames ) ) );
     }
 

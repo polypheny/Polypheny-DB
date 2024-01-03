@@ -34,7 +34,7 @@
 package org.polypheny.db.sql.volcano;
 
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.polypheny.db.sql.volcano.TraitPropagationTest.PropAction.run;
 
 import com.google.common.collect.ImmutableList;
@@ -42,8 +42,8 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.List;
 import java.util.Properties;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgCollation;
@@ -100,7 +100,7 @@ import org.polypheny.db.util.ImmutableBitSet;
 /**
  * Tests that determine whether trait propagation work in Volcano Planner.
  */
-@Ignore // TODO MV fix
+@Disabled // TODO MV fix
 public class TraitPropagationTest {
 
     static final Convention PHYSICAL = new Convention.Impl( "PHYSICAL", Phys.class );
@@ -116,7 +116,7 @@ public class TraitPropagationTest {
             System.out.println( AlgOptUtil.dumpPlan( "LOGICAL PLAN", planned, ExplainFormat.TEXT, ExplainLevel.ALL_ATTRIBUTES ) );
         }
         final AlgMetadataQuery mq = AlgMetadataQuery.instance();
-        assertEquals( "Sortedness was not propagated", 3, mq.getCumulativeCost( planned ).getRows(), 0 );
+        assertEquals( 3, mq.getCumulativeCost( planned ).getRows(), 0, "Sortedness was not propagated" );
     }
 
 
@@ -182,9 +182,7 @@ public class TraitPropagationTest {
                     AlgSubset subset = (AlgSubset) input;
                     for ( AlgNode child : subset.getAlgs() ) {
                         // skip logical nodes
-                        if ( child.getTraitSet().getTrait( ConventionTraitDef.INSTANCE ) == Convention.NONE ) {
-                            continue;
-                        } else {
+                        if ( child.getTraitSet().getTrait( ConventionTraitDef.INSTANCE ) != Convention.NONE ) {
                             AlgTraitSet outcome = child.getTraitSet().replace( PHYSICAL );
                             call.transformTo( new PhysProj( alg.getCluster(), outcome, convert( child, outcome ), alg.getChildExps(), alg.getTupleType() ) );
                         }

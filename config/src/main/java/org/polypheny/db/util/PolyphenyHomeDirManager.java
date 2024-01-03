@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
@@ -42,6 +43,7 @@ public class PolyphenyHomeDirManager {
     private File home;
     private final List<File> dirs = new ArrayList<>();
     private final List<File> deleteOnExit = new ArrayList<>();
+    @Getter
     private static PolyMode mode;
 
 
@@ -95,11 +97,11 @@ public class PolyphenyHomeDirManager {
 
         switch ( mode ) {
             case PRODUCTION:
-                return collector.version;
+                return collector.getVersion();
             case BENCHMARK:
-                return String.format( "%s-%s", collector.version, collector.hash );
+                return String.format( "%s-%s", collector.getVersion(), collector.getHash() );
             default:
-                return String.format( "%s-%s", collector.version, collector.branch );
+                return String.format( "%s-%s", collector.getVersion(), collector.getHash() );
         }
     }
 
@@ -253,6 +255,7 @@ public class PolyphenyHomeDirManager {
         return registerNewFolder( this.home, folder );
     }
 
+
     public File registerNewGlobalFolder( String testBackup ) {
         return registerNewFolder( this.root, testBackup );
     }
@@ -266,8 +269,5 @@ public class PolyphenyHomeDirManager {
     public File getRootPath() {
         return home;
     }
-
-
-
 
 }

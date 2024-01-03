@@ -52,9 +52,6 @@ public class PolyStatementHandle<E> {
 
 
     public synchronized void setOpenResultSet( Iterator<E> result ) {
-        if ( this.openResultSet != null ) {
-            //  this.openResultSet.close();
-        }
         this.openResultSet = result;
     }
 

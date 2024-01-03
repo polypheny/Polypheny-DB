@@ -194,10 +194,10 @@ public interface PolyphenyDbResource {
     @BaseMessage("Database ''{0}'' not found")
     ExInst<ValidatorException> databaseNotFound( String a0 );
 
-    @BaseMessage("Table ''{0}'' not found")
+    @BaseMessage("Entity ''{0}'' not found")
     ExInst<ValidatorException> tableNameNotFound( String a0 );
 
-    @BaseMessage("Table ''{0}'' not found; did you mean ''{1}''?")
+    @BaseMessage("Entity ''{0}'' not found; did you mean ''{1}''?")
     ExInst<ValidatorException> tableNameNotFoundDidYouMean( String a0, String a1 );
 
     @BaseMessage("Value ''{0}'' is not valid JSON; {1}")
@@ -206,7 +206,7 @@ public interface PolyphenyDbResource {
     /**
      * Same message as {@link #tableNameNotFound(String)} but a different kind of exception, so it can be used in {@code AlgBuilder}.
      */
-    @BaseMessage("Table ''{0}'' not found")
+    @BaseMessage("Entity ''{0}'' not found")
     ExInst<PolyphenyDbException> tableNotFound( String tableName );
 
     @BaseMessage("Object ''{0}'' not found")
@@ -221,22 +221,22 @@ public interface PolyphenyDbResource {
     @BaseMessage("Object ''{0}'' not found within ''{1}''; did you mean ''{2}''?")
     ExInst<ValidatorException> objectNotFoundWithinDidYouMean( String a0, String a1, String a2 );
 
-    @BaseMessage("Table ''{0}'' is not a sequence")
+    @BaseMessage("Entity ''{0}'' is not a sequence")
     ExInst<ValidatorException> notASequence( String a0 );
 
-    @BaseMessage("Column ''{0}'' not found in any table")
+    @BaseMessage("Field ''{0}'' not found in any entity")
     ExInst<ValidatorException> columnNotFound( String a0 );
 
-    @BaseMessage("Column ''{0}'' not found in any table; did you mean ''{1}''?")
+    @BaseMessage("Field ''{0}'' not found in any entity; did you mean ''{1}''?")
     ExInst<ValidatorException> columnNotFoundDidYouMean( String a0, String a1 );
 
-    @BaseMessage("Column ''{0}'' not found in table ''{1}''")
+    @BaseMessage("Field ''{0}'' not found in entity ''{1}''")
     ExInst<ValidatorException> columnNotFoundInTable( String a0, String a1 );
 
-    @BaseMessage("Column ''{0}'' not found in table ''{1}''; did you mean ''{2}''?")
+    @BaseMessage("Field ''{0}'' not found in entity ''{1}''; did you mean ''{2}''?")
     ExInst<ValidatorException> columnNotFoundInTableDidYouMean( String a0, String a1, String a2 );
 
-    @BaseMessage("Column ''{0}'' is ambiguous")
+    @BaseMessage("Field ''{0}'' is ambiguous")
     ExInst<ValidatorException> columnAmbiguous( String a0 );
 
     @BaseMessage("Operand {0} must be a query")
@@ -299,13 +299,13 @@ public interface PolyphenyDbResource {
     @BaseMessage("String literal continued on same line")
     ExInst<ValidatorException> stringFragsOnSameLine();
 
-    @BaseMessage("Table or column alias must be a simple identifier")
+    @BaseMessage("Entity or field alias must be a simple identifier")
     ExInst<ValidatorException> aliasMustBeSimpleIdentifier();
 
-    @BaseMessage("List of column aliases must have same degree as table; table has {0,number,#} columns {1}, whereas alias list has {2,number,#} columns")
+    @BaseMessage("List of field aliases must have same degree as entity; entity has {0,number,#} fields {1}, whereas alias list has {2,number,#} fields")
     ExInst<ValidatorException> aliasListDegree( int a0, String a1, int a2 );
 
-    @BaseMessage("Duplicate name ''{0}'' in column alias list")
+    @BaseMessage("Duplicate name ''{0}'' in field alias list")
     ExInst<ValidatorException> aliasListDuplicate( String a0 );
 
     @BaseMessage("INNER, LEFT, RIGHT or FULL join requires a condition (NATURAL keyword or ON or USING clause)")
@@ -317,10 +317,10 @@ public interface PolyphenyDbResource {
     @BaseMessage("Cannot specify NATURAL keyword with ON or USING clause")
     ExInst<ValidatorException> naturalDisallowsOnOrUsing();
 
-    @BaseMessage("Column name ''{0}'' in USING clause is not unique on one side of join")
+    @BaseMessage("Field name ''{0}'' in USING clause is not unique on one side of join")
     ExInst<ValidatorException> columnInUsingNotUnique( String a0 );
 
-    @BaseMessage("Column ''{0}'' matched using NATURAL keyword or USING clause has incompatible types: cannot compare ''{1}'' to ''{2}''")
+    @BaseMessage("Field ''{0}'' matched using NATURAL keyword or USING clause has incompatible types: cannot compare ''{1}'' to ''{2}''")
     ExInst<ValidatorException> naturalOrUsingColumnNotCompatible( String a0, String a1, String a2 );
 
     @BaseMessage("OVER clause is necessary for window functions")
@@ -554,7 +554,7 @@ public interface PolyphenyDbResource {
     @BaseMessage("Argument to function ''{0}'' must be a valid precision between ''{1,number,#}'' and ''{2,number,#}''")
     ExInst<ValidatorException> argumentMustBeValidPrecision( String a0, int a1, int a2 );
 
-    @BaseMessage("Wrong arguments for table function ''{0}'' call. Expected ''{1}'', actual ''{2}''")
+    @BaseMessage("Wrong arguments for entity function ''{0}'' call. Expected ''{1}'', actual ''{2}''")
     ExInst<PolyphenyDbException> illegalArgumentForTableFunctionCall( String a0, String a1, String a2 );
 
     @BaseMessage("''{0}'' is not a valid datetime format")
@@ -601,7 +601,7 @@ public interface PolyphenyDbResource {
     @Property(name = "FeatureDefinition", value = "SQL:2003 Part 2 Annex F")
     Feature sQLFeature_T613();
 
-    @BaseMessage("Execution of a new autocommit statement while a cursor is still execute on same connection is not supported")
+    @BaseMessage("Execution of a new autocommit statement while a cursor is still open on the same connection is not supported")
     @Property(name = "FeatureDefinition", value = "Eigenbase-defined")
     ExInst<PolyphenyDbException> sQLConformance_MultipleActiveAutocommitStatements();
 
@@ -617,7 +617,7 @@ public interface PolyphenyDbResource {
     @Property(name = "FeatureDefinition", value = "Eigenbase-defined")
     Feature sQLFeatureExt_T613_Substitution();
 
-    @BaseMessage("Personality does not maintain table''s row count in the catalog")
+    @BaseMessage("Personality does not maintain entity''s row count in the catalog")
     @Property(name = "FeatureDefinition", value = "Eigenbase-defined")
     ExInst<PolyphenyDbException> personalityManagesRowCount();
 
@@ -659,7 +659,7 @@ public interface PolyphenyDbResource {
     @BaseMessage("FilterableTable.scan must not return null")
     ExInst<PolyphenyDbException> filterableScanReturnedNull();
 
-    @BaseMessage("Cannot convert table ''{0}'' to stream")
+    @BaseMessage("Cannot convert entity ''{0}'' to stream")
     ExInst<ValidatorException> cannotConvertToStream( String tableName );
 
     @BaseMessage("Cannot convert stream ''{0}'' to relation")
@@ -680,19 +680,19 @@ public interface PolyphenyDbResource {
     @BaseMessage("Cannot resolve ''{0}''; it references view ''{1}'', whose definition is cyclic")
     ExInst<ValidatorException> cyclicDefinition( String id, String view );
 
-    @BaseMessage("Modifiable view must be based on a single table")
+    @BaseMessage("Modifiable view must be based on a single entity")
     ExInst<ValidatorException> modifiableViewMustBeBasedOnSingleTable();
 
     @BaseMessage("Modifiable view must be predicated only on equality expressions")
     ExInst<ValidatorException> modifiableViewMustHaveOnlyEqualityPredicates();
 
-    @BaseMessage("View is not modifiable. More than one expression maps to column ''{0}'' of base table ''{1}''")
+    @BaseMessage("View is not modifiable. More than one expression maps to column ''{0}'' of base entity ''{1}''")
     ExInst<ValidatorException> moreThanOneMappedColumn( String columnName, String tableName );
 
-    @BaseMessage("View is not modifiable. No value is supplied for NOT NULL column ''{0}'' of base table ''{1}''")
+    @BaseMessage("View is not modifiable. No value is supplied for NOT NULL column ''{0}'' of base entity ''{1}''")
     ExInst<ValidatorException> noValueSuppliedForViewColumn( String columnName, String tableName );
 
-    @BaseMessage("Modifiable view constraint is not satisfied for column ''{0}'' of base table ''{1}''")
+    @BaseMessage("Modifiable view constraint is not satisfied for column ''{0}'' of base entity ''{1}''")
     ExInst<ValidatorException> viewConstraintNotSatisfied( String columnName, String tableName );
 
     @BaseMessage("Not a record type. The ''*'' operator requires a record")
@@ -752,42 +752,42 @@ public interface PolyphenyDbResource {
     @BaseMessage("Must contain an ORDER BY clause when WITHIN is used")
     ExInst<ValidatorException> cannotUseWithinWithoutOrderBy();
 
-    @BaseMessage("First column of ORDER BY must be of type TIMESTAMP")
+    @BaseMessage("First field of ORDER BY must be of type TIMESTAMP")
     ExInst<ValidatorException> firstColumnOfOrderByMustBeTimestamp();
 
-    @BaseMessage("Extended columns not allowed under the current SQL conformance level")
+    @BaseMessage("Extended fields not allowed under the current SQL conformance level")
     ExInst<ValidatorException> extendNotAllowed();
 
-    @BaseMessage("Rolled up column ''{0}'' is not allowed in {1}")
+    @BaseMessage("Rolled up field ''{0}'' is not allowed in {1}")
     ExInst<ValidatorException> rolledUpNotAllowed( String column, String context );
 
-    @BaseMessage("Schema ''{0}'' already exists")
+    @BaseMessage("Namespace ''{0}'' already exists")
     ExInst<ValidatorException> schemaExists( String name );
 
-    @BaseMessage("Column ''{0}'' already exists")
+    @BaseMessage("Field ''{0}'' already exists")
     ExInst<ValidatorException> columnExists( String name );
 
-    @BaseMessage("Column ''{0}'' is defined NOT NULL and has no default value assigned")
+    @BaseMessage("Field ''{0}'' is defined NOT NULL and has no default value assigned")
     ExInst<ValidatorException> notNullAndNoDefaultValue( String name );
 
-    @BaseMessage("Invalid schema type ''{0}''; valid values: {1}")
+    @BaseMessage("Invalid namespace type ''{0}''; valid values: {1}")
     ExInst<ValidatorException> schemaInvalidType( String type, String values );
 
-    @BaseMessage("Table ''{0}'' already exists")
+    @BaseMessage("Entity ''{0}'' already exists")
     ExInst<ValidatorException> tableExists( String name );
 
     // If CREATE TABLE does not have "AS query", there must be a column list
-    @BaseMessage("Missing column list")
+    @BaseMessage("Missing field list")
     ExInst<ValidatorException> createTableRequiresColumnList();
 
     // If CREATE TABLE does not have "AS query", a type must be specified for each column
-    @BaseMessage("Type required for column ''{0}'' in CREATE TABLE without AS")
+    @BaseMessage("Type required for field ''{0}'' in CREATE TABLE without AS")
     ExInst<ValidatorException> createTableRequiresColumnTypes( String columnName );
 
     @BaseMessage("View ''{0}'' already exists and REPLACE not specified")
     ExInst<ValidatorException> viewExists( String name );
 
-    @BaseMessage("Schema ''{0}'' not found")
+    @BaseMessage("Namespace ''{0}'' not found")
     ExInst<ValidatorException> schemaNotFound( String name );
 
     @BaseMessage("User ''{0}'' not found")
@@ -874,31 +874,31 @@ public interface PolyphenyDbResource {
     @BaseMessage("Timeout of ''{0}'' ms for query execution is reached. Query execution started at ''{1}''")
     ExInst<PolyphenyDbException> queryExecutionTimeoutReached( String timeout, String queryStart );
 
-    @BaseMessage("While executing SQL [{0}] on JDBC sub-schema")
+    @BaseMessage("While executing SQL [{0}] on JDBC sub-namespace")
     ExInst<RuntimeException> exceptionWhilePerformingQueryOnJdbcSubSchema( String sql );
 
     @BaseMessage("There is no data store with this name: ''{0}''")
     ExInst<PolyphenyDbException> unknownStoreName( String store );
 
-    @BaseMessage("Table ''{0}'' is already placed on store ''{1}''")
+    @BaseMessage("Entity ''{0}'' is already placed on store ''{1}''")
     ExInst<PolyphenyDbException> placementAlreadyExists( String tableName, String storeName );
 
-    @BaseMessage("There is no placement of table ''{1}'' on store ''{0}''")
+    @BaseMessage("There is no placement of entity ''{1}'' on store ''{0}''")
     ExInst<PolyphenyDbException> placementDoesNotExist( String storeName, String tableName );
 
-    @BaseMessage("The column ''{0}'' is part of the primary key and cannot be dropped")
+    @BaseMessage("The field ''{0}'' is part of the primary key and cannot be dropped")
     ExInst<PolyphenyDbException> placementIsPrimaryKey( String name );
 
-    @BaseMessage("There needs to be at least one placement per table")
+    @BaseMessage("There needs to be at least one placement per entity")
     ExInst<PolyphenyDbException> onlyOnePlacementLeft();
 
     @BaseMessage("The specified data store does not support the index method ''{0}''!")
     ExInst<PolyphenyDbException> unknownIndexMethod( String indexMethod );
 
-    @BaseMessage("There is no placement of column ''{0}'' on the specified data store!")
+    @BaseMessage("There is no placement of field ''{0}'' on the specified data store!")
     ExInst<PolyphenyDbException> missingColumnPlacement( String columnName );
 
-    @BaseMessage("Unable to remove placement of column ''{0}'' because it is part of the index ''{1}''!")
+    @BaseMessage("Unable to remove placement of field ''{0}'' because it is part of the index ''{1}''!")
     ExInst<PolyphenyDbException> indexPreventsRemovalOfPlacement( String indexName, String columnName );
 
     @BaseMessage("There is already an index with the name ''{0}''!")
@@ -922,7 +922,7 @@ public interface PolyphenyDbResource {
     @BaseMessage("There is no partition with this name: ''{0}''")
     ExInst<PolyphenyDbException> unknownPartitionType( String name );
 
-    @BaseMessage("The partition names for a column need to be unique")
+    @BaseMessage("The partition names for a field need to be unique")
     ExInst<PolyphenyDbException> partitionNamesNotUnique();
 
 }

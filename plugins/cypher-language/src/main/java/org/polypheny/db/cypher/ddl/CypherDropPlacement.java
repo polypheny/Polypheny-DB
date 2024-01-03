@@ -17,7 +17,6 @@
 package org.polypheny.db.cypher.ddl;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
@@ -58,7 +57,7 @@ public class CypherDropPlacement extends CypherAdminCommand implements Executabl
 
         DataStore<?> dataStore = Stream.of( storeName )
                 .map( store -> (DataStore<?>) adapterManager.getAdapter( storeName ) )
-                .collect( Collectors.toList() ).get( 0 );
+                .toList().get( 0 );
 
         if ( graphs.size() != 1 ) {
             throw new GenericRuntimeException( "Error while adding graph placement" );

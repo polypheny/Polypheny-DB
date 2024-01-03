@@ -36,8 +36,8 @@ package org.polypheny.db.sql;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -62,7 +62,7 @@ import org.polypheny.db.tools.AlgBuilder;
 /**
  * RelOptTestBase is an abstract base for tests which exercise a planner and/or rules via {@link DiffRepository}.
  */
-abstract class RelOptTestBase extends SqlToAlgTestBase {
+abstract class AlgOptTestBase extends SqlToAlgTestBase {
 
     @Override
     public Tester createTester() {

@@ -19,7 +19,6 @@ package org.polypheny.db.sql.language.ddl.altertable;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.ForeignKeyOption;
 import org.polypheny.db.ddl.DdlManager;
@@ -105,8 +104,8 @@ public class SqlAlterTableAddForeignKey extends SqlAlterTable {
         DdlManager.getInstance().createForeignKey(
                 logicalTable,
                 refTable,
-                columnList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
-                referencesList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
+                columnList.getList().stream().map( Node::toString ).toList(),
+                referencesList.getList().stream().map( Node::toString ).toList(),
                 constraintName.getSimple(),
                 onUpdate,
                 onDelete );

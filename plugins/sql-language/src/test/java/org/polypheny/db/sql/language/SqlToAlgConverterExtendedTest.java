@@ -17,8 +17,8 @@
 package org.polypheny.db.sql.language;
 
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.relational.RelScan;
@@ -31,18 +31,18 @@ import org.polypheny.db.runtime.Hook.Closeable;
 /**
  * Runs {@link SqlToAlgConverterTest} with extensions.
  */
-public class SqlToRelConverterExtendedTest extends SqlToAlgConverterTest {
+public class SqlToAlgConverterExtendedTest extends SqlToAlgConverterTest {
 
     Closeable closeable;
 
 
-    @Before
+    @BeforeEach
     public void before() {
-        this.closeable = Hook.CONVERTED.addThread( SqlToRelConverterExtendedTest::foo );
+        this.closeable = Hook.CONVERTED.addThread( SqlToAlgConverterExtendedTest::foo );
     }
 
 
-    @After
+    @AfterEach
     public void after() {
         if ( this.closeable != null ) {
             this.closeable.close();

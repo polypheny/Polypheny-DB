@@ -18,9 +18,9 @@ package org.polypheny.db.sql.language.utils;
 
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
@@ -65,7 +65,7 @@ import org.polypheny.db.util.Util;
 
 /**
  * Abstract implementation of {@link Tester} that talks to a mock catalog.
- *
+ * <p>
  * This is to implement the default behavior: testing is only against the {@link SqlValidator}.
  */
 public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
@@ -151,7 +151,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     public AlgDataType getColumnType( String sql ) {
         AlgDataType rowType = getResultType( sql );
         final List<AlgDataTypeField> fields = rowType.getFields();
-        assertEquals( "expected query to return 1 field", 1, fields.size() );
+        assertEquals( 1, fields.size(), "expected query to return 1 field" );
         return fields.get( 0 ).getType();
     }
 
@@ -451,13 +451,13 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
 
     /**
      * Builds a query that extracts all literals as columns in an underlying select.
-     *
+     * <p>
      * For example,
-     *
+     * <p>
      * {@code 1 < 5}
      *
      * becomes
-     *
+     * <p>
      * {@code SELECT p0 < p1 FROM (VALUES (1, 5)) AS t(p0, p1)}
      *
      * Null literals don't have enough type information to be extracted. We push down {@code CAST(NULL AS type)} but raw nulls such as {@code CASE 1 WHEN 2 THEN 'a' ELSE NULL END} are left as is.
@@ -564,14 +564,11 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
 
             @Override
             public String next() {
-                switch ( i++ ) {
-                    case 0:
-                        return buildQuery( expression );
-                    case 1:
-                        return buildQuery2( expression );
-                    default:
-                        throw new NoSuchElementException();
-                }
+                return switch ( i++ ) {
+                    case 0 -> buildQuery( expression );
+                    case 1 -> buildQuery2( expression );
+                    default -> throw new NoSuchElementException();
+                };
             }
 
 

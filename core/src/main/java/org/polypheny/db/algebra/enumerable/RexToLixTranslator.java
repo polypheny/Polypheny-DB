@@ -54,6 +54,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
@@ -63,6 +64,7 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCorrelVariable;
 import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexElementRef;
 import org.polypheny.db.rex.RexFieldAccess;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
@@ -678,11 +680,15 @@ public class RexToLixTranslator {
                 RexCall accessCall = (RexCall) builder.makeCall( fieldAccess.getType(), OperatorRegistry.get( OperatorName.STRUCT_ACCESS ), ImmutableList.of( target, rxIndex, rxName ) );
                 return translateCall( accessCall, nullAs );
             }
+            case ELEMENT_REF:
+                RexElementRef element = expr.unwrap( RexElementRef.class ).orElseThrow();
+                return element.getExpression();
+
             default:
                 if ( expr instanceof RexCall ) {
                     return translateCall( (RexCall) expr, nullAs );
                 }
-                throw new RuntimeException( "cannot translate expression " + expr );
+                throw new GenericRuntimeException( "cannot translate expression " + expr );
         }
     }
 

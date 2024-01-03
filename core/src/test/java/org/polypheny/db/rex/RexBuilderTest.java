@@ -580,7 +580,10 @@ public class RexBuilderTest {
 
     private void checkBigDecimalLiteral( RexBuilder builder, String val ) {
         final RexLiteral literal = builder.makeExactLiteral( new BigDecimal( val ) );
-        assertEquals( "builder.makeExactLiteral(new BigDecimal(" + val + ")).getValue(BigDecimal.class).toString()", literal.value.asBigDecimal().value.toString(), val );
+        assertEquals(
+                literal.value.asBigDecimal().value.toString(),
+                val,
+                "builder.makeExactLiteral(new BigDecimal(" + val + ")).getValue(BigDecimal.class).toString()" );
     }
 
 }

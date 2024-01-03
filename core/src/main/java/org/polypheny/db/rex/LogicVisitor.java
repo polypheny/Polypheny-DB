@@ -218,5 +218,11 @@ public class LogicVisitor implements RexBiVisitor<Logic, Logic> {
         return end( ref, arg );
     }
 
+
+    @Override
+    public Logic visitElementRef( RexElementRef rexElementRef, Logic arg ) {
+        return end( rexElementRef, arg );
+    }
+
 }
 

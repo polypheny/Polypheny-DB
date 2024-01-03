@@ -21,7 +21,6 @@ import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -245,10 +244,10 @@ public class LanguageManager {
         Processor processor = queries.getLanguage().getProcessorSupplier().get();
         List<? extends Node> statements = processor.parse( queries.getQuery() );
 
-        return Pair.zip( statements, Arrays.stream( queries.getQuery().split( ";" ) ).filter( q -> !q.trim().isEmpty() ).collect( Collectors.toList() ) )
+        return Pair.zip( statements, Arrays.stream( queries.getQuery().split( ";" ) ).filter( q -> !q.trim().isEmpty() ).toList() )
                 .stream()
                 .map( p -> ParsedQueryContext.fromQuery( p.right, p.left, queries ) )
-                .collect( Collectors.toList() );
+                .toList();
     }
 
 }

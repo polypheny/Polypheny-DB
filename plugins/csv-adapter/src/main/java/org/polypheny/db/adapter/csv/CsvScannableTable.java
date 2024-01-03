@@ -74,6 +74,4 @@ public class CsvScannableTable extends CsvTable implements ScannableEntity {
         };
     }
 
-
 }
-

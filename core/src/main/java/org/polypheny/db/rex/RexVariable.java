@@ -68,5 +68,10 @@ public abstract class RexVariable extends RexNode {
     }
 
 
+    @Override
+    public String toString() {
+        return name;
+    }
+
 }
 

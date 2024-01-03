@@ -746,7 +746,7 @@ public interface CypherFactory {
     }
 
     static List<CypherDbScope> databaseScopes( ParserPos pos, List<CypherSimpleEither<String, CypherParameter>> names, ScopeType type ) {
-        return names.stream().map( n -> new CypherDbScope( pos, n, false, false, type ) ).collect( Collectors.toList() );
+        return names.stream().map( n -> new CypherDbScope( pos, n, false, false, type ) ).toList();
     }
 
     static CypherAdminCommand createDatabaseAlias( ParserPos pos, boolean replace, CypherSimpleEither<String, CypherParameter> aliasName, CypherSimpleEither<String, CypherParameter> targetName, boolean ifNotExists ) {

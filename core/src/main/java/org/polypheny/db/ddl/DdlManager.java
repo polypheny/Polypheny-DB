@@ -704,7 +704,7 @@ public abstract class DdlManager {
             List<String> names = partitionGroupNames
                     .stream()
                     .map( Identifier::getSimple )
-                    .collect( Collectors.toList() );
+                    .toList();
             List<List<String>> qualifiers = partitionQualifierList
                     .stream()
                     .map( qs -> qs.stream().map( PartitionInformation::getValueOfSqlNode ).collect( Collectors.toList() ) )

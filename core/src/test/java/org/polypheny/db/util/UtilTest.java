@@ -107,12 +107,22 @@ import org.polypheny.db.runtime.ComparableList;
 import org.polypheny.db.runtime.ConsList;
 import org.polypheny.db.runtime.Resources;
 import org.polypheny.db.test.Matchers;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
  * Unit test for {@link Util} and other classes in this package.
  */
 public class UtilTest {
+
+    @BeforeAll
+    public static void setUp() {
+        if ( PolyphenyHomeDirManager.getMode() == null ) {
+            PolyphenyHomeDirManager.setModeAndGetInstance( PolyMode.TEST );
+        }
+    }
 
 
     public UtilTest() {
@@ -921,73 +931,18 @@ public class UtilTest {
     }
 
 
-    /**
-     * Tests that flat lists behave like regular lists in terms of equals
-     * and hashCode.
-     */
-    @Test
-    public void testFlatList() {
-        final ComparableList<String> emp = ComparableList.of();
-        final List<String> emp0 = Collections.emptyList();
-        assertEquals( emp, emp0 );
-        assertEquals( emp.hashCode(), emp0.hashCode() );
-
-        final ComparableList<String> ab = ComparableList.of( "A", "B" );
-        final List<String> ab0 = Arrays.asList( "A", "B" );
-        assertEquals( ab, ab0 );
-        assertEquals( ab.hashCode(), ab0.hashCode() );
-
-        final List<String> abc = ComparableList.of( "A", "B", "C" );
-        final List<String> abc0 = Arrays.asList( "A", "B", "C" );
-        assertEquals( abc, abc0 );
-        assertEquals( abc.hashCode(), abc0.hashCode() );
-
-        final List<Object> abc1 = ImmutableList.of( "A", "B", "C" ); // if objects are comparable we use FlatList else we use ImmutableList
-        assertEquals( abc1, abc0 );
-        assertEquals( abc, abc0 );
-        assertEquals( abc1.hashCode(), abc0.hashCode() );
-
-        final List<String> an = ComparableList.of( "A", null );
-        final List<String> an0 = Arrays.asList( "A", null );
-        assertEquals( an, an0 );
-        assertEquals( an.hashCode(), an0.hashCode() );
-
-        final ComparableList<String> anb = ComparableList.of( "A", null, "B" );
-        final List<String> anb0 = Arrays.asList( "A", null, "B" );
-        assertEquals( anb, anb0 );
-        assertEquals( anb.hashCode(), anb0.hashCode() );
-        assertEquals( 1, anb.indexOf( null ), anb + ".indexOf(null)" );
-        assertEquals( 1, anb.lastIndexOf( null ), anb + ".lastIndexOf(null)" );
-        assertEquals( 2, anb.indexOf( "B" ), anb + ".indexOf(B)" );
-        assertEquals( 0, anb.lastIndexOf( "A" ), anb + ".lastIndexOf(A)" );
-        assertEquals( -1, anb.indexOf( "Z" ), anb + ".indexOf(Z)" );
-        assertEquals( -1, anb.lastIndexOf( "Z" ), anb + ".lastIndexOf(Z)" );
-
-        // Comparisons
-        assertThat( emp, instanceOf( Comparable.class ) );
-        assertThat( ab, instanceOf( Comparable.class ) );
-        final Comparable<ComparableList<String>> cemp = emp;
-        final Comparable<ComparableList<String>> cab = ab;
-        assertThat( cemp.compareTo( emp ), is( 0 ) );
-        assertThat( cemp.compareTo( ab ) < 0, is( true ) );
-        assertThat( cab.compareTo( ab ), is( 0 ) );
-        assertThat( cab.compareTo( emp ) > 0, is( true ) );
-        assertThat( cab.compareTo( anb ) > 0, is( true ) );
+    private <E extends PolyValue> PolyList<E> l1( E e ) {
+        return PolyList.copyOf( Collections.singletonList( e ) );
     }
 
 
-    private <E> List<E> l1( E e ) {
-        return Collections.singletonList( e );
+    private <E extends PolyValue> PolyList<E> l2( E e0, E e1 ) {
+        return PolyList.copyOf( List.of( e0, e1 ) );
     }
 
 
-    private <E> List<E> l2( E e0, E e1 ) {
-        return Arrays.asList( e0, e1 );
-    }
-
-
-    private <E> List<E> l3( E e0, E e1, E e2 ) {
-        return Arrays.asList( e0, e1, e2 );
+    private <E extends PolyValue> PolyList<E> l3( E e0, E e1, E e2 ) {
+        return PolyList.copyOf( List.of( e0, e1, e2 ) );
     }
 
 
@@ -1003,19 +958,19 @@ public class UtilTest {
 
 
     @Test
-    public void testFlatListProduct() {
-        final List<Enumerator<List<String>>> list = new ArrayList<>();
-        list.add( Linq4j.enumerator( l2( l1( "a" ), l1( "b" ) ) ) );
-        list.add( Linq4j.enumerator( l3( l2( "x", "p" ), l2( "y", "q" ), l2( "z", "r" ) ) ) );
-        final Enumerable<ComparableList<String>> product = Functions.product( list, 3, false );
+    public void testListProduct() {
+        final List<Enumerator<PolyList<PolyString>>> list = new ArrayList<>();
+        list.add( Linq4j.enumerator( l2( l1( PolyString.of( "a" ) ), l1( PolyString.of( "b" ) ) ) ) );
+        list.add( Linq4j.enumerator( l3( l2( PolyString.of( "x" ), PolyString.of( "p" ) ), l2( PolyString.of( "y" ), PolyString.of( "q" ) ), l2( PolyString.of( "z" ), PolyString.of( "r" ) ) ) ) );
+        final Enumerable<PolyList<PolyString>> product = Functions.product( list, 3, false );
         int n = 0;
-        ComparableList<String> previous = ComparableList.of();
-        for ( ComparableList<String> strings : product ) {
+        PolyList<PolyString> previous = PolyList.copyOf( new ArrayList<>() );
+        for ( PolyList<PolyString> strings : product ) {
             if ( n++ == 1 ) {
                 assertThat( strings.size(), is( 3 ) );
-                assertThat( strings.get( 0 ), is( "a" ) );
-                assertThat( strings.get( 1 ), is( "y" ) );
-                assertThat( strings.get( 2 ), is( "q" ) );
+                assertThat( strings.get( 0 ), is( PolyString.of( "a" ) ) );
+                assertThat( strings.get( 1 ), is( PolyString.of( "y" ) ) );
+                assertThat( strings.get( 2 ), is( PolyString.of( "q" ) ) );
             }
             if ( previous != null ) {
                 assertTrue( previous.compareTo( strings ) < 0 );

@@ -265,7 +265,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
                 statements.add( return_( statement.statements ) );
             } else {//if ( statement.type == StatementType.WHERE ) {
                 // have to add
-                statements.add( return_( list_( last.getTupleType().getFieldNames().stream().map( f -> literal_( NeoUtil.fixParameter( f ) ) ).collect( Collectors.toList() ) ) ) );
+                statements.add( return_( list_( last.getTupleType().getFieldNames().stream().map( f -> literal_( NeoUtil.fixParameter( f ) ) ).toList() ) ) );
             }
         }
     }

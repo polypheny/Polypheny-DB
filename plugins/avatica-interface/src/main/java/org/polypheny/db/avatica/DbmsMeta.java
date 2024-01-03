@@ -136,13 +136,6 @@ import org.polypheny.db.util.Pair;
 @Slf4j
 public class DbmsMeta implements ProtobufMeta {
 
-    /**
-     * Special value for {@code Statement#getLargeMaxRows()} that means fetch an unlimited number of rows in a single batch.
-     *
-     * Any other negative value will return an unlimited number of rows but will do it in the default batch size, namely 100.
-     */
-    public static final int UNLIMITED_COUNT = -2;
-
     public static final boolean SEND_FIRST_FRAME_WITH_RESPONSE = false;
 
     private final ConcurrentMap<String, PolyConnectionHandle> openConnections = new ConcurrentHashMap<>();
@@ -341,7 +334,7 @@ public class DbmsMeta implements ProtobufMeta {
             final List<LogicalColumn> columns = getLogicalTables( schemaPattern, tablePattern ).stream().flatMap( t -> catalog.getSnapshot().rel().getColumns(
                     (tablePattern == null || tablePattern.s == null) ? null : new Pattern( tablePattern.s ),
                     (columnPattern == null || columnPattern.s == null) ? null : new Pattern( columnPattern.s )
-            ).stream() ).collect( Collectors.toList() );
+            ).stream() ).toList();
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
                     ch,

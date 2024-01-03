@@ -55,7 +55,7 @@ public class Translator extends RexVisitorImpl<String> {
 
     private static List<OperatorName> binaries = Arrays.stream( OperatorName.values() )
             .filter( o -> o.getClazz() == BinaryOperator.class )
-            .collect( Collectors.toList() );
+            .toList();
 
 
     public Translator(
@@ -159,7 +159,7 @@ public class Translator extends RexVisitorImpl<String> {
             return handleBinaries( call );
         }
 
-        List<String> ops = call.operands.stream().map( o -> o.accept( this ) ).collect( Collectors.toList() );
+        List<String> ops = call.operands.stream().map( o -> o.accept( this ) ).toList();
 
         return getFinalFunction( call, ops );
     }
@@ -212,7 +212,7 @@ public class Translator extends RexVisitorImpl<String> {
     private String handleSetProperties( RexCall call ) {
         String identifier = call.operands.get( 0 ).accept( this );
         List<PolyValue> rexKeys = ((RexLiteral) call.operands.get( 1 )).value.asList();
-        List<String> keys = rexKeys.stream().map( l -> l.asString().value ).collect( Collectors.toList() );
+        List<String> keys = rexKeys.stream().map( l -> l.asString().value ).toList();
         List<PolyValue> rexValues = ((RexLiteral) call.operands.get( 2 )).value.asList().value;
         List<String> values = rexValues.stream().map( l -> {
             String literal = l.asString().value;
@@ -220,7 +220,7 @@ public class Translator extends RexVisitorImpl<String> {
                 return String.format( "'%s'", literal );
             }
             return literal;
-        } ).collect( Collectors.toList() );
+        } ).toList();
 
         boolean replace = ((RexLiteral) call.operands.get( 3 )).value.asBoolean().value;
 
@@ -255,7 +255,7 @@ public class Translator extends RexVisitorImpl<String> {
     private String handleSetLabels( RexCall call ) {
         String identifier = call.operands.get( 0 ).accept( this );
         List<PolyValue> rexLabels = ((RexLiteral) call.operands.get( 1 )).value.asList();
-        List<String> labels = rexLabels.stream().map( l -> ":" + l.asString().value ).collect( Collectors.toList() );
+        List<String> labels = rexLabels.stream().map( l -> ":" + l.asString().value ).toList();
         return identifier + String.join( "", labels );
     }
 

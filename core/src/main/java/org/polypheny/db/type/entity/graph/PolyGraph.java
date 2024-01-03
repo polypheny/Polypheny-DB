@@ -118,7 +118,7 @@ public class PolyGraph extends GraphObject {
         // Retrieve hop as de-referenced segments, which store the full information of nodes and edges
         List<List<PolySegment>> segments = pattern.getDerefSegments();
 
-        List<List<TreePart>> trees = segments.stream().map( this::buildMatchingTree ).collect( Collectors.toList() );
+        List<List<TreePart>> trees = segments.stream().map( this::buildMatchingTree ).toList();
 
         List<List<Pair<PolyString, PolyString>>> namedPathIds = buildIdPaths( trees );
 
