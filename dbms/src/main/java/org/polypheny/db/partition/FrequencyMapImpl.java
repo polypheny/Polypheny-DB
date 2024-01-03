@@ -161,10 +161,10 @@ public class FrequencyMapImpl extends FrequencyMap {
         PartitionProperty property = catalog.getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow();
 
         // Get percentage of tables which can remain in HOT
-        long numberOfPartitionsInHot = (property.partitionIds.size() * ((TemperaturePartitionProperty) property).getHotAccessPercentageIn()) / 100;
+        long numberOfPartitionsInHot = ((long) property.partitionIds.size() * ((TemperaturePartitionProperty) property).getHotAccessPercentageIn()) / 100;
 
         // These are the tables than can remain in HOT
-        long allowedTablesInHot = (property.partitionIds.size() * ((TemperaturePartitionProperty) property).getHotAccessPercentageOut()) / 100;
+        long allowedTablesInHot = ((long) property.partitionIds.size() * ((TemperaturePartitionProperty) property).getHotAccessPercentageOut()) / 100;
 
         if ( numberOfPartitionsInHot == 0 ) {
             numberOfPartitionsInHot = 1;
@@ -326,15 +326,14 @@ public class FrequencyMapImpl extends FrequencyMap {
 
 
     private void createHotTables( LogicalTable table, List<Long> partitionsFromColdToHot, List<Long> partitionsFromHotToCold, Map<DataStore<?>, List<Long>> partitionsToRemoveFromStore, Statement statement, DataMigrator dataMigrator, LogicalAdapter logicalAdapter ) {
-        Adapter<?> adapter = AdapterManager.getInstance().getAdapter( logicalAdapter.id );
-        if ( adapter instanceof DataStore ) {
-            DataStore<?> store = (DataStore<?>) adapter;
+        Adapter<?> adapter = AdapterManager.getInstance().getAdapter( logicalAdapter.id ).orElseThrow();
+        if ( adapter instanceof DataStore<?> store ) {
 
             List<Long> hotPartitionsToCreate = filterList( table.namespaceId, logicalAdapter.id, table.id, partitionsFromColdToHot );
             //List<Long> coldPartitionsToDelete = filterList( catalogAdapter.id, table.id, partitionsFromHotToCold );
 
             // If this storeId contains both Groups HOT {@literal &}  COLD do nothing
-            if ( hotPartitionsToCreate.size() != 0 ) {
+            if ( !hotPartitionsToCreate.isEmpty() ) {
                 Catalog.getInstance().getSnapshot().alloc().getPartitionsOnDataPlacement( store.getAdapterId(), table.id );
 
                 for ( long partitionId : hotPartitionsToCreate ) {

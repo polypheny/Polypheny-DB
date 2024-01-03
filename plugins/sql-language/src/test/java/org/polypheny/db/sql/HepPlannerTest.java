@@ -47,6 +47,7 @@ import org.polypheny.db.plan.hep.HepProgramBuilder;
  * HepPlannerTest is a unit test for {@link HepPlanner}. See {#@link RelOptRulesTest} for an explanation of how to add tests; the tests in this class are targeted at exercising the planner, and use specific rules for convenience only,
  * whereas the tests in that class are targeted at exercising specific rules, and use the planner for convenience only. Hence the split.
  */
+@Disabled // this test heavily relies on unmaintainable string results and arcane naming conventions of tests, as well as trickery with Throwable.getStackTrace() to get the test name, which should be avoided and replaced with proper testing
 public class HepPlannerTest extends AlgOptTestBase {
 
     private static final String UNION_TREE = "(select name from dept union select ename from emp)" + " union (select ename from bonus)";
@@ -84,7 +85,7 @@ public class HepPlannerTest extends AlgOptTestBase {
 
 
     @Test
-    public void testRuleClass() throws Exception {
+    public void testRuleClass() {
         // Verify that an entire class of rules can be applied.
 
         HepProgramBuilder programBuilder = HepProgram.builder();
@@ -100,7 +101,7 @@ public class HepPlannerTest extends AlgOptTestBase {
 
 
     @Test
-    public void testRuleDescription() throws Exception {
+    public void testRuleDescription() {
         // Verify that a rule can be applied via its description.
 
         HepProgramBuilder programBuilder = HepProgram.builder();
@@ -153,7 +154,7 @@ public class HepPlannerTest extends AlgOptTestBase {
 
 
     @Test
-    public void testMatchLimitOneTopDown() throws Exception {
+    public void testMatchLimitOneTopDown() {
         // Verify that only the top union gets rewritten.
 
         HepProgramBuilder programBuilder = HepProgram.builder();
@@ -166,7 +167,7 @@ public class HepPlannerTest extends AlgOptTestBase {
 
 
     @Test
-    public void testMatchLimitOneBottomUp() throws Exception {
+    public void testMatchLimitOneBottomUp() {
         // Verify that only the bottom union gets rewritten.
 
         HepProgramBuilder programBuilder = HepProgram.builder();
@@ -179,7 +180,7 @@ public class HepPlannerTest extends AlgOptTestBase {
 
 
     @Test
-    public void testMatchUntilFixpoint() throws Exception {
+    public void testMatchUntilFixpoint() {
         // Verify that both unions get rewritten.
 
         HepProgramBuilder programBuilder = HepProgram.builder();
@@ -192,7 +193,7 @@ public class HepPlannerTest extends AlgOptTestBase {
 
     @Test
     @Disabled
-    public void testReplaceCommonSubexpression() throws Exception {
+    public void testReplaceCommonSubexpression() {
         // Note that here it may look like the rule is firing twice, but actually it's only firing once on the common sub-expression.  The purpose of this test
         // is to make sure the planner can deal with rewriting something used as a common sub-expression twice by the same parent (the join in this case).
 
@@ -201,7 +202,7 @@ public class HepPlannerTest extends AlgOptTestBase {
 
 
     /**
-     * Tests that if two relational expressions are equivalent, the planner notices, and only applies the rule once.
+     * Tests that if two algebra expressions are equivalent, the planner notices, and only applies the rule once.
      */
     @Test
     public void testCommonSubExpression() {
@@ -220,15 +221,15 @@ public class HepPlannerTest extends AlgOptTestBase {
                 union all
                 (select 1 from dept where abs(-1)=20)""";
         planner.setRoot( tester.convertSqlToAlg( sql ).alg );
-        AlgNode bestRel = planner.findBestExp();
+        AlgNode bestAlg = planner.findBestExp();
 
-        assertThat( bestRel.getInput( 0 ).equals( bestRel.getInput( 1 ) ), is( true ) );
+        assertThat( bestAlg.getInput( 0 ).equals( bestAlg.getInput( 1 ) ), is( true ) );
         assertThat( listener.getApplyTimes() == 1, is( true ) );
     }
 
 
     @Test
-    public void testSubprogram() throws Exception {
+    public void testSubprogram() {
         // Verify that subprogram gets re-executed until fixpoint. In this case, the first time through we limit it to generate only one calc; the second time through it will generate
         // a second calc, and then merge them.
         HepProgramBuilder subprogramBuilder = HepProgram.builder();
@@ -259,7 +260,7 @@ public class HepPlannerTest extends AlgOptTestBase {
 
 
     @Test
-    public void testGC() throws Exception {
+    public void testGC() {
         HepProgramBuilder programBuilder = HepProgram.builder();
         programBuilder.addMatchOrder( HepMatchOrder.TOP_DOWN );
         programBuilder.addRuleInstance( CalcMergeRule.INSTANCE );

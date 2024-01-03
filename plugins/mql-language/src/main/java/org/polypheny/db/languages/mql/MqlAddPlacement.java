@@ -55,7 +55,7 @@ public class MqlAddPlacement extends MqlCollectionStatement implements Executabl
 
         List<DataStore<?>> dataStores = stores
                 .stream()
-                .map( store -> (DataStore<?>) adapterManager.getAdapter( store ) )
+                .map( store -> adapterManager.getStore( store ).orElseThrow() )
                 .collect( Collectors.toList() );
 
         if ( statement.getTransaction().getSnapshot().alloc().getFromLogical( collections.get( 0 ).id ).stream().anyMatch( p -> dataStores.stream().map( Adapter::getAdapterId ).toList().contains( p ) ) ) {

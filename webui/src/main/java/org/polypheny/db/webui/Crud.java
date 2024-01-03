@@ -1094,9 +1094,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         }
         List<RelationalResult> exportedColumns = new ArrayList<>();
         for ( Long adapterId : adapterIds ) {
-            Adapter<?> adapter = AdapterManager.getInstance().getAdapter( adapterId );
-            if ( adapter instanceof DataSource<?> ) {
-                DataSource<?> dataSource = (DataSource<?>) adapter;
+            Adapter<?> adapter = AdapterManager.getInstance().getAdapter( adapterId ).orElseThrow();
+            if ( adapter instanceof DataSource<?> dataSource ) {
                 for ( Entry<String, List<ExportedColumn>> entry : dataSource.getExportedColumns().entrySet() ) {
                     List<UiColumnDefinition> columnList = new ArrayList<>();
                     for ( ExportedColumn col : entry.getValue() ) {
@@ -1595,7 +1594,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         // Get functional indexes
         List<AllocationEntity> allocs = Catalog.snapshot().alloc().getFromLogical( table.id );
         for ( AllocationEntity alloc : allocs ) {
-            Adapter<?> adapter = AdapterManager.getInstance().getAdapter( alloc.adapterId );
+            Adapter<?> adapter = AdapterManager.getInstance().getAdapter( alloc.adapterId ).orElseThrow();
             DataStore<?> store;
             if ( adapter instanceof DataStore<?> ) {
                 store = (DataStore<?>) adapter;
@@ -1712,7 +1711,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             LogicalColumn pkColumn = snapshot.rel().getColumn( pkColumnIds.get( 0 ) ).orElseThrow();
             List<AllocationColumn> pkPlacements = snapshot.alloc().getColumnFromLogical( pkColumn.id ).orElseThrow();
             for ( AllocationColumn placement : pkPlacements ) {
-                Adapter<?> adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
+                Adapter<?> adapter = AdapterManager.getInstance().getAdapter( placement.adapterId ).orElseThrow();
                 PartitionProperty property = snapshot.alloc().getPartitionProperty( table.id ).orElseThrow();
                 p.addAdapter( new RelationalStore(
                         adapter.getUniqueName(),
@@ -2017,9 +2016,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         Adapter<?> adapter = adapterGson.fromJson( ctx.body(), Adapter.class );
         try {
             if ( adapter instanceof DataStore ) {
-                AdapterManager.getInstance().getStore( adapter.getAdapterId() ).updateSettings( adapter.getCurrentSettings() );
+                AdapterManager.getInstance().getStore( adapter.getAdapterId() ).orElseThrow().updateSettings( adapter.getCurrentSettings() );
             } else if ( adapter instanceof DataSource ) {
-                AdapterManager.getInstance().getSource( adapter.getAdapterId() ).updateSettings( adapter.getCurrentSettings() );
+                AdapterManager.getInstance().getSource( adapter.getAdapterId() ).orElseThrow().updateSettings( adapter.getCurrentSettings() );
             }
             Catalog.getInstance().commit();
         } catch ( Throwable t ) {
@@ -2085,13 +2084,13 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
         ConnectionMethod method = ConnectionMethod.UPLOAD;
         if ( a.settings.containsKey( "method" ) ) {
-            method = ConnectionMethod.valueOf( a.settings.get( "method" ).getValue().toUpperCase() );
+            method = ConnectionMethod.valueOf( a.settings.get( "method" ).value().toUpperCase() );
         }
         AdapterTemplate adapter = AdapterManager.getAdapterTemplate( a.adapterName, a.type );
         Map<String, AbstractAdapterSetting> allSettings = adapter.settings.stream().collect( Collectors.toMap( e -> e.name, e -> e ) );
 
         for ( AdapterSettingValueModel entry : a.settings.values() ) {
-            AbstractAdapterSetting set = allSettings.get( entry.getName() );
+            AbstractAdapterSetting set = allSettings.get( entry.name() );
             if ( set == null ) {
                 continue;
             }
@@ -2106,10 +2105,10 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 } else {
                     handleUploadFiles( null, a, setting );
                 }
-                settings.put( set.name, entry.getValue() );
+                settings.put( set.name, entry.value() );
 
             } else {
-                settings.put( set.name, entry.getValue() );
+                settings.put( set.name, entry.value() );
             }
         }
 
@@ -2423,7 +2422,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
             if ( request.freshness != null ) {
                 viewType = "Materialized View";
-                DataStore<?> store = (DataStore<?>) AdapterManager.getInstance().getAdapter( request.store );
+                DataStore<?> store = AdapterManager.getInstance().getStore( request.store ).orElseThrow();
                 List<DataStore<?>> stores = new ArrayList<>();
                 stores.add( store );
 
@@ -3147,7 +3146,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 .values()
                 .stream()
                 .map( PluginStatus::from )
-                .collect( Collectors.toList() ) );
+                .toList() );
     }
 
 
@@ -3156,19 +3155,5 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         authCrud.broadcast( SnapshotModel.from( Catalog.snapshot() ) );
     }
 
-
-    public static class QueryExecutionException extends Exception {
-
-
-        QueryExecutionException( String message, Throwable t ) {
-            super( message, t );
-        }
-
-
-        QueryExecutionException( Throwable t ) {
-            super( t );
-        }
-
-    }
 
 }

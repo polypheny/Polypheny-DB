@@ -77,10 +77,10 @@ public class CypherCreateDatabase extends CypherAdminCommand implements Executab
 
         List<DataStore<?>> dataStore = null;
         if ( store != null ) {
-            if ( manager.getStore( store ) == null ) {
+            if ( manager.getStore( store ).isEmpty() ) {
                 throw new GenericRuntimeException( "Error while retrieving placement of graph database." );
             }
-            dataStore = List.of( manager.getStore( store ) );
+            dataStore = List.of( manager.getStore( store ).get() );
         }
 
         if ( Catalog.snapshot().getNamespace( databaseName ).isPresent() && !ifNotExists ) {

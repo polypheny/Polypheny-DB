@@ -109,33 +109,33 @@ public abstract class SqlDdl extends SqlCall {
 
 
     protected DataStore<?> getDataStoreInstance( SqlIdentifier storeName ) {
-        Adapter<?> adapterInstance = AdapterManager.getInstance().getAdapter( storeName.getSimple() );
-        if ( adapterInstance == null ) {
+        Optional<Adapter<?>> optionalAdapter = AdapterManager.getInstance().getAdapter( storeName.getSimple() );
+        if ( optionalAdapter.isEmpty() ) {
             throw CoreUtil.newContextException( storeName.getPos(), RESOURCE.unknownAdapter( storeName.getSimple() ) );
         }
         // Make sure it is a data storeId instance
-        if ( adapterInstance instanceof DataStore ) {
-            return (DataStore<?>) adapterInstance;
-        } else if ( adapterInstance instanceof DataSource ) {
-            throw CoreUtil.newContextException( storeName.getPos(), RESOURCE.ddlOnDataSource( adapterInstance.getUniqueName() ) );
-        } else {
-            throw new GenericRuntimeException( "Unknown kind of adapter: " + adapterInstance.getClass().getName() );
-        }
+        return getDataStore( optionalAdapter.get(), storeName.getPos() );
     }
 
 
     protected DataStore<?> getDataStoreInstance( long storeId ) {
-        Adapter<?> adapterInstance = AdapterManager.getInstance().getAdapter( storeId );
-        if ( adapterInstance == null ) {
+        Optional<Adapter<?>> optionalAdapter = AdapterManager.getInstance().getAdapter( storeId );
+        if ( optionalAdapter.isEmpty() ) {
             throw new GenericRuntimeException( "Unknown storeId id: " + storeId );
         }
+        return getDataStore( optionalAdapter.get(), pos );
+    }
+
+
+    @NotNull
+    private DataStore<?> getDataStore( Adapter<?> optionalAdapter, ParserPos pos ) {
         // Make sure it is a data storeId instance
-        if ( adapterInstance instanceof DataStore ) {
-            return (DataStore<?>) adapterInstance;
-        } else if ( adapterInstance instanceof DataSource ) {
-            throw CoreUtil.newContextException( pos, RESOURCE.ddlOnDataSource( adapterInstance.getUniqueName() ) );
+        if ( optionalAdapter instanceof DataStore ) {
+            return (DataStore<?>) optionalAdapter;
+        } else if ( optionalAdapter instanceof DataSource ) {
+            throw CoreUtil.newContextException( pos, RESOURCE.ddlOnDataSource( optionalAdapter.getUniqueName() ) );
         } else {
-            throw new GenericRuntimeException( "Unknown kind of adapter: " + adapterInstance.getClass().getName() );
+            throw new GenericRuntimeException( "Unknown kind of adapter: " + optionalAdapter.getClass().getName() );
         }
     }
 

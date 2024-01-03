@@ -117,13 +117,13 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
             throw new GenericRuntimeException( "Empty Partition Placement is not allowed for partitioned table '" + table.name + "'" );
         }
 
-        DataStore<?> storeInstance = AdapterManager.getInstance().getStore( storeName.getSimple() );
-        if ( storeInstance == null ) {
+        Optional<DataStore<?>> optStoreInstance = AdapterManager.getInstance().getStore( storeName.getSimple() );
+        if ( optStoreInstance.isEmpty() ) {
             throw CoreUtil.newContextException(
                     storeName.getPos(),
                     RESOURCE.unknownStoreName( storeName.getSimple() ) );
         }
-        long storeId = storeInstance.getAdapterId();
+        long storeId = optStoreInstance.get().getAdapterId();
         // Check whether this placement already exists
         Optional<AllocationPlacement> optionalPlacement = statement.getTransaction().getSnapshot().alloc().getPlacement( storeId, table.id );
         if ( optionalPlacement.isEmpty() ) {
@@ -150,7 +150,7 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
             // If name partitions are specified
             // List<AllocationEntity> entities = catalog.getSnapshot().alloc().getAllocsOfPlacement( optionalPlacement.get().id );
             List<AllocationPartition> partitions = catalog.getSnapshot().alloc().getPartitionsFromLogical( tableId );
-            for ( String partitionName : partitionGroupNames.stream().map( Object::toString ).collect( Collectors.toList() ) ) {
+            for ( String partitionName : partitionGroupNames.stream().map( Object::toString ).toList() ) {
                 Optional<AllocationPartition> optionalPartition = partitions.stream().filter( p -> partitionName.equals( p.name ) ).findAny();
 
                 if ( optionalPartition.isEmpty() ) {
@@ -171,7 +171,7 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
         DdlManager.getInstance().modifyPartitionPlacement(
                 table,
                 partitionList,
-                storeInstance,
+                optStoreInstance.get(),
                 statement
         );
     }

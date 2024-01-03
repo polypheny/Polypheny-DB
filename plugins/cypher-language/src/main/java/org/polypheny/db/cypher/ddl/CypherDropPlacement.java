@@ -56,7 +56,7 @@ public class CypherDropPlacement extends CypherAdminCommand implements Executabl
         List<LogicalNamespace> graphs = statement.getTransaction().getSnapshot().getNamespaces( new Pattern( this.databaseName ) );
 
         DataStore<?> dataStore = Stream.of( storeName )
-                .map( store -> (DataStore<?>) adapterManager.getAdapter( storeName ) )
+                .map( store -> adapterManager.getStore( storeName ).orElseThrow() )
                 .toList().get( 0 );
 
         if ( graphs.size() != 1 ) {

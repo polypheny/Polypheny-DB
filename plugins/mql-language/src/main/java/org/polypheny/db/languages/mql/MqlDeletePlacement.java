@@ -50,10 +50,10 @@ public class MqlDeletePlacement extends MqlCollectionStatement implements Execut
 
         List<DataStore<?>> dataStores = stores
                 .stream()
-                .map( store -> (DataStore<?>) adapterManager.getAdapter( store ) )
+                .map( store ->  adapterManager.getStore( store ).orElseThrow() )
                 .collect( Collectors.toList() );
 
-        if ( statement.getTransaction().getSnapshot().alloc().getFromLogical( collection.id ).stream().noneMatch( p -> dataStores.stream().map( Adapter::getAdapterId ).collect( Collectors.toList() ).contains( p.adapterId ) ) ) {
+        if ( statement.getTransaction().getSnapshot().alloc().getFromLogical( collection.id ).stream().noneMatch( p -> dataStores.stream().map( Adapter::getAdapterId ).toList().contains( p.adapterId ) ) ) {
             throw new GenericRuntimeException( "Error while adding a new collection placement, placement already present." );
         }
 

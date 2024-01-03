@@ -20,6 +20,7 @@ package org.polypheny.db.webui.models.catalog;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -64,26 +65,23 @@ public class AdapterModel extends IdEntity {
     }
 
 
+    @Nullable
     public static AdapterModel from( LogicalAdapter adapter ) {
         Map<String, AdapterSettingValueModel> settings = adapter.settings.entrySet().stream().collect( Collectors.toMap( Entry::getKey, s -> AdapterSettingValueModel.from( s.getKey(), s.getValue() ) ) );
 
-        Adapter<?> a = AdapterManager.getInstance().getAdapter( adapter.id );
-        return new AdapterModel(
+        Optional<DataStore<?>> a = AdapterManager.getInstance().getStore( adapter.id );
+        return a.map( dataStore -> new AdapterModel(
                 adapter.id,
                 adapter.uniqueName,
                 adapter.adapterName,
                 adapter.type,
                 settings,
                 adapter.mode,
-                adapter.type == AdapterType.STORE ? ((DataStore<?>) a).getAvailableIndexMethods() : List.of() );
+                adapter.type == AdapterType.STORE ? dataStore.getAvailableIndexMethods() : List.of() ) ).orElse( null );
+
     }
 
-
-    @Value
-    public static class AdapterSettingValueModel {
-
-        String name;
-        String value;
+    public record AdapterSettingValueModel(String name, String value) {
 
 
         public static AdapterSettingValueModel from( String name, String value ) {

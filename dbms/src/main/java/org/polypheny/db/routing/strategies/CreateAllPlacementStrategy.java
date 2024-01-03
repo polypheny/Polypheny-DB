@@ -17,6 +17,7 @@
 package org.polypheny.db.routing.strategies;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
@@ -39,6 +40,8 @@ public class CreateAllPlacementStrategy implements CreatePlacementStrategy {
         List<AllocationPlacement> placements = snapshot.alloc().getPlacementsFromLogical( catalogTable.id );
         return placements.stream()
                 .map( elem -> AdapterManager.getInstance().getStore( elem.adapterId ) )
+                .filter( Optional::isPresent )
+                .map( Optional::get )
                 .collect( Collectors.toList() );
     }
 

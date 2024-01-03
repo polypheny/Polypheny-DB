@@ -79,7 +79,6 @@ public class QueryContext {
 
     @EqualsAndHashCode(callSuper = true)
     @Value
-
     @SuperBuilder(toBuilder = true)
     public static class ParsedQueryContext extends QueryContext {
 

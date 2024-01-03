@@ -256,11 +256,14 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     protected final Deque<FunctionParamInfo> functionCallStack = new ArrayDeque<>();
 
     private int nextGeneratedId;
+
+    @Getter
     protected final AlgDataTypeFactory typeFactory;
 
     /**
      * The type of dynamic parameters until a type is imposed on them.
      */
+    @Getter
     protected final AlgDataType unknownType;
     private final AlgDataType booleanType;
 
@@ -273,6 +276,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     private final AggFinder aggOrOverOrGroupFinder;
     private final AggFinder groupFinder;
     private final AggFinder overFinder;
+    @Getter
     private final Conformance conformance;
     private final Map<SqlNode, SqlNode> originalExprs = new HashMap<>();
 
@@ -293,6 +297,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
     private boolean inWindow; // Allow nested aggregates
 
+    @Getter
     private final SqlValidatorImpl.ValidationErrorFunction validationErrorFunction = new SqlValidatorImpl.ValidationErrorFunction();
 
 
@@ -322,22 +327,12 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
-    @Override
-    public Conformance getConformance() {
-        return conformance;
-    }
-
 
     @Override
     public OperatorTable getOperatorTable() {
         return opTab;
     }
 
-
-    @Override
-    public AlgDataTypeFactory getTypeFactory() {
-        return typeFactory;
-    }
 
 
     @Override
@@ -349,11 +344,6 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         return validateSql( (SqlNode) node );
     }
 
-
-    @Override
-    public AlgDataType getUnknownType() {
-        return unknownType;
-    }
 
 
     @Override
@@ -4540,11 +4530,6 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
-    public ValidationErrorFunction getValidationErrorFunction() {
-        return validationErrorFunction;
-    }
-
-
     @Override
     public PolyphenyDbContextException newValidationError( Node node, ExInst<ValidatorException> e ) {
         assert node != null;
@@ -5252,7 +5237,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     /**
      * retrieve pattern variables defined
      */
-    private class PatternVarVisitor implements NodeVisitor<Void> {
+    private static class PatternVarVisitor implements NodeVisitor<Void> {
 
         private MatchRecognizeScope scope;
 
