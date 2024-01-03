@@ -122,6 +122,7 @@ public class PlannerImplMock implements Planner {
         this.state = State.STATE_0_CLOSED;
         this.traitDefs = config.getTraitDefs();
         this.operatorTable = config.getOperatorTable();
+        this.planner = new MockAlgOptPlanner( config.getContext() );
         //this.convertletTable = config.getConvertletTable();
         this.executor = config.getExecutor();
         reset();
@@ -253,7 +254,6 @@ public class PlannerImplMock implements Planner {
     @Override
     public AlgRoot alg( Node sql ) throws AlgConversionException {
         ensure( State.STATE_4_VALIDATED );
-        planner = new MockAlgOptPlanner( config.getContext() );
         assert validatedSqlNode != null;
         final RexBuilder rexBuilder = createRexBuilder();
         final AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder, planner.emptyTraitSet(), Catalog.snapshot() );

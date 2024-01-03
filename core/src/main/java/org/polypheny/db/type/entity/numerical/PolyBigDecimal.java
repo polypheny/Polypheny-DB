@@ -198,6 +198,12 @@ public class PolyBigDecimal extends PolyNumber {
 
 
     @Override
+    public String toString() {
+        return value.toString();
+    }
+
+
+    @Override
     public boolean equals( Object o ) {
         if ( this == o ) {
             return true;

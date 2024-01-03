@@ -41,6 +41,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.List;
+import lombok.Setter;
 import org.apache.calcite.linq4j.function.Function1;
 import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.janino.ClassBodyEvaluator;
@@ -61,6 +62,7 @@ public class RexExecutable {
 
     private final Function1<DataContext, Object[]> compiledFunction;
     private final String code;
+    @Setter
     private DataContext dataContext;
 
 
@@ -85,11 +87,6 @@ public class RexExecutable {
         } catch ( CompileException | IOException | InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e ) {
             throw new GenericRuntimeException( "While compiling " + reason, e );
         }
-    }
-
-
-    public void setDataContext( DataContext dataContext ) {
-        this.dataContext = dataContext;
     }
 
 
