@@ -79,13 +79,11 @@ public class PolyInterval extends PolyValue {
 
     public Long getMonths() {
         log.warn( "might adjust" );
-        switch ( qualifier.getTimeUnitRange() ) {
-            case YEAR:
-                return value.longValue();
-            case MONTH:
-                return value.longValue();
-        }
-        throw new NotImplementedException( "since Epoch" );
+        return switch ( qualifier.getTimeUnitRange() ) {
+            case YEAR -> value.longValue();
+            case MONTH -> value.longValue();
+            default -> throw new NotImplementedException( "since Epoch" );
+        };
     }
 
 

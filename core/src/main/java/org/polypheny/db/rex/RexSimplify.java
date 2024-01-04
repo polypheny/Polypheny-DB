@@ -1541,9 +1541,9 @@ public class RexSimplify {
                 return e;
             }
             final RexLiteral parentFlag = (RexLiteral) e.operands.get( 1 );
-            final TimeUnitRange parentFlagValue = parentFlag.value.asInterval().qualifier.getTimeUnitRange();
+            final TimeUnitRange parentFlagValue = parentFlag.value.asSymbol().asEnum( TimeUnitRange.class );
             final RexLiteral childFlag = (RexLiteral) child.operands.get( 1 );
-            final TimeUnitRange childFlagValue = childFlag.value.asInterval().qualifier.getTimeUnitRange();
+            final TimeUnitRange childFlagValue = childFlag.value.asSymbol().asEnum( TimeUnitRange.class );
             if ( parentFlagValue != null && childFlagValue != null ) {
                 if ( canRollUp( parentFlagValue.startUnit, childFlagValue.startUnit ) ) {
                     return e.clone( e.getType(), ImmutableList.of( child.getOperands().get( 0 ), parentFlag ) );

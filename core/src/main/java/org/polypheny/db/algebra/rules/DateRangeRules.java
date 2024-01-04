@@ -230,7 +230,7 @@ public abstract class DateRangeRules {
             switch ( call.getKind() ) {
                 case EXTRACT:
                     final RexLiteral operand = (RexLiteral) call.getOperands().get( 0 );
-                    timeUnits.add( (TimeUnitRange) operand.value.asSymbol().value );
+                    timeUnits.add( operand.value.asSymbol().asEnum( TimeUnitRange.class ) );
                     break;
                 case FLOOR:
                 case CEIL:
@@ -302,7 +302,7 @@ public abstract class DateRangeRules {
                             assert op1 instanceof RexCall;
                             final RexCall subCall = (RexCall) op1;
                             final RexLiteral flag = (RexLiteral) subCall.operands.get( 1 );
-                            final TimeUnitRange timeUnit = (TimeUnitRange) flag.value.asSymbol().value;
+                            final TimeUnitRange timeUnit = flag.value.asSymbol().asEnum( TimeUnitRange.class );
                             return compareFloorCeil( call.getKind().reverse(), subCall.getOperands().get( 0 ), (RexLiteral) op0, timeUnit, op1.getKind() == Kind.FLOOR );
                         }
                     }
@@ -319,7 +319,7 @@ public abstract class DateRangeRules {
                         if ( isFloorCeilCall( op0 ) ) {
                             final RexCall subCall = (RexCall) op0;
                             final RexLiteral flag = (RexLiteral) subCall.operands.get( 1 );
-                            final TimeUnitRange timeUnit = (TimeUnitRange) flag.value.asSymbol().value;
+                            final TimeUnitRange timeUnit = flag.value.asSymbol().asEnum( TimeUnitRange.class );
                             return compareFloorCeil( call.getKind(), subCall.getOperands().get( 0 ), (RexLiteral) op1, timeUnit, op0.getKind() == Kind.FLOOR );
                         }
                     }
@@ -401,7 +401,7 @@ public abstract class DateRangeRules {
                 case EXTRACT -> {
                     final RexCall call = (RexCall) e;
                     final RexLiteral flag = (RexLiteral) call.operands.get( 0 );
-                    final TimeUnitRange timeUnit = (TimeUnitRange) flag.value.asSymbol().value;
+                    final TimeUnitRange timeUnit = flag.value.asSymbol().asEnum( TimeUnitRange.class );
                     yield timeUnit == this.timeUnit;
                 }
                 default -> false;

@@ -691,7 +691,7 @@ public class SqlLiteral extends SqlNode implements Literal {
 
             case SYMBOL:
                 if ( value.isSymbol() && value.asSymbol().value instanceof TimeUnitRange ) {
-                    String s = writer.getDialect().timeUnitName( (TimeUnitRange) value.asSymbol().value );
+                    String s = writer.getDialect().timeUnitName( value.asSymbol().asEnum( TimeUnitRange.class ) );
                     writer.keyword( s );
                 } else if ( value.isSymbol() ) {
                     Enum<?> enumVal = value.asSymbol().value;

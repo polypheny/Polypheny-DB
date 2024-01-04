@@ -123,7 +123,7 @@ public class HsqldbSqlDialect extends SqlDialect {
             }
 
             final SqlLiteral timeUnitNode = call.operand( 1 );
-            final TimeUnitRange timeUnit = (TimeUnitRange) timeUnitNode.value.asSymbol().value;
+            final TimeUnitRange timeUnit = timeUnitNode.value.asSymbol().asEnum( TimeUnitRange.class );
 
             final String translatedLit = convertTimeUnit( timeUnit );
             SqlCall call2 = SqlFloorFunction.replaceTimeUnitOperand( call, translatedLit, timeUnitNode.getPos() );

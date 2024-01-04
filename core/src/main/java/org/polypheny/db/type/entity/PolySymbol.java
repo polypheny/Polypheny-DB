@@ -50,6 +50,11 @@ public class PolySymbol extends PolyValue {
     }
 
 
+    public <T extends Enum<T>> T asEnum( Class<T> clazz ) {
+        return clazz.cast( value );
+    }
+
+
     @Override
     public int compareTo( @NotNull PolyValue o ) {
         if ( !isSameType( o ) ) {

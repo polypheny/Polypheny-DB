@@ -264,7 +264,7 @@ public class RexInterpreter implements RexVisitor<PolyValue> {
         if ( v == N ) {
             return N;
         }
-        final TimeUnitRange timeUnitRange = (TimeUnitRange) values.get( 0 ).asSymbol().value;
+        final TimeUnitRange timeUnitRange = values.get( 0 ).asSymbol().asEnum( TimeUnitRange.class );
         final long v2;
         if ( v.isTimestamp() ) {
             // TIMESTAMP
@@ -292,7 +292,7 @@ public class RexInterpreter implements RexVisitor<PolyValue> {
             return N;
         }
         final Long v = values.get( 0 ).asNumber().LongValue();
-        final TimeUnitRange unit = (TimeUnitRange) values.get( 1 ).asSymbol().value;
+        final TimeUnitRange unit = values.get( 1 ).asSymbol().asEnum( TimeUnitRange.class );
         switch ( unit ) {
             case YEAR:
             case MONTH:

@@ -62,7 +62,6 @@ import org.apache.calcite.linq4j.tree.ConstantExpression;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.ExpressionType;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.calcite.linq4j.tree.MemberExpression;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.OptimizeShuttle;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
@@ -111,8 +110,8 @@ public class RexImpTable {
     public static final ConstantExpression NULL_EXPR = Expressions.constant( null );
     public static final Expression FALSE_EXPR = PolyBoolean.FALSE.asExpression();// Expressions.constant( false );
     public static final Expression TRUE_EXPR = PolyBoolean.TRUE.asExpression();//Expressions.constant( true );
-    public static final MemberExpression BOXED_FALSE_EXPR = Expressions.field( null, Boolean.class, "FALSE" );
-    public static final MemberExpression BOXED_TRUE_EXPR = Expressions.field( null, Boolean.class, "TRUE" );
+    public static final Expression BOXED_FALSE_EXPR = PolyBoolean.FALSE.asExpression();//Expressions.field( null, Boolean.class, "FALSE" );
+    public static final Expression BOXED_TRUE_EXPR = PolyBoolean.TRUE.asExpression();//Expressions.field( null, Boolean.class, "TRUE" );
 
     private final Map<Operator, CallImplementor> map = new HashMap<>();
     private final Map<AggFunction, Supplier<? extends AggImplementor>> aggMap = new HashMap<>();
@@ -318,7 +317,7 @@ public class RexImpTable {
         // Cross Model Sql
         defineMethod( OperatorRegistry.get( OperatorName.CROSS_MODEL_ITEM ), BuiltInMethod.X_MODEL_ITEM.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( OperatorName.TO_JSON ), BuiltInMethod.TO_JSON.method, NullPolicy.NONE );
-        
+
         // System functions
         final SystemFunctionImplementor systemFunctionImplementor = new SystemFunctionImplementor();
         map.put( OperatorRegistry.get( OperatorName.USER ), systemFunctionImplementor );
@@ -572,7 +571,7 @@ public class RexImpTable {
                             case IS_NOT_NULL:
                                 final List<Expression> nullAsTrue = translator.translateList( call2.getOperands(), NullAs.TRUE );
                                 final List<Expression> nullAsIsNull = translator.translateList( call2.getOperands(), NullAs.IS_NULL );
-                                Expression hasFalse = Expressions.not( EnumUtils.foldAnd( nullAsTrue ) );
+                                Expression hasFalse = EnumUtils.not( EnumUtils.foldAnd( nullAsTrue ) );
                                 Expression hasNull = EnumUtils.foldOr( nullAsIsNull );
                                 return nullAs.handle( EnumUtils.condition( hasFalse, BOXED_FALSE_EXPR, EnumUtils.condition( hasNull, NULL_EXPR, BOXED_TRUE_EXPR ) ) );
                             default:
@@ -979,8 +978,8 @@ public class RexImpTable {
                 case NULL, NOT_POSSIBLE -> x;
                 case FALSE -> Expressions.call( BuiltInMethod.IS_TRUE.method, x );
                 case TRUE -> Expressions.call( BuiltInMethod.IS_NOT_FALSE.method, x );
-                case IS_NULL -> Expressions.equal( x, NULL_EXPR );
-                case IS_NOT_NULL -> Expressions.notEqual( x, NULL_EXPR );
+                case IS_NULL -> Expressions.new_( PolyBoolean.class, Expressions.equal( x, NULL_EXPR ) );
+                case IS_NOT_NULL -> Expressions.new_( PolyBoolean.class, Expressions.notEqual( x, NULL_EXPR ) );
             };
         }
     }
@@ -2542,7 +2541,6 @@ public class RexImpTable {
             translator.getList().append( "forLoop", builder.toBlock() );
             return predicate;
         }
-
 
 
         private RexNode substitute( RexToLixTranslator translator, RexNode node, int pos ) {
