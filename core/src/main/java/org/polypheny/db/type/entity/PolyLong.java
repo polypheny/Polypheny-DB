@@ -52,14 +52,13 @@ public class PolyLong extends PolyNumber {
     public Long value;
 
 
+    /**
+     * Creates a PolyLong, which is a wrapper for {@link Long}.
+     *
+     * @param value The value of the PolyLong
+     */
     @JsonCreator
     public PolyLong( @JsonProperty("value") @Deserialize("value") Long value ) {
-        super( PolyType.BIGINT );
-        this.value = value;
-    }
-
-
-    public PolyLong( long value ) {
         super( PolyType.BIGINT );
         this.value = value;
     }

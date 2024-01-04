@@ -107,6 +107,7 @@ public class RexToLixTranslator {
     final RexBuilder builder;
     private final RexProgram program;
     final Conformance conformance;
+    @Getter
     private final Expression root;
     private final RexToLixTranslator.InputGetter inputGetter;
     @Getter
@@ -236,274 +237,196 @@ public class RexToLixTranslator {
 
     Expression translateCast( AlgDataType sourceType, AlgDataType targetType, Expression operand ) {
         Expression convert = null;
-        switch ( targetType.getPolyType() ) {
-            case ANY:
-                convert = operand;
-                break;
-            case DATE:
-                switch ( sourceType.getPolyType() ) {
-                    case CHAR:
-                    case VARCHAR:
-                        convert = Expressions.call( BuiltInMethod.STRING_TO_DATE.method, operand );
-                        break;
-                    case TIMESTAMP:
-                        convert = Expressions.convert_(
-                                Expressions.call(
-                                        BuiltInMethod.FLOOR_DIV.method,
-                                        operand,
-                                        Expressions.constant( DateTimeUtils.MILLIS_PER_DAY ) ), int.class );
-                        break;
-                    case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                        convert = RexImpTable.optimize2(
+        convert = switch ( targetType.getPolyType() ) {
+            case ANY -> operand;
+            case DATE -> switch ( sourceType.getPolyType() ) {
+                case CHAR, VARCHAR -> Expressions.call( BuiltInMethod.STRING_TO_DATE.method, operand );
+                case TIMESTAMP -> Expressions.convert_(
+                        Expressions.call(
+                                BuiltInMethod.FLOOR_DIV.method,
                                 operand,
-                                Expressions.call(
-                                        BuiltInMethod.TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_DATE.method,
-                                        operand,
-                                        Expressions.call( BuiltInMethod.TIME_ZONE.method, root ) ) );
-                }
-                break;
-            case TIME:
-                switch ( sourceType.getPolyType() ) {
-                    case CHAR:
-                    case VARCHAR:
-                        convert = Expressions.call( BuiltInMethod.STRING_TO_TIME.method, operand );
-                        break;
-                    case TIME_WITH_LOCAL_TIME_ZONE:
-                        convert = RexImpTable.optimize2(
+                                Expressions.constant( DateTimeUtils.MILLIS_PER_DAY ) ), int.class );
+                case TIMESTAMP_WITH_LOCAL_TIME_ZONE -> RexImpTable.optimize2(
+                        operand,
+                        Expressions.call(
+                                BuiltInMethod.TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_DATE.method,
                                 operand,
-                                Expressions.call(
-                                        BuiltInMethod.TIME_WITH_LOCAL_TIME_ZONE_TO_TIME.method,
-                                        operand,
-                                        Expressions.call( BuiltInMethod.TIME_ZONE.method, root ) ) );
-                        break;
-                    case TIMESTAMP:
-                        convert = Expressions.convert_(
-                                Expressions.call(
-                                        BuiltInMethod.FLOOR_MOD.method,
-                                        operand,
-                                        Expressions.constant( DateTimeUtils.MILLIS_PER_DAY ) ),
-                                int.class );
-                        break;
-                    case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                        convert = RexImpTable.optimize2(
+                                Expressions.call( BuiltInMethod.TIME_ZONE.method, root ) ) );
+                default -> convert;
+            };
+            case TIME -> switch ( sourceType.getPolyType() ) {
+                case CHAR, VARCHAR -> Expressions.call( BuiltInMethod.STRING_TO_TIME.method, operand );
+                case TIME_WITH_LOCAL_TIME_ZONE -> RexImpTable.optimize2(
+                        operand,
+                        Expressions.call(
+                                BuiltInMethod.TIME_WITH_LOCAL_TIME_ZONE_TO_TIME.method,
                                 operand,
-                                Expressions.call(
-                                        BuiltInMethod.TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIME.method,
-                                        operand,
-                                        Expressions.call( BuiltInMethod.TIME_ZONE.method, root ) ) );
-                }
-                break;
-            case TIME_WITH_LOCAL_TIME_ZONE:
-                switch ( sourceType.getPolyType() ) {
-                    case CHAR:
-                    case VARCHAR:
-                        convert = Expressions.call( BuiltInMethod.STRING_TO_TIME_WITH_LOCAL_TIME_ZONE.method, operand );
-                        break;
-                    case TIME:
-                        convert = Expressions.call(
-                                BuiltInMethod.TIME_STRING_TO_TIME_WITH_LOCAL_TIME_ZONE.method,
-                                RexImpTable.optimize2(
-                                        operand,
-                                        Expressions.call( BuiltInMethod.UNIX_TIME_TO_STRING.method, operand ) ),
-                                Expressions.call( BuiltInMethod.TIME_ZONE.method, root ) );
-                        break;
-                    case TIMESTAMP:
-                        convert = Expressions.call(
-                                BuiltInMethod.TIMESTAMP_STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE.method,
-                                RexImpTable.optimize2(
-                                        operand,
-                                        Expressions.call( BuiltInMethod.UNIX_TIMESTAMP_TO_STRING.method, operand ) ),
-                                Expressions.call( BuiltInMethod.TIME_ZONE.method, root ) );
-                        break;
-                    case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                        convert = RexImpTable.optimize2(
+                                Expressions.call( BuiltInMethod.TIME_ZONE.method, root ) ) );
+                case TIMESTAMP -> Expressions.convert_(
+                        Expressions.call(
+                                BuiltInMethod.FLOOR_MOD.method,
                                 operand,
-                                Expressions.call( BuiltInMethod.TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIME_WITH_LOCAL_TIME_ZONE.method, operand ) );
-                }
-                break;
-            case TIMESTAMP:
-                switch ( sourceType.getPolyType() ) {
-                    case CHAR:
-                    case VARCHAR:
-                        convert = Expressions.call( BuiltInMethod.STRING_TO_TIMESTAMP.method, operand );
-                        break;
-                    case DATE:
-                        convert = Expressions.multiply(
-                                Expressions.convert_( operand, long.class ),
-                                Expressions.constant( DateTimeUtils.MILLIS_PER_DAY ) );
-                        break;
-                    case TIME:
-                        convert =
-                                Expressions.add(
-                                        Expressions.multiply(
-                                                Expressions.convert_( Expressions.call( BuiltInMethod.CURRENT_DATE.method, root ), long.class ),
-                                                Expressions.constant( DateTimeUtils.MILLIS_PER_DAY ) ),
-                                        Expressions.convert_( operand, long.class ) );
-                        break;
-                    case TIME_WITH_LOCAL_TIME_ZONE:
-                        convert = RexImpTable.optimize2(
+                                Expressions.constant( DateTimeUtils.MILLIS_PER_DAY ) ),
+                        int.class );
+                case TIMESTAMP_WITH_LOCAL_TIME_ZONE -> RexImpTable.optimize2(
+                        operand,
+                        Expressions.call(
+                                BuiltInMethod.TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIME.method,
                                 operand,
-                                Expressions.call(
-                                        BuiltInMethod.TIME_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP.method,
-                                        Expressions.call(
-                                                BuiltInMethod.UNIX_DATE_TO_STRING.method,
-                                                Expressions.call( BuiltInMethod.CURRENT_DATE.method, root ) ),
-                                        operand,
-                                        Expressions.call( BuiltInMethod.TIME_ZONE.method, root ) ) );
-                        break;
-                    case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                        convert = RexImpTable.optimize2(
+                                Expressions.call( BuiltInMethod.TIME_ZONE.method, root ) ) );
+                default -> convert;
+            };
+            case TIME_WITH_LOCAL_TIME_ZONE -> switch ( sourceType.getPolyType() ) {
+                case CHAR, VARCHAR -> Expressions.call( BuiltInMethod.STRING_TO_TIME_WITH_LOCAL_TIME_ZONE.method, operand );
+                case TIME -> Expressions.call(
+                        BuiltInMethod.TIME_STRING_TO_TIME_WITH_LOCAL_TIME_ZONE.method,
+                        RexImpTable.optimize2(
                                 operand,
-                                Expressions.call(
-                                        BuiltInMethod.TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP.method,
-                                        operand,
-                                        Expressions.call( BuiltInMethod.TIME_ZONE.method, root ) ) );
-                }
-                break;
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                switch ( sourceType.getPolyType() ) {
-                    case CHAR:
-                    case VARCHAR:
-                        convert = Expressions.call(
-                                BuiltInMethod.STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE.method,
-                                operand );
-                        break;
-                    case DATE:
-                        convert = Expressions.call(
-                                BuiltInMethod.TIMESTAMP_STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE.method,
-                                RexImpTable.optimize2(
-                                        operand,
-                                        Expressions.call(
-                                                BuiltInMethod.UNIX_TIMESTAMP_TO_STRING.method,
-                                                Expressions.multiply(
-                                                        Expressions.convert_( operand, long.class ),
-                                                        Expressions.constant( DateTimeUtils.MILLIS_PER_DAY ) ) ) ),
-                                Expressions.call( BuiltInMethod.TIME_ZONE.method, root ) );
-                        break;
-                    case TIME:
-                        convert = Expressions.call(
-                                BuiltInMethod.TIMESTAMP_STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE.method,
-                                RexImpTable.optimize2(
-                                        operand,
-                                        Expressions.call(
-                                                BuiltInMethod.UNIX_TIMESTAMP_TO_STRING.method,
-                                                Expressions.add(
-                                                        Expressions.multiply(
-                                                                Expressions.convert_( Expressions.call( BuiltInMethod.CURRENT_DATE.method, root ), long.class ),
-                                                                Expressions.constant( DateTimeUtils.MILLIS_PER_DAY ) ),
-                                                        Expressions.convert_( operand, long.class ) ) ) ),
-                                Expressions.call( BuiltInMethod.TIME_ZONE.method, root ) );
-                        break;
-                    case TIME_WITH_LOCAL_TIME_ZONE:
-                        convert = RexImpTable.optimize2(
+                                Expressions.call( BuiltInMethod.UNIX_TIME_TO_STRING.method, operand ) ),
+                        Expressions.call( BuiltInMethod.TIME_ZONE.method, root ) );
+                case TIMESTAMP -> Expressions.call(
+                        BuiltInMethod.TIMESTAMP_STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE.method,
+                        RexImpTable.optimize2(
                                 operand,
-                                Expressions.call(
-                                        BuiltInMethod.TIME_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE.method,
-                                        Expressions.call(
-                                                BuiltInMethod.UNIX_DATE_TO_STRING.method,
-                                                Expressions.call( BuiltInMethod.CURRENT_DATE.method, root ) ),
-                                        operand ) );
-                        break;
-                    case TIMESTAMP:
-                        convert = Expressions.call(
-                                BuiltInMethod.TIMESTAMP_STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE.method,
-                                RexImpTable.optimize2(
-                                        operand,
-                                        Expressions.call(
-                                                BuiltInMethod.UNIX_TIMESTAMP_TO_STRING.method,
-                                                operand ) ),
-                                Expressions.call(
-                                        BuiltInMethod.TIME_ZONE.method,
-                                        root ) );
-                }
-                break;
-            case BOOLEAN:
-                switch ( sourceType.getPolyType() ) {
-                    case CHAR:
-                    case VARCHAR:
-                        convert = Expressions.call(
-                                BuiltInMethod.STRING_TO_BOOLEAN.method,
-                                operand );
-                }
-                break;
-            case CHAR:
-            case VARCHAR:
-                final IntervalQualifier interval = sourceType.getIntervalQualifier();
-                switch ( sourceType.getPolyType() ) {
-                    case DATE:
-                        convert = RexImpTable.optimize2(
-                                operand,
+                                Expressions.call( BuiltInMethod.UNIX_TIMESTAMP_TO_STRING.method, operand ) ),
+                        Expressions.call( BuiltInMethod.TIME_ZONE.method, root ) );
+                case TIMESTAMP_WITH_LOCAL_TIME_ZONE -> RexImpTable.optimize2(
+                        operand,
+                        Expressions.call( BuiltInMethod.TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIME_WITH_LOCAL_TIME_ZONE.method, operand ) );
+                default -> convert;
+            };
+            case TIMESTAMP -> switch ( sourceType.getPolyType() ) {
+                case CHAR, VARCHAR -> Expressions.call( BuiltInMethod.STRING_TO_TIMESTAMP.method, operand );
+                case DATE -> Expressions.multiply(
+                        Expressions.convert_( operand, long.class ),
+                        Expressions.constant( DateTimeUtils.MILLIS_PER_DAY ) );
+                case TIME -> Expressions.add(
+                        Expressions.multiply(
+                                Expressions.convert_( Expressions.call( BuiltInMethod.CURRENT_DATE.method, root ), long.class ),
+                                Expressions.constant( DateTimeUtils.MILLIS_PER_DAY ) ),
+                        Expressions.convert_( operand, long.class ) );
+                case TIME_WITH_LOCAL_TIME_ZONE -> RexImpTable.optimize2(
+                        operand,
+                        Expressions.call(
+                                BuiltInMethod.TIME_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP.method,
                                 Expressions.call(
                                         BuiltInMethod.UNIX_DATE_TO_STRING.method,
-                                        operand ) );
-                        break;
-                    case TIME:
-                        convert = RexImpTable.optimize2(
+                                        Expressions.call( BuiltInMethod.CURRENT_DATE.method, root ) ),
                                 operand,
-                                Expressions.call(
-                                        BuiltInMethod.UNIX_TIME_TO_STRING.method,
-                                        operand ) );
-                        break;
-                    case TIME_WITH_LOCAL_TIME_ZONE:
-                        convert = RexImpTable.optimize2(
+                                Expressions.call( BuiltInMethod.TIME_ZONE.method, root ) ) );
+                case TIMESTAMP_WITH_LOCAL_TIME_ZONE -> RexImpTable.optimize2(
+                        operand,
+                        Expressions.call(
+                                BuiltInMethod.TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP.method,
                                 operand,
-                                Expressions.call(
-                                        BuiltInMethod.TIME_WITH_LOCAL_TIME_ZONE_TO_STRING.method,
-                                        operand,
-                                        Expressions.call( BuiltInMethod.TIME_ZONE.method, root ) ) );
-                        break;
-                    case TIMESTAMP:
-                        convert = RexImpTable.optimize2(
+                                Expressions.call( BuiltInMethod.TIME_ZONE.method, root ) ) );
+                default -> convert;
+            };
+            case TIMESTAMP_WITH_LOCAL_TIME_ZONE -> switch ( sourceType.getPolyType() ) {
+                case CHAR, VARCHAR -> Expressions.call(
+                        BuiltInMethod.STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE.method,
+                        operand );
+                case DATE -> Expressions.call(
+                        BuiltInMethod.TIMESTAMP_STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE.method,
+                        RexImpTable.optimize2(
                                 operand,
                                 Expressions.call(
                                         BuiltInMethod.UNIX_TIMESTAMP_TO_STRING.method,
-                                        operand ) );
-                        break;
-                    case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                        convert = RexImpTable.optimize2(
+                                        Expressions.multiply(
+                                                Expressions.convert_( operand, long.class ),
+                                                Expressions.constant( DateTimeUtils.MILLIS_PER_DAY ) ) ) ),
+                        Expressions.call( BuiltInMethod.TIME_ZONE.method, root ) );
+                case TIME -> Expressions.call(
+                        BuiltInMethod.TIMESTAMP_STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE.method,
+                        RexImpTable.optimize2(
                                 operand,
                                 Expressions.call(
-                                        BuiltInMethod.TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_STRING.method,
-                                        operand,
-                                        Expressions.call( BuiltInMethod.TIME_ZONE.method, root ) ) );
-                        break;
-                    case INTERVAL_YEAR:
-                    case INTERVAL_YEAR_MONTH:
-                    case INTERVAL_MONTH:
-                        convert = RexImpTable.optimize2(
+                                        BuiltInMethod.UNIX_TIMESTAMP_TO_STRING.method,
+                                        Expressions.add(
+                                                Expressions.multiply(
+                                                        Expressions.convert_( Expressions.call( BuiltInMethod.CURRENT_DATE.method, root ), long.class ),
+                                                        Expressions.constant( DateTimeUtils.MILLIS_PER_DAY ) ),
+                                                Expressions.convert_( operand, long.class ) ) ) ),
+                        Expressions.call( BuiltInMethod.TIME_ZONE.method, root ) );
+                case TIME_WITH_LOCAL_TIME_ZONE -> RexImpTable.optimize2(
+                        operand,
+                        Expressions.call(
+                                BuiltInMethod.TIME_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE.method,
+                                Expressions.call(
+                                        BuiltInMethod.UNIX_DATE_TO_STRING.method,
+                                        Expressions.call( BuiltInMethod.CURRENT_DATE.method, root ) ),
+                                operand ) );
+                case TIMESTAMP -> Expressions.call(
+                        BuiltInMethod.TIMESTAMP_STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE.method,
+                        RexImpTable.optimize2(
                                 operand,
                                 Expressions.call(
-                                        BuiltInMethod.INTERVAL_YEAR_MONTH_TO_STRING.method,
-                                        operand,
-                                        Expressions.constant( interval.getTimeUnitRange() ) ) );
-                        break;
-                    case INTERVAL_DAY:
-                    case INTERVAL_DAY_HOUR:
-                    case INTERVAL_DAY_MINUTE:
-                    case INTERVAL_DAY_SECOND:
-                    case INTERVAL_HOUR:
-                    case INTERVAL_HOUR_MINUTE:
-                    case INTERVAL_HOUR_SECOND:
-                    case INTERVAL_MINUTE:
-                    case INTERVAL_MINUTE_SECOND:
-                    case INTERVAL_SECOND:
-                        convert = RexImpTable.optimize2(
-                                operand,
-                                Expressions.call(
-                                        BuiltInMethod.INTERVAL_DAY_TIME_TO_STRING.method,
-                                        operand,
-                                        Expressions.constant( interval.getTimeUnitRange() ),
-                                        Expressions.constant( interval.getFractionalSecondPrecision( typeFactory.getTypeSystem() ) ) ) );
-                        break;
-                    case BOOLEAN:
-                        convert = RexImpTable.optimize2(
-                                operand,
-                                Expressions.call(
-                                        BuiltInMethod.BOOLEAN_TO_STRING.method,
-                                        operand ) );
-                        break;
-                }
-        }
+                                        BuiltInMethod.UNIX_TIMESTAMP_TO_STRING.method,
+                                        operand ) ),
+                        Expressions.call(
+                                BuiltInMethod.TIME_ZONE.method,
+                                root ) );
+                default -> convert;
+            };
+            case BOOLEAN -> switch ( sourceType.getPolyType() ) {
+                case CHAR, VARCHAR -> Expressions.call(
+                        BuiltInMethod.STRING_TO_BOOLEAN.method,
+                        operand );
+                default -> convert;
+            };
+            case CHAR, VARCHAR -> {
+                final IntervalQualifier interval = sourceType.getIntervalQualifier();
+                yield switch ( sourceType.getPolyType() ) {
+                    case DATE -> RexImpTable.optimize2(
+                            operand,
+                            Expressions.call(
+                                    BuiltInMethod.UNIX_DATE_TO_STRING.method,
+                                    operand ) );
+                    case TIME -> RexImpTable.optimize2(
+                            operand,
+                            Expressions.call(
+                                    BuiltInMethod.UNIX_TIME_TO_STRING.method,
+                                    operand ) );
+                    case TIME_WITH_LOCAL_TIME_ZONE -> RexImpTable.optimize2(
+                            operand,
+                            Expressions.call(
+                                    BuiltInMethod.TIME_WITH_LOCAL_TIME_ZONE_TO_STRING.method,
+                                    operand,
+                                    Expressions.call( BuiltInMethod.TIME_ZONE.method, root ) ) );
+                    case TIMESTAMP -> RexImpTable.optimize2(
+                            operand,
+                            Expressions.call(
+                                    BuiltInMethod.UNIX_TIMESTAMP_TO_STRING.method,
+                                    operand ) );
+                    case TIMESTAMP_WITH_LOCAL_TIME_ZONE -> RexImpTable.optimize2(
+                            operand,
+                            Expressions.call(
+                                    BuiltInMethod.TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_STRING.method,
+                                    operand,
+                                    Expressions.call( BuiltInMethod.TIME_ZONE.method, root ) ) );
+                    case INTERVAL_YEAR, INTERVAL_YEAR_MONTH, INTERVAL_MONTH -> RexImpTable.optimize2(
+                            operand,
+                            Expressions.call(
+                                    BuiltInMethod.INTERVAL_YEAR_MONTH_TO_STRING.method,
+                                    operand,
+                                    Expressions.constant( interval.getTimeUnitRange() ) ) );
+                    case INTERVAL_DAY, INTERVAL_DAY_HOUR, INTERVAL_DAY_MINUTE, INTERVAL_DAY_SECOND, INTERVAL_HOUR, INTERVAL_HOUR_MINUTE, INTERVAL_HOUR_SECOND, INTERVAL_MINUTE, INTERVAL_MINUTE_SECOND, INTERVAL_SECOND -> RexImpTable.optimize2(
+                            operand,
+                            Expressions.call(
+                                    BuiltInMethod.INTERVAL_DAY_TIME_TO_STRING.method,
+                                    operand,
+                                    Expressions.constant( interval.getTimeUnitRange() ),
+                                    Expressions.constant( interval.getFractionalSecondPrecision( typeFactory.getTypeSystem() ) ) ) );
+                    case BOOLEAN -> RexImpTable.optimize2(
+                            operand,
+                            Expressions.call(
+                                    BuiltInMethod.BOOLEAN_TO_STRING.method,
+                                    operand ) );
+                    default -> convert;
+                };
+            }
+            default -> null;
+        };
         if ( convert == null ) {
             convert = convert( operand, typeFactory.getJavaClass( targetType ) );
         }
@@ -715,7 +638,7 @@ public class RexToLixTranslator {
         final Operator operator = call.getOperator();
         CallImplementor implementor = RexImpTable.INSTANCE.get( operator );
         if ( implementor == null ) {
-            throw new RuntimeException( "cannot translate call " + call );
+            throw new GenericRuntimeException( "cannot translate call " + call );
         }
         return implementor.implement( this, call, nullAs );
     }
@@ -745,19 +668,12 @@ public class RexToLixTranslator {
      */
     public static Expression translateLiteral( RexLiteral literal, AlgDataType type, AlgDataTypeFactory typeFactory, RexImpTable.NullAs nullAs ) {
         if ( literal.isNull() ) {
-            switch ( nullAs ) {
-                case TRUE:
-                case IS_NULL:
-                    return RexImpTable.TRUE_EXPR;
-                case FALSE:
-                case IS_NOT_NULL:
-                    return RexImpTable.FALSE_EXPR;
-                case NOT_POSSIBLE:
-                    throw AlwaysNull.INSTANCE;
-                case NULL:
-                default:
-                    return RexImpTable.NULL_EXPR;
-            }
+            return switch ( nullAs ) {
+                case TRUE, IS_NULL -> RexImpTable.TRUE_EXPR;
+                case FALSE, IS_NOT_NULL -> RexImpTable.FALSE_EXPR;
+                case NOT_POSSIBLE -> throw AlwaysNull.INSTANCE;
+                default -> RexImpTable.NULL_EXPR;
+            };
         } else {
             switch ( nullAs ) {
                 case IS_NOT_NULL:
@@ -929,25 +845,20 @@ public class RexToLixTranslator {
         final boolean fromNumber = fromType instanceof Class && Number.class.isAssignableFrom( (Class<?>) fromType );
         if ( fromType == String.class ) {
             if ( toPrimitive != null ) {
-                switch ( toPrimitive ) {
-                    case CHAR:
-                    case SHORT:
-                    case INT:
-                    case LONG:
-                    case FLOAT:
-                    case DOUBLE:
+                return switch ( toPrimitive ) {
+                    case CHAR, SHORT, INT, LONG, FLOAT, DOUBLE ->
                         // Generate "SqlFunctions.toShort(x)".
-                        return Expressions.call(
-                                Functions.class,
-                                "to" + Functions.initcap( toPrimitive.primitiveName ),
-                                operand );
-                    default:
+                            Expressions.call(
+                                    Functions.class,
+                                    "to" + Functions.initcap( toPrimitive.primitiveName ),
+                                    operand );
+                    default ->
                         // Generate "Short.parseShort(x)".
-                        return Expressions.call(
-                                toPrimitive.boxClass,
-                                "parse" + Functions.initcap( toPrimitive.primitiveName ),
-                                operand );
-                }
+                            Expressions.call(
+                                    toPrimitive.boxClass,
+                                    "parse" + Functions.initcap( toPrimitive.primitiveName ),
+                                    operand );
+                };
             }
             if ( toBox != null ) {
                 if ( toBox == Primitive.CHAR ) {// Generate "SqlFunctions.toCharBoxed(x)".
@@ -1048,23 +959,22 @@ public class RexToLixTranslator {
                     Expressions.call( Functions.class, "toBigDecimal", operand ) );
         } else if ( toType == String.class ) {
             if ( fromPrimitive != null ) {
-                switch ( fromPrimitive ) {
-                    case DOUBLE:
-                    case FLOAT:
+                return switch ( fromPrimitive ) {
+                    case DOUBLE, FLOAT ->
                         // E.g. from "double" to "String"
                         // Generate "SqlFunctions.toString(x)"
-                        return Expressions.call(
-                                Functions.class,
-                                "toString",
-                                operand );
-                    default:
+                            Expressions.call(
+                                    Functions.class,
+                                    "toString",
+                                    operand );
+                    default ->
                         // E.g. from "int" to "String"
                         // Generate "Integer.toString(x)"
-                        return Expressions.call(
-                                fromPrimitive.boxClass,
-                                "toString",
-                                operand );
-                }
+                            Expressions.call(
+                                    fromPrimitive.boxClass,
+                                    "toString",
+                                    operand );
+                };
             } else if ( fromType == BigDecimal.class ) {
                 // E.g. from "BigDecimal" to "String"
                 // Generate "x.toString()"
@@ -1246,11 +1156,6 @@ public class RexToLixTranslator {
             return Primitive.ofBox( ((AlgDataTypeFactoryImpl.JavaType) type).getJavaClass() );
         }
         return null;
-    }
-
-
-    public Expression getRoot() {
-        return root;
     }
 
 

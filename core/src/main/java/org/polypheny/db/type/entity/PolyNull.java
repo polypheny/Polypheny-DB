@@ -58,6 +58,10 @@ public class PolyNull extends PolyValue {
     public static PolyNull NULL = new PolyNull();
 
 
+    /**
+     * Creates a PolyNull, which is a PolyValue wrapper fo {@code null},
+     * this value accepts all {@code PolyValue::is[...]} methods.
+     */
     public PolyNull() {
         super( PolyType.NULL );
     }
@@ -209,7 +213,7 @@ public class PolyNull extends PolyValue {
 
     @Override
     public PolyTemporal asTemporal() {
-        return PolyDate.of( (Long) null );
+        return PolyDate.ofNullable( (Long) null );
     }
 
 
@@ -221,7 +225,7 @@ public class PolyNull extends PolyValue {
 
     @Override
     public @NonNull PolyDate asDate() {
-        return PolyDate.of( (Long) null );
+        return PolyDate.ofNullable( (Long) null );
     }
 
 
@@ -233,7 +237,7 @@ public class PolyNull extends PolyValue {
 
     @Override
     public @NonNull PolyTime asTime() {
-        return (PolyTime) PolyTime.of( (Long) null );
+        return PolyTime.ofNullable( (Long) null );
     }
 
 

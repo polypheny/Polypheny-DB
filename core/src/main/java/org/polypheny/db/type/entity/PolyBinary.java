@@ -44,12 +44,18 @@ import org.polypheny.db.util.ConversionUtil;
 public class PolyBinary extends PolyValue {
 
     public static final PolyBinary EMPTY = new PolyBinary( ByteString.EMPTY );
+
     @JsonProperty()
     @JsonSerialize(using = ByteStringSerializer.class)
     @JsonDeserialize(using = ByteStringDeserializer.class)
     public ByteString value;
 
 
+    /**
+     * Creates a PolyBinary.
+     *
+     * @param value The value of the PolyBinary
+     */
     @JsonCreator
     public PolyBinary( @JsonProperty("value") ByteString value ) {
         super( PolyType.BINARY );

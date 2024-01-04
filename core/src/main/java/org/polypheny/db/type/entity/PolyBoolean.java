@@ -51,6 +51,11 @@ public class PolyBoolean extends PolyValue {
     public Boolean value;
 
 
+    /**
+     * Creates a PolyBoolean.
+     *
+     * @param value The value of the PolyBoolean
+     */
     public PolyBoolean( @JsonProperty("value") @Deserialize("value") Boolean value ) {
         super( PolyType.BOOLEAN );
         this.value = value;

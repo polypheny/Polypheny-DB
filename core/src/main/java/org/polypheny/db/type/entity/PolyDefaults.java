@@ -29,6 +29,9 @@ import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 
+/**
+ * Default values for Polypheny-DB {@PolyValue}s.
+ */
 public interface PolyDefaults {
 
     Map<Type, PolyValue> DEFAULTS = new HashMap<>() {{

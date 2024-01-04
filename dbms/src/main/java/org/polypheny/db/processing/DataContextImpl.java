@@ -194,7 +194,7 @@ public class DataContextImpl implements DataContext {
     @Override
     public void resetContext() {
         i = 0;
-        if ( otherParameterValues.size() > 0 ) {
+        if ( !otherParameterValues.isEmpty() ) {
             parameterValues = otherParameterValues.get( i );
         } else {
             parameterValues = new ArrayList<>();

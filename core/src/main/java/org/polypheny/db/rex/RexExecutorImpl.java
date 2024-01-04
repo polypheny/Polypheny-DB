@@ -42,7 +42,6 @@ import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.IndexExpression;
-import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.MethodDeclaration;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.polypheny.db.adapter.DataContext;
@@ -58,6 +57,7 @@ import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.Util;
@@ -108,11 +108,11 @@ public class RexExecutorImpl implements RexExecutor {
                         root_,
                         getter,
                         null );
-        blockBuilder.add( Expressions.return_( null, Expressions.newArrayInit( Object[].class, expressions ) ) );
+        blockBuilder.add( Expressions.return_( null, Expressions.newArrayInit( PolyValue[].class, expressions ) ) );
         final MethodDeclaration methodDecl =
                 Expressions.methodDecl(
                         Modifier.PUBLIC,
-                        Object[].class,
+                        PolyValue[].class,
                         BuiltInMethod.FUNCTION1_APPLY.method.getName(),
                         ImmutableList.of( root0_ ),
                         blockBuilder.toBlock() );
@@ -166,28 +166,19 @@ public class RexExecutorImpl implements RexExecutor {
 
 
     /**
-     * Implementation of {@link RexToLixTranslator.InputGetter} that reads the values of input fields by calling
+     * Implementation of {@link InputGetter} that reads the values of input fields by calling
      * <code>{@link DataContext#get}("inputRecord")</code>.
      */
-    private static class DataContextInputGetter implements InputGetter {
-
-        private final AlgDataTypeFactory typeFactory;
-        private final AlgDataType rowType;
-
-
-        DataContextInputGetter( AlgDataType rowType, AlgDataTypeFactory typeFactory ) {
-            this.rowType = rowType;
-            this.typeFactory = typeFactory;
-        }
+    private record DataContextInputGetter(AlgDataType rowType, AlgDataTypeFactory typeFactory) implements InputGetter {
 
 
         @Override
         public Expression field( BlockBuilder list, int index, Type storageType ) {
-            MethodCallExpression recFromCtx = Expressions.call(
+            Expression recFromCtx = Expressions.convert_( Expressions.call(
                     DataContext.ROOT,
                     BuiltInMethod.DATA_CONTEXT_GET.method,
-                    Expressions.constant( "inputRecord" ) );
-            Expression recFromCtxCasted = RexToLixTranslator.convert( recFromCtx, Object[].class );
+                    Expressions.constant( "inputRecord" ) ), PolyValue[].class );
+            Expression recFromCtxCasted = RexToLixTranslator.convert( recFromCtx, PolyValue[].class );
             IndexExpression recordAccess = Expressions.arrayIndex( recFromCtxCasted, Expressions.constant( index ) );
             if ( storageType == null ) {
                 final AlgDataType fieldType = rowType.getFields().get( index ).getType();

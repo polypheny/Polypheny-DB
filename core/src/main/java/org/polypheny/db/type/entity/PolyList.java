@@ -80,6 +80,12 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
     public List<E> value;
 
 
+    /**
+     * Creates a PolyList, which is the PolyValue implementation of a List,
+     * where the List, as well as all the elements are comparable.
+     *
+     * @param value The value of the PolyList
+     */
     @JsonCreator
     public PolyList( @JsonProperty("value") @Deserialize("value") List<E> value ) {
         super( PolyType.ARRAY );

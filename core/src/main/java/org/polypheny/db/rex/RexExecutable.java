@@ -50,6 +50,7 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.runtime.Utilities;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
 
@@ -114,8 +115,8 @@ public class RexExecutable {
     }
 
 
-    public Object[] execute() {
-        return compiledFunction.apply( dataContext );
+    public PolyValue[] execute() {
+        return (PolyValue[]) compiledFunction.apply( dataContext );
     }
 
 

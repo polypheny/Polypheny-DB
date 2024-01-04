@@ -45,7 +45,7 @@ public abstract class PolyNumber extends PolyValue {
 
 
     private boolean isApprox() {
-        return PolyType.APPROX_TYPES.contains( type );
+        return PolyType.APPROX_TYPES.contains( getType() );
     }
 
 

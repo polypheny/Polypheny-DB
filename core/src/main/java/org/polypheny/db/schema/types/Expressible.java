@@ -21,8 +21,19 @@ import org.apache.calcite.linq4j.tree.Expressions;
 
 public interface Expressible {
 
+    /**
+     * Returns the value as an {@link Expression}. Which can be used for code generation.
+     *
+     * @return the value as an {@link Expression}
+     */
     Expression asExpression();
 
+    /**
+     * Returns the value as an {@link Expression} and forces a specific clas. Which can be used for code generation.
+     *
+     * @param clazz the class to force
+     * @return the value as an {@link Expression}
+     */
     default Expression asExpression( Class<?> clazz ) {
         return Expressions.convert_( asExpression(), clazz );
     }

@@ -239,40 +239,21 @@ public class RexSimplify {
             }
             return rexBuilder.makeNullLiteral( e.getType() );
         }
-        switch ( e.getKind() ) {
-            case AND:
-                return simplifyAnd( (RexCall) e, unknownAs );
-            case OR:
-                return simplifyOr( (RexCall) e, unknownAs );
-            case NOT:
-                return simplifyNot( (RexCall) e, unknownAs );
-            case CASE:
-                return simplifyCase( (RexCall) e, unknownAs );
-            case COALESCE:
-                return simplifyCoalesce( (RexCall) e );
-            case CAST:
-                return simplifyCast( (RexCall) e );
-            case CEIL:
-            case FLOOR:
-                return simplifyCeilFloor( (RexCall) e );
-            case IS_NULL:
-            case IS_NOT_NULL:
-            case IS_TRUE:
-            case IS_NOT_TRUE:
-            case IS_FALSE:
-            case IS_NOT_FALSE:
+        return switch ( e.getKind() ) {
+            case AND -> simplifyAnd( (RexCall) e, unknownAs );
+            case OR -> simplifyOr( (RexCall) e, unknownAs );
+            case NOT -> simplifyNot( (RexCall) e, unknownAs );
+            case CASE -> simplifyCase( (RexCall) e, unknownAs );
+            case COALESCE -> simplifyCoalesce( (RexCall) e );
+            case CAST -> simplifyCast( (RexCall) e );
+            case CEIL, FLOOR -> simplifyCeilFloor( (RexCall) e );
+            case IS_NULL, IS_NOT_NULL, IS_TRUE, IS_NOT_TRUE, IS_FALSE, IS_NOT_FALSE -> {
                 assert e instanceof RexCall;
-                return simplifyIs( (RexCall) e );
-            case EQUALS:
-            case GREATER_THAN:
-            case GREATER_THAN_OR_EQUAL:
-            case LESS_THAN:
-            case LESS_THAN_OR_EQUAL:
-            case NOT_EQUALS:
-                return simplifyComparison( (RexCall) e, unknownAs );
-            default:
-                return e;
-        }
+                yield simplifyIs( (RexCall) e );
+            }
+            case EQUALS, GREATER_THAN, GREATER_THAN_OR_EQUAL, LESS_THAN, LESS_THAN_OR_EQUAL, NOT_EQUALS -> simplifyComparison( (RexCall) e, unknownAs );
+            default -> e;
+        };
     }
 
 
@@ -295,16 +276,14 @@ public class RexSimplify {
                 && (unknownAs == FALSE
                 || (!o0.getType().isNullable()
                 && !o1.getType().isNullable())) ) {
-            switch ( e.getKind() ) {
-                case EQUALS:
-                case GREATER_THAN_OR_EQUAL:
-                case LESS_THAN_OR_EQUAL:
+            return switch ( e.getKind() ) {
+                case EQUALS, GREATER_THAN_OR_EQUAL, LESS_THAN_OR_EQUAL ->
                     // "x = x" simplifies to "x is not null" (similarly <= and >=)
-                    return simplify( rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NOT_NULL ), o0 ), unknownAs );
-                default:
+                        simplify( rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NOT_NULL ), o0 ), unknownAs );
+                default ->
                     // "x != x" simplifies to "false" (similarly < and >)
-                    return rexBuilder.makeLiteral( false );
-            }
+                        rexBuilder.makeLiteral( false );
+            };
         }
 
         // Simplify "<literal1> <op> <literal2>"
@@ -321,22 +300,15 @@ public class RexSimplify {
                         : rexBuilder.makeNullLiteral( e.getType() );
             }
             final int comparisonResult = v0.compareTo( v1 );
-            switch ( e.getKind() ) {
-                case EQUALS:
-                    return rexBuilder.makeLiteral( comparisonResult == 0 );
-                case GREATER_THAN:
-                    return rexBuilder.makeLiteral( comparisonResult > 0 );
-                case GREATER_THAN_OR_EQUAL:
-                    return rexBuilder.makeLiteral( comparisonResult >= 0 );
-                case LESS_THAN:
-                    return rexBuilder.makeLiteral( comparisonResult < 0 );
-                case LESS_THAN_OR_EQUAL:
-                    return rexBuilder.makeLiteral( comparisonResult <= 0 );
-                case NOT_EQUALS:
-                    return rexBuilder.makeLiteral( comparisonResult != 0 );
-                default:
-                    throw new AssertionError();
-            }
+            return switch ( e.getKind() ) {
+                case EQUALS -> rexBuilder.makeLiteral( comparisonResult == 0 );
+                case GREATER_THAN -> rexBuilder.makeLiteral( comparisonResult > 0 );
+                case GREATER_THAN_OR_EQUAL -> rexBuilder.makeLiteral( comparisonResult >= 0 );
+                case LESS_THAN -> rexBuilder.makeLiteral( comparisonResult < 0 );
+                case LESS_THAN_OR_EQUAL -> rexBuilder.makeLiteral( comparisonResult <= 0 );
+                case NOT_EQUALS -> rexBuilder.makeLiteral( comparisonResult != 0 );
+                default -> throw new AssertionError();
+            };
         }
 
         // If none of the arguments were simplified, return the call unchanged.
@@ -582,12 +554,10 @@ public class RexSimplify {
                 }
                 return RexUtil.composeConjunction( rexBuilder, operands );
             case CUSTOM:
-                switch ( a.getKind() ) {
-                    case LITERAL:
-                        return rexBuilder.makeLiteral( !((RexLiteral) a).isNull() );
-                    default:
-                        throw new AssertionError( "every CUSTOM policy needs a handler, " + a.getKind() );
-                }
+                return switch ( a.getKind() ) {
+                    case LITERAL -> rexBuilder.makeLiteral( !((RexLiteral) a).isNull() );
+                    default -> throw new AssertionError( "every CUSTOM policy needs a handler, " + a.getKind() );
+                };
             case AS_IS:
             default:
                 return null;
@@ -636,17 +606,16 @@ public class RexSimplify {
                 break;
             }
         }
-        switch ( operands.size() ) {
-            case 0:
-                return rexBuilder.makeNullLiteral( call.type );
-            case 1:
-                return operands.get( 0 );
-            default:
+        return switch ( operands.size() ) {
+            case 0 -> rexBuilder.makeNullLiteral( call.type );
+            case 1 -> operands.get( 0 );
+            default -> {
                 if ( operands.equals( call.operands ) ) {
-                    return call;
+                    yield call;
                 }
-                return call.clone( call.type, operands );
-        }
+                yield call.clone( call.type, operands );
+            }
+        };
     }
 
 
@@ -1040,11 +1009,10 @@ public class RexSimplify {
 
         simplifyList( notTerms, UNKNOWN ); // TODO could be unknownAs.negate()?
 
-        switch ( unknownAs ) {
-            case FALSE:
-                return simplifyAnd2ForUnknownAsFalse( terms, notTerms, Comparable.class );
-        }
-        return simplifyAnd2( terms, notTerms );
+        return switch ( unknownAs ) {
+            case FALSE -> simplifyAnd2ForUnknownAsFalse( terms, notTerms, Comparable.class );
+            default -> simplifyAnd2( terms, notTerms );
+        };
     }
 
 
@@ -1652,7 +1620,7 @@ public class RexSimplify {
             PolyValue v0, Kind comparison ) {
         Pair<Range<PolyValue>, List<RexNode>> p = rangeTerms.get( ref );
         if ( p == null ) {
-            rangeTerms.put( ref, Pair.of( range( comparison, v0 ), (List<RexNode>) ImmutableList.of( term ) ) );
+            rangeTerms.put( ref, Pair.of( range( comparison, v0 ), ImmutableList.of( term ) ) );
         } else {
             // Exists
             boolean removeUpperBound = false;
@@ -1665,7 +1633,7 @@ public class RexSimplify {
                         // Range is empty, not satisfiable
                         return rexBuilder.makeLiteral( false );
                     }
-                    rangeTerms.put( ref, Pair.of( Range.singleton( v0 ), (List<RexNode>) ImmutableList.of( term ) ) );
+                    rangeTerms.put( ref, Pair.of( Range.singleton( v0 ), ImmutableList.of( term ) ) );
                     // remove
                     for ( RexNode e : p.right ) {
                         replaceLast( terms, e, trueLiteral );
@@ -1819,7 +1787,7 @@ public class RexSimplify {
                     }
                 }
                 newBounds.add( term );
-                rangeTerms.put( ref, Pair.of( r, (List<RexNode>) newBounds.build() ) );
+                rangeTerms.put( ref, Pair.of( r, newBounds.build() ) );
             } else if ( removeLowerBound ) {
                 ImmutableList.Builder<RexNode> newBounds = ImmutableList.builder();
                 for ( RexNode e : p.right ) {
@@ -1830,7 +1798,7 @@ public class RexSimplify {
                     }
                 }
                 newBounds.add( term );
-                rangeTerms.put( ref, Pair.of( r, (List<RexNode>) newBounds.build() ) );
+                rangeTerms.put( ref, Pair.of( r, newBounds.build() ) );
             }
         }
         // Default
@@ -1839,20 +1807,14 @@ public class RexSimplify {
 
 
     private static <C extends Comparable<C>> Range<C> range( Kind comparison, C c ) {
-        switch ( comparison ) {
-            case EQUALS:
-                return Range.singleton( c );
-            case LESS_THAN:
-                return Range.lessThan( c );
-            case LESS_THAN_OR_EQUAL:
-                return Range.atMost( c );
-            case GREATER_THAN:
-                return Range.greaterThan( c );
-            case GREATER_THAN_OR_EQUAL:
-                return Range.atLeast( c );
-            default:
-                throw new AssertionError();
-        }
+        return switch ( comparison ) {
+            case EQUALS -> Range.singleton( c );
+            case LESS_THAN -> Range.lessThan( c );
+            case LESS_THAN_OR_EQUAL -> Range.atMost( c );
+            case GREATER_THAN -> Range.greaterThan( c );
+            case GREATER_THAN_OR_EQUAL -> Range.atLeast( c );
+            default -> throw new AssertionError();
+        };
     }
 
 
@@ -1961,35 +1923,33 @@ public class RexSimplify {
 
     private static boolean isUpperBound( final RexNode e ) {
         final List<RexNode> operands;
-        switch ( e.getKind() ) {
-            case LESS_THAN:
-            case LESS_THAN_OR_EQUAL:
+        return switch ( e.getKind() ) {
+            case LESS_THAN, LESS_THAN_OR_EQUAL -> {
                 operands = ((RexCall) e).getOperands();
-                return RexUtil.isReferenceOrAccess( operands.get( 0 ), true ) && operands.get( 1 ).isA( Kind.LITERAL );
-            case GREATER_THAN:
-            case GREATER_THAN_OR_EQUAL:
+                yield RexUtil.isReferenceOrAccess( operands.get( 0 ), true ) && operands.get( 1 ).isA( Kind.LITERAL );
+            }
+            case GREATER_THAN, GREATER_THAN_OR_EQUAL -> {
                 operands = ((RexCall) e).getOperands();
-                return RexUtil.isReferenceOrAccess( operands.get( 1 ), true ) && operands.get( 0 ).isA( Kind.LITERAL );
-            default:
-                return false;
-        }
+                yield RexUtil.isReferenceOrAccess( operands.get( 1 ), true ) && operands.get( 0 ).isA( Kind.LITERAL );
+            }
+            default -> false;
+        };
     }
 
 
     private static boolean isLowerBound( final RexNode e ) {
         final List<RexNode> operands;
-        switch ( e.getKind() ) {
-            case LESS_THAN:
-            case LESS_THAN_OR_EQUAL:
+        return switch ( e.getKind() ) {
+            case LESS_THAN, LESS_THAN_OR_EQUAL -> {
                 operands = ((RexCall) e).getOperands();
-                return RexUtil.isReferenceOrAccess( operands.get( 1 ), true ) && operands.get( 0 ).isA( Kind.LITERAL );
-            case GREATER_THAN:
-            case GREATER_THAN_OR_EQUAL:
+                yield RexUtil.isReferenceOrAccess( operands.get( 1 ), true ) && operands.get( 0 ).isA( Kind.LITERAL );
+            }
+            case GREATER_THAN, GREATER_THAN_OR_EQUAL -> {
                 operands = ((RexCall) e).getOperands();
-                return RexUtil.isReferenceOrAccess( operands.get( 0 ), true ) && operands.get( 1 ).isA( Kind.LITERAL );
-            default:
-                return false;
-        }
+                yield RexUtil.isReferenceOrAccess( operands.get( 0 ), true ) && operands.get( 1 ).isA( Kind.LITERAL );
+            }
+            default -> false;
+        };
     }
 
 

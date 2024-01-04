@@ -43,7 +43,23 @@ import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
 import org.apache.calcite.avatica.util.ArrayImpl;
-import org.polypheny.db.functions.GeoFunctions;
+import org.polypheny.db.functions.GeoFunctions.Geom;
+import org.polypheny.db.type.entity.PolyBinary;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.graph.PolyEdge;
+import org.polypheny.db.type.entity.graph.PolyGraph;
+import org.polypheny.db.type.entity.graph.PolyNode;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyFloat;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.relational.PolyMap;
+import org.polypheny.db.type.entity.temporal.PolyDate;
+import org.polypheny.db.type.entity.temporal.PolyTime;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 
 
 /**
@@ -57,8 +73,10 @@ public class JavaToPolyTypeConversionRules {
             ImmutableMap.<Class<?>, PolyType>builder()
                     .put( Integer.class, PolyType.INTEGER )
                     .put( int.class, PolyType.INTEGER )
+                    .put( PolyInteger.class, PolyType.INTEGER )
                     .put( Long.class, PolyType.BIGINT )
                     .put( long.class, PolyType.BIGINT )
+                    .put( PolyLong.class, PolyType.BIGINT )
                     .put( Short.class, PolyType.SMALLINT )
                     .put( short.class, PolyType.SMALLINT )
                     .put( byte.class, PolyType.TINYINT )
@@ -66,29 +84,43 @@ public class JavaToPolyTypeConversionRules {
 
                     .put( Float.class, PolyType.REAL )
                     .put( float.class, PolyType.REAL )
+                    .put( PolyFloat.class, PolyType.REAL )
                     .put( Double.class, PolyType.DOUBLE )
                     .put( double.class, PolyType.DOUBLE )
+                    .put( PolyDouble.class, PolyType.DOUBLE )
 
                     .put( boolean.class, PolyType.BOOLEAN )
                     .put( Boolean.class, PolyType.BOOLEAN )
+                    .put( PolyBoolean.class, PolyType.BOOLEAN )
                     .put( byte[].class, PolyType.VARBINARY )
+                    .put( PolyBinary.class, PolyType.VARBINARY )
                     .put( String.class, PolyType.VARCHAR )
                     .put( char[].class, PolyType.VARCHAR )
+                    .put( PolyString.class, PolyType.VARCHAR )
                     .put( Character.class, PolyType.CHAR )
                     .put( char.class, PolyType.CHAR )
 
                     .put( java.util.Date.class, PolyType.TIMESTAMP )
+                    .put( PolyDate.class, PolyType.DATE )
                     .put( Date.class, PolyType.DATE )
                     .put( Timestamp.class, PolyType.TIMESTAMP )
+                    .put( PolyTimestamp.class, PolyType.TIMESTAMP )
                     .put( Time.class, PolyType.TIME )
+                    .put( PolyTime.class, PolyType.TIME )
                     .put( BigDecimal.class, PolyType.DECIMAL )
+                    .put( PolyBigDecimal.class, PolyType.DECIMAL )
 
-                    .put( GeoFunctions.Geom.class, PolyType.GEOMETRY )
+                    .put( Geom.class, PolyType.GEOMETRY )
 
                     .put( ResultSet.class, PolyType.CURSOR )
                     .put( ColumnList.class, PolyType.COLUMN_LIST )
                     .put( ArrayImpl.class, PolyType.ARRAY )
                     .put( List.class, PolyType.ARRAY )
+                    .put( PolyList.class, PolyType.ARRAY )
+                    .put( PolyMap.class, PolyType.MAP )
+                    .put( PolyNode.class, PolyType.NODE )
+                    .put( PolyEdge.class, PolyType.EDGE )
+                    .put( PolyGraph.class, PolyType.GRAPH )
                     .build();
 
 
