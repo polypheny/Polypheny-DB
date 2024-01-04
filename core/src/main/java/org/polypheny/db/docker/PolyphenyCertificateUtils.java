@@ -17,15 +17,14 @@
 package org.polypheny.db.docker;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.StringWriter;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.security.SecureRandom;
 import java.util.Calendar;
 import java.util.Date;
@@ -50,9 +49,8 @@ final class PolyphenyCertificateUtils {
     /**
      * Generate or load a keypair using the default algorithm.
      */
-    static PolyphenyKeypair generateOrLoadCertificates( String certfile, String keyfile, String uuid ) throws IOException {
-        Path keyfilePath = Paths.get( keyfile );
-        if ( !Files.exists( keyfilePath ) || Files.size( keyfilePath ) == 0 ) {
+    static PolyphenyKeypair generateOrLoadCertificates( File certfile, File keyfile, String uuid ) throws IOException {
+        if ( !keyfile.exists() || keyfile.length() == 0 ) {
             generateEd25519Keypair( uuid ).saveToDiskOverwrite( certfile, keyfile );
         }
         return PolyphenyKeypair.loadFromDisk( certfile, keyfile, uuid );
@@ -68,26 +66,23 @@ final class PolyphenyCertificateUtils {
     }
 
 
-    private static void overWriteFile( String filename, String content ) throws IOException {
-        Path p = Paths.get( filename );
-
-        OutputStream os = Files.newOutputStream( p, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING );
+    private static void overWriteFile( File file, String content ) throws IOException {
+        OutputStream os = new FileOutputStream( file, false );
         os.write( content.getBytes( StandardCharsets.UTF_8 ) );
         os.close();
     }
 
 
-    static void saveAsPemOverwrite( String filename, String description, byte[] data ) throws IOException {
+    static void saveAsPemOverwrite( File file, String description, byte[] data ) throws IOException {
         String encoded = encodeToPem( description, data );
-        overWriteFile( filename, encoded );
+        overWriteFile( file, encoded );
     }
 
 
-    static byte[] loadPemFromFile( String filename, String description ) throws IOException {
-        Path p = Paths.get( filename );
-        PemObject o = new PemReader( Files.newBufferedReader( p ) ).readPemObject();
+    static byte[] loadPemFromFile( File file, String description ) throws IOException {
+        PemObject o = new PemReader( new FileReader( file ) ).readPemObject();
         if ( o == null ) {
-            throw new IOException( "No PEM object present in " + filename );
+            throw new IOException( "No PEM object present in " + file.getAbsolutePath() );
         }
         if ( !description.equals( o.getType() ) ) {
             throw new IOException( "Unexpected object of type " + o.getType() + " expected " + description );
@@ -96,8 +91,8 @@ final class PolyphenyCertificateUtils {
     }
 
 
-    static byte[] loadCertificateFromFile( String filename ) throws IOException {
-        return loadPemFromFile( filename, "CERTIFICATE" );
+    static byte[] loadCertificateFromFile( File file ) throws IOException {
+        return loadPemFromFile( file, "CERTIFICATE" );
     }
 
 
