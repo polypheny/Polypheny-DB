@@ -133,7 +133,6 @@ public final class DockerContainer {
             return name;
         }
         return name + "_test";
-
     }
 
 
@@ -185,11 +184,7 @@ public final class DockerContainer {
 
     private void startProxyForConnection( Socket local, int port ) {
         try {
-            Optional<DockerInstance> maybeDockerInstance = getDockerInstance();
-            if ( maybeDockerInstance.isEmpty() ) {
-                throw new IOException( "Not connected to docker host" );
-            }
-            DockerInstance dockerInstance = maybeDockerInstance.get();
+            DockerInstance dockerInstance = getDockerInstance().orElseThrow( () -> new IOException( "Not connected to Docker instance" ) );
             Socket remote = new Socket( dockerInstance.getHost(), dockerInstance.getProxyPort() );
             PolyphenyKeypair kp = PolyphenyCertificateManager.loadClientKeypair( "docker", dockerInstance.getHost() );
             byte[] serverCert = PolyphenyCertificateManager.loadServerCertificate( "docker", dockerInstance.getHost() );
@@ -307,18 +302,7 @@ public final class DockerContainer {
     }
 
 
-    static public class HostAndPort {
-
-        @Getter
-        final String host;
-        @Getter
-        final int port;
-
-
-        HostAndPort( String host, int port ) {
-            this.host = host;
-            this.port = port;
-        }
+    public record HostAndPort(String host, int port) {
 
     }
 

@@ -223,8 +223,8 @@ public class MongoPlugin extends PolyPlugin {
                     .orElseThrow( () -> new GenericRuntimeException( "Could not find docker container with id " + deploymentId ) );
 
             HostAndPort hp = container.connectToContainer( 27017 );
-            host = hp.getHost();
-            port = hp.getPort();
+            host = hp.host();
+            port = hp.port();
 
             MongoClientSettings mongoSettings = MongoClientSettings
                     .builder()
@@ -520,8 +520,8 @@ public class MongoPlugin extends PolyPlugin {
             }
 
             HostAndPort hp = container.connectToContainer( 27017 );
-            host = hp.getHost();
-            port = hp.getPort();
+            host = hp.host();
+            port = hp.port();
 
             try {
                 MongoClientSettings mongoSettings = MongoClientSettings

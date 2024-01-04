@@ -341,8 +341,8 @@ public class MonetdbStore extends AbstractJdbcStore {
         }
 
         HostAndPort hp = container.connectToContainer( 50000 );
-        this.host = hp.getHost();
-        this.port = hp.getPort();
+        this.host = hp.host();
+        this.port = hp.port();
 
         return testConnection();
     }

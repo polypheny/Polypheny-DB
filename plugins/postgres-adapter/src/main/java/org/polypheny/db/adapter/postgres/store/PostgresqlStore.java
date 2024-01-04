@@ -424,8 +424,8 @@ public class PostgresqlStore extends AbstractJdbcStore {
         }
 
         HostAndPort hp = container.connectToContainer( 5432 );
-        this.host = hp.getHost();
-        this.port = hp.getPort();
+        this.host = hp.host();
+        this.port = hp.port();
 
         return testConnection();
     }

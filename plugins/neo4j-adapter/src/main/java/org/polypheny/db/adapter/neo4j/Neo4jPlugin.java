@@ -237,8 +237,8 @@ public class Neo4jPlugin extends PolyPlugin {
             }
 
             HostAndPort hp = container.connectToContainer( 7687 );
-            this.host = hp.getHost();
-            this.port = hp.getPort();
+            this.host = hp.host();
+            this.port = hp.port();
 
             try {
                 this.db = GraphDatabase.driver( new URI( format( "bolt://%s:%s", host, port ) ), auth );
