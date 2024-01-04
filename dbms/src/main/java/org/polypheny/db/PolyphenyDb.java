@@ -357,7 +357,6 @@ public class PolyphenyDb {
         final HttpServer server = startHttpServer( authenticator, transactionManager );
 
         // Start config server and information server
-
         new ConfigService( server.getServer() );
         new InformationService( server.getServer() );
 
@@ -372,6 +371,7 @@ public class PolyphenyDb {
             log.error( "Unable to retrieve host information." );
         }
 
+        // Status service which pipes msgs to the start ui or the console
         StatusService.initialize( transactionManager, server.getServer() );
 
         log.debug( "Setting Docker Timeouts" );
@@ -584,6 +584,12 @@ public class PolyphenyDb {
     }
 
 
+    /**
+     * Restores the previous state of Polypheny, which is provided by the catalog.
+     *
+     * @param authenticator the authenticator, which is not used atm
+     * @param catalog the current catalog, which provides the last state
+     */
     private void restore( Authenticator authenticator, Catalog catalog ) {
         PolyPluginManager.startUp( transactionManager, authenticator );
 
@@ -602,6 +608,9 @@ public class PolyphenyDb {
     }
 
 
+    /**
+     * Tries to commit the restored catalog.
+     */
     private void commitRestore() {
         Transaction trx = null;
         try {
@@ -622,6 +631,12 @@ public class PolyphenyDb {
     }
 
 
+    /**
+     * Restores the default structure, interfaces, adapters.
+     *
+     * @param catalog the current catalog
+     * @param mode the current mode
+     */
     private static void restoreDefaults( Catalog catalog, PolyMode mode ) {
         catalog.updateSnapshot();
         DefaultInserter.resetData( DdlManager.getInstance(), mode );

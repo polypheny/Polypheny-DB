@@ -117,6 +117,11 @@ public class PolyString extends PolyValue {
     }
 
 
+    public static PolyString convert( char value ) {
+        return PolyString.of( String.valueOf( value ) );
+    }
+
+
     public static PolyString join( String delimiter, List<PolyString> strings ) {
         return PolyString.of( strings.stream().map( s -> s.value ).collect( Collectors.joining( delimiter ) ) );
     }

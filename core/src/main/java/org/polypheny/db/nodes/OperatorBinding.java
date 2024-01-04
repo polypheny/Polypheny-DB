@@ -29,10 +29,15 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.NlsString;
 
+@Getter
 public abstract class OperatorBinding {
 
+    /**
+     * -- GETTER --
+     *
+     * @return factory for type creation
+     */
     protected final AlgDataTypeFactory typeFactory;
-    @Getter
     protected final Operator operator;
 
 
@@ -59,14 +64,6 @@ public abstract class OperatorBinding {
      */
     public boolean hasFilter() {
         return false;
-    }
-
-
-    /**
-     * @return factory for type creation
-     */
-    public AlgDataTypeFactory getTypeFactory() {
-        return typeFactory;
     }
 
 

@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -37,7 +36,6 @@ import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
-import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.docker.DockerContainer;
@@ -207,7 +205,7 @@ public abstract class Adapter<S extends AdapterCatalog> implements Scannable, Ex
             if ( !s.appliesTo
                     .stream()
                     .map( setting -> setting.getModes( Arrays.asList( properties.usedModes() ) ) )
-                    .collect( Collectors.toList() ).contains( deployMode ) ) {
+                    .toList().contains( deployMode ) ) {
                 continue;
             }
             if ( newSettings.containsKey( s.name ) ) {
@@ -264,7 +262,6 @@ public abstract class Adapter<S extends AdapterCatalog> implements Scannable, Ex
         );
         informationElements.add( physicalColumnNames );
 
-        Snapshot snapshot = Catalog.getInstance().getSnapshot();
         group.setRefreshFunction( () -> {
             physicalColumnNames.reset();
             List<PhysicalEntity> physicalsOnAdapter = new ArrayList<>();//snapshot.physical().getPhysicalsOnAdapter( adapterId );

@@ -198,9 +198,12 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
 
     @Override
     public Type getJavaClass( AlgDataType type ) {
-        if ( type instanceof JavaType ) {
-            JavaType javaType = (JavaType) type;
-            return javaType.getJavaClass();
+        if ( type instanceof JavaType javaType ) {
+            return PolyTemporal.class.isAssignableFrom( javaType.getJavaClass() )
+                    ? PolyTemporal.class
+                    : PolyNumber.class.isAssignableFrom( javaType.getJavaClass() )
+                            ? PolyNumber.class
+                            : javaType.getJavaClass();
         }
         if ( type.isStruct() && type.getFieldCount() == 1 && type.getPolyType() != PolyType.PATH ) {
             return getJavaClass( type.getFields().get( 0 ).getType() );

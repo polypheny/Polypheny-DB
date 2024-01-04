@@ -38,6 +38,12 @@ public class PolyInterval extends PolyValue {
     public IntervalQualifier qualifier;
 
 
+    /**
+     * Creates a PolyInterval.
+     *
+     * @param value The amount of the range
+     * @param qualifier The unit qualifier, e.g. YEAR, MONTH, DAY, etc.
+     */
     public PolyInterval( BigDecimal value, IntervalQualifier qualifier ) {
         super( qualifier.typeName() );
         this.value = value;

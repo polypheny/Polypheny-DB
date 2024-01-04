@@ -1183,6 +1183,11 @@ public class Functions {
             return ge( b0.asNumber(), b1.asNumber() );
         }
 
+        if ( allAssignablePoly( PolyTemporal.class, b0, b1 ) ) {
+            return ge( b0.asTemporal(), b1.asTemporal() );
+        }
+
+
         if ( b0.isSameType( b1 ) ) {
             return PolyBoolean.of( b0.compareTo( b1 ) >= 0 );
         }

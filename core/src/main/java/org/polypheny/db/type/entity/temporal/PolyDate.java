@@ -44,7 +44,7 @@ public class PolyDate extends PolyTemporal {
     public Long milliSinceEpoch;
 
 
-    public PolyDate( long milliSinceEpoch ) {
+    public PolyDate( Long milliSinceEpoch ) {
         super( PolyType.DATE );
         this.milliSinceEpoch = milliSinceEpoch;
     }
@@ -56,7 +56,7 @@ public class PolyDate extends PolyTemporal {
 
 
     public static PolyDate ofNullable( Number number ) {
-        return number == null ? null : of( number );
+        return number == null ? new PolyDate( null ) : of( number );
     }
 
 

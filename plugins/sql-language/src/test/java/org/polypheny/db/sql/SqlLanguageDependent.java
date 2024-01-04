@@ -108,7 +108,7 @@ public class SqlLanguageDependent {
 
         manager.createTable( Catalog.defaultNamespaceId, "emp", columns, constraints, true, null, null, transaction.createStatement() );
 
-        // "CREATE TABLE contact.customer( fname VARCHAR(50) NOT NULL, PRIMARY KEY (fname))"
+        // "CREATE TABLE contact.customer(fname VARCHAR(50) NOT NULL, PRIMARY KEY (fname))"
         long id = manager.createNamespace( "customer", DataModel.RELATIONAL, true, false );
 
         columns = List.of(

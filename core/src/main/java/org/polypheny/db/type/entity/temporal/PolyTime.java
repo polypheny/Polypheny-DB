@@ -37,7 +37,7 @@ public class PolyTime extends PolyTemporal {
     public Integer ofDay;
 
 
-    public PolyTime( int ofDay ) {
+    public PolyTime( Integer ofDay ) {
         super( PolyType.TIME );
         this.ofDay = ofDay;
     }
@@ -49,7 +49,7 @@ public class PolyTime extends PolyTemporal {
 
 
     public static PolyTime ofNullable( Number value ) {
-        return value == null ? null : of( value );
+        return value == null ? new PolyTime( null ) : of( value );
     }
 
 
