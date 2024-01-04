@@ -167,7 +167,7 @@ public class NotebooksPlugin extends PolyPlugin {
 
     public void onContainerRunning() {
         HostAndPort hostAndPort = container.connectToContainer( JUPYTER_PORT );
-        proxy = new JupyterProxy( new JupyterClient( token, hostAndPort.getHost(), hostAndPort.getPort() ) );
+        proxy = new JupyterProxy( new JupyterClient( token, hostAndPort.host(), hostAndPort.port() ) );
     }
 
 
@@ -191,7 +191,7 @@ public class NotebooksPlugin extends PolyPlugin {
         log.info( "Restarting Jupyter container..." );
         if ( createContainer( dockerInstance ) ) {
             HostAndPort hostAndPort = container.connectToContainer( JUPYTER_PORT );
-            proxy.setClient( new JupyterClient( token, hostAndPort.getHost(), hostAndPort.getPort() ) );
+            proxy.setClient( new JupyterClient( token, hostAndPort.host(), hostAndPort.port() ) );
             ctx.status( 200 ).json( "restart ok" );
         } else {
             container = null;
@@ -294,7 +294,7 @@ public class NotebooksPlugin extends PolyPlugin {
             return false;
         }
         HostAndPort hostAndPort = container.connectToContainer( JUPYTER_PORT );
-        JupyterClient client = new JupyterClient( token, hostAndPort.getHost(), hostAndPort.getPort() );
+        JupyterClient client = new JupyterClient( token, hostAndPort.host(), hostAndPort.port() );
         return client.testConnection();
     }
 
