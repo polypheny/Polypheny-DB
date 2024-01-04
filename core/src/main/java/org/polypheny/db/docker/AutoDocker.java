@@ -53,6 +53,10 @@ public final class AutoDocker {
 
     private static final AutoDocker INSTANCE = new AutoDocker();
 
+    private static final String CONTAINER_NAME = "polypheny-docker-connector";
+    private static final String IMAGE_NAME = "polypheny/polypheny-docker-connector";
+    private static final String VOLUME_NAME = "polypheny-docker-connector-data";
+
     private String status = "";
 
     private Thread thread = null;
@@ -72,13 +76,9 @@ public final class AutoDocker {
     private void createPolyphenyConnectorVolumeIfNotExists( DockerClient client ) {
         List<InspectVolumeResponse> volumes = client.listVolumesCmd().exec().getVolumes();
 
-        for ( InspectVolumeResponse vol : volumes ) {
-            if ( vol.getName().equals( "polypheny-docker-connector-data" ) ) {
-                return;
-            }
+        if ( volumes.stream().noneMatch( vol -> vol.getName().equals( VOLUME_NAME ) ) ) {
+            client.createVolumeCmd().withName( VOLUME_NAME ).exec();
         }
-
-        client.createVolumeCmd().withName( "polypheny-docker-connector-data" ).exec();
     }
 
 
@@ -86,7 +86,7 @@ public final class AutoDocker {
         List<Container> resp = client.listContainersCmd().withShowAll( true ).exec();
         for ( Container c : resp ) {
             for ( String name : c.getNames() ) {
-                if ( name.equals( "/polypheny-docker-connector" ) ) {
+                if ( name.equals( "/" + CONTAINER_NAME ) ) {
                     if ( !c.getState().equals( "running" ) ) {
                         client.startContainerCmd( c.getId() ).exec();
                     }
@@ -109,12 +109,12 @@ public final class AutoDocker {
         final String imageName;
 
         if ( registry.isEmpty() || registry.endsWith( "/" ) ) {
-            imageName = registry + "polypheny/polypheny-docker-connector";
+            imageName = registry + IMAGE_NAME;
         } else {
-            imageName = registry + "/" + "polypheny/polypheny-docker-connector";
+            imageName = registry + "/" + IMAGE_NAME;
         }
 
-        updateStatus( "Pulling container image polypheny/polypheny-docker-connector" );
+        updateStatus( String.format( "Pulling container image %s", imageName ) );
         PullImageResultCallback callback = new PullImageResultCallback();
         client.pullImageCmd( imageName ).exec( callback );
         try {
@@ -130,16 +130,16 @@ public final class AutoDocker {
         }
         createPolyphenyConnectorVolumeIfNotExists( client );
 
-        updateStatus( "Creating container polypheny-docker-connector" );
+        updateStatus( "Creating container " + CONTAINER_NAME );
         HostConfig hostConfig = new HostConfig()
-                .withBinds( Bind.parse( "polypheny-docker-connector-data:/data" ), Bind.parse( "/var/run/docker.sock:/var/run/docker.sock" ) )
+                .withBinds( Bind.parse( VOLUME_NAME + ":/data" ), Bind.parse( "/var/run/docker.sock:/var/run/docker.sock" ) )
                 .withPortBindings( PortBinding.parse( "7001:7001" ), PortBinding.parse( "7002:7002" ), PortBinding.parse( "7003:7003" ) )
                 .withRestartPolicy( RestartPolicy.unlessStoppedRestart() );
 
         CreateContainerResponse containerResponse = client.createContainerCmd( imageName )
                 .withExposedPorts( ExposedPort.tcp( ConfigDocker.COMMUNICATION_PORT ), ExposedPort.tcp( ConfigDocker.HANDSHAKE_PORT ), ExposedPort.tcp( ConfigDocker.PROXY_PORT ) )
                 .withHostConfig( hostConfig )
-                .withName( "polypheny-docker-connector" )
+                .withName( CONTAINER_NAME )
                 .withCmd( "server" )
                 .exec();
         String uuid = containerResponse.getId();
