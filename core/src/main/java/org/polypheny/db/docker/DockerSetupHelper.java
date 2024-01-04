@@ -25,6 +25,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public final class DockerSetupHelper {
 
+    private DockerSetupHelper() {
+    }
+
 
     private static void tryConnectDirectly( String hostname, int communicationPort ) throws IOException {
         byte[] serverCertificate;
