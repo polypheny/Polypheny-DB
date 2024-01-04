@@ -56,6 +56,18 @@ public abstract class PolyTemporal extends PolyNumber {
 
 
     @Override
+    public boolean isNumber() {
+        return true;
+    }
+
+
+    @Override
+    public @NotNull PolyNumber asNumber() {
+        return PolyLong.of( getMilliSinceEpoch() );
+    }
+
+
+    @Override
     public int intValue() {
         return getMilliSinceEpoch().intValue();
     }

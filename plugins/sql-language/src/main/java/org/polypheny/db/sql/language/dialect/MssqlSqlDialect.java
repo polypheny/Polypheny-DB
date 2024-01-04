@@ -110,7 +110,7 @@ public class MssqlSqlDialect extends SqlDialect {
      */
     private void unparseFloor( SqlWriter writer, SqlCall call ) {
         SqlLiteral node = call.operand( 1 );
-        TimeUnitRange unit = (TimeUnitRange) node.value.asSymbol().value;
+        TimeUnitRange unit = node.value.asSymbol().asEnum( TimeUnitRange.class );
 
         switch ( unit ) {
             case YEAR:

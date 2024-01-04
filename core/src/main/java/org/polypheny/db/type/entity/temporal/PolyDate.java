@@ -30,7 +30,6 @@ import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyTemporal;
 
@@ -103,7 +102,7 @@ public class PolyDate extends PolyTemporal {
 
     @Override
     public Expression asExpression() {
-        return Expressions.new_( PolyLong.class, Expressions.constant( milliSinceEpoch ) );
+        return Expressions.new_( PolyDate.class, Expressions.constant( milliSinceEpoch ) );
     }
 
 

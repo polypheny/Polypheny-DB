@@ -362,7 +362,7 @@ public class RexImplicationCheckerTest extends SqlLanguageDependent {
         final RexNode e = f.cast( f.intAlgDataType, f.literal( 2014 ) );
         assertThat(
                 f.simplify.simplifyPreservingType( e, RexUnknownAs.UNKNOWN, true ).toString(),
-                is( "CAST(2014):JavaType(class java.lang.Integer)" ) );
+                is( "CAST(2014):JavaType(class org.polypheny.db.type.entity.numerical.PolyInteger)" ) );
         assertThat(
                 f.simplify.simplifyPreservingType( e, RexUnknownAs.UNKNOWN, false ).toString(),
                 is( "2014" ) );
