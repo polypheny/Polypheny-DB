@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Optional;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 
 @Slf4j
 public final class DockerSetupHelper {
@@ -45,10 +46,11 @@ public final class DockerSetupHelper {
     }
 
 
-    public static DockerSetupResult newDockerInstance( String hostname, String alias, String registry, int communicationPort, int handshakePort, int proxyPort, boolean startHandshake ) {
+    public static DockerSetupResult newDockerInstance( @NotNull String hostname, @NotNull String alias, @NotNull String registry, int communicationPort, int handshakePort, int proxyPort, boolean startHandshake ) {
         if ( communicationPort == handshakePort || handshakePort == proxyPort || communicationPort == proxyPort ) {
             return new DockerSetupResult( "Communication, handshake and proxy port must be different" );
         }
+
         if ( hostname.isEmpty() ) {
             return new DockerSetupResult( "Host must not be empty" );
         }
@@ -58,11 +60,11 @@ public final class DockerSetupHelper {
         }
 
         if ( DockerManager.getInstance().hasHost( hostname ) ) {
-            return new DockerSetupResult( "There is already a docker instance connected to " + hostname );
+            return new DockerSetupResult( "There is already a Docker instance connected to " + hostname );
         }
 
         if ( DockerManager.getInstance().hasAlias( alias ) ) {
-            return new DockerSetupResult( "There is already a docker instance with alias " + alias );
+            return new DockerSetupResult( "There is already a Docker instance with alias " + alias );
         }
 
         try {
