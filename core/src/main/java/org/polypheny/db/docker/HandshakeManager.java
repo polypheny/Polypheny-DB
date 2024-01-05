@@ -181,16 +181,6 @@ public final class HandshakeManager {
         }
 
 
-        private String getContainerName() {
-            final String registryToUse = host.getRegistryOrDefault();
-            if ( registryToUse.isEmpty() || registryToUse.endsWith( "/" ) ) {
-                return registryToUse + "polypheny/polypheny-docker-connector";
-            } else {
-                return registryToUse + "/" + "polypheny/polypheny-docker-connector";
-            }
-        }
-
-
         private String getPortMapping() {
             return Stream.of(
                     new int[]{ host.communicationPort(), ConfigDocker.COMMUNICATION_PORT },
@@ -202,13 +192,13 @@ public final class HandshakeManager {
 
         // Don't forget to change AutoDocker as well!
         private String getRunCommand() {
-            return "docker run -d -v polypheny-docker-connector-data:/data -v /var/run/docker.sock:/var/run/docker.sock " + getPortMapping() + " --restart unless-stopped --name polypheny-docker-connector " + getContainerName() + " server " + client.getHandshakeParameters();
+            return "docker run -d -v " + DockerUtils.VOLUME_NAME + ":/data -v /var/run/docker.sock:/var/run/docker.sock " + getPortMapping() + " --restart unless-stopped --name polypheny-docker-connector " + DockerUtils.getContainerName( host ) + " server " + client.getHandshakeParameters();
         }
 
 
         // Don't forget to change AutoDocker as well!
         private String getExecCommand() {
-            return "docker exec -it polypheny-docker-connector ./main handshake " + client.getHandshakeParameters();
+            return "docker exec -it " + DockerUtils.CONTAINER_NAME + " ./main handshake " + client.getHandshakeParameters();
         }
 
 

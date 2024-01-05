@@ -47,19 +47,18 @@ import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.docker.DockerSetupHelper.DockerReconnectResult;
 import org.polypheny.db.docker.DockerSetupHelper.DockerSetupResult;
+import org.polypheny.db.docker.models.DockerHost;
 
 @Slf4j
 public final class AutoDocker {
 
     private static final AutoDocker INSTANCE = new AutoDocker();
 
-    private static final String CONTAINER_NAME = "polypheny-docker-connector";
-    private static final String IMAGE_NAME = "polypheny/polypheny-docker-connector";
-    private static final String VOLUME_NAME = "polypheny-docker-connector-data";
-
     private String status = "";
 
     private Thread thread = null;
+
+    private final DockerHost host = new DockerHost( "localhost", "localhost", "", ConfigDocker.COMMUNICATION_PORT, ConfigDocker.HANDSHAKE_PORT, ConfigDocker.PROXY_PORT );
 
 
     public static AutoDocker getInstance() {
@@ -76,8 +75,8 @@ public final class AutoDocker {
     private void createPolyphenyConnectorVolumeIfNotExists( DockerClient client ) {
         List<InspectVolumeResponse> volumes = client.listVolumesCmd().exec().getVolumes();
 
-        if ( volumes.stream().noneMatch( vol -> vol.getName().equals( VOLUME_NAME ) ) ) {
-            client.createVolumeCmd().withName( VOLUME_NAME ).exec();
+        if ( volumes.stream().noneMatch( vol -> vol.getName().equals( DockerUtils.VOLUME_NAME ) ) ) {
+            client.createVolumeCmd().withName( DockerUtils.VOLUME_NAME ).exec();
         }
     }
 
@@ -86,7 +85,7 @@ public final class AutoDocker {
         List<Container> resp = client.listContainersCmd().withShowAll( true ).exec();
         for ( Container c : resp ) {
             for ( String name : c.getNames() ) {
-                if ( name.equals( "/" + CONTAINER_NAME ) ) {
+                if ( name.equals( "/" + DockerUtils.CONTAINER_NAME ) ) {
                     if ( !c.getState().equals( "running" ) ) {
                         client.startContainerCmd( c.getId() ).exec();
                     }
@@ -105,14 +104,7 @@ public final class AutoDocker {
 
 
     private Optional<String> createAndStartPolyphenyContainer( DockerClient client ) {
-        final String registry = RuntimeConfig.DOCKER_CONTAINER_REGISTRY.getString();
-        final String imageName;
-
-        if ( registry.isEmpty() || registry.endsWith( "/" ) ) {
-            imageName = registry + IMAGE_NAME;
-        } else {
-            imageName = registry + "/" + IMAGE_NAME;
-        }
+        final String imageName = DockerUtils.getContainerName( host );
 
         updateStatus( String.format( "Pulling container image %s", imageName ) );
         PullImageResultCallback callback = new PullImageResultCallback();
@@ -130,16 +122,16 @@ public final class AutoDocker {
         }
         createPolyphenyConnectorVolumeIfNotExists( client );
 
-        updateStatus( "Creating container " + CONTAINER_NAME );
+        updateStatus( "Creating container " + DockerUtils.CONTAINER_NAME );
         HostConfig hostConfig = new HostConfig()
-                .withBinds( Bind.parse( VOLUME_NAME + ":/data" ), Bind.parse( "/var/run/docker.sock:/var/run/docker.sock" ) )
+                .withBinds( Bind.parse( DockerUtils.VOLUME_NAME + ":/data" ), Bind.parse( "/var/run/docker.sock:/var/run/docker.sock" ) )
                 .withPortBindings( PortBinding.parse( "7001:7001" ), PortBinding.parse( "7002:7002" ), PortBinding.parse( "7003:7003" ) )
                 .withRestartPolicy( RestartPolicy.unlessStoppedRestart() );
 
         CreateContainerResponse containerResponse = client.createContainerCmd( imageName )
                 .withExposedPorts( ExposedPort.tcp( ConfigDocker.COMMUNICATION_PORT ), ExposedPort.tcp( ConfigDocker.HANDSHAKE_PORT ), ExposedPort.tcp( ConfigDocker.PROXY_PORT ) )
                 .withHostConfig( hostConfig )
-                .withName( CONTAINER_NAME )
+                .withName( DockerUtils.CONTAINER_NAME )
                 .withCmd( "server" )
                 .exec();
         String uuid = containerResponse.getId();
@@ -247,7 +239,7 @@ public final class AutoDocker {
                 return false;
             }
         } else {
-            DockerSetupResult res = DockerSetupHelper.newDockerInstance( "localhost", "localhost", "", ConfigDocker.COMMUNICATION_PORT, ConfigDocker.HANDSHAKE_PORT, ConfigDocker.PROXY_PORT, false );
+            DockerSetupResult res = DockerSetupHelper.newDockerInstance( host.hostname(), host.alias(), host.registry(), host.communicationPort(), host.handshakePort(), host.proxyPort(), false );
 
             if ( res.isSuccess() ) {
                 return true;
