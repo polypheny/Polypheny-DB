@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.Config.ConfigListener;
@@ -40,6 +41,10 @@ public final class DockerManager {
     private final Map<Integer, DockerInstance> dockerInstances = new ConcurrentHashMap<>();
     private final AtomicBoolean initialized = new AtomicBoolean( false );
     private final Set<ConfigListener> listener = new HashSet<>();
+
+
+    private DockerManager() {
+    }
 
 
     public static DockerManager getInstance() {
@@ -80,16 +85,13 @@ public final class DockerManager {
     }
 
 
-    /**
-     * Returns the id of the new DockerInstance for host, or if it already exists the id for that.
-     */
-    void addDockerInstance( String host, String alias, String registry, int communicationPort, int handshakePort, int proxyPort, @Nullable ConfigDocker existingConfig ) {
+    void addDockerInstance( @NotNull String host, @NotNull String alias, @NotNull String registry, int communicationPort, int handshakePort, int proxyPort, @Nullable ConfigDocker existingConfig ) {
         synchronized ( this ) {
             if ( hasHost( host ) ) {
-                throw new GenericRuntimeException( "There is already a docker instance connected to " + host );
+                throw new GenericRuntimeException( "There is already a Docker instance connected to " + host );
             }
             if ( hasAlias( alias ) ) {
-                throw new GenericRuntimeException( "There is already a docker instance with alias " + alias );
+                throw new GenericRuntimeException( "There is already a Docker instance with alias " + alias );
             }
             ConfigDocker configDocker = existingConfig;
             if ( configDocker == null ) {
@@ -107,11 +109,11 @@ public final class DockerManager {
     void updateDockerInstance( int id, String host, String alias, String registry ) {
         synchronized ( this ) {
             DockerInstance dockerInstance = getInstanceById( id ).orElseThrow( () -> new GenericRuntimeException( "No docker instance with id " + id ) );
-            if ( !dockerInstance.getHost().equals( host ) && dockerInstances.values().stream().anyMatch( d -> d.getHost().equals( host ) ) ) {
-                throw new GenericRuntimeException( "There is already a docker instance connected to " + host );
+            if ( !dockerInstance.getHost().equals( host ) && hasHost( host ) ) {
+                throw new GenericRuntimeException( "There is already a Docker instance connected to " + host );
             }
-            if ( !dockerInstance.getAlias().equals( alias ) && dockerInstances.values().stream().anyMatch( d -> d.getAlias().equals( alias ) ) ) {
-                throw new GenericRuntimeException( "There is already a docker instance with alias " + alias );
+            if ( !dockerInstance.getAlias().equals( alias ) && hasAlias( alias ) ) {
+                throw new GenericRuntimeException( "There is already a Docker instance with alias " + alias );
             }
 
             dockerInstance.updateConfig( host, alias, registry );
