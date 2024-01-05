@@ -40,7 +40,6 @@ import org.apache.calcite.avatica.util.ByteString;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.metadata.NullSentinel;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -66,6 +65,9 @@ import org.polypheny.db.test.PolyphenyDbAssert;
 import org.polypheny.db.test.RexProgramBuilderBase;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeAssignmentRules;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyNull;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -86,6 +88,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
      */
     public RexProgramTest() {
         super();
+        SqlLanguageDependent.setupSqlAndSchema();
         super.setUp();
     }
 
@@ -125,7 +128,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
         } else {
             actual = node + ":" + node.getType() + (node.getType().isNullable() ? "" : " NOT NULL");
         }
-        assertEquals( message, expected, actual );
+        assertEquals( expected, actual, message );
     }
 
 
@@ -325,7 +328,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
                         typeFactory.createPolyType( PolyType.INTEGER ),
                         typeFactory.createPolyType( PolyType.INTEGER ) );
         List<String> names = Arrays.asList( "x", "y" );
-        AlgDataType inputRowType = typeFactory.createStructType( null, types, names );
+        AlgDataType inputRowType = typeFactory.createStructType( types.stream().map( t -> (Long) null ).toList(), types, names );
         final RexProgramBuilder builder = new RexProgramBuilder( inputRowType, rexBuilder );
         // $t0 = x
         // $t1 = y
@@ -607,9 +610,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
         assertThat(
                 RexUtil.isLosslessCast( rexBuilder.makeCast( bigIntType, rexBuilder.makeInputRef( intType, 0 ) ) ),
                 is( true ) );
-        assertThat(
-                RexUtil.isLosslessCast( rexBuilder.makeCast( intType, rexBuilder.makeInputRef( intType, 0 ) ) ),
-                is( true ) );
+        //assertThat( RexUtil.isLosslessCast( rexBuilder.makeCast( intType, rexBuilder.makeInputRef( intType, 0 ) ) ),is( true ) ); // the cast operator is not even create, as it is unnecessary for the same type
         assertThat(
                 RexUtil.isLosslessCast( rexBuilder.makeCast( charType6, rexBuilder.makeInputRef( smallIntType, 0 ) ) ),
                 is( true ) );
@@ -630,13 +631,13 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
     @Test
     public void removeRedundantCast() {
-        checkSimplify( cast( vInt(), nullable( tInt() ) ), "?0:ROW.int0" );
+        checkSimplifyUnchanged( cast( vInt(), nullable( tInt() ) ) ); // cast is not produced, therefore no simplification possible
         checkSimplifyUnchanged( cast( vInt(), tInt() ) );
         checkSimplify( cast( vIntNotNull(), nullable( tInt() ) ), "?0:ROW.notNullInt0" );
-        checkSimplify( cast( vIntNotNull(), tInt() ), "?0:ROW.notNullInt0" );
+        checkSimplifyUnchanged( cast( vIntNotNull(), tInt() ) ); // cast is not produced, therefore no simplification possible
 
         // Nested int int cast is removed
-        checkSimplify( cast( cast( vVarchar(), tInt() ), tInt() ), "CAST(?0:ROW.varchar0):INTEGER NOT NULL" );
+        checkSimplifyUnchanged( cast( cast( vVarchar(), tInt() ), tInt() ) );
         checkSimplifyUnchanged( cast( cast( vVarchar(), tInt() ), tVarchar() ) );
     }
 
@@ -1851,7 +1852,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
         assertNode( "cast(literal int not null)", "42:INTEGER NOT NULL", cast( literal( 42 ), tInt() ) );
         assertNode( "cast(literal int)", "42:INTEGER NOT NULL", cast( literal( 42 ), nullable( tInt() ) ) );
 
-        assertNode( "abstractCast(literal int not null)", "CAST(42):INTEGER NOT NULL", abstractCast( literal( 42 ), tInt() ) );
+        //assertNode( "abstractCast(literal int not null)", "CAST(42):INTEGER NOT NULL", abstractCast( literal( 42 ), tInt() ) );// cast to same types is removed
         assertNode( "abstractCast(literal int)", "CAST(42):INTEGER", abstractCast( literal( 42 ), nullable( tInt() ) ) );
     }
 
@@ -2029,7 +2030,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
     private void assertTypeAndToString( RexNode rexNode, String representation, String type ) {
         assertEquals( representation, rexNode.toString() );
-        assertEquals( "type of " + rexNode, type, rexNode.getType().toString() + (rexNode.getType().isNullable() ? "" : " NOT NULL") );
+        assertEquals( type, rexNode.getType().toString() + (rexNode.getType().isNullable() ? "" : " NOT NULL"), "type of " + rexNode );
     }
 
 
@@ -2244,14 +2245,14 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
     @Test
     public void testInterpreter() {
-        assertThat( eval( trueLiteral ), is( true ) );
-        assertThat( eval( nullInt ), is( NullSentinel.INSTANCE ) );
-        assertThat( eval( eq( nullInt, nullInt ) ), is( NullSentinel.INSTANCE ) );
-        assertThat( eval( eq( this.trueLiteral, nullInt ) ), is( NullSentinel.INSTANCE ) );
-        assertThat( eval( eq( falseLiteral, trueLiteral ) ), is( false ) );
-        assertThat( eval( ne( falseLiteral, trueLiteral ) ), is( true ) );
-        assertThat( eval( ne( falseLiteral, nullInt ) ), is( NullSentinel.INSTANCE ) );
-        assertThat( eval( and( this.trueLiteral, falseLiteral ) ), is( false ) );
+        assertThat( eval( trueLiteral ), is( PolyBoolean.TRUE ) );
+        assertThat( eval( nullInt ), is( PolyNull.NULL ) );
+        assertThat( eval( eq( nullInt, nullInt ) ), is( PolyNull.NULL ) );
+        assertThat( eval( eq( this.trueLiteral, nullInt ) ), is( PolyNull.NULL ) );
+        assertThat( eval( eq( falseLiteral, trueLiteral ) ), is( PolyBoolean.FALSE ) );
+        assertThat( eval( ne( falseLiteral, trueLiteral ) ), is( PolyBoolean.TRUE ) );
+        assertThat( eval( ne( falseLiteral, nullInt ) ), is( PolyNull.NULL ) );
+        assertThat( eval( and( this.trueLiteral, falseLiteral ) ), is( PolyBoolean.FALSE ) );
     }
 
 
@@ -2345,7 +2346,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
     }
 
 
-    private Comparable eval( RexNode e ) {
+    private PolyValue eval( RexNode e ) {
         return RexInterpreter.evaluate( e, ImmutableMap.of() );
     }
 

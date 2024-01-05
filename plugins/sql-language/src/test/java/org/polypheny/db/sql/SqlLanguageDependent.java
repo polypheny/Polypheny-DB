@@ -40,6 +40,11 @@ public class SqlLanguageDependent {
 
     @BeforeAll
     public static void startUp() {
+        setupSqlAndSchema();
+    }
+
+
+    public static void setupSqlAndSchema() {
         PolyphenyDb.mode = PolyMode.TEST;
         testHelper = TestHelper.getInstance();
         createTestSchema( testHelper );

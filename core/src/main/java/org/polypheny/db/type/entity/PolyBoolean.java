@@ -78,6 +78,12 @@ public class PolyBoolean extends PolyValue {
 
 
     @Override
+    public boolean isNull() {
+        return value == null;
+    }
+
+
+    @Override
     public @Nullable String toJson() {
         return value == null ? JsonToken.VALUE_NULL.asString() : String.valueOf( value );
     }

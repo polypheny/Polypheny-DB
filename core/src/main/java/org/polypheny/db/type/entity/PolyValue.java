@@ -428,6 +428,11 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
+    public boolean isNotNull() {
+        return !isNull();
+    }
+
+
     public PolyNull asNull() {
         return (PolyNull) this;
     }

@@ -83,11 +83,7 @@ public class RexInterpreter implements RexVisitor<PolyValue> {
      * Evaluates an expression in an environment.
      */
     public static PolyValue evaluate( RexNode e, Map<RexNode, PolyValue> map ) {
-        final PolyValue v = e.accept( new RexInterpreter( map ) );
-        if ( false ) {
-            System.out.println( "evaluate " + e + " on " + map + " returns " + v );
-        }
-        return v;
+        return e.accept( new RexInterpreter( map ) );
     }
 
 
@@ -221,17 +217,17 @@ public class RexInterpreter implements RexVisitor<PolyValue> {
             case CASE:
                 return case_( values );
             case IS_TRUE:
-                return PolyBoolean.of( values.get( 0 ).asBoolean().value.equals( true ) );
+                return PolyBoolean.of( values.get( 0 ).isNotNull() && values.get( 0 ).asBoolean().value );
             case IS_NOT_TRUE:
-                return PolyBoolean.of( !values.get( 0 ).asBoolean().value.equals( true ) );
+                return PolyBoolean.of( values.get( 0 ).isNull() || !values.get( 0 ).asBoolean().value );
             case IS_NULL:
                 return PolyBoolean.of( values.get( 0 ).equals( N ) );
             case IS_NOT_NULL:
                 return PolyBoolean.of( !values.get( 0 ).equals( N ) );
             case IS_FALSE:
-                return PolyBoolean.of( values.get( 0 ).asBoolean().value.equals( false ) );
+                return PolyBoolean.of( values.get( 0 ).isNull() || !values.get( 0 ).asBoolean().value );
             case IS_NOT_FALSE:
-                return PolyBoolean.of( !values.get( 0 ).asBoolean().value.equals( false ) );
+                return PolyBoolean.of( values.get( 0 ).isNotNull() && values.get( 0 ).asBoolean().value );
             case PLUS_PREFIX:
                 return values.get( 0 );
             case MINUS_PREFIX:
@@ -329,9 +325,9 @@ public class RexInterpreter implements RexVisitor<PolyValue> {
 
 
     private PolyValue not( PolyValue value ) {
-        if ( value.asBoolean().value.equals( true ) ) {
+        if ( value.isBoolean() && value.isNotNull() && value.asBoolean().value.equals( true ) ) {
             return PolyBoolean.FALSE;
-        } else if ( value.asBoolean().value.equals( false ) ) {
+        } else if ( value.isBoolean() && value.isNotNull() && value.asBoolean().value.equals( false ) ) {
             return PolyBoolean.TRUE;
         } else {
             return N;
@@ -350,7 +346,7 @@ public class RexInterpreter implements RexVisitor<PolyValue> {
             elseValue = Util.last( values );
         }
         for ( int i = 0; i < size; i += 2 ) {
-            if ( values.get( i ).asBoolean().value.equals( true ) ) {
+            if ( values.get( i ).isBoolean() && !values.get( i ).isNull() && values.get( i ).asBoolean().value.equals( true ) ) {
                 return values.get( i + 1 );
             }
         }
@@ -375,27 +371,7 @@ public class RexInterpreter implements RexVisitor<PolyValue> {
         }
         PolyValue v0 = values.get( 0 );
         PolyValue v1 = values.get( 1 );
-        /*
-        if ( v0 instanceof Number && v1 instanceof NlsString ) {
-            try {
-                v1 = new BigDecimal( ((NlsString) v1).getValue() );
-            } catch ( NumberFormatException e ) {
-                return false;
-            }
-        }
-        if ( v1 instanceof Number && v0 instanceof NlsString ) {
-            try {
-                v0 = new BigDecimal( ((NlsString) v0).getValue() );
-            } catch ( NumberFormatException e ) {
-                return false;
-            }
-        }
-        if ( v0 instanceof Number ) {
-            v0 = number( v0 );
-        }
-        if ( v1 instanceof Number ) {
-            v1 = number( v1 );
-        }*/
+
         final int c = v0.compareTo( v1 );
         return PolyBoolean.of( p.test( c ) );
     }
