@@ -16,11 +16,10 @@
 
 package org.polypheny.db.docker.models;
 
-import static org.polypheny.db.docker.DockerSetupHelper.normalizeHostname;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.docker.DockerUtils;
 
 public record DockerHost(@JsonProperty String hostname, @JsonProperty String alias, @JsonProperty String registry,
                          @JsonProperty int communicationPort, @JsonProperty int handshakePort, @JsonProperty int proxyPort) {
@@ -44,7 +43,7 @@ public record DockerHost(@JsonProperty String hostname, @JsonProperty String ali
         if ( communicationPort == handshakePort || handshakePort == proxyPort || communicationPort == proxyPort ) {
             throw new GenericRuntimeException( "Communication, handshake and proxy port must be different" );
         }
-        this.hostname = normalizeHostname( hostname );
+        this.hostname = DockerUtils.normalizeHostname( hostname );
         if ( this.hostname.isEmpty() ) {
             throw new GenericRuntimeException( "Hostname must not be empty" );
         }

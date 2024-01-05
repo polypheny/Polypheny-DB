@@ -32,17 +32,17 @@ public final class DockerSetupHelper {
     }
 
 
-    private static void tryConnectDirectly( String hostname, int communicationPort ) throws IOException {
+    private static void tryConnectDirectly( DockerHost host ) throws IOException {
         byte[] serverCertificate;
 
         try {
-            serverCertificate = PolyphenyCertificateManager.loadServerCertificate( "docker", hostname );
+            serverCertificate = PolyphenyCertificateManager.loadServerCertificate( "docker", host.hostname() );
         } catch ( IOException e ) {
             throw new IOException( "No valid server certificate present" );
         }
 
-        PolyphenyKeypair kp = PolyphenyCertificateManager.loadClientKeypair( "docker", hostname );
-        PolyphenyDockerClient client = new PolyphenyDockerClient( hostname, communicationPort, kp, serverCertificate );
+        PolyphenyKeypair kp = PolyphenyCertificateManager.loadClientKeypair( "docker", host.hostname() );
+        PolyphenyDockerClient client = new PolyphenyDockerClient( host.hostname(), host.communicationPort(), kp, serverCertificate );
         client.ping();
         client.close();
     }
@@ -59,7 +59,7 @@ public final class DockerSetupHelper {
         }
 
         try {
-            tryConnectDirectly( hostname, communicationPort );
+            tryConnectDirectly( host );
             DockerManager.getInstance().addDockerInstance( host, null );
             return new DockerSetupResult( true );
         } catch ( IOException e ) {
@@ -137,16 +137,6 @@ public final class DockerSetupHelper {
         DockerManager.getInstance().removeDockerInstance( id );
         HandshakeManager.getInstance().cancelHandshake( dockerInstance.getHost().hostname() );
         return "";
-    }
-
-
-    public static String normalizeHostname( String hostname ) {
-        // TODO: add more validation/sanity checks
-        String newHostname = hostname.strip();
-        if ( newHostname.isEmpty() ) {
-            throw new GenericRuntimeException( "invalid hostname \"" + newHostname + "\"" );
-        }
-        return newHostname;
     }
 
 

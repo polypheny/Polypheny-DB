@@ -86,7 +86,7 @@ public final class HandshakeManager {
 
     public boolean cancelHandshake( String hostname ) {
         synchronized ( this ) {
-            Handshake h = handshakes.remove( DockerSetupHelper.normalizeHostname( hostname ) );
+            Handshake h = handshakes.remove( DockerUtils.normalizeHostname( hostname ) );
             if ( h != null ) {
                 h.cancel();
             }
@@ -97,14 +97,14 @@ public final class HandshakeManager {
 
     public Map<String, String> getHandshake( String hostname ) {
         synchronized ( this ) {
-            return handshakes.get( DockerSetupHelper.normalizeHostname( hostname ) ).serializeHandshake();
+            return handshakes.get( DockerUtils.normalizeHostname( hostname ) ).serializeHandshake();
         }
     }
 
 
     String getHandshakeParameters( String hostname ) {
         synchronized ( this ) {
-            return handshakes.get( DockerSetupHelper.normalizeHostname( hostname ) ).getHandshakeParameters();
+            return handshakes.get( DockerUtils.normalizeHostname( hostname ) ).getHandshakeParameters();
         }
     }
 
