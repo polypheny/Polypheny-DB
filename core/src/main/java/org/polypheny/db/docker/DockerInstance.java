@@ -28,7 +28,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.docker.exceptions.DockerUserException;
 import org.polypheny.db.docker.models.DockerHost;
 
 
@@ -101,7 +101,7 @@ public final class DockerInstance {
         synchronized ( seenUuids ) {
             for ( DockerInstance instance : DockerManager.getInstance().getDockerInstances().values() ) {
                 if ( instance != this && instance.dockerInstanceUuid.equals( dockerInstanceUuid ) ) {
-                    throw new GenericRuntimeException( "The same docker instance cannot be added twice" );
+                    throw new DockerUserException( "The same docker instance cannot be added twice" );
                 }
             }
         }

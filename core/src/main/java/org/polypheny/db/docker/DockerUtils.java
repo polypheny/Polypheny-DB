@@ -16,7 +16,7 @@
 
 package org.polypheny.db.docker;
 
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.docker.exceptions.DockerUserException;
 import org.polypheny.db.docker.models.DockerHost;
 
 public class DockerUtils {
@@ -34,7 +34,7 @@ public class DockerUtils {
         // TODO: add more validation/sanity checks
         String newHostname = hostname.strip();
         if ( newHostname.isEmpty() ) {
-            throw new GenericRuntimeException( "invalid hostname \"" + newHostname + "\"" );
+            throw new DockerUserException( "Hostname must not be empty" );
         }
         return newHostname;
     }

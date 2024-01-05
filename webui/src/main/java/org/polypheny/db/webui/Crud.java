@@ -28,6 +28,7 @@ import com.google.gson.JsonParseException;
 import com.j256.simplemagic.ContentInfo;
 import com.j256.simplemagic.ContentInfoUtil;
 import io.javalin.http.Context;
+import io.javalin.http.HttpCode;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.BufferedReader;
@@ -133,6 +134,9 @@ import org.polypheny.db.docker.DockerSetupHelper.DockerReconnectResult;
 import org.polypheny.db.docker.DockerSetupHelper.DockerSetupResult;
 import org.polypheny.db.docker.DockerSetupHelper.DockerUpdateResult;
 import org.polypheny.db.docker.HandshakeManager;
+import org.polypheny.db.docker.exceptions.DockerUserException;
+import org.polypheny.db.docker.models.AddDockerResponse;
+import org.polypheny.db.docker.models.HandshakeInfo;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceInformation;
@@ -2952,20 +2956,23 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
     void addDockerInstance( final Context ctx ) {
-        Map<String, Object> config = gson.fromJson( ctx.body(), Map.class );
-        DockerSetupResult res = DockerSetupHelper.newDockerInstance(
-                (String) config.getOrDefault( "host", "" ),
-                (String) config.getOrDefault( "alias", "" ),
-                (String) config.getOrDefault( "registry", "" ),
-                ((Double) config.getOrDefault( "communicationPort", (double) ConfigDocker.COMMUNICATION_PORT )).intValue(),
-                ((Double) config.getOrDefault( "handshakePort", (double) ConfigDocker.HANDSHAKE_PORT )).intValue(),
-                ((Double) config.getOrDefault( "proxyPort", (double) ConfigDocker.PROXY_PORT )).intValue(),
-                true
-        );
+        try {
+            Map<String, Object> config = gson.fromJson( ctx.body(), Map.class );
+            Optional<HandshakeInfo> res = DockerSetupHelper.newDockerInstance(
+                    (String) config.getOrDefault( "host", "" ),
+                    (String) config.getOrDefault( "alias", "" ),
+                    (String) config.getOrDefault( "registry", "" ),
+                    ((Double) config.getOrDefault( "communicationPort", (double) ConfigDocker.COMMUNICATION_PORT )).intValue(),
+                    ((Double) config.getOrDefault( "handshakePort", (double) ConfigDocker.HANDSHAKE_PORT )).intValue(),
+                    ((Double) config.getOrDefault( "proxyPort", (double) ConfigDocker.PROXY_PORT )).intValue(),
+                    true
+            );
 
-        Map<String, Object> json = new HashMap<>( res.getMap() );
-        json.put( "instances", DockerManager.getInstance().getDockerInstances().values().stream().map( DockerInstance::getMap ).collect( Collectors.toList() ) );
-        ctx.json( json );
+            ctx.json( new AddDockerResponse( res.orElse( null ), DockerManager.getInstance().getDockerInstances().values().stream().map( DockerInstance::getMap ).toList() ) );
+        } catch ( DockerUserException e ) {
+            ctx.status( HttpCode.BAD_REQUEST );
+            ctx.result( e.getMessage() );
+        }
     }
 
 
@@ -3057,18 +3064,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     void getHandshake( final Context ctx ) {
         String hostname = ctx.pathParam( "hostname" );
-        Map<String, Object> dockerInstance = DockerManager.getInstance().getDockerInstances()
-                .values()
-                .stream()
-                .filter( d -> d.getHost().hostname().equals( hostname ) )
-                .map( DockerInstance::getMap )
-                .findFirst()
-                .orElse( Map.of() );
-        ctx.json( Map.of(
-                        "handshake", HandshakeManager.getInstance().getHandshake( hostname ),
-                        "instance", dockerInstance
-                )
-        );
+        ctx.json( HandshakeManager.getInstance().getHandshake( hostname ) );
     }
 
 

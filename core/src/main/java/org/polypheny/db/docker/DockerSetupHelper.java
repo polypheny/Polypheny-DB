@@ -21,8 +21,11 @@ import java.util.Map;
 import java.util.Optional;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.docker.exceptions.DockerUserException;
 import org.polypheny.db.docker.models.DockerHost;
+import org.polypheny.db.docker.models.HandshakeInfo;
 
 @Slf4j
 public final class DockerSetupHelper {
@@ -47,27 +50,28 @@ public final class DockerSetupHelper {
     }
 
 
-    public static DockerSetupResult newDockerInstance( @NotNull String hostname, @NotNull String alias, @NotNull String registry, int communicationPort, int handshakePort, int proxyPort, boolean startHandshake ) {
+    public static Optional<HandshakeInfo> newDockerInstance( @NotNull String hostname, @NotNull String alias, @NotNull String registry, int communicationPort, int handshakePort, int proxyPort, boolean startHandshake ) {
         DockerHost host = new DockerHost( hostname, alias, registry, communicationPort, handshakePort, proxyPort );
         if ( DockerManager.getInstance().hasHost( host.hostname() ) ) {
-            return new DockerSetupResult( "There is already a Docker instance connected to " + hostname );
+            throw new DockerUserException( "There is already a Docker instance connected to " + hostname );
         }
 
         if ( DockerManager.getInstance().hasAlias( host.alias() ) ) {
-            return new DockerSetupResult( "There is already a Docker instance with alias " + alias );
+            throw new DockerUserException( "There is already a Docker instance with alias " + alias );
         }
 
         try {
             tryConnectDirectly( host );
             DockerManager.getInstance().addDockerInstance( host, null );
-            return new DockerSetupResult( true );
+            return Optional.empty();
         } catch ( IOException e ) {
-            return new DockerSetupResult( HandshakeManager.getInstance()
+            return Optional.of( HandshakeManager.getInstance()
                     .newHandshake(
                             host,
                             () -> DockerManager.getInstance().addDockerInstance( host, null ),
                             startHandshake
-                    ) );
+                    )
+            );
         }
 
     }
@@ -107,13 +111,13 @@ public final class DockerSetupHelper {
 
         DockerInstance dockerInstance = maybeDockerInstance.get();
 
-        Map<String, String> m = HandshakeManager.getInstance().newHandshake(
+        HandshakeInfo m = HandshakeManager.getInstance().newHandshake(
                 dockerInstance.getHost(),
                 () -> DockerManager.getInstance().getInstanceById( id ).ifPresent( DockerInstance::reconnect ),
                 true
         );
-
-        return new DockerReconnectResult( m );
+        throw new NotImplementedException( "Temporarily disabled" );
+        //return new DockerReconnectResult( m );
     }
 
 
@@ -143,7 +147,7 @@ public final class DockerSetupHelper {
 
         @Getter
         private String error = "";
-        private Map<String, String> handshake = Map.of();
+        private HandshakeInfo handshake = null;
         @Getter
         private boolean success = false;
 
@@ -153,7 +157,7 @@ public final class DockerSetupHelper {
         }
 
 
-        private DockerSetupResult( Map<String, String> handshake ) {
+        private DockerSetupResult( HandshakeInfo handshake ) {
             this.handshake = handshake;
         }
 
@@ -177,7 +181,7 @@ public final class DockerSetupHelper {
     static public final class DockerUpdateResult {
 
         private String error = "";
-        private Map<String, String> handshake = Map.of();
+        private HandshakeInfo handshake = null;
         private Map<String, Object> instance = Map.of();
 
 

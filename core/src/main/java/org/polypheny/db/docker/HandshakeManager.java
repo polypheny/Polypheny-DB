@@ -30,6 +30,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.docker.PolyphenyHandshakeClient.State;
 import org.polypheny.db.docker.models.DockerHost;
+import org.polypheny.db.docker.models.HandshakeInfo;
 
 @Slf4j
 public final class HandshakeManager {
@@ -47,7 +48,7 @@ public final class HandshakeManager {
     }
 
 
-    Map<String, String> newHandshake( DockerHost host, Runnable onCompletion, boolean startHandshake ) {
+    HandshakeInfo newHandshake( DockerHost host, Runnable onCompletion, boolean startHandshake ) {
         synchronized ( this ) {
             Handshake old = handshakes.remove( host.hostname() );
             if ( old != null ) {
@@ -68,7 +69,7 @@ public final class HandshakeManager {
     }
 
 
-    public Map<String, String> restartOrGetHandshake( String hostname ) {
+    public HandshakeInfo restartOrGetHandshake( String hostname ) {
         synchronized ( this ) {
             Handshake h = handshakes.get( hostname );
             if ( h == null ) {
@@ -95,7 +96,7 @@ public final class HandshakeManager {
     }
 
 
-    public Map<String, String> getHandshake( String hostname ) {
+    public HandshakeInfo getHandshake( String hostname ) {
         synchronized ( this ) {
             return handshakes.get( DockerUtils.normalizeHostname( hostname ) ).serializeHandshake();
         }
@@ -112,7 +113,7 @@ public final class HandshakeManager {
     private static class Handshake {
 
         private Thread handshakeThread = null;
-        private DockerHost host;
+        private final DockerHost host;
         private boolean containerRunningGuess;
         private PolyphenyHandshakeClient client;
         private final Runnable onCompletion;
@@ -130,7 +131,7 @@ public final class HandshakeManager {
         private boolean guessIfContainerExists() {
             try {
                 Socket s = new Socket();
-                s.connect( new InetSocketAddress( host.hostname(), host.communicationPort() ), 5000 );
+                s.connect( new InetSocketAddress( host.hostname(), host.communicationPort() ), 1000 );
                 s.close();
                 return true;
             } catch ( IOException ignore ) {
@@ -138,9 +139,14 @@ public final class HandshakeManager {
             }
         }
 
-
+/*
         private Map<String, String> serializeHandshake() {
             return Map.of( "hostname", host.hostname(), "runCommand", getRunCommand(), "execCommand", getExecCommand(), "status", client.getState().toString(), "lastErrorMessage", client.getLastErrorMessage(), "containerExists", containerRunningGuess ? "true" : "false" );
+        }
+
+ */
+        private HandshakeInfo serializeHandshake() {
+            return new HandshakeInfo( host, getRunCommand(), getExecCommand(), client.getState().toString(), client.getLastErrorMessage(), containerRunningGuess);
         }
 
 

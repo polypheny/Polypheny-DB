@@ -33,6 +33,7 @@ import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.docker.exceptions.DockerUserException;
 import org.polypheny.db.docker.models.DockerHost;
 import org.polypheny.db.util.RunMode;
 
@@ -89,10 +90,10 @@ public final class DockerManager {
     void addDockerInstance( @NotNull DockerHost host, @Nullable ConfigDocker existingConfig ) {
         synchronized ( this ) {
             if ( hasHost( host.hostname() ) ) {
-                throw new GenericRuntimeException( "There is already a Docker instance connected to " + host.hostname() );
+                throw new DockerUserException( "There is already a Docker instance connected to " + host.hostname() );
             }
             if ( hasAlias( host.alias() ) ) {
-                throw new GenericRuntimeException( "There is already a Docker instance with alias " + host.alias() );
+                throw new DockerUserException( "There is already a Docker instance with alias " + host.alias() );
             }
             ConfigDocker configDocker = existingConfig;
             if ( configDocker == null ) {

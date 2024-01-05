@@ -46,8 +46,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.docker.DockerSetupHelper.DockerReconnectResult;
-import org.polypheny.db.docker.DockerSetupHelper.DockerSetupResult;
+import org.polypheny.db.docker.exceptions.DockerUserException;
 import org.polypheny.db.docker.models.DockerHost;
+import org.polypheny.db.docker.models.HandshakeInfo;
 
 @Slf4j
 public final class AutoDocker {
@@ -59,6 +60,10 @@ public final class AutoDocker {
     private Thread thread = null;
 
     private final DockerHost host = new DockerHost( "localhost", "localhost", "", ConfigDocker.COMMUNICATION_PORT, ConfigDocker.HANDSHAKE_PORT, ConfigDocker.PROXY_PORT );
+
+
+    private AutoDocker() {
+    }
 
 
     public static AutoDocker getInstance() {
@@ -190,7 +195,7 @@ public final class AutoDocker {
         HandshakeManager.getInstance().restartOrGetHandshake( "localhost" );
         int retries = 0;
         while ( true ) {
-            String handshakeStatus = HandshakeManager.getInstance().getHandshake( "localhost" ).get( "status" );
+            String handshakeStatus = HandshakeManager.getInstance().getHandshake( "localhost" ).status();
             if ( handshakeStatus.equals( "FAILED" ) || handshakeStatus.equals( "SUCCESS" ) ) {
                 break;
             }
@@ -239,15 +244,14 @@ public final class AutoDocker {
                 return false;
             }
         } else {
-            DockerSetupResult res = DockerSetupHelper.newDockerInstance( host.hostname(), host.alias(), host.registry(), host.communicationPort(), host.handshakePort(), host.proxyPort(), false );
-
-            if ( res.isSuccess() ) {
-                return true;
-            }
-
-            if ( !res.getError().isEmpty() ) {
-                log.info( "AutoDocker: Setup failed: " + res.getError() );
-                updateStatus( "setup failed: " + res.getError() );
+            try {
+                Optional<HandshakeInfo> res = DockerSetupHelper.newDockerInstance( host.hostname(), host.alias(), host.registry(), host.communicationPort(), host.handshakePort(), host.proxyPort(), false );
+                if ( res.isEmpty() ) {
+                    return true;
+                }
+            } catch ( DockerUserException e ){
+                log.info( "AutoDocker: Setup failed: " + e );
+                updateStatus( "setup failed: " + e );
                 return false;
             }
         }
