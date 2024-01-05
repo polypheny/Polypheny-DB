@@ -3040,7 +3040,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         Map<String, Object> dockerInstance = DockerManager.getInstance().getDockerInstances()
                 .values()
                 .stream()
-                .filter( d -> d.getHost().equals( hostname ) )
+                .filter( d -> d.getHost().hostname().equals( hostname ) )
                 .map( DockerInstance::getMap )
                 .findFirst()
                 .orElse( Map.of() );

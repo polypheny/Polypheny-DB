@@ -133,12 +133,11 @@ public final class DockerContainer {
             return name;
         }
         return name + "_test";
-
     }
 
 
     public Optional<String> getHost() {
-        return getDockerInstance().map( DockerInstance::getHost );
+        return getDockerInstance().map( d -> d.getHost().hostname() );
     }
 
 
@@ -185,14 +184,10 @@ public final class DockerContainer {
 
     private void startProxyForConnection( Socket local, int port ) {
         try {
-            Optional<DockerInstance> maybeDockerInstance = getDockerInstance();
-            if ( maybeDockerInstance.isEmpty() ) {
-                throw new IOException( "Not connected to docker host" );
-            }
-            DockerInstance dockerInstance = maybeDockerInstance.get();
-            Socket remote = new Socket( dockerInstance.getHost(), dockerInstance.getProxyPort() );
-            PolyphenyKeypair kp = PolyphenyCertificateManager.loadClientKeypair( "docker", dockerInstance.getHost() );
-            byte[] serverCert = PolyphenyCertificateManager.loadServerCertificate( "docker", dockerInstance.getHost() );
+            DockerInstance dockerInstance = getDockerInstance().orElseThrow( () -> new IOException( "Not connected to Docker instance" ) );
+            Socket remote = new Socket( dockerInstance.getHost().hostname(), dockerInstance.getHost().proxyPort() );
+            PolyphenyKeypair kp = PolyphenyCertificateManager.loadClientKeypair( "docker", dockerInstance.getHost().hostname() );
+            byte[] serverCert = PolyphenyCertificateManager.loadServerCertificate( "docker", dockerInstance.getHost().hostname() );
             PolyphenyTlsClient client = new PolyphenyTlsClient( kp, serverCert, remote.getInputStream(), remote.getOutputStream() );
             InputStream remote_in = client.getInputStream().get();
             OutputStream remote_out = client.getOutputStream().get();
@@ -307,18 +302,7 @@ public final class DockerContainer {
     }
 
 
-    static public class HostAndPort {
-
-        @Getter
-        final String host;
-        @Getter
-        final int port;
-
-
-        HostAndPort( String host, int port ) {
-            this.host = host;
-            this.port = port;
-        }
+    public record HostAndPort(String host, int port) {
 
     }
 
