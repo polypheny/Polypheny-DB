@@ -17,8 +17,14 @@
 package org.polypheny.db.docker;
 
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.docker.models.DockerHost;
 
 public class DockerUtils {
+
+    static final String CONTAINER_NAME = "polypheny-docker-connector";
+    static final String IMAGE_NAME = "polypheny/polypheny-docker-connector";
+    static final String VOLUME_NAME = "polypheny-docker-connector-data";
+
 
     private DockerUtils() {
     }
@@ -31,6 +37,15 @@ public class DockerUtils {
             throw new GenericRuntimeException( "invalid hostname \"" + newHostname + "\"" );
         }
         return newHostname;
+    }
+
+    public static String getContainerName( DockerHost host ) {
+        final String registryToUse = host.getRegistryOrDefault();
+        if ( registryToUse.isEmpty() || registryToUse.endsWith( "/" ) ) {
+            return registryToUse + IMAGE_NAME;
+        } else {
+            return registryToUse + "/" + IMAGE_NAME;
+        }
     }
 
 }
