@@ -22,6 +22,8 @@ import java.util.Optional;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.docker.models.DockerHost;
 
 @Slf4j
 public final class DockerSetupHelper {
@@ -47,39 +49,24 @@ public final class DockerSetupHelper {
 
 
     public static DockerSetupResult newDockerInstance( @NotNull String hostname, @NotNull String alias, @NotNull String registry, int communicationPort, int handshakePort, int proxyPort, boolean startHandshake ) {
-        if ( communicationPort == handshakePort || handshakePort == proxyPort || communicationPort == proxyPort ) {
-            return new DockerSetupResult( "Communication, handshake and proxy port must be different" );
-        }
-
-        if ( hostname.isEmpty() ) {
-            return new DockerSetupResult( "Host must not be empty" );
-        }
-
-        if ( alias.isEmpty() ) {
-            return new DockerSetupResult( "Alias must not be empty" );
-        }
-
-        if ( DockerManager.getInstance().hasHost( hostname ) ) {
+        DockerHost host = new DockerHost( hostname, alias, registry, communicationPort, handshakePort, proxyPort );
+        if ( DockerManager.getInstance().hasHost( host.hostname() ) ) {
             return new DockerSetupResult( "There is already a Docker instance connected to " + hostname );
         }
 
-        if ( DockerManager.getInstance().hasAlias( alias ) ) {
+        if ( DockerManager.getInstance().hasAlias( host.alias() ) ) {
             return new DockerSetupResult( "There is already a Docker instance with alias " + alias );
         }
 
         try {
             tryConnectDirectly( hostname, communicationPort );
-            DockerManager.getInstance().addDockerInstance( hostname, alias, registry, communicationPort, handshakePort, proxyPort, null );
+            DockerManager.getInstance().addDockerInstance( host, null );
             return new DockerSetupResult( true );
         } catch ( IOException e ) {
             return new DockerSetupResult( HandshakeManager.getInstance()
                     .newHandshake(
-                            hostname,
-                            registry,
-                            communicationPort,
-                            handshakePort,
-                            proxyPort,
-                            () -> DockerManager.getInstance().addDockerInstance( hostname, alias, registry, communicationPort, handshakePort, proxyPort, null ),
+                            host,
+                            () -> DockerManager.getInstance().addDockerInstance( host, null ),
                             startHandshake
                     ) );
         }
@@ -88,14 +75,6 @@ public final class DockerSetupHelper {
 
 
     public static DockerUpdateResult updateDockerInstance( int id, String hostname, String alias, String registry ) {
-        if ( hostname.isEmpty() ) {
-            return new DockerUpdateResult( "Host must not be empty" );
-        }
-
-        if ( alias.isEmpty() ) {
-            return new DockerUpdateResult( "Alias must not be empty" );
-        }
-
         Optional<DockerInstance> maybeDockerInstance = DockerManager.getInstance().getInstanceById( id );
 
         if ( maybeDockerInstance.isEmpty() ) {
@@ -103,17 +82,14 @@ public final class DockerSetupHelper {
         }
 
         DockerInstance dockerInstance = maybeDockerInstance.get();
+        DockerHost newHost = new DockerHost( hostname, alias, registry, dockerInstance.getHost().communicationPort(), dockerInstance.getHost().handshakePort(), dockerInstance.getHost().proxyPort() );
 
-        boolean hostChanged = !dockerInstance.getHost().equals( hostname );
+        boolean hostChanged = !dockerInstance.getHost().hostname().equals( newHost.hostname() );
         DockerManager.getInstance().updateDockerInstance( id, hostname, alias, registry );
 
         if ( hostChanged && !dockerInstance.isConnected() ) {
             HandshakeManager.getInstance().newHandshake(
-                    hostname,
-                    registry,
-                    dockerInstance.getCommunicationPort(),
-                    dockerInstance.getHandshakePort(),
-                    dockerInstance.getProxyPort(),
+                    newHost,
                     () -> DockerManager.getInstance().getInstanceById( id ).ifPresent( DockerInstance::reconnect ),
                     true
             );
@@ -134,10 +110,6 @@ public final class DockerSetupHelper {
 
         Map<String, String> m = HandshakeManager.getInstance().newHandshake(
                 dockerInstance.getHost(),
-                dockerInstance.getRegistry(),
-                dockerInstance.getCommunicationPort(),
-                dockerInstance.getHandshakePort(),
-                dockerInstance.getProxyPort(),
                 () -> DockerManager.getInstance().getInstanceById( id ).ifPresent( DockerInstance::reconnect ),
                 true
         );
@@ -163,8 +135,18 @@ public final class DockerSetupHelper {
         }
 
         DockerManager.getInstance().removeDockerInstance( id );
-        HandshakeManager.getInstance().cancelHandshake( dockerInstance.getHost() );
+        HandshakeManager.getInstance().cancelHandshake( dockerInstance.getHost().hostname() );
         return "";
+    }
+
+
+    public static String normalizeHostname( String hostname ) {
+        // TODO: add more validation/sanity checks
+        String newHostname = hostname.strip();
+        if ( newHostname.isEmpty() ) {
+            throw new GenericRuntimeException( "invalid hostname \"" + newHostname + "\"" );
+        }
+        return newHostname;
     }
 
 
@@ -219,7 +201,7 @@ public final class DockerSetupHelper {
             this.instance = dockerInstance.getMap();
 
             if ( handshake ) {
-                this.handshake = HandshakeManager.getInstance().getHandshake( dockerInstance.getHost() );
+                this.handshake = HandshakeManager.getInstance().getHandshake( dockerInstance.getHost().hostname() );
             }
         }
 

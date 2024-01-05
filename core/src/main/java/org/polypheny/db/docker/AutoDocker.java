@@ -236,7 +236,7 @@ public final class AutoDocker {
             return true;
         }
 
-        Optional<Map.Entry<Integer, DockerInstance>> maybeDockerInstance = DockerManager.getInstance().getDockerInstances().entrySet().stream().filter( e -> e.getValue().getHost().equals( "localhost" ) ).findFirst();
+        Optional<Map.Entry<Integer, DockerInstance>> maybeDockerInstance = DockerManager.getInstance().getDockerInstances().entrySet().stream().filter( e -> e.getValue().getHost().hostname().equals( "localhost" ) ).findFirst();
 
         if ( maybeDockerInstance.isPresent() ) {
             DockerReconnectResult res = DockerSetupHelper.reconnectToInstance( maybeDockerInstance.get().getKey() );
@@ -280,7 +280,7 @@ public final class AutoDocker {
 
 
     private boolean isConnected() {
-        return DockerManager.getInstance().getDockerInstances().values().stream().anyMatch( d -> d.getHost().equals( "localhost" ) && d.isConnected() );
+        return DockerManager.getInstance().getDockerInstances().values().stream().anyMatch( d -> d.getHost().hostname().equals( "localhost" ) && d.isConnected() );
     }
 
 

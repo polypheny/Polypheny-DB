@@ -137,7 +137,7 @@ public final class DockerContainer {
 
 
     public Optional<String> getHost() {
-        return getDockerInstance().map( DockerInstance::getHost );
+        return getDockerInstance().map( d -> d.getHost().hostname() );
     }
 
 
@@ -185,9 +185,9 @@ public final class DockerContainer {
     private void startProxyForConnection( Socket local, int port ) {
         try {
             DockerInstance dockerInstance = getDockerInstance().orElseThrow( () -> new IOException( "Not connected to Docker instance" ) );
-            Socket remote = new Socket( dockerInstance.getHost(), dockerInstance.getProxyPort() );
-            PolyphenyKeypair kp = PolyphenyCertificateManager.loadClientKeypair( "docker", dockerInstance.getHost() );
-            byte[] serverCert = PolyphenyCertificateManager.loadServerCertificate( "docker", dockerInstance.getHost() );
+            Socket remote = new Socket( dockerInstance.getHost().hostname(), dockerInstance.getHost().proxyPort() );
+            PolyphenyKeypair kp = PolyphenyCertificateManager.loadClientKeypair( "docker", dockerInstance.getHost().hostname() );
+            byte[] serverCert = PolyphenyCertificateManager.loadServerCertificate( "docker", dockerInstance.getHost().hostname() );
             PolyphenyTlsClient client = new PolyphenyTlsClient( kp, serverCert, remote.getInputStream(), remote.getOutputStream() );
             InputStream remote_in = client.getInputStream().get();
             OutputStream remote_out = client.getOutputStream().get();
