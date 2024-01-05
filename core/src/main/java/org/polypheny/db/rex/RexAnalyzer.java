@@ -159,13 +159,13 @@ public class RexAnalyzer {
 
         @Override
         public Void visitCall( RexCall call ) {
-            switch ( call.getKind() ) {
-                case CAST:
+            return switch ( call.getKind() ) {
+                case CAST -> {
                     ++unsupportedCount;
-                    return null;
-                default:
-                    return super.visitCall( call );
-            }
+                    yield null;
+                }
+                default -> super.visitCall( call );
+            };
         }
 
     }

@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 
@@ -116,6 +117,12 @@ public abstract class PolyNumber extends PolyValue {
             return null;
         }
         return doubleValue();
+    }
+
+
+    @Override
+    public @NotNull PolyBoolean asBoolean() {
+        return intValue() == 0 ? PolyBoolean.FALSE : PolyBoolean.TRUE;
     }
 
 

@@ -222,8 +222,7 @@ public class RexBuilder {
      * @return Expression accessing given field
      */
     private RexNode makeFieldAccessInternal( RexNode expr, final AlgDataTypeField field ) {
-        if ( expr instanceof RexRangeRef ) {
-            RexRangeRef range = (RexRangeRef) expr;
+        if ( expr instanceof RexRangeRef range ) {
             if ( field.getIndex() < 0 ) {
                 return makeCall(
                         field.getType(),
@@ -471,8 +470,7 @@ public class RexBuilder {
         }
 
         final PolyType sqlType = type.getPolyType();
-        if ( exp instanceof RexLiteral ) {
-            RexLiteral literal = (RexLiteral) exp;
+        if ( exp instanceof RexLiteral literal ) {
             PolyValue value = literal.value;
             PolyType typeName = literal.getPolyType();
             if ( canRemoveCastFromLiteral( type, value, typeName ) ) {
@@ -1403,7 +1401,7 @@ public class RexBuilder {
 
 
     /**
-     * Converts the type of a value to comply with {@link RexLiteral#valueMatchesType}.
+     * Converts the type of value to comply with {@link RexLiteral#valueMatchesType}.
      */
     private static PolyValue clean( Object o, AlgDataType type ) {
         if ( o == null ) {
@@ -1445,6 +1443,8 @@ public class RexBuilder {
                     return (PolyValue) o;
                 } else if ( o instanceof NlsString ) {
                     return PolyString.of( ((NlsString) o).getValue(), ((NlsString) o).getCharset() );
+                } else if ( o instanceof String ) {
+                    return PolyString.of( (String) o );
                 }
                 break;
             case TIME:
@@ -1500,22 +1500,24 @@ public class RexBuilder {
             case ARRAY:
                 ArrayType arrayType = (ArrayType) type;
                 List<PolyValue> list = new ArrayList<>();
-                List<Object> objects = (List<Object>) o;
-                for ( Object object : objects ) {
+
+                for ( Object object : (List<Object>) o ) {
                     list.add( clean( object, arrayType.getComponentType() ) );
                 }
                 return PolyList.copyOf( list );
+            case BOOLEAN:
+                if ( o instanceof Boolean ) {
+                    return PolyBoolean.of( (Boolean) o );
+                }
+
+                //fall through
             default:
                 if ( o instanceof PolyValue ) {
                     return (PolyValue) o;
                 }
                 throw new NotImplementedException();
         }
-        throw new
-
-                NotImplementedException();
-
-
+        throw new NotImplementedException();
     }
 
 
