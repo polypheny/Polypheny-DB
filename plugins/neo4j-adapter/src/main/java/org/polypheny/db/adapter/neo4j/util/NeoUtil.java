@@ -304,7 +304,7 @@ public interface NeoUtil {
                 return literal.getValue().toString();
             case TIMESTAMP:
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                return literal.value.asTemporal().getMilliSinceEpoch().toString();
+                return literal.value.asTemporal().getMillisSinceEpoch().toString();
             case DECIMAL:
             case FLOAT:
             case REAL:
@@ -580,7 +580,7 @@ public interface NeoUtil {
             case DATE:
                 return value.asTemporal().getDaysSinceEpoch();
             case TIME:
-                return value.asTemporal().getMilliSinceEpoch();//handleFixTime( value );
+                return value.asTemporal().getMillisSinceEpoch();//handleFixTime( value );
             case TIMESTAMP:
                 /*if ( value instanceof Long ) {
                     return value;
@@ -589,7 +589,7 @@ public interface NeoUtil {
                     return ((Timestamp) value).getTime() + offset;
                 }
                 return ((TimestampString) value).getMillisSinceEpoch();*/
-                return value.asTemporal().getMilliSinceEpoch();
+                return value.asTemporal().getMillisSinceEpoch();
             case DOCUMENT:
                 return value.asDocument().toTypedJson();//.toString();
             case INTEGER:

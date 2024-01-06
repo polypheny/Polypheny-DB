@@ -365,34 +365,32 @@ public abstract class DateRangeRules {
             if ( exprs.isEmpty() ) {
                 return ImmutableList.of(); // a bit more efficient
             }
-            switch ( calls.peek().getKind() ) {
-                case AND:
-                    return super.visitList( exprs, update );
-                default:
-                    if ( timeUnit != TimeUnitRange.YEAR ) {
-                        // Already visited for lower TimeUnit ranges in the loop below.
-                        // Early bail out.
-                        //noinspection unchecked
-                        return (List<RexNode>) exprs;
-                    }
-                    final Map<RexNode, RangeSet<Calendar>> save = ImmutableMap.copyOf( operandRanges );
-                    final ImmutableList.Builder<RexNode> clonedOperands = ImmutableList.builder();
-                    for ( RexNode operand : exprs ) {
-                        RexNode clonedOperand = operand;
-                        for ( TimeUnitRange timeUnit : timeUnitRanges ) {
-                            clonedOperand = clonedOperand.accept( new ExtractShuttle( rexBuilder, timeUnit, operandRanges, timeUnitRanges, timeZone ) );
-                        }
-                        if ( (clonedOperand != operand) && (update != null) ) {
-                            update[0] = true;
-                        }
-                        clonedOperands.add( clonedOperand );
-
-                        // Restore the state. For an operator such as "OR", an argument cannot inherit the previous argument's state.
-                        operandRanges.clear();
-                        operandRanges.putAll( save );
-                    }
-                    return clonedOperands.build();
+            if ( Objects.requireNonNull( calls.peek().getKind() ) == Kind.AND ) {
+                return super.visitList( exprs, update );
             }
+            if ( timeUnit != TimeUnitRange.YEAR ) {
+                // Already visited for lower TimeUnit ranges in the loop below.
+                // Early bail out.
+                //noinspection unchecked
+                return (List<RexNode>) exprs;
+            }
+            final Map<RexNode, RangeSet<Calendar>> save = ImmutableMap.copyOf( operandRanges );
+            final ImmutableList.Builder<RexNode> clonedOperands = ImmutableList.builder();
+            for ( RexNode operand : exprs ) {
+                RexNode clonedOperand = operand;
+                for ( TimeUnitRange timeUnit : timeUnitRanges ) {
+                    clonedOperand = clonedOperand.accept( new ExtractShuttle( rexBuilder, timeUnit, operandRanges, timeUnitRanges, timeZone ) );
+                }
+                if ( (clonedOperand != operand) && (update != null) ) {
+                    update[0] = true;
+                }
+                clonedOperands.add( clonedOperand );
+
+                // Restore the state. For an operator such as "OR", an argument cannot inherit the previous argument's state.
+                operandRanges.clear();
+                operandRanges.putAll( save );
+            }
+            return clonedOperands.build();
         }
 
 
@@ -481,21 +479,14 @@ public abstract class DateRangeRules {
 
 
         private static boolean isValid( int v, TimeUnitRange timeUnit ) {
-            switch ( timeUnit ) {
-                case YEAR:
-                    return v > 0;
-                case MONTH:
-                    return v >= Calendar.JANUARY && v <= Calendar.DECEMBER;
-                case DAY:
-                    return v > 0 && v <= 31;
-                case HOUR:
-                    return v >= 0 && v <= 24;
-                case MINUTE:
-                case SECOND:
-                    return v >= 0 && v <= 60;
-                default:
-                    return false;
-            }
+            return switch ( timeUnit ) {
+                case YEAR -> v > 0;
+                case MONTH -> v >= Calendar.JANUARY && v <= Calendar.DECEMBER;
+                case DAY -> v > 0 && v <= 31;
+                case HOUR -> v >= 0 && v <= 24;
+                case MINUTE, SECOND -> v >= 0 && v <= 60;
+                default -> false;
+            };
         }
 
 
@@ -599,71 +590,57 @@ public abstract class DateRangeRules {
 
 
         private Calendar timestampValue( RexLiteral timeLiteral ) {
-            switch ( timeLiteral.getPolyType() ) {
-                case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+            return switch ( timeLiteral.getPolyType() ) {
+                case TIMESTAMP_WITH_LOCAL_TIME_ZONE -> {
                     final TimeZone tz = TimeZone.getTimeZone( this.timeZone );
-                    return Util.calendar( Functions.timestampWithLocalTimeZoneToTimestamp( timeLiteral.value.asTimestamp().milliSinceEpoch, tz ) );
-                case TIMESTAMP:
-                    return Util.calendar( timeLiteral.value.asTimestamp().milliSinceEpoch );
-                case DATE:
+                    yield Util.calendar( Functions.timestampWithLocalTimeZoneToTimestamp( timeLiteral.value.asTimestamp().getPolyMillisSinceEpoch(), tz ).millisSinceEpoch );
+                }
+                case TIMESTAMP -> Util.calendar( timeLiteral.value.asTimestamp().millisSinceEpoch );
+                case DATE ->
                     // Cast date to timestamp with local time zone
                     //final DateString d = timeLiteral.getValue( DateString.class );
-                    return Util.calendar( timeLiteral.value.asDate().milliSinceEpoch );
-                default:
-                    throw Util.unexpected( timeLiteral.getPolyType() );
-            }
+                        Util.calendar( timeLiteral.value.asDate().millisSinceEpoch );
+                default -> throw Util.unexpected( timeLiteral.getPolyType() );
+            };
         }
 
 
         private Range<Calendar> floorRange( TimeUnitRange timeUnit, Kind comparison, Calendar c ) {
             Calendar floor = floor( c, timeUnit );
             boolean boundary = floor.equals( c );
-            switch ( comparison ) {
-                case EQUALS:
-                    return Range.closedOpen( floor, boundary ? increment( floor, timeUnit ) : floor );
-                case LESS_THAN:
-                    return boundary ? Range.lessThan( floor ) : Range.lessThan( increment( floor, timeUnit ) );
-                case LESS_THAN_OR_EQUAL:
-                    return Range.lessThan( increment( floor, timeUnit ) );
-                case GREATER_THAN:
-                    return Range.atLeast( increment( floor, timeUnit ) );
-                case GREATER_THAN_OR_EQUAL:
-                    return boundary ? Range.atLeast( floor ) : Range.atLeast( increment( floor, timeUnit ) );
-                default:
-                    throw Util.unexpected( comparison );
-            }
+            return switch ( comparison ) {
+                case EQUALS -> Range.closedOpen( floor, boundary ? increment( floor, timeUnit ) : floor );
+                case LESS_THAN -> boundary ? Range.lessThan( floor ) : Range.lessThan( increment( floor, timeUnit ) );
+                case LESS_THAN_OR_EQUAL -> Range.lessThan( increment( floor, timeUnit ) );
+                case GREATER_THAN -> Range.atLeast( increment( floor, timeUnit ) );
+                case GREATER_THAN_OR_EQUAL -> boundary ? Range.atLeast( floor ) : Range.atLeast( increment( floor, timeUnit ) );
+                default -> throw Util.unexpected( comparison );
+            };
         }
 
 
         private Range<Calendar> ceilRange( TimeUnitRange timeUnit, Kind comparison, Calendar c ) {
             final Calendar ceil = ceil( c, timeUnit );
             boolean boundary = ceil.equals( c );
-            switch ( comparison ) {
-                case EQUALS:
-                    return Range.openClosed( boundary ? decrement( ceil, timeUnit ) : ceil, ceil );
-                case LESS_THAN:
-                    return Range.atMost( decrement( ceil, timeUnit ) );
-                case LESS_THAN_OR_EQUAL:
-                    return boundary ? Range.atMost( ceil ) : Range.atMost( decrement( ceil, timeUnit ) );
-                case GREATER_THAN:
-                    return boundary ? Range.greaterThan( ceil ) : Range.greaterThan( decrement( ceil, timeUnit ) );
-                case GREATER_THAN_OR_EQUAL:
-                    return Range.greaterThan( decrement( ceil, timeUnit ) );
-                default:
-                    throw Util.unexpected( comparison );
-            }
+            return switch ( comparison ) {
+                case EQUALS -> Range.openClosed( boundary ? decrement( ceil, timeUnit ) : ceil, ceil );
+                case LESS_THAN -> Range.atMost( decrement( ceil, timeUnit ) );
+                case LESS_THAN_OR_EQUAL -> boundary ? Range.atMost( ceil ) : Range.atMost( decrement( ceil, timeUnit ) );
+                case GREATER_THAN -> boundary ? Range.greaterThan( ceil ) : Range.greaterThan( decrement( ceil, timeUnit ) );
+                case GREATER_THAN_OR_EQUAL -> Range.greaterThan( decrement( ceil, timeUnit ) );
+                default -> throw Util.unexpected( comparison );
+            };
         }
 
 
         boolean isFloorCeilCall( RexNode e ) {
-            switch ( e.getKind() ) {
-                case FLOOR:
-                case CEIL:
+            return switch ( e.getKind() ) {
+                case FLOOR, CEIL -> {
                     final RexCall call = (RexCall) e;
-                    return call.getOperands().size() == 2;
-                default:
-                    return false;
-            }
+                    yield call.getOperands().size() == 2;
+                }
+                default -> false;
+            };
         }
 
 

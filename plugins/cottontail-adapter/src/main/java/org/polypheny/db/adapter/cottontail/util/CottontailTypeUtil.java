@@ -348,7 +348,7 @@ public class CottontailTypeUtil {
             }
             case TIMESTAMP: {
                 if ( value.isTemporal() ) {
-                    return builder.setDateData( Date.newBuilder().setUtcTimestamp( value.asTemporal().getMilliSinceEpoch() ) ).build();
+                    return builder.setDateData( Date.newBuilder().setUtcTimestamp( value.asTemporal().getMillisSinceEpoch() ) ).build();
                 }
                 break;
             }

@@ -1632,7 +1632,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
         RexCall result = (RexCall) simplify.simplifyUnknownAs( caseNode, RexUnknownAs.UNKNOWN );
         assertThat( result.getType().isNullable(), is( false ) );
-        assertThat( result.getType().getPolyType(), is( PolyType.CHAR ) );
+        assertThat( result.getType().getPolyType(), is( PolyType.VARCHAR ) );
         assertThat( result, is( caseNode ) );
     }
 
@@ -1869,9 +1869,9 @@ public class RexProgramTest extends RexProgramBuilderBase {
         checkSimplifyUnchanged( cast( literalAbc, intType ) );
         checkSimplifyUnchanged( cast( literalOne, intType ) );
         checkSimplifyUnchanged( cast( literalAbc, varcharType ) );
-        checkSimplify( cast( literalOne, varcharType ), "'1':VARCHAR(10)" );
+        checkSimplify( cast( literalOne, varcharType ), "'1':VARCHAR(10) CHARACTER SET \"UTF-8\"" );
         checkSimplifyUnchanged( cast( literalAbc, booleanType ) );
-        checkSimplify( cast( literalOne, booleanType ), "false" ); // different from Hive
+        checkSimplify( cast( literalOne, booleanType ), "true" ); // different from Hive
         checkSimplifyUnchanged( cast( literalAbc, dateType ) );
         checkSimplify( cast( literalOne, dateType ), "1970-01-02" ); // different from Hive
         checkSimplifyUnchanged( cast( literalAbc, timestampType ) );
@@ -1910,7 +1910,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
         checkSimplify( cast( timestampLTZChar3, timestampLTZType ), "2011-07-20 12:34:56:TIMESTAMP_WITH_LOCAL_TIME_ZONE(0)" );
         checkSimplifyUnchanged( cast( literalTimestampLTZ, timestampLTZType ) );
         checkSimplify( cast( literalDate, timestampLTZType ), "2011-07-20 07:00:00:TIMESTAMP_WITH_LOCAL_TIME_ZONE(0)" );
-        checkSimplify( cast( literalTime, timestampLTZType ), "2011-07-20 19:34:56:TIMESTAMP_WITH_LOCAL_TIME_ZONE(0)" );
+        checkSimplify( cast( literalTime, timestampLTZType ), "1970-01-01 19:34:56:TIMESTAMP_WITH_LOCAL_TIME_ZONE(0)" );
         checkSimplify( cast( literalTimestamp, timestampLTZType ), "2011-07-20 19:34:56:TIMESTAMP_WITH_LOCAL_TIME_ZONE(0)" );
         checkSimplify( cast( literalTimestamp, dateType ), "2011-07-20" );
         checkSimplify( cast( literalTimestampLTZ, dateType ), "2011-07-20" );

@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import java.io.IOException;
+import java.util.Arrays;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.calcite.avatica.util.ByteString;
@@ -111,6 +112,12 @@ public class PolyBinary extends PolyValue {
 
 
     @Override
+    public @NotNull PolyString asString() {
+        return value == null ? PolyString.of( null ) : PolyString.of( toHexString() );
+    }
+
+
+    @Override
     public Expression asExpression() {
         return Expressions.call( PolyBinary.class, "of", Expressions.constant( value.getBytes() ) );
     }
@@ -136,6 +143,20 @@ public class PolyBinary extends PolyValue {
     @Override
     public @NotNull Long deriveByteSize() {
         return (long) (value == null ? 1 : value.getBytes().length);
+    }
+
+
+    /**
+     * Returns a byte-string padded with zero bytes to make it at least a given length,
+     */
+    public PolyBinary padRight( int length ) {
+        if ( value == null ) {
+            return PolyBinary.of( (ByteString) null );
+        }
+        if ( this.value.length() >= length ) {
+            return this;
+        }
+        return PolyBinary.of( new ByteString( Arrays.copyOf( value.getBytes(), length ) ) );
     }
 
 

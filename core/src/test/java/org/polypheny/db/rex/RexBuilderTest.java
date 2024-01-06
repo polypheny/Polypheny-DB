@@ -196,7 +196,7 @@ public class RexBuilderTest {
         RexLiteral literal = (RexLiteral) node;
         assertTrue( literal.getValue().isTemporal() );
         assertTrue( literal.getValue().isTimestamp() );
-        assertEquals( MOON, (long) literal.getValue().asTimestamp().milliSinceEpoch );
+        assertEquals( MOON, (long) literal.getValue().asTimestamp().millisSinceEpoch );
     }
 
 

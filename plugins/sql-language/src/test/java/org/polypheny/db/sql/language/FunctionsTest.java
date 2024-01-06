@@ -210,7 +210,7 @@ public class FunctionsTest {
 
     private void checkAddMonths( int y0, int m0, int d0, int y1, int m1, int d1, int months ) {
         final PolyDate date0 = PolyDate.of( ymdToUnixDate( y0, m0, d0 ) );
-        final long date = addMonths( date0, PolyLong.of( months ) ).milliSinceEpoch;
+        final long date = addMonths( date0, PolyLong.of( months ) ).millisSinceEpoch;
         final PolyDate date1 = PolyDate.of( ymdToUnixDate( y1, m1, d1 ) );
         assertThat( (int) date, is( date1 ) );
 
@@ -226,7 +226,7 @@ public class FunctionsTest {
      * Converts a date (days since epoch) and milliseconds (since midnight) into a timestamp (milliseconds since epoch).
      */
     private PolyDate d2ts( PolyDate date, int millis ) {
-        return PolyDate.of( date.milliSinceEpoch * DateTimeUtils.MILLIS_PER_DAY + millis );
+        return PolyDate.of( date.millisSinceEpoch * DateTimeUtils.MILLIS_PER_DAY + millis );
     }
 
 

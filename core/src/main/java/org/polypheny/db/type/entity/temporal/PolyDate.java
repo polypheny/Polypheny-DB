@@ -25,12 +25,14 @@ import lombok.Getter;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.category.PolyTemporal;
 
 @Getter
@@ -40,12 +42,17 @@ public class PolyDate extends PolyTemporal {
 
     public static final DateFormat dateFormat = new SimpleDateFormat( "yyyy-MM-dd" );
 
-    public Long milliSinceEpoch;
+    public Long millisSinceEpoch;
 
 
-    public PolyDate( Long milliSinceEpoch ) {
+    public PolyDate( Long millisSinceEpoch ) {
         super( PolyType.DATE );
-        this.milliSinceEpoch = milliSinceEpoch;
+        this.millisSinceEpoch = millisSinceEpoch;
+    }
+
+
+    public static PolyDate of( PolyNumber number ) {
+        return new PolyDate( number.longValue() );
     }
 
 
@@ -64,18 +71,18 @@ public class PolyDate extends PolyTemporal {
     }
 
 
-    public static PolyValue ofDays( int days ) {
+    public static PolyDate ofDays( int days ) {
         return new PolyDate( days * 24L * 60 * 60 * 1000 );
     }
 
 
     public Date asDefaultDate() {
-        return new Date( milliSinceEpoch );
+        return new Date( millisSinceEpoch );
     }
 
 
     public java.sql.Date asSqlDate() {
-        return new java.sql.Date( milliSinceEpoch );
+        return new java.sql.Date( millisSinceEpoch );
     }
 
 
@@ -84,9 +91,24 @@ public class PolyDate extends PolyTemporal {
     }
 
 
+    public static PolyDate convert( Object value ) {
+        if ( value == null ) {
+            return null;
+        }
+        if ( value instanceof PolyValue poly ) {
+            if ( poly.isDate() ) {
+                return poly.asDate();
+            } else if ( poly.isNumber() ) {
+                return ofDays( poly.asNumber().intValue() );
+            }
+        }
+        throw new NotImplementedException( "convert value to Boolean" );
+    }
+
+
     @Override
     public String toJson() {
-        return milliSinceEpoch == null ? JsonToken.VALUE_NULL.asString() : dateFormat.format( new Date( milliSinceEpoch ) );
+        return millisSinceEpoch == null ? JsonToken.VALUE_NULL.asString() : dateFormat.format( new Date( millisSinceEpoch ) );
     }
 
 
@@ -96,13 +118,13 @@ public class PolyDate extends PolyTemporal {
             return -1;
         }
 
-        return Long.compare( milliSinceEpoch, o.asDate().milliSinceEpoch );
+        return Long.compare( millisSinceEpoch, o.asDate().millisSinceEpoch );
     }
 
 
     @Override
     public Expression asExpression() {
-        return Expressions.new_( PolyDate.class, Expressions.constant( milliSinceEpoch ) );
+        return Expressions.new_( PolyDate.class, Expressions.constant( millisSinceEpoch ) );
     }
 
 

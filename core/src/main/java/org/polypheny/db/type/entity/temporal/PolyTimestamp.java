@@ -22,6 +22,7 @@ import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.TimeZone;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Value;
@@ -43,12 +44,18 @@ public class PolyTimestamp extends PolyTemporal {
 
     public static final DateFormat dateFormat = new SimpleDateFormat( "yyyy-MM-dd HH:mm:ss" );
 
-    public Long milliSinceEpoch; // normalized to UTC
+
+    static {
+        dateFormat.setTimeZone( TimeZone.getTimeZone( "UTC" ) );
+    }
 
 
-    public PolyTimestamp( Long milliSinceEpoch ) {
+    public Long millisSinceEpoch; // normalized to UTC
+
+
+    public PolyTimestamp( Long millisSinceEpoch ) {
         super( PolyType.TIMESTAMP );
-        this.milliSinceEpoch = milliSinceEpoch;
+        this.millisSinceEpoch = millisSinceEpoch;
     }
 
 
@@ -87,14 +94,27 @@ public class PolyTimestamp extends PolyTemporal {
     }
 
 
+    public static PolyTimestamp convert( Object value ) {
+        if ( value == null ) {
+            return null;
+        }
+        if ( value instanceof PolyValue poly ) {
+            if ( poly.isTimestamp() ) {
+                return poly.asTimestamp();
+            }
+        }
+        throw new NotImplementedException( "convert value to Boolean" );
+    }
+
+
     public Timestamp asSqlTimestamp() {
-        return new Timestamp( milliSinceEpoch );
+        return new Timestamp( millisSinceEpoch );
     }
 
 
     @Override
     public String toJson() {
-        return milliSinceEpoch == null ? JsonToken.VALUE_NULL.asString() : TimestampString.fromMillisSinceEpoch( milliSinceEpoch ).toString();
+        return millisSinceEpoch == null ? JsonToken.VALUE_NULL.asString() : TimestampString.fromMillisSinceEpoch( millisSinceEpoch ).toString();
     }
 
 
@@ -104,13 +124,13 @@ public class PolyTimestamp extends PolyTemporal {
             return -1;
         }
 
-        return Long.compare( milliSinceEpoch, o.asTimestamp().milliSinceEpoch );
+        return Long.compare( millisSinceEpoch, o.asTimestamp().millisSinceEpoch );
     }
 
 
     @Override
     public Expression asExpression() {
-        return Expressions.new_( PolyTimestamp.class, Expressions.constant( milliSinceEpoch ) );
+        return Expressions.new_( PolyTimestamp.class, Expressions.constant( millisSinceEpoch ) );
     }
 
 
@@ -121,10 +141,14 @@ public class PolyTimestamp extends PolyTemporal {
 
 
     public static PolyTimestamp convert( PolyValue value ) {
+        if ( value == null ) {
+            return null;
+        }
+
         if ( value.isNumber() ) {
             return PolyTimestamp.of( value.asNumber().longValue() );
         } else if ( value.isTemporal() ) {
-            return PolyTimestamp.of( value.asTemporal().getMilliSinceEpoch() );
+            return PolyTimestamp.of( value.asTemporal().getMillisSinceEpoch() );
         }
         throw new NotImplementedException( "convert " + PolyTimestamp.class.getSimpleName() );
     }
@@ -133,6 +157,15 @@ public class PolyTimestamp extends PolyTemporal {
     @Override
     public @NotNull Long deriveByteSize() {
         return 16L;
+    }
+
+
+    @Override
+    public String toString() {
+        if ( millisSinceEpoch == null ) {
+            return null;
+        }
+        return dateFormat.format( new Date( millisSinceEpoch ) );
     }
 
 }

@@ -22,11 +22,13 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.category.PolyTemporal;
 import org.polypheny.db.util.TimeString;
 
@@ -42,6 +44,10 @@ public class PolyTime extends PolyTemporal {
         this.ofDay = ofDay;
     }
 
+
+    public static PolyTime of( PolyNumber value ) {
+        return new PolyTime( value.intValue() );
+    }
 
     public static PolyTime of( Number value ) {
         return new PolyTime( value.intValue() );
@@ -67,6 +73,18 @@ public class PolyTime extends PolyTemporal {
         return new PolyTime( (int) Functions.timeToLong( value ) );
     }
 
+
+    public static PolyTime convert( Object value ) {
+        if ( value == null ) {
+            return null;
+        }
+        if ( value instanceof PolyValue poly ) {
+            if ( poly.isTime() ) {
+                return poly.asTime();
+            }
+        }
+        throw new NotImplementedException( "convert value to Boolean" );
+    }
 
     public Time asSqlTime() {
         return new Time( ofDay );
@@ -102,7 +120,7 @@ public class PolyTime extends PolyTemporal {
 
 
     @Override
-    public Long getMilliSinceEpoch() {
+    public Long getMillisSinceEpoch() {
         return Long.valueOf( ofDay );
     }
 

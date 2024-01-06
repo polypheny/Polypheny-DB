@@ -76,11 +76,16 @@ import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
+import org.polypheny.db.type.entity.category.PolyTemporal;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
+import org.polypheny.db.type.entity.temporal.PolyDate;
+import org.polypheny.db.type.entity.temporal.PolyTime;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.ControlFlowException;
@@ -241,11 +246,11 @@ public class RexToLixTranslator {
             case ANY -> operand;
             case DATE -> switch ( sourceType.getPolyType() ) {
                 case CHAR, VARCHAR -> Expressions.call( BuiltInMethod.STRING_TO_DATE.method, operand );
-                case TIMESTAMP -> Expressions.convert_(
+                case TIMESTAMP -> Expressions.call( PolyDate.class, "of",
                         Expressions.call(
                                 BuiltInMethod.FLOOR_DIV.method,
-                                operand,
-                                Expressions.constant( DateTimeUtils.MILLIS_PER_DAY ) ), int.class );
+                                Expressions.call( operand, BuiltInMethod.MILLIS_SINCE_EPOCH_POLY.method ),
+                                PolyTemporal.MILLIS_OF_DAY ) );
                 case TIMESTAMP_WITH_LOCAL_TIME_ZONE -> RexImpTable.optimize2(
                         operand,
                         Expressions.call(
@@ -262,12 +267,11 @@ public class RexToLixTranslator {
                                 BuiltInMethod.TIME_WITH_LOCAL_TIME_ZONE_TO_TIME.method,
                                 operand,
                                 Expressions.call( BuiltInMethod.TIME_ZONE.method, root ) ) );
-                case TIMESTAMP -> Expressions.convert_(
+                case TIMESTAMP -> Expressions.call( PolyTime.class, "of",
                         Expressions.call(
                                 BuiltInMethod.FLOOR_MOD.method,
-                                operand,
-                                Expressions.constant( DateTimeUtils.MILLIS_PER_DAY ) ),
-                        int.class );
+                                Expressions.call( operand, BuiltInMethod.MILLIS_SINCE_EPOCH_POLY.method ),
+                                PolyLong.of( DateTimeUtils.MILLIS_PER_DAY ).asExpression() ) );
                 case TIMESTAMP_WITH_LOCAL_TIME_ZONE -> RexImpTable.optimize2(
                         operand,
                         Expressions.call(
@@ -297,14 +301,14 @@ public class RexToLixTranslator {
             };
             case TIMESTAMP -> switch ( sourceType.getPolyType() ) {
                 case CHAR, VARCHAR -> Expressions.call( BuiltInMethod.STRING_TO_TIMESTAMP.method, operand );
-                case DATE -> Expressions.multiply(
-                        Expressions.convert_( operand, long.class ),
-                        Expressions.constant( DateTimeUtils.MILLIS_PER_DAY ) );
-                case TIME -> Expressions.add(
+                case DATE -> Expressions.call( PolyTimestamp.class, "of", Expressions.multiply(
+                        Expressions.call( operand, BuiltInMethod.MILLIS_SINCE_EPOCH_POLY.method ),
+                        PolyTemporal.MILLIS_OF_DAY ) );
+                case TIME -> Expressions.call( PolyTimestamp.class, "of", Expressions.add(
                         Expressions.multiply(
                                 Expressions.convert_( Expressions.call( BuiltInMethod.CURRENT_DATE.method, root ), long.class ),
-                                Expressions.constant( DateTimeUtils.MILLIS_PER_DAY ) ),
-                        Expressions.convert_( operand, long.class ) );
+                                PolyTemporal.MILLIS_OF_DAY ),
+                        Expressions.call( operand, BuiltInMethod.MILLIS_SINCE_EPOCH_POLY.method ) ) );
                 case TIME_WITH_LOCAL_TIME_ZONE -> RexImpTable.optimize2(
                         operand,
                         Expressions.call(
@@ -326,27 +330,14 @@ public class RexToLixTranslator {
                 case CHAR, VARCHAR -> Expressions.call(
                         BuiltInMethod.STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE.method,
                         operand );
-                case DATE -> Expressions.call(
+                case DATE, TIME -> Expressions.call(
                         BuiltInMethod.TIMESTAMP_STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE.method,
                         RexImpTable.optimize2(
                                 operand,
                                 Expressions.call(
                                         BuiltInMethod.UNIX_TIMESTAMP_TO_STRING.method,
-                                        Expressions.multiply(
-                                                Expressions.convert_( operand, long.class ),
-                                                Expressions.constant( DateTimeUtils.MILLIS_PER_DAY ) ) ) ),
-                        Expressions.call( BuiltInMethod.TIME_ZONE.method, root ) );
-                case TIME -> Expressions.call(
-                        BuiltInMethod.TIMESTAMP_STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE.method,
-                        RexImpTable.optimize2(
-                                operand,
-                                Expressions.call(
-                                        BuiltInMethod.UNIX_TIMESTAMP_TO_STRING.method,
-                                        Expressions.add(
-                                                Expressions.multiply(
-                                                        Expressions.convert_( Expressions.call( BuiltInMethod.CURRENT_DATE.method, root ), long.class ),
-                                                        Expressions.constant( DateTimeUtils.MILLIS_PER_DAY ) ),
-                                                Expressions.convert_( operand, long.class ) ) ) ),
+                                        Expressions.call( PolyTimestamp.class, "of",
+                                                Expressions.call( operand, "longValue" ) ) ) ),
                         Expressions.call( BuiltInMethod.TIME_ZONE.method, root ) );
                 case TIME_WITH_LOCAL_TIME_ZONE -> RexImpTable.optimize2(
                         operand,
@@ -1009,6 +1000,12 @@ public class RexToLixTranslator {
                 return Expressions.convert_( operand, toType ); // document
             } else if ( toType == PolyNumber.class ) {
                 return Expressions.convert_( operand, toType ); // number
+            } else if ( toType == PolyDate.class ) {
+                return Expressions.call( PolyDate.class, "convert", operand );
+            } else if ( toType == PolyTimestamp.class ) {
+                return Expressions.call( PolyTimestamp.class, "convert", operand );
+            } else if ( toType == PolyTime.class ) {
+                return Expressions.call( PolyTime.class, "convert", operand );
             }
             log.warn( "Converter missing " + toType );
         }

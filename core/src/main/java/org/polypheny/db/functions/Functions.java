@@ -118,6 +118,9 @@ import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.relational.PolyMap;
+import org.polypheny.db.type.entity.temporal.PolyDate;
+import org.polypheny.db.type.entity.temporal.PolyTime;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.NumberUtil;
 import org.polypheny.db.util.Static;
@@ -200,20 +203,14 @@ public class Functions {
 
     public static PolyDouble distance( List<PolyNumber> value, List<PolyNumber> target, PolyString metric ) {
         DistanceFunctions.verifyInputs( value, target, null );
-        switch ( metric.value ) {
-            case "L2":
-                return DistanceFunctions.l2Metric( value, target );
-            case "L1":
-                return DistanceFunctions.l1Metric( value, target );
-            case "L2SQUARED":
-                return DistanceFunctions.l2SquaredMetric( value, target );
-            case "CHISQUARED":
-                return DistanceFunctions.chiSquaredMetric( value, target );
-            case "COSINE":
-                return DistanceFunctions.cosineMetric( value, target );
-            default:
-                return PolyDouble.of( 0.0 );
-        }
+        return switch ( metric.value ) {
+            case "L2" -> DistanceFunctions.l2Metric( value, target );
+            case "L1" -> DistanceFunctions.l1Metric( value, target );
+            case "L2SQUARED" -> DistanceFunctions.l2SquaredMetric( value, target );
+            case "CHISQUARED" -> DistanceFunctions.chiSquaredMetric( value, target );
+            case "COSINE" -> DistanceFunctions.cosineMetric( value, target );
+            default -> PolyDouble.of( 0.0 );
+        };
     }
 
 
@@ -991,17 +988,17 @@ public class Functions {
 
 
     public static PolyBoolean lt( PolyTemporal b0, PolyTemporal b1 ) {
-        return lt( PolyLong.of( b0.getMilliSinceEpoch() ), PolyLong.of( b1.getMilliSinceEpoch() ) );
+        return lt( PolyLong.of( b0.getMillisSinceEpoch() ), PolyLong.of( b1.getMillisSinceEpoch() ) );
     }
 
 
     public static PolyBoolean lt( PolyTemporal b0, PolyNumber b1 ) {
-        return lt( PolyLong.of( b0.getMilliSinceEpoch() ), b1 );
+        return lt( PolyLong.of( b0.getMillisSinceEpoch() ), b1 );
     }
 
 
     public static PolyBoolean lt( PolyNumber b0, PolyTemporal b1 ) {
-        return lt( b0, PolyLong.of( b1.getMilliSinceEpoch() ) );
+        return lt( b0, PolyLong.of( b1.getMillisSinceEpoch() ) );
     }
     // <=
 
@@ -1166,7 +1163,7 @@ public class Functions {
 
 
     public static PolyBoolean ge( PolyTemporal b0, PolyTemporal b1 ) {
-        return ge( PolyLong.of( b0.getMilliSinceEpoch() ), PolyLong.of( b1.getMilliSinceEpoch() ) );
+        return ge( PolyLong.of( b0.getMillisSinceEpoch() ), PolyLong.of( b1.getMillisSinceEpoch() ) );
     }
 
 
@@ -1186,7 +1183,6 @@ public class Functions {
         if ( allAssignablePoly( PolyTemporal.class, b0, b1 ) ) {
             return ge( b0.asTemporal(), b1.asTemporal() );
         }
-
 
         if ( b0.isSameType( b1 ) ) {
             return PolyBoolean.of( b0.compareTo( b1 ) >= 0 );
@@ -2431,6 +2427,7 @@ public class Functions {
     /**
      * GREATEST operator.
      */
+    @SuppressWarnings("unused")
     public static <T extends Comparable<T>> T greatest( T b0, T b1 ) {
         return b0 == null || b1 != null && b0.compareTo( b1 ) < 0 ? b1 : b0;
     }
@@ -2490,9 +2487,9 @@ public class Functions {
     /**
      * CAST(BOOLEAN AS VARCHAR).
      */
-    public static String toString( boolean x ) {
+    public static PolyString toString( PolyBoolean x ) {
         // Boolean.toString returns lower case -- no good.
-        return x ? "TRUE" : "FALSE";
+        return x.value ? PolyString.of( "TRUE" ) : PolyString.of( "FALSE" );
     }
 
 
@@ -2505,20 +2502,22 @@ public class Functions {
     /**
      * CAST(VARCHAR AS BOOLEAN).
      */
-    public static boolean toBoolean( String s ) {
-        s = trim( true, true, " ", s );
-        if ( s.equalsIgnoreCase( "TRUE" ) ) {
-            return true;
-        } else if ( s.equalsIgnoreCase( "FALSE" ) ) {
-            return false;
+    @SuppressWarnings("unused")
+    public static PolyBoolean toBoolean( PolyString s ) {
+        s = PolyString.of( trim( true, true, " ", s.toString() ) );
+        if ( s.value.equalsIgnoreCase( "TRUE" ) ) {
+            return PolyBoolean.TRUE;
+        } else if ( s.value.equalsIgnoreCase( "FALSE" ) ) {
+            return PolyBoolean.FALSE;
         } else {
-            throw Static.RESOURCE.invalidCharacterForCast( s ).ex();
+            throw Static.RESOURCE.invalidCharacterForCast( s.value ).ex();
         }
     }
 
 
-    public static boolean toBoolean( Number number ) {
-        return !number.equals( 0 );
+    @SuppressWarnings("unused")
+    public static PolyBoolean toBoolean( PolyNumber number ) {
+        return number.asBoolean();
     }
 
 
@@ -2575,7 +2574,7 @@ public class Functions {
     /**
      * Converts the Java type used for UDF parameters of SQL DATE type ({@link java.sql.Date}) to internal representation (int).
      *
-     * Converse of {@link #internalToDate(int)}.
+     * Converse of {@link #internalToDate(PolyNumber)}.
      */
     public static int toInt( java.util.Date v ) {
         return toInt( v, LOCAL_TZ );
@@ -2587,11 +2586,13 @@ public class Functions {
     }
 
 
+    @SuppressWarnings("unused")
     public static Integer toIntOptional( java.util.Date v ) {
         return v == null ? null : toInt( v );
     }
 
 
+    @SuppressWarnings("unused")
     public static Integer toIntOptional( java.util.Date v, TimeZone timeZone ) {
         return v == null
                 ? null
@@ -2607,13 +2608,14 @@ public class Functions {
     /**
      * Converts the Java type used for UDF parameters of SQL TIME type ({@link java.sql.Time}) to internal representation (int).
      *
-     * Converse of {@link #internalToTime(int)}.
+     * Converse of {@link #internalToTime(PolyNumber)}.
      */
     public static long timeToLong( java.sql.Time v ) {
         return toLong( v, LOCAL_TZ );//% DateTimeUtils.MILLIS_PER_DAY);
     }
 
 
+    @SuppressWarnings("unused")
     public static Long timeToLongOptional( java.sql.Time v ) {
         return v == null ? null : timeToLong( v );
     }
@@ -2644,8 +2646,9 @@ public class Functions {
     /**
      * Converts the Java type used for UDF parameters of SQL TIMESTAMP type ({@link java.sql.Timestamp}) to internal representation (long).
      *
-     * Converse of {@link #internalToTimestamp(long)}.
+     * Converse of {@link #internalToTimestamp(PolyNumber)}.
      */
+    @SuppressWarnings("unused")
     public static long toLong( Timestamp v ) {
         return toLong( v, LOCAL_TZ );
     }
@@ -2754,15 +2757,17 @@ public class Functions {
     /**
      * Converts the internal representation of a SQL DATE (int) to the Java type used for UDF parameters ({@link java.sql.Date}).
      */
-    public static java.sql.Date internalToDate( int v ) {
-        final long t = v * DateTimeUtils.MILLIS_PER_DAY;
+    @SuppressWarnings("unused")
+    public static java.sql.Date internalToDate( PolyNumber v ) {
+        final long t = v.intValue() * DateTimeUtils.MILLIS_PER_DAY;
         return new java.sql.Date( t - LOCAL_TZ.getOffset( t ) );
     }
 
 
     /**
-     * As {@link #internalToDate(int)} but allows nulls.
+     * As {@link #internalToDate(PolyNumber)} but allows nulls.
      */
+    @SuppressWarnings("unused")
     public static java.sql.Date internalToDate( Integer v ) {
         return v == null ? null : internalToDate( v.intValue() );
     }
@@ -2771,130 +2776,164 @@ public class Functions {
     /**
      * Converts the internal representation of a SQL TIME (int) to the Java type used for UDF parameters ({@link java.sql.Time}).
      */
-    public static java.sql.Time internalToTime( int v ) {
-        return new java.sql.Time( v - LOCAL_TZ.getOffset( v ) );
+    @SuppressWarnings("unused")
+    public static java.sql.Time internalToTime( PolyNumber v ) {
+        return new java.sql.Time( v.intValue() - LOCAL_TZ.getOffset( v.intValue() ) );
     }
 
 
+    @SuppressWarnings("unused")
     public static java.sql.Time internalToTime( Integer v ) {
         return v == null ? null : internalToTime( v.intValue() );
     }
 
 
-    public static Integer toTimeWithLocalTimeZone( String v ) {
-        return v == null ? null : new TimeWithTimeZoneString( v )
+    @SuppressWarnings("unused")
+    public static PolyTime toTimeWithLocalTimeZone( PolyString v ) {
+        return PolyTime.of( v == null ? null : new TimeWithTimeZoneString( v.value )
                 .withTimeZone( DateTimeUtils.UTC_ZONE )
                 .getLocalTimeString()
-                .getMillisOfDay();
+                .getMillisOfDay() );
     }
 
 
-    public static Integer toTimeWithLocalTimeZone( String v, TimeZone timeZone ) {
-        return v == null ? null : new TimeWithTimeZoneString( v + " " + timeZone.getID() )
+    @SuppressWarnings("unused")
+    public static PolyTime toTimeWithLocalTimeZone( PolyString v, TimeZone timeZone ) {
+        return PolyTime.of( v == null ? null : new TimeWithTimeZoneString( v.value + " " + timeZone.getID() )
                 .withTimeZone( DateTimeUtils.UTC_ZONE )
                 .getLocalTimeString()
-                .getMillisOfDay();
+                .getMillisOfDay() );
     }
 
 
-    public static int timeWithLocalTimeZoneToTime( int v, TimeZone timeZone ) {
-        return TimeWithTimeZoneString.fromMillisOfDay( v )
+    @SuppressWarnings("unused")
+    public static PolyTime timeWithLocalTimeZoneToTime( PolyNumber v, TimeZone timeZone ) {
+        return PolyTime.of( TimeWithTimeZoneString.fromMillisOfDay( v.intValue() )
                 .withTimeZone( timeZone )
                 .getLocalTimeString()
-                .getMillisOfDay();
+                .getMillisOfDay() );
     }
 
 
-    public static long timeWithLocalTimeZoneToTimestamp( String date, int v, TimeZone timeZone ) {
-        final TimeWithTimeZoneString tTZ = TimeWithTimeZoneString.fromMillisOfDay( v )
+    @SuppressWarnings("unused")
+    public static PolyDate dateStringToUnixDate( PolyString v ) {
+        return PolyDate.ofDays( DateTimeUtils.dateStringToUnixDate( v.value ) );
+    }
+
+
+    @SuppressWarnings("unused")
+    public static PolyDate timeStringToUnixDate( PolyString v ) {
+        return PolyDate.ofDays( DateTimeUtils.timeStringToUnixDate( v.value ) );
+    }
+
+
+    @SuppressWarnings("unused")
+    public static PolyDate timestampStringToUnixDate( PolyString v ) {
+        return PolyDate.ofDays( (int) DateTimeUtils.timestampStringToUnixDate( v.value ) );
+    }
+
+
+    @SuppressWarnings("unused")
+    public static PolyTime timeWithLocalTimeZoneToTimestamp( PolyString date, PolyNumber v, TimeZone timeZone ) {
+        final TimeWithTimeZoneString tTZ = TimeWithTimeZoneString.fromMillisOfDay( v.intValue() )
                 .withTimeZone( DateTimeUtils.UTC_ZONE );
-        return new TimestampWithTimeZoneString( date + " " + tTZ.toString() )
+        return PolyTime.of( new TimestampWithTimeZoneString( date.value + " " + tTZ.toString() )
                 .withTimeZone( timeZone )
                 .getLocalTimestampString()
-                .getMillisSinceEpoch();
+                .getMillisSinceEpoch() );
     }
 
 
-    public static long timeWithLocalTimeZoneToTimestampWithLocalTimeZone( String date, int v ) {
-        final TimeWithTimeZoneString tTZ = TimeWithTimeZoneString.fromMillisOfDay( v )
+    @SuppressWarnings("unused")
+    public static PolyTimestamp timeWithLocalTimeZoneToTimestampWithLocalTimeZone( PolyString date, PolyNumber v ) {
+        final TimeWithTimeZoneString tTZ = TimeWithTimeZoneString.fromMillisOfDay( v.intValue() )
                 .withTimeZone( DateTimeUtils.UTC_ZONE );
-        return new TimestampWithTimeZoneString( date + " " + tTZ.toString() )
+        return PolyTimestamp.of( new TimestampWithTimeZoneString( date.value + " " + tTZ.toString() )
                 .getLocalTimestampString()
-                .getMillisSinceEpoch();
+                .getMillisSinceEpoch() );
     }
 
 
-    public static String timeWithLocalTimeZoneToString( int v, TimeZone timeZone ) {
-        return TimeWithTimeZoneString.fromMillisOfDay( v )
+    @SuppressWarnings("unused")
+    public static PolyString timeWithLocalTimeZoneToString( PolyNumber v, TimeZone timeZone ) {
+        return PolyString.of( TimeWithTimeZoneString.fromMillisOfDay( v.intValue() )
                 .withTimeZone( timeZone )
-                .toString();
+                .toString() );
     }
 
 
     /**
      * Converts the internal representation of a SQL TIMESTAMP (long) to the Java type used for UDF parameters ({@link java.sql.Timestamp}).
      */
-    public static java.sql.Timestamp internalToTimestamp( long v ) {
-        return new java.sql.Timestamp( v - LOCAL_TZ.getOffset( v ) );
+    public static java.sql.Timestamp internalToTimestamp( PolyNumber v ) {
+        return new java.sql.Timestamp( v.longValue() - LOCAL_TZ.getOffset( v.longValue() ) );
     }
 
 
+    @SuppressWarnings("unused")
     public static java.sql.Timestamp internalToTimestamp( Long v ) {
         return v == null ? null : internalToTimestamp( v.longValue() );
     }
 
 
-    public static int timestampWithLocalTimeZoneToDate( long v, TimeZone timeZone ) {
-        return TimestampWithTimeZoneString.fromMillisSinceEpoch( v )
+    @SuppressWarnings("unused")
+    public static PolyNumber timestampWithLocalTimeZoneToDate( PolyNumber v, TimeZone timeZone ) {
+        return PolyDate.ofDays( TimestampWithTimeZoneString.fromMillisSinceEpoch( v.longValue() )
                 .withTimeZone( timeZone )
                 .getLocalDateString()
-                .getDaysSinceEpoch();
+                .getDaysSinceEpoch() );
     }
 
 
-    public static int timestampWithLocalTimeZoneToTime( long v, TimeZone timeZone ) {
-        return TimestampWithTimeZoneString.fromMillisSinceEpoch( v )
+    @SuppressWarnings("unused")
+    public static PolyTime timestampWithLocalTimeZoneToTime( PolyNumber v, TimeZone timeZone ) {
+        return PolyTime.of( TimestampWithTimeZoneString.fromMillisSinceEpoch( v.longValue() )
                 .withTimeZone( timeZone )
                 .getLocalTimeString()
-                .getMillisOfDay();
+                .getMillisOfDay() );
     }
 
 
-    public static long timestampWithLocalTimeZoneToTimestamp( long v, TimeZone timeZone ) {
-        return TimestampWithTimeZoneString.fromMillisSinceEpoch( v )
+    @SuppressWarnings("unused")
+    public static PolyTimestamp timestampWithLocalTimeZoneToTimestamp( PolyNumber v, TimeZone timeZone ) {
+        return PolyTimestamp.of( TimestampWithTimeZoneString.fromMillisSinceEpoch( v.longValue() )
                 .withTimeZone( timeZone )
                 .getLocalTimestampString()
-                .getMillisSinceEpoch();
+                .getMillisSinceEpoch() );
     }
 
 
-    public static String timestampWithLocalTimeZoneToString( long v, TimeZone timeZone ) {
-        return TimestampWithTimeZoneString.fromMillisSinceEpoch( v )
+    @SuppressWarnings("unused")
+    public static PolyString timestampWithLocalTimeZoneToString( PolyNumber v, TimeZone timeZone ) {
+        return PolyString.of( TimestampWithTimeZoneString.fromMillisSinceEpoch( v.longValue() )
                 .withTimeZone( timeZone )
-                .toString();
+                .toString() );
     }
 
 
-    public static int timestampWithLocalTimeZoneToTimeWithLocalTimeZone( long v ) {
-        return TimestampWithTimeZoneString.fromMillisSinceEpoch( v )
+    @SuppressWarnings("unused")
+    public static PolyTime timestampWithLocalTimeZoneToTimeWithLocalTimeZone( PolyNumber v ) {
+        return PolyTime.of( TimestampWithTimeZoneString.fromMillisSinceEpoch( v.longValue() )
                 .getLocalTimeString()
-                .getMillisOfDay();
+                .getMillisOfDay() );
     }
 
 
-    public static Long toTimestampWithLocalTimeZone( String v ) {
-        return v == null ? null : new TimestampWithTimeZoneString( v )
+    @SuppressWarnings("unused")
+    public static PolyTimestamp toTimestampWithLocalTimeZone( PolyString v ) {
+        return PolyTimestamp.of( v == null ? null : new TimestampWithTimeZoneString( v.value )
                 .withTimeZone( DateTimeUtils.UTC_ZONE )
                 .getLocalTimestampString()
-                .getMillisSinceEpoch();
+                .getMillisSinceEpoch() );
     }
 
 
-    public static Long toTimestampWithLocalTimeZone( String v, TimeZone timeZone ) {
-        return v == null ? null : new TimestampWithTimeZoneString( v + " " + timeZone.getID() )
+    @SuppressWarnings("unused")
+    public static PolyTimestamp toTimestampWithLocalTimeZone( PolyString v, TimeZone timeZone ) {
+        return PolyTimestamp.of( v == null ? null : new TimestampWithTimeZoneString( v.value + " " + timeZone.getID() )
                 .withTimeZone( DateTimeUtils.UTC_ZONE )
                 .getLocalTimestampString()
-                .getMillisSinceEpoch();
+                .getMillisSinceEpoch() );
     }
 
     // Don't need shortValueOf etc. - Short.valueOf is sufficient.
@@ -2908,6 +2947,17 @@ public class Functions {
             return null;
         } else if ( s.value.length() > maxLength ) {
             return PolyString.of( s.value.substring( 0, maxLength ) );
+        } else {
+            return s;
+        }
+    }
+
+
+    public static PolyBinary truncate( PolyBinary s, int maxLength ) {
+        if ( s == null || s.value == null ) {
+            return null;
+        } else if ( s.value.length() > maxLength ) {
+            return PolyBinary.of( s.value.substring( 0, maxLength ) );
         } else {
             return s;
         }
