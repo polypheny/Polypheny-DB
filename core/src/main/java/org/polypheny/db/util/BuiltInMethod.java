@@ -51,7 +51,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TimeZone;
-import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
@@ -323,26 +322,26 @@ public enum BuiltInMethod {
     BIT_AND( Functions.class, "bitAnd", long.class, long.class ),
     BIT_OR( Functions.class, "bitOr", long.class, long.class ),
     SCANNABLE_TABLE_SCAN( ScannableEntity.class, "scan", DataContext.class ),
-    STRING_TO_BOOLEAN( Functions.class, "toBoolean", String.class ),
-    INTERNAL_TO_DATE( Functions.class, "internalToDate", int.class ),
-    INTERNAL_TO_TIME( Functions.class, "internalToTime", int.class ),
-    INTERNAL_TO_TIMESTAMP( Functions.class, "internalToTimestamp", long.class ),
-    STRING_TO_DATE( DateTimeUtils.class, "dateStringToUnixDate", String.class ),
-    STRING_TO_TIME( DateTimeUtils.class, "timeStringToUnixDate", String.class ),
-    STRING_TO_TIMESTAMP( DateTimeUtils.class, "timestampStringToUnixDate", String.class ),
-    STRING_TO_TIME_WITH_LOCAL_TIME_ZONE( Functions.class, "toTimeWithLocalTimeZone", String.class ),
-    TIME_STRING_TO_TIME_WITH_LOCAL_TIME_ZONE( Functions.class, "toTimeWithLocalTimeZone", String.class, TimeZone.class ),
-    STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE( Functions.class, "toTimestampWithLocalTimeZone", String.class ),
-    TIMESTAMP_STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE( Functions.class, "toTimestampWithLocalTimeZone", String.class, TimeZone.class ),
-    TIME_WITH_LOCAL_TIME_ZONE_TO_TIME( Functions.class, "timeWithLocalTimeZoneToTime", int.class, TimeZone.class ),
-    TIME_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP( Functions.class, "timeWithLocalTimeZoneToTimestamp", String.class, int.class, TimeZone.class ),
-    TIME_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE( Functions.class, "timeWithLocalTimeZoneToTimestampWithLocalTimeZone", String.class, int.class ),
-    TIME_WITH_LOCAL_TIME_ZONE_TO_STRING( Functions.class, "timeWithLocalTimeZoneToString", int.class, TimeZone.class ),
-    TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_DATE( Functions.class, "timestampWithLocalTimeZoneToDate", long.class, TimeZone.class ),
-    TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIME( Functions.class, "timestampWithLocalTimeZoneToTime", long.class, TimeZone.class ),
-    TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIME_WITH_LOCAL_TIME_ZONE( Functions.class, "timestampWithLocalTimeZoneToTimeWithLocalTimeZone", long.class ),
-    TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP( Functions.class, "timestampWithLocalTimeZoneToTimestamp", long.class, TimeZone.class ),
-    TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_STRING( Functions.class, "timestampWithLocalTimeZoneToString", long.class, TimeZone.class ),
+    STRING_TO_BOOLEAN( Functions.class, "toBoolean", PolyString.class ),
+    INTERNAL_TO_DATE( Functions.class, "internalToDate", PolyNumber.class ),
+    INTERNAL_TO_TIME( Functions.class, "internalToTime", PolyNumber.class ),
+    INTERNAL_TO_TIMESTAMP( Functions.class, "internalToTimestamp", PolyNumber.class ),
+    STRING_TO_DATE( Functions.class, "dateStringToUnixDate", PolyString.class ),
+    STRING_TO_TIME( Functions.class, "timeStringToUnixDate", PolyString.class ),
+    STRING_TO_TIMESTAMP( Functions.class, "timestampStringToUnixDate", PolyString.class ),
+    STRING_TO_TIME_WITH_LOCAL_TIME_ZONE( Functions.class, "toTimeWithLocalTimeZone", PolyString.class ),
+    TIME_STRING_TO_TIME_WITH_LOCAL_TIME_ZONE( Functions.class, "toTimeWithLocalTimeZone", PolyString.class, TimeZone.class ),
+    STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE( Functions.class, "toTimestampWithLocalTimeZone", PolyString.class ),
+    TIMESTAMP_STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE( Functions.class, "toTimestampWithLocalTimeZone", PolyString.class, TimeZone.class ),
+    TIME_WITH_LOCAL_TIME_ZONE_TO_TIME( Functions.class, "timeWithLocalTimeZoneToTime", PolyNumber.class, TimeZone.class ),
+    TIME_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP( Functions.class, "timeWithLocalTimeZoneToTimestamp", PolyString.class, PolyNumber.class, TimeZone.class ),
+    TIME_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE( Functions.class, "timeWithLocalTimeZoneToTimestampWithLocalTimeZone", PolyString.class, PolyNumber.class ),
+    TIME_WITH_LOCAL_TIME_ZONE_TO_STRING( Functions.class, "timeWithLocalTimeZoneToString", PolyNumber.class, TimeZone.class ),
+    TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_DATE( Functions.class, "timestampWithLocalTimeZoneToDate", PolyNumber.class, TimeZone.class ),
+    TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIME( Functions.class, "timestampWithLocalTimeZoneToTime", PolyNumber.class, TimeZone.class ),
+    TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIME_WITH_LOCAL_TIME_ZONE( Functions.class, "timestampWithLocalTimeZoneToTimeWithLocalTimeZone", PolyNumber.class ),
+    TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP( Functions.class, "timestampWithLocalTimeZoneToTimestamp", PolyNumber.class, TimeZone.class ),
+    TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_STRING( Functions.class, "timestampWithLocalTimeZoneToString", PolyNumber.class, TimeZone.class ),
     UNIX_DATE_TO_STRING( TemporalFunctions.class, "unixDateToString", PolyDate.class ),
     UNIX_TIME_TO_STRING( TemporalFunctions.class, "unixTimeToString", PolyTime.class ),
     UNIX_TIMESTAMP_TO_STRING( TemporalFunctions.class, "unixTimestampToString", PolyTimestamp.class ),
@@ -359,7 +358,11 @@ public enum BuiltInMethod {
     LOCAL_TIMESTAMP( Functions.class, "localTimestamp", DataContext.class ),
     LOCAL_TIME( Functions.class, "localTime", DataContext.class ),
     TIME_ZONE( Functions.class, "timeZone", DataContext.class ),
-    BOOLEAN_TO_STRING( Functions.class, "toString", boolean.class ),
+    BOOLEAN_TO_STRING( Functions.class, "toString", PolyBoolean.class ),
+
+    MILLIS_SINCE_EPOCH( PolyTemporal.class, "getMillisSinceEpoch" ),
+
+    MILLIS_SINCE_EPOCH_POLY( PolyTemporal.class, "getPolyMillisSinceEpoch" ),
 
     JDBC_DEEP_ARRAY_TO_POLY_LIST( Functions.class, "arrayToPolyList", java.sql.Array.class, Function1.class, int.class ),
     JDBC_ARRAY_TO_LIST( Functions.class, "arrayToList", java.sql.Array.class ),

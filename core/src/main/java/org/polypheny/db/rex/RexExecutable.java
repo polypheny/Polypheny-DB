@@ -81,9 +81,9 @@ public class RexExecutable {
             cbe.setImplementedInterfaces( new Class[]{ Function1.class, Serializable.class } );
             cbe.setParentClassLoader( RexExecutable.class.getClassLoader() );
             cbe.cook( new Scanner( null, new StringReader( code ) ) );
-            Class c = cbe.getClazz();
+            Class<?> c = cbe.getClazz();
             //noinspection unchecked
-            final Constructor<Function1<DataContext, Object[]>> constructor = c.getConstructor();
+            final Constructor<Function1<DataContext, Object[]>> constructor = (Constructor<Function1<DataContext, Object[]>>) c.getConstructor();
             return constructor.newInstance();
         } catch ( CompileException | IOException | InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e ) {
             throw new GenericRuntimeException( "While compiling " + reason, e );

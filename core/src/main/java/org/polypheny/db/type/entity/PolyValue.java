@@ -839,21 +839,21 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case DOUBLE:
                 return PolyDouble.of( (Number) object );
             case DATE:
-                if ( object instanceof Number ) {
-                    return PolyDate.of( (Number) object );
+                if ( object instanceof Number number ) {
+                    return PolyDate.of( number );
                 }
                 throw new NotImplementedException();
 
             case TIME:
             case TIME_WITH_LOCAL_TIME_ZONE:
-                if ( object instanceof Number ) {
-                    return PolyTime.of( (Number) object );
+                if ( object instanceof Number number ) {
+                    return PolyTime.of( number );
                 }
                 throw new NotImplementedException();
             case TIMESTAMP:
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                if ( object instanceof Timestamp ) {
-                    return PolyTimestamp.of( (Timestamp) object );
+                if ( object instanceof Timestamp timestamp ) {
+                    return PolyTimestamp.of( timestamp );
                 }
                 throw new NotImplementedException();
             case CHAR:

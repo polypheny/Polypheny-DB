@@ -402,17 +402,17 @@ public class BsonUtil {
 
 
     private static BsonValue handleDate( PolyValue obj ) {
-        return new BsonInt64( obj.asTemporal().getMilliSinceEpoch() );
+        return new BsonInt64( obj.asTemporal().getMillisSinceEpoch() );
     }
 
 
     private static BsonValue handleTime( PolyValue obj ) {
-        return new BsonInt64( obj.asTemporal().getMilliSinceEpoch() );
+        return new BsonInt64( obj.asTemporal().getMillisSinceEpoch() );
     }
 
 
     private static BsonValue handleTimestamp( PolyValue obj ) {
-        return new BsonInt64( obj.asTemporal().getMilliSinceEpoch() );
+        return new BsonInt64( obj.asTemporal().getMillisSinceEpoch() );
     }
 
 

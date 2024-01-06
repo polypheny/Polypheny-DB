@@ -573,7 +573,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
             case TIMESTAMP:
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                 assert value.isTimestamp();
-                pw.print( value.toJson() );
+                pw.print( value.asTimestamp() );
                 break;
             case INTERVAL_YEAR:
             case INTERVAL_YEAR_MONTH:

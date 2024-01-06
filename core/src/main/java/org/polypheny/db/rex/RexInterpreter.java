@@ -264,7 +264,7 @@ public class RexInterpreter implements RexVisitor<PolyValue> {
         final long v2;
         if ( v.isTimestamp() ) {
             // TIMESTAMP
-            v2 = (v.asTimestamp().getMilliSinceEpoch() / TimeUnit.DAY.multiplier.longValue());
+            v2 = (v.asTimestamp().getMillisSinceEpoch() / TimeUnit.DAY.multiplier.longValue());
         } else {
             // DATE
             v2 = v.asDate().asDate().getDaysSinceEpoch();

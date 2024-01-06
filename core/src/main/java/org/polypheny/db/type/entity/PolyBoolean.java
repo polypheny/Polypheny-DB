@@ -93,9 +93,11 @@ public class PolyBoolean extends PolyValue {
         if ( value == null ) {
             return null;
         }
-        if ( value instanceof PolyValue ) {
-            if ( ((PolyValue) value).isBoolean() ) {
-                return ((PolyValue) value).asBoolean();
+        if ( value instanceof PolyValue poly ) {
+            if ( poly.isBoolean() ) {
+                return poly.asBoolean();
+            } else if ( poly.isNumber() ) {
+                return poly.asBoolean();
             }
         }
         throw new NotImplementedException( "convert value to Boolean" );

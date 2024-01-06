@@ -53,7 +53,7 @@ public class PolyString extends PolyValue {
 
 
     public PolyString( @JsonProperty("value") @Deserialize("value") String value ) {
-        this( value, Charsets.UTF_16 );
+        this( value, Charsets.UTF_8 );
     }
 
 
@@ -65,12 +65,12 @@ public class PolyString extends PolyValue {
 
 
     public static PolyString of( String value, @Nullable String charset ) {
-        return new PolyString( value, charset == null ? Charsets.UTF_16 : Charset.forName( charset ) );
+        return new PolyString( value, charset == null ? Charsets.UTF_8 : Charset.forName( charset ) );
     }
 
 
     public static PolyString of( String value, @Nullable Charset charset ) {
-        return new PolyString( value, charset == null ? Charsets.UTF_16 : charset );
+        return new PolyString( value, charset == null ? Charsets.UTF_8 : charset );
     }
 
 

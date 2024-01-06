@@ -209,7 +209,7 @@ public class PolyLong extends PolyNumber {
             if ( ((PolyValue) value).isLong() ) {
                 return PolyLong.of( ((PolyValue) value).asNumber().longValue() );
             } else if ( ((PolyValue) value).isTemporal() ) {
-                return PolyLong.of( ((PolyValue) value).asTemporal().getMilliSinceEpoch() );
+                return PolyLong.of( ((PolyValue) value).asTemporal().getMillisSinceEpoch() );
             } else if ( ((PolyValue) value).isString() ) {
                 return PolyLong.of( Long.parseLong( ((PolyValue) value).asString().value ) );
             }
