@@ -13,12 +13,12 @@ jobs:
             fail-fast: false
             matrix:
                 adapter: [ mongodb, hsqldb, monetdb, postgresql, file, cottontail, neo4j ]
-        name: Integration Tests (Java 11)
+        name: Integration Tests (Java 17)
         steps:
             -   name: Checkout
-                uses: actions/checkout@v3
+                uses: actions/checkout@v4
             -   name: Set up JDK
-                uses: actions/setup-java@v3
+                uses: actions/setup-java@v4
                 with:
                     distribution: 'zulu'
                     java-version: 17
@@ -26,20 +26,19 @@ jobs:
                 run: |
                     echo "POLYPHENY_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
             -   name: Assemble
-                uses: nick-invision/retry@v2
+                uses: nick-fields/retry@v2
                 with:
                     max_attempts: 2
                     timeout_minutes: 60
                     command: ./gradlew assemble
             -   name: Build Plugins
-                uses: nick-invision/retry@v2
+                uses: nick-fields/retry@v2
                 with:
                     max_attempts: 1
                     timeout_minutes: 60
                     command: ./gradlew assemblePlugins
-
             -   name: Execute integration tests for ${{ matrix.adapter }}
-                uses: nick-invision/retry@v2
+                uses: nick-fields/retry@v2
                 with:
                     max_attempts: 3
                     timeout_minutes: 30
