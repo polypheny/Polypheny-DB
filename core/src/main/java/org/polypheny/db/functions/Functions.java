@@ -2865,6 +2865,7 @@ public class Functions {
     /**
      * Converts the internal representation of a SQL TIMESTAMP (long) to the Java type used for UDF parameters ({@link java.sql.Timestamp}).
      */
+    @SuppressWarnings("unused")
     public static java.sql.Timestamp internalToTimestamp( PolyNumber v ) {
         return new java.sql.Timestamp( v.longValue() - LOCAL_TZ.getOffset( v.longValue() ) );
     }
@@ -2872,7 +2873,7 @@ public class Functions {
 
     @SuppressWarnings("unused")
     public static java.sql.Timestamp internalToTimestamp( Long v ) {
-        return v == null ? null : internalToTimestamp( v.longValue() );
+        return v == null ? null : internalToTimestamp( v );
     }
 
 
@@ -2999,6 +3000,7 @@ public class Functions {
     /**
      * Helper for CAST(... AS BINARY(maxLength)).
      */
+    @SuppressWarnings("unused")
     public static ByteString truncateOrPad( ByteString s, int maxLength ) {
         if ( s == null ) {
             return null;
@@ -3105,37 +3107,40 @@ public class Functions {
      * SQL {@code CURRENT_TIMESTAMP} function.
      */
     @NonDeterministic
-    public static long currentTimestamp( DataContext root ) {
+    @SuppressWarnings("unused")
+    public static PolyTimestamp currentTimestamp( DataContext root ) {
         // Cast required for JDK 1.6.
-        return DataContext.Variable.CURRENT_TIMESTAMP.get( root );
+        return PolyTimestamp.of( (long) DataContext.Variable.CURRENT_TIMESTAMP.get( root ) );
     }
 
 
     /**
      * SQL {@code CURRENT_TIME} function.
      */
+    @SuppressWarnings("unused")
     @NonDeterministic
-    public static int currentTime( DataContext root ) {
-        int time = (int) (currentTimestamp( root ) % DateTimeUtils.MILLIS_PER_DAY);
+    public static PolyTime currentTime( DataContext root ) {
+        int time = (int) (currentTimestamp( root ).longValue() % DateTimeUtils.MILLIS_PER_DAY);
         if ( time < 0 ) {
-            time += DateTimeUtils.MILLIS_PER_DAY;
+            time += (int) DateTimeUtils.MILLIS_PER_DAY;
         }
-        return time;
+        return PolyTime.of( time );
     }
 
 
     /**
      * SQL {@code CURRENT_DATE} function.
      */
+    @SuppressWarnings("unused")
     @NonDeterministic
-    public static int currentDate( DataContext root ) {
-        final long timestamp = currentTimestamp( root );
+    public static PolyDate currentDate( DataContext root ) {
+        final long timestamp = currentTimestamp( root ).longValue();
         int date = (int) (timestamp / DateTimeUtils.MILLIS_PER_DAY);
         final int time = (int) (timestamp % DateTimeUtils.MILLIS_PER_DAY);
         if ( time < 0 ) {
             --date;
         }
-        return date;
+        return PolyDate.of( date );
     }
 
 
@@ -3152,9 +3157,10 @@ public class Functions {
     /**
      * SQL {@code LOCAL_TIME} function.
      */
+    @SuppressWarnings("unused")
     @NonDeterministic
-    public static int localTime( DataContext root ) {
-        return (int) (localTimestamp( root ) % DateTimeUtils.MILLIS_PER_DAY);
+    public static PolyTime localTime( DataContext root ) {
+        return PolyTime.of( (int) (localTimestamp( root ) % DateTimeUtils.MILLIS_PER_DAY) );
     }
 
 
@@ -3275,11 +3281,13 @@ public class Functions {
     /**
      * NULL &rarr; FALSE, FALSE &rarr; TRUE, TRUE &rarr; FALSE.
      */
+    @SuppressWarnings("unused")
     public static boolean isFalse( Boolean b ) {
         return b != null && !b;
     }
 
 
+    @SuppressWarnings("unused")
     public static PolyBoolean isFalse( PolyBoolean b ) {
         return PolyBoolean.of( b != null && !b.value );
     }
@@ -3288,11 +3296,13 @@ public class Functions {
     /**
      * NULL &rarr; TRUE, FALSE &rarr; TRUE, TRUE &rarr; FALSE.
      */
+    @SuppressWarnings("unused")
     public static boolean isNotTrue( Boolean b ) {
         return b == null || !b;
     }
 
 
+    @SuppressWarnings("unused")
     public static PolyBoolean isNotTrue( PolyBoolean b ) {
         return PolyBoolean.of( b == null || !b.value );
     }
@@ -3301,11 +3311,13 @@ public class Functions {
     /**
      * NULL &rarr; TRUE, FALSE &rarr; FALSE, TRUE &rarr; TRUE.
      */
+    @SuppressWarnings("unused")
     public static boolean isNotFalse( Boolean b ) {
         return b == null || b;
     }
 
 
+    @SuppressWarnings("unused")
     public static PolyBoolean isNotFalse( PolyBoolean b ) {
         return PolyBoolean.of( b == null || b.value );
     }
@@ -3332,6 +3344,7 @@ public class Functions {
     }
 
 
+    @SuppressWarnings("unused")
     public static List<PolyValue> arrayToPolyList( final java.sql.Array a, Function1<Object, PolyValue> transformer, int depth ) {
         if ( a == null ) {
             return null;
@@ -3400,6 +3413,7 @@ public class Functions {
     /**
      * Support the {@code CURRENT VALUE OF sequence} operator.
      */
+    @SuppressWarnings("unused")
     @NonDeterministic
     public static long sequenceCurrentValue( String key ) {
         return getAtomicLong( key ).get();
@@ -3410,6 +3424,7 @@ public class Functions {
      * Support the {@code NEXT VALUE OF sequence} operator.
      */
     @NonDeterministic
+    @SuppressWarnings("unused")
     public static long sequenceNextValue( String key ) {
         return getAtomicLong( key ).incrementAndGet();
     }
@@ -3417,12 +3432,7 @@ public class Functions {
 
     private static AtomicLong getAtomicLong( String key ) {
         final Map<String, AtomicLong> map = THREAD_SEQUENCES.get();
-        AtomicLong atomic = map.get( key );
-        if ( atomic == null ) {
-            atomic = new AtomicLong();
-            map.put( key, atomic );
-        }
-        return atomic;
+        return map.computeIfAbsent( key, k -> new AtomicLong() );
     }
 
 
@@ -3438,20 +3448,18 @@ public class Functions {
      * Support the ELEMENT function.
      */
     public static Object element( List<?> list ) {
-        switch ( list.size() ) {
-            case 0:
-                return null;
-            case 1:
-                return list.get( 0 );
-            default:
-                throw Static.RESOURCE.moreThanOneValueInList( list.toString() ).ex();
-        }
+        return switch ( list.size() ) {
+            case 0 -> null;
+            case 1 -> list.get( 0 );
+            default -> throw Static.RESOURCE.moreThanOneValueInList( list.toString() ).ex();
+        };
     }
 
 
     /**
      * Support the MEMBER OF function.
      */
+    @SuppressWarnings("unused")
     public static boolean memberOf( Object object, Collection<?> collection ) {
         return collection.contains( object );
     }
@@ -3507,6 +3515,7 @@ public class Functions {
     /**
      * Support the IS A SET function.
      */
+    @SuppressWarnings("unused")
     public static boolean isASet( Collection<?> collection ) {
         if ( collection instanceof Set ) {
             return true;
