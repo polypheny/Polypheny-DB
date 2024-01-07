@@ -802,48 +802,35 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
 
 
     public static PolyValue fromType( Object object, PolyType type ) {
-        switch ( type ) {
-            case BOOLEAN:
-                return PolyBoolean.of( (Boolean) object );
-            case TINYINT:
-            case SMALLINT:
-            case INTEGER:
-                return PolyInteger.of( (Number) object );
-            case BIGINT:
-                return PolyLong.of( (Number) object );
-            case DECIMAL:
-                return PolyBigDecimal.of( object.toString() );
-            case FLOAT:
-            case REAL:
-                return PolyFloat.of( (Number) object );
-            case DOUBLE:
-                return PolyDouble.of( (Number) object );
-            case DATE:
+        return switch ( type ) {
+            case BOOLEAN -> PolyBoolean.of( (Boolean) object );
+            case TINYINT, SMALLINT, INTEGER -> PolyInteger.of( (Number) object );
+            case BIGINT -> PolyLong.of( (Number) object );
+            case DECIMAL -> PolyBigDecimal.of( object.toString() );
+            case FLOAT, REAL -> PolyFloat.of( (Number) object );
+            case DOUBLE -> PolyDouble.of( (Number) object );
+            case DATE -> {
                 if ( object instanceof Number number ) {
-                    return PolyDate.of( number );
+                    yield PolyDate.of( number );
                 }
                 throw new NotImplementedException();
-
-            case TIME:
-            case TIME_WITH_LOCAL_TIME_ZONE:
+            }
+            case TIME, TIME_WITH_LOCAL_TIME_ZONE -> {
                 if ( object instanceof Number number ) {
-                    return PolyTime.of( number );
+                    yield PolyTime.of( number );
                 }
                 throw new NotImplementedException();
-            case TIMESTAMP:
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+            }
+            case TIMESTAMP, TIMESTAMP_WITH_LOCAL_TIME_ZONE -> {
                 if ( object instanceof Timestamp timestamp ) {
-                    return PolyTimestamp.of( timestamp );
+                    yield PolyTimestamp.of( timestamp );
                 }
                 throw new NotImplementedException();
-            case CHAR:
-            case VARCHAR:
-                return PolyString.of( (String) object );
-            case BINARY:
-            case VARBINARY:
-                return PolyBinary.of( (ByteString) object );
-        }
-        throw new NotImplementedException();
+            }
+            case CHAR, VARCHAR -> PolyString.of( (String) object );
+            case BINARY, VARBINARY -> PolyBinary.of( (ByteString) object );
+            default -> throw new NotImplementedException();
+        };
     }
 
 

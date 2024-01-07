@@ -155,37 +155,37 @@ public class RexBuilderTest {
 
         // Now with milliseconds
         final TimestampString ts2 = ts.withMillis( 56 );
-        assertEquals( ts2.toString(), "1969-07-21 02:56:15.056" );
+        assertEquals( "1969-07-21 02:56:15.056", ts2.toString() );
         final RexNode literal2 = builder.makeLiteral( ts2, timestampType3, false );
-        assertEquals( literal2.toString(), "1969-07-21 02:56:15.056:TIMESTAMP(3)" );
+        assertEquals( "1969-07-21 02:56:15.056:TIMESTAMP(3)", literal2.toString() );
 
         // Now with nanoseconds
         final TimestampString ts3 = ts.withNanos( 56 );
         final RexNode literal3 = builder.makeLiteral( ts3, timestampType9, false );
-        assertEquals( literal3.toString(), "1969-07-21 02:56:15:TIMESTAMP(3)" );
+        assertEquals( "1969-07-21 02:56:15:TIMESTAMP(3)", literal3.toString() );
         final TimestampString ts3b = ts.withNanos( 2345678 );
         final RexNode literal3b = builder.makeLiteral( ts3b, timestampType9, false );
-        assertEquals( literal3b.toString(), "1969-07-21 02:56:15.002:TIMESTAMP(3)" );
+        assertEquals( "1969-07-21 02:56:15.002:TIMESTAMP(3)", literal3b.toString() );
 
         // Now with a very long fraction
         final TimestampString ts4 = ts.withFraction( "102030405060708090102" );
         final RexNode literal4 = builder.makeLiteral( ts4, timestampType18, false );
-        assertEquals( literal4.toString(), "1969-07-21 02:56:15.102:TIMESTAMP(3)" );
+        assertEquals( "1969-07-21 02:56:15.102:TIMESTAMP(3)", literal4.toString() );
 
         // toString
-        assertEquals( ts2.round( 1 ).toString(), "1969-07-21 02:56:15" );
-        assertEquals( ts2.round( 2 ).toString(), "1969-07-21 02:56:15.05" );
-        assertEquals( ts2.round( 3 ).toString(), "1969-07-21 02:56:15.056" );
-        assertEquals( ts2.round( 4 ).toString(), "1969-07-21 02:56:15.056" );
+        assertEquals( "1969-07-21 02:56:15", ts2.round( 1 ).toString() );
+        assertEquals( "1969-07-21 02:56:15.05", ts2.round( 2 ).toString() );
+        assertEquals( "1969-07-21 02:56:15.056", ts2.round( 3 ).toString() );
+        assertEquals( "1969-07-21 02:56:15.056", ts2.round( 4 ).toString() );
 
-        assertEquals( ts2.toString( 6 ), "1969-07-21 02:56:15.056000" );
-        assertEquals( ts2.toString( 1 ), "1969-07-21 02:56:15.0" );
-        assertEquals( ts2.toString( 0 ), "1969-07-21 02:56:15" );
+        assertEquals( "1969-07-21 02:56:15.056000", ts2.toString( 6 ) );
+        assertEquals( "1969-07-21 02:56:15.0", ts2.toString( 1 ) );
+        assertEquals( "1969-07-21 02:56:15", ts2.toString( 0 ) );
 
-        assertEquals( ts2.round( 0 ).toString(), "1969-07-21 02:56:15" );
-        assertEquals( ts2.round( 0 ).toString( 0 ), "1969-07-21 02:56:15" );
-        assertEquals( ts2.round( 0 ).toString( 1 ), "1969-07-21 02:56:15.0" );
-        assertEquals( ts2.round( 0 ).toString( 2 ), "1969-07-21 02:56:15.00" );
+        assertEquals( "1969-07-21 02:56:15", ts2.round( 0 ).toString() );
+        assertEquals( "1969-07-21 02:56:15", ts2.round( 0 ).toString( 0 ) );
+        assertEquals( "1969-07-21 02:56:15.0", ts2.round( 0 ).toString( 1 ) );
+        assertEquals( "1969-07-21 02:56:15.00", ts2.round( 0 ).toString( 2 ) );
 
         assertEquals( TimestampString.fromMillisSinceEpoch( 1456513560123L ).toString(), "2016-02-26 19:06:00.123" );
     }
@@ -221,7 +221,7 @@ public class RexBuilderTest {
         final TimestampWithTimeZoneString ts2 = ts.withMillis( 56 );
         assertEquals( ts2.toString(), "1969-07-21 02:56:15.056 PST" );
         final RexNode literal2 = builder.makeLiteral( ts2.getLocalTimestampString(), timestampType3, false );
-        assertEquals( literal2.toString(), "1969-07-21 02:56:15.056:TIMESTAMP_WITH_LOCAL_TIME_ZONE(3)" );
+        assertEquals( "1969-07-21 02:56:15.056:TIMESTAMP_WITH_LOCAL_TIME_ZONE(3)", literal2.toString() );
 
         // Now with nanoseconds
         final TimestampWithTimeZoneString ts3 = ts.withNanos( 56 );
@@ -530,19 +530,19 @@ public class RexBuilderTest {
         RexNode literal = builder.makePreciseStringLiteral( "foobar" );
         assertEquals( "'foobar'", literal.toString() );
         literal = builder.makePreciseStringLiteral( new ByteString( new byte[]{ 'f', 'o', 'o', 'b', 'a', 'r' } ), "UTF8", Collation.IMPLICIT );
-        assertEquals( "_UTF-8'foobar'", literal.toString() );
-        assertEquals( "_UTF-8'foobar':CHAR(6) CHARACTER SET \"UTF-8\"", ((RexLiteral) literal).computeDigest( RexDigestIncludeType.ALWAYS ) );
+        assertEquals( "'foobar'", literal.toString() );
+        assertEquals( "'foobar':CHAR(6)", ((RexLiteral) literal).computeDigest( RexDigestIncludeType.ALWAYS ) );
         literal = builder.makePreciseStringLiteral(
                 new ByteString( "\u82f1\u56fd".getBytes( StandardCharsets.UTF_8 ) ),
                 "UTF8",
                 Collation.IMPLICIT );
-        assertEquals( "_UTF-8'\u82f1\u56fd'", literal.toString() );
+        assertEquals( literal.toString(), "'\u82f1\u56fd'" );
         // Test again to check decode cache.
         literal = builder.makePreciseStringLiteral(
                 new ByteString( "\u82f1".getBytes( StandardCharsets.UTF_8 ) ),
                 "UTF8",
                 Collation.IMPLICIT );
-        assertEquals( "_UTF-8'\u82f1'", literal.toString() );
+        assertEquals( literal.toString(), "'\u82f1'" );
         try {
             literal = builder.makePreciseStringLiteral(
                     new ByteString( "\u82f1\u56fd".getBytes( StandardCharsets.UTF_8 ) ),
@@ -553,9 +553,9 @@ public class RexBuilderTest {
             assertTrue( e.getMessage().contains( "Failed to encode" ) );
         }
         literal = builder.makeLiteral( latin1, varchar, false );
-        assertEquals( "'foobar'", literal.toString() );
+        assertEquals( "_UTF-16'foobar':VARCHAR CHARACTER SET \"UTF-16\"", literal.toString() );
         literal = builder.makeLiteral( utf8, varchar, false );
-        assertEquals( "_UTF-8'foobar'", literal.toString() );
+        assertEquals( "'foobar':VARCHAR", literal.toString() );
     }
 
 

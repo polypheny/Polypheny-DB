@@ -21,7 +21,9 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.Locale;
 import java.util.TimeZone;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -43,6 +45,8 @@ import org.polypheny.db.util.TimestampString;
 public class PolyTimestamp extends PolyTemporal {
 
     public static final DateFormat dateFormat = new SimpleDateFormat( "yyyy-MM-dd HH:mm:ss" );
+
+    public static final DateFormat dateMilliFormat = new SimpleDateFormat( "yyyy-MM-dd HH:mm:ss.SSS" );
 
 
     static {
@@ -165,7 +169,13 @@ public class PolyTimestamp extends PolyTemporal {
         if ( millisSinceEpoch == null ) {
             return null;
         }
-        return dateFormat.format( new Date( millisSinceEpoch ) );
+        Date date = new Date( millisSinceEpoch - Calendar.getInstance( Locale.getDefault() ).getTimeZone().getRawOffset() );
+        String dateString = dateMilliFormat.format( date );
+
+        if ( dateString.endsWith( ".000" ) ) {
+            return dateString.substring( 0, dateString.length() - 4 );
+        }
+        return dateString;
     }
 
 }

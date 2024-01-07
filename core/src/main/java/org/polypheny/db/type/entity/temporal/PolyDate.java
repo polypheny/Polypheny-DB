@@ -127,6 +127,12 @@ public class PolyDate extends PolyTemporal {
 
 
     @Override
+    public String toString() {
+        return toJson();
+    }
+
+
+    @Override
     public Expression asExpression() {
         return Expressions.new_( PolyDate.class, Expressions.constant( millisSinceEpoch ) );
     }
