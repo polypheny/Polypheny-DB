@@ -16,9 +16,12 @@
 
 package org.polypheny.db.catalog.logistic;
 
+import lombok.Getter;
 import lombok.NonNull;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 
+@Getter
 public enum Collation {
     CASE_SENSITIVE( 1 ),
     CASE_INSENSITIVE( 2 );
@@ -31,18 +34,13 @@ public enum Collation {
     }
 
 
-    public int getId() {
-        return id;
-    }
-
-
     public static Collation getById( int id ) {
         for ( Collation c : values() ) {
             if ( c.id == id ) {
                 return c;
             }
         }
-        throw new RuntimeException( "Unknown Collation with id: " + id );
+        throw new GenericRuntimeException( "Unknown Collation with id: " + id );
     }
 
 
@@ -52,7 +50,7 @@ public enum Collation {
         } else if ( str.equalsIgnoreCase( "CASE INSENSITIVE" ) ) {
             return Collation.CASE_INSENSITIVE;
         }
-        throw new RuntimeException( "Unknown Collation with name: " + str );
+        throw new GenericRuntimeException( "Unknown Collation with name: " + str );
     }
 
 

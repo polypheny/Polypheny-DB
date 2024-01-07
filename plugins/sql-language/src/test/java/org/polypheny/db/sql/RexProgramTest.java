@@ -1869,13 +1869,13 @@ public class RexProgramTest extends RexProgramBuilderBase {
         checkSimplifyUnchanged( cast( literalAbc, intType ) );
         checkSimplifyUnchanged( cast( literalOne, intType ) );
         checkSimplifyUnchanged( cast( literalAbc, varcharType ) );
-        checkSimplify( cast( literalOne, varcharType ), "'1':VARCHAR(10) CHARACTER SET \"UTF-8\"" );
+        checkSimplify( cast( literalOne, varcharType ), "'1':VARCHAR(10)" );
         checkSimplifyUnchanged( cast( literalAbc, booleanType ) );
         checkSimplify( cast( literalOne, booleanType ), "true" ); // different from Hive
         checkSimplifyUnchanged( cast( literalAbc, dateType ) );
         checkSimplify( cast( literalOne, dateType ), "1970-01-02" ); // different from Hive
         checkSimplifyUnchanged( cast( literalAbc, timestampType ) );
-        checkSimplify( cast( literalOne, timestampType ), "1970-01-01 00:00:00" ); // different from Hive
+        checkSimplify( cast( literalOne, timestampType ), "1970-01-01 00:00:00.001" ); // different from Hive
     }
 
 
@@ -1910,7 +1910,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
         checkSimplify( cast( timestampLTZChar3, timestampLTZType ), "2011-07-20 12:34:56:TIMESTAMP_WITH_LOCAL_TIME_ZONE(0)" );
         checkSimplifyUnchanged( cast( literalTimestampLTZ, timestampLTZType ) );
         checkSimplify( cast( literalDate, timestampLTZType ), "2011-07-20 07:00:00:TIMESTAMP_WITH_LOCAL_TIME_ZONE(0)" );
-        checkSimplify( cast( literalTime, timestampLTZType ), "1970-01-01 20:34:56:TIMESTAMP_WITH_LOCAL_TIME_ZONE(0)" );
+        checkSimplify( cast( literalTime, timestampLTZType ), "1970-01-01 19:34:56:TIMESTAMP_WITH_LOCAL_TIME_ZONE(0)" );
         checkSimplify( cast( literalTimestamp, timestampLTZType ), "2011-07-20 19:34:56:TIMESTAMP_WITH_LOCAL_TIME_ZONE(0)" );
         checkSimplify( cast( literalTimestamp, dateType ), "2011-07-20" );
         checkSimplify( cast( literalTimestampLTZ, dateType ), "2011-07-20" );
@@ -1919,9 +1919,9 @@ public class RexProgramTest extends RexProgramBuilderBase {
         checkSimplify( cast( literalTimeLTZ, timeType ), "17:23:45" );
         checkSimplify( cast( literalTime, timeLTZType ), "20:34:56:TIME_WITH_LOCAL_TIME_ZONE(0)" );
         checkSimplify( cast( literalTimestampLTZ, timeLTZType ), "08:23:45:TIME_WITH_LOCAL_TIME_ZONE(0)" );
-        checkSimplify( cast( literalTimeLTZ, varCharType ), "'17:23:45 America/Los_Angeles':VARCHAR(40) CHARACTER SET \"UTF-8\"" );
-        checkSimplify( cast( literalTimestampLTZ, varCharType ), "'2011-07-20 01:23:45 America/Los_Angeles':VARCHAR(40) CHARACTER SET \"UTF-8\"" );
-        checkSimplify( cast( literalTimeLTZ, timestampType ), "1970-01-14 03:13:19" );
+        checkSimplify( cast( literalTimeLTZ, varCharType ), "'17:23:45 America/Los_Angeles':VARCHAR(40)" );
+        checkSimplify( cast( literalTimestampLTZ, varCharType ), "'2011-07-20 01:23:45 America/Los_Angeles':VARCHAR(40)" );
+        checkSimplify( cast( literalTimeLTZ, timestampType ), "1970-01-14 02:13:19.720" );
         checkSimplify( cast( literalTimeLTZ, timestampLTZType ), "2011-07-20 01:23:45:TIMESTAMP_WITH_LOCAL_TIME_ZONE(0)" );
     }
 

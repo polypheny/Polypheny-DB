@@ -34,6 +34,7 @@
 package org.polypheny.db.rex;
 
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
@@ -978,7 +979,7 @@ public class RexBuilder {
      */
     protected RexLiteral makePreciseStringLiteral( String s ) {
         assert s != null;
-        if ( s.equals( "" ) ) {
+        if ( s.isEmpty() ) {
             return charEmpty;
         }
         return makeCharLiteral( new NlsString( s, null, null ) );
@@ -1437,7 +1438,7 @@ public class RexBuilder {
                 if ( o instanceof PolyNumber number ) {
                     return number;
                 } else if ( o instanceof Number number ) {
-                    return PolyBigDecimal.of( new BigDecimal( ((Number) o).doubleValue(), MathContext.DECIMAL64 ).stripTrailingZeros() );
+                    return PolyBigDecimal.of( new BigDecimal( number.doubleValue(), MathContext.DECIMAL64 ).stripTrailingZeros() );
                 }
                 break;
             case CHAR:
@@ -1486,19 +1487,21 @@ public class RexBuilder {
                 } else if ( o instanceof Long longValue ) {
                     return PolyDate.of( longValue );
                 } else if ( o instanceof Integer intValue ) {
-                    return PolyDate.of( intValue );
+                    return PolyDate.ofDays( intValue );
                 }
 
                 break;
             case TIMESTAMP:
+            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+                // we have to shift it to utc
+                Function<Integer, Integer> offset = in -> type.getPolyType() == PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE ? in : 0;
                 if ( o instanceof PolyTimestamp value ) {
                     return value;
                 } else if ( o instanceof Calendar calendar ) {
                     if ( !calendar.getTimeZone().equals( DateTimeUtils.UTC_ZONE ) ) {
-                        // we have to shift it to utc
-                        return PolyTimestamp.of( calendar.getTimeInMillis() - calendar.getTimeZone().getRawOffset() );
+                        return PolyTimestamp.of( calendar.getTimeInMillis() - offset.apply( calendar.getTimeZone().getRawOffset() ) );
                     }
-                    // we want UTC and but don't want to shift automatically as it is done with the Calendar impl
+                    // we want UTC and don't want to shift automatically as it is done with the Calendar impl
                     return PolyTimestamp.of( calendar.getTimeInMillis() );
                 } else if ( o instanceof TimestampString timestampString ) {
                     return PolyTimestamp.of( timestampString.getMillisSinceEpoch() );
@@ -1513,24 +1516,7 @@ public class RexBuilder {
                 } else if ( o instanceof Integer intValue ) {
                     return PolyTimestamp.of( intValue );
                 }
-                // fall through
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                if ( o instanceof PolyTimestamp value ) {
-                    return value;
-                } else if ( o instanceof TimestampString timestampString ) {
-                    return PolyTimestamp.of( timestampString.getMillisSinceEpoch() );
-                } else if ( o instanceof PolyTime time ) {
-                    return PolyTimestamp.of( time.getMillisSinceEpoch() );
-                } else if ( o instanceof PolyDate date ) {
-                    return PolyTimestamp.of( date.millisSinceEpoch );
-                } else if ( o instanceof Timestamp timestamp ) {
-                    return PolyTimestamp.of( timestamp.getTime() );
-                } else if ( o instanceof Long longValue ) {
-                    return PolyTimestamp.of( longValue );
-                } else if ( o instanceof Integer intValue ) {
-                    return PolyTimestamp.of( intValue );
-                }
-                // fall through
+                break;
             case ARRAY:
                 ArrayType arrayType = (ArrayType) type;
                 List<PolyValue> list = new ArrayList<>();

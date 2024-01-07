@@ -108,6 +108,12 @@ public class PolyTime extends PolyTemporal {
 
 
     @Override
+    public String toString() {
+        return ofDay == null ? "null" : TimeString.fromMillisOfDay( ofDay ).toString();
+    }
+
+
+    @Override
     public Expression asExpression() {
         return Expressions.new_( PolyTime.class, Expressions.constant( ofDay ) );
     }

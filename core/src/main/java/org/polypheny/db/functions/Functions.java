@@ -2840,7 +2840,7 @@ public class Functions {
         return PolyTime.of( new TimestampWithTimeZoneString( date.value + " " + tTZ.toString() )
                 .withTimeZone( timeZone )
                 .getLocalTimestampString()
-                .getMillisSinceEpoch() );
+                .getMillisSinceEpoch() - LOCAL_TZ.getRawOffset() );
     }
 
 
@@ -2850,7 +2850,7 @@ public class Functions {
                 .withTimeZone( DateTimeUtils.UTC_ZONE );
         return PolyTimestamp.of( new TimestampWithTimeZoneString( date.value + " " + tTZ.toString() )
                 .getLocalTimestampString()
-                .getMillisSinceEpoch() );
+                .getMillisSinceEpoch() - LOCAL_TZ.getRawOffset() );
     }
 
 
@@ -2900,7 +2900,7 @@ public class Functions {
         return PolyTimestamp.of( TimestampWithTimeZoneString.fromMillisSinceEpoch( v.longValue() )
                 .withTimeZone( timeZone )
                 .getLocalTimestampString()
-                .getMillisSinceEpoch() );
+                .getMillisSinceEpoch() - LOCAL_TZ.getRawOffset() );
     }
 
 
@@ -2925,7 +2925,7 @@ public class Functions {
         return PolyTimestamp.of( v == null ? null : new TimestampWithTimeZoneString( v.value )
                 .withTimeZone( DateTimeUtils.UTC_ZONE )
                 .getLocalTimestampString()
-                .getMillisSinceEpoch() );
+                .getMillisSinceEpoch() - LOCAL_TZ.getRawOffset() );
     }
 
 
@@ -2934,7 +2934,7 @@ public class Functions {
         return PolyTimestamp.of( v == null ? null : new TimestampWithTimeZoneString( v.value + " " + timeZone.getID() )
                 .withTimeZone( DateTimeUtils.UTC_ZONE )
                 .getLocalTimestampString()
-                .getMillisSinceEpoch() );
+                .getMillisSinceEpoch() - LOCAL_TZ.getRawOffset() );
     }
 
     // Don't need shortValueOf etc. - Short.valueOf is sufficient.
