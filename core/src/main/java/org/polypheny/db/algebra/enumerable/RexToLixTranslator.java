@@ -246,11 +246,7 @@ public class RexToLixTranslator {
             case ANY -> operand;
             case DATE -> switch ( sourceType.getPolyType() ) {
                 case CHAR, VARCHAR -> Expressions.call( BuiltInMethod.STRING_TO_DATE.method, operand );
-                case TIMESTAMP -> Expressions.call( PolyDate.class, "of",
-                        Expressions.call(
-                                BuiltInMethod.FLOOR_DIV.method,
-                                Expressions.call( operand, BuiltInMethod.MILLIS_SINCE_EPOCH_POLY.method ),
-                                PolyTemporal.MILLIS_OF_DAY ) );
+                case TIMESTAMP -> Expressions.call( PolyDate.class, "of", Expressions.call( operand, "LongValue" ) );
                 case TIMESTAMP_WITH_LOCAL_TIME_ZONE -> RexImpTable.optimize2(
                         operand,
                         Expressions.call(

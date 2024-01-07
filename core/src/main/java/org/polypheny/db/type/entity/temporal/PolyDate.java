@@ -51,6 +51,10 @@ public class PolyDate extends PolyTemporal {
     }
 
 
+    public static PolyDate of( Long millisSinceEpoch ) {
+        return new PolyDate( millisSinceEpoch );
+    }
+
     public static PolyDate of( PolyNumber number ) {
         return new PolyDate( number.longValue() );
     }
