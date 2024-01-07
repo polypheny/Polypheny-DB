@@ -64,4 +64,3 @@ include 'plugins:excel-adapter'
 
 // other plugins
 include 'plugins:notebooks'
-
