@@ -136,6 +136,7 @@ import org.polypheny.db.docker.DockerSetupHelper.DockerUpdateResult;
 import org.polypheny.db.docker.HandshakeManager;
 import org.polypheny.db.docker.exceptions.DockerUserException;
 import org.polypheny.db.docker.models.AddDockerResponse;
+import org.polypheny.db.docker.models.DockerSettings;
 import org.polypheny.db.docker.models.HandshakeInfo;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
@@ -3079,17 +3080,16 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
     void getDockerSettings( final Context ctx ) {
-        ctx.json( Map.of(
-                "registry", RuntimeConfig.DOCKER_CONTAINER_REGISTRY.getString()
-        ) );
+        ctx.json(
+                new DockerSettings( RuntimeConfig.DOCKER_CONTAINER_REGISTRY.getString() )
+        );
     }
 
 
     void changeDockerSettings( final Context ctx ) {
-        Map<String, String> config = gson.fromJson( ctx.body(), Map.class );
-        String newRegistry = config.get( "registry" );
-        if ( newRegistry != null ) {
-            RuntimeConfig.DOCKER_CONTAINER_REGISTRY.setString( newRegistry );
+        DockerSettings settings = ctx.bodyAsClass( DockerSettings.class );
+        if ( settings.defaultRegistry() != null ) {
+            RuntimeConfig.DOCKER_CONTAINER_REGISTRY.setString( settings.defaultRegistry() );
         }
         getDockerSettings( ctx );
     }
