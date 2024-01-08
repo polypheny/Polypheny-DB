@@ -20,7 +20,7 @@ jobs:
             -   name: Set up JDK
                 uses: actions/setup-java@v4
                 with:
-                    distribution: 'zulu'
+                    distribution: 'temurin'
                     java-version: 17
             -   name: Set env variable
                 run: |

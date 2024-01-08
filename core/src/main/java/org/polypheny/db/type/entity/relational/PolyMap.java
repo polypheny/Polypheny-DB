@@ -73,6 +73,8 @@ import org.polypheny.db.util.Pair;
 @JsonDeserialize(using = PolyMapDeserializer.class)
 public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue implements Map<K, V> {
 
+    public static final PolyMap<?,?> EMPTY_MAP = PolyMap.of( Map.of() );
+
     @Delegate
     @Serialize
     @JsonSerialize(using = PolyMapSerializer.class)

@@ -59,6 +59,8 @@ import org.polypheny.db.util.Pair;
 @JsonDeserialize(using = PolyDocumentDeserializer.class)
 public class PolyDocument extends PolyMap<PolyString, PolyValue> {
 
+    public static final PolyDocument EMPTY_DOCUMENT = PolyDocument.ofDocument( Map.of() );
+
     public static PolyDocument ID_NULL = new PolyDocument( Map.of( new PolyString( "_id" ), PolyNull.NULL ) );
 
     public boolean isUnset; // documents can contain documents and so on, additionally such a sub document, can not only be null, but also unset

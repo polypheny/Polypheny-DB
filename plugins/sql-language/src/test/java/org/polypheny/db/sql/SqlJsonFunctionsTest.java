@@ -43,19 +43,22 @@ import org.polypheny.db.algebra.json.JsonExistsErrorBehavior;
 import org.polypheny.db.algebra.json.JsonQueryEmptyOrErrorBehavior;
 import org.polypheny.db.algebra.json.JsonQueryWrapperBehavior;
 import org.polypheny.db.algebra.json.JsonValueEmptyOrErrorBehavior;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.functions.PathContext;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.relational.PolyMap;
 
 
 /**
  * Unit test for the methods in {@link Functions} that implement JSON processing functions.
  */
-public class SqlJsonFunctionsTest {
+public class SqlJsonFunctionsTest extends SqlLanguageDependent {
 
     public static final String INVOC_DESC_JSON_VALUE_EXPRESSION = "jsonValueExpression";
     public static final String INVOC_DESC_JSON_STRUCTURED_VALUE_EXPRESSION = "jsonStructuredValueExpression";
@@ -77,7 +80,7 @@ public class SqlJsonFunctionsTest {
 
     @Test
     public void testJsonValueExpression() {
-        assertJsonValueExpression( "{}", is( Collections.emptyMap() ) );
+        assertJsonValueExpression( "{}", is( PolyDocument.EMPTY_DOCUMENT ) );
     }
 
 
@@ -173,7 +176,7 @@ public class SqlJsonFunctionsTest {
         assertJsonExistsFailed(
                 PathContext.withStrictException( new Exception( "test message" ) ),
                 JsonExistsErrorBehavior.ERROR,
-                errorMatches( new RuntimeException( "java.lang.Exception: test message" ) ) );
+                errorMatches( new GenericRuntimeException( "java.lang.Exception: test message" ) ) );
     }
 
 
@@ -185,7 +188,7 @@ public class SqlJsonFunctionsTest {
                 null,
                 JsonValueEmptyOrErrorBehavior.NULL,
                 null,
-                is( "bar" ) );
+                is( PolyString.of( "bar" ) ) );
         assertJsonValueAny(
                 PathContext.withReturned( Functions.PathMode.LAX, null ),
                 JsonValueEmptyOrErrorBehavior.NULL,
@@ -199,7 +202,7 @@ public class SqlJsonFunctionsTest {
                 PolyString.of( "empty" ),
                 JsonValueEmptyOrErrorBehavior.NULL,
                 null,
-                is( "empty" ) );
+                is( PolyString.of("empty") ) );
         assertJsonValueAnyFailed(
                 PathContext.withReturned( Functions.PathMode.LAX, null ),
                 JsonValueEmptyOrErrorBehavior.ERROR,
@@ -220,7 +223,7 @@ public class SqlJsonFunctionsTest {
                 PolyString.of( "empty" ),
                 JsonValueEmptyOrErrorBehavior.NULL,
                 null,
-                is( "empty" ) );
+                is( PolyString.of("empty") ) );
         assertJsonValueAnyFailed(
                 PathContext.withReturned( Functions.PathMode.LAX, PolyList.EMPTY_LIST ),
                 JsonValueEmptyOrErrorBehavior.ERROR,
@@ -241,14 +244,14 @@ public class SqlJsonFunctionsTest {
                 null,
                 JsonValueEmptyOrErrorBehavior.DEFAULT,
                 PolyString.of( "empty" ),
-                is( "empty" ) );
+                is( PolyString.of("empty") ) );
         assertJsonValueAnyFailed(
                 PathContext.withStrictException( new Exception( "test message" ) ),
                 JsonValueEmptyOrErrorBehavior.NULL,
                 null,
                 JsonValueEmptyOrErrorBehavior.ERROR,
                 null,
-                errorMatches( new RuntimeException( "java.lang.Exception: test message" ) ) );
+                errorMatches( new GenericRuntimeException( "java.lang.Exception: test message" ) ) );
         assertJsonValueAny(
                 PathContext.withReturned( Functions.PathMode.STRICT, PolyList.EMPTY_LIST ),
                 JsonValueEmptyOrErrorBehavior.NULL,
@@ -262,7 +265,7 @@ public class SqlJsonFunctionsTest {
                 null,
                 JsonValueEmptyOrErrorBehavior.DEFAULT,
                 PolyString.of( "empty" ),
-                is( "empty" ) );
+                is( PolyString.of("empty") ) );
         assertJsonValueAnyFailed(
                 PathContext.withReturned( Functions.PathMode.STRICT, PolyList.EMPTY_LIST ),
                 JsonValueEmptyOrErrorBehavior.NULL,
@@ -348,7 +351,7 @@ public class SqlJsonFunctionsTest {
                 JsonQueryWrapperBehavior.WITHOUT_ARRAY,
                 JsonQueryEmptyOrErrorBehavior.NULL,
                 JsonQueryEmptyOrErrorBehavior.ERROR,
-                errorMatches( new RuntimeException( "java.lang.Exception: test message" ) ) );
+                errorMatches( new GenericRuntimeException( "java.lang.Exception: test message" ) ) );
         assertJsonQuery(
                 PathContext.withReturned( Functions.PathMode.STRICT, PolyString.of( "bar" ) ),
                 JsonQueryWrapperBehavior.WITHOUT_ARRAY,
@@ -408,8 +411,8 @@ public class SqlJsonFunctionsTest {
 
     @Test
     public void testDejsonize() {
-        assertDejsonize( "{}", is( Collections.emptyMap() ) );
-        assertDejsonize( "[]", is( Collections.emptyList() ) );
+        assertDejsonize( "{}", is( PolyDocument.EMPTY_DOCUMENT ) );
+        assertDejsonize( "[]", is( PolyList.EMPTY_LIST ) );
 
         // expect exception thrown
         final String message = "com.fasterxml.jackson.core.JsonParseException: Unexpected close marker '}': expected ']' (for Array starting at [Source: (String)\"[}\"; line: 1, column: 1])\n at [Source: (String)\"[}\"; line: 1, column: 3]";
@@ -645,7 +648,7 @@ public class SqlJsonFunctionsTest {
 
 
     private Matcher<? super Throwable> errorMatches( Throwable expected ) {
-        return new BaseMatcher<Throwable>() {
+        return new BaseMatcher<>() {
             @Override
             public boolean matches( Object item ) {
                 if ( !(item instanceof Throwable) ) {
