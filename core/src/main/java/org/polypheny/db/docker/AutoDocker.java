@@ -47,6 +47,7 @@ import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.docker.DockerSetupHelper.DockerReconnectResult;
 import org.polypheny.db.docker.exceptions.DockerUserException;
+import org.polypheny.db.docker.models.AutoDockerStatus;
 import org.polypheny.db.docker.models.DockerHost;
 import org.polypheny.db.docker.models.HandshakeInfo;
 
@@ -291,13 +292,8 @@ public final class AutoDocker {
     }
 
 
-    public Map<String, Object> getStatus() {
-        return Map.of(
-                "available", isAvailable(),
-                "connected", isConnected(),
-                "running", thread != null && thread.isAlive(),
-                "message", status
-        );
+    public AutoDockerStatus getStatus() {
+        return new AutoDockerStatus( isAvailable(), isConnected(), thread != null && thread.isAlive(), status );
     }
 
 

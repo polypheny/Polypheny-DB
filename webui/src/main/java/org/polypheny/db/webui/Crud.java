@@ -136,6 +136,7 @@ import org.polypheny.db.docker.DockerSetupHelper.DockerUpdateResult;
 import org.polypheny.db.docker.HandshakeManager;
 import org.polypheny.db.docker.exceptions.DockerUserException;
 import org.polypheny.db.docker.models.AddDockerResponse;
+import org.polypheny.db.docker.models.AutoDockerResult;
 import org.polypheny.db.docker.models.DockerSettings;
 import org.polypheny.db.docker.models.HandshakeInfo;
 import org.polypheny.db.iface.QueryInterface;
@@ -3049,11 +3050,13 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     void doAutoHandshake( final Context ctx ) {
         boolean success = AutoDocker.getInstance().doAutoConnect();
-        ctx.json( Map.of(
-                "success", success,
-                "status", AutoDocker.getInstance().getStatus(),
-                "instances", DockerManager.getInstance().getDockerInstances().values().stream().map( DockerInstance::getMap ).collect( Collectors.toList() )
-        ) );
+        ctx.json(
+                new AutoDockerResult(
+                        success,
+                        AutoDocker.getInstance().getStatus(),
+                        DockerManager.getInstance().getDockerInstances().values().stream().map( DockerInstance::getMap ).toList()
+                )
+        );
     }
 
 
