@@ -63,7 +63,7 @@ import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
-import org.polypheny.db.functions.Functions;
+import org.polypheny.db.functions.TemporalFunctions;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptRule;
@@ -593,7 +593,7 @@ public abstract class DateRangeRules {
             return switch ( timeLiteral.getPolyType() ) {
                 case TIMESTAMP_WITH_LOCAL_TIME_ZONE -> {
                     final TimeZone tz = TimeZone.getTimeZone( this.timeZone );
-                    yield Util.calendar( Functions.timestampWithLocalTimeZoneToTimestamp( timeLiteral.value.asTimestamp().getPolyMillisSinceEpoch(), tz ).millisSinceEpoch );
+                    yield Util.calendar( TemporalFunctions.timestampWithLocalTimeZoneToTimestamp( timeLiteral.value.asTimestamp().getPolyMillisSinceEpoch(), tz ).millisSinceEpoch );
                 }
                 case TIMESTAMP -> Util.calendar( timeLiteral.value.asTimestamp().millisSinceEpoch );
                 case DATE ->
