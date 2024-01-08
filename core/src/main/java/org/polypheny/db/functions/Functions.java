@@ -130,10 +130,10 @@ import org.polypheny.db.util.TimestampWithTimeZoneString;
 
 /**
  * Helper methods to implement SQL functions in generated code.
- *
+ * <p>
  * Not present: and, or, not (builtin operators are better, because they use lazy evaluation. Implementations do not check
  * for null values; the calling code must do that.
- *
+ * <p>
  * Many of the functions do not check for null values. This is intentional. If null arguments are possible, the
  * code-generation framework checks for nulls before calling the functions.
  */
@@ -166,7 +166,7 @@ public class Functions {
 
     /**
      * Holds, for each thread, a map from sequence name to sequence current value.
-     *
+     * <p>
      * This is a straw man of an implementation whose main goal is to prove that sequences can be parsed, validated and planned. A real application will want persistent values for sequences, shared among threads.
      */
     private static final ThreadLocal<Map<String, AtomicLong>> THREAD_SEQUENCES = ThreadLocal.withInitial( HashMap::new );
@@ -184,20 +184,14 @@ public class Functions {
 
     public static PolyDouble distance( List<PolyNumber> value, List<PolyNumber> target, PolyString metric, List<PolyNumber> weights ) {
         DistanceFunctions.verifyInputs( value, target, weights );
-        switch ( metric.value ) {
-            case "L2":
-                return DistanceFunctions.l2MetricWeighted( value, target, weights );
-            case "L1":
-                return DistanceFunctions.l1MetricWeighted( value, target, weights );
-            case "L2SQUARED":
-                return DistanceFunctions.l2SquaredMetricWeighted( value, target, weights );
-            case "CHISQUARED":
-                return DistanceFunctions.chiSquaredMetricWeighted( value, target, weights );
-            case "COSINE":
-                return DistanceFunctions.cosineMetricWeighted( value, target, weights );
-            default:
-                return PolyDouble.of( 0.0 );
-        }
+        return switch ( metric.value ) {
+            case "L2" -> DistanceFunctions.l2MetricWeighted( value, target, weights );
+            case "L1" -> DistanceFunctions.l1MetricWeighted( value, target, weights );
+            case "L2SQUARED" -> DistanceFunctions.l2SquaredMetricWeighted( value, target, weights );
+            case "CHISQUARED" -> DistanceFunctions.chiSquaredMetricWeighted( value, target, weights );
+            case "COSINE" -> DistanceFunctions.cosineMetricWeighted( value, target, weights );
+            default -> PolyDouble.of( 0.0 );
+        };
     }
 
 
@@ -840,33 +834,12 @@ public class Functions {
         return PolyBoolean.of( Pattern.matches( regex, s.value ) );
     }
 
-    /**
-     * SQL {@code SIMILAR} function with escape.
-     */
-    /*public static boolean similar( String s, String pattern, String escape ) {
-        final String regex = Like.sqlToRegexSimilar( pattern, escape );
-        return Pattern.matches( regex, s );
-    }*/
-
     // =
-
-    /**
-     * SQL <code>=</code> operator applied to BigDecimal values (neither may be null).
-     */
-    /*public static boolean eq( BigDecimal b0, BigDecimal b1 ) {
-        return b0.stripTrailingZeros().equals( b1.stripTrailingZeros() );
-    }*/
 
 
     /**
      * SQL <code>=</code> operator applied to Object values (including String; neither side may be null).
      */
-    /*public static boolean eq( Object b0, Object b1 ) {
-        if ( b0 == null || b1 == null ) {
-            return false;
-        }
-        return b0.equals( b1 );
-    }*/
     public static PolyBoolean eq( PolyNumber b0, PolyNumber b1 ) {
         if ( b0 == null || b1 == null ) {
             return PolyBoolean.FALSE;
@@ -904,62 +877,15 @@ public class Functions {
 
     // <>
 
-    /**
-     * SQL <code>&lt;gt;</code> operator applied to BigDecimal values.
-     */
-    /*public static boolean ne( BigDecimal b0, BigDecimal b1 ) {
-        return b0.compareTo( b1 ) != 0;
-    }*/
-
 
     /**
      * SQL <code>&lt;gt;</code> operator applied to Object values (including String; neither side may be null).
      */
-    /*public static boolean ne( Object b0, Object b1 ) {
-        return !eq( b0, b1 );
-    }*/
     public static PolyBoolean ne( PolyValue b0, PolyValue b1 ) {
         return PolyBoolean.of( b0.compareTo( b1 ) != 0 );
     }
 
-    /**
-     * SQL <code>&lt;gt;</code> operator applied to Object values (at least one operand has ANY type, including String; neither may be null).
-     */
-
     // <
-
-    /**
-     * SQL <code>&lt;</code> operator applied to boolean values.
-     */
-    /*public static boolean lt( boolean b0, boolean b1 ) {
-        return compare( b0, b1 ) < 0;
-    }*/
-
-    /**
-     * SQL <code>&lt;</code> operator applied to String values.
-     */
-    /*public static boolean lt( String b0, String b1 ) {
-        return b0.compareTo( b1 ) < 0;
-    }*/
-
-    /**
-     * SQL <code>&lt;</code> operator applied to ByteString values.
-     */
-    /*public static boolean lt( ByteString b0, ByteString b1 ) {
-        return b0.compareTo( b1 ) < 0;
-    }*/
-
-    /**
-     * SQL <code>&lt;</code> operator applied to BigDecimal values.
-     */
-    /*public static boolean lt( BigDecimal b0, BigDecimal b1 ) {
-        return b0.compareTo( b1 ) < 0;
-    }*/
-
-
-    /*public static boolean lt( Object b0, Object b1 ) {
-        return lt( b0, b1 );
-    }*/
 
 
     /**
@@ -1006,38 +932,6 @@ public class Functions {
     /**
      * SQL <code>&le;</code> operator applied to boolean values.
      */
-    /*public static boolean le( boolean b0, boolean b1 ) {
-        return compare( b0, b1 ) <= 0;
-    }
-
-
-    /**
-     * SQL <code>&le;</code> operator applied to String values.
-     */
-    /*public static boolean le( String b0, String b1 ) {
-        return b0.compareTo( b1 ) <= 0;
-    }
-
-
-    /**
-     * SQL <code>&le;</code> operator applied to ByteString values.
-     */
-    /*public static boolean le( ByteString b0, ByteString b1 ) {
-        return b0.compareTo( b1 ) <= 0;
-    }
-
-
-    /**
-     * SQL <code>&le;</code> operator applied to BigDecimal values.
-     */
-    /*public static boolean le( BigDecimal b0, BigDecimal b1 ) {
-        return b0.compareTo( b1 ) <= 0;
-    }
-
-
-    /**
-     * SQL <code>&le;</code> operator applied to Object values (at least one operand has ANY type; neither may be null).
-     */
     public static PolyBoolean le( PolyValue b0, PolyValue b1 ) {
         if ( b0 == null || b1 == null ) {
             return PolyBoolean.FALSE;
@@ -1065,33 +959,6 @@ public class Functions {
     /**
      * SQL <code>&gt;</code> operator applied to boolean values.
      */
-    /*public static boolean gt( boolean b0, boolean b1 ) {
-        return compare( b0, b1 ) > 0;
-    }
-
-
-    /**
-     * SQL <code>&gt;</code> operator applied to String values.
-     */
-    /*public static boolean gt( String b0, String b1 ) {
-        return b0.compareTo( b1 ) > 0;
-    }
-
-
-    /**
-     * SQL <code>&gt;</code> operator applied to ByteString values.
-     */
-    /*public static boolean gt( ByteString b0, ByteString b1 ) {
-        return b0.compareTo( b1 ) > 0;
-    }
-
-
-    /**
-     * SQL <code>&gt;</code> operator applied to BigDecimal values.
-     */
-    /*public static boolean gt( BigDecimal b0, BigDecimal b1 ) {
-        return b0.compareTo( b1 ) > 0;
-    }*/
     public static PolyBoolean gt( PolyNumber b0, PolyNumber b1 ) {
         return PolyBoolean.of( b0.bigDecimalValue().compareTo( b1.bigDecimalValue() ) > 0 );
     }
@@ -1101,16 +968,6 @@ public class Functions {
      * SQL <code>&gt;</code> operator applied to Object values (at least one
      * operand has ANY type; neither may be null).
      */
-    /*public static boolean gt( Object b0, Object b1 ) {
-        if ( b0.getClass().equals( b1.getClass() ) && b0 instanceof Comparable ) {
-            //noinspection unchecked
-            return ((Comparable) b0).compareTo( b1 ) > 0;
-        } else if ( allAssignable( Number.class, b0, b1 ) ) {
-            return gt( toBigDecimal( (Number) b0 ), toBigDecimal( (Number) b1 ) );
-        }
-
-        throw notComparable( ">", b0, b1 );
-    }*/
     public static PolyBoolean gt( PolyValue b0, PolyValue b1 ) {
         if ( b0 == null || b1 == null ) {
             return PolyBoolean.FALSE;
@@ -1129,34 +986,10 @@ public class Functions {
 
     // >=
 
-    /**
-     * SQL <code>&ge;</code> operator applied to boolean values.
-     */
-    /*public static boolean ge( boolean b0, boolean b1 ) {
-        return compare( b0, b1 ) >= 0;
-    }*/
-
-    /**
-     * SQL <code>&ge;</code> operator applied to String values.
-     */
-    /*public static boolean ge( String b0, String b1 ) {
-        return b0.compareTo( b1 ) >= 0;
-    }*/
-
-    /**
-     * SQL <code>&ge;</code> operator applied to ByteString values.
-     */
-    /*public static boolean ge( ByteString b0, ByteString b1 ) {
-        return b0.compareTo( b1 ) >= 0;
-    }*/
-
 
     /**
      * SQL <code>&ge;</code> operator applied to BigDecimal values.
      */
-    /*public static boolean ge( BigDecimal b0, BigDecimal b1 ) {
-        return b0.compareTo( b1 ) >= 0;
-    }*/
     public static PolyBoolean ge( PolyNumber b0, PolyNumber b1 ) {
         return PolyBoolean.of( b0.bigDecimalValue().compareTo( b1.bigDecimalValue() ) >= 0 );
     }
@@ -1192,65 +1025,12 @@ public class Functions {
 
     }
 
-
-    /*public static PolyBoolean ge( PolyValue b0, PolyValue b1 ) {
-        return PolyBoolean.of( b0.compareTo( b1 ) >= 0 );
-    }*/
     // +
-
-    /**
-     * SQL <code>+</code> operator applied to int values.
-     */
-    /*public static int plus( int b0, int b1 ) {
-        return b0 + b1;
-    }*/
-
-    /**
-     * SQL <code>+</code> operator applied to int values; left side may be null.
-     */
-    /*public static Integer plus( Integer b0, int b1 ) {
-        return b0 == null ? null : (b0 + b1);
-    }*/
-
-    /**
-     * SQL <code>+</code> operator applied to int values; right side may be null.
-     */
-    /*public static Integer plus( int b0, Integer b1 ) {
-        return b1 == null ? null : (b0 + b1);
-    }*/
-
-    /**
-     * SQL <code>+</code> operator applied to nullable int values.
-     */
-    /*public static Integer plus( Integer b0, Integer b1 ) {
-        return (b0 == null || b1 == null) ? null : (b0 + b1);
-    }*/
-
-    /**
-     * SQL <code>+</code> operator applied to nullable long and int values.
-     */
-    /*public static Long plus( Long b0, Integer b1 ) {
-        return (b0 == null || b1 == null)
-                ? null
-                : (b0.longValue() + b1.longValue());
-    }*/
-
-    /**
-     * SQL <code>+</code> operator applied to nullable int and long values.
-     */
-    /*public static Long plus( Integer b0, Long b1 ) {
-        return (b0 == null || b1 == null)
-                ? null
-                : (b0.longValue() + b1.longValue());
-    }*/
 
 
     /**
      * SQL <code>+</code> operator applied to BigDecimal values.
      */
-    /*public static BigDecimal plus( BigDecimal b0, BigDecimal b1 ) {
-        return (b0 == null || b1 == null) ? null : b0.add( b1 );
-    }*/
     public static PolyNumber plus( PolyNumber b0, PolyNumber b1 ) {
         return (b0 == null || b1 == null) ? null : b0.plus( b1 );
     }
@@ -1272,52 +1052,6 @@ public class Functions {
     }
 
     // -
-
-    /**
-     * SQL <code>-</code> operator applied to int values.
-     */
-    /*public static int minus( int b0, int b1 ) {
-        return b0 - b1;
-    }*/
-
-    /**
-     * SQL <code>-</code> operator applied to int values; left side may be null.
-     */
-    /*public static Integer minus( Integer b0, int b1 ) {
-        return b0 == null ? null : (b0 - b1);
-    }*/
-
-    /**
-     * SQL <code>-</code> operator applied to int values; right side may be null.
-     */
-    /*public static Integer minus( int b0, Integer b1 ) {
-        return b1 == null ? null : (b0 - b1);
-    }*/
-
-    /**
-     * SQL <code>-</code> operator applied to nullable int values.
-     */
-    /*public static Integer minus( Integer b0, Integer b1 ) {
-        return (b0 == null || b1 == null) ? null : (b0 - b1);
-    }*/
-
-    /**
-     * SQL <code>-</code> operator applied to nullable long and int values.
-     */
-    /*public static Long minus( Long b0, Integer b1 ) {
-        return (b0 == null || b1 == null)
-                ? null
-                : (b0.longValue() - b1.longValue());
-    }*/
-
-    /**
-     * SQL <code>-</code> operator applied to nullable int and long values.
-     */
-    /*public static Long minus( Integer b0, Long b1 ) {
-        return (b0 == null || b1 == null)
-                ? null
-                : (b0.longValue() - b1.longValue());
-    }*/
 
 
     /**
@@ -1345,61 +1079,6 @@ public class Functions {
 
     // /
 
-    /**
-     * SQL <code>/</code> operator applied to int values.
-     */
-    /*public static int divide( int b0, int b1 ) {
-        return b0 / b1;
-    }*/
-
-    /**
-     * SQL <code>/</code> operator applied to int values; left side may be null.
-     */
-    /*public static Integer divide( Integer b0, int b1 ) {
-        return b0 == null ? null : (b0 / b1);
-    }*/
-
-    /**
-     * SQL <code>/</code> operator applied to int values; right side may be null.
-     */
-    /*public static Integer divide( int b0, Integer b1 ) {
-        return b1 == null ? null : (b0 / b1);
-    }*/
-
-    /**
-     * SQL <code>/</code> operator applied to nullable int values.
-     */
-    /*public static Integer divide( Integer b0, Integer b1 ) {
-        return (b0 == null || b1 == null) ? null : (b0 / b1);
-    }*/
-
-    /**
-     * SQL <code>/</code> operator applied to nullable long and int values.
-     */
-    /*public static Long divide( Long b0, Integer b1 ) {
-        return (b0 == null || b1 == null)
-                ? null
-                : (b0.longValue() / b1.longValue());
-    }*/
-
-    /**
-     * SQL <code>/</code> operator applied to nullable int and long values.
-     */
-    /*public static Long divide( Integer b0, Long b1 ) {
-        return (b0 == null || b1 == null)
-                ? null
-                : (b0.longValue() / b1.longValue());
-    }*/
-
-    /**
-     * SQL <code>/</code> operator applied to BigDecimal values.
-     */
-    /*public static BigDecimal divide( BigDecimal b0, BigDecimal b1 ) {
-        return (b0 == null || b1 == null)
-                ? null
-                : b0.divide( b1, MathContext.DECIMAL64 );
-    }*/
-
 
     /**
      * SQL <code>/</code> operator applied to Object values (at least one operand has ANY type; either may be null).
@@ -1417,69 +1096,11 @@ public class Functions {
     }
 
 
-    /*public static int divide( int b0, BigDecimal b1 ) {
-        return BigDecimal.valueOf( b0 )
-                .divide( b1, RoundingMode.HALF_DOWN ).intValue();
-    }*/
-
-
-    /*public static long divide( long b0, BigDecimal b1 ) {
-        return BigDecimal.valueOf( b0 )
-                .divide( b1, RoundingMode.HALF_DOWN ).longValue();
-    }*/
-
-
     public static PolyNumber divide( PolyNumber b0, PolyNumber b1 ) {
         return (b0 == null || b1 == null)
                 ? null
                 : b0.divide( b1 );
     }
-
-    /**
-     * SQL <code>*</code> operator applied to int values.
-     */
-    /*public static int multiply( int b0, int b1 ) {
-        return b0 * b1;
-    }*/
-
-    /**
-     * SQL <code>*</code> operator applied to int values; left side may be null.
-     */
-    /*public static Integer multiply( Integer b0, int b1 ) {
-        return b0 == null ? null : (b0 * b1);
-    }*/
-
-    /**
-     * SQL <code>*</code> operator applied to int values; right side may be null.
-     */
-    /*public static Integer multiply( int b0, Integer b1 ) {
-        return b1 == null ? null : (b0 * b1);
-    }*/
-
-    /**
-     * SQL <code>*</code> operator applied to nullable int values.
-     */
-    /*public static Integer multiply( Integer b0, Integer b1 ) {
-        return (b0 == null || b1 == null) ? null : (b0 * b1);
-    }*/
-
-    /**
-     * SQL <code>*</code> operator applied to nullable long and int values.
-     */
-    /*public static Long multiply( Long b0, Integer b1 ) {
-        return (b0 == null || b1 == null)
-                ? null
-                : (b0.longValue() * b1.longValue());
-    }*/
-
-    /**
-     * SQL <code>*</code> operator applied to nullable int and long values.
-     */
-    /*public static Long multiply( Integer b0, Long b1 ) {
-        return (b0 == null || b1 == null)
-                ? null
-                : (b0.longValue() * b1.longValue());
-    }*/
 
 
     /**
@@ -1552,14 +1173,6 @@ public class Functions {
     /**
      * SQL <code>EXP</code> operator applied to double values.
      */
-    /*public static double exp( double b0 ) {
-        return Math.exp( b0 );
-    }
-
-
-    public static double exp( BigDecimal b0 ) {
-        return Math.exp( b0.doubleValue() );
-    }*/
     public static PolyNumber exp( PolyNumber number ) {
         return PolyBigDecimal.of( Math.exp( number.doubleValue() ) );
     }
@@ -1570,24 +1183,6 @@ public class Functions {
     /**
      * SQL <code>POWER</code> operator applied to double values.
      */
-    /*public static double power( double b0, double b1 ) {
-        return Math.pow( b0, b1 );
-    }
-
-
-    public static double power( double b0, BigDecimal b1 ) {
-        return Math.pow( b0, b1.doubleValue() );
-    }
-
-
-    public static double power( BigDecimal b0, double b1 ) {
-        return Math.pow( b0.doubleValue(), b1 );
-    }
-
-
-    public static double power( BigDecimal b0, BigDecimal b1 ) {
-        return Math.pow( b0.doubleValue(), b1.doubleValue() );
-    }*/
     public static PolyNumber power( PolyNumber base, PolyNumber exp ) {
         return PolyDouble.of( Math.pow( base.doubleValue(), exp.doubleValue() ) );
     }
@@ -1598,17 +1193,6 @@ public class Functions {
     /**
      * SQL {@code LN(number)} function applied to double values.
      */
-    /*public static double ln( double d ) {
-        return Math.log( d );
-    }
-
-
-    /**
-     * SQL {@code LN(number)} function applied to BigDecimal values.
-     */
-    /*public static double ln( BigDecimal d ) {
-        return Math.log( d.doubleValue() );
-    }*/
     public static PolyNumber ln( PolyNumber number ) {
         return PolyBigDecimal.of( Math.log( number.doubleValue() ) );
     }
@@ -1619,17 +1203,6 @@ public class Functions {
     /**
      * SQL <code>LOG10(numeric)</code> operator applied to double values.
      */
-    /*public static double log10( double b0 ) {
-        return Math.log10( b0 );
-    }
-
-
-    /**
-     * SQL {@code LOG10(number)} function applied to BigDecimal values.
-     */
-    /*public static double log10( BigDecimal d ) {
-        return Math.log10( d.doubleValue() );
-    }*/
     public static PolyNumber log10( PolyNumber number ) {
         return PolyBigDecimal.of( Math.log10( number.doubleValue() ) );
     }
@@ -1640,64 +1213,6 @@ public class Functions {
     /**
      * SQL <code>MOD</code> operator applied to byte values.
      */
-    /*public static byte mod( byte b0, byte b1 ) {
-        return (byte) (b0 % b1);
-    }
-
-
-    /**
-     * SQL <code>MOD</code> operator applied to short values.
-     */
-    /*public static short mod( short b0, short b1 ) {
-        return (short) (b0 % b1);
-    }
-
-
-    /**
-     * SQL <code>MOD</code> operator applied to int values.
-     */
-    /*public static int mod( int b0, int b1 ) {
-        return b0 % b1;
-    }
-
-
-    /**
-     * SQL <code>MOD</code> operator applied to long values.
-     */
-    /*public static long mod( long b0, long b1 ) {
-        return b0 % b1;
-    }
-
-
-    // temporary
-    /*public static BigDecimal mod( BigDecimal b0, int b1 ) {
-        return mod( b0, BigDecimal.valueOf( b1 ) );
-    }
-
-
-    // temporary
-    /*public static int mod( int b0, BigDecimal b1 ) {
-        return mod( b0, b1.intValue() );
-    }
-
-
-    public static BigDecimal mod( BigDecimal b0, BigDecimal b1 ) {
-        final BigDecimal[] bigDecimals = b0.divideAndRemainder( b1 );
-        return bigDecimals[1];
-    }
-
-
-    public static Object mod( Object b0, Object b1 ) {
-        if ( b0 == null || b1 == null ) {
-            return null;
-        }
-
-        if ( allAssignable( Number.class, b0, b1 ) ) {
-            return mod( toBigDecimal( (Number) b0 ), toBigDecimal( (Number) b1 ) );
-        }
-
-        throw notArithmetic( "mod", b0, b1 );
-    }*/
     public static PolyNumber mod( PolyNumber b0, PolyNumber b1 ) {
         final BigDecimal[] bigDecimals = b0.bigDecimalValue().divideAndRemainder( b1.bigDecimalValue() );
         return PolyBigDecimal.of( bigDecimals[1] );
@@ -1719,22 +1234,6 @@ public class Functions {
     // FLOOR
 
 
-    /*public static double floor( double b0 ) {
-        return Math.floor( b0 );
-    }
-
-
-    public static float floor( float b0 ) {
-        return (float) Math.floor( b0 );
-    }
-
-
-    public static BigDecimal floor( BigDecimal b0 ) {
-        return b0.setScale( 0, RoundingMode.FLOOR );
-    }
-     */
-
-
     public static PolyNumber floor( PolyNumber b0 ) {
         log.warn( "optimize" );
         return PolyBigDecimal.of( b0.bigDecimalValue().setScale( 0, RoundingMode.FLOOR ) );
@@ -1744,83 +1243,11 @@ public class Functions {
     /**
      * SQL <code>FLOOR</code> operator applied to byte values.
      */
-    /*public static byte floor( byte b0, byte b1 ) {
-        return (byte) floor( (int) b0, (int) b1 );
-    }
-
-
-    /**
-     * SQL <code>FLOOR</code> operator applied to short values.
-     */
-    /*public static short floor( short b0, short b1 ) {
-        return (short) floor( (int) b0, (int) b1 );
-    }
-
-
-    /**
-     * SQL <code>FLOOR</code> operator applied to int values.
-     */
-    /*public static int floor( int b0, int b1 ) {
-        int r = b0 % b1;
-        if ( r < 0 ) {
-            r += b1;
-        }
-        return b0 - r;
-    }
-
-
-    /**
-     * SQL <code>FLOOR</code> operator applied to long values.
-     */
-    /*public static long floor( long b0, long b1 ) {
-        long r = b0 % b1;
-        if ( r < 0 ) {
-            r += b1;
-        }
-        return b0 - r;
-    }
-
-
-    // temporary
-    public static BigDecimal floor( BigDecimal b0, int b1 ) {
-        return floor( b0, BigDecimal.valueOf( b1 ) );
-    }
-
-
-    // temporary
-    public static int floor( int b0, BigDecimal b1 ) {
-        return floor( b0, b1.intValue() );
-    }
-
-
-    /*public static BigDecimal floor( BigDecimal b0, BigDecimal b1 ) {
-        final BigDecimal[] bigDecimals = b0.divideAndRemainder( b1 );
-        BigDecimal r = bigDecimals[1];
-        if ( r.signum() < 0 ) {
-            r = r.add( b1 );
-        }
-        return b0.subtract( r );
-    }*/
     public static PolyNumber floor( PolyNumber b0, PolyNumber b1 ) {
         return b0.floor( b1 );
     }
 
     // CEIL
-
-
-    /*public static double ceil( double b0 ) {
-        return Math.ceil( b0 );
-    }
-
-
-    public static float ceil( float b0 ) {
-        return (float) Math.ceil( b0 );
-    }
-
-
-    public static BigDecimal ceil( BigDecimal b0 ) {
-        return b0.setScale( 0, RoundingMode.CEILING );
-    }*/
 
 
     public static PolyNumber ceil( PolyNumber b0 ) {
@@ -1831,59 +1258,6 @@ public class Functions {
     /**
      * SQL <code>CEIL</code> operator applied to byte values.
      */
-    /*public static byte ceil( byte b0, byte b1 ) {
-        return floor( (byte) (b0 + b1 - 1), b1 );
-    }
-
-
-    /**
-     * SQL <code>CEIL</code> operator applied to short values.
-     */
-    /*public static short ceil( short b0, short b1 ) {
-        return floor( (short) (b0 + b1 - 1), b1 );
-    }
-
-
-    /**
-     * SQL <code>CEIL</code> operator applied to int values.
-     */
-    /*public static int ceil( int b0, int b1 ) {
-        int r = b0 % b1;
-        if ( r > 0 ) {
-            r -= b1;
-        }
-        return b0 - r;
-    }
-
-
-    /**
-     * SQL <code>CEIL</code> operator applied to long values.
-     */
-    /*public static long ceil( long b0, long b1 ) {
-        return floor( b0 + b1 - 1, b1 );
-    }
-
-
-    // temporary
-    public static BigDecimal ceil( BigDecimal b0, int b1 ) {
-        return ceil( b0, BigDecimal.valueOf( b1 ) );
-    }
-
-
-    // temporary
-    public static int ceil( int b0, BigDecimal b1 ) {
-        return ceil( b0, b1.intValue() );
-    }
-
-
-    public static BigDecimal ceil( BigDecimal b0, BigDecimal b1 ) {
-        final BigDecimal[] bigDecimals = b0.divideAndRemainder( b1 );
-        BigDecimal r = bigDecimals[1];
-        if ( r.signum() > 0 ) {
-            r = r.subtract( b1 );
-        }
-        return b0.subtract( r );
-    }*/
     public static PolyNumber ceil( PolyNumber b0, PolyNumber b1 ) {
         return b0.ceil( b1 );
     }
@@ -1894,57 +1268,6 @@ public class Functions {
     /**
      * SQL <code>ABS</code> operator applied to byte values.
      */
-    /*public static byte abs( byte b0 ) {
-        return (byte) Math.abs( b0 );
-    }
-
-
-    /**
-     * SQL <code>ABS</code> operator applied to short values.
-     */
-    /*public static short abs( short b0 ) {
-        return (short) Math.abs( b0 );
-    }
-
-
-    /**
-     * SQL <code>ABS</code> operator applied to int values.
-     */
-    /*public static int abs( int b0 ) {
-        return Math.abs( b0 );
-    }
-
-
-    /**
-     * SQL <code>ABS</code> operator applied to long values.
-     */
-    /*public static long abs( long b0 ) {
-        return Math.abs( b0 );
-    }
-
-
-    /**
-     * SQL <code>ABS</code> operator applied to float values.
-     */
-    /*public static float abs( float b0 ) {
-        return Math.abs( b0 );
-    }
-
-
-    /**
-     * SQL <code>ABS</code> operator applied to double values.
-     */
-    /*public static double abs( double b0 ) {
-        return Math.abs( b0 );
-    }
-
-
-    /**
-     * SQL <code>ABS</code> operator applied to BigDecimal values.
-     */
-    /*public static BigDecimal abs( BigDecimal b0 ) {
-        return b0.abs();
-    }*/
     public static PolyNumber abs( PolyNumber number ) {
         return PolyBigDecimal.of( number.bigDecimalValue().abs() );
     }
@@ -1963,16 +1286,6 @@ public class Functions {
     /**
      * SQL <code>ACOS</code> operator applied to double values.
      */
-    /*public static double acos( double b0 ) {
-        return Math.acos( b0 );
-    }
-
-    // ASIN
-
-
-    /**
-     * SQL <code>ASIN</code> operator applied to BigDecimal values.
-     */
     public static PolyNumber asin( PolyNumber b0 ) {
         return PolyDouble.of( Math.asin( b0.doubleValue() ) );
     }
@@ -1980,16 +1293,6 @@ public class Functions {
 
     /**
      * SQL <code>ASIN</code> operator applied to double values.
-     */
-    /*public static double asin( double b0 ) {
-        return Math.asin( b0 );
-    }
-
-    // ATAN
-
-
-    /**
-     * SQL <code>ATAN</code> operator applied to BigDecimal values.
      */
     public static PolyNumber atan( PolyNumber b0 ) {
         return PolyDouble.of( Math.atan( b0.doubleValue() ) );
@@ -1999,16 +1302,6 @@ public class Functions {
     /**
      * SQL <code>ATAN</code> operator applied to double values.
      */
-    /*public static double atan( double b0 ) {
-        return Math.atan( b0 );
-    }
-
-    // ATAN2
-
-
-    /**
-     * SQL <code>ATAN2</code> operator applied to double/BigDecimal values.
-     */
     public static PolyNumber atan2( PolyNumber b0, PolyNumber b1 ) {
         return PolyDouble.of( Math.atan2( b0.doubleValue(), b1.doubleValue() ) );
     }
@@ -2016,32 +1309,6 @@ public class Functions {
 
     /**
      * SQL <code>ATAN2</code> operator applied to BigDecimal/double values.
-     */
-    /*public static double atan2( BigDecimal b0, double b1 ) {
-        return Math.atan2( b0.doubleValue(), b1 );
-    }
-
-
-    /**
-     * SQL <code>ATAN2</code> operator applied to BigDecimal values.
-     */
-    /*public static double atan2( BigDecimal b0, BigDecimal b1 ) {
-        return Math.atan2( b0.doubleValue(), b1.doubleValue() );
-    }
-
-
-    /**
-     * SQL <code>ATAN2</code> operator applied to double values.
-     */
-    /*public static double atan2( double b0, double b1 ) {
-        return Math.atan2( b0, b1 );
-    }
-
-    // COS
-
-
-    /**
-     * SQL <code>COS</code> operator applied to BigDecimal values.
      */
     public static PolyNumber cos( PolyNumber b0 ) {
         return PolyDouble.of( Math.cos( b0.doubleValue() ) );
@@ -2051,16 +1318,6 @@ public class Functions {
     /**
      * SQL <code>COS</code> operator applied to double values.
      */
-    /*public static double cos( double b0 ) {
-        return Math.cos( b0 );
-    }
-
-    // COT
-
-
-    /**
-     * SQL <code>COT</code> operator applied to BigDecimal values.
-     */
     public static PolyNumber cot( PolyNumber b0 ) {
         return PolyDouble.of( 1.0d / Math.tan( b0.doubleValue() ) );
     }
@@ -2068,16 +1325,6 @@ public class Functions {
 
     /**
      * SQL <code>COT</code> operator applied to double values.
-     */
-    /*public static double cot( double b0 ) {
-        return 1.0d / Math.tan( b0 );
-    }
-
-    // DEGREES
-
-
-    /**
-     * SQL <code>DEGREES</code> operator applied to BigDecimal values.
      */
     public static PolyNumber degrees( PolyNumber b0 ) {
         return PolyDouble.of( Math.toDegrees( b0.doubleValue() ) );
@@ -2087,75 +1334,14 @@ public class Functions {
     /**
      * SQL <code>DEGREES</code> operator applied to double values.
      */
-    /*public static double degrees( double b0 ) {
-        return Math.toDegrees( b0 );
-    }
-
-    // RADIANS
-
-
-    /**
-     * SQL <code>RADIANS</code> operator applied to BigDecimal values.
-     */
     public static PolyDouble radians( PolyNumber b0 ) {
         return PolyDouble.of( Math.toRadians( b0.doubleValue() ) );
     }
 
-    /**
-     * SQL <code>RADIANS</code> operator applied to double values.
-     */
-    /*public static double radians( double b0 ) {
-        return Math.toRadians( b0 );
-    }
-
-    // SQL ROUND
-
-    /**
-     * SQL <code>ROUND</code> operator applied to int values.
-     */
-    /*public static int sround( int b0 ) {
-        return sround( b0, 0 );
-    }
-
-
-    /**
-     * SQL <code>ROUND</code> operator applied to int values.
-     */
-    /*public static int sround( int b0, int b1 ) {
-        return sround( BigDecimal.valueOf( b0 ), b1 ).intValue();
-    }
-
-
-    /**
-     * SQL <code>ROUND</code> operator applied to long values.
-     */
-    /*public static long sround( long b0 ) {
-        return sround( b0, 0 );
-    }
-
-
-    /**
-     * SQL <code>ROUND</code> operator applied to long values.
-     */
-    /*public static long sround( long b0, int b1 ) {
-        return sround( BigDecimal.valueOf( b0 ), b1 ).longValue();
-    }*/
-
 
     /**
      * SQL <code>ROUND</code> operator applied to BigDecimal values.
      */
-    /*public static BigDecimal sround( BigDecimal b0 ) {
-        return sround( b0, 0 );
-    }
-
-
-    /**
-     * SQL <code>ROUND</code> operator applied to BigDecimal values.
-     */
-    /*public static BigDecimal sround( BigDecimal b0, int b1 ) {
-        return b0.movePointRight( b1 ).setScale( 0, RoundingMode.HALF_UP ).movePointLeft( b1 );
-    }*/
     public static PolyNumber sround( PolyNumber b0, PolyNumber b1 ) {
         return PolyBigDecimal.of( b0.bigDecimalValue().movePointRight( b1.intValue() ).setScale( 0, RoundingMode.HALF_UP ).movePointLeft( b1.intValue() ) );
     }
@@ -2163,24 +1349,6 @@ public class Functions {
 
     /**
      * SQL <code>ROUND</code> operator applied to double values.
-     */
-    /*public static double sround( double b0 ) {
-        return sround( b0, 0 );
-    }
-
-
-    /**
-     * SQL <code>ROUND</code> operator applied to double values.
-     */
-    /*public static double sround( double b0, int b1 ) {
-        return sround( BigDecimal.valueOf( b0 ), b1 ).doubleValue();
-    }
-
-    // SQL TRUNCATE
-
-
-    /**
-     * SQL <code>TRUNCATE</code> operator applied to int values.
      */
     public static PolyNumber struncate( PolyNumber b0 ) {
         return struncate( b0, PolyInteger.ZERO );
@@ -2195,63 +1363,6 @@ public class Functions {
     /**
      * SQL <code>TRUNCATE</code> operator applied to long values.
      */
-    /*public static long struncate( long b0 ) {
-        return struncate( b0, 0 );
-    }
-
-
-    public static long struncate( long b0, int b1 ) {
-        return struncate( BigDecimal.valueOf( b0 ), b1 ).longValue();
-    }
-
-
-    /**
-     * SQL <code>TRUNCATE</code> operator applied to BigDecimal values.
-     */
-    /*public static BigDecimal struncate( BigDecimal b0 ) {
-        return struncate( b0, 0 );
-    }
-
-
-    public static BigDecimal struncate( BigDecimal b0, int b1 ) {
-        return b0.movePointRight( b1 ).setScale( 0, RoundingMode.DOWN ).movePointLeft( b1 );
-    }
-
-
-    /**
-     * SQL <code>TRUNCATE</code> operator applied to double values.
-     */
-    /*public static double struncate( double b0 ) {
-        return struncate( b0, 0 );
-    }
-
-
-    public static double struncate( double b0, int b1 ) {
-        return struncate( BigDecimal.valueOf( b0 ), b1 ).doubleValue();
-    }
-
-    // SIGN
-
-
-    /**
-     * SQL <code>SIGN</code> operator applied to int values.
-     */
-    /*public static int sign( int b0 ) {
-        return Integer.signum( b0 );
-    }
-
-
-    /**
-     * SQL <code>SIGN</code> operator applied to long values.
-     */
-    /*public static long sign( long b0 ) {
-        return Long.signum( b0 );
-    }
-
-
-    /**
-     * SQL <code>SIGN</code> operator applied to BigDecimal values.
-     */
     public static PolyBigDecimal sign( PolyNumber b0 ) {
         return PolyBigDecimal.of( b0.bigDecimalValue().signum() );
     }
@@ -2259,16 +1370,6 @@ public class Functions {
 
     /**
      * SQL <code>SIGN</code> operator applied to double values.
-     */
-    /*public static double sign( double b0 ) {
-        return Math.signum( b0 );
-    }
-
-    // SIN
-
-
-    /**
-     * SQL <code>SIN</code> operator applied to BigDecimal values.
      */
     public static PolyNumber sin( PolyNumber b0 ) {
         return PolyDouble.of( Math.sin( b0.doubleValue() ) );
@@ -2278,16 +1379,6 @@ public class Functions {
     /**
      * SQL <code>SIN</code> operator applied to double values.
      */
-    /*public static double sin( double b0 ) {
-        return Math.sin( b0 );
-    }
-
-    // TAN
-
-
-    /**
-     * SQL <code>TAN</code> operator applied to BigDecimal values.
-     */
     public static PolyNumber tan( PolyNumber b0 ) {
         return PolyDouble.of( Math.tan( b0.doubleValue() ) );
     }
@@ -2296,29 +1387,9 @@ public class Functions {
     /**
      * SQL <code>TAN</code> operator applied to double values.
      */
-    /*public static double tan( double b0 ) {
-        return Math.tan( b0 );
-    }
-
-    // Helpers
-
-
-    /**
-     * Helper for implementing MIN. Somewhat similar to LEAST operator.
-     */
     public static <T extends Comparable<T>> T lesser( T b0, T b1 ) {
         return b0 == null || b0.compareTo( b1 ) > 0 ? b1 : b0;
     }
-
-
-    /*public static PolyValue lesser( int number, PolyInteger poly ) {
-        return number < poly.asNumber().intValue() ? PolyInteger.of( number ) : poly;
-    }
-
-
-    public static PolyValue lesser( PolyInteger poly, int number ) {
-        return poly.asNumber().intValue() < number ? poly : PolyInteger.of( number );
-    }*/
 
 
     /**
@@ -2334,19 +1405,9 @@ public class Functions {
     }
 
 
-    /*public static boolean lesser( boolean b0, boolean b1 ) {
-        return b0 && b1;
-    }*/
-
-
     public static byte greater( byte b0, byte b1 ) {
         return b0 > b1 ? b0 : b1;
     }
-
-
-    /*public static byte lesser( byte b0, byte b1 ) {
-        return b0 > b1 ? b1 : b0;
-    }*/
 
 
     public static char greater( char b0, char b1 ) {
@@ -2364,19 +1425,9 @@ public class Functions {
     }
 
 
-    /*public static short lesser( short b0, short b1 ) {
-        return b0 > b1 ? b1 : b0;
-    }*/
-
-
     public static int greater( int b0, int b1 ) {
         return Math.max( b0, b1 );
     }
-
-
-    /*public static int lesser( int b0, int b1 ) {
-        return Math.min( b0, b1 );
-    }*/
 
 
     public static long greater( long b0, long b1 ) {
@@ -2384,29 +1435,14 @@ public class Functions {
     }
 
 
-    /*public static long lesser( long b0, long b1 ) {
-        return Math.min( b0, b1 );
-    }*/
-
-
     public static float greater( float b0, float b1 ) {
         return Math.max( b0, b1 );
     }
 
 
-    /*public static float lesser( float b0, float b1 ) {
-        return Math.min( b0, b1 );
-    }*/
-
-
     public static double greater( double b0, double b1 ) {
         return Math.max( b0, b1 );
     }
-
-
-    /*public static double lesser( double b0, double b1 ) {
-        return Math.min( b0, b1 );
-    }*/
 
 
     public static PolyNumber lesser( PolyNumber b0, PolyNumber b1 ) {
@@ -2573,7 +1609,7 @@ public class Functions {
 
     /**
      * Converts the Java type used for UDF parameters of SQL DATE type ({@link java.sql.Date}) to internal representation (int).
-     *
+     * <p>
      * Converse of {@link #internalToDate(PolyNumber)}.
      */
     public static int toInt( java.util.Date v ) {
@@ -2607,7 +1643,7 @@ public class Functions {
 
     /**
      * Converts the Java type used for UDF parameters of SQL TIME type ({@link java.sql.Time}) to internal representation (int).
-     *
+     * <p>
      * Converse of {@link #internalToTime(PolyNumber)}.
      */
     public static long timeToLong( java.sql.Time v ) {
@@ -2645,7 +1681,7 @@ public class Functions {
 
     /**
      * Converts the Java type used for UDF parameters of SQL TIMESTAMP type ({@link java.sql.Timestamp}) to internal representation (long).
-     *
+     * <p>
      * Converse of {@link #internalToTimestamp(PolyNumber)}.
      */
     @SuppressWarnings("unused")
@@ -3326,9 +2362,6 @@ public class Functions {
     /**
      * NULL &rarr; NULL, FALSE &rarr; TRUE, TRUE &rarr; FALSE.
      */
-    /*public static Boolean not( Boolean b ) {
-        return (b == null) ? null : !b;
-    }*/
     public static PolyBoolean not( PolyBoolean b ) {
         return PolyBoolean.of( !b.value );
     }
@@ -3646,7 +2679,7 @@ public class Functions {
 
     /**
      * Implements the {@code .} (field access) operator on an object whose type is not known until runtime.
-     *
+     * <p>
      * A struct object can be represented in various ways by the runtime and depends on the
      * {@link JavaRowFormat}.
      */
@@ -3696,8 +2729,12 @@ public class Functions {
         try {
             PolyList<PolyList<PolyString>> collect = PolyList.copyOf( excluded.stream().map( e -> PolyList.of( Arrays.stream( e.value.split( "\\." ) ).map( PolyString::of ).collect( Collectors.toList() ) ) ).collect( Collectors.toList() ) );
 
-            PolyMap<PolyString, PolyValue> map = dejsonize( input );
-            return rebuildMap( map, collect ); // TODO DL: exchange with a direct filter on deserialization
+            PolyValue map = dejsonize( input );
+            if ( map.isMap() ){
+                return rebuildMap( (PolyMap<PolyString, PolyValue>) map, collect );
+            }else {
+                return excluded.isEmpty() ? map : null;
+            }
         } catch ( Exception e ) {
             return e;
         }
@@ -3757,30 +2794,24 @@ public class Functions {
             }
             PathMode mode = PathMode.valueOf( matcher.group( 1 ).toUpperCase( Locale.ROOT ) );
             String pathWff = matcher.group( 2 );
-            DocumentContext ctx;
-            switch ( mode ) {
-                case STRICT:
-                    ctx = JsonPath.parse(
-                            input,
-                            Configuration
-                                    .builder()
-                                    .jsonProvider( JSON_PATH_JSON_PROVIDER )
-                                    .mappingProvider( JSON_PATH_MAPPING_PROVIDER )
-                                    .build() );
-                    break;
-                case LAX:
-                    ctx = JsonPath.parse(
-                            input.toJson(),
-                            Configuration
-                                    .builder()
-                                    .options( Option.SUPPRESS_EXCEPTIONS )
-                                    .jsonProvider( JSON_PATH_JSON_PROVIDER )
-                                    .mappingProvider( JSON_PATH_MAPPING_PROVIDER )
-                                    .build() );
-                    break;
-                default:
-                    throw Static.RESOURCE.illegalJsonPathModeInPathSpec( mode.toString(), pathSpec.value ).ex();
-            }
+            DocumentContext ctx = switch ( mode ) {
+                case STRICT -> JsonPath.parse(
+                        input,
+                        Configuration
+                                .builder()
+                                .jsonProvider( JSON_PATH_JSON_PROVIDER )
+                                .mappingProvider( JSON_PATH_MAPPING_PROVIDER )
+                                .build() );
+                case LAX -> JsonPath.parse(
+                        input.toJson(),
+                        Configuration
+                                .builder()
+                                .options( Option.SUPPRESS_EXCEPTIONS )
+                                .jsonProvider( JSON_PATH_JSON_PROVIDER )
+                                .mappingProvider( JSON_PATH_MAPPING_PROVIDER )
+                                .build() );
+                default -> throw Static.RESOURCE.illegalJsonPathModeInPathSpec( mode.toString(), pathSpec.value ).ex();
+            };
             try {
                 return PathContext.withReturned( mode, BsonUtil.toPolyValue( BsonDocument.parse( "{key:" + ctx.read( pathWff ) + "}" ) ).asMap().get( PolyString.of( "key" ) ) );
             } catch ( Exception e ) {
@@ -3801,18 +2832,13 @@ public class Functions {
     public static Boolean jsonExists( PolyValue input, JsonExistsErrorBehavior errorBehavior ) {
         PathContext context = (PathContext) input;
         if ( context.exc != null ) {
-            switch ( errorBehavior ) {
-                case TRUE:
-                    return Boolean.TRUE;
-                case FALSE:
-                    return Boolean.FALSE;
-                case ERROR:
-                    throw toUnchecked( context.exc );
-                case UNKNOWN:
-                    return null;
-                default:
-                    throw Static.RESOURCE.illegalErrorBehaviorInJsonExistsFunc( errorBehavior.toString() ).ex();
-            }
+            return switch ( errorBehavior ) {
+                case TRUE -> Boolean.TRUE;
+                case FALSE -> Boolean.FALSE;
+                case ERROR -> throw toUnchecked( context.exc );
+                case UNKNOWN -> null;
+                default -> throw Static.RESOURCE.illegalErrorBehaviorInJsonExistsFunc( errorBehavior.toString() ).ex();
+            };
         } else {
             return !Objects.isNull( context.pathReturned );
         }
@@ -3827,32 +2853,24 @@ public class Functions {
         } else {
             PolyValue value = context.pathReturned;
             if ( value == null || context.mode == PathMode.LAX && !isScalarObject( value ) ) {
-                switch ( emptyBehavior ) {
-                    case ERROR:
-                        throw Static.RESOURCE.emptyResultOfJsonValueFuncNotAllowed().ex();
-                    case NULL:
-                        return null;
-                    case DEFAULT:
-                        return defaultValueOnEmpty;
-                    default:
-                        throw Static.RESOURCE.illegalEmptyBehaviorInJsonValueFunc( emptyBehavior.toString() ).ex();
-                }
+                return switch ( emptyBehavior ) {
+                    case ERROR -> throw Static.RESOURCE.emptyResultOfJsonValueFuncNotAllowed().ex();
+                    case NULL -> null;
+                    case DEFAULT -> defaultValueOnEmpty;
+                    default -> throw Static.RESOURCE.illegalEmptyBehaviorInJsonValueFunc( emptyBehavior.toString() ).ex();
+                };
             } else if ( context.mode == PathMode.STRICT && !isScalarObject( value ) ) {
                 exc = Static.RESOURCE.scalarValueRequiredInStrictModeOfJsonValueFunc( value.toString() ).ex();
             } else {
                 return value;
             }
         }
-        switch ( errorBehavior ) {
-            case ERROR:
-                throw toUnchecked( exc );
-            case NULL:
-                return null;
-            case DEFAULT:
-                return defaultValueOnError;
-            default:
-                throw Static.RESOURCE.illegalErrorBehaviorInJsonValueFunc( errorBehavior.toString() ).ex();
-        }
+        return switch ( errorBehavior ) {
+            case ERROR -> throw toUnchecked( exc );
+            case NULL -> null;
+            case DEFAULT -> defaultValueOnError;
+            default -> throw Static.RESOURCE.illegalErrorBehaviorInJsonValueFunc( errorBehavior.toString() ).ex();
+        };
     }
 
 
@@ -3885,18 +2903,13 @@ public class Functions {
                 }
             }
             if ( value == null || context.mode == PathMode.LAX && isScalarObject( value ) ) {
-                switch ( emptyBehavior ) {
-                    case ERROR:
-                        throw Static.RESOURCE.emptyResultOfJsonQueryFuncNotAllowed().ex();
-                    case NULL:
-                        return null;
-                    case EMPTY_ARRAY:
-                        return "[]";
-                    case EMPTY_OBJECT:
-                        return "{}";
-                    default:
-                        throw Static.RESOURCE.illegalEmptyBehaviorInJsonQueryFunc( emptyBehavior.toString() ).ex();
-                }
+                return switch ( emptyBehavior ) {
+                    case ERROR -> throw Static.RESOURCE.emptyResultOfJsonQueryFuncNotAllowed().ex();
+                    case NULL -> null;
+                    case EMPTY_ARRAY -> "[]";
+                    case EMPTY_OBJECT -> "{}";
+                    default -> throw Static.RESOURCE.illegalEmptyBehaviorInJsonQueryFunc( emptyBehavior.toString() ).ex();
+                };
             } else if ( context.mode == PathMode.STRICT && isScalarObject( value ) ) {
                 exc = Static.RESOURCE.arrayOrObjectValueRequiredInStrictModeOfJsonQueryFunc( value.toString() ).ex();
             } else {
@@ -3907,18 +2920,13 @@ public class Functions {
                 }
             }
         }
-        switch ( errorBehavior ) {
-            case ERROR:
-                throw toUnchecked( exc );
-            case NULL:
-                return null;
-            case EMPTY_ARRAY:
-                return "[]";
-            case EMPTY_OBJECT:
-                return "{}";
-            default:
-                throw Static.RESOURCE.illegalErrorBehaviorInJsonQueryFunc( errorBehavior.toString() ).ex();
-        }
+        return switch ( errorBehavior ) {
+            case ERROR -> throw toUnchecked( exc );
+            case NULL -> null;
+            case EMPTY_ARRAY -> "[]";
+            case EMPTY_OBJECT -> "{}";
+            default -> throw Static.RESOURCE.illegalErrorBehaviorInJsonQueryFunc( errorBehavior.toString() ).ex();
+        };
     }
 
 
@@ -3927,13 +2935,13 @@ public class Functions {
     }
 
 
-    public static PolyMap<PolyString, PolyValue> dejsonize( PolyString input ) {
-        return mapFromBson( BsonDocument.parse( input.value ) );
+    public static PolyValue dejsonize( PolyString input ) {
+        return mapFromBson( BsonDocument.parse( "{ key:" + input.value + "}" ) ).asDocument().get( PolyString.of( "key" ) );
     }
 
 
-    private static PolyMap<PolyString, PolyValue> mapFromBson( BsonDocument document ) {
-        return BsonUtil.toPolyValue( document ).asDocument();
+    private static PolyValue mapFromBson( BsonDocument document ) {
+        return BsonUtil.toPolyValue( document );
     }
 
 
