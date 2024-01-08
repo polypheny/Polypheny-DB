@@ -24,7 +24,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
-import org.polypheny.db.functions.Functions;
+import org.polypheny.db.functions.TemporalFunctions;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
@@ -70,7 +70,7 @@ public class PolyTime extends PolyTemporal {
 
 
     public static PolyTime of( Time value ) {
-        return new PolyTime( (int) Functions.timeToLong( value ) );
+        return new PolyTime( (int) TemporalFunctions.timeToLong( value ) );
     }
 
 
