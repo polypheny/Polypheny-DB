@@ -16,12 +16,15 @@
 
 package org.polypheny.db.docker.exceptions;
 
+import lombok.Getter;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 
 /**
  * These are exceptions with contents that are suitable to display a user
  */
 public class DockerUserException extends GenericRuntimeException {
+    @Getter
+    int status = 400;
 
     public DockerUserException( String message, Object... params ) {
         super( message, params );
@@ -35,6 +38,12 @@ public class DockerUserException extends GenericRuntimeException {
 
     public DockerUserException( Throwable e ) {
         super( e );
+    }
+
+
+    public DockerUserException( int status, String message, Object... params ) {
+        super(message, params);
+        this.status = status;
     }
 
 }

@@ -2971,7 +2971,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
             ctx.json( new AddDockerResponse( res.orElse( null ), DockerManager.getInstance().getDockerInstances().values().stream().map( DockerInstance::getMap ).toList() ) );
         } catch ( DockerUserException e ) {
-            ctx.status( HttpCode.BAD_REQUEST );
+            ctx.status( e.getStatus() );
             ctx.result( e.getMessage() );
         }
     }
