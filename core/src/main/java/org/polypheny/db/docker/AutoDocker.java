@@ -149,7 +149,7 @@ public final class AutoDocker {
 
 
     private String createAndStartHandshakeCommand( DockerClient client, String containerUuid ) {
-        ExecCreateCmdResponse execResponse = client.execCreateCmd( containerUuid ).withCmd( "./main", "handshake", HandshakeManager.getInstance().getHandshakeParameters(handshake.id()) ).withAttachStdin( true ).withAttachStderr( true ).exec();
+        ExecCreateCmdResponse execResponse = client.execCreateCmd( containerUuid ).withCmd( "./main", "handshake", HandshakeManager.getInstance().getHandshakeParameters( handshake.id() ) ).withAttachStdin( true ).withAttachStderr( true ).exec();
 
         client.execStartCmd( execResponse.getId() ).exec( new ResultCallback<Frame>() {
             @Override

@@ -76,6 +76,7 @@ public final class DockerManager {
         return ImmutableMap.copyOf( dockerInstances );
     }
 
+
     public List<Map<String, Object>> getDockerInstancesMap() {
         return dockerInstances.values().stream().map( DockerInstance::getMap ).toList();
     }

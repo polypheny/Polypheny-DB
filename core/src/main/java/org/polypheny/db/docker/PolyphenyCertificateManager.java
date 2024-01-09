@@ -65,7 +65,7 @@ public final class PolyphenyCertificateManager {
         PolyphenyHomeDirManager dirManager = PolyphenyHomeDirManager.getInstance();
         String basePath = getBaseDirectory( context, hostname );
         File clientKeyFile = dirManager.getHomeFile( basePath + "key.pem" ).orElseThrow( () -> new IOException( String.format( "Cannot read file %s", basePath + "key.pem" ) ) );
-        File clientCertificateFile = dirManager.getHomeFile( basePath + "cert.pem" ).orElseThrow(() -> new IOException( String.format( "Cannot read file %s", basePath + "key.pem" ) ) );
+        File clientCertificateFile = dirManager.getHomeFile( basePath + "cert.pem" ).orElseThrow( () -> new IOException( String.format( "Cannot read file %s", basePath + "key.pem" ) ) );
         return PolyphenyKeypair.loadFromDisk( clientCertificateFile, clientKeyFile, RuntimeConfig.INSTANCE_UUID.getString() );
     }
 

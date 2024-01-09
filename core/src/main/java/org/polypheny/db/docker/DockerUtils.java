@@ -39,6 +39,7 @@ public class DockerUtils {
         return newHostname;
     }
 
+
     public static String getContainerName( DockerHost host ) {
         final String registryToUse = host.getRegistryOrDefault();
         if ( registryToUse.isEmpty() || registryToUse.endsWith( "/" ) ) {
