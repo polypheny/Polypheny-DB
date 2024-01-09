@@ -20,6 +20,7 @@ import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.polypheny.db.cypher.CypherTestTemplate.execute;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
@@ -32,6 +33,12 @@ public class AllocCatalogTest {
     @BeforeEach
     public void buildUp() {
         TestHelper.getInstance();
+    }
+
+
+    @AfterEach
+    public void tearDown() {
+        execute( format( "DROP DATABASE %s IF EXISTS", name ) );
     }
 
 
