@@ -2977,33 +2977,25 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    void testDockerInstance( final Context ctx ) {
-        int dockerId = Integer.parseInt( ctx.pathParam( "dockerId" ) );
-
-        Optional<DockerInstance> maybeDockerInstance = DockerManager.getInstance().getInstanceById( dockerId );
-        if ( maybeDockerInstance.isPresent() ) {
-            ctx.json( maybeDockerInstance.get().probeDockerStatus() );
-        } else {
-            ctx.json( Map.of(
-                    "successful", false,
-                    "errorMessage", "No instance with that id"
-            ) );
-            ctx.status( 404 );
-        }
-    }
-
-
     void getDockerInstances( final Context ctx ) {
         ctx.json( DockerManager.getInstance().getDockerInstancesMap() );
     }
 
 
     void getDockerInstance( final Context ctx ) {
-        int dockerId = Integer.parseInt( ctx.pathParam( "dockerId" ) );
+        try {
+            int dockerId = Integer.parseInt( ctx.pathParam( "dockerId" ) );
 
-        Map<String, Object> res = DockerManager.getInstance().getInstanceById( dockerId ).map( DockerInstance::getMap ).orElse( Map.of() );
+            Map<String, Object> res = DockerManager.getInstance().getInstanceById( dockerId ).map( DockerInstance::getMap ).orElse( Map.of() );
 
-        ctx.json( res );
+            ctx.json( res );
+        } catch ( NumberFormatException e ) {
+            ctx.status( HttpCode.BAD_REQUEST );
+            ctx.result( "Malformed dockerId value" );
+        } catch ( DockerUserException e ) {
+            ctx.status( e.getStatus() );
+            ctx.result( e.getMessage() );
+        }
     }
 
 

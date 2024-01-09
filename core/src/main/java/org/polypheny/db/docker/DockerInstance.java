@@ -174,11 +174,6 @@ public final class DockerInstance {
     }
 
 
-    public DockerStatus probeDockerStatus() {
-        return new DockerStatus( instanceId, isConnected() );
-    }
-
-
     public Map<String, Object> getMap() {
         synchronized ( this ) {
             int numberOfContainers = -1;
