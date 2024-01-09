@@ -2971,8 +2971,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
             ctx.json( new AddDockerResponse( res.orElse( null ), DockerManager.getInstance().getDockerInstancesMap() ) );
         } catch ( DockerUserException e ) {
-            ctx.status( e.getStatus() );
-            ctx.result( e.getMessage() );
+            ctx.status( e.getStatus() ).result( e.getMessage() );
         }
     }
 
@@ -2986,13 +2985,11 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         try {
             int dockerId = Integer.parseInt( ctx.pathParam( "dockerId" ) );
 
-            ctx.json( DockerManager.getInstance().getInstanceById( dockerId ).map( DockerInstance::getInfo ).orElseThrow( () -> new DockerUserException( 404, "No instance with that id" ) ) );
+            ctx.json( DockerManager.getInstance().getInstanceById( dockerId ).map( DockerInstance::getInfo ).orElseThrow( () -> new DockerUserException( 404, "No Docker instance with that id" ) ) );
         } catch ( NumberFormatException e ) {
-            ctx.status( HttpCode.BAD_REQUEST );
-            ctx.result( "Malformed dockerId value" );
+            ctx.status( HttpCode.BAD_REQUEST ).result( "Malformed dockerId value" );
         } catch ( DockerUserException e ) {
-            ctx.status( e.getStatus() );
-            ctx.result( e.getMessage() );
+            ctx.status( e.getStatus() ).result( e.getMessage() );
         }
     }
 
@@ -3010,8 +3007,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         try {
             ctx.json( DockerSetupHelper.reconnectToInstance( Integer.parseInt( ctx.pathParam( "dockerId" ) ) ) );
         } catch ( DockerUserException e ) {
-            ctx.status( e.getStatus() );
-            ctx.result( e.getMessage() );
+            ctx.status( e.getStatus() ).result( e.getMessage() );
         }
     }
 
@@ -3022,11 +3018,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
             ctx.json( new InstancesAndAutoDocker( DockerManager.getInstance().getDockerInstancesMap(), AutoDocker.getInstance().getStatus() ) );
         } catch ( NumberFormatException e ) {
-            ctx.status( HttpCode.BAD_REQUEST );
-            ctx.result( "Malformed id value" );
+            ctx.status( HttpCode.BAD_REQUEST ).result( "Malformed id value" );
         } catch ( DockerUserException e ) {
-            ctx.status( e.getStatus() );
-            ctx.result( e.getMessage() );
+            ctx.status( e.getStatus() ).result( e.getMessage() );
         }
     }
 
@@ -3054,8 +3048,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         if ( maybeHandshake.isPresent() ) {
             ctx.json( maybeHandshake.get() );
         } else {
-            ctx.status( 404 );
-            ctx.result( "No handshake with that id" );
+            ctx.status( 404 ).result( "No handshake with that id" );
         }
     }
 
