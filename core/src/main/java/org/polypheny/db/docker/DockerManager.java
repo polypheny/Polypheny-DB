@@ -77,7 +77,7 @@ public final class DockerManager {
     }
 
     public List<Map<String, Object>> getDockerInstancesMap() {
-        return getDockerInstances().values().stream().map( DockerInstance::getMap ).toList();
+        return dockerInstances.values().stream().map( DockerInstance::getMap ).toList();
     }
 
 
