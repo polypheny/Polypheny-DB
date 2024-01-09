@@ -113,7 +113,7 @@ public final class DockerInstance {
 
         if ( first ) {
             List<ContainerInfo> containers = this.client.listContainers();
-            for ( String uuid : containers.stream().map( ContainerInfo::getUuid ).collect( Collectors.toList() ) ) {
+            for ( String uuid : containers.stream().map( ContainerInfo::getUuid ).toList() ) {
                 try {
                     this.client.deleteContainer( uuid );
                 } catch ( IOException e ) {
