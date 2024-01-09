@@ -172,31 +172,4 @@ public final class DockerSetupHelper {
 
     }
 
-
-    static public final class DockerReconnectResult {
-
-        @Getter
-        private String error = "";
-        private Map<String, String> handshake = Map.of();
-
-
-        private DockerReconnectResult( String error ) {
-            this.error = error;
-        }
-
-
-        private DockerReconnectResult( Map<String, String> handshake ) {
-            this.handshake = handshake;
-        }
-
-
-        public Map<String, Object> getMap() {
-            return Map.of(
-                    "error", error,
-                    "handshake", handshake
-            );
-        }
-
-    }
-
 }

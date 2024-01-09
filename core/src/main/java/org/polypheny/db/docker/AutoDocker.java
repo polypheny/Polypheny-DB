@@ -45,7 +45,6 @@ import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.docker.DockerSetupHelper.DockerReconnectResult;
 import org.polypheny.db.docker.exceptions.DockerUserException;
 import org.polypheny.db.docker.models.AutoDockerStatus;
 import org.polypheny.db.docker.models.DockerHost;
