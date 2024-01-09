@@ -140,41 +140,6 @@ public final class DockerSetupHelper {
     }
 
 
-    static public final class DockerSetupResult {
-
-        @Getter
-        private String error = "";
-        private HandshakeInfo handshake = null;
-        @Getter
-        private boolean success = false;
-
-
-        private DockerSetupResult( boolean success ) {
-            this.success = success;
-        }
-
-
-        private DockerSetupResult( HandshakeInfo handshake ) {
-            this.handshake = handshake;
-        }
-
-
-        private DockerSetupResult( String error ) {
-            this.error = error;
-        }
-
-
-        public Map<String, Object> getMap() {
-            return Map.of(
-                    "error", error,
-                    "handshake", handshake,
-                    "success", success
-            );
-        }
-
-    }
-
-
     static public final class DockerUpdateResult {
 
         private String error = "";
