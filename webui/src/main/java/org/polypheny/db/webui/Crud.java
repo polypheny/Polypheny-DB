@@ -130,7 +130,6 @@ import org.polypheny.db.docker.AutoDocker;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.docker.DockerSetupHelper;
-import org.polypheny.db.docker.DockerSetupHelper.DockerReconnectResult;
 import org.polypheny.db.docker.DockerSetupHelper.DockerUpdateResult;
 import org.polypheny.db.docker.HandshakeManager;
 import org.polypheny.db.docker.exceptions.DockerUserException;
@@ -3018,18 +3017,18 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
     void reconnectToDockerInstance( final Context ctx ) {
-        Map<String, String> config = gson.fromJson( ctx.body(), Map.class );
-
-        DockerReconnectResult res = DockerSetupHelper.reconnectToInstance( Integer.parseInt( config.getOrDefault( "id", "-1" ) ) );
-
-        ctx.json( res.getMap() );
+        try {
+            ctx.json( DockerSetupHelper.reconnectToInstance( Integer.parseInt( ctx.pathParam( "dockerId" ) ) ) );
+        } catch ( DockerUserException e ) {
+            ctx.status( e.getStatus() );
+            ctx.result( e.getMessage() );
+        }
     }
 
 
     void removeDockerInstance( final Context ctx ) {
         try {
-            int id = Integer.parseInt( ctx.pathParam( "dockerId" ) );
-            DockerSetupHelper.removeDockerInstance( id );
+            DockerSetupHelper.removeDockerInstance( Integer.parseInt( ctx.pathParam( "dockerId" ) ) );
 
             ctx.json( new InstancesAndAutoDocker( DockerManager.getInstance().getDockerInstancesMap(), AutoDocker.getInstance().getStatus() ) );
         } catch ( NumberFormatException e ) {

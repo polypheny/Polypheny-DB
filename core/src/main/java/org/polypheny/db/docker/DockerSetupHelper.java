@@ -103,21 +103,19 @@ public final class DockerSetupHelper {
     }
 
 
-    public static DockerReconnectResult reconnectToInstance( int id ) {
+    public static HandshakeInfo reconnectToInstance( int id ) {
         Optional<DockerInstance> maybeDockerInstance = DockerManager.getInstance().getInstanceById( id );
         if ( maybeDockerInstance.isEmpty() ) {
-            return new DockerReconnectResult( "No instance with that id" );
+            throw new DockerUserException( "No instance with that id" );
         }
 
         DockerInstance dockerInstance = maybeDockerInstance.get();
 
-        HandshakeInfo m = HandshakeManager.getInstance().newHandshake(
+        return HandshakeManager.getInstance().newHandshake(
                 dockerInstance.getHost(),
                 () -> DockerManager.getInstance().getInstanceById( id ).ifPresent( DockerInstance::reconnect ),
                 true
         );
-        throw new NotImplementedException( "Temporarily disabled" );
-        //return new DockerReconnectResult( m );
     }
 
 

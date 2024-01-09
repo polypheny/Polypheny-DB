@@ -240,11 +240,11 @@ public final class AutoDocker {
         Optional<Map.Entry<Integer, DockerInstance>> maybeDockerInstance = DockerManager.getInstance().getDockerInstances().entrySet().stream().filter( e -> e.getValue().getHost().hostname().equals( "localhost" ) ).findFirst();
 
         if ( maybeDockerInstance.isPresent() ) {
-            DockerReconnectResult res = DockerSetupHelper.reconnectToInstance( maybeDockerInstance.get().getKey() );
-
-            if ( !res.getError().isEmpty() ) {
-                log.info( "AutoDocker: Reconnect failed: " + res.getError() );
-                updateStatus( "error: " + res.getError() );
+            try {
+                handshake = DockerSetupHelper.reconnectToInstance( maybeDockerInstance.get().getKey() );
+            } catch ( DockerUserException e ) {
+                log.info( "AutoDocker: Reconnect failed: " + e );
+                updateStatus( "error: " + e.getMessage() );
                 return false;
             }
         } else {
@@ -256,7 +256,7 @@ public final class AutoDocker {
                 handshake = res.get();
             } catch ( DockerUserException e ) {
                 log.info( "AutoDocker: Setup failed: " + e );
-                updateStatus( "setup failed: " + e );
+                updateStatus( "setup failed: " + e.getMessage() );
                 return false;
             }
         }
