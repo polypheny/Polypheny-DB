@@ -17,9 +17,12 @@
 package org.polypheny.db.algebra.json;
 
 
+import lombok.Getter;
+
 /**
  * Supported json encodings that could be passed to a {@code JsonValueExpression}.
  */
+@Getter
 public enum JsonEncoding {
     UTF8( "UTF8" ),
     UTF16( "UTF16" ),
@@ -30,11 +33,6 @@ public enum JsonEncoding {
 
     JsonEncoding( String standardName ) {
         this.standardName = standardName;
-    }
-
-
-    public String getStandardName() {
-        return standardName;
     }
 
 

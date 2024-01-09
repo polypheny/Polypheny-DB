@@ -124,9 +124,7 @@ public abstract class Values extends AbstractAlgNode {
                 AlgDataType fieldType = pair.right.getType();
 
                 // TODO jvs 19-Feb-2006: strengthen this a bit.  For example, overflow, rounding, and padding/truncation must already have been dealt with.
-                if ( !RexLiteral.isNullLiteral( literal ) ) {
-                    assert PolyTypeUtil.canAssignFrom( fieldType, literal.getType() ) : "to " + fieldType + " from " + literal;
-                }
+                assert RexLiteral.isNullLiteral( literal ) || PolyTypeUtil.canAssignFrom( fieldType, literal.getType() ) : "to " + fieldType + " from " + literal;
             }
         }
         return true;

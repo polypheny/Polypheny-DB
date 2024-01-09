@@ -57,11 +57,11 @@ import org.polypheny.db.util.Pair;
 public class LogicalLpgValues extends LpgValues implements RelationalTransformable {
 
     public static final BasicPolyType ID_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.VARCHAR, 36 )
-            .createWithCharsetAndCollation( Charsets.UTF_16, Collation.IMPLICIT );
+            .createWithCharsetAndCollation( Charsets.UTF_8, Collation.IMPLICIT );
     public static final BasicPolyType LABEL_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.VARCHAR, 255 )
-            .createWithCharsetAndCollation( Charsets.UTF_16, Collation.IMPLICIT );
+            .createWithCharsetAndCollation( Charsets.UTF_8, Collation.IMPLICIT );
     public static final BasicPolyType VALUE_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.VARCHAR, 255 )
-            .createWithCharsetAndCollation( Charsets.UTF_16, Collation.IMPLICIT );
+            .createWithCharsetAndCollation( Charsets.UTF_8, Collation.IMPLICIT );
     public static final BasicPolyType NODE_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.NODE );
     public static final BasicPolyType EDGE_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.EDGE );
     private final ImmutableList<ImmutableList<RexLiteral>> values;
