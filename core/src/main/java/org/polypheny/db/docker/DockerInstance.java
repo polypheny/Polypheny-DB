@@ -100,7 +100,7 @@ public final class DockerInstance {
         // seenUuids is used to lock out all the other DockerInstance instances
         synchronized ( seenUuids ) {
             for ( DockerInstance instance : DockerManager.getInstance().getDockerInstances().values() ) {
-                if ( instance != this && instance.dockerInstanceUuid.equals( dockerInstanceUuid ) ) {
+                if ( instance != this && instance.dockerInstanceUuid != null && instance.dockerInstanceUuid.equals( dockerInstanceUuid ) ) {
                     throw new DockerUserException( "The same docker instance cannot be added twice" );
                 }
             }
