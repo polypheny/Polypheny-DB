@@ -138,6 +138,7 @@ import org.polypheny.db.docker.models.AddDockerResponse;
 import org.polypheny.db.docker.models.AutoDockerResult;
 import org.polypheny.db.docker.models.DockerSettings;
 import org.polypheny.db.docker.models.HandshakeInfo;
+import org.polypheny.db.docker.models.InstancesAndAutoDocker;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceInformation;
@@ -2969,7 +2970,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                     true
             );
 
-            ctx.json( new AddDockerResponse( res.orElse( null ), DockerManager.getInstance().getDockerInstances().values().stream().map( DockerInstance::getMap ).toList() ) );
+            ctx.json( new AddDockerResponse( res.orElse( null ), DockerManager.getInstance().getDockerInstancesMap() ) );
         } catch ( DockerUserException e ) {
             ctx.status( e.getStatus() );
             ctx.result( e.getMessage() );
@@ -2994,7 +2995,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
     void getDockerInstances( final Context ctx ) {
-        ctx.json( DockerManager.getInstance().getDockerInstances().values().stream().map( DockerInstance::getMap ).collect( Collectors.toList() ) );
+        ctx.json( DockerManager.getInstance().getDockerInstancesMap() );
     }
 
 
@@ -3026,19 +3027,18 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
     void removeDockerInstance( final Context ctx ) {
-        Map<String, String> config = gson.fromJson( ctx.body(), Map.class );
-        int id = Integer.parseInt( config.getOrDefault( "id", "-1" ) );
-        if ( id == -1 ) {
-            throw new GenericRuntimeException( "Invalid id" );
+        try {
+            int id = Integer.parseInt( ctx.pathParam( "dockerId" ) );
+            DockerSetupHelper.removeDockerInstance( id );
+
+            ctx.json( new InstancesAndAutoDocker( DockerManager.getInstance().getDockerInstancesMap(), AutoDocker.getInstance().getStatus() ) );
+        } catch ( NumberFormatException e ) {
+            ctx.status( HttpCode.BAD_REQUEST );
+            ctx.result( "Malformed id value" );
+        } catch ( DockerUserException e ) {
+            ctx.status( e.getStatus() );
+            ctx.result( e.getMessage() );
         }
-
-        String res = DockerSetupHelper.removeDockerInstance( id );
-
-        ctx.json( Map.of(
-                "error", res,
-                "instances", DockerManager.getInstance().getDockerInstances().values().stream().map( DockerInstance::getMap ).collect( Collectors.toList() ),
-                "status", AutoDocker.getInstance().getStatus()
-        ) );
     }
 
 
@@ -3053,7 +3053,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 new AutoDockerResult(
                         success,
                         AutoDocker.getInstance().getStatus(),
-                        DockerManager.getInstance().getDockerInstances().values().stream().map( DockerInstance::getMap ).toList()
+                        DockerManager.getInstance().getDockerInstancesMap()
                 )
         );
     }

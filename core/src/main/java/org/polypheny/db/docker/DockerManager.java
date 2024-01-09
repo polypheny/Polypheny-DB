@@ -76,6 +76,10 @@ public final class DockerManager {
         return ImmutableMap.copyOf( dockerInstances );
     }
 
+    public List<Map<String, Object>> getDockerInstancesMap() {
+        return getDockerInstances().values().stream().map( DockerInstance::getMap ).toList();
+    }
+
 
     public boolean hasHost( String host ) {
         return dockerInstances.values().stream().anyMatch( d -> d.getHost().hostname().equals( host ) );
