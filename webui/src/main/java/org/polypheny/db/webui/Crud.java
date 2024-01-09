@@ -2986,9 +2986,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         try {
             int dockerId = Integer.parseInt( ctx.pathParam( "dockerId" ) );
 
-            Map<String, Object> res = DockerManager.getInstance().getInstanceById( dockerId ).map( DockerInstance::getMap ).orElse( Map.of() );
-
-            ctx.json( res );
+            ctx.json( DockerManager.getInstance().getInstanceById( dockerId ).map( DockerInstance::getInfo ).orElseThrow( () -> new DockerUserException( 404, "No instance with that id" ) ) );
         } catch ( NumberFormatException e ) {
             ctx.status( HttpCode.BAD_REQUEST );
             ctx.result( "Malformed dockerId value" );

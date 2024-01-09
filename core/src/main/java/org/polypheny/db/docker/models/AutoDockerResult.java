@@ -20,6 +20,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import java.util.Map;
 
-public record AutoDockerResult(@JsonProperty boolean success,@JsonProperty AutoDockerStatus status, @JsonProperty List<Map<String, Object>> instances) {
+public record AutoDockerResult(@JsonProperty boolean success, @JsonProperty AutoDockerStatus status, @JsonProperty List<DockerInstanceInfo> instances) {
 
 }

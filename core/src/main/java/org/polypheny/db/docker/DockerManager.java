@@ -36,6 +36,7 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.docker.exceptions.DockerUserException;
 import org.polypheny.db.docker.models.DockerHost;
 import org.polypheny.db.util.RunMode;
+import org.polypheny.db.docker.models.DockerInstanceInfo;
 
 public final class DockerManager {
 
@@ -77,8 +78,8 @@ public final class DockerManager {
     }
 
 
-    public List<Map<String, Object>> getDockerInstancesMap() {
-        return dockerInstances.values().stream().map( DockerInstance::getMap ).toList();
+    public List<DockerInstanceInfo> getDockerInstancesMap() {
+        return dockerInstances.values().stream().map( DockerInstance::getInfo ).toList();
     }
 
 

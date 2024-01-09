@@ -30,6 +30,7 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.docker.exceptions.DockerUserException;
 import org.polypheny.db.docker.models.DockerHost;
+import org.polypheny.db.docker.models.DockerInstanceInfo;
 
 
 /**
@@ -174,7 +175,7 @@ public final class DockerInstance {
     }
 
 
-    public Map<String, Object> getMap() {
+    public DockerInstanceInfo getInfo() {
         synchronized ( this ) {
             int numberOfContainers = -1;
             try {
@@ -184,17 +185,7 @@ public final class DockerInstance {
             } catch ( IOException e ) {
                 // ignore
             }
-            return Map.of(
-                    "id", instanceId,
-                    "host", host.hostname(),
-                    "alias", host.alias(),
-                    "connected", isConnected(),
-                    "registry", host.registry(),
-                    "communicationPort", host.communicationPort(),
-                    "handshakePort", host.handshakePort(),
-                    "proxyPort", host.proxyPort(),
-                    "numberOfContainers", numberOfContainers
-            );
+            return new DockerInstanceInfo( instanceId, isConnected(), numberOfContainers, host );
         }
     }
 

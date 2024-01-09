@@ -21,10 +21,10 @@ import java.util.Map;
 import java.util.Optional;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.docker.exceptions.DockerUserException;
 import org.polypheny.db.docker.models.DockerHost;
+import org.polypheny.db.docker.models.DockerInstanceInfo;
 import org.polypheny.db.docker.models.HandshakeInfo;
 
 @Slf4j
@@ -179,7 +179,7 @@ public final class DockerSetupHelper {
 
         private String error = "";
         private HandshakeInfo handshake = null;
-        private Map<String, Object> instance = Map.of();
+        private DockerInstanceInfo instance = null;
 
 
         private DockerUpdateResult( String err ) {
@@ -188,7 +188,7 @@ public final class DockerSetupHelper {
 
 
         private DockerUpdateResult( DockerInstance dockerInstance, boolean handshake ) {
-            this.instance = dockerInstance.getMap();
+            this.instance = dockerInstance.getInfo();
 
             if ( handshake ) {
                 // TODO: Fix

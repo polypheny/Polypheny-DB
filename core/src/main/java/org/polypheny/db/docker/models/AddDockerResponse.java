@@ -22,9 +22,9 @@ import java.util.List;
 import java.util.Map;
 
 @JsonInclude
-public record AddDockerResponse(@JsonProperty HandshakeInfo handshake, @JsonProperty List<Map<String, Object>> instances) {
+public record AddDockerResponse(@JsonProperty HandshakeInfo handshake, @JsonProperty List<DockerInstanceInfo> instances) {
 
-    public AddDockerResponse( HandshakeInfo handshake, List<Map<String, Object>> instances ) {
+    public AddDockerResponse( HandshakeInfo handshake, List<DockerInstanceInfo> instances ) {
         this.handshake = handshake;
         this.instances = instances;
     }
