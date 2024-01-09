@@ -138,7 +138,7 @@ public final class DockerSetupHelper {
         }
 
         DockerManager.getInstance().removeDockerInstance( id );
-        HandshakeManager.getInstance().cancelHandshake( dockerInstance.getHost().hostname() );
+        HandshakeManager.getInstance().cancelHandshakes( dockerInstance.getHost().hostname() );
         return "";
     }
 
@@ -194,7 +194,8 @@ public final class DockerSetupHelper {
             this.instance = dockerInstance.getMap();
 
             if ( handshake ) {
-                this.handshake = HandshakeManager.getInstance().getHandshake( dockerInstance.getHost().hostname() );
+                // TODO: Fix
+                // this.handshake = HandshakeManager.getInstance().getHandshake( dockerInstance.getHost().hostname() );
             }
         }
 

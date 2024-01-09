@@ -131,7 +131,6 @@ import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.docker.DockerSetupHelper;
 import org.polypheny.db.docker.DockerSetupHelper.DockerReconnectResult;
-import org.polypheny.db.docker.DockerSetupHelper.DockerSetupResult;
 import org.polypheny.db.docker.DockerSetupHelper.DockerUpdateResult;
 import org.polypheny.db.docker.HandshakeManager;
 import org.polypheny.db.docker.exceptions.DockerUserException;
@@ -3060,21 +3059,21 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    void startHandshake( final Context ctx ) {
-        String hostname = ctx.body();
-        ctx.json( HandshakeManager.getInstance().restartOrGetHandshake( hostname ) );
-    }
-
-
     void getHandshake( final Context ctx ) {
-        String hostname = ctx.pathParam( "hostname" );
-        ctx.json( HandshakeManager.getInstance().getHandshake( hostname ) );
+        long id = Long.parseLong( ctx.pathParam( "id" ) );
+        Optional<HandshakeInfo> maybeHandshake = HandshakeManager.getInstance().getHandshake( id );
+        if ( maybeHandshake.isPresent() ) {
+            ctx.json( maybeHandshake.get() );
+        } else {
+            ctx.status( 404 );
+            ctx.result( "No handshake with that id" );
+        }
     }
 
 
     void cancelHandshake( final Context ctx ) {
-        String hostname = ctx.body();
-        if ( HandshakeManager.getInstance().cancelHandshake( hostname ) ) {
+        long id = Long.parseLong( ctx.pathParam( "id" ) );
+        if ( HandshakeManager.getInstance().cancelHandshake( id ) ) {
             ctx.status( 200 );
         } else {
             ctx.status( 404 );

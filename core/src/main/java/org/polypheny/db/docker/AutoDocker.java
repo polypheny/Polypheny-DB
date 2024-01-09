@@ -62,6 +62,8 @@ public final class AutoDocker {
 
     private final DockerHost host = new DockerHost( "localhost", "localhost", "", ConfigDocker.COMMUNICATION_PORT, ConfigDocker.HANDSHAKE_PORT, ConfigDocker.PROXY_PORT );
 
+    private HandshakeInfo handshake = null;
+
 
     private AutoDocker() {
     }
@@ -147,7 +149,7 @@ public final class AutoDocker {
 
 
     private String createAndStartHandshakeCommand( DockerClient client, String containerUuid ) {
-        ExecCreateCmdResponse execResponse = client.execCreateCmd( containerUuid ).withCmd( "./main", "handshake", HandshakeManager.getInstance().getHandshakeParameters( "localhost" ) ).withAttachStdin( true ).withAttachStderr( true ).exec();
+        ExecCreateCmdResponse execResponse = client.execCreateCmd( containerUuid ).withCmd( "./main", "handshake", HandshakeManager.getInstance().getHandshakeParameters(handshake.id()) ).withAttachStdin( true ).withAttachStderr( true ).exec();
 
         client.execStartCmd( execResponse.getId() ).exec( new ResultCallback<Frame>() {
             @Override
@@ -193,11 +195,12 @@ public final class AutoDocker {
 
         String execId = createAndStartHandshakeCommand( client, maybeUuid.get() );
         updateStatus( "Performing handshake with container" );
-        HandshakeManager.getInstance().restartOrGetHandshake( "localhost" );
+        HandshakeManager.getInstance().ensureHandshakeIsRunning( handshake.id() );
         int retries = 0;
         while ( true ) {
-            String handshakeStatus = HandshakeManager.getInstance().getHandshake( "localhost" ).status();
+            String handshakeStatus = HandshakeManager.getInstance().getHandshake( handshake.id() ).orElseThrow().status();
             if ( handshakeStatus.equals( "FAILED" ) || handshakeStatus.equals( "SUCCESS" ) ) {
+                handshake = null;
                 break;
             }
             if ( handshakeStatus.equals( "NOT_RUNNING" ) ) {
@@ -213,7 +216,7 @@ public final class AutoDocker {
                     updateStatus( "Command failed with exit code " + s.getExitCodeLong() );
                     break;
                 }
-                HandshakeManager.getInstance().restartOrGetHandshake( "localhost" );
+                HandshakeManager.getInstance().ensureHandshakeIsRunning( handshake.id() );
             }
             try {
                 TimeUnit.SECONDS.sleep( 1 );
@@ -246,11 +249,12 @@ public final class AutoDocker {
             }
         } else {
             try {
-                Optional<HandshakeInfo> res = DockerSetupHelper.newDockerInstance( host.hostname(), host.alias(), host.registry(), host.communicationPort(), host.handshakePort(), host.proxyPort(), false );
+                Optional<HandshakeInfo> res = DockerSetupHelper.newDockerInstance( host.hostname(), host.alias(), host.registry(), host.communicationPort(), host.handshakePort(), host.proxyPort(), false ); // TODO: Here we get the handshake
                 if ( res.isEmpty() ) {
                     return true;
                 }
-            } catch ( DockerUserException e ){
+                handshake = res.get();
+            } catch ( DockerUserException e ) {
                 log.info( "AutoDocker: Setup failed: " + e );
                 updateStatus( "setup failed: " + e );
                 return false;
