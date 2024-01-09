@@ -102,7 +102,6 @@ final class PolyphenyHandshakeClient {
         d.update( data, 0, data.length );
         d.doFinal( sum, 0 );
         return sum;
-
     }
 
 
@@ -143,7 +142,7 @@ final class PolyphenyHandshakeClient {
 
 
     void prepareNextTry() {
-        // TOOD: merge into doHandshake somehow
+        // TODO: merge into doHandshake somehow
         synchronized ( this ) {
             if ( this.state == State.SUCCESS || this.state == State.RUNNING || this.state == State.FAILED ) {
                 return;
@@ -184,8 +183,7 @@ final class PolyphenyHandshakeClient {
             try {
                 client = PolyphenyTlsClient.insecureClient( kp, con.getInputStream(), con.getOutputStream() );
             } catch ( IOException e ) {
-                if ( e instanceof TlsFatalAlert ) {
-                    TlsFatalAlert tlsAlert = (TlsFatalAlert) e;
+                if ( e instanceof TlsFatalAlert tlsAlert ) {
                     short code = tlsAlert.getAlertDescription();
                     // This is if the container is up, but nothing is listening inside the container
                     if ( code == AlertDescription.handshake_failure ) {
@@ -198,8 +196,7 @@ final class PolyphenyHandshakeClient {
                         log.error( "Server is expecting a different certificate" );
                         break;
                     }
-                } else if ( e instanceof SocketException ) {
-                    SocketException socketException = (SocketException) e;
+                } else if ( e instanceof SocketException socketException ) {
                     lastErrorMessage = socketException.getMessage();
                     if ( !socketException.getMessage().equals( "Connection reset" ) ) {
                         log.error( "SocketException", socketException );
@@ -225,8 +222,7 @@ final class PolyphenyHandshakeClient {
                 throw new IOException( "Short read" );
             }
         } catch ( IOException e ) {
-            if ( e instanceof TlsFatalAlertReceived ) {
-                TlsFatalAlertReceived tlsAlert = (TlsFatalAlertReceived) e;
+            if ( e instanceof TlsFatalAlertReceived tlsAlert ) {
                 short code = tlsAlert.getAlertDescription();
                 if ( code == AlertDescription.bad_certificate ) {
                     // The most likely reason is that the user pasted the wrong string
