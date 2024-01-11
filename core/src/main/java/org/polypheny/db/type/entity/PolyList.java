@@ -141,6 +141,12 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
     }
 
 
+    @Override
+    public String toString() {
+        return value == null ? "null" : value.toString();
+    }
+
+
     public static <E extends PolyValue> PolyList<E> of( Collection<E> value ) {
         return new PolyList<>( new ArrayList<>( value ) );
     }
@@ -188,7 +194,7 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
 
     @Override
     public @Nullable String toJson() {
-        return value == null ? JsonToken.VALUE_NULL.asString() : "[" + value.stream().map( e -> e.isString() ? e.asString().toQuotedJson() : e.toJson() ).collect( Collectors.joining( "," ) ) + "]";
+        return value == null ? JsonToken.VALUE_NULL.asString() : "[" + value.stream().map( e -> e == null ? JsonToken.VALUE_NULL.asString() : e.isString() ? e.asString().toQuotedJson() : e.toJson() ).collect( Collectors.joining( "," ) ) + "]";
     }
 
 

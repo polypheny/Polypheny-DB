@@ -22,11 +22,9 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import com.jayway.jsonpath.InvalidJsonException;
 import com.jayway.jsonpath.PathNotFoundException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +32,7 @@ import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
+import org.bson.json.JsonParseException;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
@@ -66,7 +65,7 @@ public class SqlJsonFunctionsTest extends SqlLanguageDependent {
     public static final String INVOC_DESC_JSON_EXISTS = "jsonExists";
     public static final String INVOC_DESC_JSON_VALUE_ANY = "jsonValueAny";
     public static final String INVOC_DESC_JSON_QUERY = "jsonQuery";
-    public static final String INVOC_DESC_JSONIZE = "jsonize";
+    public static final String INVOC_DESC_JSONIZE = "toJson";
     public static final String INVOC_DESC_DEJSONIZE = "dejsonize";
     public static final String INVOC_DESC_JSON_OBJECT = "jsonObject";
     public static final String INVOC_DESC_JSON_OBJECT_AGG_ADD = "jsonObjectAggAdd";
@@ -94,23 +93,23 @@ public class SqlJsonFunctionsTest extends SqlLanguageDependent {
     @Test
     public void testJsonApiCommonSyntax() {
         assertJsonApiCommonSyntax(
-                PolyList.of( PolyString.of( "foo" ), PolyString.of( "bar" ) ),
+                PolyDocument.of( Map.of( PolyString.of( "foo" ), PolyString.of( "bar" ) ) ),
                 PolyString.of( "lax $.foo" ),
                 contextMatches( PathContext.withReturned( Functions.PathMode.LAX, PolyString.of( "bar" ) ) ) );
         assertJsonApiCommonSyntax(
-                PolyList.of( PolyString.of( "foo" ), PolyString.of( "bar" ) ),
+                PolyDocument.of( Map.of( PolyString.of( "foo" ), PolyString.of( "bar" ) ) ),
                 PolyString.of( "strict $.foo" ),
                 contextMatches( PathContext.withReturned( Functions.PathMode.STRICT, PolyString.of( "bar" ) ) ) );
         assertJsonApiCommonSyntax(
-                PolyList.of( PolyString.of( "foo" ), PolyString.of( "bar" ) ),
+                PolyDocument.of( Map.of( PolyString.of( "foo" ), PolyString.of( "bar" ) ) ),
                 PolyString.of( "lax $.foo1" ),
                 contextMatches( PathContext.withReturned( Functions.PathMode.LAX, null ) ) );
         assertJsonApiCommonSyntax(
-                PolyList.of( PolyString.of( "foo" ), PolyString.of( "bar" ) ),
+                PolyDocument.of( Map.of( PolyString.of( "foo" ), PolyString.of( "bar" ) ) ),
                 PolyString.of( "strict $.foo1" ),
                 contextMatches( PathContext.withStrictException( new PathNotFoundException( "No results for path: $['foo1']" ) ) ) );
         assertJsonApiCommonSyntax(
-                PolyList.of( PolyString.of( "foo" ), PolyInteger.of( 100 ) ),
+                PolyDocument.of( Map.of( PolyString.of( "foo" ), PolyInteger.of( 100 ) ) ),
                 PolyString.of( "lax $.foo" ),
                 contextMatches( PathContext.withReturned( Functions.PathMode.LAX, PolyInteger.of( 100 ) ) ) );
     }
@@ -202,7 +201,7 @@ public class SqlJsonFunctionsTest extends SqlLanguageDependent {
                 PolyString.of( "empty" ),
                 JsonValueEmptyOrErrorBehavior.NULL,
                 null,
-                is( PolyString.of("empty") ) );
+                is( PolyString.of( "empty" ) ) );
         assertJsonValueAnyFailed(
                 PathContext.withReturned( Functions.PathMode.LAX, null ),
                 JsonValueEmptyOrErrorBehavior.ERROR,
@@ -223,7 +222,7 @@ public class SqlJsonFunctionsTest extends SqlLanguageDependent {
                 PolyString.of( "empty" ),
                 JsonValueEmptyOrErrorBehavior.NULL,
                 null,
-                is( PolyString.of("empty") ) );
+                is( PolyString.of( "empty" ) ) );
         assertJsonValueAnyFailed(
                 PathContext.withReturned( Functions.PathMode.LAX, PolyList.EMPTY_LIST ),
                 JsonValueEmptyOrErrorBehavior.ERROR,
@@ -244,7 +243,7 @@ public class SqlJsonFunctionsTest extends SqlLanguageDependent {
                 null,
                 JsonValueEmptyOrErrorBehavior.DEFAULT,
                 PolyString.of( "empty" ),
-                is( PolyString.of("empty") ) );
+                is( PolyString.of( "empty" ) ) );
         assertJsonValueAnyFailed(
                 PathContext.withStrictException( new Exception( "test message" ) ),
                 JsonValueEmptyOrErrorBehavior.NULL,
@@ -265,7 +264,7 @@ public class SqlJsonFunctionsTest extends SqlLanguageDependent {
                 null,
                 JsonValueEmptyOrErrorBehavior.DEFAULT,
                 PolyString.of( "empty" ),
-                is( PolyString.of("empty") ) );
+                is( PolyString.of( "empty" ) ) );
         assertJsonValueAnyFailed(
                 PathContext.withReturned( Functions.PathMode.STRICT, PolyList.EMPTY_LIST ),
                 JsonValueEmptyOrErrorBehavior.NULL,
@@ -404,8 +403,14 @@ public class SqlJsonFunctionsTest extends SqlLanguageDependent {
 
 
     @Test
-    public void testJsonize() {
-        assertJsonize( new HashMap<>(), is( "{}" ) );
+    public void testMapJsonize() {
+        assertJsonize( PolyMap.EMPTY_MAP, is( "{}" ) );
+    }
+
+
+    @Test
+    public void testDocJsonize() {
+        assertJsonize( PolyDocument.EMPTY_DOCUMENT, is( "{}" ) );
     }
 
 
@@ -415,8 +420,8 @@ public class SqlJsonFunctionsTest extends SqlLanguageDependent {
         assertDejsonize( "[]", is( PolyList.EMPTY_LIST ) );
 
         // expect exception thrown
-        final String message = "com.fasterxml.jackson.core.JsonParseException: Unexpected close marker '}': expected ']' (for Array starting at [Source: (String)\"[}\"; line: 1, column: 1])\n at [Source: (String)\"[}\"; line: 1, column: 3]";
-        assertDejsonizeFailed( "[}", errorMatches( new InvalidJsonException( message ) ) );
+        final String message = "JSON reader was expecting a value but found '}'.";
+        assertDejsonizeFailed( "[}", errorMatches( new JsonParseException( message ) ) );
     }
 
 
@@ -426,17 +431,17 @@ public class SqlJsonFunctionsTest extends SqlLanguageDependent {
         assertJsonObject(
                 is( "{\"foo\":\"bar\"}" ),
                 JsonConstructorNullClause.NULL_ON_NULL,
-                "foo",
-                "bar" );
+                PolyString.of( "foo" ),
+                PolyString.of( "bar" ) );
         assertJsonObject(
                 is( "{\"foo\":null}" ),
                 JsonConstructorNullClause.NULL_ON_NULL,
-                "foo",
+                PolyString.of( "foo" ),
                 null );
         assertJsonObject(
                 is( "{}" ),
                 JsonConstructorNullClause.ABSENT_ON_NULL,
-                "foo",
+                PolyString.of( "foo" ),
                 null );
     }
 
@@ -456,9 +461,9 @@ public class SqlJsonFunctionsTest extends SqlLanguageDependent {
     @Test
     public void testJsonArray() {
         assertJsonArray( is( "[]" ), JsonConstructorNullClause.NULL_ON_NULL );
-        assertJsonArray( is( "[\"foo\"]" ), JsonConstructorNullClause.NULL_ON_NULL, "foo" );
-        assertJsonArray( is( "[\"foo\",null]" ), JsonConstructorNullClause.NULL_ON_NULL, "foo", null );
-        assertJsonArray( is( "[\"foo\"]" ), JsonConstructorNullClause.ABSENT_ON_NULL, "foo", null );
+        assertJsonArray( is( "[\"foo\"]" ), JsonConstructorNullClause.NULL_ON_NULL, PolyString.of( "foo" ) );
+        assertJsonArray( is( "[\"foo\",null]" ), JsonConstructorNullClause.NULL_ON_NULL, PolyString.of( "foo" ), null );
+        assertJsonArray( is( "[\"foo\"]" ), JsonConstructorNullClause.ABSENT_ON_NULL, PolyString.of( "foo" ), null );
     }
 
 
@@ -558,8 +563,8 @@ public class SqlJsonFunctionsTest extends SqlLanguageDependent {
     }
 
 
-    private void assertJsonize( Object input, Matcher<? super String> matcher ) {
-        assertThat( invocationDesc( INVOC_DESC_JSONIZE, input ), Functions.jsonize( input ), matcher );
+    private void assertJsonize( PolyValue input, Matcher<? super String> matcher ) {
+        assertThat( invocationDesc( INVOC_DESC_JSONIZE, input ), Functions.toJson( input ), matcher );
     }
 
 
@@ -573,7 +578,7 @@ public class SqlJsonFunctionsTest extends SqlLanguageDependent {
     }
 
 
-    private void assertJsonObject( Matcher<? super String> matcher, JsonConstructorNullClause nullClause, Object... kvs ) {
+    private void assertJsonObject( Matcher<? super String> matcher, JsonConstructorNullClause nullClause, PolyValue... kvs ) {
         assertThat( invocationDesc( INVOC_DESC_JSON_OBJECT, nullClause, kvs ), Functions.jsonObject( nullClause, kvs ), matcher );
     }
 
@@ -585,7 +590,7 @@ public class SqlJsonFunctionsTest extends SqlLanguageDependent {
     }
 
 
-    private void assertJsonArray( Matcher<? super String> matcher, JsonConstructorNullClause nullClause, Object... elements ) {
+    private void assertJsonArray( Matcher<? super String> matcher, JsonConstructorNullClause nullClause, PolyValue... elements ) {
         assertThat( invocationDesc( INVOC_DESC_JSON_ARRAY, nullClause, elements ), Functions.jsonArray( nullClause, elements ), matcher );
     }
 
@@ -631,9 +636,9 @@ public class SqlJsonFunctionsTest extends SqlLanguageDependent {
 
 
     private String invocationDesc( String methodName, Object... args ) {
-        return methodName + "(" + String.join( ", ", Arrays.stream( args )
+        return methodName + "(" + Arrays.stream( args )
                 .map( Objects::toString )
-                .collect( Collectors.toList() ) ) + ")";
+                .collect( Collectors.joining( ", " ) ) + ")";
     }
 
 
@@ -651,10 +656,9 @@ public class SqlJsonFunctionsTest extends SqlLanguageDependent {
         return new BaseMatcher<>() {
             @Override
             public boolean matches( Object item ) {
-                if ( !(item instanceof Throwable) ) {
+                if ( !(item instanceof Throwable error) ) {
                     return false;
                 }
-                Throwable error = (Throwable) item;
                 return expected != null
                         && Objects.equals( error.getClass(), expected.getClass() )
                         && Objects.equals( error.getMessage(), expected.getMessage() );
@@ -671,7 +675,7 @@ public class SqlJsonFunctionsTest extends SqlLanguageDependent {
 
     @Nonnull
     private BaseMatcher<PathContext> contextMatches( PathContext expected ) {
-        return new BaseMatcher<PathContext>() {
+        return new BaseMatcher<>() {
             @Override
             public boolean matches( Object item ) {
                 if ( !(item instanceof PathContext) ) {

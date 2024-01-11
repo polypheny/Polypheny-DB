@@ -271,7 +271,7 @@ public enum BuiltInMethod {
     ANY_ITEM( Functions.class, "itemOptional", Map.class, PolyValue.class ),
     UPPER( Functions.class, "upper", PolyString.class ),
     LOWER( Functions.class, "lower", PolyString.class ),
-    JSONIZE( Functions.class, "jsonize", Object.class ),
+    JSONIZE( Functions.class, "toJson", PolyValue.class ),
     JSON_VALUE_EXPRESSION( Functions.class, "jsonValueExpression", PolyString.class ),
     JSON_VALUE_EXPRESSION_EXCLUDE( Functions.class, "jsonValueExpressionExclude", PolyString.class, List.class ),
     JSON_STRUCTURED_VALUE_EXPRESSION( Functions.class, "jsonStructuredValueExpression", Object.class ),
