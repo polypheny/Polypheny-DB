@@ -362,6 +362,12 @@ public class PolyNull extends PolyValue {
 
 
     @Override
+    public String toString() {
+        return null;
+    }
+
+
+    @Override
     public Expression asExpression() {
         return Expressions.new_( PolyNull.class );
     }

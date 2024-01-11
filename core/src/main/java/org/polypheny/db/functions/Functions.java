@@ -161,8 +161,8 @@ public class Functions {
 
     private static final Pattern JSON_PATH_BASE = Pattern.compile( "^\\s*(?<mode>strict|lax)\\s+(?<spec>.+)$", Pattern.CASE_INSENSITIVE | Pattern.DOTALL | Pattern.MULTILINE );
 
-    private static final JsonProvider JSON_PATH_JSON_PROVIDER = new JacksonJsonProvider();
-    private static final MappingProvider JSON_PATH_MAPPING_PROVIDER = new JacksonMappingProvider();
+    private static final JsonProvider JSON_PATH_JSON_PROVIDER = new JacksonJsonProvider( PolyValue.JSON_WRAPPER );
+    private static final MappingProvider JSON_PATH_MAPPING_PROVIDER = new JacksonMappingProvider( PolyValue.JSON_WRAPPER );
 
 
     private Functions() {
@@ -2551,7 +2551,7 @@ public class Functions {
         if ( context.exc != null ) {
             exc = context.exc;
         } else {
-            Object value;
+            PolyValue value;
             if ( context.pathReturned == null ) {
                 value = null;
             } else {
@@ -2560,13 +2560,13 @@ public class Functions {
                         value = context.pathReturned;
                         break;
                     case WITH_UNCONDITIONAL_ARRAY:
-                        value = Collections.singletonList( context.pathReturned );
+                        value = PolyList.of( context.pathReturned );
                         break;
                     case WITH_CONDITIONAL_ARRAY:
                         if ( context.pathReturned instanceof Collection ) {
                             value = context.pathReturned;
                         } else {
-                            value = Collections.singletonList( context.pathReturned );
+                            value = PolyList.of( context.pathReturned );
                         }
                         break;
                     default:
@@ -2579,13 +2579,12 @@ public class Functions {
                     case NULL -> null;
                     case EMPTY_ARRAY -> "[]";
                     case EMPTY_OBJECT -> "{}";
-                    default -> throw Static.RESOURCE.illegalEmptyBehaviorInJsonQueryFunc( emptyBehavior.toString() ).ex();
                 };
             } else if ( context.mode == PathMode.STRICT && isScalarObject( value ) ) {
                 exc = Static.RESOURCE.arrayOrObjectValueRequiredInStrictModeOfJsonQueryFunc( value.toString() ).ex();
             } else {
                 try {
-                    return jsonize( value );
+                    return toJson( value );
                 } catch ( Exception e ) {
                     exc = e;
                 }
@@ -2596,13 +2595,12 @@ public class Functions {
             case NULL -> null;
             case EMPTY_ARRAY -> "[]";
             case EMPTY_OBJECT -> "{}";
-            default -> throw Static.RESOURCE.illegalErrorBehaviorInJsonQueryFunc( errorBehavior.toString() ).ex();
         };
     }
 
 
-    public static String jsonize( Object input ) {
-        return JSON_PATH_JSON_PROVIDER.toJson( input );
+    public static String toJson( PolyValue input ) {
+        return input.toJson();
     }
 
 
@@ -2616,12 +2614,12 @@ public class Functions {
     }
 
 
-    public static String jsonObject( JsonConstructorNullClause nullClause, Object... kvs ) {
+    public static String jsonObject( JsonConstructorNullClause nullClause, PolyValue... kvs ) {
         assert kvs.length % 2 == 0;
-        Map<String, Object> map = new HashMap<>();
+        Map<PolyString, PolyValue> map = new HashMap<>();
         for ( int i = 0; i < kvs.length; i += 2 ) {
-            String k = (String) kvs[i];
-            Object v = kvs[i + 1];
+            PolyString k = (PolyString) kvs[i];
+            PolyValue v = kvs[i + 1];
             if ( k == null ) {
                 throw Static.RESOURCE.nullKeyOfJsonObjectNotAllowed().ex();
             }
@@ -2633,7 +2631,7 @@ public class Functions {
                 map.put( k, v );
             }
         }
-        return jsonize( map );
+        return toJson( PolyMap.of( map ) );
     }
 
 
@@ -2651,9 +2649,9 @@ public class Functions {
     }
 
 
-    public static String jsonArray( JsonConstructorNullClause nullClause, Object... elements ) {
-        List<Object> list = new ArrayList<>();
-        for ( Object element : elements ) {
+    public static String jsonArray( JsonConstructorNullClause nullClause, PolyValue... elements ) {
+        List<PolyValue> list = new ArrayList<>();
+        for ( PolyValue element : elements ) {
             if ( element == null ) {
                 if ( nullClause == JsonConstructorNullClause.NULL_ON_NULL ) {
                     list.add( null );
@@ -2662,7 +2660,7 @@ public class Functions {
                 list.add( element );
             }
         }
-        return jsonize( list );
+        return toJson( PolyList.copyOf( list ) );
     }
 
 
