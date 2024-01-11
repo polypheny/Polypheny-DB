@@ -110,6 +110,12 @@ public final class HandshakeManager {
         }
     }
 
+    public List<HandshakeInfo> getHandshakes() {
+        synchronized ( this ){
+            return handshakes.values().stream().map( Handshake::serializeHandshake ).toList();
+        }
+    }
+
 
     String getHandshakeParameters( long id ) {
         synchronized ( this ) {

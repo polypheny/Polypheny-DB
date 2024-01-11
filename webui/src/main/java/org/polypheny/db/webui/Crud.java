@@ -3052,6 +3052,10 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         }
     }
 
+    void getHandshakes( final Context ctx ) {
+        ctx.json( HandshakeManager.getInstance().getHandshakes() );
+    }
+
 
     void cancelHandshake( final Context ctx ) {
         long id = Long.parseLong( ctx.pathParam( "id" ) );

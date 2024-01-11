@@ -288,29 +288,31 @@ public class HttpServer implements Runnable {
 
 
     private static void attachDockerRoutes( Javalin webuiServer, Crud crud ) {
-        webuiServer.post( "/addDockerInstance", crud::addDockerInstance );
+        webuiServer.post( "/docker/instances/new", crud::addDockerInstance );
 
-        webuiServer.get( "/getDockerInstance/{dockerId}", crud::getDockerInstance );
+        webuiServer.get( "/docker/instances", crud::getDockerInstances );
 
-        webuiServer.get( "/getDockerInstances", crud::getDockerInstances );
+        webuiServer.get( "/docker/instances/{dockerId}", crud::getDockerInstance );
 
-        webuiServer.post( "/updateDockerInstance", crud::updateDockerInstance );
+        webuiServer.post( "/docker/instances/{dockerId}/update", crud::updateDockerInstance );
 
-        webuiServer.post( "/reconnectToDockerInstance/{dockerId}", crud::reconnectToDockerInstance );
+        webuiServer.post( "/docker/instances/{dockerId}/reconnect", crud::reconnectToDockerInstance );
 
-        webuiServer.post( "/removeDockerInstance/{dockerId}", crud::removeDockerInstance );
+        webuiServer.delete( "/docker/instances/{dockerId}", crud::removeDockerInstance );
 
-        webuiServer.get( "/getAutoDockerStatus", crud::getAutoDockerStatus );
+        webuiServer.get( "/docker/auto", crud::getAutoDockerStatus );
 
-        webuiServer.post( "/doAutoHandshake", crud::doAutoHandshake );
+        webuiServer.post( "/docker/auto", crud::doAutoHandshake );
 
-        webuiServer.get( "/getHandshake/{id}", crud::getHandshake );
+        webuiServer.get( "/docker/handshakes", crud::getHandshakes );
 
-        webuiServer.post( "/cancelHandshake/{id}", crud::cancelHandshake );
+        webuiServer.get( "/docker/handshakes/{id}", crud::getHandshake );
 
-        webuiServer.get( "/getDockerSettings", crud::getDockerSettings );
+        webuiServer.delete( "/docker/handshakes/{id}", crud::cancelHandshake );
 
-        webuiServer.post( "/changeDockerSettings", crud::changeDockerSettings );
+        webuiServer.get( "/docker/settings", crud::getDockerSettings );
+
+        webuiServer.patch( "/docker/settings", crud::changeDockerSettings );
     }
 
 
