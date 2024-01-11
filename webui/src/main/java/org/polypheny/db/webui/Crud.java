@@ -123,7 +123,6 @@ import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.docker.AutoDocker;
@@ -133,8 +132,9 @@ import org.polypheny.db.docker.DockerSetupHelper;
 import org.polypheny.db.docker.DockerSetupHelper.DockerUpdateResult;
 import org.polypheny.db.docker.HandshakeManager;
 import org.polypheny.db.docker.exceptions.DockerUserException;
-import org.polypheny.db.docker.models.AddDockerResponse;
+import org.polypheny.db.docker.models.CreateDockerResponse;
 import org.polypheny.db.docker.models.AutoDockerResult;
+import org.polypheny.db.docker.models.CreateDockerRequest;
 import org.polypheny.db.docker.models.DockerSettings;
 import org.polypheny.db.docker.models.HandshakeInfo;
 import org.polypheny.db.docker.models.InstancesAndAutoDocker;
@@ -2958,18 +2958,18 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     void addDockerInstance( final Context ctx ) {
         try {
-            Map<String, Object> config = gson.fromJson( ctx.body(), Map.class );
+            CreateDockerRequest req = ctx.bodyAsClass( CreateDockerRequest.class );
             Optional<HandshakeInfo> res = DockerSetupHelper.newDockerInstance(
-                    (String) config.getOrDefault( "host", "" ),
-                    (String) config.getOrDefault( "alias", "" ),
-                    (String) config.getOrDefault( "registry", "" ),
-                    ((Double) config.getOrDefault( "communicationPort", (double) ConfigDocker.COMMUNICATION_PORT )).intValue(),
-                    ((Double) config.getOrDefault( "handshakePort", (double) ConfigDocker.HANDSHAKE_PORT )).intValue(),
-                    ((Double) config.getOrDefault( "proxyPort", (double) ConfigDocker.PROXY_PORT )).intValue(),
+                    req.hostname(),
+                    req.alias(),
+                    req.registry(),
+                    req.communicationPort(),
+                    req.handshakePort(),
+                    req.proxyPort(),
                     true
             );
 
-            ctx.json( new AddDockerResponse( res.orElse( null ), DockerManager.getInstance().getDockerInstancesMap() ) );
+            ctx.json( new CreateDockerResponse( res.orElse( null ), DockerManager.getInstance().getDockerInstancesMap() ) );
         } catch ( DockerUserException e ) {
             ctx.status( e.getStatus() ).result( e.getMessage() );
         }

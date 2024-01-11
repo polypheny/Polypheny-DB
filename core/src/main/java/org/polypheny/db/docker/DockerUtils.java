@@ -31,6 +31,9 @@ public class DockerUtils {
 
 
     public static String normalizeHostname( String hostname ) {
+        if ( hostname == null ) {
+            throw new DockerUserException( "Hostname must not be empty" );
+        }
         // TODO: add more validation/sanity checks
         String newHostname = hostname.strip();
         if ( newHostname.isEmpty() ) {
