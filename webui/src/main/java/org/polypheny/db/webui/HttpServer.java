@@ -288,7 +288,7 @@ public class HttpServer implements Runnable {
 
 
     private static void attachDockerRoutes( Javalin webuiServer, Crud crud ) {
-        webuiServer.post( "/docker/instances/new", crud::addDockerInstance );
+        webuiServer.post( "/docker/instances/create", crud::addDockerInstance );
 
         webuiServer.get( "/docker/instances", crud::getDockerInstances );
 

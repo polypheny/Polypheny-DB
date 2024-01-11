@@ -3042,6 +3042,11 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
+    void getHandshakes( final Context ctx ) {
+        ctx.json( HandshakeManager.getInstance().getHandshakes() );
+    }
+
+
     void getHandshake( final Context ctx ) {
         long id = Long.parseLong( ctx.pathParam( "id" ) );
         Optional<HandshakeInfo> maybeHandshake = HandshakeManager.getInstance().getHandshake( id );
@@ -3050,10 +3055,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         } else {
             ctx.status( 404 ).result( "No handshake with that id" );
         }
-    }
-
-    void getHandshakes( final Context ctx ) {
-        ctx.json( HandshakeManager.getInstance().getHandshakes() );
     }
 
 
