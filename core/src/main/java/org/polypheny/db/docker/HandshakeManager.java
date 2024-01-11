@@ -69,7 +69,7 @@ public final class HandshakeManager {
     }
 
 
-    public void ensureHandshakeIsRunning( long id ) {
+    void ensureHandshakeIsRunning( long id ) {
         synchronized ( this ) {
             Handshake h = handshakes.get( id );
             if ( h == null ) {
