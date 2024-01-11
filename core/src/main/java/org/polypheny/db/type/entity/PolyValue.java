@@ -51,6 +51,8 @@ import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang3.NotImplementedException;
+import org.bson.BsonDocument;
+import org.bson.json.JsonParseException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -94,6 +96,7 @@ import org.polypheny.db.type.entity.relational.PolyMap.PolyMapSerializerDef;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
+import org.polypheny.db.util.BsonUtil;
 
 @Value
 @Slf4j
@@ -248,6 +251,27 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
 
     public static Function1<PolyValue, Object> wrapNullableIfNecessary( Function1<PolyValue, Object> polyToExternalizer, boolean nullable ) {
         return nullable ? o -> o == null ? null : polyToExternalizer.apply( o ) : polyToExternalizer;
+    }
+
+
+    public static PolyValue fromJson( String json ) {
+        if ( json == null ) {
+            return null;
+        } else if ( json.trim().startsWith( "{" ) ) {
+            return BsonUtil.toPolyValue( BsonDocument.parse( json ) );
+        }
+
+        try {
+            return BsonUtil.toPolyValue( BsonDocument.parse( "{\"key\":" + json + "}" ) ).asMap().get( PolyString.of( "key" ) );
+        } catch ( Throwable e ) {
+            log.warn( "Error on deserializing JSON." );
+
+            if ( e instanceof JsonParseException && e.getMessage().startsWith( "JSON reader was expecting a value but found '" ) ) {
+                return PolyString.of( json );
+            }
+            throw new GenericRuntimeException( e );
+        }
+
     }
 
 

@@ -22,6 +22,7 @@ import com.drew.imaging.ImageProcessingException;
 import com.drew.metadata.Directory;
 import com.drew.metadata.Metadata;
 import com.drew.metadata.Tag;
+import com.fasterxml.jackson.core.JsonParser.Feature;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
 import com.google.gson.Gson;
@@ -161,7 +162,7 @@ public class Functions {
 
     private static final Pattern JSON_PATH_BASE = Pattern.compile( "^\\s*(?<mode>strict|lax)\\s+(?<spec>.+)$", Pattern.CASE_INSENSITIVE | Pattern.DOTALL | Pattern.MULTILINE );
 
-    private static final JsonProvider JSON_PATH_JSON_PROVIDER = new JacksonJsonProvider( PolyValue.JSON_WRAPPER );
+    private static final JsonProvider JSON_PATH_JSON_PROVIDER = new JacksonJsonProvider( PolyValue.JSON_WRAPPER.configure( Feature.ALLOW_UNQUOTED_FIELD_NAMES, true ) );
     private static final MappingProvider JSON_PATH_MAPPING_PROVIDER = new JacksonMappingProvider( PolyValue.JSON_WRAPPER );
 
 
@@ -1627,8 +1628,6 @@ public class Functions {
     }
 
 
-
-
     public static long toLong( String s ) {
         if ( s.startsWith( "199" ) && s.contains( ":" ) ) {
             return Timestamp.valueOf( s ).getTime();
@@ -1709,7 +1708,6 @@ public class Functions {
                 ? toBigDecimal( (Number) o )
                 : toBigDecimal( o.toString() );
     }
-
 
 
     /**
@@ -2401,9 +2399,9 @@ public class Functions {
             PolyList<PolyList<PolyString>> collect = PolyList.copyOf( excluded.stream().map( e -> PolyList.of( Arrays.stream( e.value.split( "\\." ) ).map( PolyString::of ).collect( Collectors.toList() ) ) ).collect( Collectors.toList() ) );
 
             PolyValue map = dejsonize( input );
-            if ( map.isMap() ){
+            if ( map.isMap() ) {
                 return rebuildMap( (PolyMap<PolyString, PolyValue>) map, collect );
-            }else {
+            } else {
                 return excluded.isEmpty() ? map : null;
             }
         } catch ( Exception e ) {
@@ -2484,7 +2482,7 @@ public class Functions {
                 default -> throw Static.RESOURCE.illegalJsonPathModeInPathSpec( mode.toString(), pathSpec.value ).ex();
             };
             try {
-                return PathContext.withReturned( mode, BsonUtil.toPolyValue( BsonDocument.parse( "{key:" + ctx.read( pathWff ) + "}" ) ).asMap().get( PolyString.of( "key" ) ) );
+                return PathContext.withReturned( mode, PolyValue.fromJson( ctx.read( pathWff ) ) );
             } catch ( Exception e ) {
                 return PathContext.withStrictException( e );
             }
@@ -2605,7 +2603,7 @@ public class Functions {
 
 
     public static PolyValue dejsonize( PolyString input ) {
-        return mapFromBson( BsonDocument.parse( "{ key:" + input.value + "}" ) ).asDocument().get( PolyString.of( "key" ) );
+        return mapFromBson( BsonDocument.parse( "{ \"key\":" + input.value + "}" ) ).asDocument().get( PolyString.of( "key" ) );
     }
 
 
