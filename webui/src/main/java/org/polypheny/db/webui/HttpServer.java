@@ -294,7 +294,7 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/docker/instances/{dockerId}", crud::getDockerInstance );
 
-        webuiServer.post( "/docker/instances/{dockerId}/update", crud::updateDockerInstance );
+        webuiServer.patch( "/docker/instances/{dockerId}", crud::updateDockerInstance );
 
         webuiServer.post( "/docker/instances/{dockerId}/reconnect", crud::reconnectToDockerInstance );
 
