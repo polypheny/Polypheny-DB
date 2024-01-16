@@ -2956,7 +2956,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    void addDockerInstance( final Context ctx ) {
+    void createDockerInstance( final Context ctx ) {
         try {
             CreateDockerRequest req = ctx.bodyAsClass( CreateDockerRequest.class );
             Optional<HandshakeInfo> res = DockerSetupHelper.newDockerInstance(
@@ -3012,7 +3012,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    void removeDockerInstance( final Context ctx ) {
+    void deleteDockerInstance( final Context ctx ) {
         try {
             DockerSetupHelper.removeDockerInstance( Integer.parseInt( ctx.pathParam( "dockerId" ) ) );
 
@@ -3075,7 +3075,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    void changeDockerSettings( final Context ctx ) {
+    void updateDockerSettings( final Context ctx ) {
         DockerSettings settings = ctx.bodyAsClass( DockerSettings.class );
         if ( settings.defaultRegistry() != null ) {
             RuntimeConfig.DOCKER_CONTAINER_REGISTRY.setString( settings.defaultRegistry() );

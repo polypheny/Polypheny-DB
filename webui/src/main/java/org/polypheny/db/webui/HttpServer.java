@@ -288,7 +288,7 @@ public class HttpServer implements Runnable {
 
 
     private static void attachDockerRoutes( Javalin webuiServer, Crud crud ) {
-        webuiServer.post( "/docker/instances/create", crud::addDockerInstance );
+        webuiServer.post( "/docker/instances/create", crud::createDockerInstance );
 
         webuiServer.get( "/docker/instances", crud::getDockerInstances );
 
@@ -298,7 +298,7 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/docker/instances/{dockerId}/reconnect", crud::reconnectToDockerInstance );
 
-        webuiServer.delete( "/docker/instances/{dockerId}", crud::removeDockerInstance );
+        webuiServer.delete( "/docker/instances/{dockerId}", crud::deleteDockerInstance );
 
         webuiServer.get( "/docker/auto", crud::getAutoDockerStatus );
 
@@ -312,7 +312,7 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/docker/settings", crud::getDockerSettings );
 
-        webuiServer.patch( "/docker/settings", crud::changeDockerSettings );
+        webuiServer.patch( "/docker/settings", crud::updateDockerSettings );
     }
 
 
