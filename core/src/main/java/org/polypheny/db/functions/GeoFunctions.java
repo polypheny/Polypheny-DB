@@ -239,6 +239,13 @@ public class GeoFunctions {
 
 
     @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stEquals( PolyGeometry g1, PolyGeometry g2 ) {
+        restrictToSrid( g1, g2 );
+        return PolyBoolean.of( g1.equals( g2 ) );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean stDWithin( PolyGeometry g1, PolyGeometry g2, PolyNumber distance ) {
         restrictToSrid( g1, g2 );
         try {

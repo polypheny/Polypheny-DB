@@ -276,26 +276,17 @@ public class PolyGeometry extends PolyValue {
 
 
     protected PolyGeometryType getPolyGeometryType() {
-        switch ( jtsGeometry.getGeometryType() ) {
-            case Geometry.TYPENAME_POINT:
-                return PolyGeometryType.POINT;
-            case Geometry.TYPENAME_LINESTRING:
-                return PolyGeometryType.LINESTRING;
-            case Geometry.TYPENAME_LINEARRING:
-                return PolyGeometryType.LINEARRING;
-            case Geometry.TYPENAME_POLYGON:
-                return PolyGeometryType.POLYGON;
-            case Geometry.TYPENAME_GEOMETRYCOLLECTION:
-                return PolyGeometryType.GEOMETRYCOLLECTION;
-            case Geometry.TYPENAME_MULTIPOINT:
-                return PolyGeometryType.MULTIPOINT;
-            case Geometry.TYPENAME_MULTILINESTRING:
-                return PolyGeometryType.MULTILINESTRING;
-            case Geometry.TYPENAME_MULTIPOLYGON:
-                return PolyGeometryType.MULTIPOLYGON;
-            default:
-                throw new NotImplementedException( "value" );
-        }
+        return switch ( jtsGeometry.getGeometryType() ) {
+            case Geometry.TYPENAME_POINT -> PolyGeometryType.POINT;
+            case Geometry.TYPENAME_LINESTRING -> PolyGeometryType.LINESTRING;
+            case Geometry.TYPENAME_LINEARRING -> PolyGeometryType.LINEARRING;
+            case Geometry.TYPENAME_POLYGON -> PolyGeometryType.POLYGON;
+            case Geometry.TYPENAME_GEOMETRYCOLLECTION -> PolyGeometryType.GEOMETRYCOLLECTION;
+            case Geometry.TYPENAME_MULTIPOINT -> PolyGeometryType.MULTIPOINT;
+            case Geometry.TYPENAME_MULTILINESTRING -> PolyGeometryType.MULTILINESTRING;
+            case Geometry.TYPENAME_MULTIPOLYGON -> PolyGeometryType.MULTIPOLYGON;
+            default -> throw new NotImplementedException( "value" );
+        };
     }
 
 
@@ -845,10 +836,9 @@ public class PolyGeometry extends PolyValue {
      */
     @Override
     public boolean equals( Object o ) {
-        if ( !(o instanceof PolyGeometry) ) {
+        if ( !(o instanceof PolyGeometry that) ) {
             return false;
         }
-        PolyGeometry that = (PolyGeometry) o;
         return geometryType.equals( that.geometryType ) && jtsGeometry.equals( that.jtsGeometry ) && Objects.equals( SRID, that.SRID );
     }
 

@@ -45,8 +45,6 @@ public class GeoFunctionsTest {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-//                statement.executeUpdate( "CREATE TABLE TEST_GIS(ID INTEGER NOT NULL, WKT VARCHAR, PRIMARY KEY (ID))" );
-//                statement.executeUpdate( "INSERT INTO TEST_GIS VALUES (1, SUBSTRING('POINT (7.852923 47.998949)', 1, 3))" );
                 statement.executeUpdate( "CREATE TABLE TEST_GIS(ID INTEGER NOT NULL, WKT GEOMETRY, PRIMARY KEY (ID))" );
                 statement.executeUpdate( "INSERT INTO TEST_GIS VALUES (1, ST_GeomFromText('POINT (7.852923 47.998949)', 4326))" );
                 statement.executeUpdate( "INSERT INTO TEST_GIS VALUES (2, ST_GeomFromText('POINT (9.289382 48.741588)', 4326))" );
@@ -236,6 +234,17 @@ public class GeoFunctionsTest {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
+                // check that two geo are equal
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ST_Equals(ST_GeomFromText('POINT (7.852923 47.998949)', 4326), ST_GeomFromText('POINT (9.289382 48.741588)', 4326))" ),
+                        ImmutableList.of(
+                                new Object[]{ false }
+                        ) );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ST_Equals(ST_GeomFromText('POINT (7.852923 47.998949)', 4326), ST_GeomFromText('POINT (7.852923 47.998949)', 4326))" ),
+                        ImmutableList.of(
+                                new Object[]{ true }
+                        ) );
                 // check that geo are within the distance
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT ST_DWithin(ST_GeomFromText('POINT (7.852923 47.998949)', 4326), ST_GeomFromText('POINT (9.289382 48.741588)', 4326), 135000)" ),

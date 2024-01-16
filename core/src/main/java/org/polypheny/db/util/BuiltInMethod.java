@@ -462,6 +462,7 @@ public enum BuiltInMethod {
     ST_REVERSE( GeoFunctions.class, "stReverse", PolyGeometry.class ),
     ST_BUFFER( GeoFunctions.class, "stBuffer", PolyGeometry.class, PolyNumber.class ),
     // Spatial relationships
+    ST_EQUALS( GeoFunctions.class, "stEquals", PolyGeometry.class, PolyGeometry.class ),
     ST_DWITHIN( GeoFunctions.class, "stDWithin", PolyGeometry.class, PolyGeometry.class, PolyNumber.class ),
     ST_DISJOINT( GeoFunctions.class, "stDisjoint", PolyGeometry.class, PolyGeometry.class ),
     ST_TOUCHES( GeoFunctions.class, "stTouches", PolyGeometry.class, PolyGeometry.class ),

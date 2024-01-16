@@ -1413,6 +1413,11 @@ public enum OperatorName {
     // Spatial relationships
 
     /**
+     * The <code>ST_Equals</code> operator function: check that two {@link org.polypheny.db.type.entity.spatial.PolyGeometry} are equals
+     */
+    ST_EQUALS( Function.class ),
+
+    /**
      * The <code>ST_DWithin</code> operator function: check if two {@link org.polypheny.db.type.entity.spatial.PolyGeometry} are withing the given distance
      */
     ST_DWITHIN( Function.class ),
