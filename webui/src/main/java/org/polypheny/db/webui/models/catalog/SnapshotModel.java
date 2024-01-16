@@ -16,13 +16,12 @@
 
 package org.polypheny.db.webui.models.catalog;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import lombok.EqualsAndHashCode;
-import lombok.Value;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.webui.models.AdapterTemplateModel;
@@ -41,17 +40,29 @@ import org.polypheny.db.webui.models.catalog.schema.NamespaceModel;
 import org.polypheny.db.webui.models.catalog.schema.TableModel;
 
 public record SnapshotModel(
+        @JsonProperty
         long id,
+        @JsonProperty
         List<NamespaceModel> namespaces,
+        @JsonProperty
         List<EntityModel> entities,
+        @JsonProperty
         List<FieldModel> fields,
+        @JsonProperty
         List<KeyModel> keys,
+        @JsonProperty
         List<ConstraintModel> constraints,
+        @JsonProperty
         List<AllocationEntityModel> allocations,
+        @JsonProperty
         List<AllocationPlacementModel> placements,
+        @JsonProperty
         List<AllocationPartitionModel> partitions,
+        @JsonProperty
         List<AllocationColumnModel> allocColumns,
+        @JsonProperty
         List<AdapterModel> adapters,
+        @JsonProperty
         List<AdapterTemplateModel> adapterTemplates
 ) {
 
