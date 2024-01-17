@@ -208,11 +208,11 @@ public class PolyBigDecimal extends PolyNumber {
         if ( this == o ) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() ) {
+        if ( !(o instanceof PolyValue) || !((PolyValue) o).isNumber() ) {
             return false;
         }
-        PolyBigDecimal that = (PolyBigDecimal) o;
-        return Objects.equals( value.stripTrailingZeros(), that.value.stripTrailingZeros() );
+        BigDecimal that = ((PolyNumber) o).bigDecimalValue();
+        return Objects.equals( value.stripTrailingZeros(), that.stripTrailingZeros() );
     }
 
 

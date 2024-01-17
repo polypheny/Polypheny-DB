@@ -125,7 +125,7 @@ public class TemporalFunctions {
         if ( d0 > last ) {
             d0 = last;
         }
-        return PolyDate.of( DateTimeUtils.ymdToUnixDate( y0, m0, d0 ) );
+        return PolyDate.ofDays( DateTimeUtils.ymdToUnixDate( y0, m0, d0 ) );
     }
 
 
@@ -155,19 +155,19 @@ public class TemporalFunctions {
      */
     @SuppressWarnings("unused")
     public static PolyNumber subtractMonths( PolyDate date0, PolyDate date1 ) {
-        if ( date0.millisSinceEpoch < date1.millisSinceEpoch ) {
+        if ( date0.getDaysSinceEpoch() < date1.getDaysSinceEpoch() ) {
             return subtractMonths( date1, date0 ).negate();
         }
         // Start with an estimate.
         // Since no month has more than 31 days, the estimate is <= the true value.
-        long m = (date0.millisSinceEpoch - date1.millisSinceEpoch) / 31;
+        long m = (date0.getDaysSinceEpoch() - date1.getDaysSinceEpoch()) / 31;
         for ( ; ; ) {
-            long date2 = addMonths( date1, PolyLong.of( m ) ).millisSinceEpoch;
-            if ( date2 >= date0.millisSinceEpoch ) {
+            long date2 = addMonths( date1, PolyLong.of( m ) ).getDaysSinceEpoch();
+            if ( date2 >= date0.getDaysSinceEpoch() ) {
                 return PolyLong.of( m );
             }
-            long date3 = addMonths( date1, PolyLong.of( m + 1 ) ).millisSinceEpoch;
-            if ( date3 > date0.millisSinceEpoch ) {
+            long date3 = addMonths( date1, PolyLong.of( m + 1 ) ).getDaysSinceEpoch();
+            if ( date3 > date0.getDaysSinceEpoch() ) {
                 return PolyLong.of( m );
             }
             ++m;

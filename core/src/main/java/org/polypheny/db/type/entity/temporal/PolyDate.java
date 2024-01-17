@@ -23,6 +23,7 @@ import java.util.Date;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Value;
+import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang3.NotImplementedException;
@@ -47,7 +48,7 @@ public class PolyDate extends PolyTemporal {
 
     public PolyDate( Long millisSinceEpoch ) {
         super( PolyType.DATE );
-        this.millisSinceEpoch = millisSinceEpoch;
+        this.millisSinceEpoch = millisSinceEpoch == null ? null : millisSinceEpoch - millisSinceEpoch % DateTimeUtils.MILLIS_PER_DAY; // move to 00:00:00
     }
 
 
@@ -107,6 +108,23 @@ public class PolyDate extends PolyTemporal {
             }
         }
         throw new NotImplementedException( "convert value to Boolean" );
+    }
+
+
+    @Override
+    public boolean equals( Object o ) {
+        if ( this == o ) {
+            return true;
+        }
+        if ( !(o instanceof PolyValue value) ) {
+            return false;
+        }
+
+        if ( value.isDate() ) {
+            return compareTo( value.asDate() ) == 0;
+        }
+
+        return super.equals( o );
     }
 
 
