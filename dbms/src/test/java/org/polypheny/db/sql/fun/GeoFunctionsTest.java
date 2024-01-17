@@ -296,6 +296,11 @@ public class GeoFunctionsTest {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT count(*) from TEST_GIS where ST_Distance(wkt, ST_GeomFromText('POINT (9.289382 48.741588)', 4326)) < 135555" ),
+                        ImmutableList.of(
+                                new Object[]{ 2 }
+                        ) );
                 // calculate the distance between two points
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT ST_Distance(ST_GeomFromText('POINT (7.852923 47.998949)', 4326), ST_GeomFromText('POINT (9.289382 48.741588)', 4326))" ),

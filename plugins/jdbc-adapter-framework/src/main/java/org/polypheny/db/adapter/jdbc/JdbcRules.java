@@ -492,7 +492,7 @@ public class JdbcRules {
         }
 
 
-        private static boolean geoFunctionInProject( Project project ) {
+        private static boolean geoFunctionInProject( AlgNode project ) {
             CheckingGeoFunctionVisitor visitor = new CheckingGeoFunctionVisitor();
             for ( RexNode node : project.getChildExps() ) {
                 node.accept( visitor );
@@ -577,6 +577,7 @@ public class JdbcRules {
                             !userDefinedFunctionInFilter( filter )
                                     && !knnFunctionInFilter( filter )
                                     && !multimediaFunctionInFilter( filter )
+                                    && (!geoFunctionInFilter( filter ) || supportsGeoFunctionInFilter( out.dialect, filter ))
                                     && !DocumentRules.containsJson( filter )
                                     && !DocumentRules.containsDocument( filter )
                                     && (out.dialect.supportsNestedArrays() || (!itemOperatorInFilter( filter ) && isStringComparableArrayType( filter )))),
@@ -608,6 +609,30 @@ public class JdbcRules {
             for ( RexNode node : filter.getChildExps() ) {
                 node.accept( visitor );
                 if ( visitor.containsMultimediaFunction() ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
+        private static boolean geoFunctionInFilter( Filter filter ) {
+            CheckingGeoFunctionVisitor visitor = new CheckingGeoFunctionVisitor();
+            for ( RexNode node : filter.getChildExps() ) {
+                node.accept( visitor );
+                if ( visitor.containsGeoFunction() ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
+        private static boolean supportsGeoFunctionInFilter( SqlDialect dialect, Filter filter ) {
+            CheckingGeoFunctionSupportVisitor visitor = new CheckingGeoFunctionSupportVisitor( dialect );
+            for ( RexNode node : filter.getChildExps() ) {
+                node.accept( visitor );
+                if ( visitor.supportsGeoFunction() ) {
                     return true;
                 }
             }
@@ -697,7 +722,7 @@ public class JdbcRules {
          * Creates a JdbcAggregateRule.
          */
         public JdbcAggregateRule( JdbcConvention out, AlgBuilderFactory algBuilderFactory ) {
-            super( Aggregate.class, (Predicate<AlgNode>) r -> true, Convention.NONE, out, algBuilderFactory, "JdbcAggregateRule." + out );
+            super( Aggregate.class, aggregate -> true, Convention.NONE, out, algBuilderFactory, "JdbcAggregateRule." + out );
         }
 
 
