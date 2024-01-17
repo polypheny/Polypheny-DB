@@ -555,24 +555,16 @@ public abstract class PolyTypeUtil {
             return 0;
         }
 
-        switch ( typeName ) {
-            case CHAR:
-            case VARCHAR:
-                return (int) Math.ceil( ((double) type.getPrecision()) * type.getCharset().newEncoder().maxBytesPerChar() );
-
-            case BINARY:
-            case VARBINARY:
-                return type.getPrecision();
-
-            case MULTISET:
+        return switch ( typeName ) {
+            case CHAR, VARCHAR -> (int) Math.ceil( ((double) type.getPrecision()) * type.getCharset().newEncoder().maxBytesPerChar() );
+            case BINARY, VARBINARY -> type.getPrecision();
+            case MULTISET ->
 
                 // TODO: Need a better way to tell fennel this number. This a very generic place and implementation details
                 //  like this doesnt belong here. Waiting to change this once we have blob support
-                return 4096;
-
-            default:
-                return 0;
-        }
+                    4096;
+            default -> 0;
+        };
     }
 
 
@@ -583,19 +575,13 @@ public abstract class PolyTypeUtil {
      */
     public static long getMinValue( AlgDataType type ) {
         PolyType typeName = type.getPolyType();
-        switch ( typeName ) {
-            case TINYINT:
-                return Byte.MIN_VALUE;
-            case SMALLINT:
-                return Short.MIN_VALUE;
-            case INTEGER:
-                return Integer.MIN_VALUE;
-            case BIGINT:
-            case DECIMAL:
-                return NumberUtil.getMinUnscaled( type.getPrecision() ).longValue();
-            default:
-                throw new AssertionError( "getMinValue(" + typeName + ")" );
-        }
+        return switch ( typeName ) {
+            case TINYINT -> Byte.MIN_VALUE;
+            case SMALLINT -> Short.MIN_VALUE;
+            case INTEGER -> Integer.MIN_VALUE;
+            case BIGINT, DECIMAL -> NumberUtil.getMinUnscaled( type.getPrecision() ).longValue();
+            default -> throw new AssertionError( "getMinValue(" + typeName + ")" );
+        };
     }
 
 
@@ -606,19 +592,13 @@ public abstract class PolyTypeUtil {
      */
     public static long getMaxValue( AlgDataType type ) {
         PolyType typeName = type.getPolyType();
-        switch ( typeName ) {
-            case TINYINT:
-                return Byte.MAX_VALUE;
-            case SMALLINT:
-                return Short.MAX_VALUE;
-            case INTEGER:
-                return Integer.MAX_VALUE;
-            case BIGINT:
-            case DECIMAL:
-                return NumberUtil.getMaxUnscaled( type.getPrecision() ).longValue();
-            default:
-                throw new AssertionError( "getMaxValue(" + typeName + ")" );
-        }
+        return switch ( typeName ) {
+            case TINYINT -> Byte.MAX_VALUE;
+            case SMALLINT -> Short.MAX_VALUE;
+            case INTEGER -> Integer.MAX_VALUE;
+            case BIGINT, DECIMAL -> NumberUtil.getMaxUnscaled( type.getPrecision() ).longValue();
+            default -> throw new AssertionError( "getMaxValue(" + typeName + ")" );
+        };
     }
 
 
