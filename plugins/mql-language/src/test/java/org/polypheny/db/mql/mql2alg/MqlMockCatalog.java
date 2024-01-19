@@ -16,9 +16,20 @@
 
 package org.polypheny.db.mql.mql2alg;
 
+import java.beans.PropertyChangeListener;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
+import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.adapter.AbstractAdapterSetting;
+import org.polypheny.db.adapter.Adapter;
+import org.polypheny.db.adapter.AdapterManager.Function4;
+import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.MockCatalog;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
+import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
 
 
 public class MqlMockCatalog extends MockCatalog {
@@ -36,6 +47,12 @@ public class MqlMockCatalog extends MockCatalog {
 
 
     @Override
+    public void change() {
+
+    }
+
+
+    @Override
     public <S extends AdapterCatalog> Optional<S> getStoreSnapshot( long id ) {
         return Optional.empty();
     }
@@ -43,6 +60,60 @@ public class MqlMockCatalog extends MockCatalog {
 
     @Override
     public void addStoreSnapshot( AdapterCatalog snapshot ) {
+
+    }
+
+
+    @Override
+    public long createAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, String description, List<DeployMode> modes, List<AbstractAdapterSetting> settings, Function4<Long, String, Map<String, String>, Adapter<?>> deployer ) {
+        return 0;
+    }
+
+
+    @Override
+    public void createInterfaceTemplate( String name, QueryInterfaceTemplate queryInterfaceTemplate ) {
+
+    }
+
+
+    @Override
+    public void dropInterfaceTemplate( String name ) {
+
+    }
+
+
+    @Override
+    public @NotNull Map<String, QueryInterfaceTemplate> getInterfaceTemplates() {
+        return null;
+    }
+
+
+    @Override
+    public Map<Long, AdapterTemplate> getAdapterTemplates() {
+        return null;
+    }
+
+
+    @Override
+    public void dropAdapterTemplate( long templateId ) {
+
+    }
+
+
+    @Override
+    public PropertyChangeListener getChangeListener() {
+        return null;
+    }
+
+
+    @Override
+    public void restore() {
+
+    }
+
+
+    @Override
+    public void attachCommitConstraint( Supplier<Boolean> constraintChecker, String description ) {
 
     }
 

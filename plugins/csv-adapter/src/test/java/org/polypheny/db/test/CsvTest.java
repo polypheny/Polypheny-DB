@@ -37,7 +37,8 @@ package org.polypheny.db.test;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.isA;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.common.collect.Ordering;
 import java.io.PrintStream;
@@ -54,36 +55,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.polypheny.db.sql.sql2alg.SqlToAlgConverter;
-import org.polypheny.db.util.Sources;
-import org.polypheny.db.util.Util;
-
-import java.io.PrintStream;
-import java.io.PrintWriter;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Properties;
-import java.util.concurrent.Callable;
-import java.util.function.Consumer;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.sql.sql2alg.SqlToAlgConverter;
 import org.polypheny.db.util.Sources;
 import org.polypheny.db.util.Util;
@@ -92,7 +67,8 @@ import org.polypheny.db.util.Util;
 /**
  * Unit test of the Polypheny-DB CSV adapter.
  */
-@Ignore
+@SuppressWarnings("ALL")
+@Disabled
 public class CsvTest {
 
     /**
@@ -145,7 +121,7 @@ public class CsvTest {
             try {
                 final List<String> lines = new ArrayList<>();
                 CsvTest.collect( lines, resultSet );
-                Assert.assertEquals( Arrays.asList( expected ), lines );
+                assertEquals( Arrays.asList( expected ), lines );
             } catch ( SQLException e ) {
                 throw new RuntimeException( e );
             }
@@ -163,7 +139,7 @@ public class CsvTest {
                 final List<String> lines = new ArrayList<>();
                 CsvTest.collect( lines, resultSet );
                 Collections.sort( lines );
-                Assert.assertEquals( expectedLines, lines );
+                assertEquals( expectedLines, lines );
             } catch ( SQLException e ) {
                 throw new RuntimeException( e );
             }
@@ -210,7 +186,7 @@ public class CsvTest {
     /**
      * Tests the vanity driver.
      */
-    @Ignore
+    @Disabled
     @Test
     public void testVanityDriver() throws SQLException {
         Properties info = new Properties();
@@ -222,7 +198,7 @@ public class CsvTest {
     /**
      * Tests the vanity driver with properties in the URL.
      */
-    @Ignore
+    @Disabled
     @Test
     public void testVanityDriverArgsInUrl() throws SQLException {
         Connection connection = DriverManager.getConnection( "jdbc:csv:" + "directory='foo'" );
@@ -238,20 +214,20 @@ public class CsvTest {
         Properties info = new Properties();
         info.put(
                 "model",
-                "inline:"
-                        + "{\n"
-                        + "  version: '1.0',\n"
-                        + "   schemas: [\n"
-                        + "     {\n"
-                        + "       type: 'custom',\n"
-                        + "       name: 'bad',\n"
-                        + "       factory: 'org.polypheny.db.adapter.csv.CsvSchemaFactory',\n"
-                        + "       operand: {\n"
-                        + "         directory: '/does/not/exist'\n"
-                        + "       }\n"
-                        + "     }\n"
-                        + "   ]\n"
-                        + "}" );
+                """
+                        inline:{
+                          version: '1.0',
+                           schemas: [
+                             {
+                               type: 'custom',
+                               name: 'bad',
+                               factory: 'org.polypheny.db.adapter.csv.CsvSchemaFactory',
+                               operand: {
+                                 directory: '/does/not/exist'
+                               }
+                             }
+                           ]
+                        }""" );
 
         Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
         // must print "directory ... not found" to stdout, but not fail
@@ -341,7 +317,10 @@ public class CsvTest {
     @Test
     public void testPushDownProjectAggregate() {
         final String sql = "explain plan for\n" + "select gender, count(*) from EMPS group by gender";
-        final String expected = "PLAN=" + "EnumerableAggregate(group=[{0}], EXPR$1=[COUNT()])\n" + "  CsvScan(table=[[SALES, EMPS]], fields=[[3]])\n";
+        final String expected = """
+                PLAN=EnumerableAggregate(group=[{0}], EXPR$1=[COUNT()])
+                  CsvScan(table=[[SALES, EMPS]], fields=[[3]])
+                """;
         sql( "smart", sql ).returns( expected ).ok();
     }
 
@@ -349,27 +328,30 @@ public class CsvTest {
     @Test
     public void testPushDownProjectAggregateWithFilter() {
         final String sql = "explain plan for\n" + "select max(empno) from EMPS where gender='F'";
-        final String expected = "PLAN=" + "EnumerableAggregate(group=[{}], EXPR$0=[MAX($0)])\n"
-                + "  EnumerableCalc(expr#0..1=[{inputs}], expr#2=['F':VARCHAR], "
-                + "expr#3=[=($t1, $t2)], proj#0..1=[{exprs}], $condition=[$t3])\n"
-                + "    CsvScan(table=[[SALES, EMPS]], fields=[[0, 3]])\n";
+        final String expected = """
+                PLAN=EnumerableAggregate(group=[{}], EXPR$0=[MAX($0)])
+                  EnumerableCalc(expr#0..1=[{inputs}], expr#2=['F':VARCHAR], expr#3=[=($t1, $t2)], proj#0..1=[{exprs}], $condition=[$t3])
+                    CsvScan(table=[[SALES, EMPS]], fields=[[0, 3]])
+                """;
         sql( "smart", sql ).returns( expected ).ok();
     }
 
 
     @Test
     public void testPushDownProjectAggregateNested() {
-        final String sql = "explain plan for\n"
-                + "select gender, max(qty)\n"
-                + "from (\n"
-                + "  select name, gender, count(*) qty\n"
-                + "  from EMPS\n"
-                + "  group by name, gender) t\n"
-                + "group by gender";
-        final String expected = "PLAN="
-                + "EnumerableAggregate(group=[{1}], EXPR$1=[MAX($2)])\n"
-                + "  EnumerableAggregate(group=[{0, 1}], QTY=[COUNT()])\n"
-                + "    CsvScan(table=[[SALES, EMPS]], fields=[[1, 3]])\n";
+        final String sql = """
+                explain plan for
+                select gender, max(qty)
+                from (
+                  select name, gender, count(*) qty
+                  from EMPS
+                  group by name, gender) t
+                group by gender""";
+        final String expected = """
+                PLAN=EnumerableAggregate(group=[{1}], EXPR$1=[MAX($2)])
+                  EnumerableAggregate(group=[{0, 1}], QTY=[COUNT()])
+                    CsvScan(table=[[SALES, EMPS]], fields=[[1, 3]])
+                """;
         sql( "smart", sql ).returns( expected ).ok();
     }
 
@@ -408,10 +390,12 @@ public class CsvTest {
 
     @Test
     public void testJson() {
-        final String sql = "select _MAP['id'] as id,\n"
-                + " _MAP['title'] as title,\n"
-                + " CHAR_LENGTH(CAST(_MAP['title'] AS VARCHAR(30))) as len\n"
-                + " from \"archers\"\n";
+        final String sql = """
+                select _MAP['id'] as id,
+                 _MAP['title'] as title,
+                 CHAR_LENGTH(CAST(_MAP['title'] AS VARCHAR(30))) as len
+                 from "archers"
+                """;
         sql( "bug", sql )
                 .returns( "ID=19990101; TITLE=Tractor trouble.; LEN=16", "ID=19990103; TITLE=Charlie's surprise.; LEN=19" )
                 .ok();
@@ -478,9 +462,10 @@ public class CsvTest {
         final String sql = "select * from wacky_column_names where false";
         sql( "bug", sql ).returns().ok();
 
-        final String sql2 = "select \"joined at\", \"naME\"\n"
-                + "from wacky_column_names\n"
-                + "where \"2gender\" = 'F'";
+        final String sql2 = """
+                select "joined at", "naME"
+                from wacky_column_names
+                where "2gender" = 'F'""";
         sql( "bug", sql2 )
                 .returns( "joined at=2005-09-07; naME=Wilma", "joined at=2007-01-01; naME=Alice" )
                 .ok();
@@ -492,9 +477,10 @@ public class CsvTest {
      */
     @Test
     public void testGroupByTimestampAdd() {
-        final String sql = "select count(*) as c,\n"
-                + "  {fn timestampadd(SQL_TSI_DAY, 1, JOINEDAT) } as t\n"
-                + "from EMPS group by {fn timestampadd(SQL_TSI_DAY, 1, JOINEDAT ) } ";
+        final String sql = """
+                select count(*) as c,
+                  {fn timestampadd(SQL_TSI_DAY, 1, JOINEDAT) } as t
+                from EMPS group by {fn timestampadd(SQL_TSI_DAY, 1, JOINEDAT ) }\s""";
         sql( "model", sql )
                 .returnsUnordered(
                         "C=1; T=1996-08-04",
@@ -504,9 +490,10 @@ public class CsvTest {
                         "C=1; T=2001-01-02" )
                 .ok();
 
-        final String sql2 = "select count(*) as c,\n"
-                + "  {fn timestampadd(SQL_TSI_MONTH, 1, JOINEDAT) } as t\n"
-                + "from EMPS group by {fn timestampadd(SQL_TSI_MONTH, 1, JOINEDAT ) } ";
+        final String sql2 = """
+                select count(*) as c,
+                  {fn timestampadd(SQL_TSI_MONTH, 1, JOINEDAT) } as t
+                from EMPS group by {fn timestampadd(SQL_TSI_MONTH, 1, JOINEDAT ) }\s""";
         sql( "model", sql2 )
                 .returnsUnordered(
                         "C=1; T=2002-06-03",
@@ -520,9 +507,10 @@ public class CsvTest {
 
     @Test
     public void testUnionGroupByWithoutGroupKey() {
-        final String sql = "select count(*) as c1 from EMPS group by NAME\n"
-                + "union\n"
-                + "select count(*) as c1 from EMPS group by NAME";
+        final String sql = """
+                select count(*) as c1 from EMPS group by NAME
+                union
+                select count(*) as c1 from EMPS group by NAME""";
         sql( "model", sql ).ok();
     }
 
@@ -549,9 +537,10 @@ public class CsvTest {
     @Test
     public void testInToSemiJoinWithCast() {
         // Note that the IN list needs at least 20 values to trigger the rewrite to a semijoin. Try it both ways.
-        final String sql = "SELECT e.name\n"
-                + "FROM emps AS e\n"
-                + "WHERE cast(e.empno as bigint) in ";
+        final String sql = """
+                SELECT e.name
+                FROM emps AS e
+                WHERE cast(e.empno as bigint) in\s""";
         final int threshold = SqlToAlgConverter.DEFAULT_IN_SUB_QUERY_THRESHOLD;
         sql( "smart", sql + range( 130, threshold - 5 ) ).returns( "NAME=Alice" ).ok();
         sql( "smart", sql + range( 130, threshold ) ).returns( "NAME=Alice" ).ok();
@@ -589,31 +578,31 @@ public class CsvTest {
         try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info ) ) {
             ResultSet res = connection.getMetaData().getColumns( null, null, "DATE", "JOINEDAT" );
             res.next();
-            Assert.assertEquals( res.getInt( "DATA_TYPE" ), java.sql.Types.DATE );
+            assertEquals( res.getInt( "DATA_TYPE" ), java.sql.Types.DATE );
 
             res = connection.getMetaData().getColumns( null, null, "DATE", "JOINTIME" );
             res.next();
-            Assert.assertEquals( res.getInt( "DATA_TYPE" ), java.sql.Types.TIME );
+            assertEquals( res.getInt( "DATA_TYPE" ), java.sql.Types.TIME );
 
             res = connection.getMetaData().getColumns( null, null, "DATE", "JOINTIMES" );
             res.next();
-            Assert.assertEquals( res.getInt( "DATA_TYPE" ), java.sql.Types.TIMESTAMP );
+            assertEquals( res.getInt( "DATA_TYPE" ), java.sql.Types.TIMESTAMP );
 
             Statement statement = connection.createStatement();
             ResultSet resultSet = statement.executeQuery( "select \"JOINEDAT\", \"JOINTIME\", \"JOINTIMES\" from \"DATE\" where EMPNO = 100" );
             resultSet.next();
 
             // date
-            Assert.assertEquals( java.sql.Date.class, resultSet.getDate( 1 ).getClass() );
-            Assert.assertEquals( java.sql.Date.valueOf( "1996-08-03" ), resultSet.getDate( 1 ) );
+            assertEquals( java.sql.Date.class, resultSet.getDate( 1 ).getClass() );
+            assertEquals( java.sql.Date.valueOf( "1996-08-03" ), resultSet.getDate( 1 ) );
 
             // time
-            Assert.assertEquals( java.sql.Time.class, resultSet.getTime( 2 ).getClass() );
-            Assert.assertEquals( java.sql.Time.valueOf( "00:01:02" ), resultSet.getTime( 2 ) );
+            assertEquals( java.sql.Time.class, resultSet.getTime( 2 ).getClass() );
+            assertEquals( java.sql.Time.valueOf( "00:01:02" ), resultSet.getTime( 2 ) );
 
             // timestamp
-            Assert.assertEquals( java.sql.Timestamp.class, resultSet.getTimestamp( 3 ).getClass() );
-            Assert.assertEquals( java.sql.Timestamp.valueOf( "1996-08-03 00:01:02" ), resultSet.getTimestamp( 3 ) );
+            assertEquals( java.sql.Timestamp.class, resultSet.getTimestamp( 3 ).getClass() );
+            assertEquals( java.sql.Timestamp.valueOf( "1996-08-03 00:01:02" ), resultSet.getTimestamp( 3 ) );
 
         }
     }
@@ -667,7 +656,10 @@ public class CsvTest {
         Properties info = new Properties();
         info.put( "model", jsonPath( "bug" ) );
         // Use LIMIT to ensure that results are deterministic without ORDER BY
-        final String sql = "select \"EMPNO\", \"JOINTIMES\"\n" + "from (select * from \"DATE\" limit 1)\n" + "group by \"EMPNO\",\"JOINTIMES\"";
+        final String sql = """
+                select "EMPNO", "JOINTIMES"
+                from (select * from "DATE" limit 1)
+                group by "EMPNO","JOINTIMES\"""";
         try (
                 Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
                 Statement statement = connection.createStatement();
@@ -675,9 +667,9 @@ public class CsvTest {
         ) {
             assertThat( resultSet.next(), is( true ) );
             final Timestamp timestamp = resultSet.getTimestamp( 2 );
-            Assert.assertThat( timestamp, isA( java.sql.Timestamp.class ) );
+            assertThat( timestamp, isA( java.sql.Timestamp.class ) );
             // Note: This logic is time zone specific, but the same time zone is used in the CSV adapter and this test, so they should cancel out.
-            Assert.assertThat( timestamp, is( java.sql.Timestamp.valueOf( "1996-08-03 00:01:02.0" ) ) );
+            assertThat( timestamp, is( java.sql.Timestamp.valueOf( "1996-08-03 00:01:02.0" ) ) );
         }
     }
 
@@ -697,7 +689,7 @@ public class CsvTest {
         ) {
             assertThat( resultSet.next(), is( true ) );
             final Timestamp timestamp = resultSet.getTimestamp( 2 );
-            Assert.assertThat( timestamp, is( java.sql.Timestamp.valueOf( "1996-08-03 00:01:02" ) ) );
+            assertThat( timestamp, is( java.sql.Timestamp.valueOf( "1996-08-03 00:01:02" ) ) );
         }
     }
 
@@ -717,7 +709,7 @@ public class CsvTest {
         ) {
             assertThat( resultSet.next(), is( true ) );
             final Timestamp timestamp = resultSet.getTimestamp( 2 );
-            Assert.assertThat( timestamp, is( java.sql.Timestamp.valueOf( "1996-08-03 00:01:02" ) ) );
+            assertThat( timestamp, is( java.sql.Timestamp.valueOf( "1996-08-03 00:01:02" ) ) );
         }
     }
 
@@ -734,25 +726,32 @@ public class CsvTest {
             final Statement statement = connection.createStatement();
 
             // date
-            final String sql1 = "select JOINEDAT from \"DATE\"\n" + "where JOINEDAT < {d '2000-01-01'}\n" + "or JOINEDAT >= {d '2017-01-01'}";
+            final String sql1 = """
+                    select JOINEDAT from "DATE"
+                    where JOINEDAT < {d '2000-01-01'}
+                    or JOINEDAT >= {d '2017-01-01'}""";
             final ResultSet joinedAt = statement.executeQuery( sql1 );
             assertThat( joinedAt.next(), is( true ) );
             assertThat( joinedAt.getDate( 1 ), is( java.sql.Date.valueOf( "1996-08-03" ) ) );
 
             // time
-            final String sql2 = "select JOINTIME from \"DATE\"\n" + "where JOINTIME >= {t '07:00:00'}\n" + "and JOINTIME < {t '08:00:00'}";
+            final String sql2 = """
+                    select JOINTIME from "DATE"
+                    where JOINTIME >= {t '07:00:00'}
+                    and JOINTIME < {t '08:00:00'}""";
             final ResultSet joinTime = statement.executeQuery( sql2 );
             assertThat( joinTime.next(), is( true ) );
             assertThat( joinTime.getTime( 1 ), is( java.sql.Time.valueOf( "07:15:56" ) ) );
 
             // timestamp
-            final String sql3 = "select JOINTIMES,\n"
-                    + "  {fn timestampadd(SQL_TSI_DAY, 1, JOINTIMES)}\n"
-                    + "from \"DATE\"\n"
-                    + "where (JOINTIMES >= {ts '2003-01-01 00:00:00'}\n"
-                    + "and JOINTIMES < {ts '2006-01-01 00:00:00'})\n"
-                    + "or (JOINTIMES >= {ts '2003-01-01 00:00:00'}\n"
-                    + "and JOINTIMES < {ts '2007-01-01 00:00:00'})";
+            final String sql3 = """
+                    select JOINTIMES,
+                      {fn timestampadd(SQL_TSI_DAY, 1, JOINTIMES)}
+                    from "DATE"
+                    where (JOINTIMES >= {ts '2003-01-01 00:00:00'}
+                    and JOINTIMES < {ts '2006-01-01 00:00:00'})
+                    or (JOINTIMES >= {ts '2003-01-01 00:00:00'}
+                    and JOINTIMES < {ts '2007-01-01 00:00:00'})""";
             final ResultSet joinTimes = statement.executeQuery( sql3 );
             assertThat( joinTimes.next(), is( true ) );
             assertThat( joinTimes.getTimestamp( 1 ), is( java.sql.Timestamp.valueOf( "2005-09-07 00:00:00" ) ) );
@@ -776,12 +775,19 @@ public class CsvTest {
 
         try ( Connection connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info ) ) {
             final Statement statement = connection.createStatement();
-            final String sql1 = "select extract(year from JOINTIMES)\n" + "from \"DATE\"\n" + "where extract(year from JOINTIMES) in (2006, 2007)";
+            final String sql1 = """
+                    select extract(year from JOINTIMES)
+                    from "DATE"
+                    where extract(year from JOINTIMES) in (2006, 2007)""";
             final ResultSet joinTimes = statement.executeQuery( sql1 );
             assertThat( joinTimes.next(), is( true ) );
             assertThat( joinTimes.getInt( 1 ), is( 2007 ) );
 
-            final String sql2 = "select extract(year from JOINTIMES),\n" + "  count(0) from \"DATE\"\n" + "where extract(year from JOINTIMES) between 2007 and 2016\n" + "group by extract(year from JOINTIMES)";
+            final String sql2 = """
+                    select extract(year from JOINTIMES),
+                      count(0) from "DATE"
+                    where extract(year from JOINTIMES) between 2007 and 2016
+                    group by extract(year from JOINTIMES)""";
             final ResultSet joinTimes2 = statement.executeQuery( sql2 );
             assertThat( joinTimes2.next(), is( true ) );
             assertThat( joinTimes2.getInt( 1 ), is( 2007 ) );

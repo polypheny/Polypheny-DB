@@ -119,10 +119,17 @@ public class PolyInteger extends PolyNumber {
         if ( this == o ) {
             return true;
         }
-        if ( !(o instanceof PolyValue) ) {
+        if ( o == null ) {
             return false;
         }
-        PolyValue val = (PolyValue) o;
+
+        if ( !(o instanceof PolyValue val) ) {
+            return false;
+        }
+
+        if ( val.isNull() ) {
+            return false;
+        }
 
         if ( val.isNumber() ) {
             return PolyNumber.compareTo( this, val.asNumber() ) == 0;

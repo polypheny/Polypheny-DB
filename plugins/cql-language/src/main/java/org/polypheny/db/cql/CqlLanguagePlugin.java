@@ -44,7 +44,7 @@ public class CqlLanguagePlugin extends PolyPlugin {
 
     @Override
     public void start() {
-        QueryLanguage language = new QueryLanguage( DataModel.RELATIONAL, NAME, List.of( NAME ), null, CqlProcessor::new, null, CqlQueryBuilder::splitter );
+        QueryLanguage language = new QueryLanguage( DataModel.RELATIONAL, NAME, List.of( NAME ), null, CqlProcessor::new, null, LanguageManager::toQueryNodes );
         LanguageManager.getINSTANCE().addQueryLanguage( language );
         PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.addToResult( language, LanguageCrud::getRelResult ) );
     }

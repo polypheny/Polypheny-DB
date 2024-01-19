@@ -208,7 +208,19 @@ public class PolyBigDecimal extends PolyNumber {
         if ( this == o ) {
             return true;
         }
-        if ( !(o instanceof PolyValue) || !((PolyValue) o).isNumber() ) {
+        if ( o == null ) {
+            return false;
+        }
+
+        if ( !(o instanceof PolyValue) ) {
+            return false;
+        }
+
+        if ( ((PolyValue) o).isNull() ) {
+            return false;
+        }
+
+        if ( !((PolyValue) o).isNumber() ) {
             return false;
         }
         BigDecimal that = ((PolyNumber) o).bigDecimalValue();

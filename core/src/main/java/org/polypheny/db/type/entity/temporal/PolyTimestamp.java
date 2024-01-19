@@ -21,9 +21,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.Date;
-import java.util.Locale;
 import java.util.TimeZone;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -51,6 +49,7 @@ public class PolyTimestamp extends PolyTemporal {
 
     static {
         dateFormat.setTimeZone( TimeZone.getTimeZone( "UTC" ) );
+        dateMilliFormat.setTimeZone( TimeZone.getTimeZone( "UTC" ) );
     }
 
 
@@ -169,7 +168,8 @@ public class PolyTimestamp extends PolyTemporal {
         if ( millisSinceEpoch == null ) {
             return null;
         }
-        Date date = new Date( millisSinceEpoch - Calendar.getInstance( Locale.getDefault() ).getTimeZone().getRawOffset() );
+        Date date = new Date( millisSinceEpoch );
+
         String dateString = dateMilliFormat.format( date );
 
         if ( dateString.endsWith( ".000" ) ) {

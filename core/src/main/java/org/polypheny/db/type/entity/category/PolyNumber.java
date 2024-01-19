@@ -52,7 +52,26 @@ public abstract class PolyNumber extends PolyValue {
 
     @Override
     public boolean equals( Object o ) {
-        return this == o || o instanceof PolyNumber && compareTo( this, (PolyNumber) o ) == 0;
+        if ( this == o ) {
+            return true;
+        }
+        if ( o == null ) {
+            return false;
+        }
+
+        if ( !(o instanceof PolyValue val) ) {
+            return false;
+        }
+
+        if ( val.isNull() ) {
+            return false;
+        }
+
+        if ( val.isNumber() ) {
+            return PolyNumber.compareTo( this, val.asNumber() ) == 0;
+        }
+
+        return false;
     }
 
 

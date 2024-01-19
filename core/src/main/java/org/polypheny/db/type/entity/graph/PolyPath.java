@@ -105,7 +105,7 @@ public class PolyPath extends GraphObject {
 
 
     public int getVariants() {
-        return edges.stream().map( PolyEdge::getVariants ).reduce( 1, Math::multiplyExact );
+        return edges.stream().map( e -> ((PolyEdge) e).getVariants() ).reduce( 1, Math::multiplyExact );
     }
 
 

@@ -23,8 +23,8 @@ import java.sql.Statement;
 import java.util.Locale;
 import java.util.Random;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
@@ -36,8 +36,9 @@ public class CqlTestHelper {
     static boolean interfaceRunning = false;
 
 
-    @BeforeClass
+    @BeforeAll
     public static void setup() throws SQLException {
+        //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
         if ( !interfaceRunning ) {
             deployCqlInterface();
@@ -49,7 +50,7 @@ public class CqlTestHelper {
     }
 
 
-    @AfterClass
+    @AfterAll
     public static void teardown() {
         deleteTestData();
         //removeCqlInterface();

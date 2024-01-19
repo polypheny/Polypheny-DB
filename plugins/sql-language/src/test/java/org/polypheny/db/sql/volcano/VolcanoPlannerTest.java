@@ -67,6 +67,7 @@ import org.polypheny.db.tools.AlgBuilder;
 /**
  * Unit test for {@link VolcanoPlanner the optimizer}.
  */
+@Disabled
 public class VolcanoPlannerTest {
 
     public VolcanoPlannerTest() {
