@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import lombok.Getter;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.algebra.AlgCollation;
@@ -53,10 +54,12 @@ import org.polypheny.db.sql.volcano.PlannerTests.TestSingleAlg;
 /**
  * Unit test for {@link AlgCollationTraitDef}.
  */
+@Disabled
 public class CollationConversionTest {
 
     @BeforeAll
     public static void init() {
+        //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
     }
 

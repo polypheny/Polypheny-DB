@@ -30,7 +30,10 @@ dependencies {
     // --- Test Compile ---
     testImplementation project(path: ":dbms", configuration: "test")
     testImplementation project(path: ":dbms")
+    testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":core")
+
+    testImplementation group: "com.fasterxml.jackson.core", name: "jackson-databind", version: jackson_databind_version  // Apache 2.0
 
     // Workaround so org.polypheny.db.docker gets the right protobuf during testing
     testImplementation group: "com.google.protobuf", name: "protobuf-java", version: protobuf_version // BSD 3-clause

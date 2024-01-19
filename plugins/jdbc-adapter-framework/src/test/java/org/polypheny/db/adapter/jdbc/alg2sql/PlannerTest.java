@@ -17,10 +17,10 @@
 package org.polypheny.db.adapter.jdbc.alg2sql;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.List;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.adapter.jdbc.JdbcAlg;
 import org.polypheny.db.adapter.jdbc.JdbcConvention;
 import org.polypheny.db.adapter.jdbc.JdbcImplementor;
@@ -92,12 +92,12 @@ public class PlannerTest extends SqlLanguageDependent {
     }
 
 
-    private Planner getPlanner( List<AlgTraitDef> traitDefs, Program... programs ) {
+    private Planner getPlanner( List<AlgTraitDef<?>> traitDefs, Program... programs ) {
         return getPlanner( traitDefs, Parser.ParserConfig.DEFAULT, programs );
     }
 
 
-    private Planner getPlanner( List<AlgTraitDef> traitDefs, ParserConfig parserConfig, Program... programs ) {
+    private Planner getPlanner( List<AlgTraitDef<?>> traitDefs, ParserConfig parserConfig, Program... programs ) {
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( parserConfig )
@@ -153,7 +153,7 @@ public class PlannerTest extends SqlLanguageDependent {
     /**
      * Relational expression representing a "mock" scan of a table in a JDBC data source.
      */
-    private static class MockJdbcScan extends RelScan implements JdbcAlg {
+    private static class MockJdbcScan extends RelScan<Entity> implements JdbcAlg {
 
         MockJdbcScan( AlgOptCluster cluster, Entity table, JdbcConvention jdbcConvention ) {
             super( cluster, cluster.traitSetOf( jdbcConvention ), table );

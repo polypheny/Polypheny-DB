@@ -29,8 +29,6 @@ import org.polypheny.db.cql.BooleanGroup.TableOpsBooleanOperator;
 import org.polypheny.db.cql.exception.InvalidModifierException;
 import org.polypheny.db.cql.exception.UnknownIndexException;
 import org.polypheny.db.cql.utils.Tree;
-import org.polypheny.db.processing.QueryContext;
-import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.util.Pair;
 
 
@@ -296,9 +294,5 @@ public class CqlQueryBuilder {
         projections.add( columnIndex, modifiers );
     }
 
-
-    public static List<ParsedQueryContext> splitter( QueryContext queryContext ) {
-        return null;
-    }
 
 }

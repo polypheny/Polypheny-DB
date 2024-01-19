@@ -191,10 +191,23 @@ public class PolyLong extends PolyNumber {
         if ( this == o ) {
             return true;
         }
-        if ( o == null || !(o instanceof PolyNumber) ) {
+        if ( o == null ) {
             return false;
         }
-        return super.equals( o );
+
+        if ( !(o instanceof PolyValue val) ) {
+            return false;
+        }
+
+        if ( val.isNull() ) {
+            return false;
+        }
+
+        if ( val.isNumber() ) {
+            return PolyNumber.compareTo( this, val.asNumber() ) == 0;
+        }
+
+        return false;
     }
 
 

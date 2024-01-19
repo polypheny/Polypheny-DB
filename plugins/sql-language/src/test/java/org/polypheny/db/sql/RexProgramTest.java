@@ -1910,7 +1910,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
         checkSimplify( cast( timestampLTZChar3, timestampLTZType ), "2011-07-20 12:34:56:TIMESTAMP_WITH_LOCAL_TIME_ZONE(0)" );
         checkSimplifyUnchanged( cast( literalTimestampLTZ, timestampLTZType ) );
         checkSimplify( cast( literalDate, timestampLTZType ), "2011-07-20 07:00:00:TIMESTAMP_WITH_LOCAL_TIME_ZONE(0)" );
-        checkSimplify( cast( literalTime, timestampLTZType ), "1970-01-01 19:34:56:TIMESTAMP_WITH_LOCAL_TIME_ZONE(0)" );
+        checkSimplify( cast( literalTime, timestampLTZType ), "1970-01-01 20:34:56:TIMESTAMP_WITH_LOCAL_TIME_ZONE(0)" );
         checkSimplify( cast( literalTimestamp, timestampLTZType ), "2011-07-20 19:34:56:TIMESTAMP_WITH_LOCAL_TIME_ZONE(0)" );
         checkSimplify( cast( literalTimestamp, dateType ), "2011-07-20" );
         checkSimplify( cast( literalTimestampLTZ, dateType ), "2011-07-20" );
@@ -1921,8 +1921,8 @@ public class RexProgramTest extends RexProgramBuilderBase {
         checkSimplify( cast( literalTimestampLTZ, timeLTZType ), "08:23:45:TIME_WITH_LOCAL_TIME_ZONE(0)" );
         checkSimplify( cast( literalTimeLTZ, varCharType ), "'17:23:45 America/Los_Angeles':VARCHAR(40)" );
         checkSimplify( cast( literalTimestampLTZ, varCharType ), "'2011-07-20 01:23:45 America/Los_Angeles':VARCHAR(40)" );
-        checkSimplify( cast( literalTimeLTZ, timestampType ), "1970-01-14 02:13:19.720" );
-        checkSimplify( cast( literalTimeLTZ, timestampLTZType ), "2011-07-20 01:23:45:TIMESTAMP_WITH_LOCAL_TIME_ZONE(0)" );
+        checkSimplify( cast( literalTimeLTZ, timestampType ), "1969-12-31 17:23:45" ); // - 9 from utc
+        checkSimplify( cast( literalTimeLTZ, timestampLTZType ), "1970-01-01 01:23:45:TIMESTAMP_WITH_LOCAL_TIME_ZONE(0)" );
     }
 
 

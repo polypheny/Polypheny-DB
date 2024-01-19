@@ -241,10 +241,10 @@ public class FunctionsTest {
 
 
     private void checkFloor( int x, int y, int result ) {
-        /*assertThat( Functions.floor( x, y ), is( result ) );
-        assertThat( Functions.floor( (long) x, (long) y ), is( (long) result ) );
-        assertThat( Functions.floor( (short) x, (short) y ), is( (short) result ) );
-        assertThat( Functions.floor( (byte) x, (byte) y ), is( (byte) result ) );*/
+        assertThat( Functions.floor( PolyInteger.of( x ), PolyInteger.of( y ) ), is( PolyInteger.of( result ) ) );
+        assertThat( Functions.floor( PolyLong.of( x ), PolyLong.of( y ) ), is( PolyLong.of( result ) ) );
+        // assertThat( Functions.floor( (short) x, (short) y ), is( (short) result ) );
+        // assertThat( Functions.floor( x, (byte) y ), is( (byte) result ) );
         assertThat( Functions.floor( PolyBigDecimal.of( x ), PolyBigDecimal.of( y ) ), is( PolyBigDecimal.of( result ) ) );
     }
 
@@ -261,10 +261,10 @@ public class FunctionsTest {
 
 
     private void checkCeil( int x, int y, int result ) {
-        /*assertThat( Functions.ceil( x, y ), is( result ) );
-        assertThat( Functions.ceil( (long) x, (long) y ), is( (long) result ) );
-        assertThat( Functions.ceil( (short) x, (short) y ), is( (short) result ) );
-        assertThat( Functions.ceil( (byte) x, (byte) y ), is( (byte) result ) );*/
+        assertThat( Functions.ceil( PolyInteger.of( x ), PolyInteger.of( y ) ), is( PolyInteger.of( result ) ) );
+        assertThat( Functions.ceil( PolyLong.of( x ), PolyLong.of( y ) ), is( PolyLong.of( result ) ) );
+        //assertThat( Functions.ceil( (short) x, (short) y ), is( (short) result ) );
+        //assertThat( Functions.ceil( (byte) x, (byte) y ), is( (byte) result ) );
         assertThat( Functions.ceil( PolyInteger.of( x ), PolyInteger.of( y ) ), is( PolyInteger.of( result ) ) );
     }
 

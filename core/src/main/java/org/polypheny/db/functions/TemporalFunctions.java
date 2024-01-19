@@ -208,7 +208,7 @@ public class TemporalFunctions {
     @SuppressWarnings("unused")
     public static java.sql.Date internalToDate( PolyNumber v ) {
         final long t = v.intValue() * DateTimeUtils.MILLIS_PER_DAY;
-        return new java.sql.Date( t - LOCAL_TZ.getOffset( t ) );
+        return new java.sql.Date( t );
     }
 
 
@@ -226,7 +226,7 @@ public class TemporalFunctions {
      */
     @SuppressWarnings("unused")
     public static java.sql.Time internalToTime( PolyNumber v ) {
-        return new java.sql.Time( v.intValue() - LOCAL_TZ.getOffset( v.intValue() ) );
+        return new java.sql.Time( v.intValue() );
     }
 
 
@@ -288,7 +288,7 @@ public class TemporalFunctions {
         return PolyTime.of( new TimestampWithTimeZoneString( date.value + " " + tTZ.toString() )
                 .withTimeZone( timeZone )
                 .getLocalTimestampString()
-                .getMillisSinceEpoch() - LOCAL_TZ.getRawOffset() );
+                .getMillisSinceEpoch() );
     }
 
 
@@ -298,7 +298,7 @@ public class TemporalFunctions {
                 .withTimeZone( DateTimeUtils.UTC_ZONE );
         return PolyTimestamp.of( new TimestampWithTimeZoneString( date.value + " " + tTZ.toString() )
                 .getLocalTimestampString()
-                .getMillisSinceEpoch() - LOCAL_TZ.getRawOffset() );
+                .getMillisSinceEpoch() );
     }
 
 
@@ -315,7 +315,7 @@ public class TemporalFunctions {
      */
     @SuppressWarnings("unused")
     public static java.sql.Timestamp internalToTimestamp( PolyNumber v ) {
-        return new java.sql.Timestamp( v.longValue() - LOCAL_TZ.getOffset( v.longValue() ) );
+        return new java.sql.Timestamp( v.longValue() );
     }
 
 
@@ -348,7 +348,7 @@ public class TemporalFunctions {
         return PolyTimestamp.of( TimestampWithTimeZoneString.fromMillisSinceEpoch( v.longValue() )
                 .withTimeZone( timeZone )
                 .getLocalTimestampString()
-                .getMillisSinceEpoch() - LOCAL_TZ.getRawOffset() );
+                .getMillisSinceEpoch() );
     }
 
 
@@ -373,7 +373,7 @@ public class TemporalFunctions {
         return PolyTimestamp.of( v == null ? null : new TimestampWithTimeZoneString( v.value )
                 .withTimeZone( DateTimeUtils.UTC_ZONE )
                 .getLocalTimestampString()
-                .getMillisSinceEpoch() - LOCAL_TZ.getRawOffset() );
+                .getMillisSinceEpoch() );
     }
 
 
@@ -382,7 +382,7 @@ public class TemporalFunctions {
         return PolyTimestamp.of( v == null ? null : new TimestampWithTimeZoneString( v.value + " " + timeZone.getID() )
                 .withTimeZone( DateTimeUtils.UTC_ZONE )
                 .getLocalTimestampString()
-                .getMillisSinceEpoch() - LOCAL_TZ.getRawOffset() );
+                .getMillisSinceEpoch() );
     }
 
 
