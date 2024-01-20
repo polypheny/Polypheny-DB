@@ -95,14 +95,11 @@ public class PolyphenyHomeDirManager {
     private String getPrefix() {
         VersionCollector collector = VersionCollector.INSTANCE;
 
-        switch ( mode ) {
-            case PRODUCTION:
-                return collector.getVersion();
-            case BENCHMARK:
-                return String.format( "%s-%s", collector.getVersion(), collector.getHash() );
-            default:
-                return String.format( "%s-%s", collector.getVersion(), collector.getHash() );
-        }
+        return switch ( mode ) {
+            case PRODUCTION -> collector.getVersion();
+            case BENCHMARK -> String.format( "%s-%s", collector.getVersion(), collector.getHash() );
+            default -> String.format( "%s-%s", collector.getVersion(), collector.getHash() );
+        };
     }
 
 

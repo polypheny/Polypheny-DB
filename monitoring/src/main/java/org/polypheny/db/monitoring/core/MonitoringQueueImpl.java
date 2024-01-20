@@ -25,7 +25,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -142,7 +141,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
         List<HashMap<String, String>> infoList = new ArrayList<>();
         List<MonitoringEvent> queueElements = new ArrayList<>();
 
-        threadPoolWorkers.getQueue().stream().limit( 100 ).collect( Collectors.toList() )
+        threadPoolWorkers.getQueue().stream().limit( 100 ).toList()
                 .forEach(
                         task -> queueElements.add(
                                 ((MonitoringWorker) task).getEvent()

@@ -17,7 +17,7 @@
 package org.polypheny.db.sql.language.ddl;
 
 
-import com.google.gson.Gson;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -45,6 +45,8 @@ import org.polypheny.db.util.ImmutableNullableList;
  */
 @Slf4j
 public class SqlAlterInterfacesAdd extends SqlAlter {
+
+    public static final ObjectMapper mapper = new ObjectMapper();
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "ALTER INTERFACES ADD", Kind.OTHER_DDL );
 
@@ -90,8 +92,9 @@ public class SqlAlterInterfacesAdd extends SqlAlter {
     public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
         String uniqueNameStr = removeQuotationMarks( uniqueName.toString() );
         String clazzNameStr = removeQuotationMarks( clazzName.toString() );
-        Map<String, String> configMap = new Gson().fromJson( removeQuotationMarks( config.toString() ), Map.class );
+        Map<String, String> configMap = null;
         try {
+            configMap = mapper.readValue( removeQuotationMarks( config.toString() ), Map.class );
             QueryInterfaceManager.getInstance().addQueryInterface( Catalog.getInstance(), clazzNameStr, uniqueNameStr, configMap );
         } catch ( Exception e ) {
             throw new GenericRuntimeException( "Unable to deploy query interface", e );

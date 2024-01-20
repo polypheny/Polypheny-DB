@@ -383,7 +383,12 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
     @Override
     public @NotNull Optional<LogicalColumn> getColumn( long namespace, String tableName, String columnName ) {
-        return Optional.ofNullable( tableIdColumnNameColumn.get( Pair.of( namespace, Pair.of( tableName, columnName ) ) ) );
+        Optional<LogicalTable> optTable = getTable( namespace, tableName );
+        if ( optTable.isEmpty() ) {
+            return Optional.empty();
+        }
+
+        return Optional.ofNullable( tableIdColumnNameColumn.get( Pair.of( optTable.get().id, columnName ) ) );
     }
 
 

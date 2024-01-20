@@ -19,25 +19,22 @@ package org.polypheny.db.monitoring.events;
 import java.sql.Timestamp;
 import java.util.UUID;
 import lombok.Getter;
+import lombok.Setter;
 
 
 public abstract class BaseEvent implements MonitoringEvent {
 
     @Getter
     private final UUID id = UUID.randomUUID();
+    @Setter
     protected String eventType;
 
-    private long recordedTimestamp;
+    private final long recordedTimestamp;
 
 
     public BaseEvent() {
         setEventType( eventType );
         recordedTimestamp = getCurrentTimestamp();
-    }
-
-
-    public void setEventType( String eventType ) {
-        this.eventType = eventType;
     }
 
 
