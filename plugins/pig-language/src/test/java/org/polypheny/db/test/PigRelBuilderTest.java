@@ -18,24 +18,14 @@ package org.polypheny.db.test;
 
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.util.List;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.polypheny.db.adapter.DataContext.SlimDataContext;
-import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.plan.AlgOptUtil;
-import org.polypheny.db.plan.AlgTraitDef;
-import org.polypheny.db.prepare.ContextImpl;
-import org.polypheny.db.prepare.JavaTypeFactoryImpl;
-import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.tools.PigAlgBuilder;
-import org.polypheny.db.tools.Programs;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.Util;
 
@@ -43,7 +33,7 @@ import org.polypheny.db.util.Util;
 /**
  * Unit test for {@link PigAlgBuilder}.
  */
-@Ignore
+@Disabled // refactor
 public class PigRelBuilderTest {
 
     /**
@@ -51,26 +41,7 @@ public class PigRelBuilderTest {
      */
     public static Frameworks.ConfigBuilder config() {
         Transaction transaction = null; // TODO MV: FIX
-
-        final SchemaPlus rootSchema = transaction.getSnapshot().plus();
-        Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder()
-                .parserConfig( ParserConfig.DEFAULT )
-                .defaultSnapshot( rootSchema.getSubNamespace( transaction.getDefaultNamespace().name ) )
-                .traitDefs( (List<AlgTraitDef>) null )
-                .programs( Programs.heuristicJoinOrder( Programs.RULE_SET, true, 2 ) )
-                .prepareContext( new ContextImpl(
-                        PolyphenyDbSchema.from( rootSchema ),
-                        new SlimDataContext() {
-                            @Override
-                            public JavaTypeFactory getTypeFactory() {
-                                return new JavaTypeFactoryImpl();
-                            }
-                        },
-                        "",
-                        0,
-                        0,
-                        null ) );
-        return configBuilder;
+        return null;
     }
 
 
@@ -123,9 +94,11 @@ public class PigRelBuilderTest {
                 .project( builder.field( "DEPTNO" ) )
                 .distinct()
                 .build();
-        final String plan = "LogicalAggregate(group=[{0}])\n"
-                + "  LogicalProject(DEPTNO=[$7])\n"
-                + "    LogicalScan(table=[[scott, EMP]])\n";
+        final String plan = """
+                LogicalAggregate(group=[{0}])
+                  LogicalProject(DEPTNO=[$7])
+                    LogicalScan(table=[[scott, EMP]])
+                """;
         assertThat( str( root ), is( plan ) );
     }
 
@@ -141,8 +114,10 @@ public class PigRelBuilderTest {
                 .load( "EMP.csv", null, null )
                 .filter( builder.isNotNull( builder.field( "MGR" ) ) )
                 .build();
-        final String plan = "LogicalFilter(condition=[IS NOT NULL($3)])\n"
-                + "  LogicalScan(table=[[scott, EMP]])\n";
+        final String plan = """
+                LogicalFilter(condition=[IS NOT NULL($3)])
+                  LogicalScan(table=[[scott, EMP]])
+                """;
         assertThat( str( root ), is( plan ) );
     }
 
@@ -165,10 +140,11 @@ public class PigRelBuilderTest {
                 .scan( "EMP" )
                 .group( null, null, -1, builder.groupKey( "DEPTNO", "JOB" ).alias( "e" ) )
                 .build();
-        final String plan = ""
-                + "LogicalAggregate(group=[{2, 7}], EMP=[COLLECT($8)])\n"
-                + "  LogicalProject(EMPNO=[$0], ENAME=[$1], JOB=[$2], MGR=[$3], HIREDATE=[$4], SAL=[$5], COMM=[$6], DEPTNO=[$7], $f8=[ROW($0, $1, $2, $3, $4, $5, $6, $7)])\n"
-                + "    LogicalScan(table=[[scott, EMP]])\n";
+        final String plan = """
+                LogicalAggregate(group=[{2, 7}], EMP=[COLLECT($8)])
+                  LogicalProject(EMPNO=[$0], ENAME=[$1], JOB=[$2], MGR=[$3], HIREDATE=[$4], SAL=[$5], COMM=[$6], DEPTNO=[$7], $f8=[ROW($0, $1, $2, $3, $4, $5, $6, $7)])
+                    LogicalScan(table=[[scott, EMP]])
+                """;
         assertThat( str( root ), is( plan ) );
     }
 
@@ -185,12 +161,15 @@ public class PigRelBuilderTest {
                         builder.groupKey( "DEPTNO" ).alias( "e" ),
                         builder.groupKey( "DEPTNO" ).alias( "d" ) )
                 .build();
-        final String plan = "LogicalJoin(condition=[=($0, $2)], joinType=[inner])\n"
-                + "  LogicalAggregate(group=[{0}], EMP=[COLLECT($8)])\n"
-                + "    LogicalProject(EMPNO=[$0], ENAME=[$1], JOB=[$2], MGR=[$3], HIREDATE=[$4], SAL=[$5], COMM=[$6], DEPTNO=[$7], $f8=[ROW($0, $1, $2, $3, $4, $5, $6, $7)])\n"
-                + "      LogicalScan(table=[[scott, EMP]])\n  LogicalAggregate(group=[{0}], DEPT=[COLLECT($3)])\n"
-                + "    LogicalProject(DEPTNO=[$0], DNAME=[$1], LOC=[$2], $f3=[ROW($0, $1, $2)])\n"
-                + "      LogicalScan(table=[[scott, DEPT]])\n";
+        final String plan = """
+                LogicalJoin(condition=[=($0, $2)], joinType=[inner])
+                  LogicalAggregate(group=[{0}], EMP=[COLLECT($8)])
+                    LogicalProject(EMPNO=[$0], ENAME=[$1], JOB=[$2], MGR=[$3], HIREDATE=[$4], SAL=[$5], COMM=[$6], DEPTNO=[$7], $f8=[ROW($0, $1, $2, $3, $4, $5, $6, $7)])
+                      LogicalScan(table=[[scott, EMP]])
+                  LogicalAggregate(group=[{0}], DEPT=[COLLECT($3)])
+                    LogicalProject(DEPTNO=[$0], DNAME=[$1], LOC=[$2], $f3=[ROW($0, $1, $2)])
+                      LogicalScan(table=[[scott, DEPT]])
+                """;
         assertThat( str( root ), is( plan ) );
     }
 

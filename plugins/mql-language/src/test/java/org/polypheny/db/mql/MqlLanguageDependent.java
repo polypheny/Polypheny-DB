@@ -16,12 +16,12 @@
 
 package org.polypheny.db.mql;
 
-import org.polypheny.db.languages.MongoLanguagePlugin;
+import org.polypheny.db.TestHelper;
 
 public class MqlLanguageDependent {
 
     static {
-        MongoLanguagePlugin.startup();
+        TestHelper.getInstance();
     }
 
 }

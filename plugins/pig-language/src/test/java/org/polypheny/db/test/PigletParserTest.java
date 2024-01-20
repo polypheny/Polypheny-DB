@@ -34,8 +34,8 @@
 package org.polypheny.db.test;
 
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.piglet.parser.ParseException;
 
 
@@ -62,48 +62,51 @@ public class PigletParserTest {
      */
     @Test
     public void testParse2() throws ParseException {
-        final String s = "A = LOAD 'Emp';\n"
-                + "DESCRIBE A;\n"
-                + "DUMP A;\n"
-                + "B = FOREACH A GENERATE 1, name;\n"
-                + "B1 = FOREACH A {\n"
-                + "  X = DISTINCT A;\n"
-                + "  Y = FILTER X BY foo;\n"
-                + "  Z = LIMIT Z 3;\n"
-                + "  GENERATE 1, name;\n"
-                + "}\n"
-                + "C = FILTER B BY name;\n"
-                + "D = DISTINCT C;\n"
-                + "E = ORDER D BY $1 DESC, $2 ASC, $3;\n"
-                + "F = ORDER E BY * DESC;\n"
-                + "G = LIMIT F -10;\n"
-                + "H = GROUP G ALL;\n"
-                + "I = GROUP H BY e;\n"
-                + "J = GROUP I BY (e1, e2);\n";
-        final String expected = "{op: PROGRAM, stmts: [\n"
-                + "  {op: LOAD, target: A, name: Emp},\n"
-                + "  {op: DESCRIBE, relation: A},\n"
-                + "  {op: DUMP, relation: A},\n"
-                + "  {op: FOREACH, target: B, source: A, expList: [\n"
-                + "    1,\n"
-                + "    name]},\n"
-                + "  {op: FOREACH, target: B1, source: A, nestedOps: [\n"
-                + "    {op: DISTINCT, target: X, source: A},\n"
-                + "    {op: FILTER, target: Y, source: X, condition: foo},\n"
-                + "    {op: LIMIT, target: Z, source: Z, count: 3}], expList: [\n"
-                + "    1,\n"
-                + "    name]},\n"
-                + "  {op: FILTER, target: C, source: B, condition: name},\n"
-                + "  {op: DISTINCT, target: D, source: C},\n"
-                + "  {op: ORDER, target: E, source: D},\n"
-                + "  {op: ORDER, target: F, source: E},\n"
-                + "  {op: LIMIT, target: G, source: F, count: -10},\n"
-                + "  {op: GROUP, target: H, source: G},\n"
-                + "  {op: GROUP, target: I, source: H, keys: [\n"
-                + "    e]},\n"
-                + "  {op: GROUP, target: J, source: I, keys: [\n"
-                + "    e1,\n"
-                + "    e2]}]}";
+        final String s = """
+                A = LOAD 'Emp';
+                DESCRIBE A;
+                DUMP A;
+                B = FOREACH A GENERATE 1, name;
+                B1 = FOREACH A {
+                  X = DISTINCT A;
+                  Y = FILTER X BY foo;
+                  Z = LIMIT Z 3;
+                  GENERATE 1, name;
+                }
+                C = FILTER B BY name;
+                D = DISTINCT C;
+                E = ORDER D BY $1 DESC, $2 ASC, $3;
+                F = ORDER E BY * DESC;
+                G = LIMIT F -10;
+                H = GROUP G ALL;
+                I = GROUP H BY e;
+                J = GROUP I BY (e1, e2);
+                """;
+        final String expected = """
+                {op: PROGRAM, stmts: [
+                  {op: LOAD, target: A, name: Emp},
+                  {op: DESCRIBE, relation: A},
+                  {op: DUMP, relation: A},
+                  {op: FOREACH, target: B, source: A, expList: [
+                    1,
+                    name]},
+                  {op: FOREACH, target: B1, source: A, nestedOps: [
+                    {op: DISTINCT, target: X, source: A},
+                    {op: FILTER, target: Y, source: X, condition: foo},
+                    {op: LIMIT, target: Z, source: Z, count: 3}], expList: [
+                    1,
+                    name]},
+                  {op: FILTER, target: C, source: B, condition: name},
+                  {op: DISTINCT, target: D, source: C},
+                  {op: ORDER, target: E, source: D},
+                  {op: ORDER, target: F, source: E},
+                  {op: LIMIT, target: G, source: F, count: -10},
+                  {op: GROUP, target: H, source: G},
+                  {op: GROUP, target: I, source: H, keys: [
+                    e]},
+                  {op: GROUP, target: J, source: I, keys: [
+                    e1,
+                    e2]}]}""";
         pig( s ).parseContains( expected );
     }
 
@@ -120,10 +123,12 @@ public class PigletParserTest {
     public void testDump() throws ParseException {
         final String s = "A = LOAD 'DEPT';\n" + "DUMP A;";
         final String expected = "LogicalScan(table=[[scott, DEPT]])\n";
-        final String out = "(10,ACCOUNTING,NEW YORK)\n"
-                + "(20,RESEARCH,DALLAS)\n"
-                + "(30,SALES,CHICAGO)\n"
-                + "(40,OPERATIONS,BOSTON)\n";
+        final String out = """
+                (10,ACCOUNTING,NEW YORK)
+                (20,RESEARCH,DALLAS)
+                (30,SALES,CHICAGO)
+                (40,OPERATIONS,BOSTON)
+                """;
         pig( s ).explainContains( expected ).returns( out );
     }
 
@@ -143,22 +148,29 @@ public class PigletParserTest {
     @Test
     public void testForeach() throws ParseException {
         final String s = "A = LOAD 'DEPT';\n" + "B = FOREACH A GENERATE DNAME, $2;";
-        final String expected = "LogicalProject(DNAME=[$1], LOC=[$2])\n" + "  LogicalScan(table=[[scott, DEPT]])\n";
+        final String expected = """
+                LogicalProject(DNAME=[$1], LOC=[$2])
+                  LogicalScan(table=[[scott, DEPT]])
+                """;
         pig( s ).explainContains( expected );
     }
 
 
-    @Ignore // foreach nested not implemented yet
+    @Disabled // foreach nested not implemented yet
     @Test
     public void testForeachNested() throws ParseException {
-        final String s = "A = LOAD 'EMP';\n"
-                + "B = GROUP A BY DEPTNO;\n"
-                + "C = FOREACH B {\n"
-                + "  D = ORDER A BY SAL DESC;\n"
-                + "  E = LIMIT D 3;\n"
-                + "  GENERATE E.DEPTNO, E.EMPNO;\n"
-                + "}";
-        final String expected = "LogicalProject(DNAME=[$1], LOC=[$2])\n" + "  LogicalScan(table=[[scott, DEPT]])\n";
+        final String s = """
+                A = LOAD 'EMP';
+                B = GROUP A BY DEPTNO;
+                C = FOREACH B {
+                  D = ORDER A BY SAL DESC;
+                  E = LIMIT D 3;
+                  GENERATE E.DEPTNO, E.EMPNO;
+                }""";
+        final String expected = """
+                LogicalProject(DNAME=[$1], LOC=[$2])
+                  LogicalScan(table=[[scott, DEPT]])
+                """;
         pig( s ).explainContains( expected );
     }
 
@@ -166,20 +178,23 @@ public class PigletParserTest {
     @Test
     public void testGroup() throws ParseException {
         final String s = "A = LOAD 'EMP';\n" + "B = GROUP A BY DEPTNO;";
-        final String expected = ""
-                + "LogicalAggregate(group=[{7}], A=[COLLECT($8)])\n"
-                + "  LogicalProject(EMPNO=[$0], ENAME=[$1], JOB=[$2], MGR=[$3], HIREDATE=[$4], SAL=[$5], COMM=[$6], DEPTNO=[$7], $f8=[ROW($0, $1, $2, $3, $4, $5, $6, $7)])\n"
-                + "    LogicalScan(table=[[scott, EMP]])\n";
+        final String expected = """
+                LogicalAggregate(group=[{7}], A=[COLLECT($8)])
+                  LogicalProject(EMPNO=[$0], ENAME=[$1], JOB=[$2], MGR=[$3], HIREDATE=[$4], SAL=[$5], COMM=[$6], DEPTNO=[$7], $f8=[ROW($0, $1, $2, $3, $4, $5, $6, $7)])
+                    LogicalScan(table=[[scott, EMP]])
+                """;
         pig( s ).explainContains( expected );
     }
 
 
     @Test
     public void testGroupExample() throws ParseException {
-        final String pre = "A = VALUES ('John',18,4.0F),\n"
-                + "('Mary',19,3.8F),\n"
-                + "('Bill',20,3.9F),\n"
-                + "('Joe',18,3.8F) AS (name:chararray,age:int,gpa:float);\n";
+        final String pre = """
+                A = VALUES ('John',18,4.0F),
+                ('Mary',19,3.8F),
+                ('Bill',20,3.9F),
+                ('Joe',18,3.8F) AS (name:chararray,age:int,gpa:float);
+                """;
         final String b = pre
                 + "B = GROUP A BY age;\n"
                 + "DUMP B;\n";
@@ -192,11 +207,13 @@ public class PigletParserTest {
 
     @Test
     public void testDistinctExample() throws ParseException {
-        final String pre = "A = VALUES (8,3,4),\n"
-                + "(1,2,3),\n"
-                + "(4,3,3),\n"
-                + "(4,3,3),\n"
-                + "(1,2,3) AS (a1:int,a2:int,a3:int);\n";
+        final String pre = """
+                A = VALUES (8,3,4),
+                (1,2,3),
+                (4,3,3),
+                (4,3,3),
+                (1,2,3) AS (a1:int,a2:int,a3:int);
+                """;
         final String x = pre
                 + "X = DISTINCT A;\n"
                 + "DUMP X;\n";
@@ -207,30 +224,44 @@ public class PigletParserTest {
     @Test
     public void testFilter() throws ParseException {
         final String s = "A = LOAD 'DEPT';\n" + "B = FILTER A BY DEPTNO;";
-        final String expected = "LogicalFilter(condition=[$0])\n" + "  LogicalScan(table=[[scott, DEPT]])\n";
+        final String expected = """
+                LogicalFilter(condition=[$0])
+                  LogicalScan(table=[[scott, DEPT]])
+                """;
         pig( s ).explainContains( expected );
     }
 
 
     @Test
     public void testFilterExample() throws ParseException {
-        final String pre = "A = VALUES (1,2,3),\n"
-                + "(4,2,1),\n"
-                + "(8,3,4),\n"
-                + "(4,3,3),\n"
-                + "(7,2,5),\n"
-                + "(8,4,3) AS (f1:int,f2:int,f3:int);\n";
+        final String pre = """
+                A = VALUES (1,2,3),
+                (4,2,1),
+                (8,3,4),
+                (4,3,3),
+                (7,2,5),
+                (8,4,3) AS (f1:int,f2:int,f3:int);
+                """;
 
         final String x = pre
                 + "X = FILTER A BY f3 == 3;\n"
                 + "DUMP X;\n";
-        final String expected = "(1,2,3)\n" + "(4,3,3)\n" + "(8,4,3)\n";
+        final String expected = """
+                (1,2,3)
+                (4,3,3)
+                (8,4,3)
+                """;
         pig( x ).returns( expected );
 
         final String x2 = pre
                 + "X2 = FILTER A BY (f1 == 8) OR (NOT (f2+f3 > f1));\n"
                 + "DUMP X2;\n";
-        final String expected2 = "(4,2,1)\n" + "(8,3,4)\n" + "(7,2,5)\n" + "(8,4,3)\n";
+        final String expected2 = """
+                (4,2,1)
+                (8,3,4)
+                (7,2,5)
+                (8,4,3)
+                """;
         pig( x2 ).returns( expected2 );
     }
 
@@ -238,31 +269,44 @@ public class PigletParserTest {
     @Test
     public void testLimit() throws ParseException {
         final String s = "A = LOAD 'DEPT';\n" + "B = LIMIT A 3;";
-        final String expected = "LogicalSort(fetch=[3])\n" + "  LogicalScan(table=[[scott, DEPT]])\n";
+        final String expected = """
+                LogicalSort(fetch=[3])
+                  LogicalScan(table=[[scott, DEPT]])
+                """;
         pig( s ).explainContains( expected );
     }
 
 
     @Test
     public void testLimitExample() throws ParseException {
-        final String pre = "A = VALUES (1,2,3),\n"
-                + "(4,2,1),\n"
-                + "(8,3,4),\n"
-                + "(4,3,3),\n"
-                + "(7,2,5),\n"
-                + "(8,4,3) AS (f1:int,f2:int,f3:int);\n";
+        final String pre = """
+                A = VALUES (1,2,3),
+                (4,2,1),
+                (8,3,4),
+                (4,3,3),
+                (7,2,5),
+                (8,4,3) AS (f1:int,f2:int,f3:int);
+                """;
 
         final String x = pre
                 + "X = LIMIT A 3;\n"
                 + "DUMP X;\n";
-        final String expected = "(1,2,3)\n" + "(4,2,1)\n" + "(8,3,4)\n";
+        final String expected = """
+                (1,2,3)
+                (4,2,1)
+                (8,3,4)
+                """;
         pig( x ).returns( expected );
 
         final String x2 = pre
                 + "B = ORDER A BY f1 DESC, f2 ASC;\n"
                 + "X2 = LIMIT B 3;\n"
                 + "DUMP X2;\n";
-        final String expected2 = "(8,3,4)\n" + "(8,4,3)\n" + "(7,2,5)\n";
+        final String expected2 = """
+                (8,3,4)
+                (8,4,3)
+                (7,2,5)
+                """;
         pig( x2 ).returns( expected2 );
     }
 
@@ -271,9 +315,10 @@ public class PigletParserTest {
     public void testOrder() throws ParseException {
         final String s = "A = LOAD 'DEPT';\n"
                 + "B = ORDER A BY DEPTNO DESC, DNAME;";
-        final String expected = ""
-                + "LogicalSort(sort0=[$0], sort1=[$1], dir0=[DESC], dir1=[ASC])\n"
-                + "  LogicalScan(table=[[scott, DEPT]])\n";
+        final String expected = """
+                LogicalSort(sort0=[$0], sort1=[$1], dir0=[DESC], dir1=[ASC])
+                  LogicalScan(table=[[scott, DEPT]])
+                """;
         pig( s ).explainContains( expected );
     }
 
@@ -282,31 +327,36 @@ public class PigletParserTest {
     public void testOrderStar() throws ParseException {
         final String s = "A = LOAD 'DEPT';\n"
                 + "B = ORDER A BY * DESC;";
-        final String expected = ""
-                + "LogicalSort(sort0=[$0], sort1=[$1], sort2=[$2], dir0=[DESC], dir1=[DESC], dir2=[DESC])\n"
-                + "  LogicalScan(table=[[scott, DEPT]])\n";
+        final String expected = """
+                LogicalSort(sort0=[$0], sort1=[$1], sort2=[$2], dir0=[DESC], dir1=[DESC], dir2=[DESC])
+                  LogicalScan(table=[[scott, DEPT]])
+                """;
         pig( s ).explainContains( expected );
     }
 
 
     @Test
     public void testOrderExample() throws ParseException {
-        final String pre = "A = VALUES (1,2,3),\n"
-                + "(4,2,1),\n"
-                + "(8,3,4),\n"
-                + "(4,3,3),\n"
-                + "(7,2,5),\n"
-                + "(8,4,3) AS (a1:int,a2:int,a3:int);\n";
+        final String pre = """
+                A = VALUES (1,2,3),
+                (4,2,1),
+                (8,3,4),
+                (4,3,3),
+                (7,2,5),
+                (8,4,3) AS (a1:int,a2:int,a3:int);
+                """;
 
         final String x = pre
                 + "X = ORDER A BY a3 DESC;\n"
                 + "DUMP X;\n";
-        final String expected = "(7,2,5)\n"
-                + "(8,3,4)\n"
-                + "(1,2,3)\n"
-                + "(4,3,3)\n"
-                + "(8,4,3)\n"
-                + "(4,2,1)\n";
+        final String expected = """
+                (7,2,5)
+                (8,3,4)
+                (1,2,3)
+                (4,3,3)
+                (8,4,3)
+                (4,2,1)
+                """;
         pig( x ).returns( expected );
     }
 
@@ -324,10 +374,11 @@ public class PigletParserTest {
 
     @Test
     public void testValuesNested() throws ParseException {
-        final String s = "A = VALUES (1, {('a', true), ('b', false)}),\n"
-                + " (2, {})\n"
-                + "AS (x: int, y: bag {tuple(a: string, b: boolean)});\n"
-                + "DUMP A;";
+        final String s = """
+                A = VALUES (1, {('a', true), ('b', false)}),
+                 (2, {})
+                AS (x: int, y: bag {tuple(a: string, b: boolean)});
+                DUMP A;""";
         final String expected = "LogicalValues(tuples=[[{ 1, [['a', true], ['b', false]] }, { 2, [] }]])\n";
         pig( s ).explainContains( expected );
     }

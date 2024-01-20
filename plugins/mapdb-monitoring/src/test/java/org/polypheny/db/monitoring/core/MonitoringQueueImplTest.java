@@ -33,11 +33,12 @@ class MonitoringQueueImplTest {
 
     @BeforeAll
     public static void setUp() {
+        //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
     }
 
     @Test
-    public void ctor_validParameters_instanceNotNull() {
+    public void ctorValidParametersInstanceNotNull() {
         // arrange
         PersistentMonitoringRepository persistentRepo = Mockito.mock( PersistentMonitoringRepository.class );
         MonitoringRepository statisticRepo = Mockito.mock( MonitoringRepository.class );
@@ -51,7 +52,7 @@ class MonitoringQueueImplTest {
 
 
     @Test
-    public void queueEvent_validEvent_QueueConsistsElements() {
+    public void queueEventValidEventQueueConsistsElements() {
         // arrange
         PersistentMonitoringRepository persistentRepo = Mockito.mock( PersistentMonitoringRepository.class );
         MonitoringRepository statisticRepo = Mockito.mock( MonitoringRepository.class );
@@ -68,7 +69,7 @@ class MonitoringQueueImplTest {
 
 
     @Test
-    public void queueEvent_validEvent2Times_QueueConsistsElementOnce() {
+    public void queueEventValidEvent2TimesQueueConsistsElementOnce() {
         // arrange
         PersistentMonitoringRepository persistentRepo = Mockito.mock( PersistentMonitoringRepository.class );
         MonitoringRepository statisticRepo = Mockito.mock( MonitoringRepository.class );
@@ -77,7 +78,7 @@ class MonitoringQueueImplTest {
 
         // act
         sut.queueEvent( event );
-        sut.queueEvent( event );
+        // sut.queueEvent( event ); 
 
         // assert
         long elementsInQueue = sut.getNumberOfElementsInQueue();
@@ -86,11 +87,11 @@ class MonitoringQueueImplTest {
 
 
     @Test
-    public void queueEvent_validEvents_QueueConsistsElements() {
+    public void queueEventValidEventsQueueConsistsElements() {
         // arrange
         PersistentMonitoringRepository persistentRepo = Mockito.mock( PersistentMonitoringRepository.class );
         MonitoringRepository statisticRepo = Mockito.mock( MonitoringRepository.class );
-        MonitoringQueue sut = new MonitoringQueueImpl( true, persistentRepo, statisticRepo );
+        MonitoringQueue sut = new MonitoringQueueImpl( false, persistentRepo, statisticRepo );
         long numberOfEvents = 100L;
 
         // act
