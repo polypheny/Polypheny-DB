@@ -46,7 +46,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     private final MonitoringRepository statisticRepository;
     private MonitoringThreadPoolExecutor threadPoolWorkers;
 
-    private final BlockingQueue<Runnable> eventQueue;
+    private final BlockingQueue<Runnable> eventQueue = new LinkedBlockingQueue<>();
 
     private final int CORE_POOL_SIZE;
     private final int MAXIMUM_POOL_SIZE;
@@ -67,25 +67,32 @@ public class MonitoringQueueImpl implements MonitoringQueue {
             @NonNull MonitoringRepository statisticRepository ) {
         this.persistentRepository = persistentRepository;
         this.statisticRepository = statisticRepository;
-        this.eventQueue = new LinkedBlockingQueue<>();
         this.backgroundProcessingActive = backgroundProcessingActive;
 
         this.CORE_POOL_SIZE = RuntimeConfig.MONITORING_CORE_POOL_SIZE.getInteger();
         this.MAXIMUM_POOL_SIZE = RuntimeConfig.MONITORING_MAXIMUM_POOL_SIZE.getInteger();
         this.KEEP_ALIVE_TIME = RuntimeConfig.MONITORING_POOL_KEEP_ALIVE_TIME.getInteger();
 
-        if ( this.backgroundProcessingActive ) {
-            RuntimeConfig.MONITORING_CORE_POOL_SIZE.setRequiresRestart( true );
-            RuntimeConfig.MONITORING_MAXIMUM_POOL_SIZE.setRequiresRestart( true );
-            RuntimeConfig.MONITORING_POOL_KEEP_ALIVE_TIME.setRequiresRestart( true );
-
+        if ( !this.backgroundProcessingActive ) {
             threadPoolWorkers = new MonitoringThreadPoolExecutor(
                     CORE_POOL_SIZE,
                     MAXIMUM_POOL_SIZE,
                     KEEP_ALIVE_TIME,
                     TimeUnit.SECONDS,
                     eventQueue );
+            return;
         }
+
+        RuntimeConfig.MONITORING_CORE_POOL_SIZE.setRequiresRestart( true );
+        RuntimeConfig.MONITORING_MAXIMUM_POOL_SIZE.setRequiresRestart( true );
+        RuntimeConfig.MONITORING_POOL_KEEP_ALIVE_TIME.setRequiresRestart( true );
+
+        threadPoolWorkers = new MonitoringThreadPoolExecutor(
+                CORE_POOL_SIZE,
+                MAXIMUM_POOL_SIZE,
+                KEEP_ALIVE_TIME,
+                TimeUnit.SECONDS,
+                eventQueue );
 
         // Instantiated thread count
         this.threadCount = threadPoolWorkers.getPoolSize();
@@ -121,6 +128,8 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     public synchronized void queueEvent( @NonNull MonitoringEvent event ) {
         if ( backgroundProcessingActive ) {
             threadPoolWorkers.execute( new MonitoringWorker( event ) );
+        } else {
+            eventQueue.add( new MonitoringWorker( event ) );
         }
     }
 

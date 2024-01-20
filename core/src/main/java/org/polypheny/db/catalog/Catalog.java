@@ -79,7 +79,7 @@ public abstract class Catalog implements ExtensionPoint {
 
 
     public static Catalog setAndGetInstance( Catalog catalog ) {
-        if ( INSTANCE != null ) {
+        if ( INSTANCE != null && Catalog.mode != PolyMode.TEST ) {
             throw new GenericRuntimeException( "Setting the Catalog, when already set is not permitted." );
         }
         INSTANCE = catalog;

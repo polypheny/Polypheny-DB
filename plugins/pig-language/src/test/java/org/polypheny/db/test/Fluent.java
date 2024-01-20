@@ -34,7 +34,16 @@
 package org.polypheny.db.test;
 
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+
 import com.google.common.collect.Ordering;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Function;
 import org.polypheny.db.piglet.Ast;
 import org.polypheny.db.piglet.Ast.Program;
 import org.polypheny.db.piglet.Handler;
@@ -43,16 +52,6 @@ import org.polypheny.db.piglet.parser.PigletParser;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.tools.PigAlgBuilder;
 import org.polypheny.db.util.Util;
-
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.function.Function;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
 
 
 /**
