@@ -18,6 +18,7 @@ package org.polypheny.db.cql.utils;
 
 import java.util.HashMap;
 import java.util.Objects;
+import lombok.Getter;
 import org.polypheny.db.cql.exception.UnexpectedTypeException;
 
 
@@ -34,6 +35,7 @@ public class Tree<M, N> {
     public final Tree<M, N> right;
     private final M internalNode;
     private final N externalNode;
+    @Getter
     private final boolean leaf;
 
 
@@ -64,11 +66,6 @@ public class Tree<M, N> {
         this.left = null;
         this.right = null;
         this.leaf = true;
-    }
-
-
-    public boolean isLeaf() {
-        return leaf;
     }
 
 

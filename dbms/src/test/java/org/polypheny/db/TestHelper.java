@@ -167,6 +167,27 @@ public class TestHelper {
     }
 
 
+    public static void addHsqldb( String name ) throws SQLException {
+        executeSQL( "ALTER ADAPTERS ADD \"" + name + "\" USING 'Hsqldb' AS 'Store'"
+                + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+    }
+
+
+    public static void addCsv( String name ) throws SQLException {
+        executeSQL( "ALTER ADAPTERS ADD \"" + name + "\" USING 'Csv' AS 'Store'"
+                + " WITH '{}'" );
+    }
+
+
+    public static void executeSQL( String sql ) throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
+            try ( Statement statement = jdbcConnection.connection.createStatement() ) {
+                statement.execute( sql );
+            }
+        }
+    }
+
+
     public static void checkResultSet( ResultSet resultSet, List<Object[]> expected ) throws SQLException {
         checkResultSet( resultSet, expected, false );
     }

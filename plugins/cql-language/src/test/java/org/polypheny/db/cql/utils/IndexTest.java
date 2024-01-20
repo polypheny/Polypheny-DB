@@ -19,6 +19,7 @@ package org.polypheny.db.cql.utils;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.NoSuchElementException;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.cql.ColumnIndex;
 import org.polypheny.db.cql.TableIndex;
@@ -37,10 +38,9 @@ public class IndexTest extends CqlTestHelper {
 
     @Test
     public void testCreateColumnIndexThrowsUnknownIndexException() throws UnknownIndexException {
-        UnknownIndexException thrown = assertThrows( UnknownIndexException.class, () -> {
+        NoSuchElementException thrown = assertThrows( NoSuchElementException.class, () -> {
             ColumnIndex.createIndex( "hello", "world", "!" );
         } );
-        ColumnIndex.createIndex( "hello", "world", "!" );
     }
 
 
@@ -53,7 +53,7 @@ public class IndexTest extends CqlTestHelper {
 
     @Test
     public void testCreateTableIndexThrowsUnknownIndexException() throws UnknownIndexException {
-        UnknownIndexException thrown = assertThrows( UnknownIndexException.class, () -> {
+        NoSuchElementException thrown = assertThrows( NoSuchElementException.class, () -> {
             TableIndex.createIndex( "hello", "world" );
         } );
     }

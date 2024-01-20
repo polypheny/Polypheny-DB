@@ -20,6 +20,7 @@ dependencies {
     testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":core")
     testImplementation project(path: ":monitoring")
+    testImplementation project(path: ":dbms")
     testImplementation project(path: ":dbms", configuration: "test")
     testImplementation project(path: ":config")
 

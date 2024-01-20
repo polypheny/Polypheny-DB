@@ -23,8 +23,10 @@ import java.util.List;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.polypheny.db.TestHelper;
 import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
 import org.polypheny.db.transaction.Statement;
@@ -32,6 +34,13 @@ import org.polypheny.db.transaction.Statement;
 
 @Slf4j
 class MonitoringQueueImplIntegrationTest {
+
+    @BeforeAll
+    public static void setUp() {
+        TestHelper.getInstance();
+    }
+
+
 
     @Test
     public void queuedEventsAreProcessed() {

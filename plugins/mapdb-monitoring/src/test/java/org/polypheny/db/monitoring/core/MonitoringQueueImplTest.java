@@ -19,8 +19,10 @@ package org.polypheny.db.monitoring.core;
 import java.util.HashMap;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.polypheny.db.TestHelper;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
 import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.repository.MonitoringRepository;
@@ -28,6 +30,11 @@ import org.polypheny.db.monitoring.repository.PersistentMonitoringRepository;
 
 
 class MonitoringQueueImplTest {
+
+    @BeforeAll
+    public static void setUp() {
+        TestHelper.getInstance();
+    }
 
     @Test
     public void ctor_validParameters_instanceNotNull() {
@@ -83,7 +90,7 @@ class MonitoringQueueImplTest {
         // arrange
         PersistentMonitoringRepository persistentRepo = Mockito.mock( PersistentMonitoringRepository.class );
         MonitoringRepository statisticRepo = Mockito.mock( MonitoringRepository.class );
-        MonitoringQueue sut = new MonitoringQueueImpl( false, persistentRepo, statisticRepo );
+        MonitoringQueue sut = new MonitoringQueueImpl( true, persistentRepo, statisticRepo );
         long numberOfEvents = 100L;
 
         // act
