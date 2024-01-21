@@ -33,18 +33,23 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.exception.ConfigRuntimeException;
+import org.polypheny.db.util.PolyMode;
+import org.polypheny.db.util.PolyphenyHomeDirManager;
 
 
 public class ConfigManagerTest implements ConfigListener {
 
-    private ConfigManager cm;
+    private final ConfigManager cm;
     private boolean wasRestarted = false;
 
 
-    static {
+    @BeforeAll
+    public static void setupTestEnvironment() {
+        PolyphenyHomeDirManager.setModeAndGetInstance( PolyMode.TEST );
         ConfigManager cm = ConfigManager.getInstance();
 
         // Check if the correct file will be accessed
@@ -56,7 +61,7 @@ public class ConfigManagerTest implements ConfigListener {
         } catch ( IOException e ) {
             e.printStackTrace();
         }
-        cm.setApplicationConfFile( testFile.toFile() );
+        ConfigManager.setApplicationConfFile( testFile.toFile() );
 
         WebUiPage p = new WebUiPage( "p", "page1", "page1descr" );
         WebUiGroup g1 = new WebUiGroup( "g1", "p", 2 ).withTitle( "group1" );

@@ -2457,6 +2457,7 @@ public class Functions {
 
     public static PathContext jsonApiCommonSyntax( PolyValue input, PolyString pathSpec ) {
         try {
+
             Matcher matcher = JSON_PATH_BASE.matcher( pathSpec.value );
             if ( !matcher.matches() ) {
                 throw Static.RESOURCE.illegalJsonPathSpec( pathSpec.value ).ex();
@@ -2482,7 +2483,8 @@ public class Functions {
                 default -> throw Static.RESOURCE.illegalJsonPathModeInPathSpec( mode.toString(), pathSpec.value ).ex();
             };
             try {
-                return PathContext.withReturned( mode, PolyValue.fromJson( ctx.read( pathWff ) ) );
+                Object json = ctx.read( pathWff );
+                return PathContext.withReturned( mode, json == null ? null : PolyValue.fromJson( json.toString() ) );
             } catch ( Exception e ) {
                 return PathContext.withStrictException( e );
             }
@@ -2506,7 +2508,6 @@ public class Functions {
                 case FALSE -> Boolean.FALSE;
                 case ERROR -> throw toUnchecked( context.exc );
                 case UNKNOWN -> null;
-                default -> throw Static.RESOURCE.illegalErrorBehaviorInJsonExistsFunc( errorBehavior.toString() ).ex();
             };
         } else {
             return !Objects.isNull( context.pathReturned );

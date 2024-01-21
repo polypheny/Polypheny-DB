@@ -51,7 +51,7 @@ public class JdbcAutoCommitTest {
     }
 
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "Auto-Committing: {0}")
     @ValueSource(booleans = { false, true })
     public void testDDl( boolean useAutoCommit ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( useAutoCommit ) ) {
@@ -75,7 +75,7 @@ public class JdbcAutoCommitTest {
     }
 
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "Auto-Committing: {0}")
     @ValueSource(booleans = { false, true })
     public void testDml( boolean useAutoCommit ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( useAutoCommit ) ) {
