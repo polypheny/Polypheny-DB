@@ -16,7 +16,6 @@
 
 package org.polypheny.db.adapter.neo4j;
 
-import java.io.Serializable;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -99,7 +98,6 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
     /**
      * Creates an {@link RelModify} algebra object, which is modifies this graph.
      *
-     * @param cluster
      * @param child the child nodes of the created algebra node
      * @param operation the modify operation
      */
@@ -149,12 +147,6 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
     @Override
     public AlgNode toAlg( AlgOptCluster cluster, AlgTraitSet traitSet ) {
         return new NeoLpgScan( cluster, cluster.traitSetOf( NeoConvention.INSTANCE ).replace( ModelTrait.GRAPH ), this );
-    }
-
-
-    @Override
-    public Serializable[] getParameterArray() {
-        return new Serializable[0];
     }
 
 

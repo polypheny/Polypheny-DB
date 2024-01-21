@@ -187,6 +187,12 @@ public class PolyDouble extends PolyNumber {
     }
 
 
+    @Override
+    public Object toJava() {
+        return value;
+    }
+
+
     public static class PolyDoubleSerializerDef extends SimpleSerializerDef<PolyDouble> {
 
         @Override

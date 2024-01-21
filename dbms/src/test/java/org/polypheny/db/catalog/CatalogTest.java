@@ -17,6 +17,8 @@
 package org.polypheny.db.catalog;
 
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -25,7 +27,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
@@ -37,12 +38,12 @@ import org.polypheny.db.catalog.entity.LogicalAdapter;
 @Slf4j
 public class CatalogTest {
 
+    private static TestHelper helper;
+
+
     @BeforeAll
     public static void start() {
-        // Ensures that Polypheny-DB is running
-        //noinspection ResultOfMethodCallIgnored
-        TestHelper.getInstance();
-        //deleteOldData();
+        helper = TestHelper.getInstance();
         addTestData();
     }
 
@@ -50,6 +51,8 @@ public class CatalogTest {
     @AfterAll
     public static void stop() {
         deleteOldData();
+
+        helper.checkAllTrxClosed();
     }
 
 
@@ -111,12 +114,12 @@ public class CatalogTest {
 
             // Check number of columns
             int totalColumns = rsmd.getColumnCount();
-            Assertions.assertEquals( 3, totalColumns, "Wrong number of columns" );
+            assertEquals( 3, totalColumns, "Wrong number of columns" );
 
             // Check column names
-            Assertions.assertEquals( "Wrong column name", "TABLE_CAT", rsmd.getColumnName( 1 ) );
-            Assertions.assertEquals( "Wrong column name", "OWNER", rsmd.getColumnName( 2 ) );
-            Assertions.assertEquals( "Wrong column name", "DEFAULT_SCHEMA", rsmd.getColumnName( 3 ) );
+            assertEquals( "TABLE_CAT", rsmd.getColumnName( 1 ), "Wrong column name" );
+            assertEquals( "OWNER", rsmd.getColumnName( 2 ), "Wrong column name" );
+            assertEquals( "DEFAULT_SCHEMA", rsmd.getColumnName( 3 ), "Wrong column name" );
 
             // Check data
             final Object[] databaseApp = new Object[]{ "APP", "system", "public" };

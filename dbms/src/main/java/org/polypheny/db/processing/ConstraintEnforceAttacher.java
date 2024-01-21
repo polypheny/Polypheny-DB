@@ -138,7 +138,7 @@ public class ConstraintEnforceAttacher {
                 .stream()
                 .map( t -> LogicalConstraintEnforcer.getControl( t, statement, enforcementTime ) )
                 .filter( i -> i.getControl() != null )
-                .collect( Collectors.toList() );
+                .toList();
     }
 
 
@@ -189,10 +189,9 @@ public class ConstraintEnforceAttacher {
         if ( !logicalRoot.kind.belongsTo( Kind.DML ) ) {
             return logicalRoot;
         }
-        if ( !(logicalRoot.alg instanceof RelModify) ) {
+        if ( !(logicalRoot.alg instanceof RelModify<?> root) ) {
             return logicalRoot;
         }
-        final RelModify<?> root = (RelModify<?>) logicalRoot.alg;
 
         final LogicalTable table = root.getEntity().unwrap( LogicalTable.class ).orElseThrow();
         LogicalRelSnapshot snapshot = statement.getTransaction().getSnapshot().rel();
@@ -253,7 +252,7 @@ public class ConstraintEnforceAttacher {
                     // no need to check, only one tuple in set
                 } else if ( input instanceof LogicalProject && input.getInput( 0 ) instanceof LogicalValues && (input.getInput( 0 )).getTupleType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
                     //noinspection StatementWithEmptyBody
-                    if ( statement.getDataContext().getParameterValues().size() > 0 ) {
+                    if ( !statement.getDataContext().getParameterValues().isEmpty() ) {
                         LogicalProject project = (LogicalProject) input;
                         List<Map<Long, PolyValue>> parameterValues = statement.getDataContext().getParameterValues();
                         final Set<List<PolyValue>> uniqueSet = new HashSet<>( parameterValues.get( 0 ).size() );
@@ -279,10 +278,9 @@ public class ConstraintEnforceAttacher {
                     } else {
                         // no need to check, only one tuple in set
                     }
-                } else if ( input instanceof Values ) {
+                } else if ( input instanceof Values values ) {
                     // If the input is a Values node, check uniqueness right away, as not all stores can implement this check
                     // (And anyway, pushing this down to stores seems rather inefficient)
-                    final Values values = (Values) input;
                     final List<? extends List<RexLiteral>> tuples = values.getTuples();
                     final Set<List<RexLiteral>> uniqueSet = new HashSet<>( tuples.size() );
                     final Map<String, Integer> columnMap = new HashMap<>( constraint.key.columnIds.size() );
@@ -401,7 +399,7 @@ public class ConstraintEnforceAttacher {
                 builder.join( JoinAlgType.INNER, builder.literal( true ) );
 
                 List<LogicalColumn> columns = snapshot.getColumns( table.id );
-                List<String> columNames = columns.stream().map( c -> c.name ).collect( Collectors.toList() );
+                List<String> columNames = columns.stream().map( c -> c.name ).toList();
 
                 List<RexNode> conditionList1 = primaryKey.getColumnNames().stream().map( c ->
                         builder.call(
@@ -546,7 +544,7 @@ public class ConstraintEnforceAttacher {
                 }
                 final List<RexNode> projects = new ArrayList<>( foreignKey.columnIds.size() );
                 final List<RexNode> foreignProjects = new ArrayList<>( foreignKey.columnIds.size() );
-                final LogicalTable foreignTable = snapshot.getTable( foreignKey.tableId ).orElseThrow();
+                final LogicalTable foreignTable = snapshot.getTable( foreignKey.entityId ).orElseThrow();
                 for ( int i = 0; i < foreignKey.columnIds.size(); ++i ) {
                     final String columnName = foreignKey.getReferencedKeyColumnNames().get( i );
                     final String foreignColumnName = foreignKey.getColumnNames().get( i );
@@ -643,7 +641,7 @@ public class ConstraintEnforceAttacher {
                             .stream()
                             .flatMap( n -> Catalog.getInstance().getSnapshot().rel().getTables( n.id, null ).stream() )
                             .filter( t -> t.entityType == EntityType.ENTITY && t.getDataModel() == DataModel.RELATIONAL )
-                            .collect( Collectors.toList() );
+                            .toList();
                     Transaction transaction = this.manager.startTransaction( Catalog.defaultUserId, false, "ConstraintEnforcement" );
                     Statement statement = transaction.createStatement();
                     QueryProcessor processor = statement.getQueryProcessor();
@@ -652,14 +650,14 @@ public class ConstraintEnforceAttacher {
                     List<PolyImplementation> results = infos
                             .stream()
                             .map( s -> processor.prepareQuery( AlgRoot.of( s.getControl(), Kind.SELECT ), false ) )
-                            .collect( Collectors.toList() );
-                    List<List<?>> rows = results.stream()
+                            .toList();
+                    List<List<List<PolyValue>>> rows = results.stream()
                             .map( r -> r.execute( statement, -1 ).getAllRowsAndClose() )
                             .filter( r -> !r.isEmpty() )
-                            .collect( Collectors.toList() );
+                            .toList();
 
                     if ( !rows.isEmpty() ) {
-                        Integer index = ((List<Integer>) rows.get( 0 ).get( 0 )).get( 1 );
+                        int index = rows.get( 0 ).get( 0 ).get( 1 ).asNumber().intValue();
                         throw new TransactionException( infos.get( 0 ).getErrorMessages().get( index ) + "\nThere are violated constraints, the transaction was rolled back!" );
                     }
                     try {

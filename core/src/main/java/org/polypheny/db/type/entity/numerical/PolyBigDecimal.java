@@ -262,6 +262,12 @@ public class PolyBigDecimal extends PolyNumber {
     }
 
 
+    @Override
+    public Object toJava() {
+        return value;
+    }
+
+
     public static class PolyBigDecimalSerializerDef extends SimpleSerializerDef<PolyBigDecimal> {
 
         @Override

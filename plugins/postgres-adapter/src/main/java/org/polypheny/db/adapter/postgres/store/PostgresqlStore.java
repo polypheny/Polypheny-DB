@@ -237,8 +237,8 @@ public class PostgresqlStore extends AbstractJdbcStore {
         // List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
         // partitionIds.forEach( id -> partitionPlacements.add( catalog.getPartitionPlacement( getAdapterId(), id ) ) );
 
-        String physicalIndexName = getPhysicalIndexName( index.key.tableId, index.id );
         PhysicalTable physical = storeCatalog.fromAllocation( allocation.id );
+        String physicalIndexName = getPhysicalIndexName( physical.id, index.id );
 
         //for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
         StringBuilder builder = new StringBuilder();

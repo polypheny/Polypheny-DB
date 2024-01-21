@@ -297,6 +297,12 @@ public class PolyPath extends GraphObject {
     }
 
 
+    @Override
+    public Object toJava() {
+        return this;
+    }
+
+
     @Slf4j
     public static class PolySegment extends GraphObject {
 
@@ -391,6 +397,12 @@ public class PolyPath extends GraphObject {
         @Override
         public @Nullable Long deriveByteSize() {
             return null;
+        }
+
+
+        @Override
+        public Object toJava() {
+            return this;
         }
 
     }

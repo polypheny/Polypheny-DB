@@ -545,6 +545,11 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
                 assert value.isNumber();
                 pw.print( value.asNumber().intValue() );
                 break;
+            case REAL:
+                assert value.isNumber();
+                pw.print( value.asNumber().floatValue() );
+                pw.print( 'R' );
+                break;
             case BINARY:
                 assert value.isBinary();
                 pw.print( "X'" );

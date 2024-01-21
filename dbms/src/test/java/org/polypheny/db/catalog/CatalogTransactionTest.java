@@ -16,6 +16,7 @@
 
 package org.polypheny.db.catalog;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
@@ -30,9 +31,18 @@ import org.polypheny.db.type.PolyType;
 public class CatalogTransactionTest {
 
 
+    private static TestHelper helper;
+
+
     @BeforeAll
     public static void initClass() {
-        TestHelper.getInstance();
+        helper = TestHelper.getInstance();
+    }
+
+
+    @AfterAll
+    public static void tearDown() {
+        helper.checkAllTrxClosed();
     }
 
 

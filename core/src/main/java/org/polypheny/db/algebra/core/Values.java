@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.AlgWriter;
@@ -60,17 +61,21 @@ import org.polypheny.db.util.Pair;
 /**
  * Relational expression whose value is a sequence of zero or more literal row values.
  */
+@Getter
 public abstract class Values extends AbstractAlgNode {
 
     public static final Predicate<? super Values> IS_EMPTY_J = Values::isEmpty;
 
-
+    /**
+     * -- GETTER --
+     * Returns the rows of literals represented by this Values relational expression.
+     */
     public final ImmutableList<ImmutableList<RexLiteral>> tuples;
 
 
     /**
      * Creates a new Values.
-     *
+     * <p>
      * Note that tuples passed in become owned by this alg (without a deep copy), so caller must not modify them after this call, otherwise bad things will happen.
      *
      * @param cluster Cluster that this relational expression belongs to
@@ -87,7 +92,7 @@ public abstract class Values extends AbstractAlgNode {
 
     /**
      * Predicate, to be used when defining an operand of a {@link AlgOptRule}, that returns true if a Values contains zero tuples.
-     *
+     * <p>
      * This is the conventional way to represent an empty relational expression. There are several rules that recognize empty relational expressions and prune away that section of the tree.
      */
     public static boolean isEmpty( Values values ) {
@@ -97,19 +102,11 @@ public abstract class Values extends AbstractAlgNode {
 
     /**
      * Predicate, to be used when defining an operand of a {@link AlgOptRule}, that returns true if a Values contains one or more tuples.
-     *
+     * <p>
      * This is the conventional way to represent an empty relational expression. There are several rules that recognize empty relational expressions and prune away that section of the tree.
      */
     public static boolean isNotEmpty( Values values ) {
         return !isEmpty( values );
-    }
-
-
-    /**
-     * Returns the rows of literals represented by this Values relational expression.
-     */
-    public ImmutableList<ImmutableList<RexLiteral>> getTuples() {
-        return tuples;
     }
 
 

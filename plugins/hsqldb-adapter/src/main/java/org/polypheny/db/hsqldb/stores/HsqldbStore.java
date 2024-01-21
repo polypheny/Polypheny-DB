@@ -107,8 +107,10 @@ public class HsqldbStore extends AbstractJdbcStore {
         // List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
         // partitionIds.forEach( id -> partitionPlacements.add( context.getSnapshot().alloc().getPartitionPlacement( getAdapterId(), id ) ) );
 
-        String physicalIndexName = getPhysicalIndexName( index.key.tableId, index.id );
         PhysicalTable physical = storeCatalog.fromAllocation( allocation.id );
+
+        String physicalIndexName = getPhysicalIndexName( physical.id, index.id );
+
         // for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
 
         StringBuilder builder = new StringBuilder();
@@ -145,11 +147,13 @@ public class HsqldbStore extends AbstractJdbcStore {
     @Override
     public void dropIndex( Context context, LogicalIndex index, long allocId ) {
 
-        PhysicalTable table = storeCatalog.fromAllocation( allocId );
+        PhysicalTable physical = storeCatalog.fromAllocation( allocId );
+
+        String physicalIndexName = getPhysicalIndexName( physical.id, index.id );
 
         StringBuilder builder = new StringBuilder();
         builder.append( "DROP INDEX " );
-        builder.append( dialect.quoteIdentifier( index.physicalName + "_" + table.id ) );
+        builder.append( dialect.quoteIdentifier( physicalIndexName ) );
         executeUpdate( builder, context );
 
     }

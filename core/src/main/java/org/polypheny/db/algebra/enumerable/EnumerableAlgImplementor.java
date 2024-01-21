@@ -372,11 +372,11 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
 
     /**
      * Stashes a value for the executor. Given values are de-duplicated if identical (see {@link java.util.IdentityHashMap}).
-     *
+     * <p>
      * For instance, to pass {@code ArrayList} to your method, you can use {@code Expressions.call(method, implementor.stash(arrayList))}.
-     *
+     * <p>
      * For simple literals (strings, numbers) the result is equivalent to {@link org.apache.calcite.linq4j.tree.Expressions#constant(Object, java.lang.reflect.Type)}.
-     *
+     * <p>
      * Note: the input value is held in memory as long as the statement is alive. If you are using just a subset of its content, consider creating a slimmer holder.
      *
      * @param input Value to be stashed

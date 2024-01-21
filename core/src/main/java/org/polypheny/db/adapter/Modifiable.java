@@ -29,7 +29,6 @@ import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.core.document.DocumentModify;
 import org.polypheny.db.algebra.core.lpg.LpgModify;
 import org.polypheny.db.algebra.core.lpg.LpgProject;
-import org.polypheny.db.algebra.core.lpg.LpgValues;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.logical.common.LogicalContextSwitcher;
 import org.polypheny.db.algebra.logical.common.LogicalStreamer;
@@ -432,9 +431,9 @@ public interface Modifiable extends Scannable {
 
         switch ( alg.operation ) {
             case INSERT:
-                if ( raw instanceof LpgValues ) {
+                if ( raw instanceof LogicalLpgValues values ) {
                     // simple value insert
-                    inputs.addAll( ((LogicalLpgValues) raw).getRelationalEquivalent( List.of(), List.of( nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable ), Catalog.snapshot() ) );
+                    inputs.addAll( values.getRelationalEquivalent( List.of(), List.of( nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable ), Catalog.snapshot() ) );
                 }
                 if ( raw instanceof LpgProject ) {
                     return attachRelationalRelatedInsert( modifiable, raw, (LogicalLpgModify) alg, builder, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable );

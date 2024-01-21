@@ -177,6 +177,12 @@ public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue
     }
 
 
+    @Override
+    public Object toJava() {
+        return map == null ? null : map.entrySet().stream().collect( Collectors.toMap( e -> e.getKey().toJava(), e -> e.getValue().toJava() ) );
+    }
+
+
     public boolean isDictionary() {
         return mapType == MapType.DICTIONARY;
     }

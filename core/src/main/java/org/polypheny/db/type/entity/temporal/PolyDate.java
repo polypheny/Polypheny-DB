@@ -20,7 +20,6 @@ import com.fasterxml.jackson.core.JsonToken;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Value;
 import org.apache.calcite.avatica.util.DateTimeUtils;
@@ -38,7 +37,6 @@ import org.polypheny.db.type.entity.category.PolyTemporal;
 
 @Getter
 @Value
-@EqualsAndHashCode(callSuper = true)
 public class PolyDate extends PolyTemporal {
 
     public static final DateFormat dateFormat = new SimpleDateFormat( "yyyy-MM-dd" );
@@ -136,6 +134,9 @@ public class PolyDate extends PolyTemporal {
 
     @Override
     public int compareTo( @NotNull PolyValue o ) {
+        if ( millisSinceEpoch == null ) {
+            return -1;
+        }
         if ( !isDate() ) {
             return -1;
         }
@@ -159,6 +160,12 @@ public class PolyDate extends PolyTemporal {
     @Override
     public @Nullable Long deriveByteSize() {
         return null;
+    }
+
+
+    @Override
+    public Object toJava() {
+        return getDaysSinceEpoch();
     }
 
 

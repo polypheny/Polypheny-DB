@@ -19,7 +19,7 @@ package org.polypheny.db.catalog.entity.logical;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
-import java.io.Serializable;
+import java.io.Serial;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +34,9 @@ import org.polypheny.db.catalog.entity.PolyObject;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
 
 
 @EqualsAndHashCode()
@@ -42,6 +45,7 @@ import org.polypheny.db.type.PolyType;
 @NonFinal
 public class LogicalColumn implements PolyObject, Comparable<LogicalColumn> {
 
+    @Serial
     private static final long serialVersionUID = -4792846455300897399L;
 
     @Serialize
@@ -155,27 +159,27 @@ public class LogicalColumn implements PolyObject, Comparable<LogicalColumn> {
 
 
     @Override
-    public Serializable[] getParameterArray() {
-        return new Serializable[]{
-                Catalog.DATABASE_NAME,
-                getNamespaceName(),
-                getTableName(),
-                name,
-                type.getJdbcOrdinal(),
-                type.name(),
-                length,
+    public PolyValue[] getParameterArray() {
+        return new PolyValue[]{
+                PolyString.of( Catalog.DATABASE_NAME ),
+                PolyString.of( getNamespaceName() ),
+                PolyString.of( getTableName() ),
+                PolyString.of( name ),
+                PolyInteger.of( type.getJdbcOrdinal() ),
+                PolyString.of( type.name() ),
+                PolyInteger.of( length ),
                 null,
-                scale,
+                PolyInteger.of( scale ),
                 null,
-                nullable ? 1 : 0,
-                "",
-                defaultValue == null ? null : defaultValue.value.toJson(),
+                PolyInteger.of( nullable ? 1 : 0 ),
+                PolyString.of( "" ),
+                PolyString.of( defaultValue == null ? null : defaultValue.value.toJson() ),
                 null,
                 null,
                 null,
-                position,
-                nullable ? "YES" : "NO",
-                PolyObject.getEnumNameOrNull( collation ) };
+                PolyInteger.of( position ),
+                PolyString.of( nullable ? "YES" : "NO" ),
+                PolyString.of( PolyObject.getEnumNameOrNull( collation ) ) };
     }
 
 

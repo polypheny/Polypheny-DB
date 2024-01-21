@@ -237,6 +237,12 @@ public class PolyLong extends PolyNumber {
 
 
     @Override
+    public Object toJava() {
+        return value;
+    }
+
+
+    @Override
     public int hashCode() {
         return Objects.hash( super.hashCode(), value );
     }

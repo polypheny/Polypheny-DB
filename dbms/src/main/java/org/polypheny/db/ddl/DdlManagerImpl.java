@@ -28,6 +28,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
@@ -605,9 +606,9 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private void addDataStoreIndex( LogicalTable catalogTable, String indexMethodName, String indexName, boolean isUnique, DataStore<?> location, Statement statement, List<Long> columnIds, IndexType type ) {
+    private void addDataStoreIndex( LogicalTable table, String indexMethodName, String indexName, boolean isUnique, @NotNull DataStore<?> location, Statement statement, List<Long> columnIds, IndexType type ) {
         // Check if all required columns are present on this storeId
-        AllocationTable alloc = catalog.getSnapshot().alloc().getEntity( location.getAdapterId(), catalogTable.id ).orElseThrow().unwrap( AllocationTable.class ).orElseThrow();
+        AllocationTable alloc = catalog.getSnapshot().alloc().getEntity( location.getAdapterId(), table.id ).orElseThrow().unwrap( AllocationTable.class ).orElseThrow();
 
         if ( !new HashSet<>( alloc.getColumns().stream().map( c -> c.columnId ).toList() ).containsAll( columnIds ) ) {
             throw new GenericRuntimeException( "Not all required columns for this index are placed on this storeId." );
@@ -632,8 +633,8 @@ public class DdlManagerImpl extends DdlManager {
             methodDisplayName = location.getDefaultIndexMethod().displayName;
         }
 
-        LogicalIndex index = catalog.getLogicalRel( catalogTable.namespaceId ).addIndex(
-                catalogTable.id,
+        LogicalIndex index = catalog.getLogicalRel( table.namespaceId ).addIndex(
+                table.id,
                 columnIds,
                 isUnique,
                 method,
@@ -645,8 +646,8 @@ public class DdlManagerImpl extends DdlManager {
         String physicalName = location.addIndex(
                 statement.getPrepareContext(),
                 index, alloc );
-        catalog.getLogicalRel( catalogTable.namespaceId ).setIndexPhysicalName( index.id, physicalName );
-        //catalog.getSnapshot().alloc().getPartitionsOnDataPlacement( location.getAdapterId(), catalogTable.id );
+        catalog.getLogicalRel( table.namespaceId ).setIndexPhysicalName( index.id, physicalName );
+
     }
 
 
@@ -695,7 +696,7 @@ public class DdlManagerImpl extends DdlManager {
                 isUnique,
                 method,
                 methodDisplayName,
-                0,
+                -1,
                 type,
                 indexName );
 
@@ -893,7 +894,45 @@ public class DdlManagerImpl extends DdlManager {
         checkIfDdlPossible( table.entityType );
 
         LogicalConstraint constraint = catalog.getSnapshot().rel().getConstraint( table.id, constraintName ).orElseThrow();
+
+        Supplier<Boolean> stillUsed = () -> getKeyUniqueCount( constraint.keyId ) < 2;
+        if ( constraint.type == ConstraintType.UNIQUE && isForeignKey( constraint.key.id ) && stillUsed.get() ) {
+            // maybe we delete multiple constraints in this transaction, so we need to check again
+            catalog.attachCommitConstraint(
+                    stillUsed,
+                    "The constraint " + constraintName + " is used on a key which is referenced by at least one foreign key which requires this key to be unique. Unable to drop unique constraint." );
+        }
+
+
         catalog.getLogicalRel( table.namespaceId ).deleteConstraint( constraint.id );
+    }
+
+
+    private boolean isForeignKey( long key ) {
+        return Catalog.snapshot().rel().getKeys().stream().filter( k -> k instanceof LogicalForeignKey ).map( k -> (LogicalForeignKey) k ).anyMatch( k -> k.referencedKeyId == key );
+    }
+
+
+    private int getKeyUniqueCount( long keyId ) {
+        //LogicalKey key = Catalog.snapshot().rel().getKey( keyId );
+        int count = 0;
+        if ( Catalog.snapshot().rel().getPrimaryKey( keyId ).isPresent() ) {
+            count++;
+        }
+
+        for ( LogicalConstraint constraint : Catalog.snapshot().rel().getConstraints().stream().filter( c -> c.keyId == keyId ).toList() ) {
+            if ( constraint.type == ConstraintType.UNIQUE ) {
+                count++;
+            }
+        }
+
+        for ( LogicalIndex index : Catalog.snapshot().rel().getIndexes().stream().filter( i -> i.keyId == keyId ).toList() ) {
+            if ( index.unique ) {
+                count++;
+            }
+        }
+
+        return count;
     }
 
 
@@ -918,11 +957,14 @@ public class DdlManagerImpl extends DdlManager {
 
         LogicalIndex index = catalog.getSnapshot().rel().getIndex( table.id, indexName ).orElseThrow();
 
-        if ( index.location == 0 ) {
+        if ( index.location < 0 ) {
             IndexManager.getInstance().deleteIndex( index );
         } else {
             DataStore<?> store = AdapterManager.getInstance().getStore( index.location ).orElseThrow();
-            store.dropIndex( statement.getPrepareContext(), index, catalog.getSnapshot().alloc().getPartitionsOnDataPlacement( index.location, table.id ) );
+            AllocationPlacement placement = Catalog.snapshot().alloc().getPlacement( store.getAdapterId(), table.id ).orElseThrow();
+            catalog.getSnapshot().alloc().getAllocsOfPlacement( placement.id ).forEach( allocation -> {
+                store.dropIndex( statement.getPrepareContext(), index, List.of( allocation.id ) );
+            } );
         }
 
         catalog.getLogicalRel( table.namespaceId ).deleteIndex( index.id );
@@ -943,7 +985,7 @@ public class DdlManagerImpl extends DdlManager {
         // Drop all indexes on this storeId
         for ( LogicalIndex index : catalog.getSnapshot().rel().getIndexes( table.id, false ) ) {
             if ( index.location == store.getAdapterId() ) {
-                if ( index.location == 0 ) {
+                if ( index.location < 0 ) {
                     // Delete polystore index
                     IndexManager.getInstance().deleteIndex( index );
                 } else {
@@ -1015,9 +1057,9 @@ public class DdlManagerImpl extends DdlManager {
                 AdapterManager.getInstance().getStore( allocationColumn.adapterId )
                         .orElseThrow()
                         .updateColumnType(
-                        statement.getPrepareContext(),
-                        allocation.id,
-                        catalog.getSnapshot().rel().getColumn( logicalColumn.id ).orElseThrow() );
+                                statement.getPrepareContext(),
+                                allocation.id,
+                                catalog.getSnapshot().rel().getColumn( logicalColumn.id ).orElseThrow() );
             }
         }
 
@@ -2274,7 +2316,7 @@ public class DdlManagerImpl extends DdlManager {
                     index.location,
                     index.type,
                     index.name );
-            if ( index.location == 0 ) {
+            if ( index.location < 0 ) {
                 IndexManager.getInstance().addIndex( newIndex, statement );
             } else {
                 String physicalName = ds.addIndex(
@@ -2584,7 +2626,7 @@ public class DdlManagerImpl extends DdlManager {
                     index.location,
                     index.type,
                     index.name );
-            if ( index.location == 0 ) {
+            if ( index.location < 0 ) {
                 IndexManager.getInstance().addIndex( newIndex, statement );
             } else {
                 AllocationPlacement placement = catalog.getSnapshot().alloc().getPlacement( ds.adapterId, tableId ).orElseThrow();
@@ -2784,7 +2826,8 @@ public class DdlManagerImpl extends DdlManager {
 
         // delete constraints
         for ( LogicalConstraint constraint : snapshot.rel().getConstraints( table.id ) ) {
-            catalog.getLogicalRel( table.namespaceId ).deleteConstraint( constraint.id );
+            dropConstraint( table, constraint.name );
+            //catalog.getLogicalRel( table.namespaceId ).deleteConstraint( constraint.id );
         }
 
         // delete keys

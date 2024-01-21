@@ -16,7 +16,6 @@
 
 package org.polypheny.db.adapter.neo4j;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -117,8 +116,8 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
 
 
     @Override
-    public Serializable[] getParameterArray() {
-        return new Serializable[0];
+    public PolyValue[] getParameterArray() {
+        return new PolyValue[0];
     }
 
 

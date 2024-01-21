@@ -60,7 +60,7 @@ public abstract class AllocationEntity extends Entity {
             long namespaceId,
             long adapterId,
             DataModel type ) {
-        super( id, null, namespaceId, EntityType.ENTITY, type, true );
+        super( id, "$alloc$" + id, namespaceId, EntityType.ENTITY, type, true );
         this.adapterId = adapterId;
         this.logicalId = logicalId;
         this.partitionId = partitionId;

@@ -219,6 +219,12 @@ public class PolyEdge extends GraphPropertyHolder {
     }
 
 
+    @Override
+    public Object toJava() {
+        return this;
+    }
+
+
     public enum EdgeDirection {
         LEFT_TO_RIGHT,
         RIGHT_TO_LEFT,

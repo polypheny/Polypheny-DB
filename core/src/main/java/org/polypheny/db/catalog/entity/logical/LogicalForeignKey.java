@@ -20,7 +20,7 @@ package org.polypheny.db.catalog.entity.logical;
 import com.google.common.collect.ImmutableList;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
-import java.io.Serializable;
+import java.io.Serial;
 import java.util.LinkedList;
 import java.util.List;
 import lombok.EqualsAndHashCode;
@@ -32,6 +32,9 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.PolyObject;
 import org.polypheny.db.catalog.logistic.ForeignKeyOption;
 import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
 
 @Value
 @EqualsAndHashCode(callSuper = true)
@@ -62,7 +65,7 @@ public class LogicalForeignKey extends LogicalKey {
     public LogicalForeignKey(
             @Deserialize("id") final long id,
             @Deserialize("name") @NonNull final String name,
-            @Deserialize("tableId") final long tableId,
+            @Deserialize("entityId") final long entityId,
             @Deserialize("namespaceId") final long namespaceId,
             @Deserialize("referencedKeyId") final long referencedKeyId,
             @Deserialize("referencedKeyTableId") final long referencedKeyTableId,
@@ -71,7 +74,7 @@ public class LogicalForeignKey extends LogicalKey {
             @Deserialize("referencedKeyColumnIds") final List<Long> referencedKeyColumnIds,
             @Deserialize("updateRule") final ForeignKeyOption updateRule,
             @Deserialize("deleteRule") final ForeignKeyOption deleteRule ) {
-        super( id, tableId, namespaceId, columnIds, EnforcementTime.ON_COMMIT );
+        super( id, entityId, namespaceId, columnIds, EnforcementTime.ON_COMMIT );
         this.name = name;
         this.referencedKeyId = referencedKeyId;
         this.referencedKeyTableId = referencedKeyTableId;
@@ -108,27 +111,27 @@ public class LogicalForeignKey extends LogicalKey {
         List<LogicalForeignKeyColumn> list = new LinkedList<>();
         List<String> referencedKeyColumnNames = getReferencedKeyColumnNames();
         for ( String columnName : getColumnNames() ) {
-            list.add( new LogicalForeignKeyColumn( tableId, name, i, referencedKeyColumnNames.get( i - 1 ), columnName ) );
+            list.add( new LogicalForeignKeyColumn( entityId, name, i, referencedKeyColumnNames.get( i - 1 ), columnName ) );
             i++;
         }
         return list;
     }
 
 
-    public Serializable[] getParameterArray( String referencedKeyColumnName, String foreignKeyColumnName, int keySeq ) {
-        return new Serializable[]{
-                Catalog.DATABASE_NAME,
-                getReferencedKeySchemaName(),
-                getReferencedKeyTableName(),
-                referencedKeyColumnName,
-                Catalog.DATABASE_NAME,
-                getSchemaName(),
-                getTableName(),
-                foreignKeyColumnName,
-                keySeq,
-                updateRule.getId(),
-                deleteRule.getId(),
-                name,
+    public PolyValue[] getParameterArray( String referencedKeyColumnName, String foreignKeyColumnName, int keySeq ) {
+        return new PolyValue[]{
+                PolyString.of( Catalog.DATABASE_NAME ),
+                PolyString.of( getReferencedKeySchemaName() ),
+                PolyString.of( getReferencedKeyTableName() ),
+                PolyString.of( referencedKeyColumnName ),
+                PolyString.of( Catalog.DATABASE_NAME ),
+                PolyString.of( getSchemaName() ),
+                PolyString.of( getTableName() ),
+                PolyString.of( foreignKeyColumnName ),
+                PolyInteger.of( keySeq ),
+                PolyInteger.of( updateRule.getId() ),
+                PolyInteger.of( deleteRule.getId() ),
+                PolyString.of( name ),
                 null,
                 null };
     }
@@ -138,6 +141,7 @@ public class LogicalForeignKey extends LogicalKey {
     @RequiredArgsConstructor
     public static class LogicalForeignKeyColumn implements PolyObject {
 
+        @Serial
         private static final long serialVersionUID = 3287177728197412000L;
 
         private final long tableId;
@@ -150,7 +154,7 @@ public class LogicalForeignKey extends LogicalKey {
 
         @SneakyThrows
         @Override
-        public Serializable[] getParameterArray() {
+        public PolyValue[] getParameterArray() {
             return Catalog.snapshot()
                     .rel()
                     .getForeignKey( tableId, foreignKeyName )

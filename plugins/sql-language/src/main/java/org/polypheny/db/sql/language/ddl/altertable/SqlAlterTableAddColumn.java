@@ -19,6 +19,7 @@ package org.polypheny.db.sql.language.ddl.altertable;
 
 import java.util.List;
 import java.util.Objects;
+import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -50,9 +51,9 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
     private final SqlIdentifier column;
     private final SqlDataTypeSpec type;
     private final boolean nullable;
-    private final SqlNode defaultValue; // Can be null
-    private final SqlIdentifier beforeColumnName; // Can be null
-    private final SqlIdentifier afterColumnName; // Can be null
+    private final @Nullable SqlNode defaultValue; // Can be null
+    private final @Nullable SqlIdentifier beforeColumnName; // Can be null
+    private final @Nullable SqlIdentifier afterColumnName; // Can be null
 
 
     public SqlAlterTableAddColumn(
@@ -139,7 +140,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
                 afterColumnName == null ? null : afterColumnName.getSimple(),
                 ColumnTypeInformation.fromDataTypeSpec( type ),
                 nullable,
-                SqlLiteral.toPoly( defaultValue ),
+                defaultValue == null ? null : SqlLiteral.toPoly( defaultValue ),
                 statement );
     }
 

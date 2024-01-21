@@ -298,6 +298,12 @@ public class PolyGraph extends GraphObject {
     }
 
 
+    @Override
+    public Object toJava() {
+        return this;
+    }
+
+
     /**
      * <code>
      * /> 12, 13

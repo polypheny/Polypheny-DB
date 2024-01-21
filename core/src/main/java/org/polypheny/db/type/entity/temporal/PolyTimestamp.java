@@ -164,6 +164,12 @@ public class PolyTimestamp extends PolyTemporal {
 
 
     @Override
+    public Object toJava() {
+        return getMillisSinceEpoch();
+    }
+
+
+    @Override
     public String toString() {
         if ( millisSinceEpoch == null ) {
             return null;

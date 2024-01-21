@@ -40,6 +40,6 @@ jobs:
             -   name: Execute integration tests for ${{ matrix.adapter }}
                 uses: nick-fields/retry@v2
                 with:
-                    max_attempts: 3
+                    max_attempts: 1
                     timeout_minutes: 30
                     command: ./gradlew integrationTests -Dstore.default=${{ matrix.adapter }}

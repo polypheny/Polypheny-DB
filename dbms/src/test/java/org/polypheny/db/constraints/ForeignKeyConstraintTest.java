@@ -106,7 +106,7 @@ public class ForeignKeyConstraintTest {
     }
 
 
-    @ParameterizedTest(name = "{index}: {0}")
+    @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
     public void testInsertNoConflict( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -143,7 +143,7 @@ public class ForeignKeyConstraintTest {
     }
 
 
-    @ParameterizedTest()
+    @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
     @Tag("monetExclude") // COUNT() on empty collection returns no result and not 0...
     // https://jira.mongodb.org/browse/SERVER-54958
@@ -192,7 +192,7 @@ public class ForeignKeyConstraintTest {
     }
 
 
-    @ParameterizedTest()
+    @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
     @Disabled // todo dl enable as soon as such inserts work correctly
     public void testInsertSelectNoConflict( boolean useIndex ) throws SQLException {
@@ -236,7 +236,7 @@ public class ForeignKeyConstraintTest {
     }
 
 
-    @ParameterizedTest()
+    @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
     @Disabled // todo dl enable as soon as such inserts work correctly
     public void testInsertSelectConflict( boolean useIndex ) throws SQLException {
@@ -286,7 +286,7 @@ public class ForeignKeyConstraintTest {
     }
 
 
-    @ParameterizedTest()
+    @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
     public void testUpdateOutNoConflict( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -331,7 +331,7 @@ public class ForeignKeyConstraintTest {
     }
 
 
-    @ParameterizedTest()
+    @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
     public void testUpdateOutConflict( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
@@ -386,7 +386,7 @@ public class ForeignKeyConstraintTest {
     }
 
 
-    @ParameterizedTest()
+    @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
     public void testUpdateInNoConflict( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -431,7 +431,7 @@ public class ForeignKeyConstraintTest {
     }
 
 
-    @ParameterizedTest()
+    @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
     public void testUpdateInConflict( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
@@ -486,7 +486,7 @@ public class ForeignKeyConstraintTest {
     }
 
 
-    @ParameterizedTest()
+    @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
     public void testDeleteNoConflict( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -530,7 +530,7 @@ public class ForeignKeyConstraintTest {
     }
 
 
-    @ParameterizedTest()
+    @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
     public void testDeleteConflict( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {

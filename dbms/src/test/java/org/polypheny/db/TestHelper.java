@@ -354,6 +354,20 @@ public class TestHelper {
     }
 
 
+    public void checkAllTrxClosed() {
+        checkTrxStatus( 0 );
+    }
+
+
+    public void checkTrxStatus( int expected ) {
+        long count = transactionManager.getNumberOfActiveTransactions();
+        if ( count != expected ) {
+            fail( "There are still " + count + " active transactions, while there should be " + expected );
+            throw new RuntimeException( "There are still " + count + " active transactions, while there should be " + expected );
+        }
+    }
+
+
     public static abstract class HttpConnection {
 
         public static HttpRequest<?> buildQuery( String route, String query, String database ) {

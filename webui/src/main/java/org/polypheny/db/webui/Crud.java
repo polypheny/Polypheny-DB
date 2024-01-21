@@ -1575,7 +1575,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         for ( LogicalIndex logicalIndex : logicalIndices ) {
             String[] arr = new String[5];
             String storeUniqueName;
-            if ( logicalIndex.location == 0 ) {
+            if ( logicalIndex.location < 0 ) {
                 // a polystore index
                 storeUniqueName = "Polypheny-DB";
             } else {

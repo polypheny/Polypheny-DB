@@ -27,11 +27,11 @@ public class LogicalGenericKey extends LogicalKey {
 
     public LogicalGenericKey(
             @Deserialize("id") final long id,
-            @Deserialize("tableId") final long tableId,
+            @Deserialize("entityId") final long entityId,
             @Deserialize("namespaceId") final long namespaceId,
             @Deserialize("columnIds") final List<Long> columnIds,
             @Deserialize("enforcementTime") EnforcementTime enforcementTime ) {
-        super( id, tableId, namespaceId, columnIds, enforcementTime );
+        super( id, entityId, namespaceId, columnIds, enforcementTime );
     }
 
 }

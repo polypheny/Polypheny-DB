@@ -135,6 +135,12 @@ public class PolyNode extends GraphPropertyHolder {
     }
 
 
+    @Override
+    public Object toJava() {
+        return this;
+    }
+
+
     public static class PolyNodeSerializerDef extends SimpleSerializerDef<PolyNode> {
 
         @Override

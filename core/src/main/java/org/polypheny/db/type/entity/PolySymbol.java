@@ -84,6 +84,12 @@ public class PolySymbol extends PolyValue {
 
 
     @Override
+    public Object toJava() {
+        return value;
+    }
+
+
+    @Override
     public String toString() {
         return value.name();
     }

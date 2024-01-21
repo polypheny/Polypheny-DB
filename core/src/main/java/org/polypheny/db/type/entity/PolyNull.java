@@ -362,6 +362,12 @@ public class PolyNull extends PolyValue {
 
 
     @Override
+    public Object toJava() {
+        return null;
+    }
+
+
+    @Override
     public String toString() {
         return null;
     }

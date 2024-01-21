@@ -19,7 +19,6 @@ package org.polypheny.db.catalog.entity.physical;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
-import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
@@ -93,14 +92,14 @@ public class PhysicalColumn extends PhysicalField {
             @Deserialize("adapterId") final long adapterId,
             @Deserialize("position") final int position,
             @Deserialize("type") @NotNull final PolyType type,
-            @Deserialize("collectionsType") final PolyType collectionsType,
-            @Deserialize("length") final Integer length,
-            @Deserialize("scale") final Integer scale,
-            @Deserialize("dimension") final Integer dimension,
-            @Deserialize("cardinality") final Integer cardinality,
+            @Deserialize("collectionsType") final @Nullable PolyType collectionsType,
+            @Deserialize("length") final @Nullable Integer length,
+            @Deserialize("scale") final @Nullable Integer scale,
+            @Deserialize("dimension") final @Nullable Integer dimension,
+            @Deserialize("cardinality") final @Nullable Integer cardinality,
             @Deserialize("nullable") final boolean nullable,
-            @Deserialize("collation") final Collation collation,
-            @Deserialize("defaultValue") LogicalDefaultValue defaultValue ) {
+            @Deserialize("collation") final @Nullable Collation collation,
+            @Deserialize("defaultValue") @Nullable LogicalDefaultValue defaultValue ) {
         super( id, name, logicalName, allocId, tableId, adapterId, DataModel.RELATIONAL, true );
         this.position = position;
         this.type = type;
@@ -139,12 +138,6 @@ public class PhysicalColumn extends PhysicalField {
                 column.nullable,
                 column.collation,
                 column.defaultValue );
-    }
-
-
-    @Override
-    public Serializable[] getParameterArray() {
-        return new Serializable[0];
     }
 
 

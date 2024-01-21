@@ -28,17 +28,19 @@ import org.polypheny.db.TestHelper;
 public class AllocCatalogTest {
 
     public static String name = "allocCatalogTest";
+    private TestHelper helper;
 
 
     @BeforeEach
     public void buildUp() {
-        TestHelper.getInstance();
+        helper = TestHelper.getInstance();
     }
 
 
     @AfterEach
     public void tearDown() {
         execute( format( "DROP DATABASE %s IF EXISTS", name ) );
+        helper.checkAllTrxClosed();
     }
 
 

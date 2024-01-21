@@ -174,6 +174,12 @@ public class PolyInteger extends PolyNumber {
 
 
     @Override
+    public Object toJava() {
+        return value;
+    }
+
+
+    @Override
     public int intValue() {
         return value;
     }

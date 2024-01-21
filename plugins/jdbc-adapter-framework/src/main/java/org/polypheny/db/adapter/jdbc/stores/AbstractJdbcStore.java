@@ -475,8 +475,8 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
     }
 
 
-    protected String getPhysicalIndexName( long tableId, long indexId ) {
-        return "idx" + tableId + "_" + indexId;
+    protected String getPhysicalIndexName( long physicalId, long indexId ) {
+        return "idx" + physicalId + "_" + indexId;
     }
 
 

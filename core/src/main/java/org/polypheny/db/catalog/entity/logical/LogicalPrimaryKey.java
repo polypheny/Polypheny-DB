@@ -19,7 +19,7 @@ package org.polypheny.db.catalog.entity.logical;
 
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
-import java.io.Serializable;
+import java.io.Serial;
 import java.util.LinkedList;
 import java.util.List;
 import lombok.EqualsAndHashCode;
@@ -28,6 +28,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.PolyObject;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
 
 
 @Value
@@ -41,7 +44,7 @@ public class LogicalPrimaryKey extends LogicalKey {
     public LogicalPrimaryKey( @Deserialize("key") @NonNull final LogicalKey key ) {
         super(
                 key.id,
-                key.tableId,
+                key.entityId,
                 key.namespaceId,
                 key.columnIds,
                 EnforcementTime.ON_QUERY );
@@ -61,8 +64,13 @@ public class LogicalPrimaryKey extends LogicalKey {
     }
 
 
-    public Serializable[] getParameterArray( String columnName, int keySeq ) {
-        return new Serializable[]{ Catalog.DATABASE_NAME, getSchemaName(), getTableName(), columnName, keySeq, null };
+    public PolyValue[] getParameterArray( String columnName, int keySeq ) {
+        return new PolyValue[]{
+                PolyString.of( Catalog.DATABASE_NAME ),
+                PolyString.of( getSchemaName() ),
+                PolyString.of( getTableName() ),
+                PolyString.of( columnName ),
+                PolyInteger.of( keySeq ), null };
     }
 
 
@@ -70,6 +78,7 @@ public class LogicalPrimaryKey extends LogicalKey {
     @RequiredArgsConstructor
     public static class LogicalPrimaryKeyColumn implements PolyObject {
 
+        @Serial
         private static final long serialVersionUID = -2669773639977732201L;
 
         private final long pkId;
@@ -79,7 +88,7 @@ public class LogicalPrimaryKey extends LogicalKey {
 
 
         @Override
-        public Serializable[] getParameterArray() {
+        public PolyValue[] getParameterArray() {
             return Catalog.snapshot().rel().getPrimaryKey( pkId ).orElseThrow().getParameterArray( columnName, keySeq );
         }
 

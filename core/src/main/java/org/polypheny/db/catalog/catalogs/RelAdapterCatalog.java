@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
+import java.util.SortedSet;
 import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -65,7 +65,7 @@ public class RelAdapterCatalog extends AdapterCatalog {
             @Deserialize("physicals") Map<Long, PhysicalEntity> physicals,
             @Deserialize("allocations") Map<Long, AllocationEntity> allocations,
             @Deserialize("columns") Map<Pair<Long, Long>, PhysicalColumn> columns,
-            @Deserialize("allocToPhysicals") Map<Long, Set<Long>> allocToPhysicals,
+            @Deserialize("allocToPhysicals") Map<Long, SortedSet<Long>> allocToPhysicals,
             @Deserialize("fields") Map<Pair<Long, Long>, PhysicalField> fields ) {
         super( adapterId, Map.of(), physicals, allocations, allocToPhysicals, fields );
     }
