@@ -338,11 +338,11 @@ public class Functions {
 
 
     @SuppressWarnings("unused")
-    public static Enumerable<?> enforceConstraint( Function0<Enumerable<PolyValue>> modify, Enumerable<PolyValue[]> control, List<Class<? extends Exception>> exceptions, List<String> msgs ) {
+    public static Enumerable<?> enforceConstraint( Function0<Enumerable<PolyValue[]>> modify, Enumerable<PolyValue[]> control, List<Class<? extends Exception>> exceptions, List<String> msgs ) {
         List<PolyValue> results = new ArrayList<>();
         try {
-            for ( PolyValue object : modify.apply() ) {
-                results.add( object );
+            for ( PolyValue[] object : modify.apply() ) {
+                results.add( object[0] );
             }
         } catch ( Exception e ) {
             throw new ConstraintViolationException( Joiner.on( "\n" ).join( msgs ) );
@@ -357,7 +357,7 @@ public class Functions {
         } else {
             // force rollback
             throw new ConstraintViolationException( Joiner.on( "\n" )
-                    .join( validationIndexes.stream().map( ( PolyNumber index ) -> msgs.get( index.intValue() ) ).collect( Collectors.toList() ) ) );
+                    .join( validationIndexes.stream().map( ( PolyNumber index ) -> msgs.get( index.intValue() ) ).toList() ) );
         }
     }
 
@@ -2526,7 +2526,6 @@ public class Functions {
                     case ERROR -> throw Static.RESOURCE.emptyResultOfJsonValueFuncNotAllowed().ex();
                     case NULL -> null;
                     case DEFAULT -> defaultValueOnEmpty;
-                    default -> throw Static.RESOURCE.illegalEmptyBehaviorInJsonValueFunc( emptyBehavior.toString() ).ex();
                 };
             } else if ( context.mode == PathMode.STRICT && !isScalarObject( value ) ) {
                 exc = Static.RESOURCE.scalarValueRequiredInStrictModeOfJsonValueFunc( value.toString() ).ex();

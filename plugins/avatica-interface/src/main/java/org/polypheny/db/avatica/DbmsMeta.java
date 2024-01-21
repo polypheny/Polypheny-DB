@@ -19,7 +19,6 @@ package org.polypheny.db.avatica;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
@@ -45,8 +44,8 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+import javax.annotation.Nonnull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.AvaticaSeverity;
@@ -69,7 +68,6 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.commons.lang3.NotImplementedException;
-import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
@@ -108,6 +106,7 @@ import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Node;
+import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
@@ -137,9 +136,10 @@ import org.polypheny.db.util.Pair;
 public class DbmsMeta implements ProtobufMeta {
 
     public static final boolean SEND_FIRST_FRAME_WITH_RESPONSE = false;
+    public static final JavaTypeFactoryImpl TYPE_FACTORY = new JavaTypeFactoryImpl();
 
     private final ConcurrentMap<String, PolyConnectionHandle> openConnections = new ConcurrentHashMap<>();
-    private final ConcurrentMap<String, PolyStatementHandle> openStatements = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, PolyStatementHandle<Object>> openStatements = new ConcurrentHashMap<>();
 
     final Calendar calendar = Unsafe.localCalendar();
     private final Catalog catalog = Catalog.getInstance();
@@ -216,11 +216,12 @@ public class DbmsMeta implements ProtobufMeta {
                     }
                 };
         // changed with th branch
-        return MetaResultSet.create( ch.id, statementHandle.id, true, signature, Meta.Frame.create( 0, false, StreamSupport.stream( firstFrame.spliterator(), false ).collect( Collectors.toList() ) ) );
+        List<Object> list = StreamSupport.stream( firstFrame.spliterator(), false ).map( vs -> (Object) Arrays.stream( vs ).map( v -> v == null ? null : v.toJava() ).toArray( Object[]::new ) ).toList();
+        return MetaResultSet.create( ch.id, statementHandle.id, true, signature, Meta.Frame.create( 0, false, list ) );
     }
 
 
-    private <E> MetaResultSet createMetaResultSet( final ConnectionHandle ch, final StatementHandle statementHandle, Enumerable<E> enumerable, Class<?> clazz, String... names ) {
+    private MetaResultSet createMetaResultSet( final ConnectionHandle ch, final StatementHandle statementHandle, Enumerable<PolyValue[]> enumerable, Class<?> clazz, String... names ) {
         final List<ColumnMetaData> columns = new ArrayList<>();
         final List<Field> fields = new ArrayList<>();
         //final List<String> fieldNames = new ArrayList<>();
@@ -237,15 +238,14 @@ public class DbmsMeta implements ProtobufMeta {
             fields.add( field );
             //fieldNames.add( fieldName );
         }
-        //noinspection unchecked
-        final Iterable<PolyValue[]> iterable = (Iterable<PolyValue[]>) enumerable;
+
         //return createMetaResultSet( ch, statementHandle, Collections.emptyMap(), columns, CursorFactory.record( clazz, fields, fieldNames ), new Frame( 0, true, iterable ) );
-        return createMetaResultSet( ch, statementHandle, new HashMap<>(), columns, CursorFactory.LIST, iterable );
+        return createMetaResultSet( ch, statementHandle, new HashMap<>(), columns, CursorFactory.LIST, enumerable );
     }
 
 
-    private Enumerable<Object> toEnumerable( final List<? extends PolyObject> entities ) {
-        final List<Object> objects = new LinkedList<>();
+    private Enumerable<PolyValue[]> toEnumerable( final List<? extends PolyObject> entities ) {
+        final List<PolyValue[]> objects = new ArrayList<>();
         for ( PolyObject entity : entities ) {
             objects.add( entity.getParameterArray() );
         }
@@ -309,14 +309,14 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    @NotNull
+    @Nonnull
     private List<LogicalTable> getLogicalTables( Pat schemaPattern, Pat tablePattern ) {
         return getLogicalTables( (schemaPattern == null || schemaPattern.s == null) ? null : new Pattern( schemaPattern.s ),
                 (tablePattern == null || tablePattern.s == null) ? null : new Pattern( tablePattern.s ) );
     }
 
 
-    @NotNull
+    @Nonnull
     private List<LogicalTable> getLogicalTables( Pattern schemaPattern, Pattern tablePattern ) {
         //List<LogicalNamespace> namespaces = catalog.getSnapshot().getNamespaces( schemaPattern );
 
@@ -402,7 +402,7 @@ public class DbmsMeta implements ProtobufMeta {
                 log.trace( "getCatalogs( ConnectionHandle {} )", ch );
             }
             //final List<CatalogDatabase> databases = Linq4j.asEnumerable( new String[]{ "APP", "system", "public" } );
-            List<Object> databases = Collections.singletonList( new Serializable[]{ Catalog.DATABASE_NAME, "system", Catalog.defaultNamespaceName } );
+            List<PolyValue[]> databases = Collections.singletonList( new PolyValue[]{ PolyString.of( Catalog.DATABASE_NAME ), PolyString.of( "system" ), PolyString.of( Catalog.defaultNamespaceName ) } );
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
                     ch,
@@ -426,11 +426,11 @@ public class DbmsMeta implements ProtobufMeta {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getTableTypes( ConnectionHandle {} )", ch );
             }
-            final List<Object> objects = new LinkedList<>();
+            final List<PolyValue[]> objects = new LinkedList<>();
             for ( EntityType tt : EntityType.values() ) {
                 objects.add( tt.getParameterArray() );
             }
-            Enumerable<Object> enumerable = Linq4j.asEnumerable( objects );
+            Enumerable<PolyValue[]> enumerable = Linq4j.asEnumerable( objects );
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
                     ch,
@@ -577,7 +577,6 @@ public class DbmsMeta implements ProtobufMeta {
             }
             final Pattern tablePattern = table == null ? null : new Pattern( table );
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
-            final Pattern databasePattern = database == null ? null : new Pattern( database );
             final List<LogicalTable> catalogEntities = getLogicalTables( schemaPattern, tablePattern );
             List<LogicalForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
             for ( LogicalTable catalogTable : catalogEntities ) {
@@ -678,28 +677,28 @@ public class DbmsMeta implements ProtobufMeta {
             }
             final StatementHandle statementHandle = createStatement( ch );
             final AlgDataTypeSystem typeSystem = AlgDataTypeSystem.DEFAULT;
-            final List<Object> objects = new LinkedList<>();
+            final List<PolyValue[]> objects = new ArrayList<>();
             for ( PolyType polyType : PolyType.values() ) {
                 objects.add(
-                        new Serializable[]{
-                                polyType.getName(),
-                                polyType.getJdbcOrdinal(),
-                                typeSystem.getMaxPrecision( polyType ),
-                                typeSystem.getLiteral( polyType, true ),
-                                typeSystem.getLiteral( polyType, false ),
+                        new PolyValue[]{
+                                PolyString.of( polyType.getName() ),
+                                PolyInteger.of( polyType.getJdbcOrdinal() ),
+                                PolyInteger.of( typeSystem.getMaxPrecision( polyType ) ),
+                                PolyString.of( typeSystem.getLiteral( polyType, true ) ),
+                                PolyString.of( typeSystem.getLiteral( polyType, false ) ),
                                 null,
-                                (short) DatabaseMetaData.typeNullable, // All types are nullable
-                                typeSystem.isCaseSensitive( polyType ),
-                                (short) DatabaseMetaData.typeSearchable, // Making all type searchable; we may want to be specific and declare under PolyType
-                                false,
-                                false,
-                                typeSystem.isAutoincrement( polyType ),
-                                polyType.getName(),
-                                (short) polyType.getMinScale(),
-                                (short) typeSystem.getMaxScale( polyType ),
+                                PolyInteger.of( DatabaseMetaData.typeNullable ), // All types are nullable
+                                PolyBoolean.of( typeSystem.isCaseSensitive( polyType ) ),
+                                PolyInteger.of( DatabaseMetaData.typeSearchable ), // Making all type searchable; we may want to be specific and declare under PolyType
+                                PolyBoolean.FALSE,
+                                PolyBoolean.FALSE,
+                                PolyBoolean.of( typeSystem.isAutoincrement( polyType ) ),
+                                PolyString.of( polyType.getName() ),
+                                PolyInteger.of( polyType.getMinScale() ),
+                                PolyInteger.of( typeSystem.getMaxScale( polyType ) ),
                                 null,
                                 null,
-                                typeSystem.getNumTypeRadix( polyType ) == 0 ? null : typeSystem.getNumTypeRadix( polyType ) } );
+                                PolyInteger.of( typeSystem.getNumTypeRadix( polyType ) == 0 ? null : typeSystem.getNumTypeRadix( polyType ) ) } );
             }
             return createMetaResultSet(
                     ch,
@@ -729,18 +728,18 @@ public class DbmsMeta implements ProtobufMeta {
 
 
     @Override
-    public MetaResultSet getIndexInfo( final ConnectionHandle ch, final String database, final String schema, final String table, final boolean unique, final boolean approximate ) {
+    public MetaResultSet getIndexInfo( final ConnectionHandle ch, final String database, final String namespace, final String table, final boolean unique, final boolean approximate ) {
         final PolyConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
-                log.trace( "getIndexInfo( ConnectionHandle {}, String {}, String {}, String {}, boolean {}, boolean {} )", ch, database, schema, table, unique, approximate );
+                log.trace( "getIndexInfo( ConnectionHandle {}, String {}, String {}, String {}, boolean {}, boolean {} )", ch, database, namespace, table, unique, approximate );
             }
             final Pattern tablePattern = table == null ? null : new Pattern( table );
-            final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
-            final List<LogicalTable> catalogEntities = getLogicalTables( schemaPattern, tablePattern );
-            List<LogicalIndexColumn> logicalIndexColumns = new LinkedList<>();
-            for ( LogicalTable catalogTable : catalogEntities ) {
-                List<LogicalIndex> logicalIndexInfos = catalog.getSnapshot().rel().getIndexes( catalogTable.id, unique );
+            final Pattern namespacePattern = namespace == null ? null : new Pattern( namespace );
+            final List<LogicalTable> entities = getLogicalTables( namespacePattern, tablePattern );
+            List<LogicalIndexColumn> logicalIndexColumns = new ArrayList<>();
+            for ( LogicalTable entity : entities ) {
+                List<LogicalIndex> logicalIndexInfos = catalog.getSnapshot().rel().getIndexes( entity.id, unique );
                 logicalIndexInfos.forEach( info -> logicalIndexColumns.addAll( info.getCatalogIndexColumns() ) );
             }
             StatementHandle statementHandle = createStatement( ch );
@@ -916,7 +915,7 @@ public class DbmsMeta implements ProtobufMeta {
                     } else {
                         values.get( i ).add( toPolyValue( TypedValue.fromProto( v ) ) );
                     }
-                    types.add( (int) i, toPolyAlgType( TypedValue.fromProto( v ), connection.getCurrentTransaction().getTypeFactory() ) ); // todo dl optimize
+                    types.add( (int) i, toPolyAlgType( TypedValue.fromProto( v ), TYPE_FACTORY ) ); // todo dl optimize
                 }
             }
 
@@ -1131,6 +1130,10 @@ public class DbmsMeta implements ProtobufMeta {
 
             final PolySignature signature = statementHandle.getSignature();
             final Iterator<Object> iterator;
+            if ( statementHandle.getStatement() == null ) {
+                // this is a hotfix for catalog methods of dbmsmeta todo dl diff in jdbc bench
+                return new Frame( 0, true, new ArrayList<>() );
+            }
             if ( statementHandle.getOpenResultSet() == null ) {
                 final Iterable<Object> iterable = createExternalIterable( statementHandle.getStatement().getDataContext(), signature );
                 iterator = iterable.iterator();
@@ -1439,7 +1442,7 @@ public class DbmsMeta implements ProtobufMeta {
                 log.trace( "createStatement( ConnectionHandle {} )", ch );
             }
 
-            final PolyStatementHandle<?> statement;
+            final PolyStatementHandle<Object> statement;
 
             final int id = statementIdGenerator.getAndIncrement();
             statement = new PolyStatementHandle<>( connection, id );

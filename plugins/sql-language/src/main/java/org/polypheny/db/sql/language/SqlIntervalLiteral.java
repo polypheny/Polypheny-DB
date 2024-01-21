@@ -175,6 +175,12 @@ public class SqlIntervalLiteral extends SqlLiteral {
             return null;
         }
 
+
+        @Override
+        public Object toJava() {
+            return this;
+        }
+
     }
 
 }

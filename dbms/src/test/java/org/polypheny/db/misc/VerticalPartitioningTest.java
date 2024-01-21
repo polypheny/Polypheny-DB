@@ -17,6 +17,8 @@
 package org.polypheny.db.misc;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
@@ -25,7 +27,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import org.apache.calcite.avatica.AvaticaSqlException;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -259,7 +260,7 @@ public class VerticalPartitioningTest {
                     } catch ( AvaticaSqlException e ) {
                         failed = true;
                     }
-                    Assertions.assertTrue( failed );
+                    assertTrue( failed );
 
                     // ADD single column on second storeId
                     statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" MODIFY PLACEMENT ADD COLUMN tinteger ON STORE anotherstore" );
@@ -339,7 +340,7 @@ public class VerticalPartitioningTest {
                     boolean failed = false;
                     try {
                         statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" MODIFY PLACEMENT DROP COLUMN tvarchar ON STORE hsqldb" );
-                        Assertions.fail();
+                        fail();
                     } catch ( AvaticaSqlException e ) {
                         // empty on purpose
                     }
@@ -348,7 +349,7 @@ public class VerticalPartitioningTest {
 
                     try {
                         statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" DROP PLACEMENT ON STORE anotherstore" );
-                        Assertions.fail();
+                        fail();
                     } catch ( AvaticaSqlException e ) {
                         // empty on purpose
                     }

@@ -214,28 +214,11 @@ public class UiRoutingPageUtil {
         }
         queryAnalyzer.registerInformation( proposedPlansTable );
 
-        if ( selectedPlan instanceof ProposedRoutingPlan ) {
-            ProposedRoutingPlan plan = (ProposedRoutingPlan) selectedPlan;
+        if ( selectedPlan instanceof ProposedRoutingPlan plan ) {
             addSelectedAdapterTable( queryAnalyzer, plan, page );
             AlgRoot root = plan.getRoutedRoot();
             addRoutedPlanPage( root.alg, queryAnalyzer );
         }
-
-        /*val plans = routingPlans.stream().map( elem -> elem instanceof ProposedRoutingPlan ? (ProposedRoutingPlan) elem : null ).collect( Collectors.toList() );
-        for ( int i = 0; i < plans.size(); i++ ) {
-            val proposedPlan = plans.get( i );
-            if ( proposedPlan != null ) {
-                val root = proposedPlan.getRoutedRoot();
-                if ( statement.getTransaction().isAnalyze() ) {
-                    InformationGroup physicalQueryPlan = new InformationGroup( page, "Routed Query Plan-" + i );
-                    queryAnalyzer.addGroup( physicalQueryPlan );
-                    InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
-                            physicalQueryPlan,
-                            RelOptUtil.dumpPlan( "Routed Query Plan-" + i, root.rel, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
-                    queryAnalyzer.registerInformation( informationQueryPlan );
-                }
-            }
-        }*/
 
     }
 

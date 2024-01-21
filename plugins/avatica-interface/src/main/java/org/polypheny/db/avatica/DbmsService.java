@@ -29,7 +29,7 @@ import org.apache.calcite.avatica.remote.Service;
 @Slf4j
 public class DbmsService implements Service {
 
-    private LocalService delegate;
+    private final LocalService delegate;
 
 
     public DbmsService( DbmsMeta meta, MetricsSystem metrics ) {

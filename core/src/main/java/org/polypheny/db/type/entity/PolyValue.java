@@ -858,6 +858,9 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
+    public abstract Object toJava();
+
+
     public static class PolyValueSerializerDef extends SimpleSerializerDef<PolyValue> {
 
         @Override

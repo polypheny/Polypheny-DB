@@ -81,6 +81,12 @@ public class PathContext extends PolyValue {
 
 
     @Override
+    public Object toJava() {
+        return this;
+    }
+
+
+    @Override
     public int compareTo( @NotNull PolyValue o ) {
         throw new RuntimeException( "Not implemented" );
     }

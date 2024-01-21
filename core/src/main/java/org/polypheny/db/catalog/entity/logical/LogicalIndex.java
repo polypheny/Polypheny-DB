@@ -20,6 +20,7 @@ package org.polypheny.db.catalog.entity.logical;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
@@ -31,6 +32,11 @@ import lombok.experimental.SuperBuilder;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.PolyObject;
 import org.polypheny.db.catalog.logistic.IndexType;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
 
 
 @EqualsAndHashCode(callSuper = false)
@@ -38,6 +44,7 @@ import org.polypheny.db.catalog.logistic.IndexType;
 @SuperBuilder(toBuilder = true)
 public class LogicalIndex implements Serializable {
 
+    @Serial
     private static final long serialVersionUID = -318228681682792406L;
 
     @Serialize
@@ -52,7 +59,7 @@ public class LogicalIndex implements Serializable {
     @Serialize
     public IndexType type;
     @Serialize
-    public long location;
+    public long location; // -1 is Polypheny
     @Serialize
     public String method;
     @Serialize
@@ -98,23 +105,23 @@ public class LogicalIndex implements Serializable {
     }
 
 
-    public Serializable[] getParameterArray( int ordinalPosition, String columnName ) {
-        return new Serializable[]{
-                Catalog.DATABASE_NAME,
-                key.getSchemaName(),
-                key.getTableName(),
-                !unique,
+    public PolyValue[] getParameterArray( int ordinalPosition, String columnName ) {
+        return new PolyValue[]{
+                PolyString.of( Catalog.DATABASE_NAME ),
+                PolyString.of( key.getSchemaName() ),
+                PolyString.of( key.getTableName() ),
+                PolyBoolean.of( !unique ),
                 null,
-                name,
-                0,
-                ordinalPosition,
-                columnName,
+                PolyString.of( name ),
+                PolyInteger.of( 0 ),
+                PolyInteger.of( ordinalPosition ),
+                PolyString.of( columnName ),
                 null,
-                -1,
+                PolyInteger.of( -1 ),
                 null,
                 null,
-                location,
-                type.getId() };
+                PolyLong.of( location ),
+                PolyInteger.of( type.getId() ) };
     }
 
 
@@ -123,6 +130,7 @@ public class LogicalIndex implements Serializable {
     @Value
     public static class LogicalIndexColumn implements PolyObject {
 
+        @Serial
         private static final long serialVersionUID = -5596459769680478780L;
 
         public long indexId;
@@ -134,7 +142,7 @@ public class LogicalIndex implements Serializable {
 
 
         @Override
-        public Serializable[] getParameterArray() {
+        public PolyValue[] getParameterArray() {
             return index.getParameterArray( ordinalPosition, columnName );
         }
 

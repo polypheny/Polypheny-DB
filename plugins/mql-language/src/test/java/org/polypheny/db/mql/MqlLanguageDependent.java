@@ -21,6 +21,7 @@ import org.polypheny.db.TestHelper;
 public class MqlLanguageDependent {
 
     static {
+        //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
     }
 

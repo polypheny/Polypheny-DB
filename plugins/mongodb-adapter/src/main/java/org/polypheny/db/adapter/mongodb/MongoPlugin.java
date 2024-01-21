@@ -442,7 +442,7 @@ public class MongoPlugin extends PolyPlugin {
 
 
         private String getPhysicalIndexName( LogicalIndex catalogIndex ) {
-            return "idx" + catalogIndex.key.tableId + "_" + catalogIndex.id;
+            return "idx" + catalogIndex.key.entityId + "_" + catalogIndex.id;
         }
 
 

@@ -365,7 +365,7 @@ public class Neo4jPlugin extends PolyPlugin {
             IndexTypes type = IndexTypes.valueOf( index.method.toUpperCase( Locale.ROOT ) );
             List<Long> columns = index.key.columnIds;
 
-            String physicalIndexName = "idx" + index.key.tableId + "_" + index.id;
+            String physicalIndexName = "idx" + index.key.entityId + "_" + index.id;
 
             switch ( type ) {
                 case DEFAULT:

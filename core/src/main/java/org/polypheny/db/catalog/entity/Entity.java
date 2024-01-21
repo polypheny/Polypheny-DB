@@ -17,7 +17,6 @@
 package org.polypheny.db.catalog.entity;
 
 import io.activej.serializer.annotations.Serialize;
-import io.activej.serializer.annotations.SerializeNullable;
 import java.io.Serializable;
 import java.util.List;
 import lombok.Getter;
@@ -25,7 +24,6 @@ import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgDistribution;
@@ -59,8 +57,6 @@ public abstract class Entity implements PolyObject, Wrapper, Serializable, Catal
     public DataModel dataModel;
 
     @Serialize
-    @SerializeNullable
-    @Nullable
     public String name;
 
     @Serialize
@@ -72,7 +68,7 @@ public abstract class Entity implements PolyObject, Wrapper, Serializable, Catal
 
     public Entity(
             long id,
-            @Nullable String name,
+            @NotNull String name,
             long namespaceId,
             EntityType type,
             DataModel dataModel,

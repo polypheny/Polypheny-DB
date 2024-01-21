@@ -93,4 +93,10 @@ public class PolyInterval extends PolyValue {
     }
 
 
+    @Override
+    public Object toJava() {
+        return value;
+    }
+
+
 }

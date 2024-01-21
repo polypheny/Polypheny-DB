@@ -18,6 +18,9 @@ package org.polypheny.db.catalog.logistic;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 
 @Getter
 public enum EntityType {
@@ -41,7 +44,7 @@ public enum EntityType {
                 return t;
             }
         }
-        throw new RuntimeException( "Unknown EntityType with id: " + id );
+        throw new GenericRuntimeException( "Unknown EntityType with id: " + id );
     }
 
 
@@ -51,13 +54,13 @@ public enum EntityType {
                 return t;
             }
         }
-        throw new RuntimeException( "Unknown EntityType with name: " + name );
+        throw new GenericRuntimeException( "Unknown EntityType with name: " + name );
     }
 
 
     // Used for creating ResultSets
-    public Object[] getParameterArray() {
-        return new Object[]{ name() };
+    public PolyValue[] getParameterArray() {
+        return new PolyValue[]{ PolyString.of( name() ) };
     }
 
 

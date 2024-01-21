@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.catalogs.AllocationCatalog;
 import org.polypheny.db.catalog.catalogs.AllocationDocumentCatalog;
@@ -454,43 +455,43 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
     @Override
     public List<AllocationPartition> getPartitions( long partitionGroupId ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<String> getPartitionGroupNames( long tableId ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<AllocationColumn> getColumnPlacementsByPartitionGroup( long tableId, long partitionGroupId, long columnId ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<LogicalAdapter> getAdaptersByPartitionGroup( long tableId, long partitionGroupId ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<Long> getPartitionGroupsOnDataPlacement( long adapterId, long tableId ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<Long> getPartitionsOnDataPlacement( long adapterId, long tableId ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<Long> getPartitionGroupsIndexOnDataPlacement( long adapterId, long tableId ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 

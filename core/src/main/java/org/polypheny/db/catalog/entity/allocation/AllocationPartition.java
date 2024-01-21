@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
-import java.io.Serializable;
 import java.util.List;
 import javax.annotation.Nullable;
 import lombok.Getter;
@@ -31,6 +30,7 @@ import org.polypheny.db.catalog.entity.PolyObject;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.logistic.PlacementType;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -110,8 +110,8 @@ public class AllocationPartition implements PolyObject {
 
 
     @Override
-    public Serializable[] getParameterArray() {
-        return new Serializable[0];
+    public PolyValue[] getParameterArray() {
+        return new PolyValue[0];
     }
 
 }

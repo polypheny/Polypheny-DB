@@ -137,4 +137,10 @@ public class PolyTime extends PolyTemporal {
     }
 
 
+    @Override
+    public Object toJava() {
+        return getOfDay();
+    }
+
+
 }

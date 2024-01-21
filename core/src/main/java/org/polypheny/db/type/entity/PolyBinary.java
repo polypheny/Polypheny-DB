@@ -118,6 +118,12 @@ public class PolyBinary extends PolyValue {
 
 
     @Override
+    public Object toJava() {
+        return value == null ? null : value.getBytes();
+    }
+
+
+    @Override
     public Expression asExpression() {
         return Expressions.call( PolyBinary.class, "of", Expressions.constant( value.getBytes() ) );
     }

@@ -51,14 +51,6 @@ public class JdbcAutoCommitTest {
     }
 
 
-    private final boolean useAutoCommit;
-
-
-    public JdbcAutoCommitTest( boolean useAutoCommit ) {
-        this.useAutoCommit = useAutoCommit;
-    }
-
-
     @ParameterizedTest
     @ValueSource(booleans = { false, true })
     public void testDDl( boolean useAutoCommit ) throws SQLException {

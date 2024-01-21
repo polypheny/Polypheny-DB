@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeSet;
 import java.util.function.BinaryOperator;
@@ -211,7 +212,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
         Map<Long, List<LogicalConstraint>> map = new HashMap<>();
 
         tables.values().forEach( t -> map.put( t.id, new ArrayList<>() ) );
-        constraints.forEach( ( k, v ) -> map.get( v.key.tableId ).add( v ) );
+        constraints.forEach( ( k, v ) -> map.get( v.key.entityId ).add( v ) );
         return ImmutableMap.copyOf( map );
     }
 
@@ -220,7 +221,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     private ImmutableMap<Long, List<LogicalForeignKey>> buildTableForeignKeys() {
         Map<Long, List<LogicalForeignKey>> map = new HashMap<>();
         tables.values().forEach( t -> map.put( t.id, new ArrayList<>() ) );
-        foreignKeys.forEach( ( k, v ) -> map.get( v.tableId ).add( v ) );
+        foreignKeys.forEach( ( k, v ) -> map.get( v.entityId ).add( v ) );
         return ImmutableMap.copyOf( map );
     }
 
@@ -237,7 +238,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
         for ( LogicalTable table : tables.values() ) {
             tableKeys.put( table.id, new ArrayList<>() );
         }
-        keys.forEach( ( k, v ) -> tableKeys.get( v.tableId ).add( v ) );
+        keys.forEach( ( k, v ) -> tableKeys.get( v.entityId ).add( v ) );
         return ImmutableMap.copyOf( tableKeys );
     }
 
@@ -302,7 +303,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
             return List.of();
         }
 
-        return Optional.of( tablesNamespace.get( namespaceId ).stream().filter( e -> (name == null || (namespace.caseSensitive
+        return Optional.of( Objects.requireNonNull( tablesNamespace.get( namespaceId ) ).stream().filter( e -> (name == null || (namespace.caseSensitive
                 ? e.name.toLowerCase().matches( name.toRegex() )
                 : e.name.toLowerCase().matches( name.toRegex().toLowerCase() ))) ).toList() ).orElse( List.of() );
     }
@@ -424,7 +425,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
     @Override
     public @NotNull List<LogicalForeignKey> getForeignKeys( long tableId ) {
-        return foreignKeys.values().stream().filter( k -> k.tableId == tableId ).collect( Collectors.toList() );
+        return foreignKeys.values().stream().filter( k -> k.entityId == tableId ).collect( Collectors.toList() );
     }
 
 
@@ -479,13 +480,13 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
     @Override
     public @NonNull List<LogicalIndex> getIndexes( long tableId, boolean onlyUnique ) {
-        return index.values().stream().filter( i -> i.key.tableId == tableId && (!onlyUnique || i.unique) ).collect( Collectors.toList() );
+        return index.values().stream().filter( i -> i.key.entityId == tableId && (!onlyUnique || i.unique) ).toList();
     }
 
 
     @Override
     public @NotNull Optional<LogicalIndex> getIndex( long tableId, String indexName ) {
-        return getIndex().values().stream().filter( i -> i.getKey().tableId == tableId && i.name.equals( indexName ) ).findFirst();
+        return getIndex().values().stream().filter( i -> i.getKey().entityId == tableId && i.name.equals( indexName ) ).findFirst();
     }
 
 

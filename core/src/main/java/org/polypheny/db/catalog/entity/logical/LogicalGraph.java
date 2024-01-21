@@ -18,7 +18,7 @@ package org.polypheny.db.catalog.entity.logical;
 
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
-import java.io.Serializable;
+import java.io.Serial;
 import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
@@ -29,12 +29,14 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
 @NonFinal
 public class LogicalGraph extends LogicalEntity {
 
+    @Serial
     private static final long serialVersionUID = 7343856827901459672L;
 
     @Serialize
@@ -57,8 +59,8 @@ public class LogicalGraph extends LogicalEntity {
 
 
     @Override
-    public Serializable[] getParameterArray() {
-        return new Serializable[0];
+    public PolyValue[] getParameterArray() {
+        return new PolyString[0];
     }
 
 
@@ -70,6 +72,7 @@ public class LogicalGraph extends LogicalEntity {
 
     public static class SubstitutionGraph extends LogicalGraph {
 
+        @Serial
         private static final long serialVersionUID = 7343856827901459672L;
         public final List<PolyString> names;
 

@@ -19,7 +19,6 @@ package org.polypheny.db.catalog.entity;
 
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.EqualsAndHashCode;
@@ -28,6 +27,8 @@ import lombok.Value;
 import lombok.experimental.SuperBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 
 @EqualsAndHashCode
 @Value
@@ -72,11 +73,10 @@ public class LogicalAdapter implements PolyObject {
     }
 
 
-
     // Used for creating ResultSets
     @Override
-    public Serializable[] getParameterArray() {
-        return new Serializable[]{ uniqueName };
+    public PolyValue[] getParameterArray() {
+        return new PolyValue[]{ PolyString.of( uniqueName ) };
     }
 
 }

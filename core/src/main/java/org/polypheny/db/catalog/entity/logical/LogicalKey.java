@@ -19,7 +19,7 @@ package org.polypheny.db.catalog.entity.logical;
 import com.google.common.collect.ImmutableList;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeClass;
-import java.io.Serializable;
+import java.io.Serial;
 import java.util.LinkedList;
 import java.util.List;
 import lombok.EqualsAndHashCode;
@@ -29,6 +29,9 @@ import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.PolyObject;
 import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 @EqualsAndHashCode
@@ -37,13 +40,14 @@ import org.polypheny.db.catalog.snapshot.Snapshot;
 @SerializeClass(subclasses = { LogicalGenericKey.class, LogicalPrimaryKey.class, LogicalForeignKey.class })
 public abstract class LogicalKey implements PolyObject, Comparable<LogicalKey> {
 
+    @Serial
     private static final long serialVersionUID = -5803762884192662540L;
 
     @Serialize
     public long id;
 
     @Serialize
-    public long tableId;
+    public long entityId;
 
     @Serialize
     public long namespaceId;
@@ -55,9 +59,9 @@ public abstract class LogicalKey implements PolyObject, Comparable<LogicalKey> {
     public EnforcementTime enforcementTime;
 
 
-    public LogicalKey( long id, long tableId, long namespaceId, List<Long> columnIds, EnforcementTime enforcementTime ) {
+    public LogicalKey( long id, long entityId, long namespaceId, List<Long> columnIds, EnforcementTime enforcementTime ) {
         this.id = id;
-        this.tableId = tableId;
+        this.entityId = entityId;
         this.namespaceId = namespaceId;
         this.columnIds = ImmutableList.copyOf( columnIds );
         this.enforcementTime = enforcementTime;
@@ -70,7 +74,7 @@ public abstract class LogicalKey implements PolyObject, Comparable<LogicalKey> {
 
 
     public String getTableName() {
-        return Catalog.snapshot().rel().getTable( tableId ).orElseThrow().name;
+        return Catalog.snapshot().rel().getTable( entityId ).orElseThrow().name;
     }
 
 
@@ -85,8 +89,8 @@ public abstract class LogicalKey implements PolyObject, Comparable<LogicalKey> {
 
 
     @Override
-    public Serializable[] getParameterArray() {
-        return new Serializable[]{ id, tableId, getTableName(), namespaceId, getSchemaName(), null, null };
+    public PolyValue[] getParameterArray() {
+        return new PolyValue[]{ PolyLong.of( id ), PolyLong.of( entityId ), PolyString.of( getTableName() ), PolyLong.of( namespaceId ), PolyString.of( getSchemaName() ), null, null };
     }
 
 

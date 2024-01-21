@@ -175,6 +175,12 @@ public class PolyString extends PolyValue {
 
 
     @Override
+    public Object toJava() {
+        return value;
+    }
+
+
+    @Override
     public PolySerializable copy() {
         return null;
     }

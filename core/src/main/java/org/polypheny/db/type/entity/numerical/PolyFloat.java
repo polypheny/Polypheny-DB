@@ -186,6 +186,12 @@ public class PolyFloat extends PolyNumber {
     }
 
 
+    @Override
+    public Object toJava() {
+        return value;
+    }
+
+
     public static class PolyFloatSerializerDef extends SimpleSerializerDef<PolyFloat> {
 
         @Override

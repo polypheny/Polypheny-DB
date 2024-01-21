@@ -230,6 +230,12 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
     }
 
 
+    @Override
+    public Object toJava() {
+        return value == null ? null : value.stream().map( PolyValue::toJava ).collect( Collectors.toList() );
+    }
+
+
     public static class PolyListSerializerDef extends SimpleSerializerDef<PolyList<?>> {
 
         @Override

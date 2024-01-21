@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
@@ -63,7 +65,7 @@ public abstract class AdapterCatalog implements PolySerializable {
     public ConcurrentMap<Long, AllocationEntity> allocations;
 
     @Serialize
-    public ConcurrentMap<Long, Set<Long>> allocToPhysicals;
+    public ConcurrentMap<Long, SortedSet<Long>> allocToPhysicals;
 
     @Serialize
     public ConcurrentMap<Pair<Long, Long>, PhysicalField> fields; // allocId, fieldId
@@ -79,7 +81,7 @@ public abstract class AdapterCatalog implements PolySerializable {
             Map<Long, Namespace> namespaces,
             Map<Long, PhysicalEntity> physicals,
             Map<Long, AllocationEntity> allocations,
-            Map<Long, Set<Long>> allocToPhysicals,
+            Map<Long, SortedSet<Long>> allocToPhysicals,
             Map<Pair<Long, Long>, PhysicalField> fields ) {
         this.adapterId = adapterId;
         this.namespaces = new ConcurrentHashMap<>( namespaces );
@@ -130,7 +132,7 @@ public abstract class AdapterCatalog implements PolySerializable {
 
 
     public void addPhysical( AllocationEntity allocation, PhysicalEntity... physicalEntities ) {
-        Set<Long> physicals = Arrays.stream( physicalEntities ).map( p -> p.id ).collect( Collectors.toSet() );
+        SortedSet<Long> physicals = Arrays.stream( physicalEntities ).sorted().map( p -> p.id ).collect( Collectors.toCollection( TreeSet::new ) );
 
         allocToPhysicals.put( allocation.id, physicals );
         allocations.put( allocation.id, allocation );

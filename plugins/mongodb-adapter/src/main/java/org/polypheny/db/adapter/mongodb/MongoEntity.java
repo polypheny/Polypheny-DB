@@ -43,7 +43,6 @@ import com.mongodb.client.gridfs.GridFSBucket;
 import com.mongodb.client.model.DeleteManyModel;
 import com.mongodb.client.model.DeleteOneModel;
 import com.mongodb.client.model.WriteModel;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -179,7 +178,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
 
     /**
      * Executes a "find" operation on the underlying collection.
-     *
+     * <p>
      * For example,
      * <code>zipsTable.find("{state: 'OR'}", "{city: 1, zipcode: 1}")</code>
      *
@@ -206,7 +205,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
 
     /**
      * Executes an "aggregate" operation on the underlying collection.
-     *
+     * <p>
      * For example:
      * <code>zipsTable.aggregate(
      * "{$filter: {state: 'OR'}",
@@ -272,7 +271,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
                 final Iterator<PolyValue[]> resultIterator;
                 try {
                     if ( !list.isEmpty() ) {
-                        resultIterator = mongoDb.getCollection( physical.name ).aggregate( session, list ).map( d -> getter.apply( d ) ).iterator();
+                        resultIterator = mongoDb.getCollection( physical.name ).aggregate( session, list ).map( getter::apply ).iterator();
                     } else {
                         resultIterator = Collections.emptyIterator();
                     }
@@ -301,7 +300,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
 
     /**
      * Helper method to strip non-numerics from a string.
-     *
+     * <p>
      * Currently used to determine mongod versioning numbers
      * from buildInfo.versionArray for use in aggregate method logic.
      */
@@ -353,8 +352,8 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
 
 
     @Override
-    public Serializable[] getParameterArray() {
-        return new Serializable[0];
+    public PolyValue[] getParameterArray() {
+        return new PolyValue[0];
     }
 
 

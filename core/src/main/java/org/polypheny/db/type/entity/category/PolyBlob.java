@@ -121,6 +121,12 @@ public class PolyBlob extends PolyValue {
     }
 
 
+    @Override
+    public Object toJava() {
+        return value;
+    }
+
+
     public InputStream asBinaryStream() {
         if ( stream != null ) {
             return stream;

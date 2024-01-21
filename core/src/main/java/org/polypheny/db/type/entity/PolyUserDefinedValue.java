@@ -64,4 +64,10 @@ public class PolyUserDefinedValue extends PolyValue {
         return null;
     }
 
+
+    @Override
+    public Object toJava() {
+        return value == null ? null : value.toString();
+    }
+
 }

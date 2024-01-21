@@ -40,7 +40,7 @@ public class KeyModel extends IdEntity {
 
 
     public static KeyModel from( LogicalKey key ) {
-        return new KeyModel( key.id, null, key.tableId, key.namespaceId, key.columnIds, key instanceof LogicalPrimaryKey );
+        return new KeyModel( key.id, null, key.entityId, key.namespaceId, key.columnIds, key instanceof LogicalPrimaryKey );
     }
 
 }
