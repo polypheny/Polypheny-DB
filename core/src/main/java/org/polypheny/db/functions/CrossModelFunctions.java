@@ -182,7 +182,7 @@ public class CrossModelFunctions {
             PolyDocument doc = new PolyDocument( n.properties.entrySet().stream().collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
             doc.put( PolyString.of( DocumentType.DOCUMENT_ID ), PolyString.of( n.id.value.substring( 0, 23 ) ) );
             return new PolyValue[]{ doc };
-        } ).collect( Collectors.toList() ) );
+        } ).toList() );
 
     }
 

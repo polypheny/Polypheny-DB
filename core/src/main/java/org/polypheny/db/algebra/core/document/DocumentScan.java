@@ -43,13 +43,15 @@ public abstract class DocumentScan<E extends Entity> extends Scan<E> implements 
     public AlgWriter explainTerms( AlgWriter pw ) {
         return super.explainTerms( pw )
                 .item( "table", entity.id )
+                .item( "name", entity.name )
                 .item( "layer", entity.getLayer() );
     }
 
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + entity.id + "$";
+        // need the name for cross-model queries
+        return "$" + getClass().getSimpleName() + "$" + entity.id + "$" + entity.name + "$" + entity.getLayer();
     }
 
 

@@ -366,9 +366,9 @@ public class Programs {
 
                     planner.setRoot( rootAlg2 );
                     final AlgOptPlanner planner2 = planner.chooseDelegate();
-                    final AlgNode rootRel3 = planner2.findBestExp();
-                    assert rootRel3 != null : "could not implement exp";
-                    return rootRel3;
+                    final AlgNode rootAlg3 = planner2.findBestExp();
+                    assert rootAlg3 != null : "could not implement exp";
+                    return rootAlg3;
                 };
 
         return sequence(

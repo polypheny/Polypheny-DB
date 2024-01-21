@@ -2424,7 +2424,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 List<DataStore<?>> stores = new ArrayList<>();
                 stores.add( store );
 
-                PlacementType placementType = store == null ? PlacementType.AUTOMATIC : PlacementType.MANUAL;
+                PlacementType placementType = PlacementType.MANUAL;
 
                 List<String> columns = new ArrayList<>();
                 root.alg.getTupleType().getFields().forEach( f -> columns.add( f.getName() ) );
