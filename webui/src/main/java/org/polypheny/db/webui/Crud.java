@@ -129,13 +129,13 @@ import org.polypheny.db.docker.AutoDocker;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.docker.DockerSetupHelper;
-import org.polypheny.db.docker.DockerSetupHelper.DockerUpdateResult;
 import org.polypheny.db.docker.HandshakeManager;
 import org.polypheny.db.docker.exceptions.DockerUserException;
 import org.polypheny.db.docker.models.CreateDockerResponse;
 import org.polypheny.db.docker.models.AutoDockerResult;
 import org.polypheny.db.docker.models.CreateDockerRequest;
 import org.polypheny.db.docker.models.DockerSettings;
+import org.polypheny.db.docker.models.DockerUpdateRequest;
 import org.polypheny.db.docker.models.HandshakeInfo;
 import org.polypheny.db.docker.models.InstancesAndAutoDocker;
 import org.polypheny.db.iface.QueryInterface;
@@ -2995,11 +2995,13 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
     void updateDockerInstance( final Context ctx ) {
-        Map<String, String> config = gson.fromJson( ctx.body(), Map.class );
+        DockerUpdateRequest request = ctx.bodyAsClass( DockerUpdateRequest.class );
 
-        DockerUpdateResult res = DockerSetupHelper.updateDockerInstance( Integer.parseInt( config.getOrDefault( "id", "-1" ) ), config.getOrDefault( "hostname", "" ), config.getOrDefault( "alias", "" ), config.getOrDefault( "registry", "" ) );
-
-        ctx.json( res.getMap() );
+        try {
+            ctx.json( DockerSetupHelper.updateDockerInstance( request.id(), request.host(), request.alias(), request.registry() ) );
+        } catch ( DockerUserException e ) {
+            ctx.status( e.getStatus() ).result( e.getMessage() );
+        }
     }
 
 
@@ -3066,6 +3068,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             ctx.status( 404 );
         }
     }
+
 
     void deleteHandshake( final Context ctx ) {
         long id = Long.parseLong( ctx.pathParam( "id" ) );

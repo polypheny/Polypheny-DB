@@ -116,12 +116,12 @@ public final class DockerManager {
 
     void updateDockerInstance( int id, String hostname, String alias, String registry ) {
         synchronized ( this ) {
-            DockerInstance dockerInstance = getInstanceById( id ).orElseThrow( () -> new GenericRuntimeException( "No docker instance with id " + id ) );
+            DockerInstance dockerInstance = getInstanceById( id ).orElseThrow( () -> new DockerUserException( 404, "No Docker instance with id " + id ) );
             if ( !dockerInstance.getHost().hostname().equals( hostname ) && hasHost( hostname ) ) {
-                throw new GenericRuntimeException( "There is already a Docker instance connected to " + hostname );
+                throw new DockerUserException( "There is already a Docker instance connected to " + hostname );
             }
             if ( !dockerInstance.getHost().alias().equals( alias ) && hasAlias( alias ) ) {
-                throw new GenericRuntimeException( "There is already a Docker instance with alias " + alias );
+                throw new DockerUserException( "There is already a Docker instance with alias " + alias );
             }
 
             dockerInstance.updateConfig( hostname, alias, registry );

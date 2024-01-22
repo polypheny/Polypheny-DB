@@ -17,9 +17,7 @@
 package org.polypheny.db.docker;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.Optional;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.docker.exceptions.DockerUserException;
@@ -77,29 +75,11 @@ public final class DockerSetupHelper {
     }
 
 
-    public static DockerUpdateResult updateDockerInstance( int id, String hostname, String alias, String registry ) {
-        Optional<DockerInstance> maybeDockerInstance = DockerManager.getInstance().getInstanceById( id );
+    public static DockerInstanceInfo updateDockerInstance( int id, String hostname, String alias, String registry ) {
+        DockerInstance dockerInstance = DockerManager.getInstance().getInstanceById( id ).orElseThrow( () -> new DockerUserException( 404, "No Docker instance with that id" ) );
 
-        if ( maybeDockerInstance.isEmpty() ) {
-            return new DockerUpdateResult( "No docker instance with that id" );
-        }
-
-        DockerInstance dockerInstance = maybeDockerInstance.get();
-        DockerHost newHost = new DockerHost( hostname, alias, registry, dockerInstance.getHost().communicationPort(), dockerInstance.getHost().handshakePort(), dockerInstance.getHost().proxyPort() );
-
-        boolean hostChanged = !dockerInstance.getHost().hostname().equals( newHost.hostname() );
         DockerManager.getInstance().updateDockerInstance( id, hostname, alias, registry );
-
-        if ( hostChanged && !dockerInstance.isConnected() ) {
-            HandshakeManager.getInstance().newHandshake(
-                    newHost,
-                    () -> DockerManager.getInstance().getInstanceById( id ).ifPresent( DockerInstance::reconnect ),
-                    true
-            );
-            return new DockerUpdateResult( dockerInstance, true );
-        } else {
-            return new DockerUpdateResult( dockerInstance, false );
-        }
+        return dockerInstance.getInfo();
     }
 
 
@@ -137,39 +117,6 @@ public final class DockerSetupHelper {
 
         HandshakeManager.getInstance().cancelHandshakes( dockerInstance.getHost().hostname() );
         DockerManager.getInstance().removeDockerInstance( id );
-    }
-
-
-    static public final class DockerUpdateResult {
-
-        private String error = "";
-        private HandshakeInfo handshake = null;
-        private DockerInstanceInfo instance = null;
-
-
-        private DockerUpdateResult( String err ) {
-            this.error = err;
-        }
-
-
-        private DockerUpdateResult( DockerInstance dockerInstance, boolean handshake ) {
-            this.instance = dockerInstance.getInfo();
-
-            if ( handshake ) {
-                // TODO: Fix
-                // this.handshake = HandshakeManager.getInstance().getHandshake( dockerInstance.getHost().hostname() );
-            }
-        }
-
-
-        public Map<String, Object> getMap() {
-            return Map.of(
-                    "error", error,
-                    "handshake", handshake,
-                    "instance", instance
-            );
-        }
-
     }
 
 }

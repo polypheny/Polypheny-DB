@@ -256,23 +256,19 @@ public final class DockerInstance {
 
 
     void updateConfig( String host, String alias, String registry ) {
-        throw new NotImplementedException( "Updating configurations has been temporarily disabled" );
-        /*
         synchronized ( this ) {
+            DockerHost newHost = new DockerHost( host, alias, registry, this.getHost().communicationPort(), this.getHost().handshakePort(), this.getHost().proxyPort() );
             if ( !this.host.hostname().equals( host ) ) {
                 client.close();
-                this.host = host;
                 status = Status.NEW;
                 try {
                     checkConnection();
-                } catch ( IOException e ) {
+                } catch ( IOException e ){
                     log.info( "Failed to connect to " + host );
                 }
             }
-            this.alias = alias;
-            this.registry = registry;
+            this.host = newHost;
         }
-         */
     }
 
 
