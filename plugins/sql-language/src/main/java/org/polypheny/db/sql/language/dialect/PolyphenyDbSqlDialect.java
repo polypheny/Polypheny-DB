@@ -48,4 +48,10 @@ public class PolyphenyDbSqlDialect extends SqlDialect {
         return true;
     }
 
+
+    @Override
+    public boolean supportsArrays() {
+        return true;
+    }
+
 }

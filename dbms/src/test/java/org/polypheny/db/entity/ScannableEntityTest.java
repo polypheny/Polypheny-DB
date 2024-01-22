@@ -22,29 +22,18 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import org.apache.calcite.linq4j.AbstractEnumerable;
-import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
-import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.impl.AbstractEntity;
-import org.polypheny.db.schema.types.FilterableEntity;
-import org.polypheny.db.schema.types.ProjectableFilterableEntity;
 import org.polypheny.db.schema.types.ScannableEntity;
-import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 
@@ -56,21 +45,23 @@ public class ScannableEntityTest {
 
     @BeforeAll
     public static void setUpClass() {
+        //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
     }
+
 
     @Test
     public void testTens() {
         final Enumerator<PolyValue[]> cursor = tens();
         assertTrue( cursor.moveNext() );
-        assertThat( cursor.current()[0], equalTo( (Object) 0 ) );
+        assertThat( cursor.current()[0], equalTo( PolyInteger.of( 0 ) ) );
         assertThat( cursor.current().length, equalTo( 1 ) );
         assertTrue( cursor.moveNext() );
-        assertThat( cursor.current()[0], equalTo( (Object) 10 ) );
+        assertThat( cursor.current()[0], equalTo( PolyInteger.of( 10 ) ) );
         assertTrue( cursor.moveNext() );
-        assertThat( cursor.current()[0], equalTo( (Object) 20 ) );
+        assertThat( cursor.current()[0], equalTo( PolyInteger.of( 20 ) ) );
         assertTrue( cursor.moveNext() );
-        assertThat( cursor.current()[0], equalTo( (Object) 30 ) );
+        assertThat( cursor.current()[0], equalTo( PolyInteger.of( 30 ) ) );
         assertFalse( cursor.moveNext() );
     }
 
@@ -422,147 +413,6 @@ public class ScannableEntityTest {
     }
 
 
-    /**
-     * Table that returns one column via the {@link ScannableEntity} interface.
-     */
-    public static class SimpleEntity extends AbstractEntity implements ScannableEntity {
-
-        protected SimpleEntity() {
-            super( null, null, null );
-        }
-
-
-        @Override
-        public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
-            return typeFactory.builder().add( "i", null, PolyType.INTEGER ).build();
-        }
-
-
-        @Override
-        public Enumerable<PolyValue[]> scan( DataContext root ) {
-            return new AbstractEnumerable<>() {
-                @Override
-                public Enumerator<PolyValue[]> enumerator() {
-                    return tens();
-                }
-            };
-        }
-
-    }
-
-
-    /**
-     * Table that returns two columns via the ScannableTable interface.
-     */
-    public static class BeatlesEntity extends AbstractEntity implements ScannableEntity {
-
-        protected BeatlesEntity() {
-            super( null, null, null );
-        }
-
-
-        @Override
-        public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
-            return typeFactory.builder()
-                    .add( "i", null, PolyType.INTEGER )
-                    .add( "j", null, PolyType.VARCHAR )
-                    .build();
-        }
-
-
-        @Override
-        public Enumerable<PolyValue[]> scan( DataContext root ) {
-            return new AbstractEnumerable<PolyValue[]>() {
-                @Override
-                public Enumerator<PolyValue[]> enumerator() {
-                    return beatles( new StringBuilder(), null, null );
-                }
-            };
-        }
-
-    }
-
-
-    /**
-     * Table that returns two columns via the {@link FilterableEntity} interface.
-     */
-    public static class BeatlesFilterableEntity extends AbstractEntity implements FilterableEntity {
-
-        private final StringBuilder buf;
-        private final boolean cooperative;
-
-
-        public BeatlesFilterableEntity( StringBuilder buf, boolean cooperative ) {
-            super( null, null, null );
-            this.buf = buf;
-            this.cooperative = cooperative;
-        }
-
-
-        @Override
-        public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
-            return typeFactory.builder()
-                    .add( "i", null, PolyType.INTEGER )
-                    .add( "j", null, PolyType.VARCHAR )
-                    .add( "k", null, PolyType.INTEGER )
-                    .build();
-        }
-
-
-        @Override
-        public Enumerable<PolyValue[]> scan( DataContext root, List<RexNode> filters ) {
-            final Integer filter = getFilter( cooperative, filters );
-            return new AbstractEnumerable<>() {
-                @Override
-                public Enumerator<PolyValue[]> enumerator() {
-                    return beatles( buf, filter, null );
-                }
-            };
-        }
-
-    }
-
-
-    /**
-     * Table that returns two columns via the {@link FilterableEntity} interface.
-     */
-    public static class BeatlesProjectableFilterableEntity extends AbstractEntity implements ProjectableFilterableEntity {
-
-        private final StringBuilder buf;
-        private final boolean cooperative;
-
-
-        public BeatlesProjectableFilterableEntity( StringBuilder buf, boolean cooperative ) {
-            super( null, null, null );
-            this.buf = buf;
-            this.cooperative = cooperative;
-        }
-
-
-        @Override
-        public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
-            return typeFactory.builder()
-                    .add( "i", null, PolyType.INTEGER )
-                    .add( "j", null, PolyType.VARCHAR )
-                    .add( "k", null, PolyType.INTEGER )
-                    .build();
-        }
-
-
-        @Override
-        public Enumerable<PolyValue[]> scan( DataContext root, List<RexNode> filters, final int[] projects ) {
-            final Integer filter = getFilter( cooperative, filters );
-            return new AbstractEnumerable<PolyValue[]>() {
-                @Override
-                public Enumerator<PolyValue[]> enumerator() {
-                    return beatles( buf, filter, projects );
-                }
-            };
-        }
-
-    }
-
-
     private static Enumerator<PolyValue[]> tens() {
         return new Enumerator<>() {
             int row = -1;
@@ -599,69 +449,6 @@ public class ScannableEntityTest {
         };
     }
 
-
-    private static final PolyValue[][] BEATLES = {
-            { PolyInteger.of( 4 ), PolyString.of( "John" ), PolyInteger.of( 1940 ) },
-            { PolyInteger.of( 4 ), PolyString.of( "Paul" ), PolyInteger.of( 1942 ) },
-            { PolyInteger.of( 6 ), PolyString.of( "George" ), PolyInteger.of( 1943 ) },
-            { PolyInteger.of( 5 ), PolyString.of( "Ringo" ), PolyInteger.of( 1940 ) }
-    };
-
-
-    private static Enumerator<PolyValue[]> beatles( final StringBuilder buf, final Integer filter, final int[] projects ) {
-        return new Enumerator<PolyValue[]>() {
-            int row = -1;
-            int returnCount = 0;
-            PolyValue[] current;
-
-
-            @Override
-            public PolyValue[] current() {
-                return current;
-            }
-
-
-            @Override
-            public boolean moveNext() {
-                while ( ++row < 4 ) {
-                    PolyValue[] current = BEATLES[row % 4];
-                    if ( filter == null || filter.equals( current[0] ) ) {
-                        if ( projects == null ) {
-                            this.current = current;
-                        } else {
-                            PolyValue[] newCurrent = new PolyValue[projects.length];
-                            for ( int i = 0; i < projects.length; i++ ) {
-                                newCurrent[i] = current[projects[i]];
-                            }
-                            this.current = newCurrent;
-                        }
-                        ++returnCount;
-                        return true;
-                    }
-                }
-                return false;
-            }
-
-
-            @Override
-            public void reset() {
-                row = -1;
-            }
-
-
-            @Override
-            public void close() {
-                current = null;
-                buf.append( "returnCount=" ).append( returnCount );
-                if ( filter != null ) {
-                    buf.append( ", filter=" ).append( filter );
-                }
-                if ( projects != null ) {
-                    buf.append( ", projects=" ).append( Arrays.toString( projects ) );
-                }
-            }
-        };
-    }
 
 }
 

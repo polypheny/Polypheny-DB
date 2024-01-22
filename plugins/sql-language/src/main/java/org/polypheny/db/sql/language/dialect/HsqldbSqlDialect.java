@@ -172,53 +172,34 @@ public class HsqldbSqlDialect extends SqlDialect {
 
 
     private static String convertTimeUnit( TimeUnitRange unit ) {
-        switch ( unit ) {
-            case YEAR:
-                return "YYYY";
-            case MONTH:
-                return "MM";
-            case DAY:
-                return "DD";
-            case WEEK:
-                return "WW";
-            case HOUR:
-                return "HH24";
-            case MINUTE:
-                return "MI";
-            case SECOND:
-                return "SS";
-            default:
-                throw new AssertionError( "could not convert time unit to HSQLDB equivalent: " + unit );
-        }
+        return switch ( unit ) {
+            case YEAR -> "YYYY";
+            case MONTH -> "MM";
+            case DAY -> "DD";
+            case WEEK -> "WW";
+            case HOUR -> "HH24";
+            case MINUTE -> "MI";
+            case SECOND -> "SS";
+            default -> throw new AssertionError( "could not convert time unit to HSQLDB equivalent: " + unit );
+        };
     }
 
 
     @Override
     public String timeUnitName( TimeUnitRange unit ) {
-        switch ( unit ) {
-            case YEAR:
-                return "YEAR";
-            case MONTH:
-                return "MONTH";
-            case DAY:
-                return "DAY";
-            case HOUR:
-                return "HOUR";
-            case MINUTE:
-                return "MINUTE";
-            case SECOND:
-                return "SECOND";
-            case WEEK:
-                return "WEEK_OF_YEAR";
-            case DOW:
-                return "DAY_OF_WEEK";
-            case QUARTER:
-                return "QUARTER";
-            case DOY:
-                return "DAY_OF_YEAR";
-            default:
-                throw new AssertionError( "could not convert time unit to HSQLDB equivalent: " + unit );
-        }
+        return switch ( unit ) {
+            case YEAR -> "YEAR";
+            case MONTH -> "MONTH";
+            case DAY -> "DAY";
+            case HOUR -> "HOUR";
+            case MINUTE -> "MINUTE";
+            case SECOND -> "SECOND";
+            case WEEK -> "WEEK_OF_YEAR";
+            case DOW -> "DAY_OF_WEEK";
+            case QUARTER -> "QUARTER";
+            case DOY -> "DAY_OF_YEAR";
+            default -> throw new AssertionError( "could not convert time unit to HSQLDB equivalent: " + unit );
+        };
     }
 
 }

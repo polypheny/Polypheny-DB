@@ -1203,7 +1203,7 @@ public class DdlManagerImpl extends DdlManager {
                 .filter( c -> !columns.contains( c ) )
                 .collect( Collectors.toList() );
 
-        List<Long> toAdd = columns.stream().filter( c -> !currentColumns.contains( c ) ).collect( Collectors.toList() );
+        List<Long> toAdd = columns.stream().filter( c -> !currentColumns.contains( c ) ).toList();
 
         // Check if views are dependent from this
         checkViewDependencies( table );
@@ -1282,7 +1282,7 @@ public class DdlManagerImpl extends DdlManager {
             log.warn( "Invoked validation with two empty lists of columns and partitions to be revoked. Is therefore always true..." );
             return true;
         }
-        List<Long> columnIdsToRemove = columnsToBeRemoved.stream().map( c -> c.columnId ).collect( Collectors.toList() );
+        List<Long> columnIdsToRemove = columnsToBeRemoved.stream().map( c -> c.columnId ).toList();
 
         // TODO @HENNLO Focus on PartitionPlacements that are labeled as UPTODATE nodes. The outdated nodes do not
         //  necessarily need placement constraints
@@ -1345,11 +1345,11 @@ public class DdlManagerImpl extends DdlManager {
 
         AllocationPlacement placement = catalog.getSnapshot().alloc().getPlacement( storeId, table.id ).orElseThrow();
         List<AllocationEntity> currentAllocs = catalog.getSnapshot().alloc().getAllocsOfPlacement( placement.id );
-        List<Long> currentPartitionsId = currentAllocs.stream().map( a -> a.partitionId ).collect( Collectors.toList() );
+        List<Long> currentPartitionsId = currentAllocs.stream().map( a -> a.partitionId ).toList();
 
         // Get PartitionGroups that have been removed
-        List<AllocationEntity> removedPartitions = currentAllocs.stream().filter( a -> !partitionIds.contains( a.partitionId ) ).collect( Collectors.toList() );
-        List<Long> addedPartitions = partitionIds.stream().filter( id -> !currentPartitionsId.contains( id ) ).collect( Collectors.toList() );
+        List<AllocationEntity> removedPartitions = currentAllocs.stream().filter( a -> !partitionIds.contains( a.partitionId ) ).toList();
+        List<Long> addedPartitions = partitionIds.stream().filter( id -> !currentPartitionsId.contains( id ) ).toList();
 
         // Copy the data to the newly added column placements
         DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
@@ -1756,9 +1756,9 @@ public class DdlManagerImpl extends DdlManager {
                 .alloc()
                 .getFromLogical( graphId )
                 .stream()
-                .filter( p -> !stores.stream().map( Adapter::getAdapterId ).collect( Collectors.toList() ).contains( p.adapterId ) )
+                .filter( p -> !stores.stream().map( Adapter::getAdapterId ).toList().contains( p.adapterId ) )
                 .map( p -> p.adapterId )
-                .collect( Collectors.toList() );
+                .toList();
 
         List<AllocationPartition> partitions = catalog.getSnapshot().alloc().getPartitionsFromLogical( graphId );
 
@@ -1930,7 +1930,7 @@ public class DdlManagerImpl extends DdlManager {
     private List<Long> getUnderlyingColumns( AlgNode algNode, AlgDataType fieldList ) {
         LogicalTable table = algNode.getEntity().unwrap( LogicalTable.class ).orElseThrow();
         List<LogicalColumn> columns = Catalog.getInstance().getSnapshot().rel().getColumns( table.id );
-        List<String> logicalColumnNames = columns.stream().map( c -> c.name ).collect( Collectors.toList() );
+        List<String> logicalColumnNames = columns.stream().map( c -> c.name ).toList();
         List<Long> underlyingColumns = new ArrayList<>();
         for ( int i = 0; i < columns.size(); i++ ) {
             for ( AlgDataTypeField algDataTypeField : fieldList.getFields() ) {
@@ -2156,9 +2156,9 @@ public class DdlManagerImpl extends DdlManager {
                 .alloc()
                 .getFromLogical( collection.id )
                 .stream()
-                .filter( p -> !stores.stream().map( Adapter::getAdapterId ).collect( Collectors.toList() ).contains( p.adapterId ) )
+                .filter( p -> !stores.stream().map( Adapter::getAdapterId ).toList().contains( p.adapterId ) )
                 .map( p -> p.adapterId )
-                .collect( Collectors.toList() );
+                .toList();
 
         List<AllocationPartition> partitions = catalog.getSnapshot().alloc().getPartitionsFromLogical( collection.id );
 
@@ -2347,7 +2347,7 @@ public class DdlManagerImpl extends DdlManager {
         List<String> sanitizedPartitionGroupNames = partitionInfo.partitionGroupNames
                 .stream()
                 .map( name -> name.trim().toLowerCase() )
-                .collect( Collectors.toList() );
+                .toList();
         if ( sanitizedPartitionGroupNames.size() != new HashSet<>( sanitizedPartitionGroupNames ).size() ) {
             throw new GenericRuntimeException( "Name is not unique" );
         }

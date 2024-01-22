@@ -49,11 +49,11 @@ import org.polypheny.db.schema.trait.ModelTrait;
 
 /**
  * A <code>LogicalScan</code> reads all the rows from a {@link org.polypheny.db.catalog.entity.logical.LogicalEntity}.
- *
+ * <p>
  * If the table is a <code>net.sf.saffron.ext.JdbcTable</code>, then this is literally possible. But for other kinds of tables,
  * there may be many ways to read the data from the table. For some kinds of table, it may not even be possible to read all of
  * the rows unless some narrowing constraint is applied.
- *
+ * <p>
  * In the example of the <code>net.sf.saffron.ext.ReflectSchema</code> schema,
  *
  * <blockquote>
@@ -73,7 +73,7 @@ public final class LogicalRelScan extends RelScan<Entity> {
 
     /**
      * Creates a LogicalScan.
-     *
+     * <p>
      * Use {@link #create} unless you know what you're doing.
      */
     public LogicalRelScan( AlgOptCluster cluster, AlgTraitSet traitSet, Entity table ) {

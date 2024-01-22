@@ -262,7 +262,7 @@ public class CottontailTypeUtil {
 
     public static CottontailGrpc.Literal toData( PolyValue value, PolyType actualType, PolyType parameterComponentType ) {
         final CottontailGrpc.Literal.Builder builder = Literal.newBuilder();
-        if ( value == null ) {
+        if ( value == null || value.isNull() ) {
             return builder.build();
         }
 
@@ -336,13 +336,13 @@ public class CottontailTypeUtil {
             }
             case TIME: {
                 if ( value.isTemporal() ) {
-                    return builder.setIntData( value.asTemporal().getMillisOfDay() ).build();
+                    return builder.setIntData( Math.toIntExact( value.asTemporal().getMillisOfDay() ) ).build();
                 }
                 break;
             }
             case DATE: {
                 if ( value.isTemporal() ) {
-                    return builder.setIntData( (int) value.asTemporal().getDaysSinceEpoch() ).build();
+                    return builder.setIntData( Math.toIntExact( value.asTemporal().getDaysSinceEpoch() ) ).build();
                 }
                 break;
             }

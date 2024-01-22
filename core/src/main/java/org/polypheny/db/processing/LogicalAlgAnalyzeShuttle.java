@@ -448,7 +448,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
         if ( scan.getEntity().unwrap( LogicalTable.class ).isPresent() ) {
             final LogicalTable table = scan.getEntity().unwrap( LogicalTable.class ).get();
             final List<LogicalColumn> columns = Catalog.getInstance().getSnapshot().rel().getColumns( table.id );
-            final List<String> names = columns.stream().map( c -> c.name ).collect( Collectors.toList() );
+            final List<String> names = columns.stream().map( c -> c.name ).toList();
             final String baseName = Catalog.getInstance().getSnapshot().getNamespace( table.namespaceId ) + "." + table.name + ".";
 
             for ( int i = 0; i < columns.size(); i++ ) {
@@ -461,7 +461,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     private void getPartitioningInfo( LogicalFilter filter ) {
         Entity table = filter.getInput().getEntity();
-        if ( table == null ) {
+        if ( table == null || table.unwrap( LogicalTable.class ).isEmpty() ) {
             return;
         }
 
@@ -475,7 +475,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
                 || Catalog.snapshot().alloc().getPartitionsFromLogical( logicalEntity.id ).size() > 1 ) {
             WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(
                     this.statement,
-                    Catalog.snapshot().rel().getColumns( logicalEntity.id ).stream().map( c -> c.id ).collect( Collectors.toList() ).indexOf( Catalog.snapshot().alloc().getPartitionProperty( logicalEntity.id ).orElseThrow().partitionColumnId ) );
+                    Catalog.snapshot().rel().getColumns( logicalEntity.id ).stream().map( c -> c.id ).toList().indexOf( Catalog.snapshot().alloc().getPartitionProperty( logicalEntity.id ).orElseThrow().partitionColumnId ) );
             node.accept( whereClauseVisitor );
 
             long scanId = node.getInput( 0 ).getEntity().id;

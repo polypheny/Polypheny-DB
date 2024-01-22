@@ -271,26 +271,13 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
             throw new GenericRuntimeException( "Default values are not supported for array types" );
         }
 
-        SqlLiteral literal;
-        switch ( Objects.requireNonNull( column.defaultValue ).type ) {
-            case BOOLEAN:
-                literal = SqlLiteral.createBoolean( Boolean.parseBoolean( column.defaultValue.value.toJson() ), ParserPos.ZERO );
-                break;
-            case INTEGER:
-            case DECIMAL:
-            case BIGINT:
-                literal = SqlLiteral.createExactNumeric( column.defaultValue.value.toJson(), ParserPos.ZERO );
-                break;
-            case REAL:
-            case DOUBLE:
-                literal = SqlLiteral.createApproxNumeric( column.defaultValue.value.toJson(), ParserPos.ZERO );
-                break;
-            case VARCHAR:
-                literal = SqlLiteral.createCharString( column.defaultValue.value.toJson(), ParserPos.ZERO );
-                break;
-            default:
-                throw new PolyphenyDbException( "Not yet supported default value type: " + column.defaultValue.type );
-        }
+        SqlLiteral literal = switch ( Objects.requireNonNull( column.defaultValue ).type ) {
+            case BOOLEAN -> SqlLiteral.createBoolean( Boolean.parseBoolean( column.defaultValue.value.toJson() ), ParserPos.ZERO );
+            case INTEGER, DECIMAL, BIGINT -> SqlLiteral.createExactNumeric( column.defaultValue.value.toJson(), ParserPos.ZERO );
+            case REAL, DOUBLE -> SqlLiteral.createApproxNumeric( column.defaultValue.value.toJson(), ParserPos.ZERO );
+            case VARCHAR -> SqlLiteral.createCharString( column.defaultValue.value.toJson(), ParserPos.ZERO );
+            default -> throw new PolyphenyDbException( "Not yet supported default value type: " + column.defaultValue.type );
+        };
         builder.append( literal.toSqlString( dialect ) );
         return builder;
     }

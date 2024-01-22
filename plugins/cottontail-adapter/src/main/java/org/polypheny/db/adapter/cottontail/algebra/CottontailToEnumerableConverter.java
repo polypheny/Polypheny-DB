@@ -323,8 +323,6 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                 } else {
                     source = Expressions.call(
                             BuiltInMethod.PARSE_ARRAY_FROM_TEXT.method,
-                            Expressions.constant( fieldType.getComponentType().getPolyType() ),
-                            Expressions.constant( arrayType.getDimension() ),
                             Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getStringData", Object.class ), getDataFromMap_ )
                     );
                 }

@@ -41,11 +41,11 @@ import org.polypheny.db.util.Util;
 
 /**
  * Represents a SQL data type specification in a parse tree.
- *
+ * <p>
  * A <code>SqlDataTypeSpec</code> is immutable; once created, you cannot change any of the fields.
- *
+ * <p>
  * todo: This should really be a subtype of {@link SqlCall}.
- *
+ * <p>
  * In its full glory, we will have to support complex type expressions like:
  *
  * <blockquote><code>ROW(<br>
@@ -77,7 +77,7 @@ public class SqlDataTypeSpec extends SqlNode implements DataTypeSpec {
 
     /**
      * Whether data type is allows nulls.
-     *
+     * <p>
      * Nullable is nullable! Null means "not specified". E.g. {@code CAST(x AS INTEGER)} preserves has the same nullability as {@code x}.
      */
     @Getter
@@ -231,7 +231,7 @@ public class SqlDataTypeSpec extends SqlNode implements DataTypeSpec {
             PolyType polyType = PolyType.get( name );
 
             //e.g. for CAST call, for stores that don't support ARRAYs. This is a fix for the WebUI filtering (see webui.Crud.filterTable)
-            if ( !writer.getDialect().supportsNestedArrays() && polyType == PolyType.ARRAY ) {
+            if ( polyType == PolyType.ARRAY && (!writer.getDialect().supportsArrays() || (this.getCollectionsTypeName() != null && !writer.getDialect().supportsArrays())) ) {
                 polyType = PolyType.VARCHAR;
                 name = polyType.getName();
                 if ( precision < 0 ) {
@@ -285,10 +285,9 @@ public class SqlDataTypeSpec extends SqlNode implements DataTypeSpec {
 
     @Override
     public boolean equalsDeep( Node node, Litmus litmus ) {
-        if ( !(node instanceof SqlDataTypeSpec) ) {
+        if ( !(node instanceof SqlDataTypeSpec that) ) {
             return litmus.fail( "{} != {}", this, node );
         }
-        SqlDataTypeSpec that = (SqlDataTypeSpec) node;
         if ( !Node.equalDeep( this.collectionsTypeName, that.collectionsTypeName, litmus ) ) {
             return litmus.fail( null );
         }
@@ -344,7 +343,7 @@ public class SqlDataTypeSpec extends SqlNode implements DataTypeSpec {
 
     /**
      * Converts this type specification to a {@link AlgDataType}.
-     *
+     * <p>
      * Does not throw an error if the type is not built-in.
      *
      * @param nullable Whether the type is nullable if the type specification does not explicitly state
@@ -392,17 +391,11 @@ public class SqlDataTypeSpec extends SqlNode implements DataTypeSpec {
             final String collectionName = collectionsTypeName.getSimple();
             final PolyType collectionsPolyType = Objects.requireNonNull( PolyType.get( collectionName ), collectionName );
 
-            switch ( collectionsPolyType ) {
-                case MULTISET:
-                    type = typeFactory.createMultisetType( type, cardinality );
-                    break;
-                case ARRAY:
-                    type = typeFactory.createArrayType( type, cardinality, dimension );
-                    break;
-
-                default:
-                    throw Util.unexpected( collectionsPolyType );
-            }
+            type = switch ( collectionsPolyType ) {
+                case MULTISET -> typeFactory.createMultisetType( type, cardinality );
+                case ARRAY -> typeFactory.createArrayType( type, cardinality, dimension );
+                default -> throw Util.unexpected( collectionsPolyType );
+            };
         }
 
         if ( this.nullable != null ) {

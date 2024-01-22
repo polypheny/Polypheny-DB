@@ -402,7 +402,7 @@ public class DbmsMeta implements ProtobufMeta {
                 log.trace( "getCatalogs( ConnectionHandle {} )", ch );
             }
             //final List<CatalogDatabase> databases = Linq4j.asEnumerable( new String[]{ "APP", "system", "public" } );
-            List<PolyValue[]> databases = Collections.singletonList( new PolyValue[]{ PolyString.of( Catalog.DATABASE_NAME ), PolyString.of( "system" ), PolyString.of( Catalog.defaultNamespaceName ) } );
+            List<PolyValue[]> databases = Collections.singletonList( new PolyValue[]{ PolyString.of( Catalog.DATABASE_NAME ), PolyString.of( "system" ), PolyString.of( Catalog.DEFAULT_NAMESPACE_NAME ) } );
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
                     ch,
@@ -1526,7 +1526,7 @@ public class DbmsMeta implements ProtobufMeta {
         }
         String defaultSchemaName = connectionParameters.get( "schema" );
         if ( defaultSchemaName == null || defaultSchemaName.isEmpty() ) {
-            defaultSchemaName = Catalog.defaultNamespaceName;
+            defaultSchemaName = Catalog.DEFAULT_NAMESPACE_NAME;
         }
 
         // Create transaction

@@ -45,7 +45,7 @@ public class UIRequest extends RequestModel {
     @JsonProperty
     @JsonAlias("database")
     @Builder.Default
-    public String namespace = Catalog.defaultNamespaceName;
+    public String namespace = Catalog.DEFAULT_NAMESPACE_NAME;
 
     /**
      * Information about the pagination,

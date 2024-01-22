@@ -203,7 +203,6 @@ public abstract class SqlOperator extends OperatorImpl {
      * @param functionQualifier function qualifier (e.g. "DISTINCT"), may be
      * @param pos parser position of the identifier of the call
      * @param operands array of operands
-     * @return
      */
     @Override
     public Call createCall( Literal functionQualifier, ParserPos pos, Node... operands ) {

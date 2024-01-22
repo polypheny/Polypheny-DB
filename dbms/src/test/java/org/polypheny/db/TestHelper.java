@@ -247,7 +247,6 @@ public class TestHelper {
                                 assertEquals( ((Number) expectedRow[j]).longValue(), ((Number) row[j]).longValue(), "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'" );
                             } else {
                                 assertEquals(
-
                                         expectedRow[j],
                                         row[j],
                                         "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'"
