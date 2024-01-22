@@ -308,7 +308,9 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/docker/handshakes/{id}", crud::getHandshake );
 
-        webuiServer.delete( "/docker/handshakes/{id}", crud::cancelHandshake );
+        webuiServer.post( "/docker/handshakes/{id}/cancel", crud::cancelHandshake );
+
+        webuiServer.delete( "/docker/handshakes/{id}", crud::deleteHandshake );
 
         webuiServer.get( "/docker/settings", crud::getDockerSettings );
 

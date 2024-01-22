@@ -3067,6 +3067,15 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         }
     }
 
+    void deleteHandshake( final Context ctx ) {
+        long id = Long.parseLong( ctx.pathParam( "id" ) );
+        if ( HandshakeManager.getInstance().cancelAndRemoveHandshake( id ) ) {
+            ctx.status( 200 ).json( HandshakeManager.getInstance().getHandshakes() );
+        } else {
+            ctx.status( 404 );
+        }
+    }
+
 
     void getDockerSettings( final Context ctx ) {
         ctx.json(

@@ -86,6 +86,17 @@ public final class HandshakeManager {
 
     public boolean cancelHandshake( long id ) {
         synchronized ( this ) {
+            Handshake h = handshakes.get( id );
+            if ( h != null ) {
+                h.cancel();
+            }
+            return h != null;
+        }
+    }
+
+
+    public boolean cancelAndRemoveHandshake( long id ) {
+        synchronized ( this ) {
             Handshake h = handshakes.remove( id );
             if ( h != null ) {
                 h.cancel();
@@ -110,8 +121,9 @@ public final class HandshakeManager {
         }
     }
 
+
     public List<HandshakeInfo> getHandshakes() {
-        synchronized ( this ){
+        synchronized ( this ) {
             return handshakes.values().stream().map( Handshake::serializeHandshake ).toList();
         }
     }
@@ -160,7 +172,7 @@ public final class HandshakeManager {
 
 
         private HandshakeInfo serializeHandshake() {
-            return new HandshakeInfo( id, host, getRunCommand(), getExecCommand(), client.getState().toString(), client.getLastErrorMessage(), containerRunningGuess );
+            return new HandshakeInfo( id, host, getRunCommand(), getExecCommand(), cancelled ? "CANCELLED" : client.getState().toString(), client.getLastErrorMessage(), containerRunningGuess );
         }
 
 
