@@ -143,7 +143,7 @@ public abstract class Entity implements PolyObject, Wrapper, Serializable, Catal
 
 
     public String getNamespaceName() {
-        return null;
+        throw new UnsupportedOperationException( "Should be overwritten by child" );
     }
 
 

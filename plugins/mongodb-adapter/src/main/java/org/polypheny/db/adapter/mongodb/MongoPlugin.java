@@ -309,7 +309,7 @@ public class MongoPlugin extends PolyPlugin {
             }
 
             PhysicalCollection table = storeCatalog.createCollection(
-                    logical.getNamespaceName(),
+                    DEFAULT_DATABASE,
                     name,
                     logical,
                     allocation );
