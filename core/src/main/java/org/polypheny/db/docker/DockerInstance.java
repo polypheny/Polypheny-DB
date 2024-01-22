@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.docker.exceptions.DockerUserException;
 import org.polypheny.db.docker.models.DockerHost;
@@ -261,6 +260,7 @@ public final class DockerInstance {
             if ( !this.host.hostname().equals( host ) ) {
                 client.close();
                 status = Status.NEW;
+                // TODO: Copy/Move keys...
                 try {
                     checkConnection();
                 } catch ( IOException e ){
