@@ -111,9 +111,9 @@ public class PostgresqlStore extends AbstractJdbcStore {
             DockerInstance instance = DockerManager.getInstance().getInstanceById( instanceId )
                     .orElseThrow( () -> new GenericRuntimeException( "No docker instance with id " + instanceId ) );
             try {
-                // kartoza/postgis:14
-                // postgis/postgis:14-3.4-alpine
-                container = instance.newBuilder( "postgis/postgis:14-3.4-alpine", getUniqueName() )
+                // kartoza/postgis:16-3.4
+                // postgis/postgis:16-3.4-alpine
+                container = instance.newBuilder( "postgis/postgis:16-3.4-alpine", getUniqueName() )
                         .withEnvironmentVariable( "POSTGRES_PASSWORD", settings.get( "password" ) )
                         .withEnvironmentVariable( "POSTGRES_USER", username )
                         .withEnvironmentVariable( "POSTGRES_DBNAME", database )
