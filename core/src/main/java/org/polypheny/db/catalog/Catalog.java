@@ -59,7 +59,7 @@ public abstract class Catalog implements ExtensionPoint {
     public static AdapterTemplate defaultStore;
     public static AdapterTemplate defaultSource;
     public static long defaultUserId = 0;
-    public static String defaultNamespaceName = "public";
+    public static String DEFAULT_NAMESPACE_NAME = "public";
     public static long defaultNamespaceId = 0;
     public static boolean resetDocker;
 

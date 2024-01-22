@@ -106,6 +106,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.StructKind;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -1333,7 +1334,15 @@ public class AlgBuilder {
      */
     public AlgBuilder scan( List<String> tableNames ) {
         final List<String> names = ImmutableList.copyOf( tableNames );
-        final LogicalTable entity = snapshot.rel().getTable( tableNames.get( 0 ), names.get( 1 ) ).orElseThrow( () -> new GenericRuntimeException( String.join( ".", names ) ) );
+        final LogicalTable entity;
+        if ( tableNames.size() == 2 ) {
+            entity = snapshot.rel().getTable( tableNames.get( 0 ), names.get( 1 ) ).orElseThrow( () -> new GenericRuntimeException( String.join( ".", names ) ) );
+        } else if ( tableNames.size() == 1 ) {
+            entity = snapshot.rel().getTable( Catalog.DEFAULT_NAMESPACE_NAME, names.get( 0 ) ).orElseThrow( () -> new GenericRuntimeException( String.join( ".", names ) ) );
+        } else {
+            throw new GenericRuntimeException( "Invalid table name: " + String.join( ".", names ) );
+        }
+
         final AlgNode scan = scanFactory.createScan( cluster, entity );
         push( scan );
         rename( entity.getRowType().getFieldNames() );

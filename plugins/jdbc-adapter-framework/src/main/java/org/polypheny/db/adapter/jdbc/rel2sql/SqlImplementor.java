@@ -39,7 +39,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
@@ -668,7 +667,7 @@ public abstract class SqlImplementor {
                     }
 
                     final RexCall call = (RexCall) stripCastFromString( rex );
-                    final List<SqlNode> nodeList = toSql( program, call.getOperands() );
+                    final List<SqlNode> nodes = toSql( program, call.getOperands() );
                     Operator op = call.getOperator();
                     switch ( op.getKind() ) {
                         case SUM0:
@@ -681,32 +680,32 @@ public abstract class SqlImplementor {
                             break;
                         case IS_TRUE:
                             if ( !dialect.supportsIsBoolean() ) {
-                                assert nodeList.size() == 1;
-                                return nodeList.get( 0 );
+                                assert nodes.size() == 1;
+                                return nodes.get( 0 );
                             }
                     }
                     switch ( call.getKind() ) {
                         case CAST:
                             if ( ignoreCast ) {
-                                assert nodeList.size() == 1;
-                                return nodeList.get( 0 );
+                                assert nodes.size() == 1;
+                                return nodes.get( 0 );
                             } else {
                                 if ( call.getType().getComponentType() != null && !dialect.supportsNestedArrays() ) {
-                                    nodeList.add( dialect.getCastSpec( call.getType().getComponentType() ) );
+                                    nodes.add( dialect.getCastSpec( call.getType().getComponentType() ) );
                                 } else {
-                                    nodeList.add( dialect.getCastSpec( call.getType() ) );
+                                    nodes.add( dialect.getCastSpec( call.getType() ) );
                                 }
                             }
                     }
-                    if ( op instanceof SqlBinaryOperator && nodeList.size() > 2 ) {
+                    if ( op instanceof SqlBinaryOperator && nodes.size() > 2 ) {
                         // In RexNode trees, OR and AND have any number of children;
                         // SqlCall requires exactly 2. So, convert to a left-deep binary tree.
-                        return createLeftCall( op, nodeList );
+                        return createLeftCall( op, nodes );
                     }
                     if ( op instanceof LangFunctionOperator ) {
                         return toSql( program, call.operands.get( 0 ) );
                     }
-                    return (SqlNode) op.createCall( new SqlNodeList( nodeList, POS ) );
+                    return (SqlNode) op.createCall( new SqlNodeList( nodes, POS ) );
             }
         }
 
@@ -820,12 +819,8 @@ public abstract class SqlImplementor {
         }
 
 
-        private List<SqlNode> toSql( RexProgram program, List<RexNode> operandList ) {
-            final List<SqlNode> list = new ArrayList<>();
-            for ( RexNode rex : operandList ) {
-                list.add( toSql( program, rex ) );
-            }
-            return list;
+        private List<SqlNode> toSql( RexProgram program, List<RexNode> operands ) {
+            return operands.stream().map( o -> toSql( program, o ) ).toList();
         }
 
 
@@ -1041,6 +1036,7 @@ public abstract class SqlImplementor {
                     if ( field.getPhysicalName() != null ) {
                         physicalColumnName = field.getPhysicalName();
                     }
+
                     return new SqlIdentifier(
                             !qualified
                                     ? ImmutableList.of( physicalColumnName )

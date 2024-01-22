@@ -48,8 +48,8 @@ public abstract class PolyTemporal extends PolyNumber {
     }
 
 
-    public long getDaysSinceEpoch() {
-        return getMillisSinceEpoch() / DateTimeUtils.MILLIS_PER_DAY;
+    public Long getDaysSinceEpoch() {
+        return getMillisSinceEpoch() == null ? null : getMillisSinceEpoch() / DateTimeUtils.MILLIS_PER_DAY;
     }
 
 
@@ -60,8 +60,8 @@ public abstract class PolyTemporal extends PolyNumber {
     }
 
 
-    public int getMillisOfDay() {
-        return (int) (getMillisSinceEpoch() % DateTimeUtils.MILLIS_PER_DAY);
+    public Long getMillisOfDay() {
+        return getMillisSinceEpoch() == null ? null : (getMillisSinceEpoch() % DateTimeUtils.MILLIS_PER_DAY);
     }
 
 

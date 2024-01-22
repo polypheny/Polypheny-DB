@@ -1959,12 +1959,12 @@ public class Functions {
 
 
     @SuppressWarnings("unused")
-    public static List<?> reparse( PolyType innerType, Long dimension, String stringValue ) {
+    public static List<?> reparse( String value ) {
         //Type conversionType = PolyTypeUtil.createNestedListType( dimension, innerType );
-        if ( stringValue == null ) {
+        if ( value == null ) {
             return null;
         }
-        return PolyValue.fromTypedJson( stringValue, PolyList.class );
+        return PolyValue.fromTypedJson( value, PolyList.class );
     }
 
 

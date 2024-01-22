@@ -195,7 +195,7 @@ public abstract class ReflectUtil {
     /**
      * Implements the {@link Glossary#VISITOR_PATTERN} via reflection. The basic technique is taken from
      * <a href="http://www.javaworld.com/javaworld/javatips/jw-javatip98.html">a Javaworld article</a>. For an example of how to use it, see {@code ReflectVisitorTest}.
-     *
+     * <p>
      * Visit method lookup follows the same rules as if compile-time resolution for VisitorClass.visit(VisiteeClass) were performed. An ambiguous match due to multiple
      * interface inheritance results in an IllegalArgumentException. A non-match is indicated by returning false.
      *
@@ -394,10 +394,10 @@ public abstract class ReflectUtil {
 
     /**
      * Creates a dispatcher for calls to a single multi-method on a particular object.
-     *
+     * <p>
      * Calls to that multi-method are resolved by looking for a method on the runtime type of that object, with the required name, and with
      * the correct type or a subclass for the first argument, and precisely the same types for other arguments.
-     *
+     * <p>
      * For instance, a dispatcher created for the method
      *
      * <blockquote>String foo(Vehicle, int, List)</blockquote>

@@ -517,6 +517,11 @@ public class SqlDialect {
     }
 
 
+    public boolean supportsArrays() {
+        return false;
+    }
+
+
     /**
      * Returns whether this dialect supports column names of level 3 (SchemaName.TableName.ColumnName).
      */

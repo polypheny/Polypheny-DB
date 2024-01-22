@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
+import lombok.Getter;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.jdbc.rel2sql.SqlImplementor;
@@ -551,12 +552,23 @@ public class JdbcRules {
             super( Filter.class,
                     filter -> (
                             !userDefinedFunctionInFilter( filter )
+                                    && !containUnsupportedArray( filter, out )
                                     && !knnFunctionInFilter( filter )
                                     && !multimediaFunctionInFilter( filter )
                                     && !DocumentRules.containsJson( filter )
                                     && !DocumentRules.containsDocument( filter )
                                     && (out.dialect.supportsNestedArrays() || (!itemOperatorInFilter( filter ) && isStringComparableArrayType( filter )))),
-                    Convention.NONE, out, algBuilderFactory, "JdbcFilterRule." + out );
+                    Convention.NONE, out, algBuilderFactory, JdbcFilterRule.class.getSimpleName() + "." + out );
+        }
+
+
+        private static boolean containUnsupportedArray( Filter filter, JdbcConvention out ) {
+            if ( out.dialect.supportsNestedArrays() ) {
+                return false;
+            }
+            UnsupportedIdentifierVisitor visitor = new UnsupportedIdentifierVisitor( type -> type.getPolyType() == PolyType.ARRAY && !out.dialect.supportsNestedArrays() );
+            filter.getCondition().accept( visitor );
+            return visitor.isContainsUnsupportedIdentifier();
         }
 
 
@@ -633,6 +645,31 @@ public class JdbcRules {
                     alg.getTraitSet().replace( out ).replace( ModelTrait.RELATIONAL ),
                     convert( filter.getInput(), filter.getInput().getTraitSet().replace( out ) ),
                     filter.getCondition() );
+        }
+
+
+        private static class UnsupportedIdentifierVisitor extends RexVisitorImpl<Void> {
+
+
+            private final java.util.function.Function<AlgDataType, Boolean> isApplicable;
+            @Getter
+            private boolean containsUnsupportedIdentifier = false;
+
+
+            protected UnsupportedIdentifierVisitor( java.util.function.Function<AlgDataType, Boolean> isApplicable ) {
+                super( true );
+                this.isApplicable = isApplicable;
+            }
+
+
+            @Override
+            public Void visitIndexRef( RexIndexRef inputRef ) {
+                if ( isApplicable.apply( inputRef.type ) ) {
+                    containsUnsupportedIdentifier = true;
+                }
+                return super.visitIndexRef( inputRef );
+            }
+
         }
 
     }

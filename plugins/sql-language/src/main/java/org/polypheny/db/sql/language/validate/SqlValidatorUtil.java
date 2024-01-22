@@ -600,7 +600,7 @@ public class SqlValidatorUtil {
 
         String namespace = id.names.get( 0 );
         if ( id.names.size() == 1 ) {
-            namespace = Catalog.defaultNamespaceName;
+            namespace = Catalog.DEFAULT_NAMESPACE_NAME;
         }
 
         if ( validator.snapshot.getNamespace( namespace ).map( n -> n.dataModel != DataModel.RELATIONAL ).orElse( false ) ) {

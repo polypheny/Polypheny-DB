@@ -46,7 +46,6 @@ import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.ByteString;
-import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -215,8 +214,8 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case DOUBLE -> o -> o.asNumber().DoubleValue();
             case BIGINT -> o -> o.asNumber().LongValue();
             case DECIMAL -> o -> o.asNumber().BigDecimalValue();
-            case DATE -> o -> o.asDate().millisSinceEpoch / DateTimeUtils.MILLIS_PER_DAY;
-            case TIME -> o -> o.asTime().ofDay % DateTimeUtils.MILLIS_PER_DAY;
+            case DATE -> o -> o.asDate().getDaysSinceEpoch();
+            case TIME -> o -> o.asTime().getMillisOfDay();
             case TIMESTAMP -> o -> o.asTimestamp().millisSinceEpoch;
             case BOOLEAN -> o -> o.asBoolean().value;
             case ARRAY -> {

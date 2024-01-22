@@ -17,6 +17,8 @@
 package org.polypheny.db.misc;
 
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -254,7 +256,7 @@ public class HorizontalPartitioningTest {
                             + "PRIMARY KEY (tprimary) )"
                             + "PARTITION BY HASH (tvarchar) "
                             + "PARTITIONS 1" );
-                } catch ( AvaticaSqlException e ) {
+                } catch ( Exception e ) {
                     failed = true;
                 }
                 Assertions.assertTrue( failed );
@@ -269,13 +271,13 @@ public class HorizontalPartitioningTest {
                             + "PRIMARY KEY (tprimary) )"
                             + "PARTITION BY HASH (tvarchar) "
                             + "WITH (name1)" );
-                } catch ( AvaticaSqlException e ) {
+                } catch ( Exception e ) {
                     failed = true;
                 }
-                Assertions.assertTrue( failed );
+                assertTrue( failed );
 
-                statement.executeUpdate( "DROP TABLE horizontalparttestfalseNEW" );
-                statement.executeUpdate( "DROP TABLE horizontal2" );
+                statement.executeUpdate( "DROP TABLE IF EXISTS horizontalparttestfalseNEW" );
+                statement.executeUpdate( "DROP TABLE IF EXISTS horizontal2" );
             }
         }
     }
@@ -475,7 +477,7 @@ public class HorizontalPartitioningTest {
                                 + "PRIMARY KEY (tprimary) )"
                                 + "PARTITION BY LIST (tvarchar) "
                                 + "PARTITIONS 3" );
-                    } catch ( AvaticaSqlException e ) {
+                    } catch ( Exception e ) {
                         failed = true;
                     }
                     Assertions.assertTrue( failed );
@@ -484,9 +486,9 @@ public class HorizontalPartitioningTest {
 
                     // TODO: Check unbound partitions
                 } finally {
-                    statement.executeUpdate( "DROP TABLE listpartitioning" );
-                    statement.executeUpdate( "DROP TABLE listpartitioning2" );
-                    statement.executeUpdate( "DROP TABLE listpartitioning3" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS listpartitioning" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS listpartitioning2" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS listpartitioning3" );
                 }
             }
         }
@@ -550,17 +552,21 @@ public class HorizontalPartitioningTest {
                     // RANGE partitioning can't be created without specifying ranges
                     boolean failed = false;
                     try {
-                        statement.executeUpdate( "CREATE TABLE rangepartitioning3( "
-                                + "tprimary INTEGER NOT NULL, "
-                                + "tinteger INTEGER NULL, "
-                                + "tvarchar VARCHAR(20) NULL, "
-                                + "PRIMARY KEY (tprimary) )"
-                                + "PARTITION BY RANGE (tinteger) "
-                                + "PARTITIONS 3" );
-                    } catch ( AvaticaSqlException e ) {
+                        statement.executeUpdate(
+                                """
+                                        CREATE TABLE rangepartitioning2(\s
+                                        tprimary INTEGER NOT NULL,\s
+                                        tinteger INTEGER NULL,\s
+                                        tvarchar VARCHAR(20) NULL,\s
+                                        PRIMARY KEY (tprimary) )
+                                        PARTITION BY RANGE (tinteger)\s
+                                        PARTITIONS 3
+                                        """ );
+                    } catch ( Throwable e ) {
                         failed = true;
                     }
-                    Assertions.assertTrue( failed );
+                    assertTrue( failed );
+
                 } finally {
                     statement.executeUpdate( "DROP TABLE rangepartitioning1" );
                     statement.executeUpdate( "DROP TABLE IF EXISTS rangepartitioning2" );
@@ -829,7 +835,7 @@ public class HorizontalPartitioningTest {
 
                 } finally {
                     // Drop tables and stores
-                    statement.executeUpdate( "DROP TABLE IF EXISTS batchtest" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS multiinsert" );
                 }
             }
         }

@@ -49,6 +49,7 @@ public class PolyTime extends PolyTemporal {
         return new PolyTime( value.intValue() );
     }
 
+
     public static PolyTime of( Number value ) {
         return new PolyTime( value.intValue() );
     }
@@ -85,6 +86,7 @@ public class PolyTime extends PolyTemporal {
         }
         throw new NotImplementedException( "convert value to Boolean" );
     }
+
 
     public Time asSqlTime() {
         return new Time( ofDay );
@@ -127,7 +129,7 @@ public class PolyTime extends PolyTemporal {
 
     @Override
     public Long getMillisSinceEpoch() {
-        return Long.valueOf( ofDay );
+        return ofDay == null ? null : Long.valueOf( ofDay );
     }
 
 

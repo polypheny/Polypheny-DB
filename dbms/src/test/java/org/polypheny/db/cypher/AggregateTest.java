@@ -158,7 +158,7 @@ public class AggregateTest extends CypherTestTemplate {
         execute( SINGLE_EDGE_1 );
         execute( SINGLE_EDGE_2 );
 
-        GraphResult res = execute( "MATCH (n) RETURN sum(n.age)" );
+        execute( "MATCH (n) RETURN sum(n.age)" );
     }
 
 }

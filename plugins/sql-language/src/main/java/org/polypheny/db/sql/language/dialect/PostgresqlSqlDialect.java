@@ -17,6 +17,7 @@
 package org.polypheny.db.sql.language.dialect;
 
 
+import java.util.Objects;
 import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.algebra.constant.FunctionCategory;
@@ -51,16 +52,13 @@ public class PostgresqlSqlDialect extends SqlDialect {
             new AlgDataTypeSystemImpl() {
                 @Override
                 public int getMaxPrecision( PolyType typeName ) {
-                    switch ( typeName ) {
-                        case VARCHAR:
-                            // From htup_details.h in postgresql:
-                            // MaxAttrSize is a somewhat arbitrary upper limit on the declared size of data fields of char(n) and similar types.  It need not have anything
-                            // directly to do with the *actual* upper limit of varlena values, which is currently 1Gb (see TOAST structures in postgres.h).  I've set it
-                            // at 10Mb which seems like a reasonable number --- tgl 8/6/00. */
-                            return 10 * 1024 * 1024;
-                        default:
-                            return super.getMaxPrecision( typeName );
+                    if ( Objects.requireNonNull( typeName ) == PolyType.VARCHAR ) {// From htup_details.h in postgresql:
+                        // MaxAttrSize is a somewhat arbitrary upper limit on the declared size of data fields of char(n) and similar types.  It need not have anything
+                        // directly to do with the *actual* upper limit of varlena values, which is currently 1Gb (see TOAST structures in postgres.h).  I've set it
+                        // at 10Mb which seems like a reasonable number --- tgl 8/6/00. */
+                        return 10 * 1024 * 1024;
                     }
+                    return super.getMaxPrecision( typeName );
                 }
             };
 
@@ -86,13 +84,13 @@ public class PostgresqlSqlDialect extends SqlDialect {
 
 
     @Override
-    public IntervalParameterStrategy getIntervalParameterStrategy() {
-        return IntervalParameterStrategy.CAST;
+    public boolean supportsNestedArrays() {
+        return true;
     }
 
 
     @Override
-    public boolean supportsNestedArrays() {
+    public boolean supportsArrays() {
         return true;
     }
 
@@ -124,16 +122,11 @@ public class PostgresqlSqlDialect extends SqlDialect {
                     brackets.append( "[]" );
                 }
                 PolyType t = tt.getComponentType().getPolyType();
-                switch ( t ) {
-                    case TINYINT:
-                        castSpec = "_smallint" + brackets;
-                        break;
-                    case DOUBLE:
-                        castSpec = "_double precision" + brackets;
-                        break;
-                    default:
-                        castSpec = "_" + t.getName() + brackets;
-                }
+                castSpec = switch ( t ) {
+                    case TINYINT -> "_smallint" + brackets;
+                    case DOUBLE -> "_double precision" + brackets;
+                    default -> "_" + t.getName() + brackets;
+                };
                 break;
             case INTERVAL_YEAR_MONTH:
             case INTERVAL_DAY:
@@ -160,16 +153,12 @@ public class PostgresqlSqlDialect extends SqlDialect {
 
     @Override
     public String getArrayComponentTypeString( SqlType type ) {
-        switch ( type ) {
-            case TINYINT:
-                return "int2"; // Postgres has no tinyint (1 byte), so instead cast to smallint (2 bytes)
-            case DOUBLE:
-                return "float8";
-            case REAL:
-                return "float4";
-            default:
-                return super.getArrayComponentTypeString( type );
-        }
+        return switch ( type ) {
+            case TINYINT -> "int2"; // Postgres has no tinyint (1 byte), so instead cast to smallint (2 bytes)
+            case DOUBLE -> "float8";
+            case REAL -> "float4";
+            default -> super.getArrayComponentTypeString( type );
+        };
     }
 
 

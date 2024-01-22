@@ -36,6 +36,7 @@ import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.ImplementationContext;
@@ -48,7 +49,6 @@ import org.polypheny.db.type.entity.PolyValue;
 /**
  * The result of preparing a query. It gives the Avatica driver framework the information it needs to create a prepared statement,
  * or to execute a statement directly, without an explicit prepare step.
- *
  */
 @Getter
 public class PolySignature extends Meta.Signature {
@@ -93,6 +93,9 @@ public class PolySignature extends Meta.Signature {
     public static PolySignature from( ImplementationContext prepareQuery ) {
         final List<AvaticaParameter> parameters = new ArrayList<>();
         if ( prepareQuery.getImplementation() == null ) {
+            if ( prepareQuery.getException().isPresent() ) {
+                throw new GenericRuntimeException( prepareQuery.getException().get() );
+            }
             return fromError( prepareQuery );
         }
         PolyImplementation implementation = prepareQuery.getImplementation();
