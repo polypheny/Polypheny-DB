@@ -206,9 +206,13 @@ public final class HandshakeManager {
 
         private void cancel() {
             synchronized ( this ) {
-                timeout.set( 0 );
-                handshakeThread.interrupt();
-                cancelled = true;
+                synchronized ( client ) {
+                    if ( client.getState() != State.SUCCESS ) {
+                        timeout.set( 0 );
+                        handshakeThread.interrupt();
+                        cancelled = true;
+                    }
+                }
             }
         }
 

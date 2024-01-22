@@ -256,15 +256,18 @@ final class PolyphenyHandshakeClient {
 
             lastErrorMessage = new Date().toString();
 
-            // timeout 0 means cancelled
-            if ( onCompletion != null && timeout.get() != 0 ) {
-                onCompletion.run();
-            }
-
             synchronized ( this ) {
-                state = State.SUCCESS;
+                // timeout 0 means cancelled
+                if (timeout.get() != 0) {
+                    if ( onCompletion != null && timeout.get() != 0 ) {
+                        onCompletion.run();
+                    }
+                    state = State.SUCCESS;
+
+                    return true;
+                }
+                return false; // Prevents a handshake successful message to be printed when cancelled
             }
-            return true;
         } else {
             log.error( "Server " + hostname + " has send an invalid authentication value, aborting handshake" );
             // On purpose not NOT_RUNNING, because it could be an attack attempt.  This forces regeneration
