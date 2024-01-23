@@ -86,7 +86,7 @@ public final class DockerSetupHelper {
     public static HandshakeInfo reconnectToInstance( int id ) {
         Optional<DockerInstance> maybeDockerInstance = DockerManager.getInstance().getInstanceById( id );
         if ( maybeDockerInstance.isEmpty() ) {
-            throw new DockerUserException( "No instance with that id" );
+            throw new DockerUserException( 404, "No instance with that id" );
         }
 
         DockerInstance dockerInstance = maybeDockerInstance.get();
