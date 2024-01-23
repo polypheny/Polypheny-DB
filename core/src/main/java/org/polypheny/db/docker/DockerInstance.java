@@ -46,13 +46,13 @@ public final class DockerInstance {
      * This set is needed for resetDocker and resetCatalog.  The first time we see a new UUID, we save it in the set
      * and remove all the containers belonging to us.
      */
-    private static final Set<String> seenUuids = new HashSet<>();
+    private static final Set<String> seenInstanceUuids = new HashSet<>();
 
     private final int instanceId;
 
     @Getter
     private DockerHost host;
-    private Set<String> uuids = new HashSet<>();
+    private Set<String> containerUuids = new HashSet<>();
 
     /**
      * The UUID of the docker daemon we are talking to.  null if we are currently not connected.
@@ -75,8 +75,8 @@ public final class DockerInstance {
 
 
     DockerInstance( int instanceId, DockerHost host ) {
-        this.host = host;
         this.instanceId = instanceId;
+        this.host = host;
         this.dockerInstanceUuid = null;
         try {
             checkConnection();
@@ -98,7 +98,7 @@ public final class DockerInstance {
         this.dockerInstanceUuid = this.client.getDockerId();
 
         // seenUuids is used to lock out all the other DockerInstance instances
-        synchronized ( seenUuids ) {
+        synchronized ( seenInstanceUuids ) {
             for ( DockerInstance instance : DockerManager.getInstance().getDockerInstances().values() ) {
                 if ( instance != this && instance.dockerInstanceUuid != null && instance.dockerInstanceUuid.equals( dockerInstanceUuid ) ) {
                     throw new DockerUserException( "The same docker instance cannot be added twice" );
@@ -107,8 +107,8 @@ public final class DockerInstance {
         }
 
         boolean first;
-        synchronized ( seenUuids ) {
-            first = seenUuids.add( this.dockerInstanceUuid ) && (Catalog.resetDocker || Catalog.resetCatalog);
+        synchronized ( seenInstanceUuids ) {
+            first = seenInstanceUuids.add( this.dockerInstanceUuid ) && (Catalog.resetDocker || Catalog.resetCatalog);
         }
 
         if ( first ) {
@@ -143,7 +143,7 @@ public final class DockerInstance {
                     uuids.add( containerInfo.getUuid() );
                     new DockerContainer( containerInfo.getUuid(), containerInfo.getName() );
                 }
-                this.uuids = uuids;
+                this.containerUuids = uuids;
                 status = Status.CONNECTED;
             } else {
                 client.ping();
@@ -210,7 +210,7 @@ public final class DockerInstance {
     void destroyContainer( DockerContainer container ) {
         synchronized ( this ) {
             try {
-                uuids.remove( container.getContainerId() );
+                containerUuids.remove( container.getContainerId() );
                 client.deleteContainer( container.getContainerId() );
             } catch ( IOException e ) {
                 if ( e.getMessage().startsWith( "No such container" ) ) {
@@ -239,7 +239,7 @@ public final class DockerInstance {
 
     boolean hasContainer( String uuid ) {
         synchronized ( this ) {
-            return uuids.contains( uuid );
+            return containerUuids.contains( uuid );
         }
     }
 
@@ -333,7 +333,7 @@ public final class DockerInstance {
                 }
 
                 String uuid = client.createAndStartContainer( DockerContainer.getPhysicalUniqueName( uniqueName ), imageNameWithRegistry, exposedPorts, initCommand, environmentVariables, List.of() );
-                uuids.add( uuid );
+                containerUuids.add( uuid );
                 return new DockerContainer( uuid, uniqueName );
             }
         }
