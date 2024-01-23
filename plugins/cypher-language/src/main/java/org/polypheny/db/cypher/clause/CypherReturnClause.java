@@ -27,18 +27,22 @@ import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgFieldCollation.Direction;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.core.LaxAggregateCall;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgAggregate;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgSort;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
+import org.polypheny.db.cypher.expression.CypherAggregate;
 import org.polypheny.db.cypher.expression.CypherExpression;
+import org.polypheny.db.cypher.expression.CypherProperty;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
 
 
@@ -115,26 +119,38 @@ public class CypherReturnClause extends CypherClause {
             }
         }
 
-        List<String> aggNames = Pair.left( aggIndexes ).stream()
-                .filter( Objects::nonNull )
-                .collect( Collectors.toList() );
+        List<RexNameRef> groupIndexes = new ArrayList<>();
+        List<LaxAggregateCall> calls = new ArrayList<>();
+        AlgDataTypeFactory.Builder builder = context.typeFactory.builder();
 
-        List<Integer> groupIndexes = node
-                .getTupleType()
-                .getFields()
-                .stream()
-                .filter( f -> !aggNames.contains( f.getName() ) )
-                .map( AlgDataTypeField::getIndex )
-                .collect( Collectors.toList() );
+        int aggCount = 0;
+        for ( CypherReturn returnItem : returnItems ) {
+            if ( returnItem instanceof CypherReturnItem item ) {
+                if ( item.getExpression() instanceof CypherProperty name ) {
+                    AlgDataType type = node.getTupleType().getField( name.getName(), false, false ).getType();
+                    builder.add( name.getName(), null, type );
+
+                    int i = node.getTupleType().getFieldNames().indexOf( name.getName() );
+                    RexNameRef ref = RexNameRef.create( name.getName(), i, node.getTupleType().getFields().get( i ).getType() );
+                    groupIndexes.add( ref );
+                } else if ( item.getExpression() instanceof CypherAggregate aggregate ) {
+
+                    Pair<String, AggregateCall> aggIndex = aggIndexes.get( aggCount );
+                    LaxAggregateCall call = LaxAggregateCall.from( aggIndex.right, aggIndex.left == null ? null : node );
+                    calls.add( call );
+
+                    builder.add( item.getVariable() != null ? item.getVariable().getName() : aggregate.op.name(), null, call.getType( node.getCluster() ) );
+                }
+            }
+        }
 
         return new LogicalLpgAggregate(
                 node.getCluster(),
                 node.getTraitSet(),
                 node,
-                false,
-                ImmutableBitSet.of( groupIndexes ),
-                null, // instead of grouping by only one filed add multiple combinations (), (1,2)
-                aggCalls );
+                groupIndexes,// instead of grouping by only one filed add multiple combinations (), (1,2)
+                calls,
+                builder.build() );
     }
 
 
@@ -143,6 +159,10 @@ public class CypherReturnClause extends CypherClause {
 
         if ( node == null ) {
             node = context.asValues( nameAndProject );
+        }
+        if ( nameAndProject.isEmpty() ) {
+            // use all e.g. count(*)
+            return node;
         }
 
         AlgNode project = new LogicalLpgProject(
@@ -163,7 +183,7 @@ public class CypherReturnClause extends CypherClause {
     public AlgNode getGraphSort( CypherContext context ) {
         List<Pair<Direction, String>> orders = order.stream()
                 .map( o -> Pair.of( o.isAsc() ? Direction.ASCENDING : Direction.DESCENDING, o.getExpression().getName() ) )
-                .collect( Collectors.toList() );
+                .toList();
 
         AlgNode node = context.peek();
 

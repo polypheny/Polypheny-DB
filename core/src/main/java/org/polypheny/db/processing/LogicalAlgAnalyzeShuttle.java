@@ -217,7 +217,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalLpgAggregate aggregate ) {
-        hashBasis.add( aggregate.getClass().getSimpleName() + "#" + aggregate.getAggCallList() );
+        hashBasis.add( aggregate.getClass().getSimpleName() + "#" + aggregate.aggCalls );
         return visitChild( aggregate, 0, aggregate.getInput() );
     }
 

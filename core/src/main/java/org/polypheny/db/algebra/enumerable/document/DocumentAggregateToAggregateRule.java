@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.DocumentAggregateCall;
+import org.polypheny.db.algebra.core.LaxAggregateCall;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.enumerable.EnumerableProject;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
@@ -86,8 +86,7 @@ public class DocumentAggregateToAggregateRule extends AlgOptRule {
             names.add( DocumentType.DOCUMENT_ID );
         }
 
-        int i = 0;
-        for ( DocumentAggregateCall agg : alg.aggCalls ) {
+        for ( LaxAggregateCall agg : alg.aggCalls ) {
             RexNode node = RexIndexRef.of( 0, DocumentType.ofDoc() );
             if ( agg.getInput().isPresent() ) {
                 node = builder.getRexBuilder().makeCall(
@@ -108,7 +107,6 @@ public class DocumentAggregateToAggregateRule extends AlgOptRule {
 
             nodes.add( node );
             names.add( agg.name );
-            i++;
         }
 
         LogicalProject project = (LogicalProject) LogicalProject.create( alg.getInput(), nodes, names ).copy( alg.getInput().getTraitSet().replace( ModelTrait.DOCUMENT ), alg.getInputs() );

@@ -16,10 +16,12 @@
 
 package org.polypheny.db.algebra.rules;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.InvalidAlgException;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.enumerable.EnumerableAggregate;
+import org.polypheny.db.algebra.core.LaxAggregateCall;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.enumerable.EnumerableFilter;
 import org.polypheny.db.algebra.enumerable.EnumerableLimit;
@@ -31,11 +33,19 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgSort;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
+import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.rex.RexIndexRef;
+import org.polypheny.db.rex.RexNameRef;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.tools.AlgBuilder;
+import org.polypheny.db.util.ImmutableBitSet;
 
 public class LpgToEnumerableRule extends AlgOptRule {
 
@@ -88,12 +98,60 @@ public class LpgToEnumerableRule extends AlgOptRule {
         AlgTraitSet out = aggregate.getTraitSet().replace( EnumerableConvention.INSTANCE );
 
         try {
-            AlgNode node = new EnumerableAggregate( aggregate.getCluster(), out, convert( aggregate.getInput(), EnumerableConvention.INSTANCE ), aggregate.indicator, aggregate.getGroupSet(), aggregate.getGroupSets(), aggregate.getAggCallList() );
-            call.transformTo( node );
-        } catch ( InvalidAlgException e ) {
-            //EnumerableRules.LOGGER.debug( e.toString() );
+            AlgNode convert = convert( aggregate.getInput(), EnumerableConvention.INSTANCE );
+
+            convert = wrapAggregate( call.builder(), aggregate, convert );
+
+            call.transformTo( convert );
+        } catch ( Exception e ) {
             throw new GenericRuntimeException( e );
         }
+    }
+
+
+    private AlgNode wrapAggregate( AlgBuilder builder, LogicalLpgAggregate alg, AlgNode child ) {
+        List<RexNode> nodes = new ArrayList<>();
+        List<String> names = new ArrayList<>();
+
+        List<Integer> groupIndexes = new ArrayList<>();
+        for ( RexNameRef group : alg.groups ) {
+            if ( group.getIndex().isEmpty() ) {
+                throw new UnsupportedOperationException();
+            }
+            groupIndexes.add( group.getIndex().get() );
+            RexNode node = new RexIndexRef( group.getIndex().get(), group.type );
+            nodes.add( node );
+            names.add( group.name );
+        }
+        ImmutableBitSet groupSet = ImmutableBitSet.of( groupIndexes );
+
+        for ( LaxAggregateCall agg : alg.aggCalls ) {
+            if ( agg.getInput().isEmpty() ) {
+                nodes.add( new RexIndexRef( 0, child.getTupleType().getFields().get( 0 ).getType() ) );
+                names.add( agg.name );
+                continue;
+            }
+
+            RexNode node = agg.getInput().get();
+
+            if ( agg.requiresCast( alg.getCluster() ).isPresent() ) {
+                node = builder.getRexBuilder().makeAbstractCast( agg.requiresCast( alg.getCluster() ).get(), node );
+            }
+
+            nodes.add( node );
+            names.add( agg.name );
+        }
+
+        LogicalProject project = (LogicalProject) LogicalProject.create( child, nodes, names ).copy( alg.getInput().getTraitSet().replace( ModelTrait.GRAPH ), alg.getInputs() );
+
+        EnumerableProject enumerableProject = new EnumerableProject( project.getCluster(), alg.getInput().getTraitSet().replace( ModelTrait.GRAPH ).replace( EnumerableConvention.INSTANCE ), convert( project.getInput(), EnumerableConvention.INSTANCE ), project.getProjects(), project.getTupleType() );
+
+        builder.push( enumerableProject );
+        builder.push( LogicalAggregate.create( builder.build(), groupSet, null, alg.aggCalls.stream().map( a -> a.toAggCall( alg.getTupleType(), alg.getCluster() ) ).collect( Collectors.toList() ) ) );
+
+        builder.rename( names );
+
+        return builder.build();
     }
 
 

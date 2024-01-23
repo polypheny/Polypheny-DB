@@ -812,9 +812,8 @@ public class RexImpTable {
                 break;
             case IS_NULL:
                 // If "f" is strict, then "f(a0, a1) IS NULL" is equivalent to "a0 IS NULL OR a1 IS NULL".
-                switch ( nullPolicy ) {
-                    case STRICT:
-                        return EnumUtils.foldOr( translator.translateList( call.getOperands(), nullAs ) );
+                if ( Objects.requireNonNull( nullPolicy ) == NullPolicy.STRICT ) {
+                    return EnumUtils.foldOr( translator.translateList( call.getOperands(), nullAs ) );
                 }
                 break;
         }

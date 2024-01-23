@@ -122,14 +122,13 @@ public class CypherFunctions {
         Map<PolyString, PolyValue> oldProps = new HashMap<>();
 
         for ( PolyValue[] value : edge ) {
-            PolyValue[] o = value;
-            PolyString id = o[0].asString();
-            PolyString label = o[1].asString();
-            PolyString sourceId = o[2].asString();
-            PolyString targetId = o[3].asString();
+            PolyString id = value[0].asString();
+            PolyString label = value[1].asString();
+            PolyString sourceId = value[2].asString();
+            PolyString targetId = value[3].asString();
             // id is 4
-            PolyString key = o[5].asString();
-            PolyString val = o[6].asString();
+            PolyString key = value[5].asString();
+            PolyString val = value[6].asString();
 
             if ( !id.isNull() && !id.equals( oldId ) ) {
                 if ( oldId != null && !oldId.isNull() ) {
@@ -390,7 +389,7 @@ public class CypherFunctions {
      */
     @SuppressWarnings("unused")
     public static GraphPropertyHolder removeLabels( GraphPropertyHolder target, List<String> labels ) {
-        target.labels.removeAll( labels );
+        target.labels.removeAll( labels.stream().map( PolyString::of ).toList() );
         return target;
     }
 
@@ -404,7 +403,7 @@ public class CypherFunctions {
      */
     @SuppressWarnings("unused")
     public static GraphPropertyHolder removeProperty( GraphPropertyHolder target, String key ) {
-        target.properties.remove( key );
+        target.properties.remove( PolyString.of( key ) );
         return target;
     }
 

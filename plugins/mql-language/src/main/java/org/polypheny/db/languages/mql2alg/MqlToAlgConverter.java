@@ -47,7 +47,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.CorrelationId;
-import org.polypheny.db.algebra.core.DocumentAggregateCall;
+import org.polypheny.db.algebra.core.LaxAggregateCall;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
@@ -732,7 +732,7 @@ public class MqlToAlgConverter {
                 node,
                 null,
                 Collections.singletonList(
-                        DocumentAggregateCall.create( query.isEstimate() ? "estimatedCount" : "count", OperatorRegistry.getAgg( OperatorName.COUNT ), null ) ) );
+                        LaxAggregateCall.create( query.isEstimate() ? "estimatedCount" : "count", OperatorRegistry.getAgg( OperatorName.COUNT ), null ) ) );
     }
 
 
@@ -1127,12 +1127,12 @@ public class MqlToAlgConverter {
     private AlgNode groupBy( BsonValue value, Map<String, RexNode> nameNodes, AlgNode node, AlgDataType rowType, Map<String, AggFunction> nameOps ) {
         BsonValue groupBy = value.asDocument().get( "_id" );
 
-        List<DocumentAggregateCall> convertedAggs = new ArrayList<>();
+        List<LaxAggregateCall> convertedAggs = new ArrayList<>();
 
         for ( Entry<String, AggFunction> agg : nameOps.entrySet() ) {
 
             convertedAggs.add(
-                    DocumentAggregateCall.create(
+                    LaxAggregateCall.create(
                             agg.getKey(),
                             agg.getValue(),
                             nameNodes.get( agg.getKey() ) ) );
@@ -1175,7 +1175,7 @@ public class MqlToAlgConverter {
                 node,
                 null,
                 Collections.singletonList(
-                        DocumentAggregateCall.create( value.asString().getValue(), OperatorRegistry.getAgg( OperatorName.COUNT ), null ) ) );
+                        LaxAggregateCall.create( value.asString().getValue(), OperatorRegistry.getAgg( OperatorName.COUNT ), null ) ) );
     }
 
 

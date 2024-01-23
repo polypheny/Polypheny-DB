@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
@@ -107,7 +108,21 @@ public abstract class Aggregate extends SingleAlg {
      */
     public final boolean indicator;
     protected final List<AggregateCall> aggCalls;
+    /**
+     * -- GETTER --
+     * Returns a bit set of the grouping fields.
+     *
+     * @return bit set of ordinals of grouping fields
+     */
+    @Getter
     protected final ImmutableBitSet groupSet;
+    /**
+     * -- GETTER --
+     * Returns the list of grouping sets computed by this Aggregate.
+     *
+     * @return List of all grouping sets; null for just {@code groupSet}
+     */
+    @Getter
     public final ImmutableList<ImmutableBitSet> groupSets;
 
 
@@ -235,26 +250,6 @@ public abstract class Aggregate extends SingleAlg {
      */
     public int getIndicatorCount() {
         return indicator ? getGroupCount() : 0;
-    }
-
-
-    /**
-     * Returns a bit set of the grouping fields.
-     *
-     * @return bit set of ordinals of grouping fields
-     */
-    public ImmutableBitSet getGroupSet() {
-        return groupSet;
-    }
-
-
-    /**
-     * Returns the list of grouping sets computed by this Aggregate.
-     *
-     * @return List of all grouping sets; null for just {@code groupSet}
-     */
-    public ImmutableList<ImmutableBitSet> getGroupSets() {
-        return groupSets;
     }
 
 

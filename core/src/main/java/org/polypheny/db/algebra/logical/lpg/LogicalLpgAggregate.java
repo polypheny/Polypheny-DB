@@ -17,43 +17,28 @@
 package org.polypheny.db.algebra.logical.lpg;
 
 import java.util.List;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
-import org.polypheny.db.algebra.core.Aggregate;
-import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.core.LaxAggregateCall;
 import org.polypheny.db.algebra.core.lpg.LpgAggregate;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.plan.Convention;
-import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.rex.RexNameRef;
 
 
 public class LogicalLpgAggregate extends LpgAggregate {
 
 
-    /**
-     * Subclass of {@link LpgAggregate} not targeted at any particular engine or calling convention.
-     */
-    public static LogicalLpgAggregate create( final AlgNode input, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
-        return create_( input, false, groupSet, groupSets, aggCalls );
-    }
-
-
-    private static LogicalLpgAggregate create_( final AlgNode input, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
-        final AlgOptCluster cluster = input.getCluster();
-        final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
-        return new LogicalLpgAggregate( cluster, traitSet, input, indicator, groupSet, groupSets, aggCalls );
-    }
-
-
-    public LogicalLpgAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
-        super( cluster, traits, child, indicator, groupSet, groupSets, aggCalls );
+    public LogicalLpgAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, @NotNull List<RexNameRef> groups, List<LaxAggregateCall> aggCalls, AlgDataType tupleType ) {
+        super( cluster, traits, child, groups, aggCalls, tupleType );
     }
 
 
     @Override
-    public Aggregate copy( AlgTraitSet traitSet, AlgNode input, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
-        return new LogicalLpgAggregate( input.getCluster(), traitSet, input, indicator, groupSet, groupSets, aggCalls );
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+        return new LogicalLpgAggregate( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), groups, aggCalls, rowType );
     }
 
 
