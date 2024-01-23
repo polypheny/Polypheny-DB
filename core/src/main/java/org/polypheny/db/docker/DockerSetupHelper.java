@@ -84,12 +84,7 @@ public final class DockerSetupHelper {
 
 
     public static HandshakeInfo reconnectToInstance( int id ) {
-        Optional<DockerInstance> maybeDockerInstance = DockerManager.getInstance().getInstanceById( id );
-        if ( maybeDockerInstance.isEmpty() ) {
-            throw new DockerUserException( 404, "No instance with that id" );
-        }
-
-        DockerInstance dockerInstance = maybeDockerInstance.get();
+        DockerInstance dockerInstance = DockerManager.getInstance().getInstanceById( id ).orElseThrow( () -> new DockerUserException( 404, "No Docker instance with that id" ) );
 
         return HandshakeManager.getInstance().newHandshake(
                 dockerInstance.getHost(),
@@ -100,13 +95,7 @@ public final class DockerSetupHelper {
 
 
     public static void removeDockerInstance( int id ) {
-        Optional<DockerInstance> maybeDockerInstance = DockerManager.getInstance().getInstanceById( id );
-
-        if ( maybeDockerInstance.isEmpty() ) {
-            throw new DockerUserException( 404, "No Docker instance with that id" );
-        }
-
-        DockerInstance dockerInstance = maybeDockerInstance.get();
+        DockerInstance dockerInstance = DockerManager.getInstance().getInstanceById( id ).orElseThrow( () -> new DockerUserException( 404, "No Docker instance with that id" ) );
         try {
             if ( dockerInstance.hasContainers() ) {
                 throw new DockerUserException( "Docker instance still in use by at least one container" );
