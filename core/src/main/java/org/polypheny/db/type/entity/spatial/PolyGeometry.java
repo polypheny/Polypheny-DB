@@ -878,6 +878,12 @@ public class PolyGeometry extends PolyValue {
     }
 
 
+    @Override
+    public Object toJava() {
+        return this;
+    }
+
+
     /**
      * Output the {@link PolyGeometry} in a WKT format with its SRID. So-called EWKT
      */
