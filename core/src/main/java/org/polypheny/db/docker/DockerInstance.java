@@ -74,7 +74,7 @@ public final class DockerInstance {
     }
 
 
-    DockerInstance( Integer instanceId, DockerHost host ) {
+    DockerInstance( int instanceId, DockerHost host ) {
         this.host = host;
         this.instanceId = instanceId;
         this.dockerInstanceUuid = null;
