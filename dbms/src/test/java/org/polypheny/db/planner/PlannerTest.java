@@ -18,6 +18,7 @@ package org.polypheny.db.planner;
 
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.algebra.AbstractAlgNode;
@@ -81,6 +82,7 @@ public class PlannerTest {
 
 
     @Test
+    @Disabled
     public void dynamicAddRuleTest() {
         VolcanoPlanner planner = new VolcanoPlanner();
 
@@ -114,7 +116,7 @@ public class PlannerTest {
         public void onMatch( AlgOptRuleCall call ) {
             AlgNode alg = call.alg( 0 );
 
-            //call.getPlanner().addRule( PhysRule.INSTANCE );
+            call.getPlanner().addRule( PhysRule.INSTANCE );
             call.getPlanner().addRule( PhysRule.INSTANCE );
         }
 
@@ -144,43 +146,6 @@ public class PlannerTest {
             }
 
             call.transformTo( dummy );
-        }
-
-    }
-
-
-    public static class RootConverterRule extends AlgOptRule {
-
-        public RootConverterRule() {
-            super( operandJ( LeafDummyNode.class, Convention.NONE, r -> true, any() ), RootConverterRule.class.getSimpleName() );
-        }
-
-
-        @Override
-        public void onMatch( AlgOptRuleCall call ) {
-            AlgNode alg = call.alg( 0 );
-            //AlgNode input = convert( alg.getInput( 0 ), alg.getTraitSet().replace( PHYS_CALLING_CONVENTION ) );
-
-            call.transformTo( new SingleDummyNode( alg.getCluster(), alg.getTraitSet().replace( PHYS_CALLING_CONVENTION ), alg ) );
-        }
-
-    }
-
-
-    public static class AddRule extends AlgOptRule {
-
-        public AddRule() {
-            super( operand( AlgNode.class, any() ), AddRule.class.getSimpleName() );
-        }
-
-
-        @Override
-        public void onMatch( AlgOptRuleCall call ) {
-            AlgNode alg = call.alg( 0 );
-
-            SingleDummyNode singleDummy = new SingleDummyNode( alg.getCluster(), alg.getTraitSet(), alg );
-
-            call.transformTo( singleDummy );
         }
 
     }

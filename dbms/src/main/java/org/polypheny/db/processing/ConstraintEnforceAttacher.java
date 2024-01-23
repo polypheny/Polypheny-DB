@@ -137,7 +137,7 @@ public class ConstraintEnforceAttacher {
         return catalogTables
                 .stream()
                 .map( t -> LogicalConstraintEnforcer.getControl( t, statement, enforcementTime ) )
-                .filter( i -> i.getControl() != null )
+                .filter( i -> i.control() != null )
                 .toList();
     }
 
@@ -649,7 +649,7 @@ public class ConstraintEnforceAttacher {
                             .getConstraintAlg( new TreeSet<>( tables ), statement, EnforcementTime.ON_QUERY );
                     List<PolyImplementation> results = infos
                             .stream()
-                            .map( s -> processor.prepareQuery( AlgRoot.of( s.getControl(), Kind.SELECT ), false ) )
+                            .map( s -> processor.prepareQuery( AlgRoot.of( s.control(), Kind.SELECT ), false ) )
                             .toList();
                     List<List<List<PolyValue>>> rows = results.stream()
                             .map( r -> r.execute( statement, -1 ).getAllRowsAndClose() )
@@ -658,7 +658,7 @@ public class ConstraintEnforceAttacher {
 
                     if ( !rows.isEmpty() ) {
                         int index = rows.get( 0 ).get( 0 ).get( 1 ).asNumber().intValue();
-                        throw new TransactionException( infos.get( 0 ).getErrorMessages().get( index ) + "\nThere are violated constraints, the transaction was rolled back!" );
+                        throw new TransactionException( infos.get( 0 ).errorMessages().get( index ) + "\nThere are violated constraints, the transaction was rolled back!" );
                     }
                     try {
                         statement.getTransaction().commit();

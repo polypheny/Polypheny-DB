@@ -313,33 +313,18 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 }
                 break;
         }
-        final Expression source;
-        switch ( polyType ) {
+        final Expression source = switch ( polyType ) {
             // TODO js(knn): Make sure this is more than just a hotfix.
             //  add nullability stuff as well
-            case ARRAY:
-                source = getPreprocessArrayExpression( resultSet_, i, dialect, fieldType );
-                break;
-
-            case DATE:
-            case TIME:
-            case TIMESTAMP:
-                source = Expressions.call(
-                        getMethod( polyType, fieldType.isNullable(), offset ),
-                        Expressions.<Expression>list()
-                                .append( Expressions.call( resultSet_, getMethod2( polyType ), dateTimeArgs ) )
-                                .appendIf( offset, getTimeZoneExpression( implementor ) ) );
-                break;
-            case FILE:
-            case AUDIO:
-            case IMAGE:
-            case VIDEO:
-                source = Expressions.call( resultSet_, BuiltInMethod.RESULTSET_GETBYTES.method, Expressions.constant( i + 1 ) );
-                break;
-            default:
-                source = Expressions.call( resultSet_, jdbcGetMethod( primitive ), Expressions.constant( i + 1 ) );
-
-        }
+            case ARRAY -> getPreprocessArrayExpression( resultSet_, i, dialect, fieldType );
+            case DATE, TIME, TIMESTAMP -> Expressions.call(
+                    getMethod( polyType, fieldType.isNullable(), offset ),
+                    Expressions.<Expression>list()
+                            .append( Expressions.call( resultSet_, getMethod2( polyType ), dateTimeArgs ) )
+                            .appendIf( offset, getTimeZoneExpression( implementor ) ) );
+            case FILE, AUDIO, IMAGE, VIDEO -> Expressions.call( resultSet_, BuiltInMethod.RESULTSET_GETBYTES.method, Expressions.constant( i + 1 ) );
+            default -> Expressions.call( resultSet_, jdbcGetMethod( primitive ), Expressions.constant( i + 1 ) );
+        };
         final Expression poly = getOfPolyExpression( fieldType, source, resultSet_, i, dialect );
 
         //source is null if an expression was already added to the builder.
@@ -448,42 +433,33 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
 
 
     private Method getMethod( PolyType polyType, boolean nullable, boolean offset ) {
-        switch ( polyType ) {
-            case ARRAY:
-                return BuiltInMethod.JDBC_DEEP_ARRAY_TO_LIST.method;
-            case DATE:
-                return (nullable
-                        ? BuiltInMethod.DATE_TO_LONG_OPTIONAL
-                        : BuiltInMethod.DATE_TO_LONG).method;
-            case TIME:
-                return (nullable
-                        ? BuiltInMethod.TIME_TO_LONG_OPTIONAL
-                        : BuiltInMethod.TIME_TO_LONG).method;
-            case TIMESTAMP:
-                return (nullable
-                        ? (offset
-                        ? BuiltInMethod.TIMESTAMP_TO_LONG_OPTIONAL_OFFSET
-                        : BuiltInMethod.DATE_TO_LONG_OPTIONAL)
-                        : (offset
-                                ? BuiltInMethod.TIMESTAMP_TO_LONG_OFFSET
-                                : BuiltInMethod.DATE_TO_LONG)).method;
-            default:
-                throw new AssertionError( polyType + ":" + nullable );
-        }
+        return switch ( polyType ) {
+            case ARRAY -> BuiltInMethod.JDBC_DEEP_ARRAY_TO_LIST.method;
+            case DATE -> (nullable
+                    ? BuiltInMethod.DATE_TO_LONG_OPTIONAL
+                    : BuiltInMethod.DATE_TO_LONG).method;
+            case TIME -> (nullable
+                    ? BuiltInMethod.TIME_TO_LONG_OPTIONAL
+                    : BuiltInMethod.TIME_TO_LONG).method;
+            case TIMESTAMP -> (nullable
+                    ? (offset
+                    ? BuiltInMethod.TIMESTAMP_TO_LONG_OPTIONAL_OFFSET
+                    : BuiltInMethod.DATE_TO_LONG_OPTIONAL)
+                    : (offset
+                            ? BuiltInMethod.TIMESTAMP_TO_LONG_OFFSET
+                            : BuiltInMethod.DATE_TO_LONG)).method;
+            default -> throw new AssertionError( polyType + ":" + nullable );
+        };
     }
 
 
     private Method getMethod2( PolyType polyType ) {
-        switch ( polyType ) {
-            case DATE:
-                return BuiltInMethod.RESULT_SET_GET_DATE2.method;
-            case TIME:
-                return BuiltInMethod.RESULT_SET_GET_TIME2.method;
-            case TIMESTAMP:
-                return BuiltInMethod.RESULT_SET_GET_TIMESTAMP2.method;
-            default:
-                throw new AssertionError( polyType );
-        }
+        return switch ( polyType ) {
+            case DATE -> BuiltInMethod.RESULT_SET_GET_DATE2.method;
+            case TIME -> BuiltInMethod.RESULT_SET_GET_TIME2.method;
+            case TIMESTAMP -> BuiltInMethod.RESULT_SET_GET_TIMESTAMP2.method;
+            default -> throw new AssertionError( polyType );
+        };
     }
 
 

@@ -39,8 +39,8 @@ import org.polypheny.db.algebra.enumerable.EnumerableAlg.Prefer;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Compiler;
+import org.polypheny.db.interpreter.InterpretableAlg;
 import org.polypheny.db.interpreter.InterpretableConvention;
-import org.polypheny.db.interpreter.InterpretableRel;
 import org.polypheny.db.interpreter.Node;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.interpreter.Sink;
@@ -66,7 +66,7 @@ import org.polypheny.db.util.Util;
  * @see BindableConvention
  */
 @Slf4j
-public class EnumerableInterpretable extends ConverterImpl implements InterpretableRel {
+public class EnumerableInterpretable extends ConverterImpl implements InterpretableAlg {
 
     protected EnumerableInterpretable( AlgOptCluster cluster, AlgNode input ) {
         super( cluster, ConventionTraitDef.INSTANCE, cluster.traitSetOf( InterpretableConvention.INSTANCE ), input );

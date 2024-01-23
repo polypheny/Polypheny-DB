@@ -106,12 +106,12 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
                 .getForeignKeys( table.id )
                 .stream()
                 .filter( f -> f.enforcementTime == enforcementTime )
-                .collect( Collectors.toList() );
+                .toList();
         final List<LogicalForeignKey> exportedKeys = snapshot
                 .getExportedKeys( table.id )
                 .stream()
                 .filter( f -> f.enforcementTime == enforcementTime )
-                .collect( Collectors.toList() );
+                .toList();
 
         // Turn primary key into an artificial unique constraint
         LogicalPrimaryKey pk = snapshot.getPrimaryKey( table.primaryKey ).orElseThrow();
@@ -162,7 +162,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
         //  Enforce FOREIGN KEY constraints in INSERT operations
         //
         if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
-            for ( final LogicalForeignKey foreignKey : Stream.concat( foreignKeys.stream(), exportedKeys.stream() ).collect( Collectors.toList() ) ) {
+            for ( final LogicalForeignKey foreignKey : Stream.concat( foreignKeys.stream(), exportedKeys.stream() ).toList() ) {
                 builder.clear();
                 final LogicalTable scanOptTable = snapshot.getTable( foreignKey.entityId ).orElseThrow();
                 final LogicalTable refOptTable = snapshot.getTable( foreignKey.referencedKeyTableId ).orElseThrow();
@@ -203,7 +203,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
             }
         }
 
-        if ( filters.size() == 0 ) {
+        if ( filters.isEmpty() ) {
             constrainedNode = null;
         } else if ( filters.size() == 1 ) {
             constrainedNode = filters.poll();
@@ -287,7 +287,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
         //  Enforce FOREIGN KEY constraints in INSERT operations
         //
         if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
-            for ( final LogicalForeignKey foreignKey : Stream.concat( foreignKeys.stream(), exportedKeys.stream() ).collect( Collectors.toList() ) ) {
+            for ( final LogicalForeignKey foreignKey : Stream.concat( foreignKeys.stream(), exportedKeys.stream() ).toList() ) {
                 builder.clear();
                 //final AlgOptSchema algOptSchema = modify.getCatalogReader();
                 //final AlgOptTable scanOptTable = algOptSchema.getTableForMember( Collections.singletonList( foreignKey.getTableName() ) );
@@ -328,7 +328,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
             }
         }
 
-        if ( filters.size() == 0 ) {
+        if ( filters.isEmpty() ) {
             constrainedNode = null;
         } else if ( filters.size() == 1 ) {
             constrainedNode = filters.poll();
@@ -372,11 +372,11 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
 
     public static AlgNode create( AlgNode node, Statement statement ) {
         EnforcementInformation information = getControl( node, statement );
-        if ( information.getControl() == null ) {
+        if ( information.control() == null ) {
             // there is no constraint, which is enforced {@code ON QUERY} so we return the original
             return node;
         } else {
-            return new LogicalConstraintEnforcer( node.getCluster(), node.getTraitSet(), node, information.getControl(), information.getErrorClasses(), information.getErrorMessages() );
+            return new LogicalConstraintEnforcer( node.getCluster(), node.getTraitSet(), node, information.control(), information.errorClasses(), information.errorMessages() );
         }
     }
 
@@ -399,22 +399,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
     }
 
 
-    public static LogicalTable getCatalogTable( RelModify<?> modify ) {
-        if ( modify.getEntity() == null ) {
-            throw new RuntimeException( "The table was not found in the catalog!" );
-        }
-
-        return (LogicalTable) modify.getEntity();
-    }
-
-
-    @Getter
-    public static class EnforcementInformation {
-
-        private final AlgNode control;
-        private final List<Class<? extends Exception>> errorClasses;
-        private final List<String> errorMessages;
-
+    public record EnforcementInformation(AlgNode control, List<Class<? extends Exception>> errorClasses, List<String> errorMessages) {
 
         /**
          * {@link EnforcementInformation} holds all needed information regarding a constraint.
@@ -424,18 +409,15 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
          * @param errorClasses Class used to throw if constraint is violated
          * @param errorMessages messages, which describes validated constraint in case of validation
          */
-        public EnforcementInformation( AlgNode control, List<Class<? extends Exception>> errorClasses, List<String> errorMessages ) {
-            this.control = control;
-            this.errorClasses = errorClasses;
-            this.errorMessages = errorMessages;
+        public EnforcementInformation {
         }
 
     }
 
 
+    @Getter
     public static class ModifyExtractor extends AlgShuttleImpl {
 
-        @Getter
         private LogicalRelModify modify;
 
 

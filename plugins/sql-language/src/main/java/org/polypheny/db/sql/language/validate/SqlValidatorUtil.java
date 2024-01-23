@@ -112,9 +112,7 @@ public class SqlValidatorUtil {
         final ImmutableList.Builder<AlgDataTypeField> extendedFields = ImmutableList.builder();
         final ExtensibleEntity extTable = table.unwrap( ExtensibleEntity.class ).orElseThrow();
         int extendedFieldOffset =
-                extTable == null
-                        ? table.getRowType().getFieldCount()
-                        : extTable.getExtendedColumnOffset();
+                extTable.getExtendedColumnOffset();
         for ( final Pair<SqlIdentifier, SqlDataTypeSpec> pair : pairs( extendedColumns ) ) {
             final SqlIdentifier identifier = pair.left;
             final SqlDataTypeSpec type = pair.right;
