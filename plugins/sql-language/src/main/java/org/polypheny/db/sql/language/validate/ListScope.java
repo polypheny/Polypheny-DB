@@ -89,7 +89,7 @@ public abstract class ListScope extends DelegatingScope {
 
     private ScopeChild findChild( List<String> names, NameMatcher nameMatcher ) {
         for ( ScopeChild child : children ) {
-            if ( child.namespace.resolve().getDataModel() != DataModel.RELATIONAL ) {
+            if ( child.namespace.getTable() != null && child.namespace.resolve().getDataModel() != DataModel.RELATIONAL ) {
                 return child;
             }
 
@@ -153,15 +153,14 @@ public abstract class ListScope extends DelegatingScope {
     public Pair<String, SqlValidatorNamespace> findQualifyingTableName( final String columnName, SqlNode ctx ) {
         final NameMatcher nameMatcher = validator.snapshot.nameMatcher;
         final Map<String, ScopeChild> map = findQualifyingTableNames( columnName, ctx, nameMatcher );
-        switch ( map.size() ) {
-            case 0:
-                throw validator.newValidationError( ctx, Static.RESOURCE.columnNotFound( columnName ) );
-            case 1:
+        return switch ( map.size() ) {
+            case 0 -> throw validator.newValidationError( ctx, Static.RESOURCE.columnNotFound( columnName ) );
+            case 1 -> {
                 final Map.Entry<String, ScopeChild> entry = map.entrySet().iterator().next();
-                return Pair.of( entry.getKey(), entry.getValue().namespace );
-            default:
-                throw validator.newValidationError( ctx, Static.RESOURCE.columnAmbiguous( columnName ) );
-        }
+                yield Pair.of( entry.getKey(), entry.getValue().namespace );
+            }
+            default -> throw validator.newValidationError( ctx, Static.RESOURCE.columnAmbiguous( columnName ) );
+        };
     }
 
 
@@ -243,14 +242,11 @@ public abstract class ListScope extends DelegatingScope {
                 type = field.getType();
             }
         }
-        switch ( found ) {
-            case 0:
-                return null;
-            case 1:
-                return type;
-            default:
-                throw validator.newValidationError( ctx, Static.RESOURCE.columnAmbiguous( columnName ) );
-        }
+        return switch ( found ) {
+            case 0 -> null;
+            case 1 -> type;
+            default -> throw validator.newValidationError( ctx, Static.RESOURCE.columnAmbiguous( columnName ) );
+        };
     }
 
 }

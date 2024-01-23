@@ -40,15 +40,20 @@ import com.google.common.collect.Iterables;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.SortedSet;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.jdbc.JdbcTable;
+import org.polypheny.db.adapter.jdbc.rel2sql.SqlImplementor.Result;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgProducingVisitor;
 import org.polypheny.db.algebra.constant.JoinConditionType;
 import org.polypheny.db.algebra.constant.JoinType;
 import org.polypheny.db.algebra.core.Aggregate;
@@ -97,25 +102,43 @@ import org.polypheny.db.sql.language.fun.SqlRowOperator;
 import org.polypheny.db.sql.language.fun.SqlSingleValueAggFunction;
 import org.polypheny.db.sql.language.validate.SqlValidatorUtil;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.ReflectUtil;
-import org.polypheny.db.util.ReflectiveVisitor;
 
 
 /**
  * Utility to convert relational expressions to SQL abstract syntax tree.
  */
-public abstract class AlgToSqlConverter extends SqlImplementor implements ReflectiveVisitor {
+public abstract class AlgToSqlConverter extends SqlImplementor implements AlgProducingVisitor<Result> {
 
     /**
      * Similar to {@link OperatorRegistry ROW }, but does not print "ROW".
      */
     private static final SqlRowOperator ANONYMOUS_ROW = new SqlRowOperator( " " );
 
-    private final ReflectUtil.MethodDispatcher<Result> dispatcher;
-
     private final Deque<Frame> stack = new ArrayDeque<>();
 
     private boolean isUnion = false;
+
+    @Getter
+    private ImmutableMap<Class<? extends AlgNode>, Function<AlgNode, Result>> handlers = ImmutableMap.copyOf(
+            new HashMap<>() {{
+                put( Join.class, a -> visit( (Join) a ) );
+                put( Filter.class, a -> visit( (Filter) a ) );
+                put( Project.class, a -> visit( (Project) a ) );
+                put( Aggregate.class, a -> visit( (Aggregate) a ) );
+                put( Values.class, a -> visit( (Values) a ) );
+                put( Union.class, a -> visit( (Union) a ) );
+                put( Intersect.class, a -> visit( (Intersect) a ) );
+                put( Minus.class, a -> visit( (Minus) a ) );
+                put( Calc.class, a -> visit( (Calc) a ) );
+                put( Sort.class, a -> visit( (Sort) a ) );
+                put( RelScan.class, a -> visit( (RelScan<?>) a ) );
+                put( RelModify.class, a -> visit( (RelModify<?>) a ) );
+                put( Match.class, a -> visit( (Match) a ) );
+            }}
+    );
+
+    @Getter
+    private Function<AlgNode, Result> defaultHandler = a -> visitChild( 0, a );
 
 
     /**
@@ -123,15 +146,6 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
      */
     public AlgToSqlConverter( SqlDialect dialect ) {
         super( dialect );
-        dispatcher = ReflectUtil.createMethodDispatcher( Result.class, this, "visit", AlgNode.class );
-    }
-
-
-    /**
-     * Dispatches a call to the {@code visit(Xxx e)} method where {@code Xxx} most closely matches the runtime type of the argument.
-     */
-    protected Result dispatch( AlgNode e ) {
-        return dispatcher.invoke( e );
     }
 
 
@@ -139,24 +153,17 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
     public Result visitChild( int i, AlgNode e ) {
         try {
             stack.push( new Frame( i, e ) );
-            return dispatch( e );
+            return this.handle( e );
         } finally {
             stack.pop();
         }
     }
 
 
-    /**
-     * @see #dispatch
-     */
     public Result visit( AlgNode e ) {
         throw new AssertionError( "Need to implement " + e.getClass().getName() );
     }
 
-
-    /**
-     * @see #dispatch
-     */
     public Result visit( Join e ) {
         final Result leftResult = visitChild( 0, e.getLeft() ).resetAlias();
         final Result rightResult = visitChild( 1, e.getRight() ).resetAlias();
@@ -188,9 +195,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
     }
 
 
-    /**
-     * @see #dispatch
-     */
+    @SuppressWarnings("unused")
     public Result visit( Filter e ) {
         final AlgNode input = e.getInput();
         Result x = visitChild( 0, input );
@@ -213,9 +218,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
     }
 
 
-    /**
-     * @see #dispatch
-     */
+    @SuppressWarnings("unused")
     public Result visit( Project e ) {
         Result x = visitChild( 0, e.getInput() );
         parseCorrelTable( e, x );
@@ -234,9 +237,6 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
     }
 
 
-    /**
-     * @see #dispatch
-     */
     public Result visit( Aggregate e ) {
         // "select a, b, sum(x) from ( ... ) group by a, b"
         final Result x = visitChild( 0, e.getInput() );
@@ -269,22 +269,14 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
         return builder.result();
     }
 
-
-    /**
-     * @see #dispatch
-     */
     public Result visit( RelScan<?> e ) {
-        return result(
-                new SqlIdentifier( List.of( e.getEntity().unwrap( LogicalTable.class ).orElseThrow().getNamespaceName(), e.getEntity().name ), ParserPos.ZERO ),
+        return result( new SqlIdentifier( List.of( e.getEntity().unwrap( LogicalTable.class ).orElseThrow().getNamespaceName(), e.getEntity().name ), ParserPos.ZERO ),
                 ImmutableList.of( Clause.FROM ),
                 e,
                 null );
     }
 
 
-    /**
-     * @see #dispatch
-     */
     public Result visit( Union e ) {
         isUnion = true;
         Result result = setOpToSql( (SqlSetOperator) (e.all
@@ -295,9 +287,6 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
     }
 
 
-    /**
-     * @see #dispatch
-     */
     public Result visit( Intersect e ) {
         return setOpToSql( (SqlSetOperator) (e.all
                 ? OperatorRegistry.get( OperatorName.INTERSECT_ALL )
@@ -305,9 +294,6 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
     }
 
 
-    /**
-     * @see #dispatch
-     */
     public Result visit( Minus e ) {
         return setOpToSql( (SqlSetOperator) (e.all
                 ? OperatorRegistry.get( OperatorName.EXCEPT_ALL )
@@ -315,9 +301,6 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
     }
 
 
-    /**
-     * @see #dispatch
-     */
     public Result visit( Calc e ) {
         Result x = visitChild( 0, e.getInput() );
         parseCorrelTable( e, x );
@@ -342,9 +325,6 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
     }
 
 
-    /**
-     * @see #dispatch
-     */
     public Result visit( Values e ) {
         final List<Clause> clauses = ImmutableList.of( Clause.SELECT );
         final Map<String, AlgDataType> pairs = ImmutableMap.of();
@@ -409,9 +389,6 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
     }
 
 
-    /**
-     * @see #dispatch
-     */
     public Result visit( Sort e ) {
         Result x = visitChild( 0, e.getInput() );
         Builder builder = x.builder( e, false, Clause.ORDER_BY );
@@ -445,9 +422,6 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
     }
 
 
-    /**
-     * @see #dispatch
-     */
     public Result visit( RelModify<?> modify ) {
         final Map<String, AlgDataType> pairs = ImmutableMap.of();
         final Context context = aliasContext( pairs, false );
@@ -523,10 +497,6 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
     }
 
 
-    /**
-     * @see #dispatch
-     */
-    @SuppressWarnings("unused")
     public Result visit( Match e ) {
         final AlgNode input = e.getInput();
         final Result x = visitChild( 0, input );
@@ -667,37 +637,10 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
     /**
      * Stack frame.
      */
-    private static class Frame {
-
-        private final int ordinalInParent;
-        private final AlgNode r;
-
-
-        Frame( int ordinalInParent, AlgNode r ) {
-            this.ordinalInParent = ordinalInParent;
-            this.r = r;
-        }
+    private record Frame(int ordinalInParent, AlgNode r) {
 
     }
 
-
-    public static class PlainAlgToSqlConverter extends AlgToSqlConverter {
-
-        /**
-         * Creates a AlgToSqlConverter.
-         */
-        public PlainAlgToSqlConverter( SqlDialect dialect ) {
-            super( dialect );
-        }
-
-
-        @Override
-        public SqlIdentifier getPhysicalTableName( JdbcTable placement ) {
-            return new SqlIdentifier( placement.name, POS );
-        }
-
-
-    }
 
 }
 

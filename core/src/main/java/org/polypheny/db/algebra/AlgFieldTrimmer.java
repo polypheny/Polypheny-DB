@@ -37,14 +37,20 @@ package org.polypheny.db.algebra;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import lombok.Getter;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.algebra.AlgFieldTrimmer.TrimResult;
+import org.polypheny.db.algebra.AlgProducingVisitor.AlgProducingVisitor3;
+import org.polypheny.db.algebra.AlgProducingVisitor.Function3;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.core.Aggregate;
@@ -86,8 +92,6 @@ import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.ReflectUtil;
-import org.polypheny.db.util.ReflectiveVisitor;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.mapping.IntPair;
 import org.polypheny.db.util.mapping.Mapping;
@@ -98,19 +102,18 @@ import org.slf4j.Logger;
 
 /**
  * Transformer that walks over a tree of relational expressions, replacing each {@link AlgNode} with a 'slimmed down' relational expression that projects only the columns required by its consumer.
- *
+ * <p>
  * Uses multi-methods to fire the right rule for each type of relational expression. This allows the transformer to be extended without having to add a new method to AlgNode,
  * and without requiring a collection of rule classes scattered to the four winds.
- *
+ * <p>
  * REVIEW: jhyde: Is sql2rel the correct package for this class? Trimming fields is not an essential part of SQL-to-Rel translation, and arguably belongs in the optimization phase. But this transformer does not
  * obey the usual pattern for planner rules; it is difficult to do so, because each {@link AlgNode} needs to return a different set of fields after trimming.
- *
+ * <p>
  * TODO: Change 2nd arg of the {@link #trimFields} method from BitSet to Mapping. Sometimes it helps the consumer if you return the columns in a particular order. For instance, it may avoid a project at the top of the tree just
  * for reordering. Could ease the transition by writing methods that convert BitSet to Mapping and vice versa.
  */
-public class AlgFieldTrimmer implements ReflectiveVisitor {
+public class AlgFieldTrimmer implements AlgProducingVisitor3<TrimResult, ImmutableBitSet, Set<AlgDataTypeField>> {
 
-    private final ReflectUtil.MethodDispatcher<TrimResult> trimFieldsDispatcher;
     private final AlgBuilder algBuilder;
 
 
@@ -122,20 +125,33 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
     public AlgFieldTrimmer( Validator validator, AlgBuilder algBuilder ) {
         Util.discard( validator ); // may be useful one day
         this.algBuilder = algBuilder;
-        this.trimFieldsDispatcher =
-                ReflectUtil.createMethodDispatcher(
-                        TrimResult.class,
-                        this,
-                        "trimFields",
-                        AlgNode.class,
-                        ImmutableBitSet.class,
-                        Set.class );
     }
+
+
+    @Getter
+    private final ImmutableMap<Class<? extends AlgNode>, Function3<AlgNode, ImmutableBitSet, Set<AlgDataTypeField>, TrimResult>> handlers = ImmutableMap.copyOf(
+            new HashMap<>() {{
+                put( Aggregate.class, ( a, i, s ) -> trimFields( (Aggregate) a, i, s ) );
+                put( Filter.class, ( a, i, s ) -> trimFields( (Filter) a, i, s ) );
+                put( Join.class, ( a, i, s ) -> trimFields( (Join) a, i, s ) );
+                put( Project.class, ( a, i, s ) -> trimFields( (Project) a, i, s ) );
+                put( RelScan.class, ( a, i, s ) -> trimFields( (RelScan<?>) a, i, s ) );
+                put( SemiJoin.class, ( a, i, s ) -> trimFields( (SemiJoin) a, i, s ) );
+                put( SetOp.class, ( a, i, s ) -> trimFields( (SetOp) a, i, s ) );
+                put( Sort.class, ( a, i, s ) -> trimFields( (Sort) a, i, s ) );
+                put( LogicalValues.class, ( a, i, s ) -> trimFields( (LogicalValues) a, i, s ) );
+                put( LogicalRelModify.class, ( a, i, s ) -> trimFields( (LogicalRelModify) a, i, s ) );
+                put( LogicalTableFunctionScan.class, ( a, i, s ) -> trimFields( (LogicalTableFunctionScan) a, i, s ) );
+            }}
+    );
+
+    @Getter
+    Function3<AlgNode, ImmutableBitSet, Set<AlgDataTypeField>, TrimResult> defaultHandler = this::trimFields;
 
 
     /**
      * Trims unused fields from a relational expression.
-     *
+     * <p>
      * We presume that all fields of the relational expression are wanted by its consumer, so only trim fields that are not used within the tree.
      *
      * @param root Root node of relational expression
@@ -203,7 +219,7 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
 
     /**
      * Trims a child relational expression, then adds back a dummy project to restore the fields that were removed.
-     *
+     * <p>
      * Sounds pointless? It causes unused fields to be removed further down the tree (towards the leaves), but it ensures
      * that the consuming relational expression continues to see the same fields.
      *
@@ -244,7 +260,7 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
      * @return New relational expression and its field mapping
      */
     protected final TrimResult dispatchTrimFields( AlgNode alg, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
-        final TrimResult trimResult = trimFieldsDispatcher.invoke( alg, fieldsUsed, extraFields );
+        final TrimResult trimResult = handle( alg, fieldsUsed, extraFields );
         final AlgNode newRel = trimResult.left;
         final Mapping mapping = trimResult.right;
         final int fieldCount = alg.getTupleType().getFieldCount();
@@ -252,9 +268,7 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
         final int newFieldCount = newRel.getTupleType().getFieldCount();
         assert mapping.getTargetCount() + extraFields.size() == newFieldCount || Bug.TODO_FIXED
                 : "target: " + mapping.getTargetCount() + " + " + extraFields.size() + " != " + newFieldCount;
-        if ( Bug.TODO_FIXED ) {
-            assert newFieldCount > 0 : "rel has no fields after trim: " + alg;
-        }
+        assert !Bug.TODO_FIXED || newFieldCount > 0 : "rel has no fields after trim: " + alg;
         if ( newRel.equals( alg ) ) {
             return result( alg, mapping );
         }
@@ -292,9 +306,9 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
 
     /**
      * Visit method, per {@link org.polypheny.db.util.ReflectiveVisitor}.
-     *
+     * <p>
      * This method is invoked reflectively, so there may not be any apparent calls to it. The class (or derived classes) may contain overloads of this method with more specific types for the {@code rel} parameter.
-     *
+     * <p>
      * Returns a pair: the relational expression created, and the mapping between the original fields and the fields of the newly created relational expression.
      *
      * @param alg Relational expression
@@ -633,7 +647,7 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
 
         // If the input is unchanged, and we need to project all columns, there's to do.
         if ( changeCount == 0 && mapping.isIdentity() ) {
-            for ( AlgNode input : setOp.getInputs() ) {
+            for ( AlgNode ignored : setOp.getInputs() ) {
                 algBuilder.build();
             }
             return result( setOp, mapping );
@@ -795,7 +809,6 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
                             modifier.getTraitSet(),
                             Collections.singletonList( newInput ) );
         }
-        assert newModifier.getClass() == modifier.getClass();
 
         // Always project all fields.
         Mapping mapping = Mappings.createIdentity( fieldCount );
@@ -891,7 +904,7 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
     /**
      * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link LogicalRelScan}.
      */
-    public TrimResult trimFields( final RelScan tableAccessRel, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
+    public TrimResult trimFields( final RelScan<?> tableAccessRel, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
         final int fieldCount = tableAccessRel.getTupleType().getFieldCount();
         if ( fieldsUsed.equals( ImmutableBitSet.range( fieldCount ) ) && extraFields.isEmpty() ) {
             // If there is nothing to project or if we are projecting everything then no need to introduce another AlgNode
@@ -902,9 +915,8 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
         // Some parts of the system can't handle rows with zero fields, so pretend that one field is used.
         if ( fieldsUsed.cardinality() == 0 ) {
             AlgNode input = newTableAccessAlg;
-            if ( input instanceof Project ) {
+            if ( input instanceof Project project ) {
                 // The table has implemented the project in the obvious way - by creating project with 0 fields. Strip it away, and create our own project with one field.
-                Project project = (Project) input;
                 if ( project.getTupleType().getFieldCount() == 0 ) {
                     input = project.getInput();
                 }
@@ -919,12 +931,12 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
 
     /**
      * Result of an attempt to trim columns from a relational expression.
-     *
+     * <p>
      * The mapping describes where to find the columns wanted by the parent of the current relational expression.
-     *
+     * <p>
      * The mapping is a {@link org.polypheny.db.util.mapping.Mappings.SourceMapping}, which means that no column can be used more than once, and some columns are not used.
      * {@code columnsUsed.getSource(i)} returns the source of the i'th output field.
-     *
+     * <p>
      * For example, consider the mapping for a relational expression that has 4 output columns but only two are being used. The mapping {2 &rarr; 1, 3 &rarr; 0} would give the following behavior:
      *
      * <ul>
@@ -937,7 +949,7 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
      * <li>columnsUsed.getTargetOpt(0) returns -1
      * </ul>
      */
-    protected static class TrimResult extends Pair<AlgNode, Mapping> {
+    public static class TrimResult extends Pair<AlgNode, Mapping> {
 
         /**
          * Creates a TrimResult.

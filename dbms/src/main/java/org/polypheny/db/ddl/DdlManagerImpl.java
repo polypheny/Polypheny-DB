@@ -2857,8 +2857,6 @@ public class DdlManagerImpl extends DdlManager {
         statement.getQueryProcessor().resetCaches();
 
         catalog.updateSnapshot();
-
-
     }
 
 

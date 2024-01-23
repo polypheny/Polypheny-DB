@@ -45,7 +45,7 @@ import org.polypheny.db.algebra.AlgNode;
 /**
  * Relational expression that can implement itself using an interpreter.
  */
-public interface InterpretableRel extends AlgNode {
+public interface InterpretableAlg extends AlgNode {
 
     /**
      * Creates an interpreter node to implement this relational expression.

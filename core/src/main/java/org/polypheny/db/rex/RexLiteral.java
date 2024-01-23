@@ -358,7 +358,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
         }
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter( sw );
-        printAsJava( value, pw, typeName, false, includeType );
+        printAsJava( value, pw, typeName, false );
         pw.flush();
 
         if ( includeType != RexDigestIncludeType.NO_TYPE ) {
@@ -444,10 +444,10 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
         final StringBuilder b = new StringBuilder();
         for ( TimeUnit timeUnit : timeUnits ) {
             final BigDecimal[] result = v.divideAndRemainder( timeUnit.multiplier );
-            if ( b.length() > 0 ) {
+            if ( !b.isEmpty() ) {
                 b.append( timeUnit.separator );
             }
-            final int width = b.length() == 0 ? -1 : width( timeUnit ); // don't pad 1st
+            final int width = b.isEmpty() ? -1 : width( timeUnit ); // don't pad 1st
             pad( b, result[0].toString(), width );
             v = result[1];
         }
@@ -473,24 +473,11 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
 
 
     private static int width( TimeUnit timeUnit ) {
-        switch ( timeUnit ) {
-            case MILLISECOND:
-                return 3;
-            case HOUR:
-            case MINUTE:
-            case SECOND:
-                return 2;
-            default:
-                return -1;
-        }
-    }
-
-
-    /**
-     * Prints the value this literal as a Java string constant.
-     */
-    public void printAsJava( PrintWriter pw ) {
-        printAsJava( value, pw, polyType, true, RexDigestIncludeType.NO_TYPE );
+        return switch ( timeUnit ) {
+            case MILLISECOND -> 3;
+            case HOUR, MINUTE, SECOND -> 2;
+            default -> -1;
+        };
     }
 
 
@@ -510,9 +497,8 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
      * @param value Value
      * @param pw Writer to write to
      * @param typeName Type family
-     * @param includeType if representation should include data type
      */
-    private static void printAsJava( PolyValue value, PrintWriter pw, PolyType typeName, boolean java, RexDigestIncludeType includeType ) {
+    private static void printAsJava( PolyValue value, PrintWriter pw, PolyType typeName, boolean java ) {
         switch ( typeName ) {
             case VARCHAR:
             case CHAR:
@@ -541,7 +527,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
                 pw.print( value.asNumber().bigDecimalValue() );
                 pw.print( 'L' );
                 break;
-            case INTEGER:
+            case INTEGER, SMALLINT, TINYINT:
                 assert value.isNumber();
                 pw.print( value.asNumber().intValue() );
                 break;
@@ -711,8 +697,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
         if ( node instanceof RexLiteral ) {
             return ((RexLiteral) node).value;
         }
-        if ( node instanceof RexCall ) {
-            final RexCall call = (RexCall) node;
+        if ( node instanceof RexCall call ) {
             final Operator operator = call.getOperator();
             if ( operator.getOperatorName() == OperatorName.CAST ) {
                 return findValue( call.getOperands().get( 0 ) );

@@ -39,6 +39,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
@@ -245,10 +246,8 @@ public abstract class SqlImplementor {
                 operands = ((RexCall) node).getOperands();
                 op = (SqlOperator) ((RexCall) node).getOperator();
                 if ( operands.size() == 2
-                        && operands.get( 0 ) instanceof RexIndexRef
-                        && operands.get( 1 ) instanceof RexIndexRef ) {
-                    final RexIndexRef op0 = (RexIndexRef) operands.get( 0 );
-                    final RexIndexRef op1 = (RexIndexRef) operands.get( 1 );
+                        && operands.get( 0 ) instanceof RexIndexRef op0
+                        && operands.get( 1 ) instanceof RexIndexRef op1 ) {
 
                     if ( op0.getIndex() < leftFieldCount && op1.getIndex() >= leftFieldCount ) {
                         // Arguments were of form 'op0 = op1'
@@ -270,9 +269,8 @@ public abstract class SqlImplementor {
             case IS_NULL:
             case IS_NOT_NULL:
                 operands = ((RexCall) node).getOperands();
-                if ( operands.size() == 1 && operands.get( 0 ) instanceof RexIndexRef ) {
+                if ( operands.size() == 1 && operands.get( 0 ) instanceof RexIndexRef op0 ) {
                     op = (SqlOperator) ((RexCall) node).getOperator();
-                    final RexIndexRef op0 = (RexIndexRef) operands.get( 0 );
                     if ( op0.getIndex() < leftFieldCount ) {
                         return (SqlNode) op.createCall( POS, leftContext.field( op0.getIndex() ) );
                     } else {
@@ -328,38 +326,24 @@ public abstract class SqlImplementor {
 
 
     private static SqlOperator reverseOperatorDirection( SqlOperator op ) {
-        switch ( op.kind ) {
-            case GREATER_THAN:
-                return (SqlOperator) OperatorRegistry.get( OperatorName.LESS_THAN );
-            case GREATER_THAN_OR_EQUAL:
-                return (SqlOperator) OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL );
-            case LESS_THAN:
-                return (SqlOperator) OperatorRegistry.get( OperatorName.GREATER_THAN );
-            case LESS_THAN_OR_EQUAL:
-                return (SqlOperator) OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL );
-            case EQUALS:
-            case IS_NOT_DISTINCT_FROM:
-            case NOT_EQUALS:
-                return op;
-            default:
-                throw new AssertionError( op );
-        }
+        return switch ( op.kind ) {
+            case GREATER_THAN -> (SqlOperator) OperatorRegistry.get( OperatorName.LESS_THAN );
+            case GREATER_THAN_OR_EQUAL -> (SqlOperator) OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL );
+            case LESS_THAN -> (SqlOperator) OperatorRegistry.get( OperatorName.GREATER_THAN );
+            case LESS_THAN_OR_EQUAL -> (SqlOperator) OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL );
+            case EQUALS, IS_NOT_DISTINCT_FROM, NOT_EQUALS -> op;
+            default -> throw new AssertionError( op );
+        };
     }
 
 
     public static JoinType joinType( JoinAlgType joinType ) {
-        switch ( joinType ) {
-            case LEFT:
-                return JoinType.LEFT;
-            case RIGHT:
-                return JoinType.RIGHT;
-            case INNER:
-                return JoinType.INNER;
-            case FULL:
-                return JoinType.FULL;
-            default:
-                throw new AssertionError( joinType );
-        }
+        return switch ( joinType ) {
+            case LEFT -> JoinType.LEFT;
+            case RIGHT -> JoinType.RIGHT;
+            case INNER -> JoinType.INNER;
+            case FULL -> JoinType.FULL;
+        };
     }
 
 
@@ -399,8 +383,7 @@ public abstract class SqlImplementor {
 
 
     private void collectAliases( ImmutableMap.Builder<String, AlgDataType> builder, SqlNode node, Iterator<AlgDataType> aliases ) {
-        if ( node instanceof SqlJoin ) {
-            final SqlJoin join = (SqlJoin) node;
+        if ( node instanceof SqlJoin join ) {
             collectAliases( builder, join.getLeft(), aliases );
             collectAliases( builder, join.getRight(), aliases );
         } else {
@@ -494,16 +477,14 @@ public abstract class SqlImplementor {
                         referencedExpr = ((RexFieldAccess) referencedExpr).getReferenceExpr();
                     }
                     SqlIdentifier sqlIdentifier;
-                    switch ( referencedExpr.getKind() ) {
-                        case CORREL_VARIABLE:
-                            final RexCorrelVariable variable = (RexCorrelVariable) referencedExpr;
-                            final Context correlAliasContext = getAliasContext( variable );
-                            final RexFieldAccess lastAccess = accesses.pollLast();
-                            assert lastAccess != null;
-                            sqlIdentifier = (SqlIdentifier) correlAliasContext.field( lastAccess.getField().getIndex() );
-                            break;
-                        default:
-                            sqlIdentifier = (SqlIdentifier) toSql( program, referencedExpr );
+                    if ( Objects.requireNonNull( referencedExpr.getKind() ) == Kind.CORREL_VARIABLE ) {
+                        final RexCorrelVariable variable = (RexCorrelVariable) referencedExpr;
+                        final Context correlAliasContext = getAliasContext( variable );
+                        final RexFieldAccess lastAccess = accesses.pollLast();
+                        assert lastAccess != null;
+                        sqlIdentifier = (SqlIdentifier) correlAliasContext.field( lastAccess.getField().getIndex() );
+                    } else {
+                        sqlIdentifier = (SqlIdentifier) toSql( program, referencedExpr );
                     }
 
                     int nameIndex = sqlIdentifier.names.size();
@@ -650,16 +631,12 @@ public abstract class SqlImplementor {
                 case NOT:
                     RexNode operand = ((RexCall) rex).operands.get( 0 );
                     final Node node = toSql( program, operand );
-                    switch ( operand.getKind() ) {
-                        case IN:
-                            return (SqlNode) OperatorRegistry.get( OperatorName.NOT_IN ).createCall( POS, ((SqlCall) node).getOperandList() );
-                        case LIKE:
-                            return (SqlNode) OperatorRegistry.get( OperatorName.NOT_LIKE ).createCall( POS, ((SqlCall) node).getOperandList() );
-                        case SIMILAR:
-                            return (SqlNode) OperatorRegistry.get( OperatorName.NOT_SIMILAR_TO ).createCall( POS, ((SqlCall) node).getOperandList() );
-                        default:
-                            return (SqlNode) OperatorRegistry.get( OperatorName.NOT ).createCall( POS, node );
-                    }
+                    return switch ( operand.getKind() ) {
+                        case IN -> (SqlNode) OperatorRegistry.get( OperatorName.NOT_IN ).createCall( POS, ((SqlCall) node).getOperandList() );
+                        case LIKE -> (SqlNode) OperatorRegistry.get( OperatorName.NOT_LIKE ).createCall( POS, ((SqlCall) node).getOperandList() );
+                        case SIMILAR -> (SqlNode) OperatorRegistry.get( OperatorName.NOT_SIMILAR_TO ).createCall( POS, ((SqlCall) node).getOperandList() );
+                        default -> (SqlNode) OperatorRegistry.get( OperatorName.NOT ).createCall( POS, node );
+                    };
 
                 default:
                     if ( rex instanceof RexOver ) {
@@ -684,18 +661,17 @@ public abstract class SqlImplementor {
                                 return nodes.get( 0 );
                             }
                     }
-                    switch ( call.getKind() ) {
-                        case CAST:
-                            if ( ignoreCast ) {
-                                assert nodes.size() == 1;
-                                return nodes.get( 0 );
+                    if ( Objects.requireNonNull( call.getKind() ) == Kind.CAST ) {
+                        if ( ignoreCast ) {
+                            assert nodes.size() == 1;
+                            return nodes.get( 0 );
+                        } else {
+                            if ( call.getType().getComponentType() != null && !dialect.supportsNestedArrays() ) {
+                                nodes.add( dialect.getCastSpec( call.getType().getComponentType() ) );
                             } else {
-                                if ( call.getType().getComponentType() != null && !dialect.supportsNestedArrays() ) {
-                                    nodes.add( dialect.getCastSpec( call.getType().getComponentType() ) );
-                                } else {
-                                    nodes.add( dialect.getCastSpec( call.getType() ) );
-                                }
+                                nodes.add( dialect.getCastSpec( call.getType() ) );
                             }
+                        }
                     }
                     if ( op instanceof SqlBinaryOperator && nodes.size() > 2 ) {
                         // In RexNode trees, OR and AND have any number of children;
@@ -820,7 +796,7 @@ public abstract class SqlImplementor {
 
 
         private List<SqlNode> toSql( RexProgram program, List<RexNode> operands ) {
-            return operands.stream().map( o -> toSql( program, o ) ).toList();
+            return new ArrayList<>( operands.stream().map( o -> toSql( program, o ) ).toList() );
         }
 
 

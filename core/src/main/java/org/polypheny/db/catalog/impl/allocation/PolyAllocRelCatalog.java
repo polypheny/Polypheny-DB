@@ -143,6 +143,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
                 adapterId );
 
         columns.put( Pair.of( placementId, columnId ), column );
+        change();
         return column;
     }
 
@@ -150,6 +151,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
     @Override
     public void deleteColumn( long placementId, long columnId ) {
         columns.remove( Pair.of( placementId, columnId ) );
+        change();
     }
 
 
@@ -157,6 +159,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
     public void updateColumnPlacementType( long placementId, long columnId, PlacementType placementType ) {
         AllocationColumn column = columns.get( Pair.of( placementId, columnId ) ).toBuilder().placementType( placementType ).build();
         columns.put( Pair.of( placementId, columnId ), column );
+        change();
     }
 
 
@@ -206,6 +209,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
                 partitionType );
 
         partitions.put( id, partition );
+        change();
         return partition;
     }
 

@@ -58,6 +58,7 @@ import org.polypheny.db.util.Util;
  */
 public class IdentifierNamespace extends AbstractNamespace {
 
+    @Getter
     private final SqlIdentifier id;
     private final SqlValidatorScope parentScope;
     public final SqlNodeList extendList;
@@ -253,11 +254,6 @@ public class IdentifierNamespace extends AbstractNamespace {
     }
 
 
-    public SqlIdentifier getId() {
-        return id;
-    }
-
-
     @Override
     public SqlNode getNode() {
         return id;
@@ -266,6 +262,9 @@ public class IdentifierNamespace extends AbstractNamespace {
 
     @Override
     public SqlValidatorNamespace resolve() {
+        if ( resolvedNamespace == null ) {
+            System.out.println( "resolvedNamespace is null" );
+        }
         assert resolvedNamespace != null : "must call validate first";
         return resolvedNamespace.resolve();
     }

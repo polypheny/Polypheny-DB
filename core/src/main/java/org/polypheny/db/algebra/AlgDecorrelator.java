@@ -58,8 +58,10 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import javax.annotation.Nonnull;
+import lombok.Getter;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Function2;
+import org.polypheny.db.algebra.AlgDecorrelator.Frame;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.constant.Kind;
@@ -118,8 +120,6 @@ import org.polypheny.db.util.Holder;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.ReflectUtil;
-import org.polypheny.db.util.ReflectiveVisitor;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.mapping.Mappings;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
@@ -138,7 +138,7 @@ import org.slf4j.Logger;
  * <li>make sub-class rules static, and have them create their own de-correlator</li>
  * </ul>
  */
-public class AlgDecorrelator implements ReflectiveVisitor {
+public class AlgDecorrelator implements AlgProducingVisitor<Frame> {
 
     private static final Logger SQL2REL_LOGGER = PolyphenyDbTrace.getSqlToRelTracer();
 
@@ -148,7 +148,6 @@ public class AlgDecorrelator implements ReflectiveVisitor {
     // map built during translation
     private CorelMap cm;
 
-    private final ReflectUtil.MethodDispatcher<Frame> dispatcher = ReflectUtil.createMethodDispatcher( Frame.class, this, "decorrelateAlg", AlgNode.class );
 
     // The alg which is being visited
     private AlgNode currentAlg;
@@ -161,6 +160,24 @@ public class AlgDecorrelator implements ReflectiveVisitor {
     private final Map<AlgNode, Frame> map = new HashMap<>();
 
     private final Set<LogicalCorrelate> generatedCorAlgs = new HashSet<>();
+
+
+    @Getter
+    private final ImmutableMap<Class<? extends AlgNode>, java.util.function.Function<AlgNode, Frame>> handlers = ImmutableMap.<Class<? extends AlgNode>, java.util.function.Function<AlgNode, Frame>>builder()
+            .put( LogicalCorrelate.class, c -> decorrelateAlg( (LogicalCorrelate) c ) )
+            .put( LogicalProject.class, c -> decorrelateAlg( (LogicalProject) c ) )
+            .put( LogicalFilter.class, c -> decorrelateAlg( (LogicalFilter) c ) )
+            .put( LogicalJoin.class, c -> decorrelateAlg( (LogicalJoin) c ) )
+            .put( LogicalSort.class, c -> decorrelateAlg( (LogicalSort) c ) )
+            .put( LogicalAggregate.class, c -> decorrelateAlg( (LogicalAggregate) c ) )
+            .put( Values.class, c -> decorrelateAlg( (Values) c ) )
+            .put( Sort.class, c -> decorrelateAlg( (Sort) c ) )
+            .build();
+
+    @Getter
+    private final java.util.function.Function<AlgNode, Frame> defaultHandler = this::decorrelateAlg;
+
+
 
 
     private AlgDecorrelator( CorelMap cm, Context context, AlgBuilder algBuilder ) {
@@ -344,7 +361,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
     public Frame decorrelateAlg( AlgNode alg ) {
         AlgNode newRel = alg.copy( alg.getTraitSet(), alg.getInputs() );
 
-        if ( alg.getInputs().size() > 0 ) {
+        if ( !alg.getInputs().isEmpty() ) {
             List<AlgNode> oldInputs = alg.getInputs();
             List<AlgNode> newInputs = new ArrayList<>();
             for ( int i = 0; i < oldInputs.size(); ++i ) {
@@ -577,7 +594,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
 
 
     public Frame getInvoke( AlgNode r, AlgNode parent ) {
-        final Frame frame = dispatcher.invoke( r );
+        final Frame frame = handle( r );
         if ( frame != null ) {
             map.put( r, frame );
         }
@@ -2596,7 +2613,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
     /**
      * Frame describing the relational expression after decorrelation and where to find the output fields and correlation variables among its output fields.
      */
-    static class Frame {
+    public static class Frame {
 
         final AlgNode r;
         final ImmutableSortedMap<CorDef, Integer> corDefOutputs;

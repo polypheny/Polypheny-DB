@@ -62,35 +62,35 @@ import org.polypheny.db.util.Litmus;
 
 /**
  * A <code>AlgNode</code> is a relational expression.
- *
+ * <p>
  * Relational expressions process data, so their names are typically verbs: Sort, Join, Project, Filter, Scan, Sample.
- *
+ * <p>
  * A relational expression is not a scalar expression; see {@link AlgNode} and {@link RexNode}.
- *
+ * <p>
  * If this type of relational expression has some particular planner rules, it should implement the <em>public static</em> method {@link AbstractAlgNode#register}.
- *
+ * <p>
  * When a relational expression comes to be implemented, the system allocates a {@link AlgImplementor} to manage the process. Every implementable relational expression
  * has a {@link AlgTraitSet} describing its physical attributes. The RelTraitSet always contains a {@link Convention} describing how the expression passes data to its consuming
  * relational expression, but may contain other traits, including some applied externally. Because traits can be applied externally, implementations of {@link AlgNode} should never assume the size or contents of
  * their trait set (beyond those traits configured by the {@link AlgNode} itself).
- *
+ * <p>
  * For each calling-convention, there is a corresponding sub-interface of AlgNode. For example,
  * {@code EnumerableAlg}
  * has operations to manage the conversion to a graph of
  * {@code EnumerableConvention}
  * calling-convention, and it interacts with a
  * {@code EnumerableAlgImplementor}.
- *
+ * <p>
  * A relational expression is only required to implement its calling-convention's interface when it is actually implemented, that is, converted into a plan/program. This means that relational expressions which
  * cannot be implemented, such as converters, are not required to implement their convention's interface.
- *
+ * <p>
  * Every relational expression must derive from {@link AbstractAlgNode}. (Why have the <code>AlgNode</code> interface, then? We need a root interface, because an interface can only derive from an interface.)
  **/
 public interface AlgNode extends AlgOptNode, Cloneable {
 
     /**
      * Returns a list of this relational expression's child expressions. (These are scalar expressions, and so do not include the relational inputs that are returned by {@link #getInputs}.
-     *
+     * <p>
      * The caller should treat the list as unmodifiable; typical implementations will return an immutable list. If there are no child expressions, returns an empty list, not <code>null</code>.
      *
      * @return List of this relational expression's child expressions
@@ -142,14 +142,14 @@ public interface AlgNode extends AlgOptNode, Cloneable {
     /**
      * Returns an array of this relational expression's inputs. If there are no inputs, returns an empty list, not {@code null}.
      *
-     * @return Array of this relational expression's inputs
+     * @return collection of this relational expression's inputs
      */
     @Override
     List<AlgNode> getInputs();
 
     /**
      * Returns an estimate of the number of rows this relational expression will return.
-     *
+     * <p>
      * Don't call this method directly. Instead, use {@link AlgMetadataQuery#getRowCount}, which gives plugins a chance to override the rel's default ideas about row count.
      *
      * @param mq Metadata query
@@ -159,9 +159,9 @@ public interface AlgNode extends AlgOptNode, Cloneable {
 
     /**
      * Returns the names of variables that are set in this relational expression but also used and therefore not available to parents of this relational expression.
-     *
+     * <p>
      * Note: only {@link Correlate} should set variables.
-     *
+     * <p>
      * Note: {@link #getVariablesSet()} is equivalent but returns {@link CorrelationId} rather than their names. It is preferable except for calling old methods that require a set of strings.
      *
      * @return Names of variables which are set in this relational expression
@@ -173,7 +173,7 @@ public interface AlgNode extends AlgOptNode, Cloneable {
 
     /**
      * Returns the variables that are set in this relational expression but also used and therefore not available to parents of this relational expression.
-     *
+     * <p>
      * Note: only {@link Correlate} should set variables.
      *
      * @return Names of variables which are set in this relational expression
@@ -205,7 +205,7 @@ public interface AlgNode extends AlgOptNode, Cloneable {
 
     /**
      * Returns the cost of this plan (not including children). The base implementation throws an error; derived classes should override.
-     *
+     * <p>
      * NOTE: Don't call this method directly. Instead, use {@link AlgMetadataQuery#getNonCumulativeCost}, which gives plugins a chance to override the alg's default ideas about cost.
      *
      * @param planner Planner for cost calculation
@@ -276,7 +276,7 @@ public interface AlgNode extends AlgOptNode, Cloneable {
 
     /**
      * Returns whether this relational expression is valid.
-     *
+     * <p>
      * If assertions are enabled, this method is typically called with <code>litmus</code> = <code>THROW</code>, as follows:
      *
      * <blockquote>
@@ -294,7 +294,7 @@ public interface AlgNode extends AlgOptNode, Cloneable {
 
     /**
      * Creates a copy of this relational expression, perhaps changing traits and inputs.
-     *
+     * <p>
      * Sub-classes with other important attributes are encouraged to create variants of this method with more parameters.
      *
      * @param traitSet Trait set
@@ -305,7 +305,7 @@ public interface AlgNode extends AlgOptNode, Cloneable {
 
     /**
      * Registers any special rules specific to this kind of relational expression.
-     *
+     * <p>
      * The planner calls this method this first time that it sees a relational expression of this class. The derived class should call {@link AlgOptPlanner#addRule} for each rule,
      * and then call {@code super.register}.
      *
@@ -321,6 +321,7 @@ public interface AlgNode extends AlgOptNode, Cloneable {
      */
     AlgNode accept( AlgShuttle shuttle );
 
+
     /**
      * Accepts a visit from a shuttle. If the shuttle updates expression, then a copy of the relation should be created.
      *
@@ -328,6 +329,7 @@ public interface AlgNode extends AlgOptNode, Cloneable {
      * @return A copy of this node incorporating changes made by the shuttle to this node's children
      */
     AlgNode accept( RexShuttle shuttle );
+
 
     /**
      * Returns a string which allows to compare alg plans.
@@ -351,7 +353,6 @@ public interface AlgNode extends AlgOptNode, Cloneable {
      * If a part of AlgNode is a LogicalViewScan it is replaced
      * Else recursively hands call down if view in deeper level
      *
-     * @return
      */
     default AlgNode unfoldView( @Nullable AlgNode parent, int index, AlgOptCluster cluster ) {
         int i = 0;

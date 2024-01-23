@@ -110,5 +110,6 @@ public final class LogicalAggregate extends Aggregate implements RelAlg {
         return shuttle.visit( this );
     }
 
+
 }
 

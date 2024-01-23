@@ -43,7 +43,7 @@ import org.polypheny.db.runtime.ArrayBindable;
  *
  * @see BindableConvention
  */
-public interface BindableAlg extends AlgNode, ArrayBindable, InterpretableRel {
+public interface BindableAlg extends AlgNode, ArrayBindable, InterpretableAlg {
 
 }
 
