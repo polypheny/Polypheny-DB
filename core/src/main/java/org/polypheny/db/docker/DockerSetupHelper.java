@@ -76,10 +76,7 @@ public final class DockerSetupHelper {
 
 
     public static DockerInstanceInfo updateDockerInstance( int id, String hostname, String alias, String registry ) {
-        DockerInstance dockerInstance = DockerManager.getInstance().getInstanceById( id ).orElseThrow( () -> new DockerUserException( 404, "No Docker instance with that id" ) );
-
-        DockerManager.getInstance().updateDockerInstance( id, hostname, alias, registry );
-        return dockerInstance.getInfo();
+        return DockerManager.getInstance().updateDockerInstance( id, hostname, alias, registry ).getInfo();
     }
 
 

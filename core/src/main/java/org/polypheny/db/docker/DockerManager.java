@@ -113,7 +113,7 @@ public final class DockerManager {
     }
 
 
-    void updateDockerInstance( int id, String hostname, String alias, String registry ) {
+    DockerInstance updateDockerInstance( int id, String hostname, String alias, String registry ) {
         synchronized ( this ) {
             DockerInstance dockerInstance = getInstanceById( id ).orElseThrow( () -> new DockerUserException( 404, "No Docker instance with id " + id ) );
             if ( !dockerInstance.getHost().hostname().equals( hostname ) && hasHost( hostname ) ) {
@@ -137,6 +137,8 @@ public final class DockerManager {
                 }
             } );
             ConfigManager.getInstance().getConfig( "runtime/dockerInstances" ).setConfigObjectList( configs.stream().map( ConfigDocker::toMap ).collect( Collectors.toList() ), ConfigDocker.class );
+
+            return dockerInstance;
         }
     }
 
