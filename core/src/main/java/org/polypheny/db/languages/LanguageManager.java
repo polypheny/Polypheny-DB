@@ -231,7 +231,7 @@ public class LanguageManager {
                 }
                 cancelTransaction( transaction );
 
-                executedContexts.add( ExecutedContext.ofError( e, implementation ) );
+                executedContexts.add( ExecutedContext.ofError( e, implementation, null ) );
                 return executedContexts;
             }
         }

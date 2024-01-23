@@ -189,18 +189,12 @@ public class PolyImplementation {
             return columns;
         }
 
-        final AlgDataType x;
-        switch ( kind ) {
-            case INSERT:
-            case DELETE:
-            case UPDATE:
-            case EXPLAIN:
+        final AlgDataType x = switch ( kind ) {
+            case INSERT, DELETE, UPDATE, EXPLAIN ->
                 // FIXME: getValidatedNodeType is wrong for DML
-                x = AlgOptUtil.createDmlRowType( kind, statement.getTransaction().getTypeFactory() );
-                break;
-            default:
-                x = rowType;
-        }
+                    AlgOptUtil.createDmlRowType( kind, statement.getTransaction().getTypeFactory() );
+            default -> rowType;
+        };
         final List<ColumnMetaData> columns = QueryProcessorHelpers.getColumnMetaDataList(
                 statement.getTransaction().getTypeFactory(),
                 x,

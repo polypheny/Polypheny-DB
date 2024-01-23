@@ -581,9 +581,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 @Override
                 public AlgNode visit( AlgNode node ) {
                     RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
-                    if ( node instanceof LogicalRelModify ) {
+                    if ( node instanceof LogicalRelModify ltm ) {
                         final Catalog catalog = Catalog.getInstance();
-                        final LogicalRelModify ltm = (LogicalRelModify) node;
                         final LogicalTable table = ltm.getEntity().unwrap( LogicalTable.class ).orElseThrow();
                         final LogicalNamespace namespace = catalog.getSnapshot().getNamespace( table.namespaceId ).orElseThrow();
                         final List<Index> indices = IndexManager.getInstance().getIndices( namespace, table );
@@ -826,8 +825,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
                 @Override
                 public AlgNode visit( AlgNode node ) {
-                    if ( node instanceof LogicalConditionalExecute ) {
-                        final LogicalConditionalExecute lce = (LogicalConditionalExecute) node;
+                    if ( node instanceof LogicalConditionalExecute lce ) {
                         final Index index = IndexManager.getInstance().getIndex(
                                 lce.getLogicalNamespace(),
                                 lce.getCatalogTable(),
@@ -835,19 +833,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                         );
                         if ( index != null ) {
                             final LogicalConditionalExecute visited = (LogicalConditionalExecute) super.visit( lce );
-                            Condition c = null;
-                            switch ( lce.getCondition() ) {
-                                case TRUE:
-                                case FALSE:
-                                    c = lce.getCondition();
-                                    break;
-                                case EQUAL_TO_ZERO:
-                                    c = index.containsAny( statement.getTransaction().getXid(), lce.getValues() ) ? Condition.FALSE : Condition.TRUE;
-                                    break;
-                                case GREATER_ZERO:
-                                    c = index.containsAny( statement.getTransaction().getXid(), lce.getValues() ) ? Condition.TRUE : Condition.FALSE;
-                                    break;
-                            }
+                            Condition c = switch ( lce.getCondition() ) {
+                                case TRUE, FALSE -> lce.getCondition();
+                                case EQUAL_TO_ZERO -> index.containsAny( statement.getTransaction().getXid(), lce.getValues() ) ? Condition.FALSE : Condition.TRUE;
+                                case GREATER_ZERO -> index.containsAny( statement.getTransaction().getXid(), lce.getValues() ) ? Condition.TRUE : Condition.FALSE;
+                            };
                             final LogicalConditionalExecute simplified =
                                     LogicalConditionalExecute.create( visited.getLeft(), visited.getRight(), c, visited.getExceptionClass(), visited.getExceptionMessage() );
                             simplified.setCheckDescription( lce.getCheckDescription() );
@@ -863,17 +853,15 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
             @Override
             public AlgNode visit( LogicalProject project ) {
-                if ( project.getInput() instanceof LogicalRelScan ) {
+                if ( project.getInput() instanceof LogicalRelScan scan ) {
                     // Figure out the original column names required for index lookup
-                    final LogicalRelScan scan = (LogicalRelScan) project.getInput();
                     final List<String> columns = new ArrayList<>( project.getChildExps().size() );
                     final List<AlgDataType> ctypes = new ArrayList<>( project.getChildExps().size() );
                     for ( final RexNode expr : project.getChildExps() ) {
-                        if ( !(expr instanceof RexIndexRef) ) {
+                        if ( !(expr instanceof RexIndexRef rir) ) {
                             IndexManager.getInstance().incrementMiss();
                             return super.visit( project );
                         }
-                        final RexIndexRef rir = (RexIndexRef) expr;
                         final AlgDataTypeField field = scan.getTupleType().getFields().get( rir.getIndex() );
                         final String column = field.getName();
                         columns.add( column );
@@ -909,8 +897,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
             @Override
             public AlgNode visit( AlgNode node ) {
-                if ( node instanceof LogicalProject ) {
-                    final LogicalProject lp = (LogicalProject) node;
+                if ( node instanceof LogicalProject lp ) {
                     lp.getMapping();
                 }
                 return super.visit( node );
@@ -1190,7 +1177,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private <T> PolyImplementation createPolyImplementation( PreparedResult<PolyValue> preparedResult, Kind kind, AlgNode optimalNode, AlgDataType validatedRowType, Convention resultConvention, ExecutionTimeMonitor executionTimeMonitor, DataModel dataModel ) {
+    private PolyImplementation createPolyImplementation( PreparedResult<PolyValue> preparedResult, Kind kind, AlgNode optimalNode, AlgDataType validatedRowType, Convention resultConvention, ExecutionTimeMonitor executionTimeMonitor, DataModel dataModel ) {
         final AlgDataType jdbcType = QueryProcessorHelpers.makeStruct( optimalNode.getCluster().getTypeFactory(), validatedRowType );
         return new PolyImplementation(
                 jdbcType,
@@ -1251,7 +1238,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     /**
      * Traverses all TablesScans used during execution and identifies for the corresponding table all
      * associated partitions that needs to be accessed, on the basis of the provided partitionValues identified in a LogicalFilter
-     *
+     * <p>
      * It is necessary to associate the partitionIds again with the ScanId and not with the table itself. Because a table could be present
      * multiple times within one query. The aggregation per table would lead to data loss
      *
@@ -1388,7 +1375,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     /**
      * Aggregates results present in queryInformation as well information directly attached to the Statement Event
      * Adds all information to teh accessedPartitions directly in the StatementEvent.
-     *
+     * <p>
      * Also remaps scanId to tableId to correctly update the accessed partition List
      *
      * @param eventData monitoring data to be updated

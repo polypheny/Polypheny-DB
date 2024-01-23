@@ -22,23 +22,25 @@ import static org.polypheny.db.adapter.neo4j.util.NeoStatements.with_;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.neo4j.NeoGraphImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.OperatorStatement;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Aggregate;
-import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.core.LaxAggregateCall;
 import org.polypheny.db.algebra.core.lpg.LpgAggregate;
 import org.polypheny.db.algebra.core.lpg.LpgProject;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.rex.RexIndexRef;
+import org.polypheny.db.rex.RexNameRef;
 
 public class NeoLpgAggregate extends LpgAggregate implements NeoGraphAlg {
 
@@ -48,14 +50,14 @@ public class NeoLpgAggregate extends LpgAggregate implements NeoGraphAlg {
      * @param cluster Cluster this expression belongs to
      * @param traits Traits active for this node, including {@link org.polypheny.db.catalog.logistic.DataModel#GRAPH}
      */
-    public NeoLpgAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
-        super( cluster, traits, child, indicator, groupSet, groupSets, aggCalls );
+    public NeoLpgAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, @NotNull List<RexNameRef> groups, List<LaxAggregateCall> aggCalls, AlgDataType tupleType ) {
+        super( cluster, traits, child, groups, aggCalls, tupleType );
     }
 
 
     @Override
-    public Aggregate copy( AlgTraitSet traitSet, AlgNode input, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
-        return new NeoLpgAggregate( input.getCluster(), traitSet, input, indicator, groupSet, groupSets, aggCalls );
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+        return new NeoLpgAggregate( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), groups, aggCalls, rowType );
     }
 
 
@@ -78,16 +80,18 @@ public class NeoLpgAggregate extends LpgAggregate implements NeoGraphAlg {
             List<String> lastNames = implementor.getLast().getTupleType().getFieldNames();
             List<String> currentNames = getTupleType().getFieldNames();
 
-            for ( int index : groupSet.asSet() ) {
-                String name = lastNames.get( index );
-                finalRow.set( currentNames.indexOf( name ), name );
+            for ( RexNameRef name : groups ) {
+                finalRow.set( currentNames.indexOf( name.name ), name.name );
             }
-            for ( AggregateCall agg : aggCalls ) {
-                List<String> refs = agg.getArgList().stream().map( lastNames::get ).toList();
-                if ( refs.isEmpty() ) {
+            for ( LaxAggregateCall agg : aggCalls ) {
+                List<String> refs = new ArrayList<>();
+                if ( agg.getInput().isEmpty() ) {
                     refs.add( "*" );
+                } else {
+                    refs.add( lastNames.get( ((RexIndexRef) agg.getInput().get()).getIndex() ) );
                 }
-                finalRow.set( currentNames.indexOf( agg.name ), Objects.requireNonNull( NeoUtil.getOpAsNeo( agg.getAggregation().getOperatorName(), List.of(), agg.type ) ).apply( refs ) );
+
+                finalRow.set( currentNames.indexOf( agg.name ), Objects.requireNonNull( NeoUtil.getOpAsNeo( agg.function.getOperatorName(), List.of(), null ) ).apply( refs ) );
             }
 
             implementor.add( with_( list_( finalRow.stream().map( NeoStatements::literal_ ).toList() ) ) );

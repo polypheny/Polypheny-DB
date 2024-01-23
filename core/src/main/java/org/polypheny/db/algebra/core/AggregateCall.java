@@ -37,6 +37,7 @@ package org.polypheny.db.algebra.core;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Objects;
+import lombok.Getter;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
@@ -60,6 +61,13 @@ public class AggregateCall {
     private final boolean distinct;
     private final boolean approximate;
     public final AlgDataType type;
+    /**
+     * -- GETTER --
+     * Returns the name.
+     *
+     * @return name
+     */
+    @Getter
     public final String name;
 
     // We considered using ImmutableIntList but we would not save much memory: since all values are small,
@@ -205,16 +213,6 @@ public class AggregateCall {
      */
     public final AlgDataType getType() {
         return type;
-    }
-
-
-    /**
-     * Returns the name.
-     *
-     * @return name
-     */
-    public String getName() {
-        return name;
     }
 
 

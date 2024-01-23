@@ -244,10 +244,9 @@ public interface NeoGraphRules {
                     aggregate.getCluster(),
                     aggregate.getTraitSet().replace( NeoConvention.INSTANCE ),
                     convert( aggregate.getInput(), NeoConvention.INSTANCE ),
-                    aggregate.indicator,
-                    aggregate.getGroupSet(),
-                    aggregate.getGroupSets(),
-                    aggregate.getAggCallList() );
+                    aggregate.groups,
+                    aggregate.aggCalls,
+                    aggregate.getTupleType() );
         }
 
     }
@@ -255,7 +254,7 @@ public interface NeoGraphRules {
 
     class NeoGraphMatchRule extends NeoConverterRule {
 
-        public static NeoGraphMatchRule INSTANCE = new NeoGraphMatchRule( LpgMatch.class, r -> true, "NeoGraphMatchRule" );
+        public static NeoGraphMatchRule INSTANCE = new NeoGraphMatchRule( LpgMatch.class, r -> true, NeoGraphMatchRule.class.getSimpleName() );
 
 
         private <R extends AlgNode> NeoGraphMatchRule( Class<R> clazz, Predicate<? super R> supports, String description ) {

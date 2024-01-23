@@ -21,12 +21,15 @@ import java.util.Optional;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
+import org.apache.calcite.linq4j.Linq4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 
 @Value
 @NonFinal
@@ -55,7 +58,7 @@ public class ImplementationContext {
             return new ExecutedContext( implementation, null, query, time, result, statement );
         } catch ( Throwable e ) {
             time = System.nanoTime() - time;
-            return new ExecutedContext( implementation, e, query, time, null, statement );
+            return ExecutedContext.ofError( e, this, time );
         }
 
     }
@@ -76,15 +79,16 @@ public class ImplementationContext {
         long executionTime;
 
 
-        private ExecutedContext( PolyImplementation implementation, @Nullable Throwable error, ParsedQueryContext query, long executionTime, ResultIterator iterator, Statement statement ) {
+        private ExecutedContext( PolyImplementation implementation, @Nullable Throwable error, ParsedQueryContext query, long executionTime, @NotNull ResultIterator iterator, Statement statement ) {
             super( implementation, query, statement, error );
             this.executionTime = executionTime;
             this.iterator = iterator;
         }
 
 
-        public static ExecutedContext ofError( Throwable e, ImplementationContext implementation ) {
-            return new ExecutedContext( implementation.implementation, e, implementation.query, 0l, null, implementation.statement );
+        public static ExecutedContext ofError( Throwable e, ImplementationContext implementation, @Nullable Long time ) {
+            ResultIterator iterator = new ResultIterator( Linq4j.singletonEnumerable( new PolyValue[]{ PolyString.of( e.getMessage() ) } ).iterator(), implementation.statement, 1, false, false, false, null, null, implementation.implementation );
+            return new ExecutedContext( implementation.implementation, e, implementation.query, time == null ? 0L : time, iterator, implementation.statement );
         }
 
 

@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.adapter.mongodb.MongoAlg;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.DocumentAggregateCall;
+import org.polypheny.db.algebra.core.LaxAggregateCall;
 import org.polypheny.db.algebra.core.document.DocumentAggregate;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -45,7 +45,7 @@ public class MongoDocumentAggregate extends DocumentAggregate implements MongoAl
      * @param child Input of this expression
      * @param aggCalls Aggregate calls
      */
-    protected MongoDocumentAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, RexNameRef group, List<DocumentAggregateCall> aggCalls ) {
+    protected MongoDocumentAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, RexNameRef group, List<LaxAggregateCall> aggCalls ) {
         super( cluster, traits, child, group, aggCalls );
     }
 
@@ -65,14 +65,14 @@ public class MongoDocumentAggregate extends DocumentAggregate implements MongoAl
         list.add( "_id: " + inName );
         //implementor.physicalMapper.add( inName );
 
-        for ( DocumentAggregateCall aggCall : aggCalls ) {
+        for ( LaxAggregateCall aggCall : aggCalls ) {
             list.add( MongoRules.maybeQuote( aggCall.name ) + ": " + toMongo( aggCall ) );
         }
         implementor.add( null, "{$group: " + Util.toString( list, "{", ", ", "}" ) + "}" );
     }
 
 
-    private void handleSpecificAggregate( Implementor implementor, List<String> list, DocumentAggregateCall call ) {
+    private void handleSpecificAggregate( Implementor implementor, List<String> list, LaxAggregateCall call ) {
 
         switch ( call.function.getKind() ) {
             case COUNT:
@@ -85,7 +85,7 @@ public class MongoDocumentAggregate extends DocumentAggregate implements MongoAl
     }
 
 
-    private String toMongo( DocumentAggregateCall aggCall ) {
+    private String toMongo( LaxAggregateCall aggCall ) {
         if ( aggCall.function.getOperatorName() == OperatorName.COUNT ) {
             if ( aggCall.getInput().isEmpty() ) {
                 return "{$sum: 1}";
