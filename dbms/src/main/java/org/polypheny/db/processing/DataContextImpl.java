@@ -97,25 +97,15 @@ public class DataContextImpl implements DataContext {
         Hook.CURRENT_TIME.run( timeHolder );
         final long time = timeHolder.get();
         final long localOffset = timeZone.getOffset( time );
-        final long currentOffset = localOffset;
 
         // Give a hook chance to alter standard input, output, error streams.
         final Holder<Object[]> streamHolder = Holder.of( new Object[]{ System.in, System.out, System.err } );
         Hook.STANDARD_STREAMS.run( streamHolder );
 
         Map<String, Object> map = new HashMap<>();
-        /*map.put( Variable.UTC_TIMESTAMP.camelName, time );
-        map.put( Variable.CURRENT_TIMESTAMP.camelName, time + currentOffset );
-        map.put( Variable.LOCAL_TIMESTAMP.camelName, time + localOffset );
-        map.put( Variable.TIME_ZONE.camelName, timeZone );
-        map.put( Variable.STDIN.camelName, streamHolder.get()[0] );
-        map.put( Variable.STDOUT.camelName, streamHolder.get()[1] );
-        map.put( Variable.STDERR.camelName, streamHolder.get()[2] );*/
         for ( Map.Entry<String, Object> entry : parameters.entrySet() ) {
             Object e = entry.getValue();
-            if ( e == null ) {
-                //e = AvaticaSite.DUMMY_VALUE;
-            }
+            //e = AvaticaSite.DUMMY_VALUE;
             map.put( entry.getKey(), e );
         }
         return map;
@@ -128,9 +118,6 @@ public class DataContextImpl implements DataContext {
         if ( o == AvaticaSite.DUMMY_VALUE ) {
             return null;
         }
-        /* if ( o == null && Variable.SQL_ADVISOR.camelName.equals( name ) ) {
-            return getSqlAdvisor();
-        } */
         return o;
     }
 

@@ -64,7 +64,7 @@ import org.polypheny.db.util.NumberUtil;
  */
 public class AlgMdDistinctRowCount implements MetadataHandler<BuiltInMetadata.DistinctRowCount> {
 
-    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( BuiltInMethod.DISTINCT_ROW_COUNT.method, new AlgMdDistinctRowCount() );
+    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( new AlgMdDistinctRowCount(), BuiltInMethod.DISTINCT_ROW_COUNT.method );
 
 
     protected AlgMdDistinctRowCount() {

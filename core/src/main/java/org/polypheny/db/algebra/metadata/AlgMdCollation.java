@@ -92,7 +92,7 @@ import org.polypheny.db.util.Util;
  */
 public class AlgMdCollation implements MetadataHandler<BuiltInMetadata.Collation> {
 
-    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( BuiltInMethod.COLLATIONS.method, new AlgMdCollation() );
+    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( new AlgMdCollation(), BuiltInMethod.COLLATIONS.method );
 
 
     private AlgMdCollation() {

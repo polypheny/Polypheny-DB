@@ -35,6 +35,9 @@ package org.polypheny.db.interpreter;
 
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import java.util.function.Consumer;
+import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.Filter;
@@ -58,10 +61,27 @@ public class Nodes {
     /**
      * Extension to {@link Interpreter.CompilerImpl} that knows how to handle the core logical {@link AlgNode}s.
      */
+    @Getter
     public static class CoreCompiler extends Interpreter.CompilerImpl {
+
+        private final ImmutableMap<Class<? extends AlgNode>, Consumer<AlgNode>> handlers;
+
 
         CoreCompiler( Interpreter interpreter, AlgOptCluster cluster ) {
             super( interpreter, cluster );
+            handlers = ImmutableMap.copyOf( ImmutableMap.<Class<? extends AlgNode>, Consumer<AlgNode>>builder()
+                    .putAll( super.getHandlers() )
+                    .put( Join.class, a -> visit( (Join) a ) )
+                    .put( Aggregate.class, a -> visit( (Aggregate) a ) )
+                    .put( Filter.class, a -> visit( (Filter) a ) )
+                    .put( Project.class, a -> visit( (Project) a ) )
+                    .put( Values.class, a -> visit( (Values) a ) )
+                    .put( RelScan.class, a -> visit( (RelScan<?>) a ) )
+                    .put( BindableScan.class, a -> visit( (BindableScan) a ) )
+                    .put( Sort.class, a -> visit( (Sort) a ) )
+                    .put( Union.class, a -> visit( (Union) a ) )
+                    .put( Window.class, a -> visit( (Window) a ) )
+                    .build() );
         }
 
 

@@ -70,7 +70,7 @@ import org.polypheny.db.util.Util;
  */
 public class AlgMdTableReferences implements MetadataHandler<BuiltInMetadata.TableReferences> {
 
-    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( BuiltInMethod.TABLE_REFERENCES.method, new AlgMdTableReferences() );
+    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( new AlgMdTableReferences(), BuiltInMethod.TABLE_REFERENCES.method );
 
 
     protected AlgMdTableReferences() {

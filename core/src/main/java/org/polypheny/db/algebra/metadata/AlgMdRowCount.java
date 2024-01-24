@@ -67,7 +67,7 @@ import org.polypheny.db.util.Util;
 @Slf4j
 public class AlgMdRowCount implements MetadataHandler<BuiltInMetadata.RowCount> {
 
-    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( BuiltInMethod.ROW_COUNT.method, new AlgMdRowCount() );
+    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( new AlgMdRowCount(), BuiltInMethod.ROW_COUNT.method );
 
 
     @Override

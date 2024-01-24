@@ -268,7 +268,7 @@ public class AlgFieldTrimmer implements AlgProducingVisitor3<TrimResult, Immutab
         final int newFieldCount = newRel.getTupleType().getFieldCount();
         assert mapping.getTargetCount() + extraFields.size() == newFieldCount || Bug.TODO_FIXED
                 : "target: " + mapping.getTargetCount() + " + " + extraFields.size() + " != " + newFieldCount;
-        assert !Bug.TODO_FIXED || newFieldCount > 0 : "rel has no fields after trim: " + alg;
+        assert !Bug.TODO_FIXED || newFieldCount > 0 : "alg has no fields after trim: " + alg;
         if ( newRel.equals( alg ) ) {
             return result( alg, mapping );
         }
@@ -305,10 +305,6 @@ public class AlgFieldTrimmer implements AlgProducingVisitor3<TrimResult, Immutab
 
 
     /**
-     * Visit method, per {@link org.polypheny.db.util.ReflectiveVisitor}.
-     * <p>
-     * This method is invoked reflectively, so there may not be any apparent calls to it. The class (or derived classes) may contain overloads of this method with more specific types for the {@code rel} parameter.
-     * <p>
      * Returns a pair: the relational expression created, and the mapping between the original fields and the fields of the newly created relational expression.
      *
      * @param alg Relational expression

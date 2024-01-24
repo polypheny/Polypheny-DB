@@ -44,7 +44,7 @@ import org.polypheny.db.util.BuiltInMethod;
  */
 public class AlgMdExplainVisibility implements MetadataHandler<BuiltInMetadata.ExplainVisibility> {
 
-    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( BuiltInMethod.EXPLAIN_VISIBILITY.method, new AlgMdExplainVisibility() );
+    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( new AlgMdExplainVisibility(), BuiltInMethod.EXPLAIN_VISIBILITY.method );
 
 
     private AlgMdExplainVisibility() {

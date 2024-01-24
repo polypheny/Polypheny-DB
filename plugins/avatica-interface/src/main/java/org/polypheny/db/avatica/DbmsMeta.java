@@ -193,7 +193,6 @@ public class DbmsMeta implements ProtobufMeta {
             final StatementHandle statementHandle,
             Map<String, Object> internalParameters,
             List<ColumnMetaData> columns,
-            CursorFactory cursorFactory,
             final Iterable<PolyValue[]> firstFrame ) {
         final PolySignature signature =
                 new PolySignature(
@@ -202,7 +201,7 @@ public class DbmsMeta implements ProtobufMeta {
                         internalParameters,
                         null,
                         columns,
-                        cursorFactory,
+                        CursorFactory.LIST,
                         null,
                         ImmutableList.of(),
                         -1,
@@ -240,7 +239,7 @@ public class DbmsMeta implements ProtobufMeta {
         }
 
         //return createMetaResultSet( ch, statementHandle, Collections.emptyMap(), columns, CursorFactory.record( clazz, fields, fieldNames ), new Frame( 0, true, iterable ) );
-        return createMetaResultSet( ch, statementHandle, new HashMap<>(), columns, CursorFactory.LIST, enumerable );
+        return createMetaResultSet( ch, statementHandle, new HashMap<>(), columns, enumerable );
     }
 
 
@@ -255,7 +254,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     /**
      * Returns a map of static database properties.
-     *
+     * <p>
      * The provider can omit properties whose value is the same as the default.
      */
     @Override
@@ -540,7 +539,6 @@ public class DbmsMeta implements ProtobufMeta {
             }
             final Pattern tablePattern = table == null ? null : new Pattern( table );
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
-            final Pattern databasePattern = database == null ? null : new Pattern( database );
             final List<LogicalTable> catalogEntities = getLogicalTables( schemaPattern, tablePattern );
             List<LogicalPrimaryKeyColumn> primaryKeyColumns = new LinkedList<>();
             for ( LogicalTable catalogTable : catalogEntities ) {
@@ -944,7 +942,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     /**
      * Creates an iterable for a result set.
-     *
+     * <p>
      * The default implementation just returns {@code iterable}, which it requires to be not null; derived classes may instead choose to execute the relational
      * expression in {@code signature}.
      */
@@ -1110,7 +1108,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     /**
      * Returns a frame of rows.
-     *
+     * <p>
      * The frame describes whether there may be another frame. If there is not another frame, the current iteration is done when we have finished the rows in the this frame.
      *
      * @param h Statement handle
@@ -1144,7 +1142,7 @@ public class DbmsMeta implements ProtobufMeta {
                 statementHandle.getExecutionStopWatch().resume();
             }
 
-            final List rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, fetchMaxRowCount ), new ArrayList<>() );
+            final List<?> rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, fetchMaxRowCount ), new ArrayList<>() );
             statementHandle.getExecutionStopWatch().suspend();
             boolean done = fetchMaxRowCount == 0 || rows.size() < fetchMaxRowCount;
 
@@ -1159,7 +1157,7 @@ public class DbmsMeta implements ProtobufMeta {
                     log.error( "Exception while closing result iterator", e );
                 }
             }
-            return new Meta.Frame( offset, done, rows );
+            return new Meta.Frame( offset, done, (Iterable<Object>) rows );
         }
     }
 
@@ -1312,35 +1310,22 @@ public class DbmsMeta implements ProtobufMeta {
         }
 
         Object jdbc = value.toJdbc( calendar );
-        switch ( value.type ) {
-            case FLOAT:
-                return PolyFloat.of( (Number) jdbc );
-            case INTEGER:
-                return PolyInteger.of( (Number) jdbc );
-            case LONG:
-                return PolyLong.of( (Number) jdbc );
-            case STRING:
-                return PolyString.of( (String) jdbc );
-            case BOOLEAN:
-                return PolyBoolean.of( (Boolean) jdbc );
-            case JAVA_SQL_DATE:
-                return PolyDate.of( (Date) jdbc );
-            case JAVA_SQL_TIME:
-                return PolyTime.of( (Time) jdbc );
-            case JAVA_SQL_TIMESTAMP:
-                return PolyTimestamp.of( (Timestamp) jdbc );
-            case NUMBER:
-                return PolyBigDecimal.of( (BigDecimal) jdbc );
-            case DOUBLE:
-                return PolyDouble.of( (Double) jdbc );
-            case SHORT:
-                return PolyInteger.of( (Short) jdbc );
-            case BYTE:
-                return PolyInteger.of( (byte) jdbc );
-            case BYTE_STRING:
-                return PolyBinary.of( (byte[]) jdbc );
-        }
-        throw new NotImplementedException( "dbms to poly " + value.type );
+        return switch ( value.type ) {
+            case FLOAT -> PolyFloat.of( (Number) jdbc );
+            case INTEGER -> PolyInteger.of( (Number) jdbc );
+            case LONG -> PolyLong.of( (Number) jdbc );
+            case STRING -> PolyString.of( (String) jdbc );
+            case BOOLEAN -> PolyBoolean.of( (Boolean) jdbc );
+            case JAVA_SQL_DATE -> PolyDate.of( (Date) jdbc );
+            case JAVA_SQL_TIME -> PolyTime.of( (Time) jdbc );
+            case JAVA_SQL_TIMESTAMP -> PolyTimestamp.of( (Timestamp) jdbc );
+            case NUMBER -> PolyBigDecimal.of( (BigDecimal) jdbc );
+            case DOUBLE -> PolyDouble.of( (Double) jdbc );
+            case SHORT -> PolyInteger.of( (Short) jdbc );
+            case BYTE -> PolyInteger.of( (byte) jdbc );
+            case BYTE_STRING -> PolyBinary.of( (byte[]) jdbc );
+            default -> throw new NotImplementedException( "dbms to poly " + value.type );
+        };
     }
 
 
@@ -1457,7 +1442,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     /**
      * Closes a statement.
-     *
+     * <p>
      * If the statement handle is not known, or is already closed, does nothing.
      *
      * @param statementHandle Statement handle
@@ -1691,7 +1676,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     /**
      * Synchronizes client and server view of connection properties.
-     *
+     * <p>
      * Note: this interface is considered "experimental" and may undergo further changes as this functionality is extended to other aspects of state management for
      * {@link Connection}, {@link Statement}, and {@link ResultSet}.
      */

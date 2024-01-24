@@ -62,8 +62,8 @@ public class AlgMdNodeTypes implements MetadataHandler<BuiltInMetadata.NodeTypes
 
     public static final AlgMetadataProvider SOURCE =
             ReflectiveAlgMetadataProvider.reflectiveSource(
-                    BuiltInMethod.NODE_TYPES.method,
-                    new AlgMdNodeTypes() );
+                    new AlgMdNodeTypes(),
+                    BuiltInMethod.NODE_TYPES.method );
 
 
     @Override

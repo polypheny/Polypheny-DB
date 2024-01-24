@@ -63,7 +63,7 @@ import org.polypheny.db.util.mapping.Mappings;
  */
 public class AlgMdDistribution implements MetadataHandler<BuiltInMetadata.Distribution> {
 
-    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( BuiltInMethod.DISTRIBUTION.method, new AlgMdDistribution() );
+    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( new AlgMdDistribution(), BuiltInMethod.DISTRIBUTION.method );
 
 
     private AlgMdDistribution() {

@@ -55,9 +55,9 @@ public class AlgMdPercentageOriginalRows implements MetadataHandler<BuiltInMetad
     public static final AlgMetadataProvider SOURCE =
             ChainedAlgMetadataProvider.of(
                     ImmutableList.of(
-                            ReflectiveAlgMetadataProvider.reflectiveSource( BuiltInMethod.PERCENTAGE_ORIGINAL_ROWS.method, INSTANCE ),
-                            ReflectiveAlgMetadataProvider.reflectiveSource( BuiltInMethod.CUMULATIVE_COST.method, INSTANCE ),
-                            ReflectiveAlgMetadataProvider.reflectiveSource( BuiltInMethod.NON_CUMULATIVE_COST.method, INSTANCE ) ) );
+                            ReflectiveAlgMetadataProvider.reflectiveSource( INSTANCE, BuiltInMethod.PERCENTAGE_ORIGINAL_ROWS.method ),
+                            ReflectiveAlgMetadataProvider.reflectiveSource( INSTANCE, BuiltInMethod.CUMULATIVE_COST.method ),
+                            ReflectiveAlgMetadataProvider.reflectiveSource( INSTANCE, BuiltInMethod.NON_CUMULATIVE_COST.method ) ) );
 
 
     private AlgMdPercentageOriginalRows() {

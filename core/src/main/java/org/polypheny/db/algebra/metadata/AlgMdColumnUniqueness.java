@@ -75,7 +75,7 @@ import org.polypheny.db.util.Pair;
  */
 public class AlgMdColumnUniqueness implements MetadataHandler<BuiltInMetadata.ColumnUniqueness> {
 
-    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( BuiltInMethod.COLUMN_UNIQUENESS.method, new AlgMdColumnUniqueness() );
+    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( new AlgMdColumnUniqueness(), BuiltInMethod.COLUMN_UNIQUENESS.method );
 
 
     private AlgMdColumnUniqueness() {

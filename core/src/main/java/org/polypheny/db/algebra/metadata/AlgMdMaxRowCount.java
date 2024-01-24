@@ -58,7 +58,7 @@ import org.polypheny.db.util.Util;
  */
 public class AlgMdMaxRowCount implements MetadataHandler<BuiltInMetadata.MaxRowCount> {
 
-    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( BuiltInMethod.MAX_ROW_COUNT.method, new AlgMdMaxRowCount() );
+    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( new AlgMdMaxRowCount(), BuiltInMethod.MAX_ROW_COUNT.method );
 
 
     @Override

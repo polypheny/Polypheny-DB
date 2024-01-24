@@ -57,8 +57,8 @@ public class AlgMdPopulationSize implements MetadataHandler<BuiltInMetadata.Popu
 
     public static final AlgMetadataProvider SOURCE =
             ReflectiveAlgMetadataProvider.reflectiveSource(
-                    BuiltInMethod.POPULATION_SIZE.method,
-                    new AlgMdPopulationSize() );
+                    new AlgMdPopulationSize(),
+                    BuiltInMethod.POPULATION_SIZE.method );
 
 
     private AlgMdPopulationSize() {
