@@ -258,8 +258,8 @@ public class StatisticsTest {
                 Long rowCountNation = StatisticsManager.getInstance().rowCountPerTable( catalogTableNation.id );
                 Long rowCountRegion = StatisticsManager.getInstance().rowCountPerTable( catalogTableRegion.id );
 
-                assertEquals( Integer.valueOf( 3 ), rowCountNation );
-                assertEquals( Integer.valueOf( 2 ), rowCountRegion );
+                assertEquals( 3, rowCountNation );
+                assertEquals( 2, rowCountRegion );
 
                 connection.commit();
             } catch ( InterruptedException e ) {

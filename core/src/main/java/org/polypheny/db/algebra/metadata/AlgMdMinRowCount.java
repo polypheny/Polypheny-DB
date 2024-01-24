@@ -60,8 +60,8 @@ public class AlgMdMinRowCount implements MetadataHandler<BuiltInMetadata.MinRowC
 
     public static final AlgMetadataProvider SOURCE =
             ReflectiveAlgMetadataProvider.reflectiveSource(
-                    BuiltInMethod.MIN_ROW_COUNT.method,
-                    new AlgMdMinRowCount() );
+                    new AlgMdMinRowCount(),
+                    BuiltInMethod.MIN_ROW_COUNT.method );
 
 
     @Override

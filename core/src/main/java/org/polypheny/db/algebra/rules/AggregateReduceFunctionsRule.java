@@ -41,6 +41,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Aggregate;
@@ -69,7 +70,7 @@ import org.polypheny.db.util.Util;
 
 /**
  * Planner rule that reduces aggregate functions in {@link org.polypheny.db.algebra.core.Aggregate}s to simpler forms.
- *
+ * <p>
  * Rewrites:
  * <ul>
  * <li>AVG(x) &rarr; SUM(x) / COUNT(x)</li>
@@ -140,17 +141,13 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
         if ( Kind.AVG_AGG_FUNCTIONS.contains( kind ) || Kind.COVAR_AVG_AGG_FUNCTIONS.contains( kind ) ) {
             return true;
         }
-        switch ( kind ) {
-            case SUM:
-                return true;
-        }
-        return false;
+        return Objects.requireNonNull( kind ) == Kind.SUM;
     }
 
 
     /**
      * Reduces all calls to AVG, STDDEV_POP, STDDEV_SAMP, VAR_POP, VAR_SAMP in the aggregates list to.
-     *
+     * <p>
      * It handles newly generated common subexpressions since this was done at the sql2rel stage.
      */
     private void reduceAggs( AlgOptRuleCall ruleCall, Aggregate oldAggAlg ) {

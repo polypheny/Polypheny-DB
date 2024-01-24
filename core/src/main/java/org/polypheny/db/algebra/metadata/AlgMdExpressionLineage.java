@@ -87,7 +87,7 @@ import org.polypheny.db.util.Util;
  */
 public class AlgMdExpressionLineage implements MetadataHandler<BuiltInMetadata.ExpressionLineage> {
 
-    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( BuiltInMethod.EXPRESSION_LINEAGE.method, new AlgMdExpressionLineage() );
+    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( new AlgMdExpressionLineage(), BuiltInMethod.EXPRESSION_LINEAGE.method );
 
 
     protected AlgMdExpressionLineage() {

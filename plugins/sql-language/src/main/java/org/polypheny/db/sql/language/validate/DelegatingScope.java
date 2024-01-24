@@ -25,6 +25,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import lombok.Getter;
 import org.polypheny.db.algebra.constant.MonikerType;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -53,12 +54,11 @@ import org.polypheny.db.util.Util;
 /**
  * A scope which delegates all requests to its parent scope. Use this as a base class for defining nested scopes.
  */
+@Getter
 public abstract class DelegatingScope implements SqlValidatorScope {
 
     /**
      * Parent scope. This is where to look next to resolve an identifier; it is not always the parent object in the parse tree.
-     *
-     * This is never null: at the top of the tree, it is an {@link EmptyScope}.
      */
     protected final SqlValidatorScope parent;
     protected final SqlValidatorImpl validator;
@@ -527,14 +527,6 @@ public abstract class DelegatingScope implements SqlValidatorScope {
             }
         }
         return false;
-    }
-
-
-    /**
-     * Returns the parent scope of this <code>DelegatingScope</code>.
-     */
-    public SqlValidatorScope getParent() {
-        return parent;
     }
 
 }

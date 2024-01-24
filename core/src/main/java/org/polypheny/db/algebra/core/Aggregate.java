@@ -78,10 +78,10 @@ import org.polypheny.db.util.Util;
 
 /**
  * Relational operator that eliminates duplicates and computes totals.
- *
+ * <p>
  * It corresponds to the {@code GROUP BY} operator in a SQL query statement, together with the aggregate functions in
  * the {@code SELECT} clause.
- *
+ * <p>
  * Rules:
  *
  * <ul>
@@ -102,38 +102,28 @@ public abstract class Aggregate extends SingleAlg {
 
     /**
      * Whether there are indicator fields.
-     *
+     * <p>
      * We strongly discourage the use indicator fields, because they cause the output row type of GROUPING SETS queries to be different from regular GROUP BY queries,
      * and recommend that you set this field to {@code false}.
      */
     public final boolean indicator;
     protected final List<AggregateCall> aggCalls;
-    /**
-     * -- GETTER --
-     * Returns a bit set of the grouping fields.
-     *
-     * @return bit set of ordinals of grouping fields
-     */
+
     @Getter
     protected final ImmutableBitSet groupSet;
-    /**
-     * -- GETTER --
-     * Returns the list of grouping sets computed by this Aggregate.
-     *
-     * @return List of all grouping sets; null for just {@code groupSet}
-     */
+
     @Getter
     public final ImmutableList<ImmutableBitSet> groupSets;
 
 
     /**
      * Creates an Aggregate.
-     *
+     * <p>
      * All members of {@code groupSets} must be sub-sets of {@code groupSet}. For a simple {@code GROUP BY}, {@code groupSets} is a singleton list containing {@code groupSet}.
-     *
+     * <p>
      * If {@code GROUP BY} is not specified, or equivalently if {@code GROUP BY ()} is specified, {@code groupSet} will be the empty set, and {@code groupSets}
      * will have one element, that empty set.
-     *
+     * <p>
      * If {@code CUBE}, {@code ROLLUP} or {@code GROUPING SETS} are specified, {@code groupSets} will have additional elements, but they must each be a subset of {@code groupSet},
      * and they must be sorted by inclusion: {@code (0, 1, 2), (1), (0, 2), (0), ()}.
      *
@@ -228,7 +218,7 @@ public abstract class Aggregate extends SingleAlg {
     /**
      * Returns the number of grouping fields.
      * These grouping fields are the leading fields in both the input and output records.
-     *
+     * <p>
      * NOTE: The {@link #getGroupSet()} data structure allows for the grouping fields to not be on the leading edge. New code should, if possible, assume that grouping fields are
      * in arbitrary positions in the input relational expression.
      *
@@ -241,9 +231,9 @@ public abstract class Aggregate extends SingleAlg {
 
     /**
      * Returns the number of indicator fields.
-     *
+     * <p>
      * This is the same as {@link #getGroupCount()} if {@link #indicator} is true, zero if {@code indicator} is false.
-     *
+     * <p>
      * The offset of the first aggregate call in the output record is always <i>groupCount + indicatorCount</i>.
      *
      * @return number of indicator fields

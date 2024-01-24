@@ -61,7 +61,7 @@ import org.polypheny.db.util.ImmutableBitSet;
  */
 public class AlgMdUniqueKeys implements MetadataHandler<BuiltInMetadata.UniqueKeys> {
 
-    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( BuiltInMethod.UNIQUE_KEYS.method, new AlgMdUniqueKeys() );
+    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( new AlgMdUniqueKeys(), BuiltInMethod.UNIQUE_KEYS.method );
 
 
     private AlgMdUniqueKeys() {

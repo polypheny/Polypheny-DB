@@ -60,7 +60,7 @@ import org.polypheny.db.util.BuiltInMethod;
  */
 public class AlgMdColumnOrigins implements MetadataHandler<BuiltInMetadata.ColumnOrigin> {
 
-    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( BuiltInMethod.COLUMN_ORIGIN.method, new AlgMdColumnOrigins() );
+    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( new AlgMdColumnOrigins(), BuiltInMethod.COLUMN_ORIGIN.method );
 
 
     private AlgMdColumnOrigins() {

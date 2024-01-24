@@ -50,6 +50,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.function.Consumer;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
@@ -59,6 +61,7 @@ import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.TransformedEnumerator;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgProducingVisitor.AlgConsumingVisitor;
 import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.rules.CalcSplitRule;
 import org.polypheny.db.algebra.rules.FilterScanRule;
@@ -73,9 +76,6 @@ import org.polypheny.db.plan.hep.HepProgramBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.ReflectUtil;
-import org.polypheny.db.util.ReflectiveVisitDispatcher;
-import org.polypheny.db.util.ReflectiveVisitor;
 import org.polypheny.db.util.Util;
 
 
@@ -158,6 +158,7 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
     @Override
     public void close() {
     }
+
 
     /**
      * Information about a node registered in the data flow graph.
@@ -307,20 +308,19 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
      * <p>
      * If you wish to handle more kinds of relational expressions, add extra "visit" methods in this or a sub-class, and they will be found and called via reflection.
      */
-    static class CompilerImpl extends AlgVisitor implements Compiler, ReflectiveVisitor {
+    static class CompilerImpl extends AlgVisitor implements Compiler, AlgConsumingVisitor {
 
         final ScalarCompiler scalarCompiler;
-        private final ReflectiveVisitDispatcher<CompilerImpl, AlgNode> dispatcher = ReflectUtil.createDispatcher( CompilerImpl.class, AlgNode.class );
         protected final Interpreter interpreter;
-        protected AlgNode rootRel;
+        protected AlgNode rootAlg;
         protected AlgNode alg;
         protected Node node;
         final Map<AlgNode, NodeInfo<PolyValue>> nodes = new LinkedHashMap<>();
         final Map<AlgNode, List<AlgNode>> algInputs = new HashMap<>();
         final Multimap<AlgNode, Edge> outEdges = LinkedHashMultimap.create();
 
-        private static final String REWRITE_METHOD_NAME = "rewrite";
-        private static final String VISIT_METHOD_NAME = "visit";
+        //private static final String REWRITE_METHOD_NAME = "rewrite";
+        //private static final String VISIT_METHOD_NAME = "visit";
 
 
         CompilerImpl( Interpreter interpreter, AlgOptCluster cluster ) {
@@ -329,13 +329,22 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
         }
 
 
+        @Getter
+        final ImmutableMap<Class<? extends AlgNode>, Consumer<AlgNode>> handlers = ImmutableMap.of();
+
+        @Getter
+        final Consumer<AlgNode> defaultHandler = a -> {
+            throw new AssertionError( "interpreter: no implementation for " + a.getClass() );
+        };
+
+
         /**
          * Visits the tree, starting from the root {@code p}.
          */
         Pair<AlgNode, Map<AlgNode, NodeInfo<PolyValue>>> visitRoot( AlgNode p ) {
-            rootRel = p;
+            rootAlg = p;
             visit( p, 0, null );
-            return Pair.of( rootRel, nodes );
+            return Pair.of( rootAlg, nodes );
         }
 
 
@@ -343,15 +352,15 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
         public void visit( AlgNode p, int ordinal, AlgNode parent ) {
             for ( ; ; ) {
                 alg = null;
-                boolean found = dispatcher.invokeVisitor( this, p, REWRITE_METHOD_NAME );
+                /*boolean found = dispatcher.invokeVisitor( this, p, REWRITE_METHOD_NAME );
                 if ( !found ) {
-                    throw new AssertionError( "interpreter: no implementation for rewrite" );
-                }
+                    throw new AssertionError( "interpreter: no implementation for rewrite" ); // this was never used
+                }*/
                 if ( alg == null ) {
                     break;
                 }
                 if ( RuntimeConfig.DEBUG.getBoolean() ) {
-                    System.out.println( "Interpreter: rewrite " + p + " to " + alg );
+                    log.warn( "Interpreter: rewrite " + p + " to " + alg );
                 }
                 p = alg;
                 if ( parent != null ) {
@@ -362,7 +371,7 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
                     }
                     inputs.set( ordinal, p );
                 } else {
-                    rootRel = p;
+                    rootAlg = p;
                 }
             }
 
@@ -381,8 +390,10 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
             }
 
             node = null;
-            boolean found = dispatcher.invokeVisitor( this, p, VISIT_METHOD_NAME );
-            if ( !found ) {
+            boolean found = findHandler( p.getClass() ) != null;
+            if ( found ) {
+                this.handle( p );
+            } else {
                 if ( p instanceof InterpretableAlg interpretableAlg ) {
                     node = interpretableAlg.implement( new InterpretableAlg.InterpreterImplementor( this, null ) );
                 } else {

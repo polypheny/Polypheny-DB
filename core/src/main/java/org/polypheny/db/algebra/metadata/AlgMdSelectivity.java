@@ -58,7 +58,7 @@ import org.polypheny.db.util.ImmutableBitSet;
  */
 public class AlgMdSelectivity implements MetadataHandler<BuiltInMetadata.Selectivity> {
 
-    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( BuiltInMethod.SELECTIVITY.method, new AlgMdSelectivity() );
+    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( new AlgMdSelectivity(), BuiltInMethod.SELECTIVITY.method );
 
 
     protected AlgMdSelectivity() {

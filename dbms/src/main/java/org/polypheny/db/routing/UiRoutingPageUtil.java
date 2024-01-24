@@ -19,6 +19,7 @@ package org.polypheny.db.routing;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -106,7 +107,12 @@ public class UiRoutingPageUtil {
             for ( Entry<Long, List<AllocationColumn>> entry : proposedRoutingPlan.getPhysicalPlacementsOfPartitions().entrySet() ) {
                 Long k = entry.getKey();
                 List<AllocationColumn> v = entry.getValue();
-                AllocationEntity alloc = snapshot.alloc().getEntity( k ).orElseThrow();
+                Optional<AllocationEntity> optAlloc = snapshot.alloc().getEntity( k );
+                if ( optAlloc.isEmpty() ) {
+                    log.warn( "Error when adding to UI of proposed planner." );
+                    continue;
+                }
+                AllocationEntity alloc = optAlloc.get();
                 LogicalEntity entity = snapshot.getLogicalEntity( alloc.logicalId ).orElseThrow();
 
                 if ( alloc.unwrap( AllocationTable.class ).isPresent() ) {

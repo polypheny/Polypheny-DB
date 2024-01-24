@@ -287,7 +287,7 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
         final List<Pair<String, MetadataHandler<?>>> providerList = new ArrayList<>();
         //noinspection unchecked
         final ReflectiveAlgMetadataProvider.Space space = new ReflectiveAlgMetadataProvider.Space( (Multimap) map );
-        for ( MetadataHandler<?> provider : space.providerMap.values() ) {
+        for ( MetadataHandler<?> provider : space.providers.values() ) {
             if ( providerSet.add( provider ) ) {
                 providerList.add( Pair.of( "provider" + (providerSet.size() - 1), provider ) );
             }

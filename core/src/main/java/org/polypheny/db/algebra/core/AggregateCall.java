@@ -45,7 +45,6 @@ import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.mapping.Mapping;
 import org.polypheny.db.util.mapping.Mappings;
@@ -61,12 +60,6 @@ public class AggregateCall {
     private final boolean distinct;
     private final boolean approximate;
     public final AlgDataType type;
-    /**
-     * -- GETTER --
-     * Returns the name.
-     *
-     * @return name
-     */
     @Getter
     public final String name;
 
@@ -74,6 +67,8 @@ public class AggregateCall {
     // ImmutableList uses cached Integer values.
     private final ImmutableList<Integer> argList;
     public final int filterArg;
+
+    @Getter
     public final AlgCollation collation;
 
 
@@ -116,7 +111,7 @@ public class AggregateCall {
             AggFunction aggFunction,
             boolean distinct,
             boolean approximate,
-            List<Integer> argList,
+            List<Integer> args,
             int filterArg,
             AlgCollation collation,
             int groupCount,
@@ -125,7 +120,7 @@ public class AggregateCall {
             String name ) {
         if ( type == null ) {
             final AlgDataTypeFactory typeFactory = input.getCluster().getTypeFactory();
-            final List<AlgDataType> types = PolyTypeUtil.projectTypes( input.getTupleType(), argList );
+            final List<AlgDataType> types = PolyTypeUtil.projectTypes( input.getTupleType(), args );
             final Aggregate.AggCallBinding callBinding = new Aggregate.AggCallBinding(
                     typeFactory,
                     aggFunction,
@@ -134,7 +129,7 @@ public class AggregateCall {
                     filterArg >= 0 );
             type = aggFunction.inferReturnType( callBinding );
         }
-        return create( aggFunction, distinct, approximate, argList, filterArg, collation, type, name );
+        return create( aggFunction, distinct, approximate, args, filterArg, collation, type, name );
     }
 
 
@@ -145,12 +140,12 @@ public class AggregateCall {
             AggFunction aggFunction,
             boolean distinct,
             boolean approximate,
-            List<Integer> argList,
+            List<Integer> args,
             int filterArg,
             AlgCollation collation,
             AlgDataType type,
             String name ) {
-        return new AggregateCall( aggFunction, distinct, approximate, argList, filterArg, collation, type, name );
+        return new AggregateCall( aggFunction, distinct, approximate, args, filterArg, collation, type, name );
     }
 
 
@@ -185,18 +180,8 @@ public class AggregateCall {
 
 
     /**
-     * Returns the aggregate ordering definition (the {@code WITHIN GROUP} clause in SQL), or the empty list if not specified.
-     *
-     * @return ordering definition
-     */
-    public AlgCollation getCollation() {
-        return collation;
-    }
-
-
-    /**
      * Returns the ordinals of the arguments to this call.
-     *
+     * <p>
      * The list is immutable.
      *
      * @return list of argument ordinals
@@ -233,7 +218,7 @@ public class AggregateCall {
         StringBuilder buf = new StringBuilder( aggFunction.toString() );
         buf.append( "(" );
         if ( distinct ) {
-            buf.append( (argList.size() == 0) ? "DISTINCT" : "DISTINCT " );
+            buf.append( (argList.isEmpty()) ? "DISTINCT" : "DISTINCT " );
         }
         int i = -1;
         for ( Integer arg : argList ) {
@@ -267,10 +252,9 @@ public class AggregateCall {
 
     @Override
     public boolean equals( Object o ) {
-        if ( !(o instanceof AggregateCall) ) {
+        if ( !(o instanceof AggregateCall other) ) {
             return false;
         }
-        AggregateCall other = (AggregateCall) o;
         return aggFunction.equals( other.aggFunction )
                 && (distinct == other.distinct)
                 && argList.equals( other.argList )
@@ -316,19 +300,19 @@ public class AggregateCall {
      * Creates equivalent AggregateCall that is adapted to a new input types and/or number of columns in GROUP BY.
      *
      * @param input relation that will be used as a child of aggregate
-     * @param argList argument indices of the new call in the input
+     * @param args argument indices of the new call in the input
      * @param filterArg Index of the filter, or -1
      * @param oldGroupKeyCount number of columns in GROUP BY of old aggregate
      * @param newGroupKeyCount number of columns in GROUP BY of new aggregate
      * @return AggregateCall that suits new inputs and GROUP BY columns
      */
-    public AggregateCall adaptTo( AlgNode input, List<Integer> argList, int filterArg, int oldGroupKeyCount, int newGroupKeyCount ) {
+    public AggregateCall adaptTo( AlgNode input, List<Integer> args, int filterArg, int oldGroupKeyCount, int newGroupKeyCount ) {
         // The return type of aggregate call need to be recomputed. Since it might depend on the number of columns in GROUP BY.
         final AlgDataType newType =
                 oldGroupKeyCount == newGroupKeyCount
-                        && argList.equals( this.argList )
+                        && args.equals( this.argList )
                         && filterArg == this.filterArg ? type : null;
-        return create( (Operator & AggFunction) aggFunction, distinct, approximate, argList, filterArg, collation, newGroupKeyCount, input, newType, getName() );
+        return create( aggFunction, distinct, approximate, args, filterArg, collation, newGroupKeyCount, input, newType, getName() );
     }
 
 
@@ -345,8 +329,8 @@ public class AggregateCall {
     }
 
 
-    public AggregateCall adjustedCopy( List<Integer> argList ) {
-        return new AggregateCall( aggFunction, distinct, approximate, argList, filterArg, collation, type, name );
+    public AggregateCall adjustedCopy( List<Integer> args ) {
+        return new AggregateCall( aggFunction, distinct, approximate, args, filterArg, collation, type, name );
     }
 
 }

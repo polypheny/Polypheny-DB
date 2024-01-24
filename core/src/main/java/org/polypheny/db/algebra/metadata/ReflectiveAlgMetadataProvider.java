@@ -57,23 +57,22 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.ReflectiveVisitor;
 import org.polypheny.db.util.Util;
 
 
 /**
  * Implementation of the {@link AlgMetadataProvider} interface that dispatches metadata methods to methods on a given object via reflection.
- *
+ * <p>
  * The methods on the target object must be public and non-static, and have the same signature as the implemented metadata method except for an additional first parameter of type {@link AlgNode} or a sub-class.
  * That parameter gives this provider an indication of that relational expressions it can handle.
- *
+ * <p>
  * For an example, see {@link AlgMdColumnOrigins#SOURCE}.
  */
-public class ReflectiveAlgMetadataProvider implements AlgMetadataProvider, ReflectiveVisitor {
+public class ReflectiveAlgMetadataProvider implements AlgMetadataProvider {
 
-    private final ConcurrentMap<Class<AlgNode>, UnboundMetadata> map;
+    private final ConcurrentMap<Class<AlgNode>, UnboundMetadata<Metadata>> map;
     private final Class<? extends Metadata> metadataClass0;
-    private final ImmutableMultimap<Method, MetadataHandler> handlerMap;
+    private final ImmutableMultimap<Method, MetadataHandler<Metadata>> handlerMap;
 
 
     /**
@@ -83,7 +82,7 @@ public class ReflectiveAlgMetadataProvider implements AlgMetadataProvider, Refle
      * @param metadataClass0 Metadata class
      * @param handlerMap Methods handled and the objects to call them on
      */
-    protected ReflectiveAlgMetadataProvider( ConcurrentMap<Class<AlgNode>, UnboundMetadata> map, Class<? extends Metadata> metadataClass0, Multimap<Method, MetadataHandler> handlerMap ) {
+    protected ReflectiveAlgMetadataProvider( ConcurrentMap<Class<AlgNode>, UnboundMetadata<Metadata>> map, Class<Metadata> metadataClass0, Multimap<Method, MetadataHandler<Metadata>> handlerMap ) {
         assert !map.isEmpty() : "are your methods named wrong?";
         this.map = map;
         this.metadataClass0 = metadataClass0;
@@ -93,7 +92,7 @@ public class ReflectiveAlgMetadataProvider implements AlgMetadataProvider, Refle
 
     /**
      * Returns an implementation of {@link AlgMetadataProvider} that scans for methods with a preceding argument.
-     *
+     * <p>
      * For example, {@link BuiltInMetadata.Selectivity} has a method {@link BuiltInMetadata.Selectivity#getSelectivity(RexNode)}. A class
      *
      * <blockquote><pre><code>
@@ -104,7 +103,7 @@ public class ReflectiveAlgMetadataProvider implements AlgMetadataProvider, Refle
      *
      * provides implementations of selectivity for relational expressions that extend {@link org.polypheny.db.algebra.core.Union} or {@link org.polypheny.db.algebra.core.Filter}.
      */
-    public static AlgMetadataProvider reflectiveSource( Method method, MetadataHandler target ) {
+    public static AlgMetadataProvider reflectiveSource( Method method, MetadataHandler<Metadata> target ) {
         return reflectiveSource( target, ImmutableList.of( method ) );
     }
 
@@ -112,24 +111,24 @@ public class ReflectiveAlgMetadataProvider implements AlgMetadataProvider, Refle
     /**
      * Returns a reflective metadata provider that implements several methods.
      */
-    public static AlgMetadataProvider reflectiveSource( MetadataHandler target, Method... methods ) {
+    public static AlgMetadataProvider reflectiveSource( MetadataHandler<?> target, Method... methods ) {
         return reflectiveSource( target, ImmutableList.copyOf( methods ) );
     }
 
 
-    private static AlgMetadataProvider reflectiveSource( final MetadataHandler target, final ImmutableList<Method> methods ) {
+    private static AlgMetadataProvider reflectiveSource( final MetadataHandler<?> target, final ImmutableList<Method> methods ) {
         final Space2 space = Space2.create( target, methods );
 
         // This needs to be a concurrent map since RelMetadataProvider are cached in static fields, thus the map is subject to concurrent modifications later.
         // See map.put in org.polypheny.db.alg.metadata.ReflectiveRelMetadataProvider.apply(java.lang.Class<? extends org.polypheny.db.alg.AlgNode>)
-        final ConcurrentMap<Class<AlgNode>, UnboundMetadata> methodsMap = new ConcurrentHashMap<>();
+        final ConcurrentMap<Class<AlgNode>, UnboundMetadata<Metadata>> methodsMap = new ConcurrentHashMap<>();
         for ( Class<AlgNode> key : space.classes ) {
             ImmutableNullableList.Builder<Method> builder = ImmutableNullableList.builder();
             for ( final Method method : methods ) {
                 builder.add( space.find( key, method ) );
             }
             final List<Method> handlerMethods = builder.build();
-            final UnboundMetadata function = ( alg, mq ) ->
+            final UnboundMetadata<Metadata> function = ( alg, mq ) ->
                     (Metadata) Proxy.newProxyInstance(
                             space.metadataClass0.getClassLoader(),
                             new Class[]{ space.metadataClass0 }, ( proxy, method, args ) -> {
@@ -188,17 +187,16 @@ public class ReflectiveAlgMetadataProvider implements AlgMetadataProvider, Refle
                             } );
             methodsMap.put( key, function );
         }
-        return new ReflectiveAlgMetadataProvider( methodsMap, space.metadataClass0, space.providerMap );
+        return new ReflectiveAlgMetadataProvider( methodsMap, space.metadataClass0, space.providers );
     }
-
 
     @Override
     public <M extends Metadata> Multimap<Method, MetadataHandler<M>> handlers( MetadataDef<M> def ) {
         final ImmutableMultimap.Builder<Method, MetadataHandler<M>> builder = ImmutableMultimap.builder();
-        for ( Map.Entry<Method, MetadataHandler> entry : handlerMap.entries() ) {
+        for ( Map.Entry<Method, MetadataHandler<Metadata>> entry : handlerMap.entries() ) {
             if ( def.methods.contains( entry.getKey() ) ) {
                 //noinspection unchecked
-                builder.put( entry.getKey(), entry.getValue() );
+                builder.put( entry.getKey(), (MetadataHandler<M>) entry.getValue() );
             }
         }
         return builder.build();
@@ -231,27 +229,28 @@ public class ReflectiveAlgMetadataProvider implements AlgMetadataProvider, Refle
     }
 
 
+
     @SuppressWarnings({ "unchecked" })
     public <M extends Metadata> UnboundMetadata<M> apply( Class<? extends AlgNode> algClass ) {
         List<Class<? extends AlgNode>> newSources = new ArrayList<>();
         for ( ; ; ) {
-            UnboundMetadata<M> function = map.get( algClass );
+            UnboundMetadata<Metadata> function = map.get( algClass );
             if ( function != null ) {
-                for ( @SuppressWarnings("rawtypes") Class clazz : newSources ) {
-                    map.put( clazz, function );
+                for ( Class<?> clazz : newSources ) {
+                    map.put( (Class<AlgNode>) clazz, function );
                 }
-                return function;
+                return (UnboundMetadata<M>) function;
             } else {
                 newSources.add( algClass );
             }
             for ( Class<?> interfaceClass : algClass.getInterfaces() ) {
                 if ( AlgNode.class.isAssignableFrom( interfaceClass ) ) {
-                    final UnboundMetadata<M> function2 = map.get( interfaceClass );
+                    final UnboundMetadata<Metadata> function2 = map.get( interfaceClass );
                     if ( function2 != null ) {
-                        for ( @SuppressWarnings("rawtypes") Class clazz : newSources ) {
-                            map.put( clazz, function2 );
+                        for ( Class<?> clazz : newSources ) {
+                            map.put( (Class<AlgNode>) clazz, function2 );
                         }
-                        return function2;
+                        return (UnboundMetadata<M>) function2;
                     }
                 }
             }
@@ -271,16 +270,16 @@ public class ReflectiveAlgMetadataProvider implements AlgMetadataProvider, Refle
 
         final Set<Class<AlgNode>> classes = new HashSet<>();
         final Map<Pair<Class<AlgNode>, Method>, Method> handlerMap = new HashMap<>();
-        final ImmutableMultimap<Method, MetadataHandler> providerMap;
+        final ImmutableMultimap<Method, MetadataHandler<Metadata>> providers;
 
 
-        Space( Multimap<Method, MetadataHandler> providerMap ) {
-            this.providerMap = ImmutableMultimap.copyOf( providerMap );
+        Space( Multimap<Method, MetadataHandler<Metadata>> providers ) {
+            this.providers = ImmutableMultimap.copyOf( providers );
 
             // Find the distinct set of {@link AlgNode} classes handled by this provider, ordered base-class first.
-            for ( Map.Entry<Method, MetadataHandler> entry : providerMap.entries() ) {
+            for ( Map.Entry<Method, MetadataHandler<Metadata>> entry : providers.entries() ) {
                 final Method method = entry.getKey();
-                final MetadataHandler provider = entry.getValue();
+                final MetadataHandler<?> provider = entry.getValue();
                 for ( final Method handlerMethod : provider.getClass().getMethods() ) {
                     if ( couldImplement( handlerMethod, method ) ) {
                         @SuppressWarnings("unchecked") final Class<AlgNode> algNodeClass = (Class<AlgNode>) handlerMethod.getParameterTypes()[0];
@@ -297,7 +296,7 @@ public class ReflectiveAlgMetadataProvider implements AlgMetadataProvider, Refle
          */
         Method find( final Class<? extends AlgNode> algNodeClass, Method method ) {
             Objects.requireNonNull( algNodeClass );
-            for ( Class r = algNodeClass; ; ) {
+            for ( Class<?> r = algNodeClass; ; ) {
                 Method implementingMethod = handlerMap.get( Pair.of( r, method ) );
                 if ( implementingMethod != null ) {
                     return implementingMethod;
@@ -325,28 +324,29 @@ public class ReflectiveAlgMetadataProvider implements AlgMetadataProvider, Refle
      */
     static class Space2 extends Space {
 
-        private Class<Metadata> metadataClass0;
+        private final Class<Metadata> metadataClass0;
 
 
-        Space2( Class<Metadata> metadataClass0, ImmutableMultimap<Method, MetadataHandler> providerMap ) {
+        Space2( Class<Metadata> metadataClass0, ImmutableMultimap<Method, MetadataHandler<Metadata>> providerMap ) {
             super( providerMap );
             this.metadataClass0 = metadataClass0;
         }
 
 
-        public static Space2 create( MetadataHandler target, ImmutableList<Method> methods ) {
-            assert methods.size() > 0;
+        public static Space2 create( MetadataHandler<?> target, ImmutableList<Method> methods ) {
+            assert !methods.isEmpty();
             final Method method0 = methods.get( 0 );
             //noinspection unchecked
-            Class<Metadata> metadataClass0 = (Class) method0.getDeclaringClass();
+            Class<Metadata> metadataClass0 = (Class<Metadata>) method0.getDeclaringClass();
             assert Metadata.class.isAssignableFrom( metadataClass0 );
             for ( Method method : methods ) {
                 assert method.getDeclaringClass() == metadataClass0;
             }
 
-            final ImmutableMultimap.Builder<Method, MetadataHandler> providerBuilder = ImmutableMultimap.builder();
+            final ImmutableMultimap.Builder<Method, MetadataHandler<Metadata>> providerBuilder = ImmutableMultimap.builder();
             for ( final Method method : methods ) {
-                providerBuilder.put( method, target );
+                //noinspection unchecked
+                providerBuilder.put( method, (MetadataHandler<Metadata>) target );
             }
             return new Space2( metadataClass0, providerBuilder.build() );
         }

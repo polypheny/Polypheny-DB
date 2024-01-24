@@ -127,7 +127,7 @@ import org.polypheny.db.util.mapping.Mappings;
  */
 public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicates> {
 
-    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( BuiltInMethod.PREDICATES.method, new AlgMdPredicates() );
+    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( new AlgMdPredicates(), BuiltInMethod.PREDICATES.method );
 
     private static final List<RexNode> EMPTY_LIST = ImmutableList.of();
 
