@@ -254,17 +254,17 @@ public final class DockerInstance {
     }
 
 
-    void updateConfig( String host, String alias, String registry ) {
+    void updateConfig( String hostname, String alias, String registry ) {
         synchronized ( this ) {
-            DockerHost newHost = new DockerHost( host, alias, registry, this.getHost().communicationPort(), this.getHost().handshakePort(), this.getHost().proxyPort() );
-            if ( !this.host.hostname().equals( host ) ) {
+            DockerHost newHost = new DockerHost( hostname, alias, registry, this.getHost().communicationPort(), this.getHost().handshakePort(), this.getHost().proxyPort() );
+            if ( !this.host.hostname().equals( hostname ) ) {
                 client.close();
                 status = Status.NEW;
                 // TODO: Copy/Move keys...
                 try {
                     checkConnection();
-                } catch ( IOException e ){
-                    log.info( "Failed to connect to " + host );
+                } catch ( IOException e ) {
+                    log.info( "Failed to connect to " + hostname );
                 }
             }
             this.host = newHost;
