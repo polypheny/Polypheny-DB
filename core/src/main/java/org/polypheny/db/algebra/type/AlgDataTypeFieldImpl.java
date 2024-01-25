@@ -86,10 +86,9 @@ public class AlgDataTypeFieldImpl extends Triple<String, Long, AlgDataType> impl
         if ( this == obj ) {
             return true;
         }
-        if ( !(obj instanceof AlgDataTypeFieldImpl) ) {
+        if ( !(obj instanceof AlgDataTypeFieldImpl that) ) {
             return false;
         }
-        AlgDataTypeFieldImpl that = (AlgDataTypeFieldImpl) obj;
         return this.index == that.index
                 && this.name.equals( that.name )
                 && this.type.equals( that.type );

@@ -62,7 +62,6 @@ import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.Namespace.Schema;
 import org.polypheny.db.schema.SchemaVersion;
-import org.polypheny.db.schema.TableType;
 import org.polypheny.db.schema.types.Expressible;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlDialectFactory;
@@ -141,8 +140,8 @@ public class JdbcSchema implements Namespace, Schema, Expressible {
             PhysicalTable table ) {
         return new JdbcTable(
                 this,
-                table,
-                TableType.TABLE );
+                table
+        );
     }
 
 

@@ -34,6 +34,7 @@
 package org.polypheny.db.algebra.type;
 
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
@@ -70,12 +71,6 @@ public class AlgRecordType extends AlgDataTypeImpl implements Serializable {
     @Override
     public PolyType getPolyType() {
         return PolyType.ROW;
-    }
-
-
-    @Override
-    public boolean isNullable() {
-        return false;
     }
 
 
@@ -136,6 +131,7 @@ public class AlgRecordType extends AlgDataTypeImpl implements Serializable {
      * This implementation converts this RelRecordType into a SerializableRelRecordType, whose <code>readResolve</code>
      * method converts it back to a RelRecordType during deserialization.
      */
+    @Serial
     private Object writeReplace() {
         return new SerializableAlgRecordType( fields );
     }
@@ -147,7 +143,7 @@ public class AlgRecordType extends AlgDataTypeImpl implements Serializable {
      */
     private static class SerializableAlgRecordType implements Serializable {
 
-        private List<AlgDataTypeField> fields;
+        private final List<AlgDataTypeField> fields;
 
 
         private SerializableAlgRecordType( List<AlgDataTypeField> fields ) {
@@ -158,6 +154,7 @@ public class AlgRecordType extends AlgDataTypeImpl implements Serializable {
         /**
          * Per {@link Serializable} API. See {@link AlgRecordType#writeReplace()}.
          */
+        @Serial
         private Object readResolve() {
             return new AlgRecordType( fields );
         }

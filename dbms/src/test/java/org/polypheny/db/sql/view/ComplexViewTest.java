@@ -995,7 +995,8 @@ public class ComplexViewTest {
                             ImmutableList.of( q4_TEST_DATA )
                     );
 
-                    statement.executeUpdate( "CREATE VIEW q4_VIEW AS "
+                    statement.executeUpdate(
+                            "CREATE VIEW q4_VIEW AS "
                             + "select "
                             + "o_orderpriority, "
                             + "count(*) as order_count "
@@ -1046,7 +1047,8 @@ public class ComplexViewTest {
 
                 try {
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "select "
+                            statement.executeQuery(
+                                    "select "
                                     + "sum(l_extendedprice * l_discount) as revenue "
                                     + "from "
                                     + "lineitem "
@@ -1058,7 +1060,8 @@ public class ComplexViewTest {
                             ImmutableList.of( q6_TEST_DATA )
                     );
 
-                    statement.executeUpdate( "CREATE VIEW q6_VIEW AS "
+                    statement.executeUpdate(
+                            "CREATE VIEW q6_VIEW AS "
                             + "select "
                             + "sum(l_extendedprice * l_discount) as revenue "
                             + "from "
@@ -1096,7 +1099,8 @@ public class ComplexViewTest {
 
                 try {
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "select "
+                            statement.executeQuery(
+                                    "select "
                                     + "supp_nation, "
                                     + "cust_nation, "
                                     + "l_year, "
@@ -1135,7 +1139,8 @@ public class ComplexViewTest {
                             ImmutableList.of( q7_TEST_DATA )
                     );
 
-                    statement.executeUpdate( "CREATE VIEW q7_VIEW AS "
+                    statement.executeUpdate(
+                            "CREATE VIEW q7_VIEW AS "
                             + "select "
                             + "supp_nation, "
                             + "cust_nation, "
@@ -1200,7 +1205,8 @@ public class ComplexViewTest {
 
                 try {
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "select "
+                            statement.executeQuery(
+                                    "select "
                                     + "o_year, "
                                     + "sum(case "
                                     + "when nation = 'Switzerland' then volume "
@@ -1400,7 +1406,8 @@ public class ComplexViewTest {
 
                 try {
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "select "
+                            statement.executeQuery(
+                                    "select "
                                     + "c_custkey, "
                                     + "c_name, "
                                     + "sum(l_extendedprice * (1 - l_discount)) as revenue, "
@@ -1497,7 +1504,8 @@ public class ComplexViewTest {
 
                 try {
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "select "
+                            statement.executeQuery(
+                                    "select "
                                     + "ps_partkey, "
                                     + "sum(ps_supplycost * ps_availqty) as valueAA "
                                     + "from "
@@ -1550,7 +1558,8 @@ public class ComplexViewTest {
 
                 try {
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "select "
+                            statement.executeQuery(
+                                    "select "
                                     + "l_shipmode, "
                                     + "sum(case "
                                     + "when o_orderpriority = 'orderPriority' "
@@ -1601,7 +1610,8 @@ public class ComplexViewTest {
 
                 try {
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "select "
+                            statement.executeQuery(
+                                    "select "
                                     + "count(o_orderkey) "
                                     + "from "
                                     + "customer left outer join orders on "
@@ -1613,7 +1623,8 @@ public class ComplexViewTest {
                             } ) );
 
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "select "
+                            statement.executeQuery(
+                                    "select "
                                     + "c_count, "
                                     + "count(*) as custdist "
                                     + "from "
@@ -1636,7 +1647,8 @@ public class ComplexViewTest {
                             ImmutableList.of( q13_TEST_DATA )
                     );
 
-                    statement.executeUpdate( "CREATE VIEW q13_VIEW AS "
+                    statement.executeUpdate(
+                            "CREATE VIEW q13_VIEW AS "
                             + "select "
                             + "c_count, "
                             + "count(*) as custdist "
@@ -1683,7 +1695,8 @@ public class ComplexViewTest {
 
                 try {
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "select "
+                            statement.executeQuery(
+                                    "select "
                                     + "100.00 * sum(case "
                                     + "when p_type like 'Wireless' "
                                     + "then l_extendedprice * (1 - l_discount) "
@@ -1699,7 +1712,8 @@ public class ComplexViewTest {
                             ImmutableList.of( q14_TEST_DATA )
                     );
 
-                    statement.executeUpdate( "CREATE VIEW q14_VIEW AS "
+                    statement.executeUpdate(
+                            "CREATE VIEW q14_VIEW AS "
                             + "select "
                             + "100.00 * sum(case "
                             + "when p_type like 'Wireless' "
@@ -1796,7 +1810,8 @@ public class ComplexViewTest {
 
                 try {
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "select "
+                            statement.executeQuery(
+                                    "select "
                                     + "p_brand, "
                                     + "p_type, "
                                     + "p_size, "
@@ -1848,7 +1863,8 @@ public class ComplexViewTest {
 
                 try {
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "select "
+                            statement.executeQuery(
+                                    "select "
                                     + "sum(l_extendedprice) / 7.0 as avg_yearly "
                                     + "from "
                                     + "lineitem, "
@@ -1869,7 +1885,8 @@ public class ComplexViewTest {
                     );
 
                     // @formatter:off
-                    statement.executeUpdate( "CREATE VIEW q17_VIEW AS "
+                    statement.executeUpdate(
+                            "CREATE VIEW q17_VIEW AS "
                             +"select "
                             +     "sum(l_extendedprice) / 7.0 as avg_yearly "
                             + "from "
@@ -1917,7 +1934,8 @@ public class ComplexViewTest {
 
                 try {
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "select "
+                            statement.executeQuery(
+                                    "select "
                                     + "c_name, "
                                     + "c_custkey, "
                                     + "o_orderkey, "
@@ -1972,7 +1990,8 @@ public class ComplexViewTest {
 
                 try {
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "select sum(l_extendedprice* (1 - l_discount)) as revenue "
+                            statement.executeQuery(
+                                    "select sum(l_extendedprice* (1 - l_discount)) as revenue "
                                     + "from lineitem, part "
                                     + "where (p_partkey = l_partkey and p_brand = 'Logitec' "
                                     + "and p_container in ( 'container')  "
@@ -1997,7 +2016,8 @@ public class ComplexViewTest {
                             ImmutableList.of( q19_TEST_DATA )
                     );
 
-                    statement.executeUpdate( "CREATE VIEW q19_VIEW AS "
+                    statement.executeUpdate(
+                            "CREATE VIEW q19_VIEW AS "
                             + "select sum(l_extendedprice* (1 - l_discount)) as revenue "
                             + "from lineitem, part "
                             + "where (p_partkey = l_partkey and p_brand = 'Logitec' "
@@ -2048,7 +2068,8 @@ public class ComplexViewTest {
 
                 try {
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "select "
+                            statement.executeQuery(
+                                    "select "
                                     + "s_name, "
                                     + "s_address "
                                     + "from "
@@ -2147,7 +2168,8 @@ public class ComplexViewTest {
 
                 try {
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "select "
+                            statement.executeQuery(
+                                    "select "
                                     + "cntrycode, "
                                     + "count(*) as numcust, "
                                     + "sum(c_acctbal) as totacctbal "

@@ -38,7 +38,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-import lombok.NonNull;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.ColumnMetaData.Rep;
 import org.apache.calcite.linq4j.Enumerable;
@@ -63,7 +62,6 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.TableType;
 import org.polypheny.db.schema.impl.AbstractEntityQueryable;
 import org.polypheny.db.schema.types.ModifiableTable;
 import org.polypheny.db.schema.types.QueryableEntity;
@@ -93,13 +91,10 @@ public class JdbcTable extends PhysicalTable implements TranslatableEntity, Scan
 
     private JdbcSchema jdbcSchema;
 
-    private final TableType jdbcTableType;
-
 
     public JdbcTable(
             JdbcSchema jdbcSchema,
-            PhysicalTable physical,
-            @NonNull TableType jdbcTableType ) {
+            PhysicalTable physical ) {
         super(
                 physical.id,
                 physical.allocationId,
@@ -110,7 +105,6 @@ public class JdbcTable extends PhysicalTable implements TranslatableEntity, Scan
                 physical.namespaceName,
                 physical.adapterId );
         this.jdbcSchema = jdbcSchema;
-        this.jdbcTableType = jdbcTableType;
     }
 
 
