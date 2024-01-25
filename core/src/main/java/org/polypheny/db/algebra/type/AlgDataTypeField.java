@@ -38,7 +38,7 @@ package org.polypheny.db.algebra.type;
  * RelDataTypeField represents the definition of a field in a structured {@link AlgDataType}.
  * <p>
  * Extends the {@link java.util.Map.Entry} interface to allow convenient inter-operation with Java collections classes.
- * In any implementation of this interface, {@link #getKey()} must be equivalent to {@link #getName()} and {@link #getValue()}
+ * In any implementation of this interface, {@link #getName()} must be equivalent to {@link #getName()} and {@link #getName()} ()}
  * must be equivalent to {@link #getType()}.
  */
 public interface AlgDataTypeField {

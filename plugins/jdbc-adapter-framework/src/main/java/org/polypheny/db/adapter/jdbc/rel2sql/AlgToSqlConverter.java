@@ -138,7 +138,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements AlgPro
     );
 
     @Getter
-    private Function<AlgNode, Result> defaultHandler = a -> visitChild( 0, a );
+    private Function<AlgNode, Result> defaultHandler = this::visit;
 
 
     /**
@@ -247,12 +247,12 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements AlgPro
         } else {
             builder = x.builder( e, true, Clause.GROUP_BY );
         }
-        List<SqlNode> groupByList = Expressions.list();
+        List<SqlNode> groupBys = Expressions.list();
         final List<SqlNode> selectList = new ArrayList<>();
         for ( int group : e.getGroupSet() ) {
             final SqlNode field = builder.context.field( group );
             addSelect( selectList, field, e.getTupleType() );
-            groupByList.add( field );
+            groupBys.add( field );
         }
         for ( AggregateCall aggCall : e.getAggCallList() ) {
             SqlNode aggCallSqlNode = builder.context.toSql( aggCall );
@@ -262,9 +262,9 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements AlgPro
             addSelect( selectList, aggCallSqlNode, e.getTupleType() );
         }
         builder.setSelect( new SqlNodeList( selectList, POS ) );
-        if ( !groupByList.isEmpty() || e.getAggCallList().isEmpty() ) {
+        if ( !groupBys.isEmpty() || e.getAggCallList().isEmpty() ) {
             // Some databases don't support "GROUP BY ()". We can omit it as long as there is at least one aggregate function.
-            builder.setGroupBy( new SqlNodeList( groupByList, POS ) );
+            builder.setGroupBy( new SqlNodeList( groupBys, POS ) );
         }
         return builder.result();
     }
