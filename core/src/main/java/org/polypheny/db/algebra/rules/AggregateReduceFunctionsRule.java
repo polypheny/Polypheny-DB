@@ -148,7 +148,7 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
     /**
      * Reduces all calls to AVG, STDDEV_POP, STDDEV_SAMP, VAR_POP, VAR_SAMP in the aggregates list to.
      * <p>
-     * It handles newly generated common subexpressions since this was done at the sql2rel stage.
+     * It handles newly generated common subexpressions since this was done at the sql2alg stage.
      */
     private void reduceAggs( AlgOptRuleCall ruleCall, Aggregate oldAggAlg ) {
         RexBuilder rexBuilder = oldAggAlg.getCluster().getRexBuilder();
@@ -366,7 +366,7 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
                         oldCall.filterArg,
                         oldCall.collation,
                         oldAggAlg.getGroupCount(),
-                        oldAggAlg,
+                        oldAggAlg.getInput(),
                         null,
                         null );
 

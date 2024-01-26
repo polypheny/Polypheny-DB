@@ -2230,7 +2230,7 @@ public abstract class AlgOptUtil {
     /**
      * Returns the number of {@link Join} nodes in a tree.
      */
-    public static int countJoins( AlgNode rootRel ) {
+    public static int countJoins( AlgNode rootAlg ) {
         // Visitor that counts join nodes.
         class JoinCounter extends AlgVisitor {
 
@@ -2253,7 +2253,7 @@ public abstract class AlgOptUtil {
 
         }
 
-        return new JoinCounter().run( rootRel );
+        return new JoinCounter().run( rootAlg );
     }
 
 

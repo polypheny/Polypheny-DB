@@ -50,7 +50,7 @@ import org.polypheny.db.util.ImmutableBitSet;
 
 /**
  * <code>LogicalAggregate</code> is a relational operator which eliminates duplicates and computes totals.
- *
+ * <p>
  * Rules:
  *
  * <ul>
@@ -63,7 +63,7 @@ public final class LogicalAggregate extends Aggregate implements RelAlg {
 
     /**
      * Creates a LogicalAggregate.
-     *
+     * <p>
      * Use {@link #create} unless you know what you're doing.
      *
      * @param cluster Cluster that this relational expression belongs to
