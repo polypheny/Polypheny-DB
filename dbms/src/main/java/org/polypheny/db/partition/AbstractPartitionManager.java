@@ -19,13 +19,12 @@ package org.polypheny.db.partition;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -87,7 +86,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
                         }
                     } else {
                         // contains additional -> add
-                        allocColumns = Stream.concat( existingAllocColumns.stream(), allocColumns.stream().filter( c -> !existingColumnsIds.contains( c.columnId ) ) ).collect( Collectors.toList() );
+                        allocColumns = Stream.concat( existingAllocColumns.stream(), allocColumns.stream().filter( c -> !existingColumnsIds.contains( c.columnId ) ) ).toList();
                     }
 
                 }
@@ -101,7 +100,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
 
     @Override
-    public boolean validatePartitionGroupSetup(
+    public List<List<String>> validateAdjustPartitionGroupSetup(
             List<List<String>> partitionGroupQualifiers,
             long numPartitionGroups,
             List<String> partitionGroupNames,
@@ -110,7 +109,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
         if ( numPartitionGroups == 0 && partitionGroupNames.size() < 2 ) {
             throw new GenericRuntimeException( "Partitioning of table failed! Can't partition table with less than 2 partitions/names" );
         }
-        return true;
+        return partitionGroupQualifiers;
     }
 
 
@@ -131,14 +130,14 @@ public abstract class AbstractPartitionManager implements PartitionManager {
         Map<Long, Map<Long, List<AllocationColumn>>> adapterPlacements = new HashMap<>(); // placementId -> partitionId ; placements
         if ( partitionIds != null ) {
             for ( long partitionId : partitionIds ) {
-                List<LogicalAdapter> adapters = catalog.getSnapshot().alloc().getAdaptersByPartitionGroup( table.id, partitionId );
+                List<AllocationPlacement> placements = catalog.getSnapshot().alloc().getPlacementsFromLogical( table.id );
 
-                for ( LogicalAdapter adapter : adapters ) {
-                    if ( !adapterPlacements.containsKey( adapter.id ) ) {
-                        adapterPlacements.put( adapter.id, new HashMap<>() );
+                for ( AllocationPlacement placement : placements ) {
+                    if ( !adapterPlacements.containsKey( placement.id ) ) {
+                        adapterPlacements.put( placement.id, new HashMap<>() );
                     }
-                    List<AllocationColumn> placements = catalog.getSnapshot().alloc().getColumnPlacementsOnAdapterPerTable( adapter.id, table.id );
-                    adapterPlacements.get( placements.get( 0 ).placementId ).put( partitionId, placements );
+                    List<AllocationColumn> placementColumns = catalog.getSnapshot().alloc().getColumnPlacementsOnAdapterPerTable( placement.adapterId, table.id );
+                    adapterPlacements.get( placement.id ).put( partitionId, placementColumns );
                 }
             }
         }

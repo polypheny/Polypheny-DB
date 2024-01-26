@@ -65,6 +65,7 @@ subprojects {
         from plugin
         into pluginsDir
     }
+
 }
 
 tasks.register('assemblePlugins') {

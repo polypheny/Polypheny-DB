@@ -90,16 +90,8 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public int getNumberOfPartitionsPerGroup( int numberOfPartitions ) {
-        return 1;
-    }
-
-
-    @Override
-    public boolean validatePartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, LogicalColumn partitionColumn ) {
-        super.validatePartitionGroupSetup( partitionGroupQualifiers, numPartitionGroups, partitionGroupNames, partitionColumn );
-
-        return true;
+    public List<List<String>> validateAdjustPartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, LogicalColumn partitionColumn ) {
+        return super.validateAdjustPartitionGroupSetup( partitionGroupQualifiers, numPartitionGroups, partitionGroupNames, partitionColumn );
     }
 
 
@@ -292,7 +284,7 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager {
                 .sqlPrefix( "" )
                 .sqlSuffix( "PARTITIONS" )
                 .valueSeparation( "" )
-                .options( new ArrayList<>( Arrays.asList( "HASH" ) ) )
+                .options( new ArrayList<>( List.of( "HASH" ) ) )
                 .build() );
 
         rowsAfter.add( costRow );
@@ -301,7 +293,8 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager {
         rowsAfter.add( unboundRow );
 
         // Bring all rows and columns together
-        PartitionFunctionInfo uiObject = PartitionFunctionInfo.builder()
+
+        return PartitionFunctionInfo.builder()
                 .functionTitle( FUNCTION_TITLE )
                 .description( "Automatically partitions data into HOT and COLD based on a selected cost model which is automatically applied to "
                         + "the values of the partition column. "
@@ -314,8 +307,6 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager {
                 .rowsAfter( rowsAfter )
                 .headings( new ArrayList<>( Arrays.asList( "Partition Name", "Classification" ) ) )
                 .build();
-
-        return uiObject;
     }
 
 }

@@ -32,7 +32,9 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
+import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -350,13 +352,18 @@ public class FrequencyMapImpl extends FrequencyMap {
                 List<LogicalColumn> logicalColumns = new ArrayList<>();
                 catalog.getSnapshot().alloc().getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), table.id ).forEach( cp -> logicalColumns.add( catalog.getSnapshot().rel().getColumn( cp.columnId ).orElseThrow() ) );
 
-                dataMigrator.copyData(
-                        statement.getTransaction(),
-                        catalog.getSnapshot().getAdapter( store.getAdapterId() ).orElseThrow(),
-                        table,
-                        logicalColumns,
-                        null
-                        /*hotPartitionsToCreate*/ );
+                AllocationPlacement placement = catalog.getSnapshot().alloc().getPlacement( store.getAdapterId(), table.id ).orElseThrow();
+
+                for ( long id : hotPartitionsToCreate ) {
+                    AllocationEntity entity = Catalog.snapshot().alloc().getAlloc( placement.id, id ).orElseThrow();
+                    dataMigrator.copyData(
+                            statement.getTransaction(),
+                            catalog.getSnapshot().getAdapter( store.getAdapterId() ).orElseThrow(),
+                            table,
+                            logicalColumns,
+                            entity );
+                    /*hotPartitionsToCreate*/
+                }
 
                 if ( !partitionsToRemoveFromStore.containsKey( store ) ) {
                     partitionsToRemoveFromStore.put( store, partitionsFromHotToCold );
@@ -365,7 +372,7 @@ public class FrequencyMapImpl extends FrequencyMap {
                             store,
                             Stream.of( partitionsToRemoveFromStore.get( store ), partitionsFromHotToCold )
                                     .flatMap( Collection::stream )
-                                    .collect( Collectors.toList() )
+                                    .toList()
                     );
                 }
             }

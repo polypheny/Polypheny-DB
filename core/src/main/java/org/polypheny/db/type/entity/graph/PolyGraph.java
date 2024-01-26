@@ -34,10 +34,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiPredicate;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
@@ -54,10 +54,12 @@ public class PolyGraph extends GraphObject {
 
     @Serialize
     @JsonProperty
+    @NotNull
     private final PolyMap<PolyString, PolyNode> nodes;
 
     @Serialize
     @JsonProperty
+    @NotNull
     private final PolyMap<PolyString, PolyEdge> edges;
 
 
@@ -186,7 +188,7 @@ public class PolyGraph extends GraphObject {
 
 
     private List<List<Pair<PolyString, PolyString>>> buildIdPaths( List<List<TreePart>> trees ) {
-        return trees.stream().flatMap( tree -> tree.stream().map( t -> t.getPath( new LinkedList<>() ) ) ).collect( Collectors.toList() );
+        return trees.stream().flatMap( tree -> tree.stream().map( t -> t.getPath( new LinkedList<>() ) ) ).toList();
     }
 
 
@@ -212,7 +214,7 @@ public class PolyGraph extends GraphObject {
 
             for ( TreePart part : last ) {
                 // only loop matching connections
-                for ( PolyEdge edge : edges.values().stream().filter( e -> filter.test( e, part ) ).collect( Collectors.toList() ) ) {
+                for ( PolyEdge edge : edges.values().stream().filter( e -> filter.test( e, part ) ).toList() ) {
                     PolyNode left = nodes.get( edge.source );
                     PolyNode right = nodes.get( edge.target );
                     // then check if it matches pattern of segment either ()->() or ()-() depending if direction is specified

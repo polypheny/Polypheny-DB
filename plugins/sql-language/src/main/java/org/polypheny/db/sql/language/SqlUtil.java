@@ -415,13 +415,11 @@ public abstract class SqlUtil {
     private static Iterator<SqlOperator> lookupSubjectRoutinesByName( OperatorTable opTab, SqlIdentifier funcName, final SqlSyntax syntax, FunctionCategory category ) {
         final List<Operator> operators = new ArrayList<>();
         opTab.lookupOperatorOverloads( funcName, category, syntax.getSyntax(), operators );
-        final List<SqlOperator> sqlOperators = operators.stream().map( e -> (SqlOperator) e ).collect( Collectors.toList() );
-        switch ( syntax ) {
-            case FUNCTION:
-                return Iterators.filter( sqlOperators.iterator(), Predicates.instanceOf( SqlFunction.class ) );
-            default:
-                return Iterators.filter( sqlOperators.iterator(), operator -> Objects.requireNonNull( operator ).getSqlSyntax() == syntax );
+        final List<SqlOperator> sqlOperators = operators.stream().map( e -> (SqlOperator) e ).toList();
+        if ( syntax == SqlSyntax.FUNCTION ) {
+            return Iterators.filter( sqlOperators.iterator(), Predicates.instanceOf( SqlFunction.class ) );
         }
+        return Iterators.filter( sqlOperators.iterator(), operator -> Objects.requireNonNull( operator ).getSqlSyntax() == syntax );
     }
 
 
@@ -509,7 +507,7 @@ public abstract class SqlUtil {
                             final AlgDataType paramType = paramTypes.get( argType.i );
                             return precList.compareTypePrecedence( paramType, bestMatch ) >= 0;
                         } )
-                        .collect( Collectors.toList() );
+                        .toList();
             }
         }
         //noinspection unchecked
@@ -597,7 +595,7 @@ public abstract class SqlUtil {
 
 
     public static List<List<Node>> toNodeListList( List<List<SqlNode>> sqlList ) {
-        return sqlList.stream().map( CoreUtil::toNodeList ).collect( Collectors.toList() );
+        return sqlList.stream().map( CoreUtil::toNodeList ).toList();
     }
 
 
@@ -756,7 +754,7 @@ public abstract class SqlUtil {
 
 
     static public List<List<SqlNode>> toSqlListList( List<List<? extends Node>> nodes ) {
-        return nodes.stream().map( SqlUtil::toSqlList ).collect( Collectors.toList() );
+        return nodes.stream().map( SqlUtil::toSqlList ).toList();
     }
 
 
@@ -771,7 +769,7 @@ public abstract class SqlUtil {
 
 
     static public <T extends Node> List<T> toSqlList( List<? extends Node> nodes, Class<T> clazz ) {
-        return nodes.stream().map( clazz::cast ).collect( Collectors.toList() );
+        return nodes.stream().map( clazz::cast ).toList();
     }
 
 
@@ -852,7 +850,7 @@ public abstract class SqlUtil {
             split.add( currentStatement.toString() );
         }
 
-        return split.stream().map( String::strip ).collect( Collectors.toList() );
+        return split.stream().map( String::strip ).toList();
     }
 
 }

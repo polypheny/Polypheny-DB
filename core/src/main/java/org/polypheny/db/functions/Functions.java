@@ -2056,7 +2056,7 @@ public class Functions {
 
     private static PolyValue applyToLowest( Object o, Function1<Object, PolyValue> transformer ) {
         if ( o instanceof Object[] ) {
-            return PolyList.of( Arrays.stream( ((Object[]) o) ).map( a -> applyToLowest( a, transformer ) ).collect( Collectors.toList() ) );
+            return PolyList.of( Arrays.stream( ((Object[]) o) ).map( a -> applyToLowest( a, transformer ) ).toList() );
         }
         return transformer.apply( o );
     }
@@ -2396,7 +2396,7 @@ public class Functions {
     @SuppressWarnings("unused")
     public static Object jsonValueExpressionExclude( PolyString input, List<PolyString> excluded ) {
         try {
-            PolyList<PolyList<PolyString>> collect = PolyList.copyOf( excluded.stream().map( e -> PolyList.of( Arrays.stream( e.value.split( "\\." ) ).map( PolyString::of ).collect( Collectors.toList() ) ) ).collect( Collectors.toList() ) );
+            PolyList<PolyList<PolyString>> collect = PolyList.copyOf( excluded.stream().map( e -> PolyList.of( Arrays.stream( e.value.split( "\\." ) ).map( PolyString::of ).toList() ) ).toList() );
 
             PolyValue map = dejsonize( input );
             if ( map.isMap() ) {

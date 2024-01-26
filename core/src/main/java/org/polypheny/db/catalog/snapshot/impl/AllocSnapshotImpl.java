@@ -80,7 +80,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     @NotNull
     ImmutableMap<Pair<Long, Long>, List<AllocationColumn>> adapterLogicalTablePlacements;
     @NotNull
-    ImmutableMap<Pair<Long, Long>, AllocationEntity> adapterLogicalTableAlloc;
+    ImmutableMap<Pair<Long, Long>, AllocationEntity> adapterPartitionTableAlloc;
     @NotNull
     ImmutableMap<Long, List<AllocationEntity>> logicalAllocs;
 
@@ -148,7 +148,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
         this.allocsOnAdapters = buildAllocsOnAdapters( adapters );
         this.logicalColumnToAlloc = buildColumnPlacements();
         this.adapterLogicalTablePlacements = buildAdapterLogicalTablePlacements();
-        this.adapterLogicalTableAlloc = buildAdapterLogicalTableAlloc();
+        this.adapterPartitionTableAlloc = buildAdapterPartitionTableAlloc();
         this.placementColumns = buildPlacementColumns();
         this.logicalAllocs = buildLogicalAllocs();
 
@@ -364,9 +364,9 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     }
 
 
-    private ImmutableMap<Pair<Long, Long>, AllocationEntity> buildAdapterLogicalTableAlloc() {
+    private ImmutableMap<Pair<Long, Long>, AllocationEntity> buildAdapterPartitionTableAlloc() {
         Map<Pair<Long, Long>, AllocationEntity> map = new HashMap<>();
-        this.allocs.forEach( ( k, v ) -> map.put( Pair.of( v.adapterId, v.logicalId ), v ) );
+        this.allocs.forEach( ( k, v ) -> map.put( Pair.of( v.adapterId, v.partitionId ), v ) );
         return ImmutableMap.copyOf( map );
     }
 
@@ -450,12 +450,6 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     @Override
-    public @NonNull Optional<AllocationEntity> getEntity( long id ) {
-        return Optional.ofNullable( allocs.get( id ) );
-    }
-
-
-    @Override
     public @NonNull Optional<AllocationColumn> getColumn( long placementId, long columnId ) {
         return Optional.ofNullable( columns.get( Pair.of( placementId, columnId ) ) );
     }
@@ -504,12 +498,6 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     @Override
-    public List<Long> getPartitionGroupsOnDataPlacement( long adapterId, long tableId ) {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
     public List<Long> getPartitionsOnDataPlacement( long adapterId, long tableId ) {
         throw new NotImplementedException();
     }
@@ -522,8 +510,8 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     @Override
-    public @NotNull Optional<AllocationPlacement> getPlacement( long adapterId, long logicalTableId ) {
-        return Optional.ofNullable( adapterLogicalToPlacement.get( Pair.of( adapterId, logicalTableId ) ) );
+    public @NotNull Optional<AllocationPlacement> getPlacement( long adapterId, long logicalId ) {
+        return Optional.ofNullable( adapterLogicalToPlacement.get( Pair.of( adapterId, logicalId ) ) );
     }
 
     @Override
@@ -535,12 +523,6 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     @Override
     public @NotNull Optional<PartitionProperty> getPartitionProperty( long id ) {
         return Optional.ofNullable( properties.get( id ) );
-    }
-
-
-    @Override
-    public @NotNull Optional<AllocationEntity> getEntity( long adapterId, long entityId ) {
-        return Optional.ofNullable( adapterLogicalTableAlloc.get( Pair.of( adapterId, entityId ) ) );
     }
 
 
@@ -669,7 +651,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
         if ( !adapterLogicalTablePlacements.equals( that.adapterLogicalTablePlacements ) ) {
             return false;
         }
-        if ( !adapterLogicalTableAlloc.equals( that.adapterLogicalTableAlloc ) ) {
+        if ( !adapterPartitionTableAlloc.equals( that.adapterPartitionTableAlloc ) ) {
             return false;
         }
         if ( !logicalAllocs.equals( that.logicalAllocs ) ) {

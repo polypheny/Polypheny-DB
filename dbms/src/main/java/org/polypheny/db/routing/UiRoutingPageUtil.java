@@ -19,20 +19,19 @@ package org.polypheny.db.routing;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
-import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
-import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
-import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
@@ -105,43 +104,21 @@ public class UiRoutingPageUtil {
                 ImmutableList.of( "Entity", "Field", "Allocation Id", "Adapter" ) );
         if ( proposedRoutingPlan.getPhysicalPlacementsOfPartitions() != null ) {
             for ( Entry<Long, List<AllocationColumn>> entry : proposedRoutingPlan.getPhysicalPlacementsOfPartitions().entrySet() ) {
-                Long k = entry.getKey();
-                List<AllocationColumn> v = entry.getValue();
-                Optional<AllocationEntity> optAlloc = snapshot.alloc().getEntity( k );
-                if ( optAlloc.isEmpty() ) {
-                    log.warn( "Error when adding to UI of proposed planner." );
-                    continue;
-                }
-                AllocationEntity alloc = optAlloc.get();
-                LogicalEntity entity = snapshot.getLogicalEntity( alloc.logicalId ).orElseThrow();
+                AllocationPartition alloc = snapshot.alloc().getPartition( entry.getKey() ).orElseThrow();
+                LogicalEntity entity = snapshot.getLogicalEntity( alloc.logicalEntityId ).orElseThrow();
 
-                if ( alloc.unwrap( AllocationTable.class ).isPresent() ) {
-                    AllocationTable allocTable = alloc.unwrap( AllocationTable.class ).get();
-                    List<AllocationColumn> columns = snapshot.alloc().getColumns( allocTable.id );
-
-                    for ( AllocationColumn column : columns ) {
+                if ( entity.unwrap( LogicalTable.class ).isPresent() ) {
+                    for ( AllocationColumn column : entry.getValue() ) {
                         LogicalColumn logical = snapshot.rel().getColumn( column.columnId ).orElseThrow();
                         table.addRow(
                                 entity.getNamespaceName() + "." + entity.name,
                                 logical.name,
                                 alloc.id,
-                                alloc.adapterId );
+                                column.adapterId );
                     }
 
-                } else if ( alloc.unwrap( AllocationCollection.class ).isPresent() ) {
-                    table.addRow(
-                            entity.getNamespaceName() + "." + entity.name,
-                            entity.name,
-                            alloc.id,
-                            alloc.adapterId );
-
-                } else if ( alloc.unwrap( AllocationGraph.class ).isPresent() ) {
-                    table.addRow(
-                            entity.getNamespaceName() + "." + entity.name,
-                            entity.name,
-                            alloc.id,
-                            alloc.adapterId );
-
+                } else if ( entity.unwrap( LogicalCollection.class ).isPresent() ) {
+                    throw new GenericRuntimeException( "Not supported" );
                 } else {
                     log.warn( "Error when adding to UI of proposed planner." );
                 }

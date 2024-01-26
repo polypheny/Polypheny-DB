@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
@@ -216,7 +215,7 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
                     BuiltInMethod.X_MODEL_TABLE_TO_NODE.method,
                     exp,
                     PolyString.of( entry.getKey() ).asExpression(),
-                    PolyList.of( entry.getValue().getKey().getTupleType().getFieldNames().stream().map( PolyString::of ).collect( Collectors.toList() ) ).asExpression() );
+                    PolyList.of( entry.getValue().getKey().getTupleType().getFieldNames().stream().map( PolyString::of ).toList() ).asExpression() );
             tableAsNodes.add( transformedTable );
             i++;
         }
@@ -388,7 +387,7 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.prefer( JavaRowFormat.SCALAR ) );
         Expression old = builder.append( builder.newName( "docs_" + System.nanoTime() ), impl.block );
 
-        List<String> extract = getTupleType().getFieldNames().stream().filter( n -> !n.equals( DocumentType.DOCUMENT_DATA ) ).collect( Collectors.toList() );
+        List<String> extract = getTupleType().getFieldNames().stream().filter( n -> !n.equals( DocumentType.DOCUMENT_DATA ) ).toList();
         List<Expression> expressions = new ArrayList<>();
 
         ParameterExpression target = Expressions.parameter( Object.class );

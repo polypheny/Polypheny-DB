@@ -40,7 +40,6 @@ import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.logistic.Pattern;
-import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
@@ -802,7 +801,6 @@ public class HorizontalPartitioningTest {
 
     @Test
     public void multiInsertTest() throws SQLException {
-        Snapshot snapshot = Catalog.getInstance().getSnapshot();
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -1185,6 +1183,13 @@ public class HorizontalPartitioningTest {
             try ( Statement statement = connection.createStatement() ) {
 
                 // Add Table
+                statement.executeUpdate( "CREATE TABLE beforetes( "
+                        + "tprimary INTEGER NOT NULL, "
+                        + "tvarchar VARCHAR(20) NULL, "
+                        + "tinteger INTEGER NULL, "
+                        + "PRIMARY KEY (tprimary) )" );
+
+                // Add Table
                 statement.executeUpdate( "CREATE TABLE hybridpartitioningtest( "
                         + "tprimary INTEGER NOT NULL, "
                         + "tvarchar VARCHAR(20) NULL, "
@@ -1198,9 +1203,12 @@ public class HorizontalPartitioningTest {
                     assertEquals( 1, Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).size() );
                     assertEquals( 1, Catalog.snapshot().alloc().getPartitionsFromLogical( table.id ).size() );
 
+                    long originalAdapterId = Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).get( 0 ).adapterId;
+
                     // Add second Adapter
                     statement.executeUpdate( "ALTER ADAPTERS ADD \"anotherstore\" USING 'Hsqldb' AS 'Store'"
                             + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+                    long newAdapterId = Catalog.snapshot().getAdapter( "anotherstore" ).orElseThrow().id;
 
                     // Add second placement for table on that new adapter
                     statement.executeUpdate( "ALTER TABLE \"hybridpartitioningtest\" ADD PLACEMENT ON STORE \"anotherstore\"" );
@@ -1217,12 +1225,27 @@ public class HorizontalPartitioningTest {
                     assertEquals( 2, Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).size() );
                     assertEquals( 4, Catalog.snapshot().alloc().getPartitionsFromLogical( table.id ).size() );
 
+                    AllocationPlacement origPlacement = Catalog.snapshot().alloc().getPlacement( originalAdapterId, table.id ).orElseThrow();
+                    List<AllocationEntity> originalPlacements = Catalog.snapshot().alloc().getAllocsOfPlacement( origPlacement.id );
+                    originalPlacements.stream().map( p -> p.name ).forEach( System.out::println );
+                    originalPlacements.stream().map( p -> p.partitionId ).forEach( System.out::println );
+                    System.out.println( "-------------------" );
+                    assertEquals( 4, originalPlacements.size() );
+
                     // Place Partition 1 & 2 on first adapter
                     statement.executeUpdate( "ALTER TABLE \"hybridpartitioningtest\" MODIFY PARTITIONS (\"one\", \"two\" ) ON STORE hsqldb" );
 
                     assertEquals( 6, Catalog.snapshot().alloc().getFromLogical( table.id ).size() );
                     assertEquals( 2, Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).size() );
                     assertEquals( 4, Catalog.snapshot().alloc().getPartitionsFromLogical( table.id ).size() );
+                    origPlacement = Catalog.snapshot().alloc().getPlacement( originalAdapterId, table.id ).orElseThrow();
+
+                    originalPlacements = Catalog.snapshot().alloc().getAllocsOfPlacement( origPlacement.id );
+
+                    originalPlacements.stream().map( p -> p.name ).forEach( System.out::println );
+                    originalPlacements.stream().map( p -> p.partitionId ).forEach( System.out::println );
+
+                    assertEquals( 2, originalPlacements.size() );
 
                     // Place Partition 3 & 4 on second adapter
                     statement.executeUpdate( "ALTER TABLE \"hybridpartitioningtest\" MODIFY PARTITIONS (\"three\", \"four\" ) ON STORE anotherstore" );

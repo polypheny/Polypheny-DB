@@ -35,9 +35,6 @@ public interface AllocSnapshot {
     @NotNull
     Optional<List<AllocationEntity>> getEntitiesOnAdapter( long id );
 
-    @NotNull
-    Optional<AllocationEntity> getEntity( long id );
-
     /**
      * Gets a collective list of column placements per column on an adapter.
      * Effectively used to retrieve all relevant placements including partitions.
@@ -123,15 +120,6 @@ public interface AllocSnapshot {
      * @param tableId The unique id of the table
      * @return List of partitionIds
      */
-    List<Long> getPartitionGroupsOnDataPlacement( long adapterId, long tableId );
-
-    /**
-     * Get all partitions of a DataPlacement (identified by adapterId and tableId)
-     *
-     * @param adapterId The unique id of the adapter
-     * @param tableId The unique id of the table
-     * @return List of partitionIds
-     */
     List<Long> getPartitionsOnDataPlacement( long adapterId, long tableId );
 
     /**
@@ -158,10 +146,6 @@ public interface AllocSnapshot {
 
     @NotNull
     Optional<PartitionProperty> getPartitionProperty( long id );
-
-    @NotNull
-    @Deprecated
-    Optional<AllocationEntity> getEntity( long adapterId, long entityId );
 
     @NotNull
     List<AllocationColumn> getColumns( long placementId );
@@ -201,5 +185,6 @@ public interface AllocSnapshot {
 
     @NotNull
     List<AllocationPartition> getPartitionsFromGroup( long groupId );
+
 
 }

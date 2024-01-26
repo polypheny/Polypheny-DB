@@ -46,7 +46,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.jdbc.JdbcTable;
@@ -475,7 +474,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements AlgPro
      * Converts a list of {@link RexNode} expressions to {@link SqlNode} expressions.
      */
     private SqlNodeList exprList( final Context context, List<? extends RexNode> exprs ) {
-        return new SqlNodeList( exprs.stream().map( e -> context.toSql( null, e ) ).collect( Collectors.toList() ), POS );
+        return new SqlNodeList( exprs.stream().map( e -> context.toSql( null, e ) ).toList(), POS );
     }
 
 
@@ -483,7 +482,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements AlgPro
      * Converts a list of names expressions to a list of single-part {@link SqlIdentifier}s.
      */
     private SqlNodeList identifierList( List<String> names ) {
-        return new SqlNodeList( names.stream().map( name -> new SqlIdentifier( name, POS ) ).collect( Collectors.toList() ), POS );
+        return new SqlNodeList( names.stream().map( name -> new SqlIdentifier( name, POS ) ).toList(), POS );
     }
 
 
@@ -491,7 +490,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements AlgPro
      * Converts a list of names expressions to a list of single-part {@link SqlIdentifier}s.
      */
     private SqlNodeList physicalIdentifierList( JdbcTable entity, List<String> columnNames ) {
-        return new SqlNodeList( entity.columns.stream().filter( c -> columnNames.contains( c.logicalName ) ).map( c -> new SqlIdentifier( c.name, ParserPos.ZERO ) ).collect( Collectors.toList() ), POS );
+        return new SqlNodeList( entity.columns.stream().filter( c -> columnNames.contains( c.logicalName ) ).map( c -> new SqlIdentifier( c.name, ParserPos.ZERO ) ).toList(), POS );
     }
 
 

@@ -321,7 +321,7 @@ public class MqlToAlgConverter {
             return new SubstitutionGraph( graph.id, query.getCollection(), false, graph.caseSensitive, List.of( PolyString.of( query.getCollection() ) ) );
         }
 
-        return optionalGraph.orElseThrow();
+        throw new GenericRuntimeException( "The used entity does not exist." );
     }
 
 
@@ -740,7 +740,7 @@ public class MqlToAlgConverter {
      * @return the {@link Values} representation of the values
      */
     private AlgNode convertMultipleValues( BsonArray array, AlgDataType rowType ) {
-        LogicalDocumentValues docs = (LogicalDocumentValues) LogicalDocumentValues.create( cluster, array.asArray().stream().map( a -> BsonUtil.toPolyValue( a ).asDocument() ).collect( Collectors.toList() ) );
+        LogicalDocumentValues docs = (LogicalDocumentValues) LogicalDocumentValues.create( cluster, array.asArray().stream().map( a -> BsonUtil.toPolyValue( a ).asDocument() ).toList() );
         if ( usesDocumentModel ) {
             return docs;
         } else {
@@ -1491,7 +1491,7 @@ public class MqlToAlgConverter {
         if ( bsonValue.isArray() ) {
             List<RexNode> operands = convertArray( parentKey, bsonValue.asArray(), false, rowType, errorMsg );
             if ( isNegated ) {
-                operands = operands.stream().map( this::negate ).collect( Collectors.toList() );
+                operands = operands.stream().map( this::negate ).toList();
             }
             return getFixedCall( operands, op, PolyType.BOOLEAN );
         } else {

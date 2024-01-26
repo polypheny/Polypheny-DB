@@ -39,7 +39,7 @@ public interface PartitionManager {
 
     Map<Long, List<AllocationColumn>> getRelevantPlacements( LogicalTable table, List<AllocationEntity> allocs, List<Long> excludedAdapters );
 
-    boolean validatePartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, LogicalColumn partitionColumn );
+    List<List<String>> validateAdjustPartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, LogicalColumn partitionColumn );
 
     /**
      * Returns all placements of catalogEntity and partitionIds

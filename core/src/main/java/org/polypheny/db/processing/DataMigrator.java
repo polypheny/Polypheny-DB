@@ -42,6 +42,13 @@ public interface DataMigrator {
             LogicalAdapter store,
             LogicalTable source,
             List<LogicalColumn> columns,
+            AllocationEntity target );
+
+    void copyData(
+            Transaction transaction,
+            LogicalAdapter store,
+            LogicalTable source,
+            List<LogicalColumn> columns,
             AllocationPlacement target );
 
     /**
@@ -72,9 +79,6 @@ public interface DataMigrator {
      * @param transaction Transactional scope
      * @param store Target Store where data should be migrated to
      * @param sourceTables Source Table from where data is queried
-     * @param targetProperty
-     * @param targetTables
-     * @param table
      */
     void copyAllocationData(
             Transaction transaction,

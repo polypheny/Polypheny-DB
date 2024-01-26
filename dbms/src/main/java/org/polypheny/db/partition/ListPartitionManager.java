@@ -76,8 +76,8 @@ public class ListPartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public boolean validatePartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, LogicalColumn partitionColumn ) {
-        super.validatePartitionGroupSetup( partitionGroupQualifiers, numPartitionGroups, partitionGroupNames, partitionColumn );
+    public List<List<String>> validateAdjustPartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, LogicalColumn partitionColumn ) {
+        partitionGroupQualifiers = super.validateAdjustPartitionGroupSetup( partitionGroupQualifiers, numPartitionGroups, partitionGroupNames, partitionColumn );
 
         if ( partitionColumn.type.getFamily() == PolyTypeFamily.NUMERIC ) {
             for ( List<String> singlePartitionQualifiers : partitionGroupQualifiers ) {
@@ -101,7 +101,7 @@ public class ListPartitionManager extends AbstractPartitionManager {
                     "' + (mandatory 'Unbound' partition) is not equal to number of specified partitions '" + numPartitionGroups + "'" );
         }
 
-        return true;
+        return partitionGroupQualifiers;
     }
 
 

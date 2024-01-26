@@ -762,7 +762,7 @@ public interface CypherFactory {
     }
 
     static List<CypherPrivilegeQualifier> functionQualifier( ParserPos pos, List<String> executables ) {
-        return executables.stream().map( e -> new CypherPrivilegeQualifier( pos, ImmutableList.of( e ), CypherPrivilegeQualifier.QualifierType.ALL ) ).collect( Collectors.toList() );
+        return executables.stream().map( e -> new CypherPrivilegeQualifier( pos, ImmutableList.of( e ), CypherPrivilegeQualifier.QualifierType.ALL ) ).toList();
     }
 
     static List<CypherPrivilegeQualifier> procedureQualifier( ParserPos pos, List<String> executables ) {
