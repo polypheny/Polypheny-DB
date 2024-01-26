@@ -227,7 +227,7 @@ public class JdbcRules {
 
         /**
          * Returns whether a condition is supported by {@link JdbcJoin}.
-         *
+         * <p>
          * Corresponds to the capabilities of {@link SqlImplementor#convertConditionToSqlNode}.
          *
          * @param node Condition
@@ -263,6 +263,7 @@ public class JdbcRules {
                     return false;
             }
         }
+
 
     }
 

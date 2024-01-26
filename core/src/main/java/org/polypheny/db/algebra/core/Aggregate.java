@@ -337,11 +337,7 @@ public abstract class Aggregate extends SingleAlg {
         }
         for ( Ord<AggregateCall> aggCall : Ord.zip( aggCalls ) ) {
             final String base;
-            if ( aggCall.e.name != null ) {
-                base = aggCall.e.name;
-            } else {
-                base = "$f" + (groupList.size() + aggCall.i);
-            }
+            base = Objects.requireNonNullElseGet( aggCall.e.name, () -> "$f" + (groupList.size() + aggCall.i) );
             String name = base;
             int i = 0;
             while ( containedNames.contains( name ) ) {

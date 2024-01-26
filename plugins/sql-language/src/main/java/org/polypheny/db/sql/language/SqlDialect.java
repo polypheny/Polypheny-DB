@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.avatica.util.DateTimeUtils;
@@ -126,6 +127,11 @@ public class SqlDialect {
     private final String identifierEndQuoteString;
     private final String identifierEscapedQuote;
     private final DatabaseProduct databaseProduct;
+    /**
+     * -- GETTER --
+     *  Returns how NULL values are sorted if an ORDER BY item does not contain NULLS ASCENDING or NULLS DESCENDING.
+     */
+    @Getter
     protected final NullCollation nullCollation;
     private final AlgDataTypeSystem dataTypeSystem;
 
@@ -490,15 +496,10 @@ public class SqlDialect {
 
 
     public boolean supportsAggregateFunction( Kind kind ) {
-        switch ( kind ) {
-            case COUNT:
-            case SUM:
-            case SUM0:
-            case MIN:
-            case MAX:
-                return true;
-        }
-        return false;
+        return switch ( kind ) {
+            case COUNT, SUM, SUM0, MIN, MAX -> true;
+            default -> false;
+        };
     }
 
 
@@ -536,37 +537,10 @@ public class SqlDialect {
      * It only applies to built-in scalar functions and operators, since user-defined functions and procedures should be read by JdbcSchema.
      */
     public boolean supportsFunction( SqlOperator operator, AlgDataType type, List<AlgDataType> paramTypes ) {
-        switch ( operator.kind ) {
-            case AND:
-            case BETWEEN:
-            case CASE:
-            case CAST:
-            case CEIL:
-            case COALESCE:
-            case DIVIDE:
-            case EQUALS:
-            case FLOOR:
-            case GREATER_THAN:
-            case GREATER_THAN_OR_EQUAL:
-            case IN:
-            case IS_NULL:
-            case IS_NOT_NULL:
-            case LESS_THAN:
-            case LESS_THAN_OR_EQUAL:
-            case MINUS:
-            case MOD:
-            case NOT:
-            case NOT_IN:
-            case NOT_EQUALS:
-            case NVL:
-            case OR:
-            case PLUS:
-            case ROW:
-            case TIMES:
-                return true;
-            default:
-                return BUILT_IN_OPERATORS_LIST.contains( operator );
-        }
+        return switch ( operator.kind ) {
+            case AND, BETWEEN, CASE, CAST, CEIL, COALESCE, DIVIDE, EQUALS, FLOOR, GREATER_THAN, GREATER_THAN_OR_EQUAL, IN, IS_NULL, IS_NOT_NULL, LESS_THAN, LESS_THAN_OR_EQUAL, MINUS, MOD, NOT, NOT_IN, NOT_EQUALS, NVL, OR, PLUS, ROW, TIMES -> true;
+            default -> BUILT_IN_OPERATORS_LIST.contains( operator );
+        };
     }
 
 
@@ -733,31 +707,18 @@ public class SqlDialect {
 
 
     /**
-     * Returns how NULL values are sorted if an ORDER BY item does not contain NULLS ASCENDING or NULLS DESCENDING.
-     */
-    public NullCollation getNullCollation() {
-        return nullCollation;
-    }
-
-
-    /**
      * Returns whether NULL values are sorted first or last, in this dialect, in an ORDER BY item of a given direction.
      */
     public AlgFieldCollation.NullDirection defaultNullDirection( AlgFieldCollation.Direction direction ) {
-        switch ( direction ) {
-            case ASCENDING:
-            case STRICTLY_ASCENDING:
-                return getNullCollation().last( false )
-                        ? AlgFieldCollation.NullDirection.LAST
-                        : AlgFieldCollation.NullDirection.FIRST;
-            case DESCENDING:
-            case STRICTLY_DESCENDING:
-                return getNullCollation().last( true )
-                        ? AlgFieldCollation.NullDirection.LAST
-                        : AlgFieldCollation.NullDirection.FIRST;
-            default:
-                return AlgFieldCollation.NullDirection.UNSPECIFIED;
-        }
+        return switch ( direction ) {
+            case ASCENDING, STRICTLY_ASCENDING -> getNullCollation().last( false )
+                    ? AlgFieldCollation.NullDirection.LAST
+                    : AlgFieldCollation.NullDirection.FIRST;
+            case DESCENDING, STRICTLY_DESCENDING -> getNullCollation().last( true )
+                    ? AlgFieldCollation.NullDirection.LAST
+                    : AlgFieldCollation.NullDirection.FIRST;
+            default -> AlgFieldCollation.NullDirection.UNSPECIFIED;
+        };
     }
 
 

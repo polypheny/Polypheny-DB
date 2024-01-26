@@ -20,6 +20,7 @@ package org.polypheny.db.sql.language;
 import com.google.common.base.Preconditions;
 import java.util.List;
 import java.util.Objects;
+import lombok.Setter;
 import org.polypheny.db.algebra.constant.JoinConditionType;
 import org.polypheny.db.algebra.constant.JoinType;
 import org.polypheny.db.algebra.constant.Kind;
@@ -39,6 +40,7 @@ public class SqlJoin extends SqlCall {
 
     public static final SqlJoinOperator OPERATOR = new SqlJoinOperator();
 
+    @Setter
     SqlNode left;
 
     /**
@@ -50,6 +52,7 @@ public class SqlJoin extends SqlCall {
      * Value must be a {@link SqlLiteral}, one of the integer codes for {@link JoinType}.
      */
     SqlLiteral joinType;
+    @Setter
     SqlNode right;
 
     /**
@@ -161,11 +164,6 @@ public class SqlJoin extends SqlCall {
     }
 
 
-    public void setLeft( SqlNode left ) {
-        this.left = left;
-    }
-
-
     public final boolean isNatural() {
         return natural.booleanValue();
     }
@@ -178,11 +176,6 @@ public class SqlJoin extends SqlCall {
 
     public final SqlNode getRight() {
         return right;
-    }
-
-
-    public void setRight( SqlNode right ) {
-        this.right = right;
     }
 
 

@@ -195,7 +195,6 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements AlgPro
     }
 
 
-    @SuppressWarnings("unused")
     public Result visit( Filter e ) {
         final AlgNode input = e.getInput();
         Result x = visitChild( 0, input );
@@ -218,7 +217,6 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements AlgPro
     }
 
 
-    @SuppressWarnings("unused")
     public Result visit( Project e ) {
         Result x = visitChild( 0, e.getInput() );
         parseCorrelTable( e, x );
