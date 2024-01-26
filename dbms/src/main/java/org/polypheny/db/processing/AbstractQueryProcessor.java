@@ -429,7 +429,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         // Can we return earlier?
         if ( plans.stream().allMatch( obj -> Objects.nonNull( obj.result() ) && Objects.nonNull( obj.optimalNode() ) ) ) {
-            return new ProposedImplementations( plans.stream().filter( Plan::isValid ).collect( Collectors.toList() ), logicalQueryInformation );
+            return new ProposedImplementations( plans.stream().filter( Plan::isValid ).toList(), logicalQueryInformation );
         }
 
         //
@@ -516,7 +516,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         // Finally, all optionals should be of certain values.
         return new ProposedImplementations(
-                plans.stream().filter( Plan::isValid ).collect( Collectors.toList() ),
+                plans.stream().filter( Plan::isValid ).toList(),
                 logicalQueryInformation );
     }
 
@@ -534,7 +534,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         }
 
         if ( plans == null ) {
-            plans = route( indexLookupRoot, statement, logicalQueryInformation ).stream().map( p -> new Plan().proposedRoutingPlan( p ) ).collect( Collectors.toList() );
+            plans = route( indexLookupRoot, statement, logicalQueryInformation ).stream().map( p -> new Plan().proposedRoutingPlan( p ) ).toList();
         }
         return plans;
     }
@@ -886,7 +886,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                             replacement,
                             IntStream.range( 0, compositeType.getFieldCount() )
                                     .mapToObj( i -> rexBuilder.makeInputRef( replacement, i ) )
-                                    .collect( Collectors.toList() ),
+                                    .toList(),
                             compositeType );
                     IndexManager.getInstance().incrementHit();
                     return rProject;
@@ -1067,9 +1067,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         // parameterRowType
         AlgDataType newParameterRowType = statement.getTransaction().getTypeFactory().createStructType(
-                types.stream().map( t -> 1L ).collect( Collectors.toList() ),
+                types.stream().map( t -> 1L ).toList(),
                 types,
-                IntStream.range( 0, types.size() ).mapToObj( i -> "?" + i ).collect( Collectors.toList() ) );
+                IntStream.range( 0, types.size() ).mapToObj( i -> "?" + i ).toList() );
 
         return new Pair<>(
                 new AlgRoot( parameterized, routedRoot.validatedRowType, routedRoot.kind, routedRoot.fields, routedRoot.collation ),

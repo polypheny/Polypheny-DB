@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
@@ -113,7 +112,7 @@ public class IcarusRouter extends FullPlacementQueryRouter {
                 final RoutedAlgBuilder builder = builders.stream().filter( b -> {
                     final List<AllocationColumn> listPairs = b.getPhysicalPlacementsOfPartitions().values().stream()
                             .flatMap( Collection::stream )
-                            .collect( Collectors.toList() );
+                            .toList();
                     final Optional<Long> found = listPairs.stream()
                             .map( elem -> elem.placementId )
                             .filter( elem -> elem == placementId )

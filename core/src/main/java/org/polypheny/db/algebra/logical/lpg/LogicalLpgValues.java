@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
@@ -100,12 +99,12 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
         List<AlgDataTypeField> fields = new ArrayList<>();
 
         int i = 0;
-        for ( PolyString name : Pair.left( nodes ).stream().filter( Objects::nonNull ).collect( Collectors.toList() ) ) {
+        for ( PolyString name : Pair.left( nodes ).stream().filter( Objects::nonNull ).toList() ) {
             fields.add( new AlgDataTypeFieldImpl( -1L, name.value, i, nodeType ) );
             i++;
         }
 
-        for ( PolyString name : Pair.left( edges ).stream().filter( s -> s.value != null ).collect( Collectors.toList() ) ) {
+        for ( PolyString name : Pair.left( edges ).stream().filter( s -> s.value != null ).toList() ) {
             fields.add( new AlgDataTypeFieldImpl( -1L, name.value, i, edgeType ) );
             i++;
         }

@@ -1,4 +1,4 @@
-name: Polypheny-DB Adapter Matrix CI
+name: Polypheny-DB Plugin Matrix CI
 
 on:
     push:
@@ -8,12 +8,13 @@ on:
 jobs:
     build:
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
-        runs-on: ubuntu-latest
+        runs-on: ${{ matrix.os }}
         strategy:
             fail-fast: false
             matrix:
-                adapter: [ mongodb, hsqldb, monetdb, postgresql, file, cottontail, neo4j ]
-        name: Integration Tests (Java 17)
+                java: [ 17, 21 ]
+                os: [ macos-latest, ubuntu-latest, windows-latest ]
+        name: Java ${{ matrix.java }} @ ${{ matrix.os }}
         steps:
             -   name: Checkout
                 uses: actions/checkout@v4
@@ -21,7 +22,7 @@ jobs:
                 uses: actions/setup-java@v4
                 with:
                     distribution: 'temurin'
-                    java-version: 17
+                    java-version: ${{ matrix.java }}
             -   name: Set env variable
                 run: |
                     echo "POLYPHENY_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
@@ -37,9 +38,9 @@ jobs:
                     max_attempts: 1
                     timeout_minutes: 60
                     command: ./gradlew assemblePlugins
-            -   name: Execute integration tests for ${{ matrix.adapter }}
+            -   name: Execute tests
                 uses: nick-fields/retry@v2
                 with:
                     max_attempts: 1
                     timeout_minutes: 30
-                    command: ./gradlew integrationTests -Dstore.default=${{ matrix.adapter }}
+                    command: ./gradlew -p test

@@ -39,7 +39,6 @@ import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.core.JoinAlgType;
-import org.polypheny.db.algebra.core.document.DocumentAlg;
 import org.polypheny.db.algebra.core.document.DocumentScan;
 import org.polypheny.db.algebra.core.document.DocumentValues;
 import org.polypheny.db.algebra.core.lpg.LpgAlg;
@@ -60,7 +59,6 @@ import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
 import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
-import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
@@ -120,7 +118,6 @@ public abstract class BaseRouter implements Router {
     protected List<AllocationColumn> getPlacementsOfPartition( AllocationPartition partition, LogicalTable table, List<LogicalColumn> columns, List<Long> excludedAdapterIds ) {
         Snapshot snapshot = Catalog.snapshot();
 
-        List<AllocationColumn> columnPlacements = new ArrayList<>();
         List<Long> columnIds = columns.stream().map( c -> c.id ).toList();
 
         Map<Long, List<AllocationColumn>> columnsOfPlacements = new HashMap<>();
@@ -132,11 +129,11 @@ public abstract class BaseRouter implements Router {
                 continue;
             }
 
-            List<AllocationColumn> allocColumns = snapshot.alloc().getColumns( placement.id ).stream().filter( c -> columnIds.contains( c.columnId ) ).collect( Collectors.toList() );
+            List<AllocationColumn> allocColumns = snapshot.alloc().getColumns( placement.id ).stream().filter( c -> columnIds.contains( c.columnId ) ).toList();
             columnsOfPlacements.put( placement.id, allocColumns );
         }
 
-        List<List<AllocationColumn>> mostToLeastColumns = columnsOfPlacements.values().stream().sorted( ( a, b ) -> b.size() - a.size() ).collect( Collectors.toList() );
+        List<List<AllocationColumn>> mostToLeastColumns = columnsOfPlacements.values().stream().sorted( ( a, b ) -> b.size() - a.size() ).toList();
 
         return selectBiggest( columns, mostToLeastColumns );
     }
@@ -164,53 +161,12 @@ public abstract class BaseRouter implements Router {
 
         return Stream.concat(
                 allocColumns.stream(), selectBiggest(
-                        columns.stream().filter( c -> !allocIds.contains( c.id ) ).collect( Collectors.toList() ),
+                        columns.stream().filter( c -> !allocIds.contains( c.id ) ).toList(),
                         mostToLeastColumnsUpdated
                 ).stream()
-        ).collect( Collectors.toList() );
+        ).toList();
     }
 
-
-    /**
-     * Execute the table scan on the first placement of a table
-     *
-     * Recursively take the largest placements to build the complete placement (guarantees least amount of placements used => least amount of scans)
-     */
-    protected Map<Long, List<AllocationColumn>> selectPlacementOld( LogicalTable table, List<LogicalColumn> logicalColumns, List<Long> excludedAdapterIds ) {
-        // Find the adapter with the most column placements
-        long adapterIdWithMostPlacements = -1;
-        int numOfPlacements = 0;
-        for ( Entry<Long, List<Long>> entry : Catalog.snapshot().alloc().getColumnPlacementsByAdapters( table.id ).entrySet() ) {
-            if ( !excludedAdapterIds.contains( entry.getKey() ) && entry.getValue().size() > numOfPlacements ) {
-                adapterIdWithMostPlacements = entry.getKey();
-                numOfPlacements = entry.getValue().size();
-            }
-        }
-
-        List<LogicalColumn> missingColumns = new ArrayList<>();
-
-        // Take the adapter with most placements as base and add missing column placements recursively
-        List<AllocationColumn> placementList = new ArrayList<>();
-        AllocationPlacement longestPlacement = catalog.getSnapshot().alloc().getPlacement( adapterIdWithMostPlacements, table.id ).orElseThrow();
-        for ( LogicalColumn column : logicalColumns ) {
-            Optional<AllocationColumn> optionalColumn = catalog.getSnapshot().alloc().getColumn( longestPlacement.id, column.id );
-            optionalColumn.ifPresentOrElse(
-                    placementList::add,
-                    () -> missingColumns.add( column )
-            );
-        }
-
-        Map<Long, List<AllocationColumn>> placementToColumns = new HashMap<>();
-        placementToColumns.put( longestPlacement.id, placementList );
-        if ( !missingColumns.isEmpty() ) {
-            List<Long> newExcludedAdapterIds = new ArrayList<>( excludedAdapterIds );
-            newExcludedAdapterIds.add( longestPlacement.adapterId );
-            Map<Long, List<AllocationColumn>> rest = selectPlacement( table, missingColumns, newExcludedAdapterIds );
-            placementToColumns.putAll( rest );
-        }
-        return placementToColumns;
-
-    }
 
 
     public AlgNode recursiveCopy( AlgNode node ) {
@@ -245,7 +201,7 @@ public abstract class BaseRouter implements Router {
         if ( table.getRowType().getFieldCount() == builder.peek().getTupleType().getFieldCount() && !table.getRowType().equals( builder.peek().getTupleType() ) ) {
             // we adjust the
             Map<String, Integer> namesIndexMapping = table.getRowType().getFields().stream().collect( Collectors.toMap( AlgDataTypeField::getName, AlgDataTypeField::getIndex ) );
-            List<Integer> target = builder.peek().getTupleType().getFields().stream().map( f -> namesIndexMapping.get( f.getName() ) ).collect( Collectors.toList() );
+            List<Integer> target = builder.peek().getTupleType().getFields().stream().map( f -> namesIndexMapping.get( f.getName() ) ).toList();
             builder.permute( Mappings.bijection( target ) );
         }
 
@@ -281,7 +237,7 @@ public abstract class BaseRouter implements Router {
 
 
     protected List<RoutedAlgBuilder> handleValues( LogicalValues node, List<RoutedAlgBuilder> builders ) {
-        return builders.stream().map( builder -> builder.values( node.tuples, node.getTupleType() ) ).collect( Collectors.toList() );
+        return builders.stream().map( builder -> builder.values( node.tuples, node.getTupleType() ) ).toList();
     }
 
 
@@ -330,8 +286,6 @@ public abstract class BaseRouter implements Router {
 
         for ( Map.Entry<Long, List<AllocationColumn>> partitionToColumnsPlacements : partitionsColumnsPlacements.entrySet() ) {
 
-            //List<AllocationPartition> partitions = catalog.getSnapshot().alloc().getPartitionsFromLogical( placements.values().iterator().next().get( 0 ).logicalTableId );
-            //long placementId = placementToColumns.getKey();
             List<AllocationColumn> currentPlacements = partitionToColumnsPlacements.getValue();
             long partitionId = partitionToColumnsPlacements.getKey();
             // Sort by adapter
@@ -385,10 +339,7 @@ public abstract class BaseRouter implements Router {
                     AllocationColumn column = ordered.get( 0 );
                     AllocationEntity cpp = catalog.getSnapshot().alloc().getAlloc( column.placementId, partitionId ).orElseThrow();
 
-                    handleRelScan(
-                            builder,
-                            statement,
-                            cpp );
+                    handleRelScan( builder, statement, cpp );
                     if ( first ) {
                         first = false;
                     } else {
@@ -463,19 +414,6 @@ public abstract class BaseRouter implements Router {
     }
 
 
-    private AlgNode handleOnePartitionScan( Statement statement, AlgOptCluster cluster, Map<Long, List<AllocationColumn>> partitionsColumns, RoutedAlgBuilder builder, Long partitionId ) {
-        List<AllocationColumn> columns = partitionsColumns.get( partitionId );
-
-        // each column is one entity
-        List<AllocationTable> tables = columns.stream().map( c -> catalog.getSnapshot().alloc().getAlloc( c.placementId, partitionId ).orElseThrow().unwrap( AllocationTable.class ).orElseThrow() ).toList();
-
-        List<AlgNode> nodes = tables.stream().map( t -> handleRelScan( RoutedAlgBuilder.create( statement, cluster ), statement, t ).build() ).toList();
-        // todo remove multiple scans, add projection
-        nodes.forEach( builder::push );
-
-        return nodes.size() == 1 ? builder.build() : builder.union( true ).build();
-    }
-
 
     public AlgNode handleGraphScan( LogicalLpgScan alg, Statement statement, @Nullable AllocationEntity targetAlloc, @Nullable List<Long> excludedPlacements ) {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
@@ -484,13 +422,21 @@ public abstract class BaseRouter implements Router {
 
         LogicalGraph graph = alg.entity.unwrap( LogicalGraph.class ).orElseThrow();
 
-        List<Long> placements = snapshot.alloc().getFromLogical( graph.id ).stream().filter( p -> excludedPlacements == null || !excludedPlacements.contains( p.id ) ).map( p -> p.adapterId ).toList();
+        List<AllocationPlacement> placements = snapshot.alloc().getPlacementsFromLogical( graph.id ).stream().filter( p -> excludedPlacements == null || !excludedPlacements.contains( p.id ) ).toList();
         if ( targetAlloc != null ) {
             return new LogicalLpgScan( alg.getCluster(), alg.getTraitSet(), targetAlloc, alg.getTupleType() );
         }
 
-        for ( long placement : placements ) {
-            AllocationEntity entity = snapshot.alloc().getEntity( placement, graph.id ).orElseThrow();
+        for ( AllocationPlacement placement : placements ) {
+            List<AllocationPartition> partitions = snapshot.alloc().getPartitionsFromLogical( graph.id );
+            if ( partitions.size() != 1 ) {
+                throw new GenericRuntimeException( "Graphs with multiple partitions are not supported yet." );
+            }
+            Optional<AllocationEntity> optEntity = snapshot.alloc().getAlloc( placement.id, partitions.get( 0 ).id );
+            if ( optEntity.isEmpty() ) {
+                throw new GenericRuntimeException( "Error while routing graph query." );
+            }
+            AllocationEntity entity = optEntity.orElseThrow();
 
             // a native placement was used, we go with that
             return new LogicalLpgScan( alg.getCluster(), alg.getTraitSet(), entity, alg.getTupleType() );
@@ -538,38 +484,6 @@ public abstract class BaseRouter implements Router {
         return new LogicalTransformer( alg.getCluster(), alg.getTraitSet(), Pair.right( scans ), Pair.left( scans ), namespace.dataModel.getModelTrait(), ModelTrait.GRAPH, GraphType.of(), true );
     }
 
-
-    private AlgNode handleGraphOnRelational( LogicalLpgScan alg, LogicalNamespace namespace, Statement statement, Long placementId ) {
-        AlgOptCluster cluster = alg.getCluster();
-        List<LogicalTable> tables = Catalog.snapshot().rel().getTables( namespace.id, null );
-        List<Pair<String, AlgNode>> scans = tables.stream()
-                .map( t -> Pair.of( t.name, buildJoinedScan( statement, cluster, tables.get( 0 ), null ) ) )
-                .toList();
-
-        // Builder infoBuilder = cluster.getTypeFactory().builder();
-        // infoBuilder.add( "g", null, PolyType.GRAPH );
-
-        return LogicalTransformer.create( cluster, Pair.right( scans ), Pair.left( scans ), ModelTrait.RELATIONAL, ModelTrait.GRAPH, GraphType.of(), true );
-    }
-
-
-    private AlgNode handleGraphOnDocument( LogicalLpgScan alg, LogicalNamespace namespace, Statement statement, Long placementId ) {
-        AlgOptCluster cluster = alg.getCluster();
-        List<LogicalCollection> collections = Catalog.snapshot().doc().getCollections( namespace.id, null );
-        List<Pair<String, AlgNode>> scans = collections.stream()
-                .map( t -> {
-                    RoutedAlgBuilder algBuilder = RoutedAlgBuilder.create( statement, alg.getCluster() );
-                    AlgNode scan = algBuilder.documentScan( t ).build();
-                    routeDocument( algBuilder, (AlgNode & DocumentAlg) scan, statement );
-                    return Pair.of( t.name, algBuilder.build() );
-                } )
-                .toList();
-
-        // Builder infoBuilder = cluster.getTypeFactory().builder();
-        // infoBuilder.add( "g", null, PolyType.GRAPH );
-
-        return LogicalTransformer.create( cluster, Pair.right( scans ), Pair.left( scans ), ModelTrait.DOCUMENT, ModelTrait.GRAPH, GraphType.of(), true );
-    }
 
 
     @Override

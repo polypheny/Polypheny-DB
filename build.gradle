@@ -80,7 +80,7 @@ allprojects {
         }
     }
 
-    configurations.all {
+    configurations.configureEach {
         // check for updates every build
         resolutionStrategy.cacheChangingModulesFor 0, "seconds"
     }
@@ -97,7 +97,7 @@ allprojects {
 
     String storeName = System.getProperty("store.default") != null ? System.getProperty("store.default") : 'hsqldb'
 
-    task integrationTests(type: Test) {
+    tasks.register('integrationTests', Test) {
         description = 'Runs integration tests.'
         group = 'verification'
         systemProperty 'store.default', storeName
@@ -169,7 +169,7 @@ allprojects {
 
 }
 
-task gatherLicenseReports(type: Copy) {
+tasks.register('gatherLicenseReports', Copy) {
     // Define the destination directory for the reports
     def destinationDir = "${rootProject.buildDir}/reports/licenses"
 

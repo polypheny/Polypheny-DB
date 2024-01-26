@@ -19,9 +19,9 @@ package org.polypheny.db.ddl;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import lombok.Value;
+import lombok.experimental.SuperBuilder;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.algebra.AlgCollation;
@@ -466,10 +466,6 @@ public abstract class DdlManager {
     /**
      * Adds a new constraint to a table
      *
-     * @param information
-     * @param namespaceId
-     * @param columnIds
-     * @param tableId
      */
     public abstract void createConstraint( ConstraintInformation information, long namespaceId, List<Long> columnIds, long tableId );
 
@@ -595,7 +591,7 @@ public abstract class DdlManager {
         public @Nullable String foreignKeyColumnName;
 
 
-        public ConstraintInformation( String name, ConstraintType type, List<String> columnNames, String foreignKeyTable, String foreignKeyColumnName ) {
+        public ConstraintInformation( String name, ConstraintType type, List<String> columnNames, @Nullable String foreignKeyTable, @Nullable String foreignKeyColumnName ) {
             this.name = name;
             this.type = type;
             this.columnNames = columnNames;
@@ -661,6 +657,7 @@ public abstract class DdlManager {
 
 
     @Value
+    @SuperBuilder(toBuilder = true)
     public static class PartitionInformation {
 
         public LogicalTable table;
@@ -708,8 +705,8 @@ public abstract class DdlManager {
                     .toList();
             List<List<String>> qualifiers = partitionQualifierList
                     .stream()
-                    .map( qs -> qs.stream().map( PartitionInformation::getValueOfSqlNode ).collect( Collectors.toList() ) )
-                    .collect( Collectors.toList() );
+                    .map( qs -> qs.stream().map( PartitionInformation::getValueOfSqlNode ).toList() )
+                    .toList();
             return new PartitionInformation( table, typeName, columnName, names, numberOfPartitionGroups, numberOfPartitions, qualifiers, rawPartitionInformation );
         }
 

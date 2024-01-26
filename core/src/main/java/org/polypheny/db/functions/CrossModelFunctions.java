@@ -203,7 +203,7 @@ public class CrossModelFunctions {
         if ( !edge.properties.isEmpty() ) {
             context.addParameterValues( 0, idType, Collections.nCopies( edge.properties.size(), edge.id ) );
             context.addParameterValues( 1, labelType, new ArrayList<>( edge.properties.keySet() ) );
-            context.addParameterValues( 2, valueType, new ArrayList<>( edge.properties.values().stream().map( value -> PolyString.of( value.toString() ) ).collect( Collectors.toList() ) ) );
+            context.addParameterValues( 2, valueType, new ArrayList<>( edge.properties.values().stream().map( value -> PolyString.of( value.toString() ) ).toList() ) );
             drainInserts( enumerables.get( i ), edge.labels.size() );
             context.resetParameterValues();
         }
@@ -240,7 +240,7 @@ public class CrossModelFunctions {
         if ( !node.properties.isEmpty() ) {
             context.addParameterValues( 0, idType, Collections.nCopies( node.properties.size(), node.id ) );
             context.addParameterValues( 1, labelType, new ArrayList<>( node.properties.keySet() ) );
-            context.addParameterValues( 2, valueType, new ArrayList<>( node.properties.values().stream().map( e -> PolyString.of( e.toJson() ) ).collect( Collectors.toList() ) ) );
+            context.addParameterValues( 2, valueType, new ArrayList<>( node.properties.values().stream().map( e -> PolyString.of( e.toJson() ) ).toList() ) );
             drainInserts( enumerables.get( i ), node.properties.size() );
             context.resetParameterValues();
         }
@@ -462,7 +462,7 @@ public class CrossModelFunctions {
 
 
     public static Enumerable<PolyValue[]> enumerableFromContext( DataContext context ) {
-        return Linq4j.asEnumerable( context.getParameterValues().stream().map( e -> e.values().toArray( PolyValue[]::new ) ).collect( Collectors.toList() ) );
+        return Linq4j.asEnumerable( context.getParameterValues().stream().map( e -> e.values().toArray( PolyValue[]::new ) ).toList() );
     }
 
 }
