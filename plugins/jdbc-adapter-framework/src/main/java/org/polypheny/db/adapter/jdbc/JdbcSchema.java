@@ -196,7 +196,7 @@ public class JdbcSchema implements Namespace, Schema, Expressible {
 
     @Override
     public Expression getExpression( Snapshot snapshot, long id ) {
-        return asExpression();//Schemas.subSchemaExpression( Catalog.getInstance().getStoreSnapshot( getAdapterId() ), id, getAdapterId(), JdbcSchema.class );
+        return asExpression();//Schemas.subSchemaExpression( Catalog.getInstance().getAdapterCatalog( getAdapterId() ), id, getAdapterId(), JdbcSchema.class );
     }
 
 

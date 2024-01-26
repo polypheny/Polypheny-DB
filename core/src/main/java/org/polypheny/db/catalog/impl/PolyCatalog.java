@@ -192,7 +192,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
         // re-add physical namespace, we could check first, but not necessary
 
-        getStoreSnapshot( entity.adapterId ).ifPresent( e -> e.addNamespace( entity.namespaceId, adapter.getCurrentNamespace() ) );
+        getAdapterCatalog( entity.adapterId ).ifPresent( e -> e.addNamespace( entity.namespaceId, adapter.getCurrentNamespace() ) );
 
     }
 
@@ -317,7 +317,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     @Override
-    public <S extends AdapterCatalog> Optional<S> getStoreSnapshot( long id ) {
+    public <S extends AdapterCatalog> Optional<S> getAdapterCatalog( long id ) {
         return Optional.ofNullable( (S) adapterCatalogs.get( id ) );
     }
 

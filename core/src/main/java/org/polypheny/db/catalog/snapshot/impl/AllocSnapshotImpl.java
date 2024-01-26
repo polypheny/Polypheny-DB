@@ -53,34 +53,60 @@ import org.polypheny.db.util.Pair;
 @Slf4j
 public class AllocSnapshotImpl implements AllocSnapshot {
 
+    @NotNull
     ImmutableMap<Long, AllocationTable> tables;
+    @NotNull
     ImmutableMap<Pair<Long, Long>, AllocationColumn> columns;
+    @NotNull
     ImmutableMap<Long, AllocationCollection> collections;
+    @NotNull
     ImmutableMap<Long, AllocationGraph> graphs;
 
+    @NotNull
     ImmutableMap<Long, AllocationEntity> allocs;
+    @NotNull
     ImmutableMap<Long, AllocationPartition> partitions;
+    @NotNull
     ImmutableMap<Long, AllocationPartitionGroup> groups;
+    @NotNull
     ImmutableMap<Long, AllocationPlacement> placements;
+    @NotNull
     ImmutableMap<Long, List<AllocationEntity>> allocsOnAdapters;
+    @NotNull
     ImmutableMap<Long, List<AllocationColumn>> logicalColumnToAlloc;
 
+    @NotNull
     ImmutableMap<Long, List<AllocationColumn>> placementColumns;
+    @NotNull
     ImmutableMap<Pair<Long, Long>, List<AllocationColumn>> adapterLogicalTablePlacements;
+    @NotNull
     ImmutableMap<Pair<Long, Long>, AllocationEntity> adapterLogicalTableAlloc;
+    @NotNull
     ImmutableMap<Long, List<AllocationEntity>> logicalAllocs;
+
+    @NotNull
     ImmutableMap<Long, Map<Long, List<Long>>> logicalTablePlacementColumns;
 
+    @NotNull
     ImmutableMap<Long, PartitionProperty> properties;
+    @NotNull
     ImmutableMap<Long, List<AllocationPartition>> logicalToPartitions;
+    @NotNull
     ImmutableMap<Long, List<AllocationPartitionGroup>> logicalToGroups;
+    @NotNull
     ImmutableMap<Long, List<AllocationPlacement>> logicalToPlacements;
+    @NotNull
     ImmutableMap<Pair<Long, Long>, AllocationEntity> placementPartitionToAlloc;
+    @NotNull
     ImmutableMap<Pair<Long, Long>, AllocationPlacement> adapterLogicalToPlacement;
+    @NotNull
     ImmutableMap<Long, List<AllocationEntity>> placementToPartitions;
+    @NotNull
     ImmutableMap<Long, List<AllocationPlacement>> placementsOfColumn;
+    @NotNull
     ImmutableMap<Long, List<AllocationPartition>> partitionsOfGroup;
 
+    @NotNull
     ImmutableMap<Pair<Long, String>, AllocationPartition> entityPartitionNameToPartition;
 
 
@@ -90,21 +116,21 @@ public class AllocSnapshotImpl implements AllocSnapshot {
                 .stream()
                 .filter( a -> a.getNamespace().dataModel == DataModel.RELATIONAL )
                 .map( c -> (AllocationRelationalCatalog) c )
-                .collect( Collectors.toList() ) );
+                .toList() );
 
         this.collections = buildCollections( allocationCatalogs
                 .values()
                 .stream()
                 .filter( a -> a.getNamespace().dataModel == DataModel.DOCUMENT )
                 .map( c -> (AllocationDocumentCatalog) c )
-                .collect( Collectors.toList() ) );
+                .toList() );
 
         this.graphs = buildGraphs( allocationCatalogs
                 .values()
                 .stream()
                 .filter( a -> a.getNamespace().dataModel == DataModel.GRAPH )
                 .map( c -> (AllocationGraphCatalog) c )
-                .collect( Collectors.toList() ) );
+                .toList() );
 
         this.columns = buildPlacementColumns( allocationCatalogs.values()
                 .stream()
@@ -112,7 +138,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
                 .map( c -> (AllocationRelationalCatalog) c )
                 .map( AllocationRelationalCatalog::getColumns )
                 .flatMap( c -> c.values().stream() )
-                .collect( Collectors.toList() ) );
+                .toList() );
 
         this.groups = buildPartitionGroups( allocationCatalogs );
         this.partitions = buildPartitions( allocationCatalogs );
@@ -155,7 +181,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     private ImmutableMap<Long, List<AllocationPartition>> buildPartitionsOfGroups() {
         Map<Long, List<AllocationPartition>> map = new HashMap<>();
         for ( AllocationPartitionGroup group : groups.values() ) {
-            map.put( group.id, partitions.values().stream().filter( p -> p.groupId == group.id ).collect( Collectors.toList() ) );
+            map.put( group.id, partitions.values().stream().filter( p -> p.groupId == group.id ).toList() );
         }
 
         return ImmutableMap.copyOf( map );
@@ -594,6 +620,94 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     public @NotNull List<AllocationPartition> getPartitionsFromGroup( long groupId ) {
         return Optional.ofNullable( partitionsOfGroup.get( groupId ) ).orElse( List.of() );
     }
+
+
+    @Override
+    public boolean equals( Object o ) {
+        if ( this == o ) {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() ) {
+            return false;
+        }
+
+        AllocSnapshotImpl that = (AllocSnapshotImpl) o;
+
+        if ( !tables.equals( that.tables ) ) {
+            return false;
+        }
+        if ( !columns.equals( that.columns ) ) {
+            return false;
+        }
+        if ( !collections.equals( that.collections ) ) {
+            return false;
+        }
+        if ( !graphs.equals( that.graphs ) ) {
+            return false;
+        }
+        if ( !allocs.equals( that.allocs ) ) {
+            return false;
+        }
+        if ( !partitions.equals( that.partitions ) ) {
+            return false;
+        }
+        if ( !groups.equals( that.groups ) ) {
+            return false;
+        }
+        if ( !placements.equals( that.placements ) ) {
+            return false;
+        }
+        if ( !allocsOnAdapters.equals( that.allocsOnAdapters ) ) {
+            return false;
+        }
+        if ( !logicalColumnToAlloc.equals( that.logicalColumnToAlloc ) ) {
+            return false;
+        }
+        if ( !placementColumns.equals( that.placementColumns ) ) {
+            return false;
+        }
+        if ( !adapterLogicalTablePlacements.equals( that.adapterLogicalTablePlacements ) ) {
+            return false;
+        }
+        if ( !adapterLogicalTableAlloc.equals( that.adapterLogicalTableAlloc ) ) {
+            return false;
+        }
+        if ( !logicalAllocs.equals( that.logicalAllocs ) ) {
+            return false;
+        }
+        if ( !logicalTablePlacementColumns.equals( that.logicalTablePlacementColumns ) ) {
+            return false;
+        }
+        if ( !properties.equals( that.properties ) ) {
+            return false;
+        }
+        if ( !logicalToPartitions.equals( that.logicalToPartitions ) ) {
+            return false;
+        }
+        if ( !logicalToGroups.equals( that.logicalToGroups ) ) {
+            return false;
+        }
+        if ( !logicalToPlacements.equals( that.logicalToPlacements ) ) {
+            return false;
+        }
+        if ( !placementPartitionToAlloc.equals( that.placementPartitionToAlloc ) ) {
+            return false;
+        }
+        if ( !adapterLogicalToPlacement.equals( that.adapterLogicalToPlacement ) ) {
+            return false;
+        }
+        if ( !placementToPartitions.equals( that.placementToPartitions ) ) {
+            return false;
+        }
+        if ( !placementsOfColumn.equals( that.placementsOfColumn ) ) {
+            return false;
+        }
+        if ( !partitionsOfGroup.equals( that.partitionsOfGroup ) ) {
+            return false;
+        }
+        return entityPartitionNameToPartition.equals( that.entityPartitionNameToPartition );
+    }
+
 
 
 }

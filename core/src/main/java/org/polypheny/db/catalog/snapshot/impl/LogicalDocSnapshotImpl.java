@@ -75,7 +75,7 @@ public class LogicalDocSnapshotImpl implements LogicalDocSnapshot {
         if ( namespacePattern != null ) {
             namespaces = namespaces.stream().filter( n -> n.caseSensitive
                     ? n.name.matches( namespacePattern.toRegex() )
-                    : n.name.toLowerCase().matches( namespacePattern.toLowerCase().toRegex() ) ).collect( Collectors.toList() );
+                    : n.name.toLowerCase().matches( namespacePattern.toLowerCase().toRegex() ) ).toList();
         }
 
         return namespaces.stream().flatMap( n -> getCollections( n.id, namePattern ).stream() ).collect( Collectors.toList() );
@@ -89,6 +89,40 @@ public class LogicalDocSnapshotImpl implements LogicalDocSnapshot {
         return collections.stream().filter( c -> namespaces.get( c.namespaceId ).caseSensitive
                 ? c.name.equals( name )
                 : c.name.equalsIgnoreCase( name ) ).findFirst();
+    }
+
+
+    @Override
+    public boolean equals( Object o ) {
+        if ( this == o ) {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() ) {
+            return false;
+        }
+
+        LogicalDocSnapshotImpl that = (LogicalDocSnapshotImpl) o;
+
+        if ( !namespaces.equals( that.namespaces ) ) {
+            return false;
+        }
+        if ( !collections.equals( that.collections ) ) {
+            return false;
+        }
+        if ( !collectionNames.equals( that.collectionNames ) ) {
+            return false;
+        }
+        return namespaceCollections.equals( that.namespaceCollections );
+    }
+
+
+    @Override
+    public int hashCode() {
+        int result = namespaces.hashCode();
+        result = 31 * result + collections.hashCode();
+        result = 31 * result + collectionNames.hashCode();
+        result = 31 * result + namespaceCollections.hashCode();
+        return result;
     }
 
 }

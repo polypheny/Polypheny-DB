@@ -50,9 +50,13 @@ import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
 public class SnapshotImpl implements Snapshot {
 
 
+    @NotNull
     LogicalRelSnapshot rel;
+    @NotNull
     LogicalDocSnapshot doc;
+    @NotNull
     LogicalGraphSnapshot graph;
+    @NotNull
     AllocSnapshot alloc;
 
     @Getter
@@ -217,7 +221,7 @@ public class SnapshotImpl implements Snapshot {
 
 
     @Override
-    public Optional<AdapterTemplate> getAdapterTemplate( String name, AdapterType adapterType ) {
+    public @NotNull Optional<AdapterTemplate> getAdapterTemplate( String name, AdapterType adapterType ) {
         return adapterTemplates.values().stream().filter( t -> t.adapterName.equalsIgnoreCase( name ) && t.adapterType == adapterType ).findAny();
     }
 
@@ -251,5 +255,79 @@ public class SnapshotImpl implements Snapshot {
         return Optional.empty();
     }
 
+
+    @Override
+    public boolean equals( Object o ) {
+        if ( this == o ) {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() ) {
+            return false;
+        }
+
+        SnapshotImpl snapshot = (SnapshotImpl) o;
+
+        if ( !rel.equals( snapshot.rel ) ) {
+            return false;
+        }
+        if ( !doc.equals( snapshot.doc ) ) {
+            return false;
+        }
+        if ( !graph.equals( snapshot.graph ) ) {
+            return false;
+        }
+        if ( !alloc.equals( snapshot.alloc ) ) {
+            return false;
+        }
+        if ( !users.equals( snapshot.users ) ) {
+            return false;
+        }
+        if ( !userNames.equals( snapshot.userNames ) ) {
+            return false;
+        }
+        if ( !interfaces.equals( snapshot.interfaces ) ) {
+            return false;
+        }
+        if ( !interfaceTemplates.equals( snapshot.interfaceTemplates ) ) {
+            return false;
+        }
+        if ( !interfaceNames.equals( snapshot.interfaceNames ) ) {
+            return false;
+        }
+        if ( !adapters.equals( snapshot.adapters ) ) {
+            return false;
+        }
+        if ( !adapterTemplates.equals( snapshot.adapterTemplates ) ) {
+            return false;
+        }
+        if ( !adapterNames.equals( snapshot.adapterNames ) ) {
+            return false;
+        }
+        if ( !namespaces.equals( snapshot.namespaces ) ) {
+            return false;
+        }
+        return namespaceNames.equals( snapshot.namespaceNames );
+    }
+
+
+    @Override
+    public int hashCode() {
+        int result = rel.hashCode();
+        result = 31 * result + doc.hashCode();
+        result = 31 * result + graph.hashCode();
+        result = 31 * result + alloc.hashCode();
+        result = 31 * result + (int) (id ^ (id >>> 32));
+        result = 31 * result + users.hashCode();
+        result = 31 * result + userNames.hashCode();
+        result = 31 * result + interfaces.hashCode();
+        result = 31 * result + interfaceTemplates.hashCode();
+        result = 31 * result + interfaceNames.hashCode();
+        result = 31 * result + adapters.hashCode();
+        result = 31 * result + adapterTemplates.hashCode();
+        result = 31 * result + adapterNames.hashCode();
+        result = 31 * result + namespaces.hashCode();
+        result = 31 * result + namespaceNames.hashCode();
+        return result;
+    }
 
 }
