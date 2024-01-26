@@ -93,7 +93,7 @@ public abstract class AdapterCatalog implements PolySerializable {
 
 
     public Expression asExpression() {
-        return Expressions.call( Catalog.CATALOG_EXPRESSION, "getStoreSnapshot", Expressions.constant( adapterId ) );
+        return Expressions.call( Catalog.CATALOG_EXPRESSION, "getAdapterCatalog", Expressions.constant( adapterId ) );
     }
 
 

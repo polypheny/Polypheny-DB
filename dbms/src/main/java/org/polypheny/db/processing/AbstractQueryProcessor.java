@@ -937,8 +937,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 try {
                     List<RoutedAlgBuilder> builders = router.route( logicalRoot, statement, queryInformation );
                     List<ProposedRoutingPlan> plans = builders.stream()
-                            .map( builder -> new ProposedRoutingPlanImpl( builder, logicalRoot, queryInformation.getQueryHash(), router.getClass() ) )
-                            .collect( Collectors.toList() );
+                            .map( builder -> (ProposedRoutingPlan) new ProposedRoutingPlanImpl( builder, logicalRoot, queryInformation.getQueryHash(), router.getClass() ) )
+                            .toList();
                     proposedPlans.addAll( plans );
                 } catch ( Throwable e ) {
                     log.warn( String.format( "Router: %s was not able to route the query.", router.getClass().getSimpleName() ) ); // this should not be necessary but some of the routers fail loudly, which makes this necessary todo dl
@@ -954,7 +954,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 statement.getRoutingDuration().start( "Remove Duplicates" );
             }
 
-            final List<ProposedRoutingPlan> distinctPlans = proposedPlans.stream().distinct().collect( Collectors.toList() );
+            final List<ProposedRoutingPlan> distinctPlans = proposedPlans.stream().distinct().toList();
 
             if ( distinctPlans.isEmpty() ) {
                 throw new GenericRuntimeException( "No routing of query found" );
@@ -1253,7 +1253,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 Map<Long, List<Long>> result = getAccessedPartitionsPerScan( alg.getInput( i ), aggregatedPartitionValues );
                 if ( !result.isEmpty() ) {
                     for ( Map.Entry<Long, List<Long>> elem : result.entrySet() ) {
-                        accessedPartitions.merge( elem.getKey(), elem.getValue(), ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).collect( Collectors.toList() ) );
+                        accessedPartitions.merge( elem.getKey(), elem.getValue(), ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).toList() );
                     }
                 }
             }
@@ -1310,7 +1310,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     accessedPartitions.merge(
                             scanId,
                             identifiedPartitions,
-                            ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).collect( Collectors.toList() ) );
+                            ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).toList() );
                     scanPerTable.putIfAbsent( scanId, table.id );
                     // Fallback all partitionIds are needed
                 }
@@ -1319,7 +1319,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     accessedPartitions.merge(
                             scanId,
                             property.partitionIds,
-                            ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).collect( Collectors.toList() ) );
+                            ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).toList() );
                     scanPerTable.putIfAbsent( scanId, table.id );
                 }
 

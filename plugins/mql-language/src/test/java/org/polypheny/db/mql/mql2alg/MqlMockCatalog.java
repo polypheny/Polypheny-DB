@@ -53,7 +53,7 @@ public class MqlMockCatalog extends MockCatalog {
 
 
     @Override
-    public <S extends AdapterCatalog> Optional<S> getStoreSnapshot( long id ) {
+    public <S extends AdapterCatalog> Optional<S> getAdapterCatalog( long id ) {
         return Optional.empty();
     }
 

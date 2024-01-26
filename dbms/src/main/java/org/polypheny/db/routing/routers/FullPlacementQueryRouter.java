@@ -17,7 +17,6 @@
 package org.polypheny.db.routing.routers;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -59,7 +58,7 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
             log.debug( "{} is horizontally partitioned", table.name );
         }
 
-        Collection<Map<Long, List<AllocationColumn>>> placements = selectPlacementHorizontalPartitioning( node, table, queryInformation );
+        List<Map<Long, List<AllocationColumn>>> placements = selectPlacementHorizontalPartitioning( node, table, queryInformation );
 
         List<RoutedAlgBuilder> newBuilders = new ArrayList<>();
         for ( Map<Long, List<AllocationColumn>> placementCombination : placements ) {
@@ -129,17 +128,17 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
     }
 
 
-    protected Collection<Map<Long, List<AllocationColumn>>> selectPlacementHorizontalPartitioning( AlgNode node, LogicalTable catalogTable, LogicalQueryInformation queryInformation ) {
+    protected List<Map<Long, List<AllocationColumn>>> selectPlacementHorizontalPartitioning( AlgNode node, LogicalTable table, LogicalQueryInformation queryInformation ) {
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
-        PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( catalogTable.id ).orElseThrow();
+        PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( table.id ).orElseThrow();
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( property.partitionType );
 
         // Utilize scanId to retrieve Partitions being accessed
-        List<Long> partitionIds = queryInformation.getAccessedPartitions().get( node.getId() );
+        List<Long> partitionIds = queryInformation.getAccessedPartitions().get( node.getEntity().id );
 
-        Map<Long, Map<Long, List<AllocationColumn>>> allPlacements = partitionManager.getAllPlacements( catalogTable, partitionIds );
+        Map<Long, Map<Long, List<AllocationColumn>>> allPlacements = partitionManager.getAllPlacements( table, partitionIds );
 
-        return allPlacements.values();
+        return List.copyOf( allPlacements.values() );
     }
 
 
@@ -163,7 +162,7 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
         for ( AllocationEntity alloc : allocs ) {
             List<AllocationColumn> placements = usedColumns.stream()
                     .map( colId -> alloc.unwrap( AllocationTable.class ).orElseThrow().getColumns().stream().filter( c -> c.columnId == colId ).findFirst().orElseThrow() )
-                    .collect( Collectors.toList() );
+                    .toList();
 
             if ( !placements.isEmpty() ) {
                 result.add( placements );

@@ -35,20 +35,20 @@ public interface PartitionManager {
      */
     long getTargetPartitionId( LogicalTable table, PartitionProperty property, String columnValue );
 
-    boolean probePartitionGroupDistributionChange( LogicalTable catalogTable, int storeId, long columnId, int threshold );
+    boolean probePartitionGroupDistributionChange( LogicalTable table, int storeId, long columnId, int threshold );
 
-    Map<Long, List<AllocationColumn>> getRelevantPlacements( LogicalTable catalogTable, List<AllocationEntity> allocs, List<Long> excludedAdapters );
+    Map<Long, List<AllocationColumn>> getRelevantPlacements( LogicalTable table, List<AllocationEntity> allocs, List<Long> excludedAdapters );
 
     boolean validatePartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, LogicalColumn partitionColumn );
 
     /**
      * Returns all placements of catalogEntity and partitionIds
      *
-     * @param catalogTable Table to look for placements
+     * @param table Table to look for placements
      * @param partitionIds List of all requested partitions ids
      * @return Returns map of AdapterId  {@code ->} [Map PartitionsId {@code ->}needed Columns Placements]
      */
-    Map<Long, Map<Long, List<AllocationColumn>>> getAllPlacements( LogicalTable catalogTable, List<Long> partitionIds );
+    Map<Long, Map<Long, List<AllocationColumn>>> getAllPlacements( LogicalTable table, List<Long> partitionIds );
 
     int getNumberOfPartitionsPerGroup( int numberOfPartitions );
 

@@ -110,7 +110,7 @@ public abstract class BaseRouter implements Router {
         List<AllocationPartition> partitions = snapshot.alloc().getPartitionsFromLogical( table.id );
 
         for ( AllocationPartition partition : partitions ) {
-            partitionsToColumns.put( partition.id, getPlacementsOfPartition( partition, table, logicalColumns, excludedAdapterIds ).stream().sorted( Comparator.comparingInt( AllocationColumn::getPosition ) ).collect( Collectors.toList() ) );
+            partitionsToColumns.put( partition.id, getPlacementsOfPartition( partition, table, logicalColumns, excludedAdapterIds ).stream().sorted( Comparator.comparingInt( AllocationColumn::getPosition ) ).toList() );
         }
 
         return partitionsToColumns;
@@ -121,7 +121,7 @@ public abstract class BaseRouter implements Router {
         Snapshot snapshot = Catalog.snapshot();
 
         List<AllocationColumn> columnPlacements = new ArrayList<>();
-        List<Long> columnIds = columns.stream().map( c -> c.id ).collect( Collectors.toList() );
+        List<Long> columnIds = columns.stream().map( c -> c.id ).toList();
 
         Map<Long, List<AllocationColumn>> columnsOfPlacements = new HashMap<>();
 
@@ -144,10 +144,6 @@ public abstract class BaseRouter implements Router {
 
     /**
      * We take the biggest available placement and remove these columns and continue with the remaining columns
-     *
-     * @param columns
-     * @param mostToLeastColumns
-     * @return
      */
     private List<AllocationColumn> selectBiggest( List<LogicalColumn> columns, List<List<AllocationColumn>> mostToLeastColumns ) {
         if ( columns.isEmpty() ) {
@@ -157,14 +153,14 @@ public abstract class BaseRouter implements Router {
             throw new GenericRuntimeException( "Could not route correctly" );
         }
 
-        List<Long> remainingColumns = columns.stream().map( c -> c.id ).collect( Collectors.toList() );
+        List<Long> remainingColumns = columns.stream().map( c -> c.id ).toList();
 
         List<AllocationColumn> allocColumns = mostToLeastColumns.get( 0 );
-        List<Long> allocIds = allocColumns.stream().map( a -> a.columnId ).collect( Collectors.toList() );
+        List<Long> allocIds = allocColumns.stream().map( a -> a.columnId ).toList();
 
         List<List<AllocationColumn>> mostToLeastColumnsUpdated = mostToLeastColumns.subList( 1, mostToLeastColumns.size() );
         // remove the selected columns from the list
-        mostToLeastColumnsUpdated = mostToLeastColumnsUpdated.stream().map( cs -> cs.stream().filter( column -> remainingColumns.contains( column.columnId ) && !allocIds.contains( column.columnId ) ).collect( Collectors.toList() ) ).collect( Collectors.toList() );
+        mostToLeastColumnsUpdated = mostToLeastColumnsUpdated.stream().map( cs -> cs.stream().filter( column -> remainingColumns.contains( column.columnId ) && !allocIds.contains( column.columnId ) ).toList() ).toList();
 
         return Stream.concat(
                 allocColumns.stream(), selectBiggest(
@@ -237,7 +233,7 @@ public abstract class BaseRouter implements Router {
 
         if ( entity.unwrap( LogicalTable.class ).isPresent() ) {
             List<AllocationEntity> allocations = statement.getTransaction().getSnapshot().alloc().getFromLogical( entity.id );
-            table = entity.unwrap( LogicalEntity.class ).get();
+            table = entity.unwrap( LogicalTable.class ).orElseThrow();
             builder.scan( allocations.get( 0 ) );
         } else if ( entity.unwrap( AllocationTable.class ).isPresent() ) {
             builder.scan( entity.unwrap( AllocationTable.class ).get() );
@@ -263,7 +259,7 @@ public abstract class BaseRouter implements Router {
             @Nullable List<Long> excludedPlacements ) {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
 
-        List<AllocationPlacement> placements = snapshot.alloc().getPlacementsFromLogical( scan.entity.id ).stream().filter( p -> excludedPlacements == null || !excludedPlacements.contains( p.id ) ).collect( Collectors.toList() );
+        List<AllocationPlacement> placements = snapshot.alloc().getPlacementsFromLogical( scan.entity.id ).stream().filter( p -> excludedPlacements == null || !excludedPlacements.contains( p.id ) ).toList();
 
         List<AllocationPartition> partitions = snapshot.alloc().getPartitionsFromLogical( scan.entity.id );
 
@@ -342,7 +338,7 @@ public abstract class BaseRouter implements Router {
             Map<Long, List<AllocationColumn>> columnsByPlacements = new HashMap<>();
             for ( AllocationColumn column : currentPlacements ) {
                 if ( !columnsByPlacements.containsKey( column.placementId ) ) {
-                    columnsByPlacements.put( column.placementId, new LinkedList<>() );
+                    columnsByPlacements.put( column.placementId, new ArrayList<>() );
                 }
                 columnsByPlacements.get( column.placementId ).add( column );
             }
@@ -385,7 +381,7 @@ public abstract class BaseRouter implements Router {
                 Deque<String> queue = new ArrayDeque<>();
                 boolean first = true;
                 for ( List<AllocationColumn> columns : columnsByPlacements.values() ) {
-                    List<AllocationColumn> ordered = columns.stream().sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() );
+                    List<AllocationColumn> ordered = columns.stream().sorted( Comparator.comparingInt( a -> a.position ) ).toList();
                     AllocationColumn column = ordered.get( 0 );
                     AllocationEntity cpp = catalog.getSnapshot().alloc().getAlloc( column.placementId, partitionId ).orElseThrow();
 
@@ -459,7 +455,7 @@ public abstract class BaseRouter implements Router {
         List<LogicalColumn> placementList = currentPlacements.stream()
                 .map( col -> catalog.getSnapshot().rel().getColumn( col.columnId ).orElseThrow() )
                 .sorted( Comparator.comparingInt( col -> col.position ) )
-                .collect( Collectors.toList() );
+                .toList();
         for ( LogicalColumn catalogColumn : placementList ) {
             rexNodes.add( builder.field( catalogColumn.name ) );
         }
@@ -471,9 +467,9 @@ public abstract class BaseRouter implements Router {
         List<AllocationColumn> columns = partitionsColumns.get( partitionId );
 
         // each column is one entity
-        List<AllocationTable> tables = columns.stream().map( c -> catalog.getSnapshot().alloc().getAlloc( c.placementId, partitionId ).orElseThrow().unwrap( AllocationTable.class ).orElseThrow() ).collect( Collectors.toList() );
+        List<AllocationTable> tables = columns.stream().map( c -> catalog.getSnapshot().alloc().getAlloc( c.placementId, partitionId ).orElseThrow().unwrap( AllocationTable.class ).orElseThrow() ).toList();
 
-        List<AlgNode> nodes = tables.stream().map( t -> handleRelScan( RoutedAlgBuilder.create( statement, cluster ), statement, t ).build() ).collect( Collectors.toList() );
+        List<AlgNode> nodes = tables.stream().map( t -> handleRelScan( RoutedAlgBuilder.create( statement, cluster ), statement, t ).build() ).toList();
         // todo remove multiple scans, add projection
         nodes.forEach( builder::push );
 
@@ -488,7 +484,7 @@ public abstract class BaseRouter implements Router {
 
         LogicalGraph graph = alg.entity.unwrap( LogicalGraph.class ).orElseThrow();
 
-        List<Long> placements = snapshot.alloc().getFromLogical( graph.id ).stream().filter( p -> excludedPlacements == null || !excludedPlacements.contains( p.id ) ).map( p -> p.adapterId ).collect( Collectors.toList() );
+        List<Long> placements = snapshot.alloc().getFromLogical( graph.id ).stream().filter( p -> excludedPlacements == null || !excludedPlacements.contains( p.id ) ).map( p -> p.adapterId ).toList();
         if ( targetAlloc != null ) {
             return new LogicalLpgScan( alg.getCluster(), alg.getTraitSet(), targetAlloc, alg.getTupleType() );
         }
@@ -521,7 +517,7 @@ public abstract class BaseRouter implements Router {
         List<PolyString> names = substitutionGraph.names;
         if ( names.isEmpty() ) {
             // no label means all entites
-            names = namespace.dataModel == DataModel.DOCUMENT ? snapshot.doc().getCollections( graph.namespaceId, null ).stream().map( c -> new PolyString( c.name ) ).collect( Collectors.toList() ) : snapshot.rel().getTables( graph.namespaceId, null ).stream().map( t -> new PolyString( t.name ) ).collect( Collectors.toList() );
+            names = namespace.dataModel == DataModel.DOCUMENT ? snapshot.doc().getCollections( graph.namespaceId, null ).stream().map( c -> new PolyString( c.name ) ).toList() : snapshot.rel().getTables( graph.namespaceId, null ).stream().map( t -> new PolyString( t.name ) ).toList();
         }
 
         for ( PolyString name : names ) {
@@ -548,7 +544,7 @@ public abstract class BaseRouter implements Router {
         List<LogicalTable> tables = Catalog.snapshot().rel().getTables( namespace.id, null );
         List<Pair<String, AlgNode>> scans = tables.stream()
                 .map( t -> Pair.of( t.name, buildJoinedScan( statement, cluster, tables.get( 0 ), null ) ) )
-                .collect( Collectors.toList() );
+                .toList();
 
         // Builder infoBuilder = cluster.getTypeFactory().builder();
         // infoBuilder.add( "g", null, PolyType.GRAPH );
@@ -567,7 +563,7 @@ public abstract class BaseRouter implements Router {
                     routeDocument( algBuilder, (AlgNode & DocumentAlg) scan, statement );
                     return Pair.of( t.name, algBuilder.build() );
                 } )
-                .collect( Collectors.toList() );
+                .toList();
 
         // Builder infoBuilder = cluster.getTypeFactory().builder();
         // infoBuilder.add( "g", null, PolyType.GRAPH );

@@ -92,7 +92,7 @@ public class SimpleRouter extends AbstractDqlRouter {
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( property.partitionType );
 
         // Utilize scanId to retrieve Partitions being accessed
-        List<Long> partitionIds = queryInformation.getAccessedPartitions().get( node.getId() );
+        List<Long> partitionIds = queryInformation.getAccessedPartitions().get( node.getEntity().id );
 
         Map<Long, List<AllocationColumn>> placementDistribution = partitionIds != null
                 ? partitionManager.getRelevantPlacements( table, getAllocOfPartitions( partitionIds, table ), Collections.emptyList() )

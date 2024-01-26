@@ -75,7 +75,7 @@ public abstract class Catalog implements ExtensionPoint {
     public static final Expression CATALOG_EXPRESSION = Expressions.call( Catalog.class, "getInstance" );
 
     public static final Expression SNAPSHOT_EXPRESSION = Expressions.call( Catalog.class, "snapshot" );
-    public static final Function<Long, Expression> PHYSICAL_EXPRESSION = id -> Expressions.call( CATALOG_EXPRESSION, "getStoreSnapshot", Expressions.constant( id ) );
+    public static final Function<Long, Expression> PHYSICAL_EXPRESSION = id -> Expressions.call( CATALOG_EXPRESSION, "getAdapterCatalog", Expressions.constant( id ) );
 
 
     public static Catalog setAndGetInstance( Catalog catalog ) {
@@ -123,7 +123,7 @@ public abstract class Catalog implements ExtensionPoint {
 
     public abstract AllocationGraphCatalog getAllocGraph( long namespaceId );
 
-    public abstract <S extends AdapterCatalog> Optional<S> getStoreSnapshot( long id );
+    public abstract <S extends AdapterCatalog> Optional<S> getAdapterCatalog( long id );
 
     public abstract void addStoreSnapshot( AdapterCatalog snapshot );
 
