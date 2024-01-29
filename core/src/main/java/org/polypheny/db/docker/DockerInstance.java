@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +31,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.docker.exceptions.DockerUserException;
 import org.polypheny.db.docker.models.DockerHost;
 import org.polypheny.db.docker.models.DockerInstanceInfo;
+import org.polypheny.db.docker.models.HandshakeInfo;
 
 
 /**
@@ -254,7 +256,7 @@ public final class DockerInstance {
     }
 
 
-    void updateConfig( String hostname, String alias, String registry ) {
+    Optional<HandshakeInfo> updateConfig( String hostname, String alias, String registry ) {
         synchronized ( this ) {
             DockerHost newHost = new DockerHost( hostname, alias, registry, this.getHost().communicationPort(), this.getHost().handshakePort(), this.getHost().proxyPort() );
             if ( !this.host.hostname().equals( hostname ) ) {
@@ -281,9 +283,11 @@ public final class DockerInstance {
                     checkConnection();
                 } catch ( IOException e ) {
                     log.info( "Failed to connect to '" + hostname + "': " + e.getMessage() );
+                    return Optional.of( HandshakeManager.getInstance().newHandshake( newHost, null, true ) );
                 }
             }
             this.host = newHost;
+            return Optional.empty();
         }
     }
 

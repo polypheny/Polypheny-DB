@@ -36,6 +36,9 @@ import org.polypheny.db.docker.exceptions.DockerUserException;
 import org.polypheny.db.docker.models.DockerHost;
 import org.polypheny.db.util.RunMode;
 import org.polypheny.db.docker.models.DockerInstanceInfo;
+import org.polypheny.db.docker.models.HandshakeInfo;
+import org.polypheny.db.docker.models.UpdateDockerResponse;
+
 
 public final class DockerManager {
 
@@ -113,7 +116,7 @@ public final class DockerManager {
     }
 
 
-    DockerInstance updateDockerInstance( int id, String hostname, String alias, String registry ) {
+    UpdateDockerResponse updateDockerInstance( int id, String hostname, String alias, String registry ) {
         synchronized ( this ) {
             DockerInstance dockerInstance = getInstanceById( id ).orElseThrow( () -> new DockerUserException( 404, "No Docker instance with id " + id ) );
             if ( !dockerInstance.getHost().hostname().equals( hostname ) && hasHost( hostname ) ) {
@@ -123,7 +126,7 @@ public final class DockerManager {
                 throw new DockerUserException( "There is already a Docker instance with alias " + alias );
             }
 
-            dockerInstance.updateConfig( hostname, alias, registry );
+            Optional<HandshakeInfo> maybeHandshake = dockerInstance.updateConfig( hostname, alias, registry );
 
             listener.forEach( c -> c.onConfigChange( null ) );
 
@@ -138,7 +141,7 @@ public final class DockerManager {
             } );
             ConfigManager.getInstance().getConfig( "runtime/dockerInstances" ).setConfigObjectList( configs.stream().map( ConfigDocker::toMap ).collect( Collectors.toList() ), ConfigDocker.class );
 
-            return dockerInstance;
+            return new UpdateDockerResponse( maybeHandshake.orElse( null ), dockerInstance.getInfo() );
         }
     }
 

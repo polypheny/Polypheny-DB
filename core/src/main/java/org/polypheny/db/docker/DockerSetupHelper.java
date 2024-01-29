@@ -22,8 +22,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.docker.exceptions.DockerUserException;
 import org.polypheny.db.docker.models.DockerHost;
-import org.polypheny.db.docker.models.DockerInstanceInfo;
 import org.polypheny.db.docker.models.HandshakeInfo;
+import org.polypheny.db.docker.models.UpdateDockerResponse;
 
 @Slf4j
 public final class DockerSetupHelper {
@@ -75,8 +75,8 @@ public final class DockerSetupHelper {
     }
 
 
-    public static DockerInstanceInfo updateDockerInstance( int id, String hostname, String alias, String registry ) {
-        return DockerManager.getInstance().updateDockerInstance( id, hostname, alias, registry ).getInfo();
+    public static UpdateDockerResponse updateDockerInstance( int id, String hostname, String alias, String registry ) {
+        return DockerManager.getInstance().updateDockerInstance( id, hostname, alias, registry );
     }
 
 
