@@ -135,7 +135,7 @@ import org.polypheny.db.docker.models.CreateDockerResponse;
 import org.polypheny.db.docker.models.AutoDockerResult;
 import org.polypheny.db.docker.models.CreateDockerRequest;
 import org.polypheny.db.docker.models.DockerSettings;
-import org.polypheny.db.docker.models.DockerUpdateRequest;
+import org.polypheny.db.docker.models.UpdateDockerRequest;
 import org.polypheny.db.docker.models.HandshakeInfo;
 import org.polypheny.db.docker.models.InstancesAndAutoDocker;
 import org.polypheny.db.iface.QueryInterface;
@@ -2995,7 +2995,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
     void updateDockerInstance( final Context ctx ) {
-        DockerUpdateRequest request = ctx.bodyAsClass( DockerUpdateRequest.class );
+        UpdateDockerRequest request = ctx.bodyAsClass( UpdateDockerRequest.class );
 
         try {
             ctx.json( DockerSetupHelper.updateDockerInstance( request.id(), request.host(), request.alias(), request.registry() ) );
