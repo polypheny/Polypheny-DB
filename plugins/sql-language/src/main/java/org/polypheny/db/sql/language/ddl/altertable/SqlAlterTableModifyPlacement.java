@@ -17,6 +17,7 @@
 package org.polypheny.db.sql.language.ddl.altertable;
 
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -143,14 +144,14 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
                 partitionGroups,
                 partitionGroupNames.stream()
                         .map( SqlIdentifier::toString )
-                        .collect( Collectors.toList() ),
+                        .toList(),
                 store,
                 statement );
 
         if ( !partitionGroups.isEmpty() || !partitionGroupNames.isEmpty() ) {
-            List<Long> ids = partitionGroups.stream().map( id -> (long) id ).collect( Collectors.toList() );
+            List<Long> ids = new ArrayList<>( partitionGroups.stream().map( id -> (long) id ).toList() );
 
-            ids.addAll( partitionGroupNames.stream().map( SqlIdentifier::toString ).map( name -> Catalog.snapshot().alloc().getPartitionFromName( table.id, name ).orElseThrow().id ).collect( Collectors.toList() ) );
+            ids.addAll( partitionGroupNames.stream().map( SqlIdentifier::toString ).map( name -> Catalog.snapshot().alloc().getPartitionFromName( table.id, name ).orElseThrow().id ).toList() );
 
             DdlManager.getInstance().modifyPartitionPlacement(
                     table,

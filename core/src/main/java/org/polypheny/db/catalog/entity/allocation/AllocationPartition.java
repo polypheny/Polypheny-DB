@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
+import java.io.Serial;
 import java.util.List;
 import javax.annotation.Nullable;
 import lombok.Getter;
@@ -39,6 +40,7 @@ import org.polypheny.db.type.entity.PolyValue;
 @Value
 public class AllocationPartition implements PolyObject {
 
+    @Serial
     private static final long serialVersionUID = 8835793248417591036L;
 
     @Serialize

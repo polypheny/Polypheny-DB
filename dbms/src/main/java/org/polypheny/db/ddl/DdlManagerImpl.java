@@ -28,6 +28,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
@@ -1161,7 +1162,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void setDefaultValue( LogicalTable table, String columnName, PolyValue defaultValue, Statement statement ) {
-        LogicalColumn logicalColumn = (LogicalColumn) catalog.getSnapshot().rel().getColumn( table.id, columnName ).orElseThrow();
+        LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( table.id, columnName ).orElseThrow();
 
         // Check if model permits operation
         checkModelLogic( table, columnName );
@@ -1175,7 +1176,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void dropDefaultValue( LogicalTable table, String columnName, Statement statement ) {
-        LogicalColumn logicalColumn = (LogicalColumn) catalog.getSnapshot().rel().getColumn( table.id, columnName ).orElseThrow();
+        LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( table.id, columnName ).orElseThrow();
 
         // check if model permits operation
         checkModelLogic( table, columnName );
@@ -1422,7 +1423,6 @@ public class DdlManagerImpl extends DdlManager {
                     PlacementType.MANUAL );
 
         } else {
-            //AllocationEntity allocation = catalog.getSnapshot().alloc().getEntity( placement.id, table.id ).orElseThrow();
             // Create column placement
             catalog.getAllocRel( table.namespaceId ).addColumn(
                     placement.id,
@@ -1437,9 +1437,14 @@ public class DdlManagerImpl extends DdlManager {
                 store.addColumn( statement.getPrepareContext(), allocation.id, logicalColumn );
                 // Copy the data to the newly added column placements
                 DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
-                dataMigrator.copyData( statement.getTransaction(), catalog.getSnapshot().getAdapter( store.getAdapterId() ).orElseThrow(), table,
-                        ImmutableList.of( logicalColumn ), placement );
+                dataMigrator.copyData(
+                        statement.getTransaction(),
+                        catalog.getSnapshot().getAdapter( store.getAdapterId() ).orElseThrow(),
+                        table,
+                        List.of( logicalColumn ),
+                        allocation );
             }
+
 
         }
 
@@ -2035,6 +2040,7 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
+    @SuppressWarnings("UnusedReturnValue")
     private List<AllocationTable> addAllocationsForPlacement( long namespaceId, Statement statement, LogicalTable logical, long placementId, List<LogicalColumn> lColumns, List<Long> pkIds, List<Long> partitionIds, Adapter<?> adapter ) {
         List<AllocationColumn> columns = new ArrayList<>();
         int i = 0;
@@ -2245,10 +2251,8 @@ public class DdlManagerImpl extends DdlManager {
         long pkid = partitionInfo.table.primaryKey;
         LogicalRelSnapshot relSnapshot = catalog.getSnapshot().rel();
         List<Long> pkColumnIds = relSnapshot.getPrimaryKey( pkid ).orElseThrow().columnIds;
-        // Basically get first part of PK even if its compound of PK it is sufficient
-        LogicalColumn pkColumn = relSnapshot.getColumn( pkColumnIds.get( 0 ) ).orElseThrow();
-        // This gets us only one ccp per storeId (first part of PK)
 
+        // This gets us only one ccp per storeId (first part of PK)
         boolean fillStores = false;
         if ( stores == null ) {
             stores = new ArrayList<>();
@@ -2260,7 +2264,10 @@ public class DdlManagerImpl extends DdlManager {
 
         List<AllocationPlacement> placements = snapshot.alloc().getPlacementsFromLogical( unPartitionedTable.id );
         Map<AllocationPlacement, List<AllocationTable>> newAllocations = new HashMap<>();
-        List<AllocationEntity> sources = new ArrayList<>();
+
+        // add all allocations which we could use to "find" our data, as we create new partitions we exclude allocations with non-old partitions
+        List<AllocationEntity> sourceAllocs = new ArrayList<>( catalog.getSnapshot().alloc().getFromLogical( unPartitionedTable.id ).stream().filter( a -> initialProperty.partitionIds.contains( a.partitionId ) ).toList() );
+
         for ( AllocationPlacement placement : placements ) {
             if ( !fillStores ) {
                 continue;
@@ -2272,54 +2279,25 @@ public class DdlManagerImpl extends DdlManager {
             }
             stores.add( store );
 
-            List<AllocationEntity> sourceAllocs = new ArrayList<>();
-            sourceAllocs.add( catalog.getSnapshot().alloc().getAllocsOfPlacement( placement.id ).get( 0 ) );
-            if ( !sourceAllocs.get( 0 ).unwrap( AllocationTable.class ).orElseThrow().getColumnIds().contains( partitionColumn.id ) ) {
-                // partitionColumn is not included in placement, look for it
-                for ( AllocationPlacement allocationPlacement : placements ) {
-                    AllocationEntity allocation = catalog.getSnapshot().alloc().getAllocsOfPlacement( allocationPlacement.id ).get( 0 );
-                    if ( allocation.unwrap( AllocationTable.class ).orElseThrow().getColumnIds().contains( partitionColumn.id ) ) {
-                        sourceAllocs.add( allocation );
-                        break;
-                    }
-                }
-            }
 
             List<AllocationColumn> columns = catalog.getSnapshot().alloc().getColumns( placement.id );//allocation.unwrap( AllocationTable.class ).getColumns().stream().map( c -> snapshot.rel().getColumn( c.columnId ).orElseThrow() ).collect( Collectors.toList() );
             List<AllocationTable> partitionAllocations = new ArrayList<>();
             List<LogicalColumn> logicalColumns = columns.stream().map( c -> catalog.getSnapshot().rel().getColumn( c.columnId ).orElseThrow() ).collect( Collectors.toList() );
             for ( AllocationPartition partition : result.left ) {
-                /*catalog.getAllocRel( partitionInfo.table.namespaceId ).add(
-                        partitionedTable.namespaceId,
-                        storeId.getAdapterId(),
-                        unPartitionedTable.id,
-                        PlacementType.AUTOMATIC,
-                        DataPlacementRole.UP_TO_DATE );*/
 
                 partitionAllocations.add( addAllocationTable( partitionInfo.table.namespaceId, statement, unPartitionedTable, logicalColumns, pkColumnIds, placement.id, partition.id, columns, store ) );
             }
             newAllocations.put( placement, partitionAllocations );
 
-            // First create new tables
-            //storeId.createTable( statement.getPrepareContext(), null, (AllocationTableWrapper) null );
-
-            // Copy data from unpartitioned to partitioned
-            // Get only columns that are actually on that storeId
-            // Every storeId of a newly partitioned table, initially will hold all partitions
-            //List<LogicalColumn> necessaryColumns = new ArrayList<>();
-            //catalog.getSnapshot().alloc().getColumnPlacementsOnAdapterPerTable( storeId.getAdapterId(), unPartitionedTable.id ).forEach( cp -> necessaryColumns.add( relSnapshot.getColumn( cp.columnId ).orElseThrow() ) );
-            //catalog.updateSnapshot();
             // Copy data from the old partition to new partitions
             catalog.updateSnapshot();
             dataMigrator.copyAllocationData(
                     statement.getTransaction(),
                     catalog.getSnapshot().getAdapter( store.getAdapterId() ).orElseThrow(),
-                    sourceAllocs.stream().map( s -> s.unwrap( AllocationTable.class ).orElseThrow() ).collect( Collectors.toList() ),
+                    sourceAllocs.stream().map( s -> s.unwrap( AllocationTable.class ).orElseThrow() ).toList(),
                     result.right,
                     newAllocations.get( placement ),
                     unPartitionedTable );
-            sources.add( sourceAllocs.get( 0 ) );
-
         }
 
         // Adjust indexes
@@ -2350,8 +2328,8 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // Remove old tables
-        sources.forEach( s -> deleteAllocation( statement, s ) );
-        //stores.forEach( storeId -> storeId.dropTable( statement.getPrepareContext(), -1 ) );
+        sourceAllocs.forEach( s -> deleteAllocation( statement, s ) );
+
         catalog.getAllocRel( partitionInfo.table.namespaceId ).deletePartitionGroup( snapshot.alloc().getPartitionProperty( unPartitionedTable.id ).orElseThrow().partitionIds.get( 0 ) );
         initialProperty.partitionIds.forEach( id -> catalog.getAllocRel( partitionInfo.table.namespaceId ).deletePartition( id ) );
 
@@ -2430,23 +2408,13 @@ public class DdlManagerImpl extends DdlManager {
                 }
 
                 // Mainly needed for HASH
-                if ( partitionInfo.qualifiers.isEmpty() ) {
-                    group = catalog.getAllocRel( partitionInfo.table.namespaceId ).addPartitionGroup(
-                            partitionInfo.table.id,
-                            partitionGroupName,
-                            partitionInfo.table.namespaceId,
-                            actualPartitionType,
-                            numberOfPartitionsPerGroup,
-                            false );
-                } else {
-                    group = catalog.getAllocRel( partitionInfo.table.namespaceId ).addPartitionGroup(
-                            partitionInfo.table.id,
-                            partitionGroupName,
-                            partitionInfo.table.namespaceId,
-                            actualPartitionType,
-                            numberOfPartitionsPerGroup,
-                            false );
-                }
+                group = catalog.getAllocRel( partitionInfo.table.namespaceId ).addPartitionGroup(
+                        partitionInfo.table.id,
+                        partitionGroupName,
+                        partitionInfo.table.namespaceId,
+                        actualPartitionType,
+                        numberOfPartitionsPerGroup,
+                        false );
             }
             List<AllocationPartition> partitions = new ArrayList<>();
             partitionGroups.put( group, partitions );
@@ -2578,10 +2546,6 @@ public class DdlManagerImpl extends DdlManager {
 
         // Need to gather the partitionDistribution before actually merging
         // We need a columnPlacement for every partition
-        Map<Long, List<AllocationColumn>> placementDistribution;
-        PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
-        PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( property.partitionType );
-        //placementDistribution = partitionManager.getRelevantPlacements( table, null, List.of() );
 
         // Update catalog table
         catalog.getAllocRel( table.namespaceId ).deleteProperty( tableId );
@@ -2590,14 +2554,13 @@ public class DdlManagerImpl extends DdlManager {
         long pkid = table.primaryKey;
         List<Long> pkColumnIds = relSnapshot.getPrimaryKey( pkid ).orElseThrow().columnIds;
         // Basically get first part of PK even if its compound of PK it is sufficient
-        LogicalColumn pkColumn = relSnapshot.getColumn( pkColumnIds.get( 0 ) ).orElseThrow();
         // This gets us only one ccp per storeId (first part of PK)
 
         DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
         List<LogicalColumn> logicalColumns = snapshot.rel().getColumns( tableId );
 
         Pair<AllocationPartition, PartitionProperty> partitionProperty = createSinglePartition( table.namespaceId, table );
-        List<AllocationEntity> sources = new ArrayList<>();
+        Set<AllocationEntity> sources = new HashSet<>();
         // For merge create only full placements on the used stores. Otherwise, partition constraints might not hold
         for ( AllocationPlacement placement : catalog.getSnapshot().alloc().getPlacementsFromLogical( tableId ) ) {
 
@@ -2606,7 +2569,16 @@ public class DdlManagerImpl extends DdlManager {
                 continue;
             }
 
-            List<AllocationTable> sourceTables = snapshot.alloc().getAllocsOfPlacement( placement.id ).stream().map( t -> t.unwrap( AllocationTable.class ).orElseThrow() ).collect( Collectors.toList() );
+            List<AllocationTable> sourceTables = new ArrayList<>( snapshot.alloc().getAllocsOfPlacement( placement.id ).stream().map( t -> t.unwrap( AllocationTable.class ).orElseThrow() ).toList() );
+            List<Long> missingPartitions = new ArrayList<>( property.partitionIds );
+            missingPartitions.removeAll( sourceTables.stream().map( s -> s.partitionId ).toList() );
+
+            sources.addAll( sourceTables );
+
+            for ( long missingPartition : missingPartitions ) {
+                sourceTables.addAll( snapshot.alloc().getAllocsOfPartitions( missingPartition ).stream().filter( a -> a.adapterId != store.adapterId ).map( a -> a.unwrap( AllocationTable.class ).orElseThrow() ).toList() );
+            }
+
             List<AllocationColumn> columns = snapshot.alloc().getColumns( placement.id );
 
             // First create new tables
@@ -2620,7 +2592,8 @@ public class DdlManagerImpl extends DdlManager {
                     partitionProperty.right,
                     List.of( targetTable ),
                     table );
-            sources.addAll( sourceTables );
+
+
         }
 
         // Adjust indexes
@@ -2705,6 +2678,7 @@ public class DdlManagerImpl extends DdlManager {
             case FOREIGN:
                 String foreignKeyTable = information.foreignKeyTable;
                 long foreignTableId;
+                assert foreignKeyTable != null;
                 if ( foreignKeyTable.split( "\\." ).length == 1 ) {
                     foreignTableId = catalog.getSnapshot().rel().getTable( namespaceId, foreignKeyTable ).orElseThrow().id;
                 } else if ( foreignKeyTable.split( "\\." ).length == 2 ) {

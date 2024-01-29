@@ -28,6 +28,7 @@ import java.sql.Statement;
 import java.util.List;
 import org.apache.calcite.avatica.AvaticaSqlException;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
@@ -43,11 +44,19 @@ import org.polypheny.db.catalog.logistic.Pattern;
 public class VerticalPartitioningTest {
 
 
+    private static TestHelper helper;
+
+
     @BeforeAll
     public static void start() {
         // Ensures that Polypheny-DB is running
-        //noinspection ResultOfMethodCallIgnored
-        TestHelper.getInstance();
+        helper = TestHelper.getInstance();
+    }
+
+
+    @BeforeEach
+    public void beforeEach() {
+        helper.randomizeCatalogIds();
     }
 
 

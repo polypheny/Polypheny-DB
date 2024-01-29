@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
@@ -45,10 +44,9 @@ import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
-import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.Router;
+import org.polypheny.db.routing.RoutingContext;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.RoutedAlgBuilder;
@@ -90,33 +88,27 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
     protected abstract List<RoutedAlgBuilder> handleHorizontalPartitioning(
             AlgNode node,
             LogicalTable table,
-            Statement statement,
             List<RoutedAlgBuilder> builders,
-            AlgOptCluster cluster,
-            LogicalQueryInformation queryInformation );
+            RoutingContext context );
 
     protected abstract List<RoutedAlgBuilder> handleVerticalPartitioningOrReplication(
             AlgNode node,
             LogicalTable table,
-            Statement statement,
             List<RoutedAlgBuilder> builders,
-            AlgOptCluster cluster,
-            LogicalQueryInformation queryInformation );
+            RoutingContext context );
 
     protected abstract List<RoutedAlgBuilder> handleNonePartitioning(
             AlgNode node,
             LogicalTable table,
-            Statement statement,
             List<RoutedAlgBuilder> builders,
-            AlgOptCluster cluster,
-            LogicalQueryInformation queryInformation );
+            RoutingContext context );
 
 
     /**
      * Abstract router only routes DQL queries.
      */
     @Override
-    public List<RoutedAlgBuilder> route( AlgRoot logicalRoot, Statement statement, LogicalQueryInformation queryInformation ) {
+    public List<RoutedAlgBuilder> route( AlgRoot logicalRoot, RoutingContext context ) {
         // Reset cancel query this run
         this.cancelQuery = false;
 
@@ -127,13 +119,11 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
         } else if ( logicalRoot.alg instanceof BatchIterator ) {
             throw new IllegalStateException( "Should never happen for Iterator" );
         } else {
-            RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, logicalRoot.alg.getCluster() );
+            RoutedAlgBuilder builder = context.getRoutedAlgBuilder();
             return buildDql(
                     logicalRoot.alg,
                     Lists.newArrayList( builder ),
-                    statement,
-                    logicalRoot.alg.getCluster(),
-                    queryInformation );
+                    context );
         }
     }
 
@@ -163,31 +153,31 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
     }
 
 
-    protected List<RoutedAlgBuilder> buildDql( AlgNode node, List<RoutedAlgBuilder> builders, Statement statement, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
+    protected List<RoutedAlgBuilder> buildDql( AlgNode node, List<RoutedAlgBuilder> builders, RoutingContext context ) {
         if ( node instanceof SetOp ) {
             if ( node instanceof Union ) {
                 // unions can have more than one child
-                return buildUnion( node, builders, statement, cluster, queryInformation );
+                return buildUnion( node, builders, context );
             } else {
-                return buildSetOp( node, builders, statement, cluster, queryInformation );
+                return buildSetOp( node, builders, context );
             }
         } else {
-            return buildSelect( node, builders, statement, cluster, queryInformation );
+            return buildSelect( node, builders, context );
         }
     }
 
 
-    protected List<RoutedAlgBuilder> buildSelect( AlgNode node, List<RoutedAlgBuilder> builders, Statement statement, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
+    protected List<RoutedAlgBuilder> buildSelect( AlgNode node, List<RoutedAlgBuilder> builders, RoutingContext context ) {
         if ( cancelQuery ) {
             return Collections.emptyList();
         }
 
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
-            builders = this.buildDql( node.getInput( i ), builders, statement, cluster, queryInformation );
+            builders = this.buildDql( node.getInput( i ), builders, context );
         }
 
         if ( node instanceof LogicalDocumentScan ) {
-            return Lists.newArrayList( builders.get( 0 ).push( super.handleDocScan( (DocumentScan<?>) node, statement, null ) ) );
+            return Lists.newArrayList( builders.get( 0 ).push( super.handleDocScan( (DocumentScan<?>) node, context.getStatement(), null ) ) );
         }
 
         if ( node.unwrap( LogicalRelScan.class ).isPresent() && node.getEntity() != null ) {
@@ -198,12 +188,16 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
             }
 
             if ( oLogicalEntity.get().getDataModel() == DataModel.GRAPH ) {
-                return handleRelationalOnGraphScan( node, statement, oLogicalEntity.get(), builders, cluster, queryInformation );
+                return handleRelationalOnGraphScan( node, oLogicalEntity.get(), builders, context );
             }
 
             if ( oLogicalEntity.get().getDataModel() == DataModel.DOCUMENT ) {
                 builders.forEach( b -> {
-                    LogicalRelScan scan = new LogicalRelScan( cluster, node.getTraitSet(), handleDocScan( new LogicalDocumentScan( cluster, node.getTraitSet(), oLogicalEntity.get() ), statement, List.of() ).entity );
+                    LogicalRelScan scan = new LogicalRelScan(
+                            context.getCluster(),
+                            node.getTraitSet(),
+                            handleDocScan(
+                                    new LogicalDocumentScan( context.getCluster(), node.getTraitSet(), oLogicalEntity.get() ), context.getStatement(), List.of() ).entity );
                     b.push( scan );
                 } );
                 return builders;
@@ -218,12 +212,12 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
             // Check if table is even horizontal partitioned
 
             if ( catalog.getSnapshot().alloc().getPartitionsFromLogical( oLogicalTable.get().id ).size() > 1 ) { // todo dl replace vert atm
-                return handleHorizontalPartitioning( node, oLogicalTable.get(), statement, builders, cluster, queryInformation );
+                return handleHorizontalPartitioning( node, oLogicalTable.get(), builders, context );
             } else if ( catalog.getSnapshot().alloc().getPlacementsFromLogical( oLogicalTable.get().id ).size() > 1 ) { // At the moment multiple strategies
-                return handleVerticalPartitioningOrReplication( node, oLogicalTable.get(), statement, builders, cluster, queryInformation );
+                return handleVerticalPartitioningOrReplication( node, oLogicalTable.get(), builders, context );
             }
 
-            return handleNonePartitioning( node, oLogicalTable.get(), statement, builders, cluster, queryInformation );
+            return handleNonePartitioning( node, oLogicalTable.get(), builders, context );
 
         } else if ( node instanceof LogicalValues ) {
             return Lists.newArrayList( super.handleValues( (LogicalValues) node, builders ) );
@@ -233,9 +227,9 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
     }
 
 
-    private List<RoutedAlgBuilder> handleRelationalOnGraphScan( AlgNode node, Statement statement, LogicalEntity logicalTable, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
+    private List<RoutedAlgBuilder> handleRelationalOnGraphScan( AlgNode node, LogicalEntity logicalTable, List<RoutedAlgBuilder> builders, RoutingContext context ) {
         // todo dl: remove after RowType refactor
-        AlgBuilder algBuilder = AlgBuilder.create( statement );
+        AlgBuilder algBuilder = AlgBuilder.create( context.getStatement() );
         RexBuilder rexBuilder = algBuilder.getRexBuilder();
 
         algBuilder.lpgScan( logicalTable.id );
@@ -244,7 +238,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
                 List.of( rexBuilder.makeToJson( rexBuilder.makeLpgGetId() ), rexBuilder.makeToJson( rexBuilder.makeLpgPropertiesExtract() ), rexBuilder.makeLpgLabels() ),
                 List.of( PolyString.of( "id" ), PolyString.of( "properties" ), PolyString.of( "labels" ) ) );
 
-        AlgNode built = routeGraph( RoutedAlgBuilder.create( statement, cluster ), (AlgNode & LpgAlg) algBuilder.build(), statement );
+        AlgNode built = routeGraph( context.getRoutedAlgBuilder(), (AlgNode & LpgAlg) algBuilder.build(), context.getStatement() );
 
         builders.get( 0 ).push( new LogicalTransformer(
                 node.getCluster(),
@@ -259,14 +253,14 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
     }
 
 
-    protected List<RoutedAlgBuilder> buildSetOp( AlgNode node, List<RoutedAlgBuilder> builders, Statement statement, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
+    protected List<RoutedAlgBuilder> buildSetOp( AlgNode node, List<RoutedAlgBuilder> builders, RoutingContext context ) {
         if ( cancelQuery ) {
             return Collections.emptyList();
         }
-        builders = buildDql( node.getInput( 0 ), builders, statement, cluster, queryInformation );
+        builders = buildDql( node.getInput( 0 ), builders, context );
 
-        RoutedAlgBuilder builder0 = RoutedAlgBuilder.create( statement, cluster );
-        RoutedAlgBuilder b0 = buildDql( node.getInput( 1 ), Lists.newArrayList( builder0 ), statement, cluster, queryInformation ).get( 0 );
+        RoutedAlgBuilder builder0 = context.getRoutedAlgBuilder();
+        RoutedAlgBuilder b0 = buildDql( node.getInput( 1 ), Lists.newArrayList( builder0 ), context ).get( 0 );
 
         builders.forEach(
                 builder -> builder.replaceTop( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek(), b0.build() ) ) )
@@ -276,16 +270,16 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
     }
 
 
-    protected List<RoutedAlgBuilder> buildUnion( AlgNode node, List<RoutedAlgBuilder> builders, Statement statement, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
+    protected List<RoutedAlgBuilder> buildUnion( AlgNode node, List<RoutedAlgBuilder> builders, RoutingContext context ) {
         if ( cancelQuery ) {
             return Collections.emptyList();
         }
-        builders = buildDql( node.getInput( 0 ), builders, statement, cluster, queryInformation );
+        builders = buildDql( node.getInput( 0 ), builders, context );
 
-        RoutedAlgBuilder builder0 = RoutedAlgBuilder.create( statement, cluster );
+        RoutedAlgBuilder builder0 = context.getRoutedAlgBuilder();
         List<RoutedAlgBuilder> b0s = new ArrayList<>();
         for ( AlgNode input : node.getInputs().subList( 1, node.getInputs().size() ) ) {
-            b0s.add( buildDql( input, Lists.newArrayList( builder0 ), statement, cluster, queryInformation ).get( 0 ) );
+            b0s.add( buildDql( input, Lists.newArrayList( builder0 ), context ).get( 0 ) );
         }
 
         builders.forEach(
@@ -295,7 +289,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
                                 Stream.concat(
                                                 Stream.of( builder.peek() ),
                                                 b0s.stream().map( AlgBuilder::build ) )
-                                        .collect( Collectors.toList() ) ) ) )
+                                        .toList() ) ) )
         );
 
         return builders;

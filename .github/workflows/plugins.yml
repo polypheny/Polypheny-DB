@@ -43,4 +43,4 @@ jobs:
                 with:
                     max_attempts: 1
                     timeout_minutes: 30
-                    command: ./gradlew -p test
+                    command: ./gradlew -p plugins test

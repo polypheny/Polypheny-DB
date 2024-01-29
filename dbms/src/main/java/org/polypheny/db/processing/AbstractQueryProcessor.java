@@ -123,6 +123,7 @@ import org.polypheny.db.routing.ExecutionTimeMonitor.ExecutionTimeObserver;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.ProposedRoutingPlan;
 import org.polypheny.db.routing.Router;
+import org.polypheny.db.routing.RoutingContext;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.routing.RoutingPlan;
 import org.polypheny.db.routing.UiRoutingPageUtil;
@@ -528,8 +529,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     .flatMap( List::stream )
                     .collect( Collectors.toSet() );
             List<CachedProposedRoutingPlan> routingPlansCached = RoutingPlanCache.INSTANCE.getIfPresent( logicalQueryInformation.getQueryHash(), partitionIds );
-            if ( !routingPlansCached.isEmpty() && routingPlansCached.stream().noneMatch( p -> p.physicalPlacementsOfPartitions.isEmpty() ) ) {
-                plans = routeCached( indexLookupRoot, routingPlansCached, statement, logicalQueryInformation, isAnalyze );
+            if ( !routingPlansCached.isEmpty() && routingPlansCached.stream().noneMatch( Objects::nonNull ) ) {
+                plans = routeCached( indexLookupRoot, routingPlansCached, new RoutingContext( indexLookupRoot.alg.getCluster(), statement, logicalQueryInformation ), isAnalyze );
             }
         }
 
@@ -910,6 +911,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     private List<ProposedRoutingPlan> route( AlgRoot logicalRoot, Statement statement, LogicalQueryInformation queryInformation ) {
+        RoutingContext context = new RoutingContext( logicalRoot.alg.getCluster(), statement, queryInformation );
         final DmlRouter dmlRouter = RoutingManager.getInstance().getDmlRouter();
         if ( logicalRoot.getModel() == ModelTrait.GRAPH ) {
             return routeGraph( logicalRoot, queryInformation, dmlRouter );
@@ -919,13 +921,13 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             AlgNode routedDml = dmlRouter.routeDml( (LogicalRelModify) logicalRoot.alg, statement );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryInformation.getQueryHash() ) );
         } else if ( logicalRoot.alg instanceof ConditionalExecute ) {
-            AlgNode routedConditionalExecute = dmlRouter.handleConditionalExecute( logicalRoot.alg, statement, queryInformation );
+            AlgNode routedConditionalExecute = dmlRouter.handleConditionalExecute( logicalRoot.alg, context );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedConditionalExecute, logicalRoot, queryInformation.getQueryHash() ) );
         } else if ( logicalRoot.alg instanceof BatchIterator ) {
-            AlgNode routedIterator = dmlRouter.handleBatchIterator( logicalRoot.alg, statement, queryInformation );
+            AlgNode routedIterator = dmlRouter.handleBatchIterator( logicalRoot.alg, context );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedIterator, logicalRoot, queryInformation.getQueryHash() ) );
         } else if ( logicalRoot.alg instanceof ConstraintEnforcer ) {
-            AlgNode routedConstraintEnforcer = dmlRouter.handleConstraintEnforcer( logicalRoot.alg, statement, queryInformation );
+            AlgNode routedConstraintEnforcer = dmlRouter.handleConstraintEnforcer( logicalRoot.alg, context );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedConstraintEnforcer, logicalRoot, queryInformation.getQueryHash() ) );
         } else {
             final List<ProposedRoutingPlan> proposedPlans = new ArrayList<>();
@@ -935,9 +937,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
             for ( Router router : RoutingManager.getInstance().getRouters() ) {
                 try {
-                    List<RoutedAlgBuilder> builders = router.route( logicalRoot, statement, queryInformation );
+                    List<RoutedAlgBuilder> builders = router.route( logicalRoot, context );
                     List<ProposedRoutingPlan> plans = builders.stream()
-                            .map( builder -> (ProposedRoutingPlan) new ProposedRoutingPlanImpl( builder, logicalRoot, queryInformation.getQueryHash(), router.getClass() ) )
+                            .map( builder -> (ProposedRoutingPlan) new ProposedRoutingPlanImpl( context, builder, logicalRoot, queryInformation.getQueryHash(), router.getClass() ) )
                             .toList();
                     proposedPlans.addAll( plans );
                 } catch ( Throwable e ) {
@@ -991,7 +993,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private List<Plan> routeCached( AlgRoot logicalRoot, List<CachedProposedRoutingPlan> routingPlansCached, Statement statement, LogicalQueryInformation queryInformation, boolean isAnalyze ) {
+    private List<Plan> routeCached( AlgRoot logicalRoot, List<CachedProposedRoutingPlan> routingPlansCached, RoutingContext context, boolean isAnalyze ) {
         if ( isAnalyze ) {
             statement.getRoutingDuration().start( "Select Cached Plan" );
         }
@@ -1009,15 +1011,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         RoutedAlgBuilder builder = RoutingManager.getInstance().getCachedPlanRouter().routeCached(
                 logicalRoot,
                 selectedCachedPlan,
-                statement,
-                queryInformation );
+                context );
 
         if ( isAnalyze ) {
             statement.getRoutingDuration().stop( "Route Cached Plan" );
             statement.getRoutingDuration().start( "Create Plan From Cache" );
         }
 
-        ProposedRoutingPlan proposed = new ProposedRoutingPlanImpl( builder, logicalRoot, queryInformation.getQueryHash(), selectedCachedPlan );
+        ProposedRoutingPlan proposed = new ProposedRoutingPlanImpl( context, builder, logicalRoot, context.getQueryInformation().getQueryHash(), selectedCachedPlan );
 
         if ( isAnalyze ) {
             statement.getRoutingDuration().stop( "Create Plan From Cache" );

@@ -18,17 +18,13 @@ package org.polypheny.db.routing;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import java.util.Map.Entry;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
-import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
-import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -41,6 +37,9 @@ import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.processing.util.Plan;
+import org.polypheny.db.routing.ColumnDistribution.FullPartition;
+import org.polypheny.db.routing.ColumnDistribution.PartialPartition;
+import org.polypheny.db.routing.ColumnDistribution.RoutedDistribution;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -101,20 +100,19 @@ public class UiRoutingPageUtil {
         queryAnalyzer.addGroup( group );
         InformationTable table = new InformationTable(
                 group,
-                ImmutableList.of( "Entity", "Field", "Allocation Id", "Adapter" ) );
-        if ( proposedRoutingPlan.getPhysicalPlacementsOfPartitions() != null ) {
-            for ( Entry<Long, List<AllocationColumn>> entry : proposedRoutingPlan.getPhysicalPlacementsOfPartitions().entrySet() ) {
-                AllocationPartition alloc = snapshot.alloc().getPartition( entry.getKey() ).orElseThrow();
-                LogicalEntity entity = snapshot.getLogicalEntity( alloc.logicalEntityId ).orElseThrow();
+                ImmutableList.of( "Entity", "Placement Id", "Adapter", "Allocation Id" ) );
+        if ( proposedRoutingPlan.getRoutedDistribution() != null ) {
+            RoutedDistribution distribution = proposedRoutingPlan.getRoutedDistribution();
+            LogicalEntity entity = distribution.entity();
 
+            for ( FullPartition partition : distribution.partitions() ) {
                 if ( entity.unwrap( LogicalTable.class ).isPresent() ) {
-                    for ( AllocationColumn column : entry.getValue() ) {
-                        LogicalColumn logical = snapshot.rel().getColumn( column.columnId ).orElseThrow();
+                    for ( PartialPartition partial : partition.partials() ) {
                         table.addRow(
                                 entity.getNamespaceName() + "." + entity.name,
-                                logical.name,
-                                alloc.id,
-                                column.adapterId );
+                                partial.entity().placementId,
+                                partial.entity().adapterId,
+                                partial.entity().id );
                     }
 
                 } else if ( entity.unwrap( LogicalCollection.class ).isPresent() ) {
@@ -145,8 +143,8 @@ public class UiRoutingPageUtil {
         overviewTable.addRow( "Pre Cost Factor", ratioPre );
         overviewTable.addRow( "Post Cost Factor", ratioPost );
         overviewTable.addRow( "Selection Strategy", RoutingManager.PLAN_SELECTION_STRATEGY.getEnum() );
-        if ( selectedPlan.getPhysicalPlacementsOfPartitions() != null ) {
-            overviewTable.addRow( "Selected Plan", selectedPlan.getPhysicalPlacementsOfPartitions().toString() );
+        if ( selectedPlan.getRoutedDistribution() != null ) {
+            overviewTable.addRow( "Selected Plan", selectedPlan.getRoutedDistribution().toString() );
         }
         if ( selectedPlan.getRouter() != null ) {
             overviewTable.addRow( "Proposed By", selectedPlan.getRouter().getSimpleName() );
@@ -185,7 +183,7 @@ public class UiRoutingPageUtil {
         for ( int i = 0; i < routingPlans.size(); i++ ) {
             final RoutingPlan routingPlan = routingPlans.get( i );
             proposedPlansTable.addRow(
-                    routingPlan.getPhysicalPlacementsOfPartitions().toString(),
+                    routingPlan.getRoutedDistribution().toString(),
                     routingPlan.getRouter() != null ? routingPlan.getRouter().getSimpleName() : "",
                     approximatedCosts.get( i ),
                     Math.round( preCosts.get( i ) * 100.0 ) / 100.0,

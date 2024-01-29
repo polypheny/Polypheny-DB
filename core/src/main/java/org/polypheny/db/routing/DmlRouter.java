@@ -39,11 +39,11 @@ public interface DmlRouter {
     /**
      * Routes conditional executes and directly returns a RelNode.
      */
-    AlgNode handleConditionalExecute( AlgNode node, Statement statement, LogicalQueryInformation queryInformation );
+    AlgNode handleConditionalExecute( AlgNode node, RoutingContext context );
 
-    AlgNode handleConstraintEnforcer( AlgNode alg, Statement statement, LogicalQueryInformation queryInformation );
+    AlgNode handleConstraintEnforcer( AlgNode alg, RoutingContext context );
 
-    AlgNode handleBatchIterator( AlgNode alg, Statement statement, LogicalQueryInformation queryInformation );
+    AlgNode handleBatchIterator( AlgNode alg, RoutingContext context );
 
     AlgNode routeDocumentDml( LogicalDocumentModify alg, Statement statement, @Nullable AllocationEntity target, @Nullable List<Long> excludedPlacements );
 

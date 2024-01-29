@@ -133,9 +133,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * Adds a new DataPlacement for a given table on a specific store
      *
      * @param adapterId adapter where placement should be located
-     * @param placementId
      * @param logicalId table to retrieve the placement from
-     * @return
      */
     AllocationTable addAllocation( long adapterId, long placementId, long partitionId, long logicalId );
 

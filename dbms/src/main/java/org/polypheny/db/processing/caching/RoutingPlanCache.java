@@ -65,12 +65,12 @@ public class RoutingPlanCache {
 
 
     public boolean isKeyPresent( String queryId, Set<Long> partitionIds ) {
-        return planCache.getIfPresent( new Pair( queryId, partitionIds ) ) != null;
+        return planCache.getIfPresent( Pair.of( queryId, partitionIds ) ) != null;
     }
 
 
     public List<CachedProposedRoutingPlan> getIfPresent( String queryId, Set<Long> partitionIds ) {
-        List<CachedProposedRoutingPlan> routingPlans = planCache.getIfPresent( new Pair( queryId, partitionIds ) );
+        List<CachedProposedRoutingPlan> routingPlans = planCache.getIfPresent( Pair.of( queryId, partitionIds ) );
         if ( routingPlans == null ) {
             missesCounter.incrementAndGet();
         } else {
@@ -86,15 +86,15 @@ public class RoutingPlanCache {
         // all physicalPlacementsOfPartitions or else it will fail later on.
         // We check here and don't cache if the plan is not complete
         // This might be only a symptom fix and needs fixing in the ProposedPlan itself
-        if ( routingPlans.stream().allMatch( p -> {
+        /*if ( routingPlans.stream().allMatch( p -> {
             if ( !partitionIds.stream().allMatch( i -> p.physicalPlacementsOfPartitions.containsKey( i ) ) ) {
                 log.warn( "Does not contain all placement." );
                 return false;
             }
             return true;
-        } ) ) {
-            planCache.put( new Pair<>( queryId, partitionIds ), routingPlans );
-        }
+        } ) ) {*/
+        planCache.put( new Pair<>( queryId, partitionIds ), routingPlans );
+        //}
 
     }
 

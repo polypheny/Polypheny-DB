@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,21 +16,7 @@
 
 package org.polypheny.db.routing;
 
-import org.polypheny.db.routing.ColumnDistribution.RoutedDistribution;
+public interface FieldDistribution {
 
-
-/**
- * Common interface for cached and non-cached routing plans.
- */
-public interface RoutingPlan {
-
-    String getQueryClass();
-
-    String getPhysicalQueryClass();
-
-    Class<? extends Router> getRouter();
-
-    // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
-    RoutedDistribution getRoutedDistribution();
 
 }

@@ -42,6 +42,7 @@ import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.util.Pair;
 
@@ -140,7 +141,11 @@ public class RelAdapterCatalog extends AdapterCatalog {
 
 
     public PhysicalTable fromAllocation( long id ) {
-        return getPhysicalsFromAllocs( id ).get( 0 ).unwrap( PhysicalTable.class ).orElseThrow();
+        List<PhysicalEntity> allocs = getPhysicalsFromAllocs( id );
+        if ( allocs == null || allocs.isEmpty() ) {
+            throw new GenericRuntimeException( "No physical table found for allocation with id %s", id );
+        }
+        return allocs.get( 0 ).unwrap( PhysicalTable.class ).orElseThrow();
     }
 
 

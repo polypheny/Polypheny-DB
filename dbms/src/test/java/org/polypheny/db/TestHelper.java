@@ -40,8 +40,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import kong.unirest.HttpRequest;
 import kong.unirest.HttpResponse;
@@ -56,6 +59,8 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.IdBuilder;
+import org.polypheny.db.catalog.impl.PolyCatalog;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.processing.caching.ImplementationCache;
 import org.polypheny.db.processing.caching.QueryPlanCache;
@@ -172,15 +177,25 @@ public class TestHelper {
     }
 
 
-    public static void addHsqldb( String name ) throws SQLException {
-        executeSQL( "ALTER ADAPTERS ADD \"" + name + "\" USING 'Hsqldb' AS 'Store'"
+    public static void addHsqldb( String name, Statement statement ) throws SQLException {
+        executeSQL( statement, "ALTER ADAPTERS ADD \"" + name + "\" USING 'Hsqldb' AS 'Store'"
                 + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
     }
 
 
-    public static void addCsv( String name ) throws SQLException {
-        executeSQL( "ALTER ADAPTERS ADD \"" + name + "\" USING 'Csv' AS 'Store'"
+    public static void addCsv( String name, Statement statement ) throws SQLException {
+        executeSQL( statement, "ALTER ADAPTERS ADD \"" + name + "\" USING 'Csv' AS 'Store'"
                 + " WITH '{}'" );
+    }
+
+
+    public static void dropAdaper( String name, Statement statement ) throws SQLException {
+        executeSQL( statement, "ALTER ADAPTERS DROP \"" + name + "\"" );
+    }
+
+
+    public static void executeSQL( Statement statement, String sql ) throws SQLException {
+        statement.execute( sql );
     }
 
 
@@ -189,6 +204,43 @@ public class TestHelper {
             try ( Statement statement = jdbcConnection.connection.createStatement() ) {
                 statement.execute( sql );
             }
+        }
+    }
+
+
+    /**
+     * Surprisingly often when testing the used ids are in a similar range and quite low, which can result in unexpected behaviour,
+     * where tests seem to work but shouldn't.
+     */
+    public void randomizeCatalogIds() {
+        Random random = new Random();
+        int max = 200;
+        Supplier<Integer> offset = () -> random.nextInt( max );
+
+        try {
+            PolyCatalog catalog = (PolyCatalog) Catalog.getInstance();
+            Field field = catalog.getClass().getDeclaredField( "idBuilder" );
+            field.setAccessible( true );
+            field.set( catalog, new IdBuilder(
+                    new AtomicLong( catalog.idBuilder.getSnapshotId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getNamespaceId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getEntityId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getFieldId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getUserId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getAllocId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getPhysicalId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getIndexId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getKeyId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getAdapterId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getAdapterTemplateId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getInterfaceId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getConstraintId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getGroupId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getPartitionId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getPlacementId().longValue() + offset.get() )
+            ) );
+        } catch ( NoSuchFieldException | IllegalAccessException e ) {
+            throw new RuntimeException( e );
         }
     }
 

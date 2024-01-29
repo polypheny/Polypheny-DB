@@ -166,13 +166,10 @@ public abstract class AdapterCatalog implements PolySerializable {
             allocations.remove( physical.allocationId );
 
             // remove fields
-            List<PhysicalField> removeFields = fields.entrySet().stream().filter( f -> f.getValue().entityId == physicalId
-                    || f.getKey().getKey() == physical.allocationId ).map( Entry::getValue ).collect( Collectors.toList() );
+            List<PhysicalField> removeFields = fields.entrySet().stream().filter( f -> f.getKey().getKey() == physical.allocationId ).map( Entry::getValue ).toList();
             removeFields.forEach( field -> fields.remove( Pair.of( field.allocId, field.id ) ) );
         }
         physicals.forEach( this.physicals::remove );
-        physicals.forEach( allocToPhysicals::remove );
-
     }
 
 
