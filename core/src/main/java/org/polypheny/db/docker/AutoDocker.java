@@ -91,13 +91,11 @@ public final class AutoDocker {
     private Optional<String> findAndStartPolyphenyContainer( DockerClient client ) {
         List<Container> resp = client.listContainersCmd().withShowAll( true ).exec();
         for ( Container c : resp ) {
-            for ( String name : c.getNames() ) {
-                if ( name.equals( "/" + DockerUtils.CONTAINER_NAME ) ) {
-                    if ( !c.getState().equals( "running" ) ) {
-                        client.startContainerCmd( c.getId() ).exec();
-                    }
-                    return Optional.of( c.getId() );
+            if (Arrays.asList( c.getNames() ).contains( "/" + DockerUtils.CONTAINER_NAME )) {
+                if ( !c.getState().equals( "running" ) ) {
+                    client.startContainerCmd( c.getId() ).exec();
                 }
+                return Optional.of( c.getId() );
             }
         }
         return Optional.empty();

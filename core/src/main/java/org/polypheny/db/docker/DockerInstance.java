@@ -57,12 +57,12 @@ public final class DockerInstance {
     private Set<String> containerUuids = new HashSet<>();
 
     /**
-     * The UUID of the docker daemon we are talking to.  null if we are currently not connected.
+     * The UUID of the Docker daemon we are talking to.  null if we are currently not connected.
      */
     private String dockerInstanceUuid;
 
     /**
-     * The client object used to communicate with Docker.  null if not connected.
+     * The client object used to communicate with this Docker instance.  null if not connected.
      */
     private PolyphenyDockerClient client;
 
@@ -89,9 +89,7 @@ public final class DockerInstance {
 
 
     private void connectToDocker() throws IOException {
-        PolyphenyKeypair kp = PolyphenyCertificateManager.loadClientKeypair( "docker", host.hostname() );
-        byte[] serverCertificate = PolyphenyCertificateManager.loadServerCertificate( "docker", host.hostname() );
-        this.client = new PolyphenyDockerClient( host.hostname(), host.communicationPort(), kp, serverCertificate );
+        this.client = PolyphenyDockerClient.connect( "docker", host.hostname(), host.communicationPort() );
         this.client.ping();
     }
 
@@ -99,29 +97,30 @@ public final class DockerInstance {
     private void handleNewDockerInstance() throws IOException {
         this.dockerInstanceUuid = this.client.getDockerId();
 
-        // seenUuids is used to lock out all the other DockerInstance instances
+        // seenUuids is used to synchronize with other DockerInstance instances
         synchronized ( seenInstanceUuids ) {
             for ( DockerInstance instance : DockerManager.getInstance().getDockerInstances().values() ) {
                 if ( instance != this && instance.dockerInstanceUuid != null && instance.dockerInstanceUuid.equals( dockerInstanceUuid ) ) {
-                    throw new DockerUserException( "The same docker instance cannot be added twice" );
+                    throw new RuntimeException( String.format( "Already connected to instance at %s with alias %s", this.host, instance.host.alias() ) );
                 }
             }
         }
-
+        // What follows here is only to clean up old containers when Polypheny is reset.
         boolean first;
         synchronized ( seenInstanceUuids ) {
-            first = seenInstanceUuids.add( this.dockerInstanceUuid ) && (Catalog.resetDocker || Catalog.resetCatalog);
+            first = seenInstanceUuids.add( this.dockerInstanceUuid );
         }
 
-        if ( first ) {
-            List<ContainerInfo> containers = this.client.listContainers();
-            for ( String uuid : containers.stream().map( ContainerInfo::getUuid ).toList() ) {
-                try {
-                    this.client.deleteContainer( uuid );
-                } catch ( IOException e ) {
-                    log.error( "Failed to delete container " + uuid, e );
-                }
-            }
+        if ( first && (Catalog.resetDocker || Catalog.resetCatalog) ) {
+            this.client.listContainers().forEach(
+                    containerInfo -> {
+                        try {
+                            this.client.deleteContainer( containerInfo.getUuid() );
+                        } catch ( IOException e ) {
+                            log.error( "Failed to delete container " + containerInfo.getUuid(), e );
+                        }
+                    }
+            );
         }
     }
 
@@ -134,17 +133,16 @@ public final class DockerInstance {
 
             if ( status == Status.NEW ) {
                 handleNewDockerInstance();
-                status = Status.DISCONNECTED; // This is so that the next block is executed as well, but that we never rerun handleNewDockerInstance
+                status = Status.DISCONNECTED; // This is so that the next block is executed as well, but that we never run handleNewDockerInstance again
             }
 
             // We only get here, if connectToDocker worked
             if ( status != Status.CONNECTED ) {
                 Set<String> uuids = new HashSet<>();
-                List<ContainerInfo> containers = this.client.listContainers();
-                for ( ContainerInfo containerInfo : containers ) {
-                    uuids.add( containerInfo.getUuid() );
-                    new DockerContainer( containerInfo.getUuid(), containerInfo.getName() );
-                }
+                this.client.listContainers().forEach( c -> {
+                    uuids.add( c.getUuid() );
+                    new DockerContainer( c.getUuid(), c.getName() );
+                } );
                 this.containerUuids = uuids;
                 status = Status.CONNECTED;
             } else {

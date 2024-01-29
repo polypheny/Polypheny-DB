@@ -33,16 +33,10 @@ public final class DockerSetupHelper {
 
 
     private static void tryConnectDirectly( DockerHost host ) throws IOException {
-        byte[] serverCertificate;
+        PolyphenyCertificateManager.loadServerCertificate( "docker", host.hostname() );
+        PolyphenyCertificateManager.loadClientKeypair( "docker", host.hostname() );
 
-        try {
-            serverCertificate = PolyphenyCertificateManager.loadServerCertificate( "docker", host.hostname() );
-        } catch ( IOException e ) {
-            throw new IOException( "No valid server certificate present" );
-        }
-
-        PolyphenyKeypair kp = PolyphenyCertificateManager.loadClientKeypair( "docker", host.hostname() );
-        PolyphenyDockerClient client = new PolyphenyDockerClient( host.hostname(), host.communicationPort(), kp, serverCertificate );
+        PolyphenyDockerClient client = PolyphenyDockerClient.connect( "docker", host.hostname(), host.communicationPort() );
         client.ping();
         client.close();
     }

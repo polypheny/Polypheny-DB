@@ -71,7 +71,7 @@ final class PolyphenyKeypair {
         PolyphenyKeypair kp = new PolyphenyKeypair( cert, sk );
 
         if ( !kp.getUuid().equals( uuid ) ) {
-            throw new IOException( "Loaded certificate UUID does not match the expected UUID" );
+            throw new IOException( "Loaded certificate UUID does not match the current Polypheny instance UUID" );
         }
 
         return kp;
