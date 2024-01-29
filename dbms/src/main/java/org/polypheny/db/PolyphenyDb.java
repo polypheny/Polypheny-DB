@@ -377,11 +377,9 @@ public class PolyphenyDb {
         StatusService.initialize( transactionManager, server.getServer() );
 
         log.debug( "Setting Docker Timeouts" );
-        Catalog.resetDocker = resetDocker;
+        Catalog.resetDocker = resetDocker; // TODO: Needed?
         RuntimeConfig.DOCKER_TIMEOUT.setInteger( mode == RunMode.DEVELOPMENT || mode == RunMode.TEST ? 5 : RuntimeConfig.DOCKER_TIMEOUT.getInteger() );
-        if ( initializeDockerManager() ) {
-            return;
-        }
+        initializeDockerManager();
 
         // Initialize plugin manager
         PolyPluginManager.init( resetPlugins );
@@ -486,22 +484,22 @@ public class PolyphenyDb {
     }
 
 
-    private boolean initializeDockerManager() {
+    private void initializeDockerManager() {
         if ( AutoDocker.getInstance().isAvailable() ) {
             if ( mode == RunMode.TEST ) {
                 resetDocker = true;
                 Catalog.resetDocker = true;
             }
-            boolean success = AutoDocker.getInstance().doAutoConnect();
-            if ( mode == RunMode.TEST && !success ) {
+            try {
+                AutoDocker.getInstance().doAutoConnect();
+            } catch ( GenericRuntimeException e ) {
                 // AutoDocker does not work in Windows containers
-                if ( !System.getenv( "RUNNER_OS" ).equals( "Windows" ) ) {
-                    log.error( "Failed to connect to docker instance" );
-                    return true;
+                if ( mode == PolyMode.TEST && !System.getenv( "RUNNER_OS" ).equals( "Windows" ) ) {
+                    log.error( "Failed to connect to Docker instance: " + e.getMessage() );
+                    throw e;
                 }
             }
         }
-        return false;
     }
 
 

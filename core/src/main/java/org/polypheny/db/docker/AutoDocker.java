@@ -227,13 +227,13 @@ public final class AutoDocker {
     }
 
 
-    public boolean doAutoConnect() {
+    public void doAutoConnect() {
         if ( !isAvailable() ) {
-            return false;
+            throw new DockerUserException( "AutoDocker is not available" );
         }
 
         if ( isConnected() ) {
-            return true;
+            return;
         }
 
         Optional<Map.Entry<Integer, DockerInstance>> maybeDockerInstance = DockerManager.getInstance().getDockerInstances().entrySet().stream().filter( e -> e.getValue().getHost().hostname().equals( "localhost" ) ).findFirst();
@@ -244,19 +244,19 @@ public final class AutoDocker {
             } catch ( DockerUserException e ) {
                 log.info( "AutoDocker: Reconnect failed: " + e );
                 updateStatus( "error: " + e.getMessage() );
-                return false;
+                throw new DockerUserException( e.getMessage() );
             }
         } else {
             try {
                 Optional<HandshakeInfo> res = DockerSetupHelper.newDockerInstance( host.hostname(), host.alias(), host.registry(), host.communicationPort(), host.handshakePort(), host.proxyPort(), false ); // TODO: Here we get the handshake
                 if ( res.isEmpty() ) {
-                    return true;
+                    return;
                 }
                 handshake = res.get();
             } catch ( DockerUserException e ) {
                 log.info( "AutoDocker: Setup failed: " + e );
                 updateStatus( "setup failed: " + e.getMessage() );
-                return false;
+                throw new DockerUserException( e.getMessage() );
             }
         }
 
@@ -275,7 +275,9 @@ public final class AutoDocker {
                 // no problem
             }
         }
-        return isConnected();
+        if ( !isConnected() ) {
+            throw new DockerUserException( "Failed to connect to local Docker instance" );
+        }
     }
 
 

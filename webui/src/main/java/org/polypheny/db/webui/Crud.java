@@ -3033,14 +3033,17 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
     void doAutoHandshake( final Context ctx ) {
-        boolean success = AutoDocker.getInstance().doAutoConnect();
-        ctx.json(
-                new AutoDockerResult(
-                        success,
-                        AutoDocker.getInstance().getStatus(),
-                        DockerManager.getInstance().getDockerInstancesMap()
-                )
-        );
+        try {
+            AutoDocker.getInstance().doAutoConnect();
+            ctx.json(
+                    new AutoDockerResult(
+                            AutoDocker.getInstance().getStatus(),
+                            DockerManager.getInstance().getDockerInstancesMap()
+                    )
+            );
+        } catch ( DockerUserException e ) {
+            ctx.status( e.getStatus() ).result( e.getMessage() );
+        }
     }
 
 

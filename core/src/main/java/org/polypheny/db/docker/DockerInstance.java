@@ -260,11 +260,27 @@ public final class DockerInstance {
             if ( !this.host.hostname().equals( hostname ) ) {
                 client.close();
                 status = Status.NEW;
+//                try {
+//                    PolyphenyKeypair kp = PolyphenyCertificateManager.loadClientKeypair( "docker", host.hostname() );
+//                    byte[] serverCertificate = PolyphenyCertificateManager.loadServerCertificate( "docker", host.hostname() );
+//                    PolyphenyDockerClient client = new PolyphenyDockerClient( newHost.hostname(), newHost.communicationPort(), kp, serverCertificate );
+//                    client.ping();
+//                    if ( !client.getDockerId().equals( dockerInstanceUuid ) ) {
+//
+//                    }
+//                    // Getting here means everything is OK.
+//                } catch ( IOException e ) {
+//                    log.error( "Failed to use new Docker instance", e );
+//                    throw new DockerUserException( "Cannot update to Docker instance" );
+//                }
+//
                 // TODO: Copy/Move keys...
+                // TODO: Restart all proxy connections
                 try {
+                    this.host = newHost;
                     checkConnection();
                 } catch ( IOException e ) {
-                    log.info( "Failed to connect to " + hostname );
+                    log.info( "Failed to connect to '" + hostname + "': " + e.getMessage() );
                 }
             }
             this.host = newHost;
