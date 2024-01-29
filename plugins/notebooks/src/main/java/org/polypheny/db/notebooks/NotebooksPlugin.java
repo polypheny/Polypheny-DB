@@ -200,7 +200,7 @@ public class NotebooksPlugin extends PolyPlugin {
     }
 
 
-    public void pluginStatus( Context ctx, Crud crud ) {
+    public void pluginStatus( Context ctx ) {
         if ( pluginLoaded ) {
             ctx.status( 200 );
         } else {
