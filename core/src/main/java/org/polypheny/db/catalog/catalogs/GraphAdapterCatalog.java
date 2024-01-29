@@ -76,7 +76,7 @@ public class GraphAdapterCatalog extends AdapterCatalog {
             }
         }
         for ( PhysicalColumn u : updates ) {
-            PhysicalTable table = physicals.get( u.entityId ).unwrap( PhysicalTable.class ).orElseThrow();
+            PhysicalTable table = physicals.get( u.logicalEntityId ).unwrap( PhysicalTable.class ).orElseThrow();
             List<PhysicalColumn> newColumns = new ArrayList<>( table.columns );
             newColumns.remove( u );
             newColumns.add( u );
@@ -121,7 +121,7 @@ public class GraphAdapterCatalog extends AdapterCatalog {
 
 
     public List<? extends PhysicalField> getFields( long allocId ) {
-        return fields.values().stream().filter( f -> f.allocId == allocId ).collect( Collectors.toList() );
+        return fields.values().stream().filter( f -> f.allocId == allocId ).toList();
     }
 
 

@@ -18,6 +18,7 @@ package org.polypheny.db.catalog.snapshot.impl;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -30,6 +31,7 @@ import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.Value;
+import org.apache.commons.compress.utils.Lists;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgNode;
@@ -75,7 +77,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
     ImmutableMap<Long, List<LogicalKey>> tableKeys;
 
-    ImmutableMap<long[], LogicalKey> columnsKey;
+    ImmutableMap<long[], LogicalKey> columnsKeys;
 
     ImmutableMap<Long, LogicalIndex> index;
 
@@ -129,7 +131,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
         this.tableKeys = buildTableKeys();
 
-        this.columnsKey = buildColumnsKey();
+        this.columnsKeys = buildColumnsKey();
 
         this.index = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getIndexes().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue, getDuplicateError() ) ) );
 
@@ -385,11 +387,8 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     @Override
     public @NotNull Optional<LogicalColumn> getColumn( long namespace, String tableName, String columnName ) {
         Optional<LogicalTable> optTable = getTable( namespace, tableName );
-        if ( optTable.isEmpty() ) {
-            return Optional.empty();
-        }
+        return optTable.map( logicalTable -> tableIdColumnNameColumn.get( Pair.of( logicalTable.id, columnName ) ) );
 
-        return Optional.ofNullable( tableIdColumnNameColumn.get( Pair.of( optTable.get().id, columnName ) ) );
     }
 
 
@@ -536,13 +535,103 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
     @Override
     public @NotNull Optional<LogicalKey> getKeys( long[] columnIds ) {
-        return Optional.ofNullable( columnsKey.get( columnIds ) );
+        return Optional.ofNullable( columnsKeys.get( columnIds ) );
     }
 
 
     @Override
     public @NonNull Optional<LogicalKey> getKey( long id ) {
         return Optional.ofNullable( keys.get( id ) );
+    }
+
+
+    @Override
+    public boolean equals( Object o ) {
+        if ( this == o ) {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() ) {
+            return false;
+        }
+
+        LogicalRelSnapshotImpl that = (LogicalRelSnapshotImpl) o;
+
+        if ( !Objects.equals( namespaces, that.namespaces ) ) {
+            return false;
+        }
+        if ( !Objects.equals( namespaceNames, that.namespaceNames ) ) {
+            return false;
+        }
+        if ( !Objects.equals( namespaceCaseSensitive, that.namespaceCaseSensitive ) ) {
+            return false;
+        }
+        if ( !Objects.equals( tables, that.tables ) ) {
+            return false;
+        }
+        if ( !Objects.equals( views, that.views ) ) {
+            return false;
+        }
+        if ( !Objects.equals( tableNames, that.tableNames ) ) {
+            return false;
+        }
+        if ( !Objects.equals( tablesNamespace, that.tablesNamespace ) ) {
+            return false;
+        }
+        if ( !Objects.equals( tableColumns, that.tableColumns ) ) {
+            return false;
+        }
+        if ( !Objects.equals( columns, that.columns ) ) {
+            return false;
+        }
+        if ( !Objects.equals( columnNames, that.columnNames ) ) {
+            return false;
+        }
+        if ( !Objects.equals( keys, that.keys ) ) {
+            return false;
+        }
+        if ( !Objects.equals( tableKeys, that.tableKeys ) ) {
+            return false;
+        }
+        if ( !Objects.equals( columnsKeys.values(), that.columnsKeys.values() ) ) {
+            return false;
+        }
+        if ( columnsKeys.size() != that.columnsKeys.size() || Lists.newArrayList( Pair.zip( columnsKeys.keySet(), that.columnsKeys.keySet() ).iterator() ).stream().anyMatch( p -> !Arrays.equals( p.left, p.right ) ) ) {
+            return false;
+        }
+        if ( !Objects.equals( index, that.index ) ) {
+            return false;
+        }
+        if ( !Objects.equals( constraints, that.constraints ) ) {
+            return false;
+        }
+        if ( !Objects.equals( foreignKeys, that.foreignKeys ) ) {
+            return false;
+        }
+        if ( !Objects.equals( primaryKeys, that.primaryKeys ) ) {
+            return false;
+        }
+        if ( !Objects.equals( keyToIndexes, that.keyToIndexes ) ) {
+            return false;
+        }
+        if ( !Objects.equals( tableColumnIdColumn, that.tableColumnIdColumn ) ) {
+            return false;
+        }
+        if ( !Objects.equals( tableColumnNameColumn, that.tableColumnNameColumn ) ) {
+            return false;
+        }
+        if ( !Objects.equals( tableIdColumnNameColumn, that.tableIdColumnNameColumn ) ) {
+            return false;
+        }
+        if ( !Objects.equals( tableConstraints, that.tableConstraints ) ) {
+            return false;
+        }
+        if ( !Objects.equals( tableForeignKeys, that.tableForeignKeys ) ) {
+            return false;
+        }
+        if ( !Objects.equals( nodes, that.nodes ) ) {
+            return false;
+        }
+        return Objects.equals( connectedViews, that.connectedViews );
     }
 
 

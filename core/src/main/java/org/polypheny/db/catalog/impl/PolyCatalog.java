@@ -83,7 +83,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     /**
      * Constraints which have to be met before a commit can be executed.
      */
-    private Collection<Pair<Supplier<Boolean>, String>> commitConstraints = new ConcurrentLinkedDeque<>();
+    private final Collection<Pair<Supplier<Boolean>, String>> commitConstraints = new ConcurrentLinkedDeque<>();
 
 
     @Serialize
@@ -116,7 +116,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     @Serialize
     public final Map<Long, AdapterRestore> adapterRestore;
 
-    private final IdBuilder idBuilder = IdBuilder.getInstance();
+    public final IdBuilder idBuilder = IdBuilder.getInstance();
     private final Persister persister;
 
     @Getter

@@ -47,8 +47,8 @@ public abstract class AbstractPartitionManager implements PartitionManager {
     @Override
     public boolean probePartitionGroupDistributionChange( LogicalTable table, int storeId, long columnId, int threshold ) {
         // Check for the specified columnId if we still have a ColumnPlacement for every partitionGroup
-        for ( Long partitionGroupId : Catalog.getInstance().getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow().partitionGroupIds ) {
-            List<AllocationColumn> ccps = catalog.getSnapshot().alloc().getColumnPlacementsByPartitionGroup( table.id, partitionGroupId, columnId );
+        for ( Long partitionIds : Catalog.getInstance().getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow().partitionIds ) {
+            List<AllocationColumn> ccps = catalog.getSnapshot().alloc().getColumnPlacementsByPartitionGroup( table.id, partitionIds, columnId );
             if ( ccps.size() <= threshold ) {
                 for ( AllocationColumn placement : ccps ) {
                     if ( placement.adapterId == storeId ) {

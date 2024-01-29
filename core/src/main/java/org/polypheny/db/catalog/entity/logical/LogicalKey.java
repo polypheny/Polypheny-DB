@@ -105,4 +105,42 @@ public abstract class LogicalKey implements PolyObject, Comparable<LogicalKey> {
         ON_QUERY
     }
 
+
+    @Override
+    public boolean equals( Object o ) {
+        if ( this == o ) {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() ) {
+            return false;
+        }
+
+        LogicalKey that = (LogicalKey) o;
+
+        if ( id != that.id ) {
+            return false;
+        }
+        if ( entityId != that.entityId ) {
+            return false;
+        }
+        if ( namespaceId != that.namespaceId ) {
+            return false;
+        }
+        if ( !columnIds.equals( that.columnIds ) ) {
+            return false;
+        }
+        return enforcementTime == that.enforcementTime;
+    }
+
+
+    @Override
+    public int hashCode() {
+        int result = (int) (id ^ (id >>> 32));
+        result = 31 * result + (int) (entityId ^ (entityId >>> 32));
+        result = 31 * result + (int) (namespaceId ^ (namespaceId >>> 32));
+        result = 31 * result + columnIds.hashCode();
+        result = 31 * result + (enforcementTime != null ? enforcementTime.hashCode() : 0);
+        return result;
+    }
+
 }

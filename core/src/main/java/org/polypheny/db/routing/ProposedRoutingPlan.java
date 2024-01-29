@@ -16,11 +16,9 @@
 
 package org.polypheny.db.routing;
 
-import java.util.List;
-import java.util.Map;
 import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.routing.ColumnDistribution.RoutedDistribution;
 
 
 public interface ProposedRoutingPlan extends RoutingPlan {
@@ -63,7 +61,7 @@ public interface ProposedRoutingPlan extends RoutingPlan {
      * @return The physical placements of the necessary partitions: {@code AllocationId  -> List<AdapterId, CatalogColumnPlacementId>}
      */
     @Override
-    Map<Long, List<AllocationColumn>> getPhysicalPlacementsOfPartitions(); // PartitionId -> List<PlacementId, ColumnId>
+    RoutedDistribution getRoutedDistribution(); // PartitionId -> List<PlacementId, ColumnId>
 
     /**
      * @return Optional pre costs.

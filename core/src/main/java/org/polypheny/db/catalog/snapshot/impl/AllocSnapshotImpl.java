@@ -102,6 +102,8 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     @NotNull
     ImmutableMap<Long, List<AllocationEntity>> placementToPartitions;
     @NotNull
+    ImmutableMap<Long, List<AllocationEntity>> allocsOfPartitions;
+    @NotNull
     ImmutableMap<Long, List<AllocationPlacement>> placementsOfColumn;
     @NotNull
     ImmutableMap<Long, List<AllocationPartition>> partitionsOfGroup;
@@ -175,6 +177,21 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
         this.partitionsOfGroup = buildPartitionsOfGroups();
 
+        this.allocsOfPartitions = buildAllocsOfPartitions();
+
+    }
+
+
+    private ImmutableMap<Long, List<AllocationEntity>> buildAllocsOfPartitions() {
+        Map<Long, List<AllocationEntity>> map = new HashMap<>();
+        for ( AllocationEntity value : allocs.values() ) {
+            if ( !map.containsKey( value.partitionId ) ) {
+                map.put( value.partitionId, new ArrayList<>() );
+            }
+            map.get( value.partitionId ).add( value );
+        }
+
+        return ImmutableMap.copyOf( map );
     }
 
 
@@ -601,6 +618,12 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     @Override
     public @NotNull List<AllocationPartition> getPartitionsFromGroup( long groupId ) {
         return Optional.ofNullable( partitionsOfGroup.get( groupId ) ).orElse( List.of() );
+    }
+
+
+    @Override
+    public @NotNull List<AllocationEntity> getAllocsOfPartitions( long partitionId ) {
+        return Optional.ofNullable( allocsOfPartitions.get( partitionId ) ).orElse( List.of() );
     }
 
 

@@ -223,7 +223,7 @@ public class PolyBigDecimal extends PolyNumber {
         if ( !((PolyValue) o).isNumber() ) {
             return false;
         }
-        BigDecimal that = ((PolyNumber) o).bigDecimalValue();
+        BigDecimal that = ((PolyValue) o).asNumber().bigDecimalValue();
         return Objects.equals( value.stripTrailingZeros(), that.stripTrailingZeros() );
     }
 

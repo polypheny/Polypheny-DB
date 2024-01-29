@@ -85,7 +85,7 @@ import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.routing.DmlRouter;
-import org.polypheny.db.routing.LogicalQueryInformation;
+import org.polypheny.db.routing.RoutingContext;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.tools.AlgBuilder;
@@ -595,15 +595,15 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     @Override
-    public AlgNode handleConditionalExecute( AlgNode node, Statement statement, LogicalQueryInformation queryInformation ) {
+    public AlgNode handleConditionalExecute( AlgNode node, RoutingContext context ) {
         LogicalConditionalExecute lce = (LogicalConditionalExecute) node;
-        RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, node.getCluster() );
-        builder = RoutingManager.getInstance().getFallbackRouter().routeFirst( lce.getLeft(), builder, statement, node.getCluster(), queryInformation );
+        RoutedAlgBuilder builder = context.getRoutedAlgBuilder();
+        builder = RoutingManager.getInstance().getFallbackRouter().routeFirst( lce.getLeft(), builder, context );
         AlgNode action;
         if ( lce.getRight() instanceof LogicalConditionalExecute ) {
-            action = handleConditionalExecute( lce.getRight(), statement, queryInformation );
+            action = handleConditionalExecute( lce.getRight(), context );
         } else if ( lce.getRight() instanceof LogicalRelModify ) {
-            action = routeDml( (LogicalRelModify) lce.getRight(), statement );
+            action = routeDml( (LogicalRelModify) lce.getRight(), context.getStatement() );
         } else {
             throw new IllegalArgumentException();
         }
@@ -613,20 +613,20 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     @Override
-    public AlgNode handleConstraintEnforcer( AlgNode alg, Statement statement, LogicalQueryInformation queryInformation ) {
+    public AlgNode handleConstraintEnforcer( AlgNode alg, RoutingContext context ) {
         LogicalConstraintEnforcer constraint = (LogicalConstraintEnforcer) alg;
-        RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, alg.getCluster() );
-        builder = RoutingManager.getInstance().getFallbackRouter().routeFirst( constraint.getRight(), builder, statement, alg.getCluster(), queryInformation );
+        RoutedAlgBuilder builder = context.getRoutedAlgBuilder();
+        builder = RoutingManager.getInstance().getFallbackRouter().routeFirst( constraint.getRight(), builder, context );
 
         if ( constraint.getLeft() instanceof RelModify ) {
             return LogicalConstraintEnforcer.create(
-                    routeDml( (LogicalRelModify) constraint.getLeft(), statement ),
+                    routeDml( (LogicalRelModify) constraint.getLeft(), context.getStatement() ),
                     builder.build(),
                     constraint.getExceptionClasses(),
                     constraint.getExceptionMessages() );
         } else if ( constraint.getLeft() instanceof BatchIterator ) {
             return LogicalConstraintEnforcer.create(
-                    handleBatchIterator( constraint.getLeft(), statement, queryInformation ),
+                    handleBatchIterator( constraint.getLeft(), context ),
                     builder.build(),
                     constraint.getExceptionClasses(),
                     constraint.getExceptionMessages() );
@@ -637,20 +637,20 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     @Override
-    public AlgNode handleBatchIterator( AlgNode alg, Statement statement, LogicalQueryInformation queryInformation ) {
+    public AlgNode handleBatchIterator( AlgNode alg, RoutingContext context ) {
         LogicalBatchIterator iterator = (LogicalBatchIterator) alg;
         AlgNode input;
         if ( iterator.getInput() instanceof RelModify ) {
-            input = routeDml( (LogicalRelModify) iterator.getInput(), statement );
+            input = routeDml( (LogicalRelModify) iterator.getInput(), context.getStatement() );
         } else if ( iterator.getInput() instanceof ConditionalExecute ) {
-            input = handleConditionalExecute( iterator.getInput(), statement, queryInformation );
+            input = handleConditionalExecute( iterator.getInput(), context );
         } else if ( iterator.getInput() instanceof ConstraintEnforcer ) {
-            input = handleConstraintEnforcer( iterator.getInput(), statement, queryInformation );
+            input = handleConstraintEnforcer( iterator.getInput(), context );
         } else {
             throw new GenericRuntimeException( "BachIterator had an unknown child!" );
         }
 
-        return LogicalBatchIterator.create( input, statement );
+        return LogicalBatchIterator.create( input, context.getStatement() );
     }
 
 
@@ -701,7 +701,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
         List<AllocationPlacement> targetPlacements = catalog.getSnapshot().alloc().getPlacementsFromLogical( graph.id );
         if ( excludedPlacements != null ) {
-            targetPlacements = targetPlacements.stream().filter( p -> !excludedPlacements.contains( p.id ) ).collect( Collectors.toList() );
+            targetPlacements = targetPlacements.stream().filter( p -> !excludedPlacements.contains( p.id ) ).toList();
         }
 
         for ( AllocationPlacement placement : targetPlacements ) {
@@ -767,8 +767,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     statement,
                     target,
                     excludedPlacements ) );
-        } else if ( node instanceof LogicalValues ) {
-            LogicalValues values = (LogicalValues) node;
+        } else if ( node instanceof LogicalValues values ) {
 
             return super.handleValues( values, builder );
         } else if ( node instanceof LogicalDocumentValues ) {
@@ -909,15 +908,14 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     private AlgBuilder handleSelectFromOtherTable( RoutedAlgBuilder builder, LogicalTable catalogTable, Statement statement ) {
-        LogicalTable fromTable = catalogTable;
         Snapshot snapshot = statement.getTransaction().getSnapshot();
         // Select from other table
         snapshot = statement.getDataContext().getSnapshot();
-        if ( snapshot.alloc().getFromLogical( fromTable.id ).size() > 1 ) {
+        if ( snapshot.alloc().getFromLogical( catalogTable.id ).size() > 1 ) {
             throw new UnsupportedOperationException( "DMLs from other partitioned tables is not supported" );
         }
 
-        long pkid = fromTable.primaryKey;
+        long pkid = catalogTable.primaryKey;
         List<Long> pkColumnIds = snapshot.rel().getPrimaryKey( pkid ).orElseThrow().columnIds;
         LogicalColumn pkColumn = snapshot.rel().getColumn( pkColumnIds.get( 0 ) ).orElseThrow();
         List<AllocationColumn> pkPlacements = snapshot.alloc().getColumnFromLogical( pkColumn.id ).orElseThrow();
@@ -928,7 +926,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             nodes.add( super.handleRelScan(
                     builder,
                     statement,
-                    fromTable ).build() );
+                    catalogTable ).build() );
         }
 
         if ( nodes.size() == 1 ) {

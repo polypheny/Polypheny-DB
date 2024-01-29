@@ -23,11 +23,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
 import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -100,18 +98,16 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
-        Catalog catalog = Catalog.getInstance();
         LogicalTable table = getTableFailOnEmpty( context, this.table );
 
         if ( table.entityType != EntityType.ENTITY ) {
             throw new GenericRuntimeException( "Not possible to use ALTER TABLE because " + table.name + " is not a table." );
         }
 
-        if ( !statement.getTransaction().getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow().isPartitioned ) {
+        List<AllocationPartition> partitions = statement.getTransaction().getSnapshot().alloc().getPartitionsFromLogical( table.id );
+        if ( partitions.size() < 2 ) {
             throw new GenericRuntimeException( "Table '%s' is not partitioned", table.name );
         }
-
-        long tableId = table.id;
 
         if ( partitionGroups.isEmpty() && partitionGroupNames.isEmpty() ) {
             throw new GenericRuntimeException( "Empty Partition Placement is not allowed for partitioned table '" + table.name + "'" );
@@ -136,20 +132,20 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
 
         // If index partitions are specified
         if ( !partitionGroups.isEmpty() && partitionGroupNames.isEmpty() ) {
+            List<Long> partitionIds = partitions.stream().map( p -> p.id ).sorted().toList();
             //First convert specified index to correct partitionId
             for ( int partitionId : partitionGroups ) {
                 // Check if specified partition index is even part of table and if so get corresponding uniquePartId
                 try {
-                    partitionList.add( statement.getTransaction().getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow().partitionGroupIds.get( partitionId ) );
+                    partitionList.add( partitionIds.get( partitionId ) );
                 } catch ( IndexOutOfBoundsException e ) {
                     throw new GenericRuntimeException( "Specified Partition-Index: '%s' is not part of table '%s', has only %s partitions",
-                            partitionId, table.name, statement.getTransaction().getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow().numPartitionGroups );
+                            partitionId, table.name, partitions.size() );
                 }
             }
         } else if ( !partitionGroupNames.isEmpty() && partitionGroups.isEmpty() ) {
             // If name partitions are specified
             // List<AllocationEntity> entities = catalog.getSnapshot().alloc().getAllocsOfPlacement( optionalPlacement.get().id );
-            List<AllocationPartition> partitions = catalog.getSnapshot().alloc().getPartitionsFromLogical( tableId );
             for ( String partitionName : partitionGroupNames.stream().map( Object::toString ).toList() ) {
                 Optional<AllocationPartition> optionalPartition = partitions.stream().filter( p -> partitionName.equals( p.name ) ).findAny();
 

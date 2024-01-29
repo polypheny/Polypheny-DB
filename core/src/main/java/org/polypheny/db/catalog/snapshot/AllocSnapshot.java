@@ -187,4 +187,7 @@ public interface AllocSnapshot {
     List<AllocationPartition> getPartitionsFromGroup( long groupId );
 
 
+    @NotNull
+    List<AllocationEntity> getAllocsOfPartitions( long partitionId );
+
 }

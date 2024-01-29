@@ -28,11 +28,10 @@ public interface Router {
 
     /**
      * @param algRoot The algRoot which will be routed.
-     * @param statement The corresponding statement.
-     * @param queryInformation Different query information resulting from analyze step.
+     * @param context
      * @return Proposes multiple routed alg nodes as a List of  relBuilders.
      */
-    List<RoutedAlgBuilder> route( AlgRoot algRoot, Statement statement, LogicalQueryInformation queryInformation );
+    List<RoutedAlgBuilder> route( AlgRoot algRoot, RoutingContext context );
 
     /**
      * Resets the routing caches, if some are used.

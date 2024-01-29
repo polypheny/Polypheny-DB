@@ -16,20 +16,18 @@
 
 package org.polypheny.db.tools;
 
-import com.google.common.collect.ImmutableMap;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import lombok.Getter;
+import lombok.Setter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.processing.DeepCopyShuttle;
 import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.routing.FieldDistribution;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.document.PolyDocument;
 
@@ -37,10 +35,11 @@ import org.polypheny.db.type.entity.document.PolyDocument;
 /**
  * Extension of RelBuilder for routed plans with some more information.
  */
+@Setter
 @Getter
 public class RoutedAlgBuilder extends AlgBuilder {
 
-    protected Map<Long, List<AllocationColumn>> physicalPlacementsOfPartitions = new HashMap<>(); // PartitionId -> List<AllocationColumn>
+    protected FieldDistribution fieldDistribution; // PartitionId -> List<AllocationColumn>
 
 
     public RoutedAlgBuilder( Context context, AlgOptCluster cluster, Snapshot snapshot ) {
@@ -55,7 +54,7 @@ public class RoutedAlgBuilder extends AlgBuilder {
 
     public static RoutedAlgBuilder createCopy( Statement statement, AlgOptCluster cluster, RoutedAlgBuilder builder ) {
         final RoutedAlgBuilder newBuilder = RoutedAlgBuilder.create( statement, cluster );
-        newBuilder.getPhysicalPlacementsOfPartitions().putAll( ImmutableMap.copyOf( builder.getPhysicalPlacementsOfPartitions() ) );
+        newBuilder.fieldDistribution = builder.fieldDistribution;
 
         if ( builder.stackSize() > 0 ) {
             for ( int i = 0; i < builder.stackSize(); i++ ) {
@@ -93,11 +92,6 @@ public class RoutedAlgBuilder extends AlgBuilder {
     public RoutedAlgBuilder documents( List<PolyDocument> documents, AlgDataType rowType ) {
         super.documents( documents, rowType );
         return this;
-    }
-
-
-    public void addPhysicalInfo( Map<Long, List<AllocationColumn>> partitionColumns ) {
-        physicalPlacementsOfPartitions.putAll( partitionColumns );
     }
 
 

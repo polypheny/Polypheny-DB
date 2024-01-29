@@ -66,7 +66,7 @@ public class DocAdapterCatalog extends AdapterCatalog {
             }
         }
         for ( PhysicalColumn u : updates ) {
-            PhysicalTable table = physicals.get( u.entityId ).unwrap( PhysicalTable.class ).orElseThrow();
+            PhysicalTable table = physicals.get( u.logicalEntityId ).unwrap( PhysicalTable.class ).orElseThrow();
             List<PhysicalColumn> newColumns = new ArrayList<>( table.columns );
             newColumns.remove( u );
             newColumns.add( u );

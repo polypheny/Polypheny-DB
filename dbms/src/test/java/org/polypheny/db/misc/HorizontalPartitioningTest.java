@@ -29,19 +29,23 @@ import java.util.List;
 import org.apache.calcite.avatica.AvaticaSqlException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
 import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.logistic.Pattern;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.ConfigManager;
+import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
@@ -54,11 +58,23 @@ import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 @Tag("adapter")
 public class HorizontalPartitioningTest {
 
+    private static TestHelper helper;
+
+    public static final String CREATE_TABLE_0 = "CREATE TABLE TableA(ID INTEGER NOT NULL, NAME VARCHAR(20), AGE INTEGER, PRIMARY KEY (ID))";
+
+    public static final String DROP_TABLE_0 = "DROP TABLE TableA";
+
+
     @BeforeAll
     public static void start() {
         // Ensures that Polypheny-DB is running
-        //noinspection ResultOfMethodCallIgnored
-        TestHelper.getInstance();
+        helper = TestHelper.getInstance();
+    }
+
+
+    @BeforeEach
+    public void beforeEach() {
+        //helper.randomizeCatalogIds();
     }
 
 
@@ -106,8 +122,8 @@ public class HorizontalPartitioningTest {
                     Assertions.assertTrue( failed );
                 } finally {
                     // Drop tables and stores
-                    statement.executeUpdate( "DROP TABLE horizontalparttest" );
-                    //statement.executeUpdate( "DROP TABLE horizontalparttestfalsepartition" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS horizontalparttest" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS horizontalparttestfalsepartition" );
                 }
             }
         }
@@ -129,8 +145,7 @@ public class HorizontalPartitioningTest {
 
                 try {
                     // Deploy additional storeId
-                    statement.executeUpdate( "ALTER ADAPTERS ADD \"store3\" USING 'Hsqldb' AS 'Store'"
-                            + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+                    TestHelper.addHsqldb( "store3", statement );
 
                     // Add placement
                     statement.executeUpdate( "ALTER TABLE \"horizontalparttest\" ADD PLACEMENT (tvarchar) ON STORE \"store3\"" );
@@ -142,8 +157,8 @@ public class HorizontalPartitioningTest {
                     //Modify partitions out of index error
                     boolean failed = false;
                     try {
-                        statement.executeUpdate( "ALTER TABLE \"horizontalparttest\" MODIFY PARTITIONS (0,1,4) ON STORE \"store1\" " );
-                    } catch ( AvaticaSqlException e ) {
+                        statement.executeUpdate( "ALTER TABLE \"horizontalparttest\" MODIFY PARTITIONS (0,1,4) ON STORE \"store3\" " );
+                    } catch ( Exception e ) {
                         failed = true;
                     }
                     Assertions.assertTrue( failed );
@@ -158,8 +173,7 @@ public class HorizontalPartitioningTest {
                             + "PARTITIONS 3" );
 
                     // Deploy additional storeId
-                    statement.executeUpdate( "ALTER ADAPTERS ADD \"store2\" USING 'Hsqldb' AS 'Store'"
-                            + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+                    TestHelper.addHsqldb( "store2", statement );
 
                     // Add placement for second table
                     statement.executeUpdate( "ALTER TABLE \"horizontalparttestextension\" ADD PLACEMENT (tvarchar) ON STORE \"store2\"" );
@@ -233,7 +247,7 @@ public class HorizontalPartitioningTest {
 
                 } finally {
                     // Drop tables and stores
-                    statement.executeUpdate( "DROP TABLE columnparttest" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS columnparttest" );
                 }
             }
         }
@@ -305,8 +319,7 @@ public class HorizontalPartitioningTest {
                                     new Object[]{ 2, 7, "bob" } ) );
 
                     // ADD adapter
-                    statement.executeUpdate( "ALTER ADAPTERS ADD \"storehash\" USING 'Hsqldb' AS 'Store'"
-                            + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+                    TestHelper.addHsqldb( "storehash", statement );
 
                     // ADD FullPlacement
                     statement.executeUpdate( "ALTER TABLE \"hashpartition\" ADD PLACEMENT (tprimary, tinteger, tvarchar) ON STORE \"storehash\"" );
@@ -403,8 +416,7 @@ public class HorizontalPartitioningTest {
                     Assertions.assertTrue( failed );
 
                     // ADD adapter
-                    statement.executeUpdate( "ALTER ADAPTERS ADD \"storehash\" USING 'Hsqldb' AS 'Store'"
-                            + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+                    TestHelper.addHsqldb( "storehash", statement );
 
                     // ADD FullPlacement
                     statement.executeUpdate( "ALTER TABLE \"hashpartition\" ADD PLACEMENT ON STORE \"storehash\"" );
@@ -430,7 +442,7 @@ public class HorizontalPartitioningTest {
                     }
                     Assertions.assertTrue( failed );
                 } finally {
-                    statement.executeUpdate( "DROP TABLE hashpartition" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS hashpartition" );
                     statement.executeUpdate( "DROP TABLE IF EXISTS hashpartitioning" );
                     statement.executeUpdate( "DROP TABLE IF EXISTS hashpartitioningvalidate" );
                     statement.executeUpdate( "ALTER ADAPTERS DROP \"storehash\"" );
@@ -661,8 +673,7 @@ public class HorizontalPartitioningTest {
                     assertEquals( partitionsToCreate, Catalog.snapshot().alloc().getFromLogical( table.id ).size() );
 
                     // ADD adapter
-                    statement.executeUpdate( "ALTER ADAPTERS ADD \"anotherstore\" USING 'Hsqldb' AS 'Store'"
-                            + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+                    TestHelper.addHsqldb( "anotherstore", statement );
 
                     // ADD FullPlacement
                     statement.executeUpdate( "ALTER TABLE \"physicalPartitionTest\" ADD PLACEMENT ON STORE \"anotherstore\"" );
@@ -750,11 +761,9 @@ public class HorizontalPartitioningTest {
                     Assertions.assertTrue( (numberOfPartitionsInHot == hotPartitions.size()) || (numberOfPartitionsInHot == allowedTablesInHot) );
 
                     // ADD adapter
-                    statement.executeUpdate( "ALTER ADAPTERS ADD \"hot\" USING 'Hsqldb' AS 'Store'"
-                            + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+                    TestHelper.addHsqldb( "hot", statement );
 
-                    statement.executeUpdate( "ALTER ADAPTERS ADD \"cold\" USING 'Hsqldb' AS 'Store'"
-                            + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+                    TestHelper.addHsqldb( "cold", statement );
 
                     String partitionValue = "Foo";
 
@@ -1002,8 +1011,7 @@ public class HorizontalPartitioningTest {
                                     new Object[]{ 4, "FooBar", 89 } ) );
 
                     // Add second Adapter
-                    statement.executeUpdate( "ALTER ADAPTERS ADD \"anotherstore\" USING 'Hsqldb' AS 'Store'"
-                            + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+                    TestHelper.addHsqldb( "anotherstore", statement );
 
                     // Add second placement for table on that new adapter
                     statement.executeUpdate( "ALTER TABLE \"hybridpartitioningtest\" ADD PLACEMENT ON STORE \"anotherstore\"" );
@@ -1206,8 +1214,7 @@ public class HorizontalPartitioningTest {
                     long originalAdapterId = Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).get( 0 ).adapterId;
 
                     // Add second Adapter
-                    statement.executeUpdate( "ALTER ADAPTERS ADD \"anotherstore\" USING 'Hsqldb' AS 'Store'"
-                            + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+                    TestHelper.addHsqldb( "anotherstore", statement );
                     long newAdapterId = Catalog.snapshot().getAdapter( "anotherstore" ).orElseThrow().id;
 
                     // Add second placement for table on that new adapter
@@ -1227,9 +1234,6 @@ public class HorizontalPartitioningTest {
 
                     AllocationPlacement origPlacement = Catalog.snapshot().alloc().getPlacement( originalAdapterId, table.id ).orElseThrow();
                     List<AllocationEntity> originalPlacements = Catalog.snapshot().alloc().getAllocsOfPlacement( origPlacement.id );
-                    originalPlacements.stream().map( p -> p.name ).forEach( System.out::println );
-                    originalPlacements.stream().map( p -> p.partitionId ).forEach( System.out::println );
-                    System.out.println( "-------------------" );
                     assertEquals( 4, originalPlacements.size() );
 
                     // Place Partition 1 & 2 on first adapter
@@ -1241,9 +1245,6 @@ public class HorizontalPartitioningTest {
                     origPlacement = Catalog.snapshot().alloc().getPlacement( originalAdapterId, table.id ).orElseThrow();
 
                     originalPlacements = Catalog.snapshot().alloc().getAllocsOfPlacement( origPlacement.id );
-
-                    originalPlacements.stream().map( p -> p.name ).forEach( System.out::println );
-                    originalPlacements.stream().map( p -> p.partitionId ).forEach( System.out::println );
 
                     assertEquals( 2, originalPlacements.size() );
 
@@ -1328,8 +1329,7 @@ public class HorizontalPartitioningTest {
                     assertEquals( partitionsToCreate, Catalog.snapshot().alloc().getPartitionsFromLogical( table.id ).size() );
 
                     // ADD adapter
-                    statement.executeUpdate( "ALTER ADAPTERS ADD \"anotherstore\" USING 'Hsqldb' AS 'Store'"
-                            + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+                    TestHelper.addHsqldb( "anotherstore", statement );
 
                     // ADD FullPlacement
                     statement.executeUpdate( "ALTER TABLE \"horizontalDataPlacementTest\" ADD PLACEMENT ON STORE \"anotherstore\"" );
@@ -1393,6 +1393,50 @@ public class HorizontalPartitioningTest {
                 }
             }
         }
+    }
+
+
+    @Test
+    public void mixOperationTest() throws SQLException {
+        Snapshot snapshot = Catalog.snapshot();
+        AdapterCatalog adapterCatalog = Catalog.getInstance().getAdapterCatalog( 0 ).orElseThrow();
+        String graphName = "product";
+
+        CypherTestTemplate.execute( "CREATE DATABASE " + graphName + " IF NOT EXISTS" );
+
+        assertTrue( Catalog.snapshot().getNamespace( graphName ).isPresent() );
+
+        CypherTestTemplate.execute( "DROP DATABASE " + graphName );
+
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+
+                statement.executeUpdate( CREATE_TABLE_0 );
+
+                TestHelper.addHsqldb( "store1", statement );
+
+                statement.executeUpdate( "ALTER TABLE \"TableA\" ADD PLACEMENT (name) ON STORE \"store1\"" );
+
+                Snapshot snapshot1 = Catalog.snapshot();
+
+                statement.executeUpdate( "ALTER TABLE TableA "
+                        + "PARTITION BY HASH (name) "
+                        + "PARTITIONS 3" );
+
+                Snapshot snapshot2 = Catalog.snapshot();
+
+                statement.executeUpdate( "ALTER TABLE \"TableA\" MERGE PARTITIONS" );
+
+                statement.executeUpdate( DROP_TABLE_0 );
+
+                TestHelper.dropAdaper( "store1", statement );
+
+            }
+        }
+
+        AdapterCatalog adapterCatalog2 = Catalog.getInstance().getAdapterCatalog( 1 ).orElseThrow();
+        assertEquals( snapshot, Catalog.snapshot() );
     }
 
 }

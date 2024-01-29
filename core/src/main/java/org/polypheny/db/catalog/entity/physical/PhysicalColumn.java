@@ -22,7 +22,6 @@ import io.activej.serializer.annotations.SerializeNullable;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
-import org.apache.calcite.linq4j.tree.Expression;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -88,7 +87,7 @@ public class PhysicalColumn extends PhysicalField {
             @Deserialize("name") final String name,
             @Deserialize("logicalName") final String logicalName,
             @Deserialize("allocId") final long allocId,
-            @Deserialize("entityId") final long tableId,
+            @Deserialize("logicalEntityId") final long logicalEntityId,
             @Deserialize("adapterId") final long adapterId,
             @Deserialize("position") final int position,
             @Deserialize("type") @NotNull final PolyType type,
@@ -100,7 +99,7 @@ public class PhysicalColumn extends PhysicalField {
             @Deserialize("nullable") final boolean nullable,
             @Deserialize("collation") final @Nullable Collation collation,
             @Deserialize("defaultValue") @Nullable LogicalDefaultValue defaultValue ) {
-        super( id, name, logicalName, allocId, tableId, adapterId, DataModel.RELATIONAL, true );
+        super( id, name, logicalName, allocId, logicalEntityId, adapterId, DataModel.RELATIONAL, true );
         this.position = position;
         this.type = type;
         this.collectionsType = collectionsType;
@@ -138,18 +137,6 @@ public class PhysicalColumn extends PhysicalField {
                 column.nullable,
                 column.collation,
                 column.defaultValue );
-    }
-
-
-    @Override
-    public Expression asExpression() {
-        return null;
-    }
-
-
-    @Override
-    public State getLayer() {
-        return State.PHYSICAL;
     }
 
 

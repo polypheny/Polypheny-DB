@@ -22,6 +22,7 @@ import io.activej.serializer.annotations.Serialize;
 import java.io.Serial;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -74,6 +75,32 @@ public class LogicalPrimaryKey extends LogicalKey {
     }
 
 
+    @Override
+    public boolean equals( Object o ) {
+        if ( this == o ) {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() ) {
+            return false;
+        }
+        if ( !super.equals( o ) ) {
+            return false;
+        }
+
+        LogicalPrimaryKey that = (LogicalPrimaryKey) o;
+
+        return Objects.equals( key, that.key );
+    }
+
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (key != null ? key.hashCode() : 0);
+        return result;
+    }
+
+
     // Used for creating ResultSets
     @RequiredArgsConstructor
     public static class LogicalPrimaryKeyColumn implements PolyObject {
@@ -84,12 +111,43 @@ public class LogicalPrimaryKey extends LogicalKey {
         private final long pkId;
 
         private final int keySeq;
+
         private final String columnName;
 
 
         @Override
         public PolyValue[] getParameterArray() {
             return Catalog.snapshot().rel().getPrimaryKey( pkId ).orElseThrow().getParameterArray( columnName, keySeq );
+        }
+
+
+        @Override
+        public boolean equals( Object o ) {
+            if ( this == o ) {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() ) {
+                return false;
+            }
+
+            LogicalPrimaryKeyColumn that = (LogicalPrimaryKeyColumn) o;
+
+            if ( pkId != that.pkId ) {
+                return false;
+            }
+            if ( keySeq != that.keySeq ) {
+                return false;
+            }
+            return Objects.equals( columnName, that.columnName );
+        }
+
+
+        @Override
+        public int hashCode() {
+            int result = (int) (pkId ^ (pkId >>> 32));
+            result = 31 * result + keySeq;
+            result = 31 * result + (columnName != null ? columnName.hashCode() : 0);
+            return result;
         }
 
 

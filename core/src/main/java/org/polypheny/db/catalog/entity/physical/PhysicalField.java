@@ -39,7 +39,7 @@ public abstract class PhysicalField extends Entity {
     public long adapterId;
 
     @Serialize
-    public long entityId;
+    public long logicalEntityId;
 
     @Serialize
     public String logicalName;
@@ -53,12 +53,12 @@ public abstract class PhysicalField extends Entity {
             final String name,
             final String logicalName,
             final long allocId,
-            final long entityId,
+            final long logicalEntityId,
             final long adapterId,
             final DataModel dataModel,
             final boolean modifiable ) {
         super( id, name, allocId, EntityType.ENTITY, dataModel, modifiable );
-        this.entityId = entityId;
+        this.logicalEntityId = logicalEntityId;
         this.allocId = allocId;
         this.adapterId = adapterId;
         this.logicalName = logicalName;

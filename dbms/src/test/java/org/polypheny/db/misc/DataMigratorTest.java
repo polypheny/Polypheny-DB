@@ -22,6 +22,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
@@ -34,11 +35,19 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 public class DataMigratorTest {
 
 
+    private static TestHelper helper;
+
+
     @BeforeAll
     public static void start() {
         // Ensures that Polypheny-DB is running
-        //noinspection ResultOfMethodCallIgnored
-        TestHelper.getInstance();
+        helper = TestHelper.getInstance();
+    }
+
+
+    @BeforeEach
+    public void beforeEach() {
+        helper.randomizeCatalogIds();
     }
 
 
