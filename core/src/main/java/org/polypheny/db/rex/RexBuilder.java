@@ -103,7 +103,7 @@ import org.polypheny.db.util.Util;
 
 /**
  * Factory for row expressions.
- *
+ * <p>
  * Some common literal values (NULL, TRUE, FALSE, 0, 1, '') are cached.
  */
 @Slf4j
@@ -180,7 +180,7 @@ public class RexBuilder {
 
     /**
      * Creates an expression accessing a given named field from a record.
-     *
+     * <p>
      * NOTE: Be careful choosing the value of {@code caseSensitive}. If the field name was supplied by an end-user (e.g. as a column alias in SQL), use your session's case-sensitivity setting.
      * Only hard-code {@code true} if you are sure that the field name is internally generated. Hard-coding {@code false} is almost certainly wrong.</p>
      *
@@ -260,7 +260,7 @@ public class RexBuilder {
 
     /**
      * Creates a call with a list of arguments.
-     *
+     * <p>
      * Equivalent to <code>makeCall(op, exprList.toArray(new RexNode[exprList.size()]))</code>.
      */
     public final RexNode makeCall( Operator op, RexNode... exprs ) {
@@ -287,7 +287,7 @@ public class RexBuilder {
 
     /**
      * Creates a reference to an aggregate call, checking for repeated calls.
-     *
+     * <p>
      * Argument types help to optimize for repeated aggregates.
      * For instance count(42) is equivalent to count(*).
      *
@@ -457,7 +457,7 @@ public class RexBuilder {
 
     /**
      * Creates a call to the CAST operator, expanding if possible, and optionally also preserving nullability.
-     *
+     * <p>
      * Tries to expand the cast, and therefore the result may be something other than a {@link RexCall} to the CAST operator, such as a {@link RexLiteral}.
      *
      * @param type Type to cast to
@@ -557,26 +557,19 @@ public class RexBuilder {
         }
         if ( value.isString() ) {
             final int length = value.asString().getValue().length();
-            switch ( toType.getPolyType() ) {
-                case CHAR:
-                    return PolyTypeUtil.comparePrecision( toType.getPrecision(), length ) == 0;
-                case JSON:
-                case VARCHAR:
-                    return PolyTypeUtil.comparePrecision( toType.getPrecision(), length ) >= 0;
-                default:
-                    throw new AssertionError( toType );
-            }
+            return switch ( toType.getPolyType() ) {
+                case CHAR -> PolyTypeUtil.comparePrecision( toType.getPrecision(), length ) == 0;
+                case JSON, VARCHAR -> PolyTypeUtil.comparePrecision( toType.getPrecision(), length ) >= 0;
+                default -> throw new AssertionError( toType );
+            };
         }
         if ( value.isBinary() ) {
             final int length = value.asBinary().value.length();
-            switch ( toType.getPolyType() ) {
-                case BINARY:
-                    return PolyTypeUtil.comparePrecision( toType.getPrecision(), length ) == 0;
-                case VARBINARY:
-                    return PolyTypeUtil.comparePrecision( toType.getPrecision(), length ) >= 0;
-                default:
-                    throw new AssertionError( toType );
-            }
+            return switch ( toType.getPolyType() ) {
+                case BINARY -> PolyTypeUtil.comparePrecision( toType.getPrecision(), length ) == 0;
+                case VARBINARY -> PolyTypeUtil.comparePrecision( toType.getPrecision(), length ) >= 0;
+                default -> throw new AssertionError( toType );
+            };
         }
         return true;
     }
@@ -629,24 +622,22 @@ public class RexBuilder {
     public RexNode multiplyDivide( RexNode e, BigDecimal multiplier, BigDecimal divider ) {
         assert multiplier.signum() > 0;
         assert divider.signum() > 0;
-        switch ( multiplier.compareTo( divider ) ) {
-            case 0:
-                return e;
-            case 1:
+        return switch ( multiplier.compareTo( divider ) ) {
+            case 0 -> e;
+            case 1 ->
                 // E.g. multiplyDivide(e, 1000, 10) ==> e * 100
-                return makeCall( OperatorRegistry.get( OperatorName.MULTIPLY ), e, makeExactLiteral( multiplier.divide( divider, RoundingMode.UNNECESSARY ) ) );
-            case -1:
+                    makeCall( OperatorRegistry.get( OperatorName.MULTIPLY ), e, makeExactLiteral( multiplier.divide( divider, RoundingMode.UNNECESSARY ) ) );
+            case -1 ->
                 // E.g. multiplyDivide(e, 10, 1000) ==> e / 100
-                return makeCall( OperatorRegistry.get( OperatorName.DIVIDE_INTEGER ), e, makeExactLiteral( divider.divide( multiplier, RoundingMode.UNNECESSARY ) ) );
-            default:
-                throw new AssertionError( multiplier + "/" + divider );
-        }
+                    makeCall( OperatorRegistry.get( OperatorName.DIVIDE_INTEGER ), e, makeExactLiteral( divider.divide( multiplier, RoundingMode.UNNECESSARY ) ) );
+            default -> throw new AssertionError( multiplier + "/" + divider );
+        };
     }
 
 
     /**
      * Casts a decimal's integer representation to a decimal node. If the expression is not the expected integer type, then it is casted first.
-     *
+     * <p>
      * An overflow check may be requested to ensure the internal value does not exceed the maximum value of the decimal type.
      *
      * @param value integer representation of decimal
@@ -734,7 +725,7 @@ public class RexBuilder {
 
     /**
      * Creates a reference to all the fields in the row.
-     *
+     * <p>
      * For example, if the input row has type <code>T{f0,f1,f2,f3,f4}</code> then <code>makeRangeReference(T{f0,f1,f2,f3,f4}, S{f3,f4}, 3)</code> is an expression which yields the last 2 fields.
      *
      * @param type Type of the resulting range record.
@@ -1046,7 +1037,7 @@ public class RexBuilder {
 
     /**
      * Creates a character string literal from an {@link NlsString}.
-     *
+     * <p>
      * If the string's charset and collation are not set, uses the system defaults.
      */
     public RexLiteral makeCharLiteral( NlsString str ) {
@@ -1179,7 +1170,7 @@ public class RexBuilder {
 
     /**
      * Creates a literal whose value is NULL, with a particular type.
-     *
+     * <p>
      * The typing is necessary because RexNodes are strictly typed. For example, in the Rex world the <code>NULL</code> parameter to <code>SUBSTRING(NULL FROM 2 FOR 4)</code> must have a valid VARCHAR type so
      * that the result type can be determined.
      *
@@ -1208,7 +1199,7 @@ public class RexBuilder {
 
     /**
      * Creates a literal of the default value for the given type.
-     *
+     * <p>
      * This value is:
      *
      * <ul>
@@ -1228,38 +1219,18 @@ public class RexBuilder {
 
 
     private static Comparable zeroValue( AlgDataType type ) {
-        switch ( type.getPolyType() ) {
-            case CHAR:
-                return new NlsString( Spaces.of( type.getPrecision() ), null, null );
-            case JSON:
-            case VARCHAR:
-                return new NlsString( "", null, null );
-            case BINARY:
-                return new ByteString( new byte[type.getPrecision()] );
-            case VARBINARY:
-                return ByteString.EMPTY;
-            case TINYINT:
-            case SMALLINT:
-            case INTEGER:
-            case BIGINT:
-            case DECIMAL:
-            case FLOAT:
-            case REAL:
-            case DOUBLE:
-                return BigDecimal.ZERO;
-            case BOOLEAN:
-                return false;
-            case TIME:
-            case DATE:
-            case TIMESTAMP:
-                return DateTimeUtils.ZERO_CALENDAR;
-            case TIME_WITH_LOCAL_TIME_ZONE:
-                return new TimeString( 0, 0, 0 );
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                return new TimestampString( 0, 0, 0, 0, 0, 0 );
-            default:
-                throw Util.unexpected( type.getPolyType() );
-        }
+        return switch ( type.getPolyType() ) {
+            case CHAR -> new NlsString( Spaces.of( type.getPrecision() ), null, null );
+            case JSON, VARCHAR -> new NlsString( "", null, null );
+            case BINARY -> new ByteString( new byte[type.getPrecision()] );
+            case VARBINARY -> ByteString.EMPTY;
+            case TINYINT, SMALLINT, INTEGER, BIGINT, DECIMAL, FLOAT, REAL, DOUBLE -> BigDecimal.ZERO;
+            case BOOLEAN -> false;
+            case TIME, DATE, TIMESTAMP -> DateTimeUtils.ZERO_CALENDAR;
+            case TIME_WITH_LOCAL_TIME_ZONE -> new TimeString( 0, 0, 0 );
+            case TIMESTAMP_WITH_LOCAL_TIME_ZONE -> new TimestampString( 0, 0, 0, 0, 0, 0 );
+            default -> throw Util.unexpected( type.getPolyType() );
+        };
     }
 
 
@@ -1391,7 +1362,7 @@ public class RexBuilder {
         final Map<RexNode, RexNode> map = value
                 .entrySet()
                 .stream()
-                .collect( Collectors.toMap( e -> makeLiteral( e.getKey(), mapType.unwrap( MapPolyType.class ).getKeyType(), allowCast ), e -> makeLiteral( e.getValue(), mapType.unwrap( MapPolyType.class ).getValueType(), allowCast ) ) );
+                .collect( Collectors.toMap( e -> makeLiteral( e.getKey(), mapType.unwrap( MapPolyType.class ).orElseThrow().getKeyType(), allowCast ), e -> makeLiteral( e.getValue(), mapType.unwrap( MapPolyType.class ).orElseThrow().getValueType(), allowCast ) ) );
 
         return makeMap( type, map );
     }

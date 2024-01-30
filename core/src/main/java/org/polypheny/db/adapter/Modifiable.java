@@ -19,6 +19,7 @@ package org.polypheny.db.adapter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
@@ -39,6 +40,7 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
 import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
@@ -72,6 +74,14 @@ import org.polypheny.db.util.Pair;
 
 
 public interface Modifiable extends Scannable {
+
+    Function<AlgDataTypeFactory, AlgDataType> nullableText = factory -> factory.createTypeWithNullability( factory.createPolyType( PolyType.TEXT ), true );
+
+    Function<AlgDataTypeFactory, AlgDataType> nonNullText = factory -> factory.createTypeWithNullability( factory.createPolyType( PolyType.TEXT ), false );
+
+    Function<AlgDataTypeFactory, AlgDataType> nullableGraphId = factory -> factory.createTypeWithNullability( factory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE ), true );
+
+    Function<AlgDataTypeFactory, AlgDataType> nonNullGraphId = factory -> factory.createTypeWithNullability( factory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE ), false );
 
     static AlgNode attachRelationalGraphUpdate( Modifiable modifiable, AlgNode provider, LogicalLpgModify alg, AlgBuilder builder, Entity nodesTable, Entity nodePropertiesTable, Entity edgesTable, Entity edgePropertiesTable ) {
         AlgNode project = new LogicalLpgProject( alg.getCluster(), alg.getTraitSet(), alg.getInput(), alg.operations, alg.ids );
@@ -173,8 +183,8 @@ public interface Modifiable extends Scannable {
         LogicalProject preparedNodes = LogicalProject.create(
                 LogicalValues.createOneRow( cluster ),
                 List.of(
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE ), 0 ), // id
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.TEXT ), 1 ) ), // label
+                        rexBuilder.makeDynamicParam( nonNullGraphId.apply( typeFactory ), 0 ), // id
+                        rexBuilder.makeDynamicParam( nonNullText.apply( typeFactory ), 1 ) ), // label
                 nodesTable.getRowType() );
 
         inputs.add( getModify( nodesTable, preparedNodes, Modify.Operation.INSERT, null, null ) );
@@ -182,9 +192,9 @@ public interface Modifiable extends Scannable {
         LogicalProject preparedNProperties = LogicalProject.create(
                 LogicalValues.createOneRow( cluster ),
                 List.of(
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE ), 0 ), // id
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.TEXT ), 1 ), // key
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.TEXT ), 2 ) ), // value
+                        rexBuilder.makeDynamicParam( nonNullGraphId.apply( typeFactory ), 0 ), // id
+                        rexBuilder.makeDynamicParam( nonNullText.apply( typeFactory ), 1 ), // key
+                        rexBuilder.makeDynamicParam( nullableText.apply( typeFactory ), 2 ) ), // value
                 nodePropertiesTable.getRowType() );
 
         inputs.add( getModify( nodePropertiesTable, preparedNProperties, Modify.Operation.INSERT, null, null ) );
@@ -228,10 +238,10 @@ public interface Modifiable extends Scannable {
         LogicalProject preparedEdges = LogicalProject.create(
                 LogicalValues.createOneRow( cluster ),
                 List.of(
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE ), 0 ), // id
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.TEXT ), 1 ), // label
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE ), 2 ), // source
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE ), 3 ) ), // target
+                        rexBuilder.makeDynamicParam( nonNullGraphId.apply( typeFactory ), 0 ), // id
+                        rexBuilder.makeDynamicParam( nullableText.apply( typeFactory ), 1 ), // label
+                        rexBuilder.makeDynamicParam( nullableGraphId.apply( typeFactory ), 2 ), // source
+                        rexBuilder.makeDynamicParam( nullableGraphId.apply( typeFactory ), 3 ) ), // target
                 edgesTable.getRowType() );
 
         inputs.add( getModify( edgesTable, preparedEdges, Modify.Operation.INSERT, null, null ) );
@@ -239,9 +249,9 @@ public interface Modifiable extends Scannable {
         LogicalProject preparedEProperties = LogicalProject.create(
                 LogicalValues.createOneRow( cluster ),
                 List.of(
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE ), 0 ), // id
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.TEXT ), 1 ), // key
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.TEXT ), 2 ) ), // value
+                        rexBuilder.makeDynamicParam( nonNullGraphId.apply( typeFactory ), 0 ), // id
+                        rexBuilder.makeDynamicParam( nonNullText.apply( typeFactory ), 1 ), // key
+                        rexBuilder.makeDynamicParam( nullableText.apply( typeFactory ), 2 ) ), // value
                 edgePropertiesTable.getRowType() );
 
         inputs.add( getModify( edgePropertiesTable, preparedEProperties, Modify.Operation.INSERT, null, null ) );

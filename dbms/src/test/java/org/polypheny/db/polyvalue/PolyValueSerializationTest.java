@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
 import java.util.Map;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -51,8 +50,8 @@ public class PolyValueSerializationTest {
 
 
     private void assertEqualAfterSerialization( PolyValue value ) {
-        Assertions.assertEquals( value, PolyValue.fromTypedJson( value.toTypedJson(), value.getClass() ), "Json serialization is incorrect" );
-        Assertions.assertEquals( value, PolyValue.deserialize( value.serialize() ), "Binary serialization is incorrect" );
+        assertEquals( value, PolyValue.fromTypedJson( value.toTypedJson(), value.getClass() ), "Json serialization is incorrect" );
+        assertEquals( value, PolyValue.deserialize( value.serialize() ), "Binary serialization is incorrect" );
     }
 
 

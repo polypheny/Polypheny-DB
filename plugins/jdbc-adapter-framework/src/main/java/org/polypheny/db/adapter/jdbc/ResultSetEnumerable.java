@@ -296,7 +296,7 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                 }
                 break;
             case ARRAY:
-                if ( connectionHandler.getDialect().supportsNestedArrays() ) {
+                if ( (type.getComponentType().getPolyType() == PolyType.ARRAY && connectionHandler.getDialect().supportsNestedArrays()) || (type.getComponentType().getPolyType() != PolyType.ARRAY) && connectionHandler.getDialect().supportsArrays() ) {
                     Array array = getArray( value, type, connectionHandler );
                     preparedStatement.setArray( i, array );
                     array.free(); // according to documentation this is advised to not hog the memory

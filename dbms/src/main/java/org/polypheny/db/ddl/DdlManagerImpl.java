@@ -52,6 +52,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
@@ -890,7 +891,7 @@ public class DdlManagerImpl extends DdlManager {
 
     private void checkModelLogic( LogicalTable catalogTable, String columnName ) {
         if ( catalogTable.dataModel == DataModel.DOCUMENT
-                && (columnName.equals( "_data" ) || columnName.equals( "_id" )) ) {
+                && (columnName.equals( DocumentType.DOCUMENT_DATA ) || columnName.equals( DocumentType.DOCUMENT_ID )) ) {
             throw new GenericRuntimeException( "Modification operation is not allowed by schema type DOCUMENT" );
         }
     }
@@ -2278,7 +2279,6 @@ public class DdlManagerImpl extends DdlManager {
                 continue;
             }
             stores.add( store );
-
 
             List<AllocationColumn> columns = catalog.getSnapshot().alloc().getColumns( placement.id );//allocation.unwrap( AllocationTable.class ).getColumns().stream().map( c -> snapshot.rel().getColumn( c.columnId ).orElseThrow() ).collect( Collectors.toList() );
             List<AllocationTable> partitionAllocations = new ArrayList<>();

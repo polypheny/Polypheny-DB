@@ -89,7 +89,7 @@ public class PostgresqlSqlDialect extends SqlDialect {
 
     @Override
     public boolean supportsNestedArrays() {
-        return true;
+        return false;
     }
 
 
@@ -141,6 +141,11 @@ public class PostgresqlSqlDialect extends SqlDialect {
                 castSpec = "_BYTEA";
                 break;
             case ARRAY:
+                if ( type.getComponentType().getPolyType() == PolyType.ARRAY ) {
+                    castSpec = "_TEXT";
+                    break;
+                }
+
                 AlgDataType tt = type;
                 StringBuilder brackets = new StringBuilder( "[]" );
                 while ( tt.getComponentType().getPolyType() == PolyType.ARRAY ) {

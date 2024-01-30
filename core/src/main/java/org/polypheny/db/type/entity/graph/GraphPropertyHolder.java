@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.List;
 import java.util.Map.Entry;
 import lombok.Getter;
+import lombok.NonNull;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyList.PolyListDeserializer;
@@ -37,7 +38,7 @@ public abstract class GraphPropertyHolder extends GraphObject {
 
     @JsonProperty
     @JsonDeserialize(using = PolyListDeserializer.class)
-    public final PolyList<PolyString> labels;
+    public final PolyList<@NonNull PolyString> labels;
 
 
     public GraphPropertyHolder( PolyString id, PolyType type, PolyDictionary properties, List<PolyString> labels, PolyString variableName ) {

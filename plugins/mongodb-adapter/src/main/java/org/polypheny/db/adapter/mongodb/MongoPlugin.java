@@ -301,7 +301,7 @@ public class MongoPlugin extends PolyPlugin {
         @Override
         public List<PhysicalEntity> createCollection( Context context, LogicalCollection logical, AllocationCollection allocation ) {
             commitAll();
-            String name = getPhysicalTableName( allocation.id, adapterId );
+            String name = getPhysicalTableName( allocation.id );
 
             if ( storeCatalog.getNamespace( allocation.namespaceId ) == null ) {
                 updateNamespace( DEFAULT_DATABASE, allocation.namespaceId );
@@ -504,12 +504,9 @@ public class MongoPlugin extends PolyPlugin {
         }
 
 
-        public static String getPhysicalTableName( long tableId, long partitionId ) {
-            String physicalTableName = "tab-" + tableId;
-            if ( partitionId >= 0 ) {
-                physicalTableName += "_part" + partitionId;
-            }
-            return physicalTableName;
+        public static String getPhysicalTableName( long tableId ) {
+
+            return "tab-" + tableId;
         }
 
 
@@ -573,7 +570,7 @@ public class MongoPlugin extends PolyPlugin {
                 storeCatalog.addNamespace( allocation.table.namespaceId, currentNamespace );
             }
 
-            String physicalTableName = getPhysicalTableName( logical.table.id, allocation.table.id );
+            String physicalTableName = getPhysicalTableName( logical.table.id );
             PhysicalTable physical = storeCatalog.createTable(
                     logical.getTable().getNamespaceName(),
                     physicalTableName,
