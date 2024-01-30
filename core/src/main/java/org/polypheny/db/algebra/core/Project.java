@@ -36,6 +36,7 @@ package org.polypheny.db.algebra.core;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -54,7 +55,9 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexChecker;
+import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
@@ -93,6 +96,79 @@ public abstract class Project extends SingleAlg {
         this.exps = ImmutableList.copyOf( projects );
         this.rowType = rowType;
         assert isValid( Litmus.THROW, null );
+    }
+
+
+    /**
+     * Returns a mapping of a set of project expressions.
+     *
+     * The mapping is an inverse surjection.
+     * Every target has a source field, but a source field may appear as zero, one, or more target fields.
+     * Thus you can safely call {@link org.polypheny.db.util.mapping.Mappings.TargetMapping#getTarget(int)}.
+     *
+     * @param inputFieldCount Number of input fields
+     * @param projects Project expressions
+     * @return Mapping of a set of project expressions, or null if projection is not a mapping
+     */
+    public static Mappings.TargetMapping getMapping( int inputFieldCount, List<? extends RexNode> projects ) {
+        if ( inputFieldCount < projects.size() ) {
+            return null; // surjection is not possible
+        }
+        Mappings.TargetMapping mapping = Mappings.create( MappingType.INVERSE_SURJECTION, inputFieldCount, projects.size() );
+        for ( Ord<RexNode> exp : Ord.<RexNode>zip( projects ) ) {
+            if ( !(exp.e instanceof RexIndexRef) ) {
+                return null;
+            }
+            mapping.set( ((RexIndexRef) exp.e).getIndex(), exp.i );
+        }
+        return mapping;
+    }
+
+
+    /**
+     * Returns a partial mapping of a set of project expressions.
+     *
+     * The mapping is an inverse function. Every target has a source field, but a source might have 0, 1 or more targets.
+     * Project expressions that do not consist of a mapping are ignored.
+     *
+     * @param inputFieldCount Number of input fields
+     * @param projects Project expressions
+     * @return Mapping of a set of project expressions, never null
+     */
+    public static Mappings.TargetMapping getPartialMapping( int inputFieldCount, List<? extends RexNode> projects ) {
+        Mappings.TargetMapping mapping = Mappings.create( MappingType.INVERSE_FUNCTION, inputFieldCount, projects.size() );
+        for ( Ord<RexNode> exp : Ord.<RexNode>zip( projects ) ) {
+            if ( exp.e instanceof RexIndexRef ) {
+                mapping.set( ((RexIndexRef) exp.e).getIndex(), exp.i );
+            }
+        }
+        return mapping;
+    }
+
+
+    /**
+     * Returns a permutation, if this projection is merely a permutation of its input fields; otherwise null.
+     */
+    public static Permutation getPermutation( int inputFieldCount, List<? extends RexNode> projects ) {
+        final int fieldCount = projects.size();
+        if ( fieldCount != inputFieldCount ) {
+            return null;
+        }
+        final Permutation permutation = new Permutation( fieldCount );
+        final Set<Integer> alreadyProjected = new HashSet<>( fieldCount );
+        for ( int i = 0; i < fieldCount; ++i ) {
+            final RexNode exp = projects.get( i );
+            if ( exp instanceof RexIndexRef ) {
+                final int index = ((RexIndexRef) exp).getIndex();
+                if ( !alreadyProjected.add( index ) ) {
+                    return null;
+                }
+                permutation.set( i, index );
+            } else {
+                return null;
+            }
+        }
+        return permutation;
     }
 
 
@@ -173,7 +249,7 @@ public abstract class Project extends SingleAlg {
             return litmus.fail( "field names not distinct: {}", rowType );
         }
         //CHECKSTYLE: IGNORE 1
-        if ( false && !Util.isDistinct( Lists.transform( exps, RexNode::toString ) ) ) {
+        if ( false ) {
             // Projecting the same expression twice is usually a bad idea, because it may create expressions downstream which are equivalent but which look different.
             // We can't ban duplicate projects, because we need to allow
             //
@@ -212,7 +288,8 @@ public abstract class Project extends SingleAlg {
         // If we're generating a digest, include the rowtype. If two projects differ in return type, we don't want to regard them as equivalent, otherwise we will try to put rels
         // of different types into the same planner equivalence set.
         //CHECKSTYLE: IGNORE 2
-        if ( (pw.getDetailLevel() == ExplainLevel.DIGEST_ATTRIBUTES) && false ) {
+        pw.getDetailLevel();
+        if ( false ) {
             pw.item( "type", rowType );
         }
 
@@ -231,85 +308,12 @@ public abstract class Project extends SingleAlg {
 
 
     /**
-     * Returns a mapping of a set of project expressions.
-     *
-     * The mapping is an inverse surjection.
-     * Every target has a source field, but a source field may appear as zero, one, or more target fields.
-     * Thus you can safely call {@link org.polypheny.db.util.mapping.Mappings.TargetMapping#getTarget(int)}.
-     *
-     * @param inputFieldCount Number of input fields
-     * @param projects Project expressions
-     * @return Mapping of a set of project expressions, or null if projection is not a mapping
-     */
-    public static Mappings.TargetMapping getMapping( int inputFieldCount, List<? extends RexNode> projects ) {
-        if ( inputFieldCount < projects.size() ) {
-            return null; // surjection is not possible
-        }
-        Mappings.TargetMapping mapping = Mappings.create( MappingType.INVERSE_SURJECTION, inputFieldCount, projects.size() );
-        for ( Ord<RexNode> exp : Ord.<RexNode>zip( projects ) ) {
-            if ( !(exp.e instanceof RexIndexRef) ) {
-                return null;
-            }
-            mapping.set( ((RexIndexRef) exp.e).getIndex(), exp.i );
-        }
-        return mapping;
-    }
-
-
-    /**
-     * Returns a partial mapping of a set of project expressions.
-     *
-     * The mapping is an inverse function. Every target has a source field, but a source might have 0, 1 or more targets.
-     * Project expressions that do not consist of a mapping are ignored.
-     *
-     * @param inputFieldCount Number of input fields
-     * @param projects Project expressions
-     * @return Mapping of a set of project expressions, never null
-     */
-    public static Mappings.TargetMapping getPartialMapping( int inputFieldCount, List<? extends RexNode> projects ) {
-        Mappings.TargetMapping mapping = Mappings.create( MappingType.INVERSE_FUNCTION, inputFieldCount, projects.size() );
-        for ( Ord<RexNode> exp : Ord.<RexNode>zip( projects ) ) {
-            if ( exp.e instanceof RexIndexRef ) {
-                mapping.set( ((RexIndexRef) exp.e).getIndex(), exp.i );
-            }
-        }
-        return mapping;
-    }
-
-
-    /**
      * Returns a permutation, if this projection is merely a permutation of its input fields; otherwise null.
      *
      * @return Permutation, if this projection is merely a permutation of its input fields; otherwise null
      */
     public Permutation getPermutation() {
         return getPermutation( getInput().getTupleType().getFieldCount(), exps );
-    }
-
-
-    /**
-     * Returns a permutation, if this projection is merely a permutation of its input fields; otherwise null.
-     */
-    public static Permutation getPermutation( int inputFieldCount, List<? extends RexNode> projects ) {
-        final int fieldCount = projects.size();
-        if ( fieldCount != inputFieldCount ) {
-            return null;
-        }
-        final Permutation permutation = new Permutation( fieldCount );
-        final Set<Integer> alreadyProjected = new HashSet<>( fieldCount );
-        for ( int i = 0; i < fieldCount; ++i ) {
-            final RexNode exp = projects.get( i );
-            if ( exp instanceof RexIndexRef ) {
-                final int index = ((RexIndexRef) exp).getIndex();
-                if ( !alreadyProjected.add( index ) ) {
-                    return null;
-                }
-                permutation.set( i, index );
-            } else {
-                return null;
-            }
-        }
-        return permutation;
     }
 
 
@@ -329,10 +333,22 @@ public abstract class Project extends SingleAlg {
 
     @Override
     public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" +
-                input.algCompareString() + "$" +
-                (exps != null ? exps.stream().map( Objects::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
-                rowType.toString() + "&";
+        String types = "";
+        if ( exps != null ) {
+            // use the real data types to exclude wrong cache usage:
+            // <FUNCTION_NAME>(?1:CHAR, ?2:INTEGER)
+            // - second usage of the same function will clip the string because unclear what is the size of CHAR
+            // should be <FUNCTION_NAME>(?1:CHAR(<LENGTH>), ?2:INTEGER)
+            types = "$" + exps.stream().filter( RexCall.class::isInstance )
+                    .flatMap( call -> ((RexCall) call).operands.stream() )
+                    .filter( RexDynamicParam.class::isInstance )
+                    .map( param -> param + "(" + param.getType().getFullTypeString() + ")" )
+                    .collect( Collectors.joining( "$" ) );
+        }
+        return this.getClass().getSimpleName() + "$" + input.algCompareString() + "$" +
+                (exps != null ? exps.stream().map( Objects::hashCode ).map( Objects::toString )
+                        .collect( Collectors.joining( "$" ) ) : "") + "$" +
+                rowType.toString() + types + "&";
     }
 
 }
