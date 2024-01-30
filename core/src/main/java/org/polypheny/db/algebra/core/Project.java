@@ -54,7 +54,9 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexChecker;
+import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
@@ -329,10 +331,22 @@ public abstract class Project extends SingleAlg {
 
     @Override
     public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" +
-                input.algCompareString() + "$" +
-                (exps != null ? exps.stream().map( Objects::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
-                rowType.toString() + "&";
+        String types = "";
+        if ( exps != null ) {
+            // use the real data types to exclude wrong cache usage:
+            // <FUNCTION_NAME>(?1:CHAR, ?2:INTEGER)
+            // - second usage of the same function will clip the string because unclear what is the size of CHAR
+            // should be <FUNCTION_NAME>(?1:CHAR(<LENGTH>), ?2:INTEGER)
+            types = "$" + exps.stream().filter( RexCall.class::isInstance )
+                    .flatMap( call -> ((RexCall) call).operands.stream() )
+                    .filter( RexDynamicParam.class::isInstance )
+                    .map( param -> param + "(" + param.getType().getFullTypeString() + ")" )
+                    .collect( Collectors.joining( "$" ) );
+        }
+        return this.getClass().getSimpleName() + "$" + input.algCompareString() + "$" +
+                (exps != null ? exps.stream().map( Objects::hashCode ).map( Objects::toString )
+                        .collect( Collectors.joining( "$" ) ) : "") + "$" +
+                rowType.toString() + types + "&";
     }
 
 }
