@@ -31,13 +31,13 @@ import org.polypheny.db.adapter.jdbc.JdbcTable;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.adapter.jdbc.sources.AbstractJdbcSource;
+import org.polypheny.db.adapter.monetdb.MonetdbSqlDialect;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.sql.language.SqlDialect;
-import org.polypheny.db.sql.language.dialect.MonetdbSqlDialect;
 
 
 @Slf4j

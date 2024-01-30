@@ -17,6 +17,7 @@
 package org.polypheny.db.sql.language.dialect;
 
 
+import org.polypheny.db.algebra.constant.NullCollation;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlIntervalLiteral;
@@ -29,7 +30,8 @@ import org.polypheny.db.sql.language.SqlWriter;
  */
 public class Db2SqlDialect extends SqlDialect {
 
-    public static final SqlDialect DEFAULT = new Db2SqlDialect( EMPTY_CONTEXT.withDatabaseProduct( DatabaseProduct.DB2 ) );
+    public static final SqlDialect DEFAULT = new Db2SqlDialect(
+            EMPTY_CONTEXT.withNullCollation( NullCollation.HIGH ) );
 
 
     /**

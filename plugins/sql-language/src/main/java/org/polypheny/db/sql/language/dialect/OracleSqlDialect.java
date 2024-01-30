@@ -17,7 +17,10 @@
 package org.polypheny.db.sql.language.dialect;
 
 
+import java.util.Objects;
 import org.apache.calcite.avatica.util.TimeUnitRange;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.constant.NullCollation;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlDialect;
@@ -35,7 +38,7 @@ public class OracleSqlDialect extends SqlDialect {
 
     public static final SqlDialect DEFAULT =
             new OracleSqlDialect( EMPTY_CONTEXT
-                    .withDatabaseProduct( DatabaseProduct.ORACLE )
+                    .withNullCollation( NullCollation.HIGH )
                     .withIdentifierQuoteString( "\"" ) );
 
 
@@ -70,22 +73,19 @@ public class OracleSqlDialect extends SqlDialect {
         if ( call.getOperator().getOperatorName() == OperatorName.SUBSTRING ) {
             SqlUtil.unparseFunctionSyntax( OracleSqlOperatorTable.SUBSTR, writer, call );
         } else {
-            switch ( call.getKind() ) {
-                case FLOOR:
-                    if ( call.operandCount() != 2 ) {
-                        super.unparseCall( writer, call, leftPrec, rightPrec );
-                        return;
-                    }
-
-                    final SqlLiteral timeUnitNode = call.operand( 1 );
-                    final TimeUnitRange timeUnit = timeUnitNode.getValueAs( TimeUnitRange.class );
-
-                    SqlCall call2 = SqlFloorFunction.replaceTimeUnitOperand( call, timeUnit.name(), timeUnitNode.getPos() );
-                    SqlFloorFunction.unparseDatetimeFunction( writer, call2, "TRUNC", true );
-                    break;
-
-                default:
+            if ( Objects.requireNonNull( call.getKind() ) == Kind.FLOOR ) {
+                if ( call.operandCount() != 2 ) {
                     super.unparseCall( writer, call, leftPrec, rightPrec );
+                    return;
+                }
+
+                final SqlLiteral timeUnitNode = call.operand( 1 );
+                final TimeUnitRange timeUnit = timeUnitNode.getValueAs( TimeUnitRange.class );
+
+                SqlCall call2 = SqlFloorFunction.replaceTimeUnitOperand( call, timeUnit.name(), timeUnitNode.getPos() );
+                SqlFloorFunction.unparseDatetimeFunction( writer, call2, "TRUNC", true );
+            } else {
+                super.unparseCall( writer, call, leftPrec, rightPrec );
             }
         }
     }

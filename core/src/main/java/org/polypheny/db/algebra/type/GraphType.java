@@ -33,9 +33,6 @@ public class GraphType implements Serializable, AlgDataType, AlgDataTypeFamily {
     public static final String GRAPH_LABELS = "labels";
 
     public static final int ID_SIZE = 36;
-    public static final int LABEL_SIZE = 255;
-    public static final int KEY_SIZE = 2024;
-    public static final int VALUE_SIZE = 2024;
 
     public final List<AlgDataTypeField> fixedFields;
 
@@ -56,8 +53,8 @@ public class GraphType implements Serializable, AlgDataType, AlgDataTypeFamily {
     public static AlgDataType ofRelational() {
         return new AlgRecordType( List.of(
                 new AlgDataTypeFieldImpl( -1L, GRAPH_ID, 0, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARCHAR, ID_SIZE ) ),
-                new AlgDataTypeFieldImpl( -1L, GRAPH_PROPERTIES, 1, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARCHAR, 2024 ) ),
-                new AlgDataTypeFieldImpl( -1L, GRAPH_LABELS, 2, AlgDataTypeFactory.DEFAULT.createArrayType( AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARCHAR, LABEL_SIZE ), -1 ) )
+                new AlgDataTypeFieldImpl( -1L, GRAPH_PROPERTIES, 1, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.TEXT ) ),
+                new AlgDataTypeFieldImpl( -1L, GRAPH_LABELS, 2, AlgDataTypeFactory.DEFAULT.createArrayType( AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.TEXT ), -1 ) )
         ) );
     }
 

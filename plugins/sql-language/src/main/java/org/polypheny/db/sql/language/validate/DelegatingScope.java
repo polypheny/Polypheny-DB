@@ -91,7 +91,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
 
 
     /**
-     * If a record type allows implicit references to fields, recursively looks into the fields. Otherwise returns immediately.
+     * If a record type allows implicit references to fields, recursively looks into the fields. Otherwise, returns immediately.
      */
     void resolveInNamespace( SqlValidatorNamespace ns, boolean nullable, List<String> names, NameMatcher nameMatcher, Path path, Resolved resolved ) {
         if ( names.isEmpty() ) {

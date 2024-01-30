@@ -232,7 +232,7 @@ public abstract class Project extends SingleAlg {
 
     /**
      * Returns a mapping of a set of project expressions.
-     *
+     * <p>
      * The mapping is an inverse surjection.
      * Every target has a source field, but a source field may appear as zero, one, or more target fields.
      * Thus you can safely call {@link org.polypheny.db.util.mapping.Mappings.TargetMapping#getTarget(int)}.
@@ -258,7 +258,7 @@ public abstract class Project extends SingleAlg {
 
     /**
      * Returns a partial mapping of a set of project expressions.
-     *
+     * <p>
      * The mapping is an inverse function. Every target has a source field, but a source might have 0, 1 or more targets.
      * Project expressions that do not consist of a mapping are ignored.
      *

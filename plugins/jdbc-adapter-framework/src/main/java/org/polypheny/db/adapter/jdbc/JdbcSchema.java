@@ -41,7 +41,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import javax.sql.DataSource;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -64,7 +63,6 @@ import org.polypheny.db.schema.Namespace.Schema;
 import org.polypheny.db.schema.SchemaVersion;
 import org.polypheny.db.schema.types.Expressible;
 import org.polypheny.db.sql.language.SqlDialect;
-import org.polypheny.db.sql.language.SqlDialectFactory;
 import org.polypheny.db.type.PolyType;
 
 
@@ -154,14 +152,6 @@ public class JdbcSchema implements Namespace, Schema, Expressible {
         final Expression expression = adapter.getNamespaceAsExpression( id );
         final JdbcConvention convention = JdbcConvention.of( dialect, expression, name + adapter.adapterId ); // fixes multiple placement errors
         return new JdbcSchema( id, connectionFactory, dialect, convention, adapter );
-    }
-
-
-    /**
-     * Returns a suitable SQL dialect for the given data source.
-     */
-    public static SqlDialect createDialect( SqlDialectFactory dialectFactory, DataSource dataSource ) {
-        return JdbcUtils.DialectPool.INSTANCE.get( dialectFactory, dataSource );
     }
 
 

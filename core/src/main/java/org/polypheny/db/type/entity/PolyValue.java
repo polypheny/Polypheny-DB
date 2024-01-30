@@ -208,7 +208,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
 
     public static Function1<PolyValue, Object> getPolyToJava( AlgDataType type, boolean arrayAsList ) {
         return switch ( type.getPolyType() ) {
-            case VARCHAR, CHAR -> o -> o.asString().value;
+            case VARCHAR, CHAR, TEXT -> o -> o.asString().value;
             case INTEGER, TINYINT, SMALLINT -> o -> o.asNumber().IntValue();
             case FLOAT, REAL -> o -> o.asNumber().FloatValue();
             case DOUBLE -> o -> o.asNumber().DoubleValue();
@@ -361,13 +361,10 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     public static Class<? extends PolyValue> classFrom( PolyType polyType ) {
         return switch ( polyType ) {
             case BOOLEAN -> PolyBoolean.class;
-            case TINYINT -> PolyInteger.class;
-            case SMALLINT -> PolyInteger.class;
-            case INTEGER -> PolyInteger.class;
+            case TINYINT, INTEGER, SMALLINT -> PolyInteger.class;
             case BIGINT -> PolyLong.class;
             case DECIMAL -> PolyBigDecimal.class;
-            case FLOAT -> PolyFloat.class;
-            case REAL -> PolyFloat.class;
+            case FLOAT, REAL -> PolyFloat.class;
             case DOUBLE -> PolyDouble.class;
             case DATE -> PolyDate.class;
             case TIME -> PolyTime.class;
@@ -412,6 +409,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case GEOMETRY -> PolyValue.class;
             case FILE, IMAGE, VIDEO, AUDIO -> PolyBlob.class;
             case JSON -> PolyString.class;
+            case TEXT -> PolyString.class;
             default -> throw new NotImplementedException( "value" );
         };
     }

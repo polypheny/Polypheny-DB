@@ -5390,7 +5390,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             for ( ; i < id.getNames().size(); i++ ) {
                 String name = id.getNames().get( i );
                 final AlgDataTypeField field;
-                if ( name.equals( "" ) ) {
+                if ( name.isEmpty() ) {
                     // The wildcard "*" is represented as an empty name. It never resolves to a field.
                     name = "*";
                     field = null;

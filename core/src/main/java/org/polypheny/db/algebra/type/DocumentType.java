@@ -35,8 +35,7 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
 
     public static final String DOCUMENT_ID = "_id";
     public static final String DOCUMENT_DATA = "_data";
-    public static final Integer ID_SIZE = 2024;
-    public static final Integer DATA_SIZE = 12024;
+
     public StructKind structKind;
 
     public final List<AlgDataTypeField> fixed;
@@ -75,8 +74,8 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
 
     public static AlgDataType ofRelational() {
         return new AlgRecordType( List.of(
-                new AlgDataTypeFieldImpl( -1L, DOCUMENT_ID, 0, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARBINARY, ID_SIZE ) ),
-                new AlgDataTypeFieldImpl( -1L, DOCUMENT_DATA, 1, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARBINARY, DATA_SIZE ) )
+                new AlgDataTypeFieldImpl( -1L, DOCUMENT_ID, 0, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.TEXT ) ),
+                new AlgDataTypeFieldImpl( -1L, DOCUMENT_DATA, 1, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.TEXT ) )
         ) );
     }
 
@@ -130,12 +129,6 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
 
 
     @Override
-    public AlgDataType asGraph() {
-        throw new UnsupportedOperationException();
-    }
-
-
-    @Override
     public List<AlgDataTypeField> getFields() {
         return fixed;
     }
@@ -143,13 +136,13 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
 
     @Override
     public List<String> getFieldNames() {
-        return getFields().stream().map( AlgDataTypeField::getName ).collect( Collectors.toList() );
+        return getFields().stream().map( AlgDataTypeField::getName ).toList();
     }
 
 
     @Override
     public List<Long> getFieldIds() {
-        return fixed.stream().map( AlgDataTypeField::getId ).collect( Collectors.toList() );
+        return fixed.stream().map( AlgDataTypeField::getId ).toList();
     }
 
 

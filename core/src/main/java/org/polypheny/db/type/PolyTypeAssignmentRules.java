@@ -160,6 +160,12 @@ public class PolyTypeAssignmentRules {
         rule.add( PolyType.BINARY );
         rules.add( PolyType.VARBINARY, rule );
 
+        // TEXT is assignable from...
+        rule.clear();
+        rule.add( PolyType.TEXT );
+        rule.add( PolyType.VARCHAR );
+        rules.add( PolyType.TEXT, rule );
+
         // CHAR is assignable from...
         rules.add( PolyType.CHAR, EnumSet.of( PolyType.CHAR ) );
 
@@ -167,6 +173,7 @@ public class PolyTypeAssignmentRules {
         rule.clear();
         rule.add( PolyType.CHAR );
         rule.add( PolyType.VARCHAR );
+        rule.add( PolyType.TEXT );
         rules.add( PolyType.VARCHAR, rule );
 
         // BOOLEAN is assignable from...
@@ -291,7 +298,16 @@ public class PolyTypeAssignmentRules {
                         .add( PolyType.TIME )
                         .add( PolyType.TIMESTAMP )
                         .add( PolyType.DOCUMENT )
+                        .add( PolyType.TEXT )
+                        .add( PolyType.JSON )
                         .addAll( PolyType.INTERVAL_TYPES )
+                        .build() );
+
+        coerceRules.add(
+                PolyType.TEXT,
+                coerceRules.copyValues( PolyType.TEXT )
+                        .add( PolyType.VARCHAR )
+                        .add( PolyType.JSON )
                         .build() );
 
         // CHAR is castable from BOOLEAN, DATE, TIME, TIMESTAMP and numeric types

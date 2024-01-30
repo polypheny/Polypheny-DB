@@ -104,9 +104,9 @@ public abstract class DocumentValues extends AbstractAlgNode implements Document
                     throw new GenericRuntimeException( "Error while transforming document to relational values" );
                 }
 
-                normalizedTuple.add( 0, rexBuilder.makeLiteral( PolyBinary.of( id.serialize().getBytes() ), AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARBINARY, DocumentType.ID_SIZE ), PolyType.VARBINARY ) );
+                normalizedTuple.add( 0, rexBuilder.makeLiteral( PolyBinary.of( id.serialize().getBytes() ), AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.TEXT ), PolyType.TEXT ) );
                 byte[] parsed = tuple.serialize().getBytes();
-                normalizedTuple.add( 1, rexBuilder.makeLiteral( PolyBinary.of( parsed ), AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARBINARY, DocumentType.DATA_SIZE ), PolyType.VARBINARY ) );
+                normalizedTuple.add( 1, rexBuilder.makeLiteral( PolyBinary.of( parsed ), AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.TEXT ), PolyType.TEXT ) );
                 normalized.add( ImmutableList.copyOf( normalizedTuple ) );
             }
         }

@@ -21,7 +21,9 @@ import org.polypheny.db.adapter.postgres.source.PostgresqlSource;
 import org.polypheny.db.adapter.postgres.store.PostgresqlStore;
 import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
+import org.polypheny.db.sql.language.SqlDialectRegistry;
 
+@SuppressWarnings("unused")
 public class PostgresqlPlugin extends PolyPlugin {
 
 
@@ -41,6 +43,7 @@ public class PostgresqlPlugin extends PolyPlugin {
 
     @Override
     public void afterCatalogInit() {
+        SqlDialectRegistry.registerDialect( "PostgreSQL", PostgresqlSqlDialect.DEFAULT );
         this.storeId = AdapterManager.addAdapterTemplate( PostgresqlStore.class, ADAPTER_NAME, PostgresqlStore::new );
         this.sourceId = AdapterManager.addAdapterTemplate( PostgresqlSource.class, ADAPTER_NAME, PostgresqlSource::new );
     }
@@ -48,6 +51,7 @@ public class PostgresqlPlugin extends PolyPlugin {
 
     @Override
     public void stop() {
+        SqlDialectRegistry.unregisterDialect( "PostgreSQL" );
         AdapterManager.removeAdapterTemplate( storeId );
         AdapterManager.removeAdapterTemplate( sourceId );
     }

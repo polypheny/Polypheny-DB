@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.sql.language.dialect;
+package org.polypheny.db.adapter.monetdb;
 
 
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.algebra.constant.NullCollation;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.sql.language.SqlCall;
@@ -35,7 +36,9 @@ import org.polypheny.db.sql.language.SqlWriter;
 public class MonetdbSqlDialect extends SqlDialect {
 
     public static final SqlDialect DEFAULT = new MonetdbSqlDialect(
-            EMPTY_CONTEXT.withDatabaseProduct( DatabaseProduct.MONETDB ).withIdentifierQuoteString( "\"" )
+            EMPTY_CONTEXT
+                    .withNullCollation( NullCollation.HIGH )
+                    .withIdentifierQuoteString( "\"" )
     );
 
 
@@ -117,10 +120,8 @@ public class MonetdbSqlDialect extends SqlDialect {
 
     @Override
     public void unparseCall( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
-        switch ( call.getKind() ) {
-            default:
-                super.unparseCall( writer, call, leftPrec, rightPrec );
-        }
+        call.getKind();
+        super.unparseCall( writer, call, leftPrec, rightPrec );
     }
 
 }

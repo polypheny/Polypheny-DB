@@ -21,6 +21,7 @@ import org.polypheny.db.adapter.monetdb.sources.MonetdbSource;
 import org.polypheny.db.adapter.monetdb.stores.MonetdbStore;
 import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
+import org.polypheny.db.sql.language.SqlDialectRegistry;
 
 public class MonetdbPlugin extends PolyPlugin {
 
@@ -42,6 +43,7 @@ public class MonetdbPlugin extends PolyPlugin {
 
     @Override
     public void afterCatalogInit() {
+        SqlDialectRegistry.registerDialect( "MonetDB", MonetdbSqlDialect.DEFAULT );
         this.storeId = AdapterManager.addAdapterTemplate( MonetdbStore.class, ADAPTER_NAME, MonetdbStore::new );
         this.sourcId = AdapterManager.addAdapterTemplate( MonetdbSource.class, ADAPTER_NAME, MonetdbSource::new );
     }
@@ -49,6 +51,7 @@ public class MonetdbPlugin extends PolyPlugin {
 
     @Override
     public void stop() {
+        SqlDialectRegistry.unregisterDialect( "MonetDB" );
         AdapterManager.removeAdapterTemplate( storeId );
         AdapterManager.removeAdapterTemplate( sourcId );
     }

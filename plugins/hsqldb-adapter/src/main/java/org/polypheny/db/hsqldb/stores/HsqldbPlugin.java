@@ -19,7 +19,9 @@ package org.polypheny.db.hsqldb.stores;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
+import org.polypheny.db.sql.language.SqlDialectRegistry;
 
+@SuppressWarnings("unused")
 public class HsqldbPlugin extends PolyPlugin {
 
 
@@ -38,12 +40,14 @@ public class HsqldbPlugin extends PolyPlugin {
 
     @Override
     public void afterCatalogInit() {
+        SqlDialectRegistry.registerDialect( "HSQLDB", HsqldbSqlDialect.DEFAULT );
         this.id = AdapterManager.addAdapterTemplate( HsqldbStore.class, ADAPTER_NAME, HsqldbStore::new );
     }
 
 
     @Override
     public void stop() {
+        SqlDialectRegistry.unregisterDialect( "HSQLDB" );
         AdapterManager.removeAdapterTemplate( this.id );
     }
 

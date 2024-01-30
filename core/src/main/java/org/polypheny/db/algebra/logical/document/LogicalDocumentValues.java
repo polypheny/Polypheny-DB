@@ -21,13 +21,11 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.document.DocumentValues;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexDynamicParam;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.document.PolyDocument;
 
 
@@ -37,16 +35,16 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
     /**
      * Java representation of multiple documents, which can be retrieved in the original BSON format form
      * or in the substantiated relational form, where the documents are bundled into a BSON string
-     *
+     * <p>
      * BSON format
      * <pre><code>
      *     "_id": ObjectId(23kdf232123)
      *     "key": "value",
      *     "key1": "value"
      * </pre></code>
-     *
+     * <p>
      * becomes
-     *
+     * <p>
      * Column format
      * <pre><code>
      *     "_id": ObjectId(23kdf232123)
@@ -78,12 +76,6 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
 
 
     public static LogicalDocumentValues createOneTuple( AlgOptCluster cluster ) {
-        final AlgDataType rowType =
-                cluster.getTypeFactory()
-                        .builder()
-                        .add( "ZERO", null, PolyType.INTEGER )
-                        .nullable( false )
-                        .build();
         return new LogicalDocumentValues( cluster, cluster.traitSet(), List.of( new PolyDocument() ) );
     }
 

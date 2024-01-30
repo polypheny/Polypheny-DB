@@ -17,6 +17,7 @@
 package org.polypheny.db.sql.language.dialect;
 
 
+import org.polypheny.db.algebra.constant.NullCollation;
 import org.polypheny.db.sql.language.SqlDialect;
 
 
@@ -25,7 +26,7 @@ import org.polypheny.db.sql.language.SqlDialect;
  */
 public class InterbaseSqlDialect extends SqlDialect {
 
-    public static final SqlDialect DEFAULT = new InterbaseSqlDialect( EMPTY_CONTEXT.withDatabaseProduct( DatabaseProduct.INTERBASE ) );
+    public static final SqlDialect DEFAULT = new InterbaseSqlDialect( EMPTY_CONTEXT.withNullCollation( NullCollation.HIGH ) );
 
 
     /**
