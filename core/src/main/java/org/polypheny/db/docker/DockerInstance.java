@@ -165,7 +165,9 @@ public final class DockerInstance {
     public void reconnect() {
         synchronized ( this ) {
             try {
-                status = Status.DISCONNECTED;
+                if ( status != Status.NEW ) {
+                    status = Status.DISCONNECTED;
+                }
                 checkConnection();
             } catch ( IOException e ) {
                 log.info( "Failed to reconnect: " + e );
@@ -296,7 +298,9 @@ public final class DockerInstance {
                 client.close();
                 client = null;
             }
-            status = Status.DISCONNECTED;
+            if ( status != Status.NEW ) {
+                status = Status.DISCONNECTED;
+            }
         }
     }
 
