@@ -81,13 +81,18 @@ final class PolyphenyTlsClient {
 
 
     static PolyphenyTlsClient connect( String context, String hostname, int port ) throws IOException {
-        Socket s = new Socket();
-        s.connect( new InetSocketAddress( hostname, port ), 5000 );
         PolyphenyKeypair kp = PolyphenyCertificateManager.loadClientKeypair( context, hostname );
         byte[] serverCertificate = PolyphenyCertificateManager.loadServerCertificate( context, hostname );
-        PolyphenyTlsClient client = new PolyphenyTlsClient( kp, serverCertificate, s.getInputStream(), s.getOutputStream() );
-        client.socket = s;
-        return client;
+        Socket s = new Socket();
+        s.connect( new InetSocketAddress( hostname, port ), 5000 );
+        try {
+            PolyphenyTlsClient client = new PolyphenyTlsClient( kp, serverCertificate, s.getInputStream(), s.getOutputStream() );
+            client.socket = s;
+            return client;
+        } catch ( IOException e ) {
+            s.close();
+            throw e;
+        }
     }
 
 
