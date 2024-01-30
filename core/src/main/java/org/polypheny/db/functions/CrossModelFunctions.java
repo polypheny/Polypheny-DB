@@ -393,8 +393,8 @@ public class CrossModelFunctions {
         Map<Long, AlgDataType> typeBackup = context.getParameterTypes();
         JavaTypeFactory typeFactory = context.getStatement().getTransaction().getTypeFactory();
         AlgDataType idType = typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE );
-        AlgDataType labelType = typeFactory.createPolyType( PolyType.VARCHAR, GraphType.LABEL_SIZE );
-        AlgDataType valueType = typeFactory.createPolyType( PolyType.VARCHAR, GraphType.VALUE_SIZE );
+        AlgDataType labelType = typeFactory.createPolyType( PolyType.TEXT );
+        AlgDataType valueType = typeFactory.createPolyType( PolyType.TEXT );
 
         context.resetParameterValues();
         for ( PolyType polyType : order ) {
@@ -461,6 +461,7 @@ public class CrossModelFunctions {
     }
 
 
+    @SuppressWarnings("unused")
     public static Enumerable<PolyValue[]> enumerableFromContext( DataContext context ) {
         return Linq4j.asEnumerable( context.getParameterValues().stream().map( e -> e.values().toArray( PolyValue[]::new ) ).toList() );
     }

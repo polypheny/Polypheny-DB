@@ -17,6 +17,7 @@
 package org.polypheny.db.sql.language.dialect;
 
 
+import org.polypheny.db.algebra.constant.NullCollation;
 import org.polypheny.db.sql.language.SqlDialect;
 
 
@@ -31,8 +32,8 @@ public class PolyphenyDbSqlDialect extends SqlDialect {
      */
     public static final SqlDialect DEFAULT =
             new PolyphenyDbSqlDialect( emptyContext()
-                    .withDatabaseProduct( DatabaseProduct.POLYPHENYDB )
-                    .withIdentifierQuoteString( "\"" ) );
+                    .withIdentifierQuoteString( "\"" )
+                    .withNullCollation( NullCollation.HIGH ) );
 
 
     /**

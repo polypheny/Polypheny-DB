@@ -168,23 +168,23 @@ public interface Scannable {
     static List<PhysicalEntity> createGraphSubstitute( Scannable scannable, Context context, LogicalGraph logical, AllocationGraph allocation ) {
         PhysicalTable node = createSubstitutionTable( scannable, context, logical, allocation, "_node_", List.of(
                 Triple.of( "id", GraphType.ID_SIZE, PolyType.VARCHAR ),
-                Triple.of( "label", GraphType.LABEL_SIZE, PolyType.VARCHAR ) ) );
+                Triple.of( "label", null, PolyType.TEXT ) ) );
 
         PhysicalTable nProperties = createSubstitutionTable( scannable, context, logical, allocation, "_nProperties_", List.of(
                 Triple.of( "id", GraphType.ID_SIZE, PolyType.VARCHAR ),
-                Triple.of( "key", GraphType.KEY_SIZE, PolyType.VARCHAR ),
-                Triple.of( "value", GraphType.VALUE_SIZE, PolyType.VARCHAR ) ) );
+                Triple.of( "key", null, PolyType.TEXT ),
+                Triple.of( "value", null, PolyType.TEXT ) ) );
 
         PhysicalTable edge = createSubstitutionTable( scannable, context, logical, allocation, "_edge_", List.of(
                 Triple.of( "id", GraphType.ID_SIZE, PolyType.VARCHAR ),
-                Triple.of( "label", GraphType.LABEL_SIZE, PolyType.VARCHAR ),
+                Triple.of( "label", null, PolyType.TEXT ),
                 Triple.of( "_l_id_", GraphType.ID_SIZE, PolyType.VARCHAR ),
                 Triple.of( "_r_id_", GraphType.ID_SIZE, PolyType.VARCHAR ) ) );
 
         PhysicalTable eProperties = createSubstitutionTable( scannable, context, logical, allocation, "_eProperties_", List.of(
                 Triple.of( "id", GraphType.ID_SIZE, PolyType.VARCHAR ),
-                Triple.of( "key", GraphType.KEY_SIZE, PolyType.VARCHAR ),
-                Triple.of( "value", GraphType.VALUE_SIZE, PolyType.VARCHAR ) ) );
+                Triple.of( "key", null, PolyType.TEXT ),
+                Triple.of( "value", null, PolyType.TEXT ) ) );
 
         scannable.getCatalog().addPhysical( allocation, node, nProperties, edge, eProperties );
         return List.of( node, nProperties, edge, eProperties );
@@ -218,8 +218,8 @@ public interface Scannable {
 
     static List<PhysicalEntity> createCollectionSubstitute( Scannable scannable, Context context, LogicalCollection logical, AllocationCollection allocation ) {
         PhysicalTable doc = createSubstitutionTable( scannable, context, logical, allocation, "_doc_", List.of(
-                Triple.of( DocumentType.DOCUMENT_ID, DocumentType.DATA_SIZE, PolyType.VARCHAR ),
-                Triple.of( DocumentType.DOCUMENT_DATA, DocumentType.DATA_SIZE, PolyType.VARCHAR ) ) );
+                Triple.of( DocumentType.DOCUMENT_ID, null, PolyType.TEXT ),
+                Triple.of( DocumentType.DOCUMENT_DATA, null, PolyType.TEXT ) ) );
 
         scannable.getCatalog().addPhysical( allocation, doc );
         return List.of( doc );

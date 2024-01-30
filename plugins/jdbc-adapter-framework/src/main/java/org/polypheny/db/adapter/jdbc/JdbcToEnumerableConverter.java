@@ -307,11 +307,10 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 polyType = PolyType.ANY;
                 break;
             case SHIFT:
-                switch ( polyType ) {
-                    case TIMESTAMP:
-                    case DATE:
-                        offset = true;
-                }
+                offset = switch ( polyType ) {
+                    case TIMESTAMP, DATE -> true;
+                    default -> offset;
+                };
                 break;
         }
         final Expression source = switch ( polyType ) {
@@ -418,6 +417,9 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 } else {
                     poly = Expressions.call( PolyBinary.class, "fromTypedJson", Expressions.convert_( source, String.class ), Expressions.constant( PolyBinary.class ) );
                 }
+                break;
+            case TEXT:
+                poly = dialect.getExpression( fieldType, source );
                 break;
             case FILE:
             case AUDIO:

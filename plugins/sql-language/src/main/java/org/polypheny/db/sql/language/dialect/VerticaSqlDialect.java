@@ -17,6 +17,7 @@
 package org.polypheny.db.sql.language.dialect;
 
 
+import org.polypheny.db.algebra.constant.NullCollation;
 import org.polypheny.db.sql.language.SqlDialect;
 
 
@@ -27,7 +28,7 @@ public class VerticaSqlDialect extends SqlDialect {
 
     public static final SqlDialect DEFAULT =
             new VerticaSqlDialect( EMPTY_CONTEXT
-                    .withDatabaseProduct( DatabaseProduct.VERTICA )
+                    .withNullCollation( NullCollation.HIGH )
                     .withIdentifierQuoteString( "\"" ) );
 
 

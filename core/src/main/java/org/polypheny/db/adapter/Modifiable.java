@@ -174,7 +174,7 @@ public interface Modifiable extends Scannable {
                 LogicalValues.createOneRow( cluster ),
                 List.of(
                         rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE ), 0 ), // id
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.LABEL_SIZE ), 1 ) ), // label
+                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.TEXT ), 1 ) ), // label
                 nodesTable.getRowType() );
 
         inputs.add( getModify( nodesTable, preparedNodes, Modify.Operation.INSERT, null, null ) );
@@ -183,8 +183,8 @@ public interface Modifiable extends Scannable {
                 LogicalValues.createOneRow( cluster ),
                 List.of(
                         rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE ), 0 ), // id
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.KEY_SIZE ), 1 ), // key
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.VALUE_SIZE ), 2 ) ), // value
+                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.TEXT ), 1 ), // key
+                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.TEXT ), 2 ) ), // value
                 nodePropertiesTable.getRowType() );
 
         inputs.add( getModify( nodePropertiesTable, preparedNProperties, Modify.Operation.INSERT, null, null ) );
@@ -229,7 +229,7 @@ public interface Modifiable extends Scannable {
                 LogicalValues.createOneRow( cluster ),
                 List.of(
                         rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE ), 0 ), // id
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.LABEL_SIZE ), 1 ), // label
+                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.TEXT ), 1 ), // label
                         rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE ), 2 ), // source
                         rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE ), 3 ) ), // target
                 edgesTable.getRowType() );
@@ -240,8 +240,8 @@ public interface Modifiable extends Scannable {
                 LogicalValues.createOneRow( cluster ),
                 List.of(
                         rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE ), 0 ), // id
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.KEY_SIZE ), 1 ), // key
-                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.VALUE_SIZE ), 2 ) ), // value
+                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.TEXT ), 1 ), // key
+                        rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.TEXT ), 2 ) ), // value
                 edgePropertiesTable.getRowType() );
 
         inputs.add( getModify( edgePropertiesTable, preparedEProperties, Modify.Operation.INSERT, null, null ) );

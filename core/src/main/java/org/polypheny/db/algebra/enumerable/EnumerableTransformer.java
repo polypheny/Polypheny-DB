@@ -56,7 +56,6 @@ import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.schema.trait.ModelTraitDef;
-import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
@@ -355,7 +354,7 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
         boolean hasData = false;
         for ( AlgDataTypeField field : impl.physType.getRowType().getFields() ) {
             IndexExpression indexField = Expressions.arrayIndex( target, Expressions.constant( field.getIndex() ) );
-            UnaryExpression element = Expressions.convert_( indexField, PolyBinary.class );
+            UnaryExpression element = Expressions.convert_( indexField, PolyString.class );
             Expression el = Expressions.call( RefactorFunctions.class, "toDocument", element );
             if ( field.getName().equals( DocumentType.DOCUMENT_DATA ) ) {
                 // target field

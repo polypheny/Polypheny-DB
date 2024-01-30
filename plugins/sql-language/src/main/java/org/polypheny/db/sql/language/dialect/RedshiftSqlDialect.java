@@ -17,6 +17,7 @@
 package org.polypheny.db.sql.language.dialect;
 
 
+import org.polypheny.db.algebra.constant.NullCollation;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
@@ -29,7 +30,7 @@ public class RedshiftSqlDialect extends SqlDialect {
 
     public static final SqlDialect DEFAULT =
             new RedshiftSqlDialect( EMPTY_CONTEXT
-                    .withDatabaseProduct( DatabaseProduct.REDSHIFT )
+                    .withNullCollation( NullCollation.HIGH )
                     .withIdentifierQuoteString( "\"" ) );
 
 

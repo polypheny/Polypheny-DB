@@ -17,6 +17,7 @@
 package org.polypheny.db.sql.language.dialect;
 
 
+import org.polypheny.db.algebra.constant.NullCollation;
 import org.polypheny.db.sql.language.SqlDialect;
 
 
@@ -25,7 +26,8 @@ import org.polypheny.db.sql.language.SqlDialect;
  */
 public class DerbySqlDialect extends SqlDialect {
 
-    public static final SqlDialect DEFAULT = new DerbySqlDialect( EMPTY_CONTEXT.withDatabaseProduct( DatabaseProduct.DERBY ) );
+    public static final SqlDialect DEFAULT = new DerbySqlDialect(
+            EMPTY_CONTEXT.withNullCollation( NullCollation.HIGH ) );
 
 
     /**

@@ -28,7 +28,7 @@ public interface SqlDialectFactory {
 
     /**
      * Creates a <code>SqlDialect</code> from a DatabaseMetaData.
-     *
+     * <p>
      * Does not maintain a reference to the DatabaseMetaData -- or, more* importantly, to its {@link Connection} -- after this call has returned.
      *
      * @param databaseMetaData used to determine which dialect of SQL to generate

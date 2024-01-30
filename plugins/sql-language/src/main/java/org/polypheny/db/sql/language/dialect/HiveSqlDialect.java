@@ -36,7 +36,6 @@ public class HiveSqlDialect extends SqlDialect {
 
     public static final SqlDialect DEFAULT =
             new HiveSqlDialect( EMPTY_CONTEXT
-                    .withDatabaseProduct( DatabaseProduct.HIVE )
                     .withNullCollation( NullCollation.LOW ) );
 
     private final boolean emulateNullDirection;
@@ -49,9 +48,7 @@ public class HiveSqlDialect extends SqlDialect {
         super( context );
         // Since 2.1.0, Hive natively supports "NULLS FIRST" and "NULLS LAST".
         // See https://issues.apache.org/jira/browse/HIVE-12994.
-        emulateNullDirection = (context.databaseMajorVersion() < 2)
-                || (context.databaseMajorVersion() == 2
-                && context.databaseMinorVersion() < 1);
+        emulateNullDirection = true;
     }
 
 

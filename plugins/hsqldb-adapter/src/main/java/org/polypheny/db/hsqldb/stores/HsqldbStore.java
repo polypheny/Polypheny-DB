@@ -42,7 +42,6 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.sql.language.dialect.HsqldbSqlDialect;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PUID.Type;
 import org.polypheny.db.transaction.PolyXid;
@@ -216,8 +215,8 @@ public class HsqldbStore extends AbstractJdbcStore {
             case DATE -> "DATE";
             case TIME -> "TIME";
             case TIMESTAMP -> "TIMESTAMP";
-            case ARRAY -> "LONGVARCHAR";
-            case JSON, NODE, EDGE, DOCUMENT, GEOMETRY -> "LONGVARCHAR";
+            case TEXT -> "CLOB";
+            case JSON, NODE, EDGE, DOCUMENT, ARRAY, GEOMETRY -> "LONGVARCHAR";
             default -> throw new GenericRuntimeException( "Unknown type: " + type.name() );
         };
     }

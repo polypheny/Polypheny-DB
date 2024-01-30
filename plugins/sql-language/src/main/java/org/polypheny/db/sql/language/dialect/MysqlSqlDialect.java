@@ -17,6 +17,7 @@
 package org.polypheny.db.sql.language.dialect;
 
 
+import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.avatica.util.TimeUnitRange;
@@ -54,7 +55,6 @@ public class MysqlSqlDialect extends SqlDialect {
 
     public static final SqlDialect DEFAULT =
             new MysqlSqlDialect( EMPTY_CONTEXT
-                    .withDatabaseProduct( DatabaseProduct.MYSQL )
                     .withIdentifierQuoteString( "`" )
                     .withNullCollation( NullCollation.LOW ) );
 
@@ -92,16 +92,10 @@ public class MysqlSqlDialect extends SqlDialect {
 
     @Override
     public boolean supportsAggregateFunction( Kind kind ) {
-        switch ( kind ) {
-            case COUNT:
-            case SUM:
-            case SUM0:
-            case MIN:
-            case MAX:
-            case SINGLE_VALUE:
-                return true;
-        }
-        return false;
+        return switch ( kind ) {
+            case COUNT, SUM, SUM0, MIN, MAX, SINGLE_VALUE -> true;
+            default -> false;
+        };
     }
 
 
@@ -173,18 +167,15 @@ public class MysqlSqlDialect extends SqlDialect {
 
     @Override
     public void unparseCall( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
-        switch ( call.getKind() ) {
-            case FLOOR:
-                if ( call.operandCount() != 2 ) {
-                    super.unparseCall( writer, call, leftPrec, rightPrec );
-                    return;
-                }
-
-                unparseFloor( writer, call );
-                break;
-
-            default:
+        if ( Objects.requireNonNull( call.getKind() ) == Kind.FLOOR ) {
+            if ( call.operandCount() != 2 ) {
                 super.unparseCall( writer, call, leftPrec, rightPrec );
+                return;
+            }
+
+            unparseFloor( writer, call );
+        } else {
+            super.unparseCall( writer, call, leftPrec, rightPrec );
         }
     }
 
@@ -210,29 +201,15 @@ public class MysqlSqlDialect extends SqlDialect {
             return;
         }
 
-        String format;
-        switch ( unit ) {
-            case YEAR:
-                format = "%Y-01-01";
-                break;
-            case MONTH:
-                format = "%Y-%m-01";
-                break;
-            case DAY:
-                format = "%Y-%m-%d";
-                break;
-            case HOUR:
-                format = "%Y-%m-%d %H:00:00";
-                break;
-            case MINUTE:
-                format = "%Y-%m-%d %H:%i:00";
-                break;
-            case SECOND:
-                format = "%Y-%m-%d %H:%i:%s";
-                break;
-            default:
-                throw new AssertionError( "MYSQL does not support FLOOR for time unit: " + unit );
-        }
+        String format = switch ( unit ) {
+            case YEAR -> "%Y-01-01";
+            case MONTH -> "%Y-%m-01";
+            case DAY -> "%Y-%m-%d";
+            case HOUR -> "%Y-%m-%d %H:00:00";
+            case MINUTE -> "%Y-%m-%d %H:%i:00";
+            case SECOND -> "%Y-%m-%d %H:%i:%s";
+            default -> throw new AssertionError( "MYSQL does not support FLOOR for time unit: " + unit );
+        };
 
         writer.print( "DATE_FORMAT" );
         SqlWriter.Frame frame = writer.startList( "(", ")" );
@@ -285,20 +262,10 @@ public class MysqlSqlDialect extends SqlDialect {
 
 
     private TimeUnit validate( TimeUnit timeUnit ) {
-        switch ( timeUnit ) {
-            case MICROSECOND:
-            case SECOND:
-            case MINUTE:
-            case HOUR:
-            case DAY:
-            case WEEK:
-            case MONTH:
-            case QUARTER:
-            case YEAR:
-                return timeUnit;
-            default:
-                throw new AssertionError( " Time unit " + timeUnit + "is not supported now." );
-        }
+        return switch ( timeUnit ) {
+            case MICROSECOND, SECOND, MINUTE, HOUR, DAY, WEEK, MONTH, QUARTER, YEAR -> timeUnit;
+            default -> throw new AssertionError( " Time unit " + timeUnit + "is not supported now." );
+        };
     }
 
 }

@@ -17,6 +17,7 @@
 package org.polypheny.db.sql.language.dialect;
 
 
+import org.polypheny.db.algebra.constant.NullCollation;
 import org.polypheny.db.sql.language.SqlDialect;
 
 
@@ -27,7 +28,7 @@ public class InfobrightSqlDialect extends SqlDialect {
 
     public static final SqlDialect DEFAULT =
             new InfobrightSqlDialect( EMPTY_CONTEXT
-                    .withDatabaseProduct( DatabaseProduct.INFOBRIGHT )
+                    .withNullCollation( NullCollation.HIGH )
                     .withIdentifierQuoteString( "`" ) );
 
 

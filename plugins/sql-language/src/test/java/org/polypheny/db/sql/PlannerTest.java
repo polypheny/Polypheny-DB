@@ -98,6 +98,7 @@ import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.sql.language.SqlAggFunction;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlNode;
+import org.polypheny.db.sql.language.dialect.HiveSqlDialect;
 import org.polypheny.db.sql.language.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.language.util.ListSqlOperatorTable;
 import org.polypheny.db.sql.util.PlannerImplMock;
@@ -747,7 +748,7 @@ public class PlannerTest extends SqlLanguageDependent {
     public void testHiveDialect() throws NodeParseException {
         Planner planner = getPlanner( null );
         Node parse = planner.parse( "select * from (select * from \"emps\") as t\n" + "where \"name\" like '%e%'" );
-        final SqlDialect hiveDialect = SqlDialect.DatabaseProduct.HIVE.getDialect();
+        final SqlDialect hiveDialect = HiveSqlDialect.DEFAULT;
         assertThat(
                 Util.toLinux( ((SqlNode) parse).toSqlString( hiveDialect ).getSql() ),
                 equalTo( """

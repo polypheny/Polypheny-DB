@@ -37,8 +37,8 @@ public class BigQuerySqlDialect extends SqlDialect {
     public static final SqlDialect DEFAULT =
             new BigQuerySqlDialect(
                     EMPTY_CONTEXT
-                            .withDatabaseProduct( SqlDialect.DatabaseProduct.BIG_QUERY )
-                            .withNullCollation( NullCollation.LOW ) );
+                            .withNullCollation( NullCollation.LOW )
+                            .withIdentifierQuoteString( "`" ) );
 
 
     /**

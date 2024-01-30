@@ -66,6 +66,7 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlDialectFactory;
+import org.polypheny.db.sql.language.SqlDialectRegistry;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
@@ -118,7 +119,7 @@ public final class JdbcUtils {
                 List<?> key = ImmutableList.of( productName, productVersion, dialectFactory );
                 SqlDialect dialect = map.get( key );
                 if ( dialect == null ) {
-                    dialect = dialectFactory.create( metaData );
+                    dialect = SqlDialectRegistry.getDialect( productName ).orElseThrow();
                     map.put( key, dialect );
                     if ( dialectMap == null ) {
                         dialectMap = new IdentityHashMap<>();
@@ -201,15 +202,12 @@ public final class JdbcUtils {
         private PolyValue value( int i ) throws SQLException {
             // MySQL returns timestamps shifted into local time. Using getTimestamp(int, Calendar) with a UTC calendar
             // should prevent this, but does not. So we shift explicitly.
-            switch ( types[i] ) {
-                case Types.TIMESTAMP:
-                    return PolyTimestamp.of( shift( resultSet.getTimestamp( i + 1 ) ) );
-                case Types.TIME:
-                    return PolyTime.of( shift( resultSet.getTime( i + 1 ) ) );
-                case Types.DATE:
-                    return PolyDate.of( shift( resultSet.getDate( i + 1 ) ) );
-            }
-            return getPolyValue( i );
+            return switch ( types[i] ) {
+                case Types.TIMESTAMP -> PolyTimestamp.of( shift( resultSet.getTimestamp( i + 1 ) ) );
+                case Types.TIME -> PolyTime.of( shift( resultSet.getTime( i + 1 ) ) );
+                case Types.DATE -> PolyDate.of( shift( resultSet.getDate( i + 1 ) ) );
+                default -> getPolyValue( i );
+            };
 
             //return (PolyValue) reps[i].jdbcGet( resultSet, i + 1 );
         }

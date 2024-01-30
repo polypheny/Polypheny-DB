@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.ByteString;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -38,6 +39,7 @@ import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.type.PolyTypeUtil;
 
+@Slf4j
 public class ValidatorUtil {
 
     public static final Suggester EXPR_SUGGESTER = ( original, attempt, size ) -> Util.first( original, "EXPR$" ) + attempt;
@@ -240,6 +242,9 @@ public class ValidatorUtil {
         // (every charset must have a default collation)
         if ( PolyTypeUtil.inCharFamily( type ) ) {
             Charset strCharset = type.getCharset();
+            if ( type.getCollation() == null ) {
+                log.warn( "Type '{}' has a null collation", type.toString() );
+            }
             Charset colCharset = type.getCollation().getCharset();
             assert null != strCharset;
             assert null != colCharset;

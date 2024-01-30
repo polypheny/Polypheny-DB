@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,22 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.sql.language.dialect;
+package org.polypheny.db.hsqldb.stores;
 
 
+import com.google.common.io.CharStreams;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.TimeUnitRange;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.UnaryExpression;
+import org.hsqldb.jdbc.JDBCClobClient;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.constant.NullCollation;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.sql.language.SqlBasicCall;
@@ -46,7 +53,7 @@ public class HsqldbSqlDialect extends SqlDialect {
 
     public static final SqlDialect DEFAULT = new HsqldbSqlDialect(
             EMPTY_CONTEXT
-                    .withDatabaseProduct( DatabaseProduct.HSQLDB )
+                    .withNullCollation( NullCollation.HIGH )
                     .withIdentifierQuoteString( "\"" ) );
 
 
@@ -83,6 +90,9 @@ public class HsqldbSqlDialect extends SqlDialect {
             case ARRAY:
                 // We need to flag the type with an underscore to flag the type (the underscore is removed in the unparse method)
                 castSpec = "_LONGVARCHAR";
+                break;
+            case TEXT:
+                castSpec = "CLOB";
                 break;
             case FILE:
             case IMAGE:
@@ -130,6 +140,31 @@ public class HsqldbSqlDialect extends SqlDialect {
             SqlFloorFunction.unparseDatetimeFunction( writer, call2, "TRUNC", true );
         } else {
             super.unparseCall( writer, call, leftPrec, rightPrec );
+        }
+    }
+
+
+    @Override
+    public Expression getExpression( AlgDataType fieldType, Expression child ) {
+        return switch ( fieldType.getPolyType() ) {
+            case TEXT -> {
+                UnaryExpression client = Expressions.convert_( child, JDBCClobClient.class );
+                yield super.getExpression( fieldType, Expressions.call( HsqldbSqlDialect.class, "toString", client ) );
+            }
+            default -> super.getExpression( fieldType, child );
+        };
+    }
+
+
+    @SuppressWarnings("unused")
+    public static String toString( JDBCClobClient client ) {
+        if ( client == null ) {
+            return null;
+        }
+        try {
+            return CharStreams.toString( client.getCharacterStream() );
+        } catch ( Exception e ) {
+            throw new GenericRuntimeException( e );
         }
     }
 
