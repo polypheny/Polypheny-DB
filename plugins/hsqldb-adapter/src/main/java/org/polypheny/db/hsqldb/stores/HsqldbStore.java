@@ -102,15 +102,9 @@ public class HsqldbStore extends AbstractJdbcStore {
 
     @Override
     public String addIndex( Context context, LogicalIndex index, AllocationTable allocation ) {
-        // List<AllocationColumn> ccps = context.getSnapshot().alloc().getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogIndex.key.tableId );
-        // List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
-        // partitionIds.forEach( id -> partitionPlacements.add( context.getSnapshot().alloc().getPartitionPlacement( getAdapterId(), id ) ) );
-
         PhysicalTable physical = storeCatalog.fromAllocation( allocation.id );
 
         String physicalIndexName = getPhysicalIndexName( physical.id, index.id );
-
-        // for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
 
         StringBuilder builder = new StringBuilder();
         builder.append( "CREATE " );
@@ -120,7 +114,7 @@ public class HsqldbStore extends AbstractJdbcStore {
             builder.append( "INDEX " );
         }
 
-        builder.append( dialect.quoteIdentifier( physicalIndexName ) );//+ "_" + partitionPlacement.partitionId ) );
+        builder.append( dialect.quoteIdentifier( physicalIndexName ) );
         builder.append( " ON " )
                 .append( dialect.quoteIdentifier( physical.namespaceName ) )
                 .append( "." )
@@ -137,9 +131,7 @@ public class HsqldbStore extends AbstractJdbcStore {
         }
         builder.append( ")" );
         executeUpdate( builder, context );
-        //}
         return physicalIndexName;
-        // Catalog.getInstance().getLogicalRel( catalogIndex.key.namespaceId ).setIndexPhysicalName( catalogIndex.id, physicalIndexName );
     }
 
 
@@ -216,7 +208,7 @@ public class HsqldbStore extends AbstractJdbcStore {
             case TIME -> "TIME";
             case TIMESTAMP -> "TIMESTAMP";
             case ARRAY -> "LONGVARCHAR";
-            case TEXT -> "CLOB";
+            case TEXT -> "VARCHAR(20000)"; // clob can sadly not be used as pk which puts arbitrary limit on the value
             case JSON, NODE, EDGE, DOCUMENT -> "LONGVARCHAR";
             default -> throw new GenericRuntimeException( "Unknown type: " + type.name() );
         };

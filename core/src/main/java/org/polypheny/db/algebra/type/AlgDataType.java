@@ -39,6 +39,7 @@ import java.util.List;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Collation;
+import org.polypheny.db.util.Wrapper;
 
 
 /**
@@ -47,7 +48,7 @@ import org.polypheny.db.util.Collation;
  * This is a somewhat "fat" interface which unions the attributes of many different type classes into one. Inelegant,
  * but since our type system was defined before the advent of Java generics, it avoids a lot of typecasting.
  */
-public interface AlgDataType {
+public interface AlgDataType extends Wrapper {
 
     int SCALE_NOT_SPECIFIED = Integer.MIN_VALUE;
     int PRECISION_NOT_SPECIFIED = -1;
@@ -230,12 +231,6 @@ public interface AlgDataType {
     boolean isDynamicStruct();
 
 
-    default <T extends AlgDataType> T unwrap( Class<T> clazz ) {
-        if ( this.getClass().isInstance( clazz ) ) {
-            return clazz.cast( this );
-        }
-        return null;
-    }
 
 }
 

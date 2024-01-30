@@ -533,6 +533,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
         return type == PolyType.TEXT;
     }
 
+
     public boolean isBinary() {
         return type == PolyType.BINARY;
     }

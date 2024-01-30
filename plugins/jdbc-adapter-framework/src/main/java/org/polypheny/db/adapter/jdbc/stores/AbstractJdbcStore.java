@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.jdbc.stores;
 
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -150,7 +151,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
     public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocationWrapper ) {
         AllocationTable allocation = allocationWrapper.table;
         String namespaceName = getDefaultPhysicalNamespaceName();
-        String tableName = getPhysicalTableName( allocation.id, 0 );
+        String tableName = getPhysicalTableName( allocation.id );
 
         updateNamespace( logical.table.getNamespaceName(), logical.table.namespaceId );
 
@@ -162,7 +163,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
                 logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c ) ),
                 allocationWrapper );
 
-        executeCreateTable( context, table );
+        executeCreateTable( context, table, logical.pkIds );
 
         JdbcTable physical = this.currentJdbcSchema.createJdbcTable( table );
         storeCatalog.replacePhysical( physical );
@@ -170,11 +171,11 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
     }
 
 
-    private void executeCreateTable( Context context, PhysicalTable table ) {
+    private void executeCreateTable( Context context, PhysicalTable table, List<Long> pkIds ) {
         if ( log.isDebugEnabled() ) {
             log.debug( "[{}] createTable: Qualified names: {}, physicalTableName: {}", getUniqueName(), table.namespaceName, table.name );
         }
-        StringBuilder query = buildCreateTableQuery( table );
+        StringBuilder query = buildCreateTableQuery( table, pkIds );
         if ( RuntimeConfig.DEBUG.getBoolean() ) {
             log.info( "{} on store {}", query.toString(), this.getUniqueName() );
         }
@@ -182,7 +183,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
     }
 
 
-    protected StringBuilder buildCreateTableQuery( PhysicalTable table ) {
+    protected StringBuilder buildCreateTableQuery( PhysicalTable table, List<Long> pkIds ) {
         StringBuilder builder = new StringBuilder();
         builder.append( "CREATE TABLE " )
                 .append( dialect.quoteIdentifier( table.namespaceName ) )
@@ -190,17 +191,35 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
                 .append( dialect.quoteIdentifier( table.name ) )
                 .append( " ( " );
         boolean first = true;
+        List<String> pkNames = new ArrayList<>();
         for ( PhysicalColumn column : table.columns ) {
             if ( !first ) {
                 builder.append( ", " );
             }
             first = false;
-            builder.append( dialect.quoteIdentifier( column.name ) ).append( " " );
+            String name = dialect.quoteIdentifier( column.name );
+            if ( pkIds.contains( column.id ) ) {
+                pkNames.add( name );
+            }
+
+            builder.append( name ).append( " " );
             createColumnDefinition( column, builder );
             builder.append( " NULL" );
         }
+
+        attachPrimaryKey( pkNames, builder );
         builder.append( " )" );
         return builder;
+    }
+
+
+    public void attachPrimaryKey( List<String> pkNames, StringBuilder builder ) {
+        if ( pkNames.isEmpty() ) {
+            return;
+        }
+        builder.append( ", PRIMARY KEY ( " );
+        builder.append( String.join( ",", pkNames ) );
+        builder.append( " )" );
     }
 
 
@@ -238,21 +257,25 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
 
 
     protected void createColumnDefinition( PhysicalColumn column, StringBuilder builder ) {
-        if ( !this.dialect.supportsNestedArrays() && column.collectionsType == PolyType.ARRAY ) {
+        boolean supportsThisArray = (column.collectionsType == PolyType.ARRAY) && this.dialect.supportsArrays() && (this.dialect.supportsNestedArrays() || column.dimension == 1);
+        if ( supportsThisArray ) {
             // Returns e.g. TEXT if arrays are not supported
             builder.append( getTypeString( PolyType.ARRAY ) );
         } else if ( column.collectionsType == PolyType.MAP ) {
             builder.append( getTypeString( PolyType.ARRAY ) );
         } else {
-            builder.append( " " ).append( getTypeString( column.type ) );
-            if ( column.length != null && doesTypeUseLength( column.type ) ) {
+            PolyType type = column.dimension != null ? PolyType.TEXT : column.type; // nested array was not suppored
+            PolyType collectionsType = column.collectionsType == PolyType.ARRAY ? null : column.collectionsType; // nested array was not suppored
+
+            builder.append( " " ).append( getTypeString( type ) );
+            if ( column.length != null && doesTypeUseLength( type ) ) {
                 builder.append( "(" ).append( column.length );
                 if ( column.scale != null ) {
                     builder.append( "," ).append( column.scale );
                 }
                 builder.append( ")" );
             }
-            if ( column.collectionsType != null ) {
+            if ( collectionsType != null ) {
                 builder.append( " " ).append( getTypeString( column.collectionsType ) );
             }
         }
@@ -316,6 +339,9 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
 
 
     public boolean doesTypeUseLength( PolyType type ) {
+        if ( type == PolyType.TEXT ) {
+            return false;
+        }
         return true;
     }
 
@@ -448,12 +474,8 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
     }
 
 
-    public String getPhysicalTableName( long tableId, long partitionId ) {
-        String physicalTableName = "tab" + tableId;
-        if ( partitionId >= 0 ) {
-            physicalTableName += "_part" + partitionId;
-        }
-        return physicalTableName;
+    public String getPhysicalTableName( long tableId ) {
+        return "tab" + tableId;
     }
 
 

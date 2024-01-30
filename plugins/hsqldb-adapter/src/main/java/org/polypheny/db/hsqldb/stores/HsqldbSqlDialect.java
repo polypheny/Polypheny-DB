@@ -22,8 +22,6 @@ import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.calcite.linq4j.tree.UnaryExpression;
 import org.hsqldb.jdbc.JDBCClobClient;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.NullCollation;
@@ -92,7 +90,7 @@ public class HsqldbSqlDialect extends SqlDialect {
                 castSpec = "_LONGVARCHAR";
                 break;
             case TEXT:
-                castSpec = "CLOB";
+                castSpec = "_VARCHAR(20000)";
                 break;
             case FILE:
             case IMAGE:
@@ -146,13 +144,14 @@ public class HsqldbSqlDialect extends SqlDialect {
 
     @Override
     public Expression getExpression( AlgDataType fieldType, Expression child ) {
-        return switch ( fieldType.getPolyType() ) {
+        /*return switch ( fieldType.getPolyType() ) {
             case TEXT -> {
                 UnaryExpression client = Expressions.convert_( child, JDBCClobClient.class );
                 yield super.getExpression( fieldType, Expressions.call( HsqldbSqlDialect.class, "toString", client ) );
             }
             default -> super.getExpression( fieldType, child );
-        };
+        };*/
+        return super.getExpression( fieldType, child );
     }
 
 

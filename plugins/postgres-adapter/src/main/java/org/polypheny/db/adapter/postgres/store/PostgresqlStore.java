@@ -193,9 +193,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
         PhysicalColumn column = storeCatalog.updateColumnType( allocId, newCol );
 
         PhysicalTable physicalTable = storeCatalog.getTable( allocId );
-        //List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogColumn.tableId );
 
-        //for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
         StringBuilder builder = new StringBuilder();
         builder.append( "ALTER TABLE " )
                 .append( dialect.quoteIdentifier( physicalTable.namespaceName ) )
@@ -223,20 +221,14 @@ public class PostgresqlStore extends AbstractJdbcStore {
             builder.append( " " ).append( column.collectionsType );
         }
         executeUpdate( builder, context );
-        //}
-
     }
 
 
     @Override
     public String addIndex( Context context, LogicalIndex index, AllocationTable allocation ) {
-        // List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
-        // partitionIds.forEach( id -> partitionPlacements.add( catalog.getPartitionPlacement( getAdapterId(), id ) ) );
-
         PhysicalTable physical = storeCatalog.fromAllocation( allocation.id );
         String physicalIndexName = getPhysicalIndexName( physical.id, index.id );
 
-        //for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
         StringBuilder builder = new StringBuilder();
         builder.append( "CREATE " );
         if ( index.unique ) {
@@ -245,7 +237,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
             builder.append( "INDEX " );
         }
 
-        builder.append( dialect.quoteIdentifier( physicalIndexName ) );//+ "_" + partitionPlacement.partitionId ) );
+        builder.append( dialect.quoteIdentifier( physicalIndexName ) );
         builder.append( " ON " )
                 .append( dialect.quoteIdentifier( physical.namespaceName ) )
                 .append( "." )
@@ -282,8 +274,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
         builder.append( ")" );
 
         executeUpdate( builder, context );
-        //}
-        //Catalog.getInstance().setIndexPhysicalName( catalogIndex.id, physicalIndexName );
+
         return physicalIndexName;
     }
 
@@ -297,6 +288,14 @@ public class PostgresqlStore extends AbstractJdbcStore {
         builder.append( dialect.quoteIdentifier( index.physicalName + "_" + table.id ) );
         executeUpdate( builder, context );
         // }
+    }
+
+
+    @Override
+    public void attachPrimaryKey( List<String> pkNames, StringBuilder builder ) {
+        builder.append( ", PRIMARY KEY ( " );
+        builder.append( String.join( ",", pkNames ) );
+        builder.append( " ) DEFERRABLE INITIALLY IMMEDIATE" );
     }
 
 
@@ -329,72 +328,37 @@ public class PostgresqlStore extends AbstractJdbcStore {
     }
 
 
-    /*@Override
-    protected void createColumnDefinition( LogicalColumn catalogColumn, StringBuilder builder ) {
-        builder.append( " " ).append( getTypeString( catalogColumn.type ) );
-        if ( catalogColumn.length != null ) {
-            builder.append( "(" ).append( catalogColumn.length );
-            if ( catalogColumn.scale != null ) {
-                builder.append( "," ).append( catalogColumn.scale );
-            }
-            builder.append( ")" );
-        }
-        if ( catalogColumn.collectionsType != null ) {
-            for ( int i = 0; i < catalogColumn.dimension; i++ ) {
-                builder.append( "[" ).append( catalogColumn.cardinality ).append( "]" );
-            }
-        }
-    }*/
-
-
     @Override
     protected String getTypeString( PolyType type ) {
         if ( type.getFamily() == PolyTypeFamily.MULTIMEDIA ) {
             return "BYTEA";
         }
-        switch ( type ) {
-            case BOOLEAN:
-                return "BOOLEAN";
-            case VARBINARY:
-                return "BYTEA";
-            case TINYINT:
-                return "SMALLINT";
-            case SMALLINT:
-                return "SMALLINT";
-            case INTEGER:
-                return "INT";
-            case BIGINT:
-                return "BIGINT";
-            case REAL:
-                return "REAL";
-            case DOUBLE:
-                return "FLOAT";
-            case DECIMAL:
-                return "DECIMAL";
-            case VARCHAR:
-                return "VARCHAR";
-            case JSON:
-                return "TEXT";
-            case DATE:
-                return "DATE";
-            case TIME:
-                return "TIME";
-            case TIMESTAMP:
-                return "TIMESTAMP";
-            case ARRAY:
-                return "ARRAY";
-        }
-        throw new GenericRuntimeException( "Unknown type: " + type.name() );
+        return switch ( type ) {
+            case BOOLEAN -> "BOOLEAN";
+            case VARBINARY -> "BYTEA";
+            case TINYINT, SMALLINT -> "SMALLINT";
+            case INTEGER -> "INT";
+            case BIGINT -> "BIGINT";
+            case REAL -> "REAL";
+            case DOUBLE -> "FLOAT";
+            case DECIMAL -> "DECIMAL";
+            case VARCHAR -> "VARCHAR";
+            case JSON, TEXT -> "TEXT";
+            case DATE -> "DATE";
+            case TIME -> "TIME";
+            case TIMESTAMP -> "TIMESTAMP";
+            case ARRAY -> "ARRAY";
+            default -> throw new GenericRuntimeException( "Unknown type: " + type.name() );
+        };
     }
 
 
     @Override
     public boolean doesTypeUseLength( PolyType type ) {
-        switch ( type ) {
-            case VARBINARY:
-                return false;
-        }
-        return super.doesTypeUseLength( type );
+        return switch ( type ) {
+            case VARBINARY -> false;
+            default -> super.doesTypeUseLength( type );
+        };
     }
 
 

@@ -45,19 +45,18 @@ import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.Triple;
 
 
 public interface Scannable {
 
-    static PhysicalTable createSubstitutionTable( Scannable scannable, Context context, LogicalEntity logical, AllocationEntity allocation, String name, List<Triple<String, Integer, PolyType>> nameLength ) {
+    static PhysicalTable createSubstitutionTable( Scannable scannable, Context context, LogicalEntity logical, AllocationEntity allocation, String name, List<ColumnContext> nameLength, int amountPk ) {
         IdBuilder builder = IdBuilder.getInstance();
         LogicalTable table = new LogicalTable( builder.getNewLogicalId(), name + logical.id, logical.namespaceId, logical.entityType, null, logical.modifiable );
         List<LogicalColumn> columns = new ArrayList<>();
 
         int i = 0;
-        for ( Triple<String, Integer, PolyType> col : nameLength ) {
-            LogicalColumn column = new LogicalColumn( builder.getNewFieldId(), col.getLeft(), table.id, table.namespaceId, i, col.getRight(), null, col.getMiddle(), null, null, null, false, Collation.getDefaultCollation(), null );
+        for ( ColumnContext col : nameLength ) {
+            LogicalColumn column = new LogicalColumn( builder.getNewFieldId(), col.name, table.id, table.namespaceId, i, col.type, null, col.precision, null, null, null, col.nullable, Collation.getDefaultCollation(), null );
             columns.add( column );
             i++;
         }
@@ -70,7 +69,7 @@ public interface Scannable {
             allocColumns.add( alloc );
         }
         // we use first as pk
-        scannable.createTable( context, LogicalTableWrapper.of( table, columns, List.of( columns.get( 0 ).id ) ), AllocationTableWrapper.of( allocSubTable, allocColumns ) );
+        scannable.createTable( context, LogicalTableWrapper.of( table, columns, columns.subList( 0, amountPk ).stream().map( c -> c.id ).toList() ), AllocationTableWrapper.of( allocSubTable, allocColumns ) );
         return scannable.getCatalog().getPhysicalsFromAllocs( allocSubTable.id ).get( 0 ).unwrap( PhysicalTable.class ).orElseThrow();
     }
 
@@ -167,24 +166,24 @@ public interface Scannable {
 
     static List<PhysicalEntity> createGraphSubstitute( Scannable scannable, Context context, LogicalGraph logical, AllocationGraph allocation ) {
         PhysicalTable node = createSubstitutionTable( scannable, context, logical, allocation, "_node_", List.of(
-                Triple.of( "id", GraphType.ID_SIZE, PolyType.VARCHAR ),
-                Triple.of( "label", null, PolyType.TEXT ) ) );
+                new ColumnContext( "id", GraphType.ID_SIZE, PolyType.VARCHAR, false ),
+                new ColumnContext( "label", null, PolyType.TEXT, false ) ), 2 );
 
         PhysicalTable nProperties = createSubstitutionTable( scannable, context, logical, allocation, "_nProperties_", List.of(
-                Triple.of( "id", GraphType.ID_SIZE, PolyType.VARCHAR ),
-                Triple.of( "key", null, PolyType.TEXT ),
-                Triple.of( "value", null, PolyType.TEXT ) ) );
+                new ColumnContext( "id", GraphType.ID_SIZE, PolyType.VARCHAR, false ),
+                new ColumnContext( "key", null, PolyType.TEXT, false ),
+                new ColumnContext( "value", null, PolyType.TEXT, true ) ), 2 );
 
         PhysicalTable edge = createSubstitutionTable( scannable, context, logical, allocation, "_edge_", List.of(
-                Triple.of( "id", GraphType.ID_SIZE, PolyType.VARCHAR ),
-                Triple.of( "label", null, PolyType.TEXT ),
-                Triple.of( "_l_id_", GraphType.ID_SIZE, PolyType.VARCHAR ),
-                Triple.of( "_r_id_", GraphType.ID_SIZE, PolyType.VARCHAR ) ) );
+                new ColumnContext( "id", GraphType.ID_SIZE, PolyType.VARCHAR, false ),
+                new ColumnContext( "label", null, PolyType.TEXT, true ),
+                new ColumnContext( "_l_id_", GraphType.ID_SIZE, PolyType.VARCHAR, true ),
+                new ColumnContext( "_r_id_", GraphType.ID_SIZE, PolyType.VARCHAR, true ) ), 1 );
 
         PhysicalTable eProperties = createSubstitutionTable( scannable, context, logical, allocation, "_eProperties_", List.of(
-                Triple.of( "id", GraphType.ID_SIZE, PolyType.VARCHAR ),
-                Triple.of( "key", null, PolyType.TEXT ),
-                Triple.of( "value", null, PolyType.TEXT ) ) );
+                new ColumnContext( "id", GraphType.ID_SIZE, PolyType.VARCHAR, false ),
+                new ColumnContext( "key", null, PolyType.TEXT, false ),
+                new ColumnContext( "value", null, PolyType.TEXT, true ) ), 2 );
 
         scannable.getCatalog().addPhysical( allocation, node, nProperties, edge, eProperties );
         return List.of( node, nProperties, edge, eProperties );
@@ -218,8 +217,8 @@ public interface Scannable {
 
     static List<PhysicalEntity> createCollectionSubstitute( Scannable scannable, Context context, LogicalCollection logical, AllocationCollection allocation ) {
         PhysicalTable doc = createSubstitutionTable( scannable, context, logical, allocation, "_doc_", List.of(
-                Triple.of( DocumentType.DOCUMENT_ID, null, PolyType.TEXT ),
-                Triple.of( DocumentType.DOCUMENT_DATA, null, PolyType.TEXT ) ) );
+                new ColumnContext( DocumentType.DOCUMENT_ID, null, PolyType.TEXT, false ),
+                new ColumnContext( DocumentType.DOCUMENT_DATA, null, PolyType.TEXT, false ) ), 1 );
 
         scannable.getCatalog().addPhysical( allocation, doc );
         return List.of( doc );
@@ -244,5 +243,10 @@ public interface Scannable {
 
 
     void renameLogicalColumn( long id, String newColumnName );
+
+
+    record ColumnContext(String name, Integer precision, PolyType type, boolean nullable) {
+
+    }
 
 }

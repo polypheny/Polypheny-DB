@@ -80,6 +80,7 @@ import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlDialect.CalendarPolicy;
 import org.polypheny.db.sql.language.util.SqlString;
+import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
@@ -345,7 +346,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
 
     @NotNull
     private static Expression getPreprocessArrayExpression( ParameterExpression resultSet_, int i, SqlDialect dialect, AlgDataType fieldType ) {
-        if ( (dialect.supportsArrays() && fieldType.getComponentType().getPolyType() != PolyType.ARRAY) || dialect.supportsNestedArrays() ) {
+        if ( (dialect.supportsArrays() && (fieldType.unwrap( ArrayType.class ).orElseThrow().getDimension() == 1 || dialect.supportsNestedArrays())) ) {
             ParameterExpression argument = Expressions.parameter( Object.class );
 
             AlgDataType componentType = fieldType.getComponentType();

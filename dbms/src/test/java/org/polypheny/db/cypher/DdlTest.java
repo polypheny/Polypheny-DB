@@ -26,6 +26,7 @@ import java.sql.Statement;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
@@ -190,10 +191,7 @@ public class DdlTest extends CypherTestTemplate {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-
-                statement.executeUpdate( String.format( "ALTER ADAPTERS ADD \"%s\" USING 'Hsqldb' AS 'Store'"
-                        + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'", name ) );
-
+                TestHelper.addHsqldb( name, statement );
             }
         }
     }
