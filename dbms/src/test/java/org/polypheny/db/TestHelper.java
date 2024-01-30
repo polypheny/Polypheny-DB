@@ -106,7 +106,7 @@ public class TestHelper {
 
         Runnable runnable = () -> {
             polyphenyDb.mode = PolyMode.TEST;
-            String defaultStoreName = System.getProperty( "storeId.default" );
+            String defaultStoreName = System.getProperty( "store.default" );
             if ( defaultStoreName != null ) {
                 polyphenyDb.defaultStoreName = defaultStoreName;
             }
