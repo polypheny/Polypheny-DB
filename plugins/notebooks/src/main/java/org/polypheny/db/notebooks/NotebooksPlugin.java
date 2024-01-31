@@ -123,7 +123,7 @@ public class NotebooksPlugin extends PolyPlugin {
 
 
     private void getDockerInstances( Context ctx ) {
-        List<DockerInstanceInfo> result = DockerManager.getInstance().getDockerInstances().values().stream().filter( DockerInstance::isConnected ).map( DockerInstance::getInfo ).toList();
+        List<DockerInstanceInfo> result = DockerManager.getInstance().getDockerInstances().values().stream().map( DockerInstance::getInfo ).filter( DockerInstanceInfo::connected ).toList();
         ctx.status( 200 ).json( result );
     }
 

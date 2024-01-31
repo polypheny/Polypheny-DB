@@ -152,7 +152,7 @@ public final class DockerInstance {
     }
 
 
-    public boolean isConnected() {
+     boolean isConnected() {
         try {
             checkConnection();
             return true;
