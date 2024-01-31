@@ -427,7 +427,7 @@ public class JdbcRules {
          */
         public JdbcProjectRule( final JdbcConvention out, AlgBuilderFactory algBuilderFactory ) {
             super( Project.class, project -> supports( out, project ),
-                    Convention.NONE, out, algBuilderFactory, "JdbcProjectRule." + out );
+                    Convention.NONE, out, algBuilderFactory, JdbcProjectRule.class.getSimpleName() + "." + out );
         }
 
 
@@ -440,6 +440,7 @@ public class JdbcRules {
                     && !DocumentRules.containsJson( project )
                     && !DocumentRules.containsDocument( project )
                     && !UnsupportedRexCallVisitor.containsModelItem( project.getProjects() )
+                    && out.dialect.supportsProject( project )
                     && (out.dialect.supportsNestedArrays() || !itemOperatorInProject( project ));
 
         }

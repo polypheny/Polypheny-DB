@@ -624,8 +624,7 @@ public class RexImpTable {
 
 
     public AggImplementor get( final AggFunction aggregation, boolean forWindowAggregate ) {
-        if ( aggregation instanceof UserDefined ) {
-            final UserDefined udaf = (UserDefined) aggregation;
+        if ( aggregation instanceof UserDefined udaf ) {
             if ( !(udaf.getFunction() instanceof ImplementableAggFunction) ) {
                 throw new IllegalStateException( "User defined aggregation " + aggregation + " must implement ImplementableAggFunction" );
             }
@@ -1879,14 +1878,10 @@ public class RexImpTable {
         public Expression implement( RexToLixTranslator translator, RexCall call, List<Expression> translatedOperands ) {
             switch ( call.getOperands().size() ) {
                 case 1:
-                    switch ( call.getType().getPolyType() ) {
-                        case BIGINT:
-                        case INTEGER:
-                        case SMALLINT:
-                        case TINYINT:
-                            return translatedOperands.get( 0 );
-                    }
-                    return super.implement( translator, call, translatedOperands );
+                    return switch ( call.getType().getPolyType() ) {
+                        case BIGINT, INTEGER, SMALLINT, TINYINT -> translatedOperands.get( 0 );
+                        default -> super.implement( translator, call, translatedOperands );
+                    };
                 case 2:
                     final Type type;
                     final Method floorMethod;
@@ -1900,21 +1895,19 @@ public class RexImpTable {
                             // fall through
                         case TIMESTAMP:
                             type = PolyBigDecimal.class;
+                            operand = Expressions.call( PolyBigDecimal.class, "convert", operand );
                             floorMethod = timestampMethod;
                             break;
                         default:
                             type = PolyBigDecimal.class;
                             floorMethod = dateMethod;
                     }
-                    final ConstantExpression tur = (ConstantExpression) translatedOperands.get( 1 );
+                    ConstantExpression tur = (ConstantExpression) translatedOperands.get( 1 );
                     final TimeUnitRange timeUnitRange = (TimeUnitRange) tur.value;
-                    switch ( Objects.requireNonNull( timeUnitRange ) ) {
-                        case YEAR:
-                        case MONTH:
-                            return Expressions.call( floorMethod, tur, EnumUtils.convertPolyValue( call.type.getPolyType(), call( operand, type, TimeUnit.DAY ) ) );
-                        default:
-                            return EnumUtils.convertPolyValue( call.type.getPolyType(), call( operand, type, timeUnitRange.startUnit ) );
-                    }
+                    return switch ( Objects.requireNonNull( timeUnitRange ) ) {
+                        case YEAR, MONTH -> Expressions.call( floorMethod, tur, EnumUtils.convertPolyValue( call.type.getPolyType(), call( operand, type, TimeUnit.DAY ) ) );
+                        default -> EnumUtils.convertPolyValue( call.type.getPolyType(), call( operand, type, timeUnitRange.startUnit ) );
+                    };
                 default:
                     throw new AssertionError();
             }
@@ -1923,7 +1916,7 @@ public class RexImpTable {
 
         private Expression call( Expression operand, Type type, TimeUnit timeUnit ) {
             return Expressions.call( Functions.class, methodName,
-                    Types.castIfNecessary( type, operand ),
+                    operand,
                     Types.castIfNecessary( type, EnumUtils.wrapPolyValue( type, Expressions.constant( timeUnit.multiplier ) ) ) );
         }
 
@@ -1933,10 +1926,10 @@ public class RexImpTable {
     /**
      * Implementor for a function that generates calls to a given method.
      */
+    @Getter
     @Value
     public static class MethodImplementor implements NotNullImplementor {
 
-        @Getter
         public Method method;
 
 

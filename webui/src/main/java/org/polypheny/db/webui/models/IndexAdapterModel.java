@@ -51,7 +51,7 @@ public class IndexAdapterModel extends IdEntity {
 
 
         public static IndexMethodModel from( DataStore.IndexMethodModel index ) {
-            return new IndexMethodModel( index.name, index.displayName );
+            return new IndexMethodModel( index.name(), index.displayName() );
         }
 
     }

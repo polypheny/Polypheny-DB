@@ -403,7 +403,7 @@ public class EnumUtils {
     @NotNull
     public static Expression convertPolyValue( PolyType outputType, Expression operand ) {
         Class<?> clazz = PolyValue.classFrom( outputType );
-        if ( Types.isAssignableFrom( operand.type, clazz ) ) {
+        if ( Types.isAssignableFrom( clazz, operand.type ) ) {
             return operand;
         }
         return Expressions.call( clazz, "convert", operand );

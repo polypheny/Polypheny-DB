@@ -40,7 +40,6 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 @Tag("cottontailExclude")
 @Tag("fileExclude")
 @Tag("neo4jExclude")
-@Tag("monetdbExclude")
 public class ForeignKeyConstraintTest {
 
 
@@ -75,13 +74,13 @@ public class ForeignKeyConstraintTest {
             "ALTER TABLE constraint_test2 ADD UNIQUE INDEX idx2_ct2id ON ctid",
             "ALTER TABLE constraint_test2 ADD INDEX idx2_ctid ON ctid",
     };
+    private static TestHelper helper;
 
 
     @BeforeAll
     public static void start() throws SQLException {
         // Ensures that Polypheny-DB is running
-        //noinspection ResultOfMethodCallIgnored
-        TestHelper.getInstance();
+        helper = TestHelper.getInstance();
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -116,7 +115,7 @@ public class ForeignKeyConstraintTest {
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST );
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST2 );
                 statement.executeUpdate( ALTER_TABLE_ADD_FK );
-                if ( useIndex ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );
@@ -145,7 +144,7 @@ public class ForeignKeyConstraintTest {
 
     @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
-    @Tag("monetExclude") // COUNT() on empty collection returns no result and not 0...
+    @Tag("mongoExclude") // COUNT() on empty collection returns no result and not 0...
     // https://jira.mongodb.org/browse/SERVER-54958
     public void testInsertConflict( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
@@ -155,7 +154,7 @@ public class ForeignKeyConstraintTest {
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST );
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST2 );
                 statement.executeUpdate( ALTER_TABLE_ADD_FK );
-                if ( useIndex ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );
@@ -203,7 +202,7 @@ public class ForeignKeyConstraintTest {
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST );
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST2 );
                 statement.executeUpdate( ALTER_TABLE_ADD_FK );
-                if ( useIndex ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );
@@ -247,7 +246,7 @@ public class ForeignKeyConstraintTest {
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST );
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST2 );
                 statement.executeUpdate( ALTER_TABLE_ADD_FK );
-                if ( useIndex ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );
@@ -296,7 +295,7 @@ public class ForeignKeyConstraintTest {
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST );
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST2 );
                 statement.executeUpdate( ALTER_TABLE_ADD_FK );
-                if ( useIndex ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );
@@ -341,7 +340,7 @@ public class ForeignKeyConstraintTest {
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST );
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST2 );
                 statement.executeUpdate( ALTER_TABLE_ADD_FK );
-                if ( useIndex ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );
@@ -396,7 +395,7 @@ public class ForeignKeyConstraintTest {
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST );
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST2 );
                 statement.executeUpdate( ALTER_TABLE_ADD_FK );
-                if ( useIndex ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );
@@ -441,7 +440,7 @@ public class ForeignKeyConstraintTest {
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST );
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST2 );
                 statement.executeUpdate( ALTER_TABLE_ADD_FK );
-                if ( useIndex ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );
@@ -496,7 +495,7 @@ public class ForeignKeyConstraintTest {
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST );
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST2 );
                 statement.executeUpdate( ALTER_TABLE_ADD_FK );
-                if ( useIndex ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );
@@ -540,7 +539,7 @@ public class ForeignKeyConstraintTest {
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST );
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST2 );
                 statement.executeUpdate( ALTER_TABLE_ADD_FK );
-                if ( useIndex ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );

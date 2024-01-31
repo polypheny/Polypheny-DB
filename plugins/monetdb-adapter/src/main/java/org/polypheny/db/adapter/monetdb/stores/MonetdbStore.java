@@ -180,13 +180,11 @@ public class MonetdbStore extends AbstractJdbcStore {
         }
         PhysicalColumn column = storeCatalog.updateColumnType( allocId, newCol );
 
-        PhysicalTable table = storeCatalog.getTable( allocId );
+        PhysicalTable table = storeCatalog.fromAllocation( allocId );
         // MonetDB does not support updating the column type directly. We need to do a work-around
-        //LogicalTable catalogTable = Catalog.getInstance().getTable( catalogColumn.tableId );
+
         String tmpColName = column.name + "tmp";
         StringBuilder builder;
-
-        //for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( columnPlacement.adapterId, columnPlacement.tableId ) ) {
 
         // (1) Create a temporary column `alter table tabX add column colXtemp NEW_TYPE;`
         builder = new StringBuilder();
@@ -254,9 +252,10 @@ public class MonetdbStore extends AbstractJdbcStore {
                 .append( dialect.quoteIdentifier( table.name ) );
         builder.append( " DROP COLUMN " )
                 .append( dialect.quoteIdentifier( tmpColName ) );
+
         executeUpdate( builder, context );
-        //}
-        //Catalog.getInstance().updateColumnPlacementPhysicalPosition( getAdapterId(), catalogColumn.id );
+
+        updateNativePhysical( allocId );
     }
 
 

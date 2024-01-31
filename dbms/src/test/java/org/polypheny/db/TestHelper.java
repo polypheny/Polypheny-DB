@@ -57,6 +57,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
@@ -429,6 +430,11 @@ public class TestHelper {
             fail( "There are still " + count + " active transactions, while there should be " + expected );
             throw new RuntimeException( "There are still " + count + " active transactions, while there should be " + expected );
         }
+    }
+
+
+    public boolean storeSupportsIndex() {
+        return !AdapterManager.getInstance().getStore( "hsqldb" ).orElseThrow().getAvailableIndexMethods().isEmpty();
     }
 
 

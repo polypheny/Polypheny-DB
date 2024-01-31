@@ -218,6 +218,7 @@ public class PostgresqlSqlDialect extends SqlDialect {
                 }
                 break;
             case MIN:
+            case MAX:
                 // min( boolean ) should stay boolean and return true if one value is true else false, this is not the case in postgres
                 SqlBasicCall basicCall = (SqlBasicCall) call;
                 if ( basicCall.getOperandList().size() == 1
@@ -226,7 +227,7 @@ public class PostgresqlSqlDialect extends SqlDialect {
                         && childCall.getOperator().getKind() == Kind.CAST
                         && childCall.getOperandList().get( 1 ) instanceof SqlDataTypeSpec dataTypeSpec
                         && dataTypeSpec.getType() == PolyType.BOOLEAN ) {
-                    writer.print( "bool_or(" );
+                    writer.print( call.getKind() == Kind.MIN ? "bool_or(" : "bool_and(" );
                     childCall.unparse( writer, leftPrec, rightPrec );
                     writer.print( ")" );
                     return;

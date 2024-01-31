@@ -22,7 +22,6 @@ import com.google.gson.JsonSerializer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.ExtensionPoint;
@@ -55,23 +54,12 @@ public abstract class DataStore<S extends AdapterCatalog> extends Adapter<S> imp
     public abstract List<FunctionalIndexInfo> getFunctionalIndexes( LogicalTable catalogTable );
 
 
-
-
-    @AllArgsConstructor
-    public static class IndexMethodModel {
-
-        public final String name;
-        public final String displayName;
+    public record IndexMethodModel(String name, String displayName) {
 
     }
 
 
-    @AllArgsConstructor
-    public static class FunctionalIndexInfo {
-
-        public final List<Long> columnIds;
-        public final String methodDisplayName;
-
+    public record FunctionalIndexInfo(List<Long> columnIds, String methodDisplayName) {
 
         public List<String> getColumnNames() {
             List<String> columnNames = new ArrayList<>( columnIds.size() );

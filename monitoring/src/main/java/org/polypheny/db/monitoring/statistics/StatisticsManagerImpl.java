@@ -357,7 +357,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
      *
      * @param column the column in which the values should be inserted
      */
-    private <T> void assignUnique( StatisticColumn column, StatisticQueryResult unique ) {
+    private void assignUnique( StatisticColumn column, StatisticQueryResult unique ) {
         if ( unique == null || unique.getData() == null ) {
             return;
         }
@@ -454,23 +454,12 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
         AlgNode queryNode;
         LogicalRelScan tableScan = getLogicalScan( queryResult.getEntity().id, snapshot, cluster );
-        switch ( nodeType ) {
-            case MIN:
-            case MAX:
-                queryNode = getAggregateColumn( queryResult, nodeType, tableScan, rexBuilder, cluster );
-                break;
-            case UNIQUE_VALUE:
-                queryNode = getUniqueValues( queryResult, tableScan, rexBuilder );
-                break;
-            case ROW_COUNT_COLUMN:
-                queryNode = getColumnCount( queryResult, tableScan, rexBuilder, cluster );
-                break;
-            case ROW_COUNT_TABLE:
-                queryNode = getTableCount( tableScan, cluster );
-                break;
-            default:
-                throw new GenericRuntimeException( "Used nodeType is not defined in statistics." );
-        }
+        queryNode = switch ( nodeType ) {
+            case MIN, MAX -> getAggregateColumn( queryResult, nodeType, tableScan, rexBuilder, cluster );
+            case UNIQUE_VALUE -> getUniqueValues( queryResult, tableScan, rexBuilder );
+            case ROW_COUNT_COLUMN -> getColumnCount( queryResult, tableScan, rexBuilder, cluster );
+            case ROW_COUNT_TABLE -> getTableCount( tableScan, cluster );
+        };
         return queryNode;
     }
 
@@ -934,37 +923,24 @@ public class StatisticsManagerImpl extends StatisticsManager {
      */
     @Override
     public void updateRowCountPerTable( long tableId, long number, MonitoringType type ) {
-        StatisticTable table;
+        StatisticTable table = tableStatistic.get( tableId );
+        if ( table == null ) {
+            table = new StatisticTable( tableId );
+        }
         switch ( type ) {
             case INSERT:
-                if ( tableStatistic.containsKey( tableId ) ) {
-                    table = tableStatistic.get( tableId );
-                    long totalRows = table.getNumberOfRows() + number;
-
-                    table.setNumberOfRows( totalRows );
-                } else {
-                    table = new StatisticTable( tableId );
-                    table.setNumberOfRows( number );
-                }
+                long plus = table.getNumberOfRows() + number;
+                table.setNumberOfRows( plus );
                 break;
             case DELETE:
-                if ( tableStatistic.containsKey( tableId ) ) {
-                    table = tableStatistic.get( tableId );
-                    long totalRows = table.getNumberOfRows() - number;
+                long minus = table.getNumberOfRows() - number;
+                table.setNumberOfRows( minus );
 
-                    table.setNumberOfRows( totalRows );
-                } else {
-                    table = new StatisticTable( tableId );
-                }
                 break;
             case SET_ROW_COUNT:
             case TRUNCATE:
-                if ( tableStatistic.containsKey( tableId ) ) {
-                    table = tableStatistic.get( tableId );
-                } else {
-                    table = new StatisticTable( tableId );
-                }
                 table.setNumberOfRows( number );
+
                 break;
             default:
                 throw new GenericRuntimeException( "updateRowCountPerTable is not implemented for: " + type );

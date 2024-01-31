@@ -1604,7 +1604,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 arr[0] = "";
                 arr[1] = String.join( ", ", fif.getColumnNames() );
                 arr[2] = store.getUniqueName();
-                arr[3] = fif.methodDisplayName;
+                arr[3] = fif.methodDisplayName();
                 arr[4] = "FUNCTIONAL";
                 data.add( arr );
             }
@@ -1772,23 +1772,12 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         List<PartitionFunctionColumn> constructedRow = new ArrayList<>();
 
         for ( PartitionFunctionInfoColumn currentColumn : columnList ) {
-            FieldType type;
-            switch ( currentColumn.getFieldType() ) {
-                case STRING:
-                    type = FieldType.STRING;
-                    break;
-                case INTEGER:
-                    type = FieldType.INTEGER;
-                    break;
-                case LIST:
-                    type = FieldType.LIST;
-                    break;
-                case LABEL:
-                    type = FieldType.LABEL;
-                    break;
-                default:
-                    throw new GenericRuntimeException( "Unknown Field ExpressionType: " + currentColumn.getFieldType() );
-            }
+            FieldType type = switch ( currentColumn.getFieldType() ) {
+                case STRING -> FieldType.STRING;
+                case INTEGER -> FieldType.INTEGER;
+                case LIST -> FieldType.LIST;
+                case LABEL -> FieldType.LABEL;
+            };
 
             if ( type.equals( FieldType.LIST ) ) {
                 constructedRow.add( new PartitionFunctionColumn( type, currentColumn.getOptions(), currentColumn.getDefaultValue() )
