@@ -197,6 +197,9 @@ public final class AutoDocker {
         while ( true ) {
             String handshakeStatus = HandshakeManager.getInstance().getHandshake( handshake.id() ).orElseThrow().status();
             if ( handshakeStatus.equals( "FAILED" ) || handshakeStatus.equals( "SUCCESS" ) ) {
+                if (handshakeStatus.equals( "FAILED" )) {
+                    status = HandshakeManager.getInstance().getHandshake( handshake.id() ).orElseThrow().lastErrorMessage();
+                }
                 handshake = null;
                 break;
             }
@@ -254,7 +257,7 @@ public final class AutoDocker {
             } catch ( DockerUserException e ) {
                 log.info( "AutoDocker: Setup failed: " + e );
                 updateStatus( "setup failed: " + e.getMessage() );
-                throw new DockerUserException( e.getMessage() );
+                throw e;
             }
         }
 
@@ -274,7 +277,7 @@ public final class AutoDocker {
             }
         }
         if ( !isConnected() ) {
-            throw new DockerUserException( "Failed to connect to local Docker instance: " + handshake.lastErrorMessage() );
+            throw new DockerUserException( "Failed to connect to local Docker instance: " + status );
         }
     }
 
