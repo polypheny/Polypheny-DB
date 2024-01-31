@@ -258,12 +258,17 @@ final class PolyphenyHandshakeClient {
 
             synchronized ( this ) {
                 // timeout 0 means cancelled
-                if (timeout.get() != 0) {
+                if ( timeout.get() != 0 ) {
                     if ( onCompletion != null && timeout.get() != 0 ) {
-                        onCompletion.run();
+                        try {
+                            onCompletion.run();
+                        } catch ( Throwable t ) {
+                            lastErrorMessage = t.getMessage();
+                            state = State.FAILED;
+                            return false;
+                        }
                     }
                     state = State.SUCCESS;
-
                     return true;
                 }
                 return false; // Prevents a handshake successful message to be printed when cancelled

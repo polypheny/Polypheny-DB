@@ -101,7 +101,7 @@ public final class DockerInstance {
         synchronized ( seenInstanceUuids ) {
             for ( DockerInstance instance : DockerManager.getInstance().getDockerInstances().values() ) {
                 if ( instance != this && instance.dockerInstanceUuid != null && instance.dockerInstanceUuid.equals( dockerInstanceUuid ) ) {
-                    throw new RuntimeException( String.format( "Already connected to instance at %s with alias %s", this.host, instance.host.alias() ) );
+                    throw new DockerUserException( String.format( "Already connected to instance at '%s' with alias '%s'", this.host, instance.host.alias() ) );
                 }
             }
         }

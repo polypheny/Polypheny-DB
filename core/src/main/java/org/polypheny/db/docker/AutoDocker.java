@@ -91,7 +91,7 @@ public final class AutoDocker {
     private Optional<String> findAndStartPolyphenyContainer( DockerClient client ) {
         List<Container> resp = client.listContainersCmd().withShowAll( true ).exec();
         for ( Container c : resp ) {
-            if (Arrays.asList( c.getNames() ).contains( "/" + DockerUtils.CONTAINER_NAME )) {
+            if ( Arrays.asList( c.getNames() ).contains( "/" + DockerUtils.CONTAINER_NAME ) ) {
                 if ( !c.getState().equals( "running" ) ) {
                     client.startContainerCmd( c.getId() ).exec();
                 }
@@ -274,7 +274,7 @@ public final class AutoDocker {
             }
         }
         if ( !isConnected() ) {
-            throw new DockerUserException( "Failed to connect to local Docker instance" );
+            throw new DockerUserException( "Failed to connect to local Docker instance: " + handshake.lastErrorMessage() );
         }
     }
 
