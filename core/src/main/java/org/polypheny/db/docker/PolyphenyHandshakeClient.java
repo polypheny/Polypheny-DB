@@ -36,6 +36,7 @@ import org.bouncycastle.crypto.util.DigestFactory;
 import org.bouncycastle.tls.AlertDescription;
 import org.bouncycastle.tls.TlsFatalAlert;
 import org.bouncycastle.tls.TlsFatalAlertReceived;
+import org.bouncycastle.tls.TlsNoCloseNotifyException;
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Base64;
 import org.polypheny.db.config.RuntimeConfig;
@@ -229,6 +230,9 @@ final class PolyphenyHandshakeClient {
                     lastErrorMessage = "Client is using the wrong certificate, did you paste the right string?";
                     log.error( "Server is expecting a different certificate" );
                 }
+            } else if ( e instanceof TlsNoCloseNotifyException ) {
+                lastErrorMessage = "Server unexpectedly closed the connection";
+                log.error( "Server unexpectedly closed the connection" );
             } else {
                 lastErrorMessage = "Failed to read response from server";
                 log.error( "Reading authentication value: ", e );
