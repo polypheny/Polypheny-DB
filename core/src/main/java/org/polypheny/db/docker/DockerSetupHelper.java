@@ -18,8 +18,8 @@ package org.polypheny.db.docker;
 
 import java.io.IOException;
 import java.util.Optional;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.docker.exceptions.DockerUserException;
 import org.polypheny.db.docker.models.DockerHost;
 import org.polypheny.db.docker.models.HandshakeInfo;
@@ -42,7 +42,7 @@ public final class DockerSetupHelper {
     }
 
 
-    public static Optional<HandshakeInfo> newDockerInstance( @NotNull String hostname, @NotNull String alias, @NotNull String registry, int communicationPort, int handshakePort, int proxyPort, boolean startHandshake ) {
+    public static Optional<HandshakeInfo> newDockerInstance( @NonNull String hostname, @NonNull String alias, @NonNull String registry, int communicationPort, int handshakePort, int proxyPort, boolean startHandshake ) {
         DockerHost host = new DockerHost( hostname, alias, registry, communicationPort, handshakePort, proxyPort );
         if ( DockerManager.getInstance().hasHost( host.hostname() ) ) {
             throw new DockerUserException( "There is already a Docker instance connected to " + hostname );

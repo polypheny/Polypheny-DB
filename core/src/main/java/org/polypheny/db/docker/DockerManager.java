@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.ConfigManager;
@@ -102,6 +103,9 @@ public final class DockerManager {
             }
             if ( hasAlias( host.alias() ) ) {
                 throw new DockerUserException( "There is already a Docker instance with alias " + host.alias() );
+            }
+            if ( host.registry() == null ) {
+                throw new GenericRuntimeException( "registry must not be null" );
             }
             ConfigDocker configDocker = existingConfig;
             if ( configDocker == null ) {
