@@ -32,6 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.docker.PolyphenyHandshakeClient.State;
+import org.polypheny.db.docker.exceptions.DockerUserException;
 import org.polypheny.db.docker.models.DockerHost;
 import org.polypheny.db.docker.models.HandshakeInfo;
 
@@ -61,6 +62,22 @@ public final class HandshakeManager {
                 if ( startHandshake ) {
                     h.startOrRestart();
                 }
+                return h.serializeHandshake();
+            } catch ( IOException e ) {
+                throw new GenericRuntimeException( e );
+            }
+        }
+    }
+
+
+    public HandshakeInfo restartHandshake( long id ) {
+        synchronized ( this ) {
+            Handshake h = handshakes.get( id );
+            if ( h == null ) {
+                throw new DockerUserException( 404, "No handshake with id " + id );
+            }
+            try {
+                h.startOrRestart();
                 return h.serializeHandshake();
             } catch ( IOException e ) {
                 throw new GenericRuntimeException( e );
