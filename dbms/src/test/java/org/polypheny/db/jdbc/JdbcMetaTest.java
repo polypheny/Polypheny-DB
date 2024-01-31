@@ -39,11 +39,13 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 public class JdbcMetaTest {
 
 
+    private static TestHelper helper;
+
+
     @BeforeAll
     public static void start() throws SQLException {
         // Ensures that Polypheny-DB is running
-        //noinspection ResultOfMethodCallIgnored
-        TestHelper.getInstance();
+        helper = TestHelper.getInstance();
         addTestData();
     }
 
@@ -58,8 +60,12 @@ public class JdbcMetaTest {
                 statement.executeUpdate( "ALTER TABLE test.foo2 ADD CONSTRAINT u_foo1 UNIQUE (name, foobar)" );
                 statement.executeUpdate( "ALTER TABLE foo ADD CONSTRAINT fk_foo_1 FOREIGN KEY (name, bar) REFERENCES test.foo2(name, foobar) ON UPDATE RESTRICT ON DELETE RESTRICT" );
                 statement.executeUpdate( "ALTER TABLE test.foo2 ADD CONSTRAINT fk_foo_2 FOREIGN KEY (id) REFERENCES public.foo(id)" );
-                statement.executeUpdate( "ALTER TABLE foo ADD UNIQUE INDEX i_foo ON id ON STORE hsqldb" );
-                statement.executeUpdate( "ALTER TABLE test.foo2 ADD INDEX i_foo2 ON (name, foobar) USING \"default\" ON STORE hsqldb" );
+
+                if ( helper.storeSupportsIndex() ) {
+                    statement.executeUpdate( "ALTER TABLE foo ADD UNIQUE INDEX i_foo ON id ON STORE hsqldb" );
+                    statement.executeUpdate( "ALTER TABLE test.foo2 ADD INDEX i_foo2 ON (name, foobar) USING \"default\" ON STORE hsqldb" );
+                }
+
                 // statement.executeUpdate( "CREATE DOCUMENT SCHEMA doc" ); // todo There should be an alias to use the SQL default term SCHEMA instead of NAMESPACE
                 connection.commit();
             }
@@ -478,6 +484,9 @@ public class JdbcMetaTest {
             final Object[] index2a = new Object[]{ "APP", "test", "foo2", true, null, "i_foo2", 0, 1, "name", null, -1, null, null, 0, 1 };
             final Object[] index2b = new Object[]{ "APP", "test", "foo2", true, null, "i_foo2", 0, 2, "foobar", null, -1, null, null, 0, 1 };
 
+            if ( !helper.storeSupportsIndex() ) {
+                return;
+            }
             TestHelper.checkResultSet(
                     connection.getMetaData().getIndexInfo( "APP", "public", "foo", false, false ),
                     ImmutableList.of( index1 ) );

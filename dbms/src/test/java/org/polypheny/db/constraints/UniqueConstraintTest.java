@@ -58,13 +58,14 @@ public class UniqueConstraintTest {
             "ALTER TABLE constraint_test ADD INDEX idx_a ON (a)",
             "ALTER TABLE constraint_test ADD INDEX idx_b ON (b)"
     };
+    private static TestHelper helper;
 
 
     @BeforeAll
     public static void start() throws SQLException {
         // Ensures that Polypheny-DB is running
-        //noinspection ResultOfMethodCallIgnored
-        TestHelper.getInstance();
+
+        helper = TestHelper.getInstance();
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -97,7 +98,7 @@ public class UniqueConstraintTest {
             try ( Statement statement = connection.createStatement() ) {
                 // Create schema
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_STATEMENTS );
-                if ( useIndex ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );
@@ -129,7 +130,7 @@ public class UniqueConstraintTest {
             try ( Statement statement = connection.createStatement() ) {
                 // Create schema
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_STATEMENTS );
-                if ( useIndex ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );
@@ -178,7 +179,7 @@ public class UniqueConstraintTest {
             try ( Statement statement = connection.createStatement() ) {
                 // Create schema
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_STATEMENTS );
-                if ( useIndex ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );
@@ -218,7 +219,7 @@ public class UniqueConstraintTest {
             try ( Statement statement = connection.createStatement() ) {
                 // Create schema
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_STATEMENTS );
-                if ( useIndex ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );
@@ -254,7 +255,7 @@ public class UniqueConstraintTest {
             try ( Statement statement = connection.createStatement() ) {
                 // Create schema
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_STATEMENTS );
-                if ( useIndex ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );
@@ -297,7 +298,7 @@ public class UniqueConstraintTest {
             try ( Statement statement = connection.createStatement() ) {
                 // Create schema
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_STATEMENTS );
-                if ( useIndex ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );
@@ -340,7 +341,7 @@ public class UniqueConstraintTest {
             try ( Statement statement = connection.createStatement() ) {
                 // Create schema
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_STATEMENTS );
-                if ( useIndex ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );
@@ -426,7 +427,7 @@ public class UniqueConstraintTest {
             try ( Statement statement = connection.createStatement() ) {
                 // Create schema
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_STATEMENTS );
-                if ( useIndex ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );
@@ -516,7 +517,7 @@ public class UniqueConstraintTest {
             try ( Statement statement = connection.createStatement() ) {
                 // Create schema
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_STATEMENTS );
-                if ( useIndex ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );
@@ -579,7 +580,7 @@ public class UniqueConstraintTest {
             try ( Statement statement = connection.createStatement() ) {
                 // Create schema
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_STATEMENTS );
-                if ( useIndex ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );

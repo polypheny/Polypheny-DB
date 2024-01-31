@@ -42,6 +42,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.NullCollation;
+import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
@@ -778,6 +779,11 @@ public class SqlDialect {
 
     public SqlNode rewriteMinMax( SqlNode node ) {
         return node;
+    }
+
+
+    public boolean supportsProject( Project project ) {
+        return true;
     }
 
 

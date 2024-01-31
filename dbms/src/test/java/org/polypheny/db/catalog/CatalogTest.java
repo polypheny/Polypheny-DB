@@ -63,7 +63,9 @@ public class CatalogTest {
                 statement.executeUpdate( "CREATE NAMESPACE schema1" );
                 statement.executeUpdate( "CREATE TABLE schema1.table1( id INTEGER NOT NULL, PRIMARY KEY(id))" );
                 statement.executeUpdate( "ALTER TABLE schema1.table1 ADD COLUMN name VARCHAR (255) NULL" );
-                statement.executeUpdate( "ALTER TABLE schema1.table1 ADD UNIQUE INDEX index1 ON id ON STORE hsqldb" );
+                if ( helper.storeSupportsIndex() ) {
+                    statement.executeUpdate( "ALTER TABLE schema1.table1 ADD UNIQUE INDEX index1 ON id ON STORE hsqldb" );
+                }
                 statement.executeUpdate( "CREATE TABLE schema1.table2( id INTEGER NOT NULL, PRIMARY KEY(id) )" );
                 statement.executeUpdate( "ALTER TABLE schema1.table2 ADD CONSTRAINT fk_id FOREIGN KEY (id) REFERENCES schema1.table1(id) ON UPDATE RESTRICT ON DELETE RESTRICT" );
                 statement.executeUpdate( "CREATE DOCUMENT SCHEMA private" );
@@ -203,9 +205,15 @@ public class CatalogTest {
             // Check data
             final Object[] index1 = new Object[]{ "APP", "schema1", "table1", false, null, "index1", 0, 1, "id", null, -1, null, null, adapter.id, 1 };
 
-            TestHelper.checkResultSet(
-                    connection.getMetaData().getIndexInfo( "APP", "schema1", "table1", false, false ),
-                    ImmutableList.of( index1 ) );
+            if ( helper.storeSupportsIndex() ) {
+                TestHelper.checkResultSet(
+                        connection.getMetaData().getIndexInfo( "APP", "schema1", "table1", false, false ),
+                        ImmutableList.of( index1 ) );
+            } else {
+                TestHelper.checkResultSet(
+                        connection.getMetaData().getIndexInfo( "APP", "schema1", "table1", false, false ),
+                        ImmutableList.of() );
+            }
 
         } catch ( SQLException e ) {
             log.error( "Exception while testing getTables()", e );

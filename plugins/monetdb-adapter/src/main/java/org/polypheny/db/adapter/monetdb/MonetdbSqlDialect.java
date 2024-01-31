@@ -17,14 +17,28 @@
 package org.polypheny.db.adapter.monetdb;
 
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import nl.cwi.monetdb.jdbc.MonetClob;
+import org.apache.calcite.avatica.util.TimeUnitRange;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.UnaryExpression;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.NullCollation;
+import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlDataTypeSpec;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlIdentifier;
+import org.polypheny.db.sql.language.SqlLiteral;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
 
@@ -101,6 +115,42 @@ public class MonetdbSqlDialect extends SqlDialect {
 
 
     @Override
+    public Expression getExpression( AlgDataType fieldType, Expression child ) {
+        return switch ( fieldType.getPolyType() ) {
+            case TEXT -> {
+                UnaryExpression client = Expressions.convert_( child, MonetClob.class );
+                yield super.getExpression( fieldType, Expressions.call( MonetdbSqlDialect.class, "toString", client ) );
+            }
+            default -> super.getExpression( fieldType, child );
+        };
+    }
+
+
+    @SuppressWarnings("unused")
+    public static String toString( MonetClob clob ) {
+        if ( clob == null ) {
+            return null;
+        }
+        try {
+            if ( clob.length() == 0 ) {
+                return null;
+            }
+            return clob.getSubString( 1, (int) clob.length() );
+        } catch ( Exception e ) {
+            throw new GenericRuntimeException( e );
+        }
+    }
+
+
+    @Override
+    public boolean supportsProject( Project project ) {
+        MonetdbRexVisitor visitor = new MonetdbRexVisitor();
+        project.getProjects().forEach( p -> p.accept( visitor ) );
+        return visitor.supportsProject;
+    }
+
+
+    @Override
     public void unparseOffsetFetch( SqlWriter writer, SqlNode offset, SqlNode fetch ) {
         unparseFetchUsingLimit( writer, offset, fetch );
     }
@@ -120,8 +170,43 @@ public class MonetdbSqlDialect extends SqlDialect {
 
     @Override
     public void unparseCall( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
-        call.getKind();
+        if ( call.getKind() == Kind.EXTRACT
+                && call.getSqlOperandList().size() > 1
+                && call.getSqlOperandList().get( 0 ) instanceof SqlLiteral literal
+                && literal.value.isSymbol()
+                && literal.value.asSymbol().value == TimeUnitRange.DOW ) {
+            // monetdb starts the week on monday, so we need to add 1 to the result
+            writer.sep( "(" );
+            super.unparseCall( writer, call, leftPrec, rightPrec );
+            writer.print( " + 1) % 7 " );
+            return;
+        }
+
         super.unparseCall( writer, call, leftPrec, rightPrec );
+
+
+    }
+
+
+    @Getter
+    private static class MonetdbRexVisitor extends RexShuttle {
+
+        boolean supportsProject = true;
+
+
+        @Override
+        public RexNode visitCall( RexCall call ) {
+            if ( call.getKind() == Kind.FLOOR ) {
+                if ( call.getOperands().size() == 2
+                        && call.getOperands().get( 1 ) instanceof RexLiteral type
+                        && type.value.isSymbol()
+                        && type.value.asSymbol().value instanceof TimeUnitRange ) {
+                    supportsProject = false;
+                }
+            }
+            return super.visitCall( call );
+        }
+
     }
 
 }

@@ -599,7 +599,7 @@ public class DdlManagerImpl extends DdlManager {
                     }
                 }
                 if ( !createdAtLeastOne ) {
-                    throw new GenericRuntimeException( "Unable to create an index on one of the underlying data stores since there is no data storeId that supports indexes and has all required columns!" );
+                    throw new GenericRuntimeException( "Unable to create an index on one of the underlying data stores since there is no data store that supports indexes and has all required columns!" );
                 }
             }
         } else { // Store Index
@@ -609,8 +609,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private void addDataStoreIndex( LogicalTable table, String indexMethodName, String indexName, boolean isUnique, @NotNull DataStore<?> location, Statement statement, List<Long> columnIds, IndexType type ) {
-        // Check if all required columns are present on this storeId
-        //AllocationPlacement placement = catalog.getSnapshot().alloc().getPlacement( location.getAdapterId(), table.id ).orElseThrow();
+
         List<AllocationPartition> partitions = catalog.getSnapshot().alloc().getPartitionsFromLogical( table.id );
         if ( partitions.size() != 1 ) {
             throw new GenericRuntimeException( "It is not possible to create an index on a table with more than one partition." );
@@ -628,18 +627,18 @@ public class DdlManagerImpl extends DdlManager {
         if ( indexMethodName != null && !indexMethodName.equalsIgnoreCase( "default" ) ) {
             IndexMethodModel aim = null;
             for ( IndexMethodModel indexMethodModel : location.getAvailableIndexMethods() ) {
-                if ( indexMethodModel.name.equals( indexMethodName ) ) {
+                if ( indexMethodModel.name().equals( indexMethodName ) ) {
                     aim = indexMethodModel;
                 }
             }
             if ( aim == null ) {
                 throw new GenericRuntimeException( "The used Index method is not known." );
             }
-            method = aim.name;
-            methodDisplayName = aim.displayName;
+            method = aim.name();
+            methodDisplayName = aim.displayName();
         } else {
-            method = location.getDefaultIndexMethod().name;
-            methodDisplayName = location.getDefaultIndexMethod().displayName;
+            method = location.getDefaultIndexMethod().name();
+            methodDisplayName = location.getDefaultIndexMethod().displayName();
         }
 
         LogicalIndex index = catalog.getLogicalRel( table.namespaceId ).addIndex(
@@ -685,18 +684,18 @@ public class DdlManagerImpl extends DdlManager {
         if ( indexMethodName != null ) {
             IndexMethodModel aim = null;
             for ( IndexMethodModel indexMethodModel : IndexManager.getAvailableIndexMethods() ) {
-                if ( indexMethodModel.name.equals( indexMethodName ) ) {
+                if ( indexMethodModel.name().equals( indexMethodName ) ) {
                     aim = indexMethodModel;
                 }
             }
             if ( aim == null ) {
                 throw new GenericRuntimeException( "The index method is not known" );
             }
-            method = aim.name;
-            methodDisplayName = aim.displayName;
+            method = aim.name();
+            methodDisplayName = aim.displayName();
         } else {
-            method = IndexManager.getDefaultIndexMethod().name;
-            methodDisplayName = IndexManager.getDefaultIndexMethod().displayName;
+            method = IndexManager.getDefaultIndexMethod().name();
+            methodDisplayName = IndexManager.getDefaultIndexMethod().displayName();
         }
 
         LogicalIndex index = catalog.getLogicalRel( table.namespaceId ).addIndex(

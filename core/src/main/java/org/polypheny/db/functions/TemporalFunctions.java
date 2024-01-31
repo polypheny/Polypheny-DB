@@ -39,6 +39,7 @@ public class TemporalFunctions {
 
     public static final TimeZone LOCAL_TZ = TimeZone.getDefault();
 
+
     @SuppressWarnings("unused")
     public static PolyString unixDateToString( PolyDate date ) {
         return PolyString.of( DateTimeUtils.unixDateToString( date.millisSinceEpoch.intValue() ) );
@@ -534,7 +535,6 @@ public class TemporalFunctions {
     public static TimeZone timeZone( DataContext root ) {
         return DataContext.Variable.TIME_ZONE.get( root );
     }
-
 
 
 }
