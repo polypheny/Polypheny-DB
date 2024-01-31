@@ -257,10 +257,10 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
 
 
     protected void createColumnDefinition( PhysicalColumn column, StringBuilder builder ) {
-        boolean supportsThisArray = (column.collectionsType == PolyType.ARRAY) && this.dialect.supportsArrays() && (this.dialect.supportsNestedArrays() || column.dimension == 1);
+        boolean supportsThisArray = column.collectionsType == PolyType.ARRAY && column.dimension != null && this.dialect.supportsArrays() && (this.dialect.supportsNestedArrays() || column.dimension == 1);
         if ( supportsThisArray ) {
             // Returns e.g. TEXT if arrays are not supported
-            builder.append( getTypeString( PolyType.ARRAY ) );
+            builder.append( getTypeString( column.type ) ).append( " " ).append( getTypeString( PolyType.ARRAY ).repeat( column.dimension ) );
         } else if ( column.collectionsType == PolyType.MAP ) {
             builder.append( getTypeString( PolyType.ARRAY ) );
         } else {
@@ -393,7 +393,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
     }
 
 
-    private void updateNativePhysical( long allocId ) {
+    protected void updateNativePhysical( long allocId ) {
         PhysicalTable table = storeCatalog.fromAllocation( allocId );
         storeCatalog.replacePhysical( this.currentJdbcSchema.createJdbcTable( table ) );
     }

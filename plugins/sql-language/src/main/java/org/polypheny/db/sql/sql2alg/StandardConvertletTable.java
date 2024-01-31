@@ -120,14 +120,10 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                 OperatorRegistry.get( OperatorName.MINUS ),
                 ( cx, call ) -> {
                     final RexCall e = (RexCall) StandardConvertletTable.this.convertCall( cx, call, (SqlOperator) call.getOperator() );
-                    switch ( e.getOperands().get( 0 ).getType().getPolyType() ) {
-                        case DATE:
-                        case TIME:
-                        case TIMESTAMP:
-                            return convertDatetimeMinus( cx, OperatorRegistry.get( OperatorName.MINUS_DATE, SqlDatetimeSubtractionOperator.class ), call );
-                        default:
-                            return e;
-                    }
+                    return switch ( e.getOperands().get( 0 ).getType().getPolyType() ) {
+                        case DATE, TIME, TIMESTAMP -> convertDatetimeMinus( cx, OperatorRegistry.get( OperatorName.MINUS_DATE, SqlDatetimeSubtractionOperator.class ), call );
+                        default -> e;
+                    };
                 } );
 
         registerOp( OracleSqlOperatorTable.LTRIM, new TrimConvertlet( SqlTrimFunction.Flag.LEADING ) );

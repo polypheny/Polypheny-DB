@@ -57,7 +57,7 @@ public class RelAdapterCatalog extends AdapterCatalog {
 
 
     public RelAdapterCatalog( long adapterId ) {
-        this( adapterId, Map.of(), Map.of(), Map.of(), Map.of(), Map.of() );
+        this( adapterId, Map.of(), Map.of(), Map.of(), Map.of() );
     }
 
 
@@ -65,7 +65,6 @@ public class RelAdapterCatalog extends AdapterCatalog {
             @Deserialize("adapterId") long adapterId,
             @Deserialize("physicals") Map<Long, PhysicalEntity> physicals,
             @Deserialize("allocations") Map<Long, AllocationEntity> allocations,
-            @Deserialize("columns") Map<Pair<Long, Long>, PhysicalColumn> columns,
             @Deserialize("allocToPhysicals") Map<Long, SortedSet<Long>> allocToPhysicals,
             @Deserialize("fields") Map<Pair<Long, Long>, PhysicalField> fields ) {
         super( adapterId, Map.of(), physicals, allocations, allocToPhysicals, fields );

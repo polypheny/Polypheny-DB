@@ -1351,12 +1351,14 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
 
     /**
-     * Converts an EXISTS or IN predicate into a join. For EXISTS, the sub-query produces an indicator variable, and the result is a relational expression which outer joins that indicator to the original query. After performing
+     * Converts an EXISTS or IN predicate into a join. For EXISTS, the sub-query produces an indicator variable,
+     * and the result is a relational expression which outer joins that indicator to the original query. After performing
      * the outer join, the condition will be TRUE if the EXISTS condition holds, NULL otherwise.
      *
      * @param seek A query, for example 'select * from emp' or 'values (1,2,3)' or '('Foo', 34)'.
      * @param subQueryType Whether sub-query is IN, EXISTS or scalar
-     * @param logic Whether the answer needs to be in full 3-valued logic (TRUE, FALSE, UNKNOWN) will be required, or whether we can accept an approximation (say representing UNKNOWN as FALSE)
+     * @param logic Whether the answer needs to be in full 3-valued logic (TRUE, FALSE, UNKNOWN) will be required,
+     * or whether we can accept an approximation (say representing UNKNOWN as FALSE)
      * @param notIn Whether the operation is NOT IN
      * @return join expression
      */
@@ -1366,9 +1368,9 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                         ? validator.getSelectScope( (SqlSelect) seek )
                         : null;
         final Blackboard seekBb = createBlackboard( seekScope, null, false );
-        AlgNode seekRel = convertQueryOrInList( seekBb, seek, targetDataType );
+        AlgNode seekAlg = convertQueryOrInList( seekBb, seek, targetDataType );
 
-        return AlgOptUtil.createExistsPlan( seekRel, subQueryType, logic, notIn, algBuilder );
+        return AlgOptUtil.createExistsPlan( seekAlg, subQueryType, logic, notIn, algBuilder );
     }
 
 

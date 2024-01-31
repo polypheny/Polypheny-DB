@@ -110,7 +110,7 @@ public class SqlTypeUtil {
 
 
     /**
-     * Converts an instance of RelDataType to an instance of SqlDataTypeSpec.
+     * Converts an instance of AlgDataType to an instance of SqlDataTypeSpec.
      *
      * @param type type descriptor
      * @return corresponding parse representation

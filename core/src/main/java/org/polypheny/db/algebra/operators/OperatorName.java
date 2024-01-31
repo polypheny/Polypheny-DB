@@ -451,6 +451,7 @@ public enum OperatorName {
      */
     MIN( AggFunction.class ),
 
+    BOOL_OR( AggFunction.class ),
     /**
      * <code>MAX</code> aggregate function.
      */

@@ -550,6 +550,7 @@ public class PolyphenyDb {
                     }
                 }
             }
+            //noinspection ResultOfMethodCallIgnored
             backupFolder.delete();
             log.info( "Restoring the data folder." );
         }

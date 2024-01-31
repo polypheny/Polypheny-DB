@@ -776,6 +776,11 @@ public class SqlDialect {
     }
 
 
+    public SqlNode rewriteMinMax( SqlNode node ) {
+        return node;
+    }
+
+
     public enum IntervalParameterStrategy {CAST, MULTIPLICATION, NONE}
 
 

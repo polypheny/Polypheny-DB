@@ -34,30 +34,14 @@ import org.polypheny.db.util.Pair;
 /**
  * Packaging all the information in a CQL query together.
  */
-public class CqlQuery implements Node {
-
-    public final Tree<Combiner, TableIndex> queryRelation;
-    public final Tree<BooleanGroup<ColumnOpsBooleanOperator>, Filter> filters;
-    public final Map<String, TableIndex> tableIndexMapping;
-    public final Map<String, ColumnIndex> columnIndexMapping;
-    public final List<Pair<ColumnIndex, Map<String, Modifier>>> sortSpecifications;
-    public final Projections projections;
-
-
-    public CqlQuery(
-            final Tree<Combiner, TableIndex> queryRelation,
-            final Tree<BooleanGroup<ColumnOpsBooleanOperator>, Filter> filters,
-            final Map<String, TableIndex> tableIndexMapping,
-            final Map<String, ColumnIndex> columnIndexMapping,
-            final List<Pair<ColumnIndex, Map<String, Modifier>>> sortSpecifications,
-            final Projections projections ) {
-        this.queryRelation = queryRelation;
-        this.filters = filters;
-        this.tableIndexMapping = tableIndexMapping;
-        this.columnIndexMapping = columnIndexMapping;
-        this.sortSpecifications = sortSpecifications;
-        this.projections = projections;
-    }
+public record CqlQuery(
+        Tree<Combiner, TableIndex> queryRelation,
+        Tree<BooleanGroup<ColumnOpsBooleanOperator>, Filter> filters,
+        Map<String, TableIndex> tableIndexMapping,
+        Map<String, ColumnIndex> columnIndexMapping,
+        List<Pair<ColumnIndex, Map<String, Modifier>>> sortSpecifications,
+        Projections projections
+) implements Node {
 
 
     @Override
@@ -92,7 +76,7 @@ public class CqlQuery implements Node {
             stringBuilder.append( filters );
         }
         stringBuilder.append( "relation " ).append( queryRelation );
-        if ( sortSpecifications != null && sortSpecifications.size() != 0 ) {
+        if ( sortSpecifications != null && !sortSpecifications.isEmpty() ) {
             stringBuilder.append( " " );
             for ( Pair<ColumnIndex, Map<String, Modifier>> sortSpecification : sortSpecifications ) {
                 stringBuilder.append( sortSpecification.toString() );

@@ -196,7 +196,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
     public void updateColumnType( Context context, long allocId, LogicalColumn newCol ) {
         PhysicalColumn column = storeCatalog.updateColumnType( allocId, newCol );
 
-        PhysicalTable physicalTable = storeCatalog.getTable( allocId );
+        PhysicalTable physicalTable = storeCatalog.fromAllocation( allocId );
 
         StringBuilder builder = new StringBuilder();
         builder.append( "ALTER TABLE " )
@@ -225,6 +225,8 @@ public class PostgresqlStore extends AbstractJdbcStore {
             builder.append( " " ).append( column.collectionsType );
         }
         executeUpdate( builder, context );
+
+        updateNativePhysical( allocId );
     }
 
 
@@ -288,17 +290,20 @@ public class PostgresqlStore extends AbstractJdbcStore {
     @Override
     public void dropIndex( Context context, LogicalIndex index, long allocId ) {
         PhysicalTable table = storeCatalog.fromAllocation( allocId );
-        //for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
+
         StringBuilder builder = new StringBuilder();
         builder.append( "DROP INDEX " );
         builder.append( dialect.quoteIdentifier( index.physicalName + "_" + table.id ) );
         executeUpdate( builder, context );
-        // }
     }
 
 
     @Override
     public void attachPrimaryKey( List<String> pkNames, StringBuilder builder ) {
+        if ( pkNames.isEmpty() ) {
+            // we let postgres handle this
+            return;
+        }
         builder.append( ", PRIMARY KEY ( " );
         builder.append( String.join( ",", pkNames ) );
         builder.append( " ) DEFERRABLE INITIALLY IMMEDIATE" );
@@ -355,7 +360,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
             case DATE -> "DATE";
             case TIME -> "TIME";
             case TIMESTAMP -> "TIMESTAMP";
-            case ARRAY -> "ARRAY";
+            case ARRAY -> "[]";
             default -> throw new GenericRuntimeException( "Unknown type: " + type.name() );
         };
     }
