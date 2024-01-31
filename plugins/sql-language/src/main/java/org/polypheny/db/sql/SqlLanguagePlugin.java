@@ -64,13 +64,11 @@ import org.polypheny.db.sql.language.SqlPostfixOperator;
 import org.polypheny.db.sql.language.SqlPrefixOperator;
 import org.polypheny.db.sql.language.SqlProcedureCallOperator;
 import org.polypheny.db.sql.language.SqlRankFunction;
-import org.polypheny.db.sql.language.SqlSampleSpec;
 import org.polypheny.db.sql.language.SqlSetOperator;
 import org.polypheny.db.sql.language.SqlSpecialOperator;
 import org.polypheny.db.sql.language.SqlUnnestOperator;
 import org.polypheny.db.sql.language.SqlUtil;
 import org.polypheny.db.sql.language.SqlValuesOperator;
-import org.polypheny.db.sql.language.SqlWindow;
 import org.polypheny.db.sql.language.SqlWithinGroupOperator;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.fun.OracleSqlOperatorTable;
@@ -175,7 +173,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
     private static boolean isInit = false;
 
 
-    /**
+    /*
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to be successfully loaded by manager.
      */
@@ -230,7 +228,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
 
     public static <T> T fun( Class<T> operatorTableClass, T defaultOperatorTable ) {
         final String fun = PolyphenyDbConnectionProperty.FUN.wrap( new Properties() ).getString();
-        if ( fun == null || fun.equals( "" ) || fun.equals( "standard" ) ) {
+        if ( fun == null || fun.isEmpty() || fun.equals( "standard" ) ) {
             return defaultOperatorTable;
         }
         final Collection<OperatorTable> tables = new LinkedHashSet<>();
@@ -286,32 +284,32 @@ public class SqlLanguagePlugin extends PolyPlugin {
 
         register( OperatorName.INTERSECT_ALL, new SqlSetOperator( "INTERSECT ALL", Kind.INTERSECT, 18, true ) );
 
-        /**
+        /*
          * The {@code MULTISET UNION DISTINCT} operator.
          */
         register( OperatorName.MULTISET_UNION_DISTINCT, new SqlMultisetSetOperator( "MULTISET UNION DISTINCT", 14, false ) );
 
-        /**
+        /*
          * The {@code MULTISET UNION [ALL]} operator.
          */
         register( OperatorName.MULTISET_UNION, new SqlMultisetSetOperator( "MULTISET UNION ALL", 14, true ) );
 
-        /**
+        /*
          * The {@code MULTISET EXCEPT DISTINCT} operator.
          */
         register( OperatorName.MULTISET_EXCEPT_DISTINCT, new SqlMultisetSetOperator( "MULTISET EXCEPT DISTINCT", 14, false ) );
 
-        /**
+        /*
          * The {@code MULTISET EXCEPT [ALL]} operator.
          */
         register( OperatorName.MULTISET_EXCEPT, new SqlMultisetSetOperator( "MULTISET EXCEPT ALL", 14, true ) );
 
-        /**
+        /*
          * The {@code MULTISET INTERSECT DISTINCT} operator.
          */
         register( OperatorName.MULTISET_INTERSECT_DISTINCT, new SqlMultisetSetOperator( "MULTISET INTERSECT DISTINCT", 18, false ) );
 
-        /**
+        /*
          * The {@code MULTISET INTERSECT [ALL]} operator.
          */
         register( OperatorName.MULTISET_INTERSECT, new SqlMultisetSetOperator( "MULTISET INTERSECT ALL", 18, true ) );
@@ -320,7 +318,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
         //                   BINARY OPERATORS
         //-------------------------------------------------------------
 
-        /**
+        /*
          * Logical <code>AND</code> operator.
          */
         register( OperatorName.AND, new SqlBinaryOperator(
@@ -332,59 +330,59 @@ public class SqlLanguagePlugin extends PolyPlugin {
                 InferTypes.BOOLEAN,
                 OperandTypes.BOOLEAN_BOOLEAN ) );
 
-        /**
+        /*
          * <code>AS</code> operator associates an expression in the SELECT clause with an alias.
          */
         register( OperatorName.AS, new SqlAsOperator() );
 
-        /**
+        /*
          * <code>ARGUMENT_ASSIGNMENT</code> operator (<code>=&lt;</code>) assigns an argument to a function call to a particular named parameter.
          */
         register( OperatorName.ARGUMENT_ASSIGNMENT, new SqlArgumentAssignmentOperator() );
 
-        /**
+        /*
          * <code>DEFAULT</code> operator indicates that an argument to a function call is to take its default value..
          */
         register( OperatorName.DEFAULT, new SqlDefaultOperator() );
 
-        /**
+        /*
          * <code>FILTER</code> operator filters which rows are included in an aggregate function.
          */
         register( OperatorName.FILTER, new SqlFilterOperator() );
 
-        /**
+        /*
          * <code>WITHIN_GROUP</code> operator performs aggregations on ordered data input.
          */
         register( OperatorName.WITHIN_GROUP, new SqlWithinGroupOperator() );
 
-        /**
+        /*
          * {@code CUBE} operator, occurs within {@code GROUP BY} clause or nested within a {@code GROUPING SETS}.
          */
         register( OperatorName.CUBE, new SqlRollupOperator( "CUBE", Kind.CUBE ) );
 
-        /**
+        /*
          * {@code ROLLUP} operator, occurs within {@code GROUP BY} clause or nested within a {@code GROUPING SETS}.
          */
         register( OperatorName.ROLLUP, new SqlRollupOperator( "ROLLUP", Kind.ROLLUP ) );
 
-        /**
+        /*
          * {@code GROUPING SETS} operator, occurs within {@code GROUP BY} clause or nested within a {@code GROUPING SETS}.
          */
         register( OperatorName.GROUPING_SETS, new SqlRollupOperator( "GROUPING SETS", Kind.GROUPING_SETS ) );
 
-        /**
+        /*
          * {@code GROUPING(c1 [, c2, ...])} function.
          *
          * Occurs in similar places to an aggregate function ({@code SELECT}, {@code HAVING} clause, etc. of an aggregate query), but not technically an aggregate function.
          */
         register( OperatorName.GROUPING, new SqlGroupingFunction( "GROUPING" ) );
 
-        /**
+        /*
          * {@code GROUP_ID()} function. (Oracle-specific.)
          */
         register( OperatorName.GROUP_ID, new SqlGroupIdFunction() );
 
-        /**
+        /*
          * {@code GROUPING_ID} function is a synonym for {@code GROUPING}.
          *
          * Some history. The {@code GROUPING} function is in the SQL standard, and originally supported only one argument. {@code GROUPING_ID} is not standard (though supported in Oracle and SQL Server)
@@ -394,12 +392,12 @@ public class SqlLanguagePlugin extends PolyPlugin {
          */
         register( OperatorName.GROUPING_ID, new SqlGroupingFunction( "GROUPING_ID" ) );
 
-        /**
+        /*
          * {@code EXTEND} operator.
          */
         register( OperatorName.EXTEND, new SqlExtendOperator() );
 
-        /**
+        /*
          * String concatenation operator, '<code>||</code>'.
          */
         register(
@@ -413,7 +411,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         null,
                         OperandTypes.STRING_SAME_SAME ) );
 
-        /**
+        /*
          * Arithmetic division operator, '<code>/</code>'.
          */
         register(
@@ -427,7 +425,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         InferTypes.FIRST_KNOWN,
                         OperandTypes.DIVISION_OPERATOR ) );
 
-        /**
+        /*
          * Arithmetic remainder operator, '<code>%</code>', an alternative to {@link #MOD} allowed if under certain conformance levels.
          *
          * @see SqlConformance#isPercentRemainderAllowed
@@ -443,17 +441,17 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         null,
                         OperandTypes.EXACT_NUMERIC_EXACT_NUMERIC ) );
 
-        /**
+        /*
          * The {@code RAND_INTEGER([seed, ] bound)} function, which yields a random integer, optionally with seed.
          */
         register( OperatorName.RAND_INTEGER, new SqlRandIntegerFunction() );
 
-        /**
+        /*
          * The {@code RAND([seed])} function, which yields a random double, optionally with seed.
          */
         register( OperatorName.RAND, new SqlRandFunction() );
 
-        /**
+        /*
          * Internal integer arithmetic division operator, '<code>/INT</code>'. This is only used to adjust scale for numerics. We distinguish it from user-requested division since some personalities want a floating-point computation,
          * whereas for the internal scaling use of division, we always want integer division.
          */
@@ -468,12 +466,12 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         InferTypes.FIRST_KNOWN,
                         OperandTypes.DIVISION_OPERATOR ) );
 
-        /**
+        /*
          * Dot operator, '<code>.</code>', used for referencing fields of records.
          */
         register( OperatorName.DOT, new SqlDotOperator() );
 
-        /**
+        /*
          * Logical equals operator, '<code>=</code>'.
          */
         register(
@@ -487,7 +485,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         InferTypes.FIRST_KNOWN,
                         OperandTypes.COMPARABLE_UNORDERED_COMPARABLE_UNORDERED ) );
 
-        /**
+        /*
          * Logical greater-than operator, '<code>&gt;</code>'.
          */
         register(
@@ -501,7 +499,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         InferTypes.FIRST_KNOWN,
                         OperandTypes.COMPARABLE_ORDERED_COMPARABLE_ORDERED ) );
 
-        /**
+        /*
          * <code>IS DISTINCT FROM</code> operator.
          */
         register(
@@ -515,7 +513,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         InferTypes.FIRST_KNOWN,
                         OperandTypes.COMPARABLE_UNORDERED_COMPARABLE_UNORDERED ) );
 
-        /**
+        /*
          * <code>IS NOT DISTINCT FROM</code> operator. Is equivalent to <code>NOT(x IS DISTINCT FROM y)</code>
          */
         register(
@@ -529,7 +527,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         InferTypes.FIRST_KNOWN,
                         OperandTypes.COMPARABLE_UNORDERED_COMPARABLE_UNORDERED ) );
 
-        /**
+        /*
          * The internal <code>$IS_DIFFERENT_FROM</code> operator is the same as the user-level {@link #IS_DISTINCT_FROM} in all respects except that the test for equality on character datatypes treats trailing spaces as significant.
          */
         register(
@@ -543,7 +541,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         InferTypes.FIRST_KNOWN,
                         OperandTypes.COMPARABLE_UNORDERED_COMPARABLE_UNORDERED ) );
 
-        /**
+        /*
          * Logical greater-than-or-equal operator, '<code>&gt;=</code>'.
          */
         register(
@@ -557,17 +555,17 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         InferTypes.FIRST_KNOWN,
                         OperandTypes.COMPARABLE_ORDERED_COMPARABLE_ORDERED ) );
 
-        /**
+        /*
          * <code>IN</code> operator tests for a value's membership in a sub-query or a list of values.
          */
         register( OperatorName.IN, new SqlInOperator( Kind.IN ) );
 
-        /**
+        /*
          * <code>NOT IN</code> operator tests for a value's membership in a sub-query or a list of values.
          */
         register( OperatorName.NOT_IN, new SqlInOperator( Kind.NOT_IN ) );
 
-        /**
+        /*
          * The <code>&lt; SOME</code> operator (synonymous with <code>&lt; ANY</code>).
          */
         register( OperatorName.SOME_LT, new SqlQuantifyOperator( Kind.SOME, Kind.LESS_THAN ) );
@@ -582,7 +580,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
 
         register( OperatorName.SOME_NE, new SqlQuantifyOperator( Kind.SOME, Kind.NOT_EQUALS ) );
 
-        /**
+        /*
          * The <code>&lt; ALL</code> operator.
          */
         register( OperatorName.ALL_LT, new SqlQuantifyOperator( Kind.ALL, Kind.LESS_THAN ) );
@@ -597,7 +595,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
 
         register( OperatorName.ALL_NE, new SqlQuantifyOperator( Kind.ALL, Kind.NOT_EQUALS ) );
 
-        /**
+        /*
          * Logical less-than operator, '<code>&lt;</code>'.
          */
         register(
@@ -611,7 +609,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         InferTypes.FIRST_KNOWN,
                         OperandTypes.COMPARABLE_ORDERED_COMPARABLE_ORDERED ) );
 
-        /**
+        /*
          * Logical less-than-or-equal operator, '<code>&lt;=</code>'.
          */
         register(
@@ -625,7 +623,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         InferTypes.FIRST_KNOWN,
                         OperandTypes.COMPARABLE_ORDERED_COMPARABLE_ORDERED ) );
 
-        /**
+        /*
          * Infix arithmetic minus operator, '<code>-</code>'.
          *
          * Its precedence is less than the prefix {@link #UNARY_PLUS +} and {@link #UNARY_MINUS -} operators.
@@ -643,7 +641,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         InferTypes.FIRST_KNOWN,
                         OperandTypes.MINUS_OPERATOR ) );
 
-        /**
+        /*
          * Arithmetic multiplication operator, '<code>*</code>'.
          */
         register(
@@ -657,7 +655,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         InferTypes.FIRST_KNOWN,
                         OperandTypes.MULTIPLY_OPERATOR ) );
 
-        /**
+        /*
          * Logical not-equals operator, '<code>&lt;&gt;</code>'.
          */
         register(
@@ -671,7 +669,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         InferTypes.FIRST_KNOWN,
                         OperandTypes.COMPARABLE_UNORDERED_COMPARABLE_UNORDERED ) );
 
-        /**
+        /*
          * Logical <code>OR</code> operator.
          */
         register(
@@ -685,7 +683,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         InferTypes.BOOLEAN,
                         OperandTypes.BOOLEAN_BOOLEAN ) );
 
-        /**
+        /*
          * Infix arithmetic plus operator, '<code>+</code>'.
          */
         register(
@@ -699,12 +697,12 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         InferTypes.FIRST_KNOWN,
                         OperandTypes.PLUS_OPERATOR ) );
 
-        /**
+        /*
          * Infix datetime plus operator, '<code>DATETIME + INTERVAL</code>'.
          */
         register( OperatorName.DATETIME_PLUS, new SqlDatetimePlusOperator() );
 
-        /**
+        /*
          * Multiset {@code MEMBER OF}, which returns whether a element belongs to a multiset.
          *
          * For example, the following returns <code>false</code>:
@@ -715,7 +713,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
          */
         register( OperatorName.MEMBER_OF, new SqlMultisetMemberOfOperator() );
 
-        /**
+        /*
          * Submultiset. Checks to see if an multiset is a sub-set of another multiset.
          *
          * For example, the following returns <code>false</code>:
@@ -1026,7 +1024,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         InferTypes.BOOLEAN,
                         OperandTypes.BOOLEAN ) );
 
-        /**
+        /*
          * Prefix arithmetic minus operator, '<code>-</code>'.
          *
          * Its precedence is greater than the infix '{@link #PLUS +}' and '{@link #MINUS -}' operators.
@@ -1041,7 +1039,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         InferTypes.RETURN_TYPE,
                         OperandTypes.NUMERIC_OR_INTERVAL ) );
 
-        /**
+        /*
          * Prefix arithmetic plus operator, '<code>+</code>'.
          *
          * Its precedence is greater than the infix '{@link #PLUS +}' and '{@link #MINUS -}' operators.
@@ -1056,7 +1054,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         InferTypes.RETURN_TYPE,
                         OperandTypes.NUMERIC_OR_INTERVAL ) );
 
-        /**
+        /*
          * Keyword which allows an identifier to be explicitly flagged as a table.
          * For example, <code>select * from (TABLE t)</code> or <code>TABLE t</code>. See also {@link #COLLECTION_TABLE}.
          */
@@ -1070,7 +1068,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         null,
                         null ) );
 
-        /**
+        /*
          * {@code FINAL} function to be used within {@code MATCH_RECOGNIZE}.
          */
         register(
@@ -1083,7 +1081,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         null,
                         OperandTypes.ANY ) );
 
-        /**
+        /*
          * {@code RUNNING} function to be used within {@code MATCH_RECOGNIZE}.
          */
         register(
@@ -1099,137 +1097,137 @@ public class SqlLanguagePlugin extends PolyPlugin {
         //-------------------------------------------------------------
         // AGGREGATE OPERATORS
         //-------------------------------------------------------------
-        /**
+        /*
          * <code>SUM</code> aggregate function.
          */
         register( OperatorName.SUM, new SqlSumAggFunction( null ) );
 
-        /**
+        /*
          * <code>COUNT</code> aggregate function.
          */
         register( OperatorName.COUNT, new SqlCountAggFunction( "COUNT" ) );
 
-        /**
+        /*
          * <code>APPROX_COUNT_DISTINCT</code> aggregate function.
          */
         register( OperatorName.APPROX_COUNT_DISTINCT, new SqlCountAggFunction( "APPROX_COUNT_DISTINCT" ) );
 
-        /**
+        /*
          * <code>MIN</code> aggregate function.
          */
         register( OperatorName.MIN, new SqlMinMaxAggFunction( Kind.MIN ) );
 
-        /**
+        /*
          * <code>MAX</code> aggregate function.
          */
         register( OperatorName.MAX, new SqlMinMaxAggFunction( Kind.MAX ) );
 
-        /**
+        /*
          * <code>LAST_VALUE</code> aggregate function.
          */
         register( OperatorName.LAST_VALUE, new SqlFirstLastValueAggFunction( Kind.LAST_VALUE ) );
 
-        /**
+        /*
          * <code>ANY_VALUE</code> aggregate function.
          */
         register( OperatorName.ANY_VALUE, new SqlAnyValueAggFunction( Kind.ANY_VALUE ) );
 
-        /**
+        /*
          * <code>FIRST_VALUE</code> aggregate function.
          */
         register( OperatorName.FIRST_VALUE, new SqlFirstLastValueAggFunction( Kind.FIRST_VALUE ) );
 
-        /**
+        /*
          * <code>NTH_VALUE</code> aggregate function.
          */
         register( OperatorName.NTH_VALUE, new SqlNthValueAggFunction( Kind.NTH_VALUE ) );
 
-        /**
+        /*
          * <code>LEAD</code> aggregate function.
          */
         register( OperatorName.LEAD, new SqlLeadLagAggFunction( Kind.LEAD ) );
 
-        /**
+        /*
          * <code>LAG</code> aggregate function.
          */
         register( OperatorName.LAG, new SqlLeadLagAggFunction( Kind.LAG ) );
 
-        /**
+        /*
          * <code>NTILE</code> aggregate function.
          */
         register( OperatorName.NTILE, new SqlNtileAggFunction() );
 
-        /**
+        /*
          * <code>SINGLE_VALUE</code> aggregate function.
          */
         register( OperatorName.SINGLE_VALUE, new SqlSingleValueAggFunction( null ) );
 
-        /**
+        /*
          * <code>AVG</code> aggregate function.
          */
         register( OperatorName.AVG, new SqlAvgAggFunction( Kind.AVG ) );
 
-        /**
+        /*
          * <code>STDDEV_POP</code> aggregate function.
          */
         register( OperatorName.STDDEV_POP, new SqlAvgAggFunction( Kind.STDDEV_POP ) );
 
-        /**
+        /*
          * <code>REGR_COUNT</code> aggregate function.
          */
         register( OperatorName.REGR_COUNT, new SqlRegrCountAggFunction( Kind.REGR_COUNT ) );
 
-        /**
+        /*
          * <code>REGR_SXX</code> aggregate function.
          */
         register( OperatorName.REGR_SXX, new SqlCovarAggFunction( Kind.REGR_SXX ) );
 
-        /**
+        /*
          * <code>REGR_SYY</code> aggregate function.
          */
         register( OperatorName.REGR_SYY, new SqlCovarAggFunction( Kind.REGR_SYY ) );
 
-        /**
+        /*
          * <code>COVAR_POP</code> aggregate function.
          */
         register( OperatorName.COVAR_POP, new SqlCovarAggFunction( Kind.COVAR_POP ) );
 
-        /**
+        /*
          * <code>COVAR_SAMP</code> aggregate function.
          */
         register( OperatorName.COVAR_SAMP, new SqlCovarAggFunction( Kind.COVAR_SAMP ) );
 
-        /**
+        /*
          * <code>STDDEV_SAMP</code> aggregate function.
          */
         register( OperatorName.STDDEV_SAMP, new SqlAvgAggFunction( Kind.STDDEV_SAMP ) );
 
-        /**
+        /*
          * <code>STDDEV</code> aggregate function.
          */
         register( OperatorName.STDDEV, new SqlAvgAggFunction( "STDDEV", Kind.STDDEV_SAMP ) );
 
-        /**
+        /*
          * <code>VAR_POP</code> aggregate function.
          */
         register( OperatorName.VAR_POP, new SqlAvgAggFunction( Kind.VAR_POP ) );
 
-        /**
+        /*
          * <code>VAR_SAMP</code> aggregate function.
          */
         register( OperatorName.VAR_SAMP, new SqlAvgAggFunction( Kind.VAR_SAMP ) );
 
-        /**
+        /*
          * <code>VARIANCE</code> aggregate function.
          */
         register( OperatorName.VARIANCE, new SqlAvgAggFunction( "VARIANCE", Kind.VAR_SAMP ) );
 
-        /**
+        /*
          * <code>BIT_AND</code> aggregate function.
          */
         register( OperatorName.BIT_AND, new SqlBitOpAggFunction( Kind.BIT_AND ) );
 
-        /**
+        /*
          * <code>BIT_OR</code> aggregate function.
          */
         register( OperatorName.BIT_OR, new SqlBitOpAggFunction( Kind.BIT_OR ) );
@@ -1237,12 +1235,12 @@ public class SqlLanguagePlugin extends PolyPlugin {
         //-------------------------------------------------------------
         // WINDOW Aggregate Functions
         //-------------------------------------------------------------
-        /**
+        /*
          * <code>HISTOGRAM</code> aggregate function support. Used by window aggregate versions of MIN/MAX
          */
         register( OperatorName.HISTOGRAM_AGG, new SqlHistogramAggFunction( null ) );
 
-        /**
+        /*
          * <code>HISTOGRAM_MIN</code> window aggregate function.
          */
         register(
@@ -1255,7 +1253,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         OperandTypes.NUMERIC_OR_STRING,
                         FunctionCategory.NUMERIC ) );
 
-        /**
+        /*
          * <code>HISTOGRAM_MAX</code> window aggregate function.
          */
         register(
@@ -1268,7 +1266,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         OperandTypes.NUMERIC_OR_STRING,
                         FunctionCategory.NUMERIC ) );
 
-        /**
+        /*
          * <code>HISTOGRAM_FIRST_VALUE</code> window aggregate function.
          */
         register(
@@ -1281,7 +1279,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         OperandTypes.NUMERIC_OR_STRING,
                         FunctionCategory.NUMERIC ) );
 
-        /**
+        /*
          * <code>HISTOGRAM_LAST_VALUE</code> window aggregate function.
          */
         register(
@@ -1294,7 +1292,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         OperandTypes.NUMERIC_OR_STRING,
                         FunctionCategory.NUMERIC ) );
 
-        /**
+        /*
          * <code>SUM0</code> aggregate function.
          */
         register( OperatorName.SUM0, new SqlSumEmptyIsZeroAggFunction() );
@@ -1302,27 +1300,27 @@ public class SqlLanguagePlugin extends PolyPlugin {
         //-------------------------------------------------------------
         // WINDOW Rank Functions
         //-------------------------------------------------------------
-        /**
+        /*
          * <code>CUME_DIST</code> window function.
          */
         register( OperatorName.CUME_DIST, new SqlRankFunction( Kind.CUME_DIST, ReturnTypes.FRACTIONAL_RANK, true ) );
 
-        /**
+        /*
          * <code>DENSE_RANK</code> window function.
          */
         register( OperatorName.DENSE_RANK, new SqlRankFunction( Kind.DENSE_RANK, ReturnTypes.RANK, true ) );
 
-        /**
+        /*
          * <code>PERCENT_RANK</code> window function.
          */
         register( OperatorName.PERCENT_RANK, new SqlRankFunction( Kind.PERCENT_RANK, ReturnTypes.FRACTIONAL_RANK, true ) );
 
-        /**
+        /*
          * <code>RANK</code> window function.
          */
         register( OperatorName.RANK, new SqlRankFunction( Kind.RANK, ReturnTypes.RANK, true ) );
 
-        /**
+        /*
          * <code>ROW_NUMBER</code> window function.
          */
         register( OperatorName.ROW_NUMBER, new SqlRankFunction( Kind.ROW_NUMBER, ReturnTypes.RANK, false ) );
@@ -1332,7 +1330,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
         //-------------------------------------------------------------
         register( OperatorName.ROW, new SqlRowOperator( "ROW" ) );
 
-        /**
+        /*
          * A special operator for the subtraction of two DATETIMEs. The format of DATETIME subtraction is:
          *
          * <blockquote><code>"(" &lt;datetime&gt; "-" &lt;datetime&gt; ")" &lt;interval qualifier&gt;</code></blockquote>
@@ -1341,52 +1339,52 @@ public class SqlLanguagePlugin extends PolyPlugin {
          */
         register( OperatorName.MINUS_DATE, new SqlDatetimeSubtractionOperator() );
 
-        /**
+        /*
          * The MULTISET Value Constructor. e.g. "<code>MULTISET[1,2,3]</code>".
          */
         register( OperatorName.MULTISET_VALUE, new SqlMultisetValueConstructor() );
 
-        /**
+        /*
          * The MULTISET Query Constructor. e.g. "<code>SELECT dname, MULTISET(SELECT FROM emp WHERE deptno", dept.deptno) FROM dept</code>".
          */
         register( OperatorName.MULTISET_QUERY, new SqlMultisetQueryConstructor() );
 
-        /**
+        /*
          * The ARRAY Query Constructor. e.g. "<code>SELECT dname, ARRAY(SELECT FROM emp WHERE deptno", dept.deptno) FROM dept</code>".
          */
         register( OperatorName.ARRAY_QUERY, new SqlArrayQueryConstructor() );
 
-        /**
+        /*
          * The MAP Query Constructor. e.g. "<code>MAP(SELECT empno, deptno FROM emp)</code>".
          */
         register( OperatorName.MAP_QUERY, new SqlMapQueryConstructor() );
 
-        /**
+        /*
          * The CURSOR constructor. e.g. "<code>SELECT * FROM TABLE(DEDUP(CURSOR(SELECT * FROM EMPS), 'name'))</code>".
          */
         register( OperatorName.CURSOR, new SqlCursorConstructor() );
 
-        /**
+        /*
          * The COLUMN_LIST constructor. e.g. the ROW() call in "<code>SELECT * FROM TABLE(DEDUP(CURSOR(SELECT * FROM EMPS), ROW(name, empno)))</code>".
          */
         register( OperatorName.COLUMN_LIST, new SqlColumnListConstructor() );
 
-        /**
+        /*
          * The <code>UNNEST</code> operator.
          */
         register( OperatorName.UNNEST, new SqlUnnestOperator( false ) );
 
-        /**
+        /*
          * The <code>UNNEST WITH ORDINALITY</code> operator.
          */
         register( OperatorName.UNNEST_WITH_ORDINALITY, new SqlUnnestOperator( true ) );
 
-        /**
+        /*
          * The <code>LATERAL</code> operator.
          */
         register( OperatorName.LATERAL, new SqlLateralOperator( Kind.LATERAL ) );
 
-        /**
+        /*
          * The "table function derived table" operator, which a table-valued function into a relation, e.g. "<code>SELECT * FROM TABLE(ramp(5))</code>".
          *
          * This operator has function syntax (with one argument), whereas {@link #EXPLICIT_TABLE} is a prefix operator.
@@ -1453,7 +1451,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
 
         register( OperatorName.SIMILAR_TO, new SqlLikeOperator( "SIMILAR TO", Kind.SIMILAR, false ) );
 
-        /**
+        /*
          * Internal operator used to represent the ESCAPE clause of a LIKE or SIMILAR TO expression.
          */
         register( OperatorName.ESCAPE, new SqlSpecialOperator( "ESCAPE", Kind.ESCAPE, 0 ) );
@@ -1464,7 +1462,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
 
         register( OperatorName.NEW, new SqlNewOperator() );
 
-        /**
+        /*
          * The <code>OVER</code> operator, which applies an aggregate functions to a {@link SqlWindow window}.
          *
          * Operands are as follows:
@@ -1476,7 +1474,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
          */
         register( OperatorName.OVER, new SqlOverOperator() );
 
-        /**
+        /*
          * An <code>REINTERPRET</code> operator is internal to the planner. When the physical storage of two types is the same, this operator may be used to reinterpret values of one type as the other. This operator is similar to a cast,
          * except that it does not alter the data value. Like a regular cast it accepts one operand and stores the target type as the return type. It performs an overflow check if it has <i>any</i> second operand, whether true or not.
          */
@@ -1493,24 +1491,24 @@ public class SqlLanguagePlugin extends PolyPlugin {
         //                   FUNCTIONS
         //-------------------------------------------------------------
 
-        /**
+        /*
          * distance function: <code>DISTANCE(column, ARRAY[], METRIC, WEIGHTS)</code>.
          */
         register( OperatorName.DISTANCE, new SqlDistanceFunction() );
 
-        /**
+        /*
          * Get metadata of multimedia files
          */
         register( OperatorName.META, new SqlMetaFunction() );
 
-        /**
+        /*
          * The character substring function: <code>SUBSTRING(string FROM start [FOR length])</code>.
          *
          * If the length parameter is a constant, the length of the result is the minimum of the length of the input and that length. Otherwise it is the length of the input.
          */
         register( OperatorName.SUBSTRING, new SqlSubstringFunction() );
 
-        /**
+        /*
          * The {@code REPLACE(string, search, replace)} function. Not standard SQL, but in Oracle and Postgres.
          */
         register(
@@ -1525,7 +1523,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
 
         register( OperatorName.CONVERT, new SqlConvertFunction( "CONVERT" ) );
 
-        /**
+        /*
          * The <code>TRANSLATE(<i>char_value</i> USING <i>translation_name</i>)</code> function alters the character set of a string value from one base character set to another.
          *
          * It is defined in the SQL standard. See also non-standard {@link OracleSqlOperatorTable#TRANSLATE3}.
@@ -1534,7 +1532,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
 
         register( OperatorName.OVERLAY, new SqlOverlayFunction() );
 
-        /**
+        /*
          * The "TRIM" function.
          */
         register( OperatorName.TRIM, SqlTrimFunction.INSTANCE );
@@ -1591,7 +1589,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         OperandTypes.CHARACTER,
                         FunctionCategory.STRING ) );
 
-        /**
+        /*
          * Uses SqlOperatorTable.useDouble for its return type since we don't know what the result type will be by just looking at the operand types. For example POW(int, int) can return a non integer if the second operand is negative.
          */
         register(
@@ -1614,7 +1612,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         OperandTypes.NUMERIC,
                         FunctionCategory.NUMERIC ) );
 
-        /**
+        /*
          * Arithmetic remainder function {@code MOD}.
          *
          * @see #PERCENT_REMAINDER
@@ -1808,7 +1806,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         ReturnTypes.DOUBLE,
                         FunctionCategory.NUMERIC ) );
 
-        /**
+        /*
          * {@code FIRST} function to be used within {@code MATCH_RECOGNIZE}.
          */
         register(
@@ -1821,7 +1819,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         OperandTypes.ANY_NUMERIC,
                         FunctionCategory.MATCH_RECOGNIZE ) );
 
-        /**
+        /*
          * {@code LAST} function to be used within {@code MATCH_RECOGNIZE}.
          */
         register(
@@ -1834,7 +1832,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         OperandTypes.ANY_NUMERIC,
                         FunctionCategory.MATCH_RECOGNIZE ) );
 
-        /**
+        /*
          * {@code PREV} function to be used within {@code MATCH_RECOGNIZE}.
          */
         register(
@@ -1847,7 +1845,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         OperandTypes.ANY_NUMERIC,
                         FunctionCategory.MATCH_RECOGNIZE ) );
 
-        /**
+        /*
          * {@code NEXT} function to be used within {@code MATCH_RECOGNIZE}.
          */
         register(
@@ -1860,7 +1858,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         OperandTypes.ANY_NUMERIC,
                         FunctionCategory.MATCH_RECOGNIZE ) );
 
-        /**
+        /*
          * {@code CLASSIFIER} function to be used within {@code MATCH_RECOGNIZE}.
          */
         register(
@@ -1873,7 +1871,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         OperandTypes.NILADIC,
                         FunctionCategory.MATCH_RECOGNIZE ) );
 
-        /**
+        /*
          * {@code MATCH_NUMBER} function to be used within {@code MATCH_RECOGNIZE}.
          */
         register(
@@ -1888,97 +1886,97 @@ public class SqlLanguagePlugin extends PolyPlugin {
 
         register( OperatorName.NULLIF, new SqlNullifFunction() );
 
-        /**
+        /*
          * The COALESCE builtin function.
          */
         register( OperatorName.COALESCE, new SqlCoalesceFunction() );
 
-        /**
+        /*
          * The <code>FLOOR</code> function.
          */
         register( OperatorName.FLOOR, new SqlFloorFunction( Kind.FLOOR ) );
 
-        /**
+        /*
          * The <code>CEIL</code> function.
          */
         register( OperatorName.CEIL, new SqlFloorFunction( Kind.CEIL ) );
 
-        /**
+        /*
          * The <code>USER</code> function.
          */
         register( OperatorName.USER, new SqlStringContextVariable( "USER" ) );
 
-        /**
+        /*
          * The <code>CURRENT_USER</code> function.
          */
         register( OperatorName.CURRENT_USER, new SqlStringContextVariable( "CURRENT_USER" ) );
 
-        /**
+        /*
          * The <code>SESSION_USER</code> function.
          */
         register( OperatorName.SESSION_USER, new SqlStringContextVariable( "SESSION_USER" ) );
 
-        /**
+        /*
          * The <code>SYSTEM_USER</code> function.
          */
         register( OperatorName.SYSTEM_USER, new SqlStringContextVariable( "SYSTEM_USER" ) );
 
-        /**
+        /*
          * The <code>CURRENT_PATH</code> function.
          */
         register( OperatorName.CURRENT_PATH, new SqlStringContextVariable( "CURRENT_PATH" ) );
 
-        /**
+        /*
          * The <code>CURRENT_ROLE</code> function.
          */
         register( OperatorName.CURRENT_ROLE, new SqlStringContextVariable( "CURRENT_ROLE" ) );
 
-        /**
+        /*
          * The <code>CURRENT_CATALOG</code> function.
          */
         register( OperatorName.CURRENT_CATALOG, new SqlStringContextVariable( "CURRENT_CATALOG" ) );
 
-        /**
+        /*
          * The <code>CURRENT_SCHEMA</code> function.
          */
         register( OperatorName.CURRENT_SCHEMA, new SqlStringContextVariable( "CURRENT_SCHEMA" ) );
 
-        /**
+        /*
          * The <code>LOCALTIME [(<i>precision</i>)]</code> function.
          */
         register( OperatorName.LOCALTIME, new SqlAbstractTimeFunction( "LOCALTIME", PolyType.TIME ) );
 
-        /**
+        /*
          * The <code>LOCALTIMESTAMP [(<i>precision</i>)]</code> function.
          */
         register( OperatorName.LOCALTIMESTAMP, new SqlAbstractTimeFunction( "LOCALTIMESTAMP", PolyType.TIMESTAMP ) );
 
-        /**
+        /*
          * The <code>CURRENT_TIME [(<i>precision</i>)]</code> function.
          */
         register( OperatorName.CURRENT_TIME, new SqlAbstractTimeFunction( "CURRENT_TIME", PolyType.TIME ) );
 
-        /**
+        /*
          * The <code>CURRENT_TIMESTAMP [(<i>precision</i>)]</code> function.
          */
         register( OperatorName.CURRENT_TIMESTAMP, new SqlAbstractTimeFunction( "CURRENT_TIMESTAMP", PolyType.TIMESTAMP ) );
 
-        /**
+        /*
          * The <code>CURRENT_DATE</code> function.
          */
         register( OperatorName.CURRENT_DATE, new SqlCurrentDateFunction() );
 
-        /**
+        /*
          * The <code>TIMESTAMPADD</code> function.
          */
         register( OperatorName.TIMESTAMP_ADD, new SqlTimestampAddFunction() );
 
-        /**
+        /*
          * The <code>TIMESTAMPDIFF</code> function.
          */
         register( OperatorName.TIMESTAMP_DIFF, new SqlTimestampDiffFunction() );
 
-        /**
+        /*
          * Use of the <code>IN_FENNEL</code> operator forces the argument to be evaluated in Fennel. Otherwise acts as identity function.
          */
         register(
@@ -1991,7 +1989,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         OperandTypes.ANY,
                         FunctionCategory.SYSTEM ) );
 
-        /**
+        /*
          * The SQL <code>CAST</code> operator.
          *
          * The SQL syntax is
@@ -2008,73 +2006,73 @@ public class SqlLanguagePlugin extends PolyPlugin {
          */
         register( OperatorName.CAST, new SqlCastFunction() );
 
-        /**
+        /*
          * The SQL <code>EXTRACT</code> operator. Extracts a specified field value from a DATETIME or an INTERVAL. E.g.<br>
          * <code>EXTRACT(HOUR FROM INTERVAL '364 23:59:59')</code> returns <code>23</code>
          */
         register( OperatorName.EXTRACT, new SqlExtractFunction() );
 
-        /**
+        /*
          * The SQL <code>YEAR</code> operator. Returns the Year from a DATETIME  E.g.<br>
          * <code>YEAR(date '2008-9-23')</code> returns <code>2008</code>
          */
         register( OperatorName.YEAR, new SqlDatePartFunction( "YEAR", TimeUnit.YEAR ) );
 
-        /**
+        /*
          * The SQL <code>QUARTER</code> operator. Returns the Quarter from a DATETIME  E.g.<br>
          * <code>QUARTER(date '2008-9-23')</code> returns <code>3</code>
          */
         register( OperatorName.QUARTER, new SqlDatePartFunction( "QUARTER", TimeUnit.QUARTER ) );
 
-        /**
+        /*
          * The SQL <code>MONTH</code> operator. Returns the Month from a DATETIME  E.g.<br>
          * <code>MONTH(date '2008-9-23')</code> returns <code>9</code>
          */
         register( OperatorName.MONTH, new SqlDatePartFunction( "MONTH", TimeUnit.MONTH ) );
 
-        /**
+        /*
          * The SQL <code>WEEK</code> operator. Returns the Week from a DATETIME  E.g.<br>
          * <code>WEEK(date '2008-9-23')</code> returns <code>39</code>
          */
         register( OperatorName.WEEK, new SqlDatePartFunction( "WEEK", TimeUnit.WEEK ) );
 
-        /**
+        /*
          * The SQL <code>DAYOFYEAR</code> operator. Returns the DOY from a DATETIME  E.g.<br>
          * <code>DAYOFYEAR(date '2008-9-23')</code> returns <code>267</code>
          */
         register( OperatorName.DAYOFYEAR, new SqlDatePartFunction( "DAYOFYEAR", TimeUnit.DOY ) );
 
-        /**
+        /*
          * The SQL <code>DAYOFMONTH</code> operator. Returns the Day from a DATETIME  E.g.<br>
          * <code>DAYOFMONTH(date '2008-9-23')</code> returns <code>23</code>
          */
         register( OperatorName.DAYOFMONTH, new SqlDatePartFunction( "DAYOFMONTH", TimeUnit.DAY ) );
 
-        /**
+        /*
          * The SQL <code>DAYOFWEEK</code> operator. Returns the DOW from a DATETIME  E.g.<br>
          * <code>DAYOFWEEK(date '2008-9-23')</code> returns <code>2</code>
          */
         register( OperatorName.DAYOFWEEK, new SqlDatePartFunction( "DAYOFWEEK", TimeUnit.DOW ) );
 
-        /**
+        /*
          * The SQL <code>HOUR</code> operator. Returns the Hour from a DATETIME  E.g.<br>
          * <code>HOUR(timestamp '2008-9-23 01:23:45')</code> returns <code>1</code>
          */
         register( OperatorName.HOUR, new SqlDatePartFunction( "HOUR", TimeUnit.HOUR ) );
 
-        /**
+        /*
          * The SQL <code>MINUTE</code> operator. Returns the Minute from a DATETIME  E.g.<br>
          * <code>MINUTE(timestamp '2008-9-23 01:23:45')</code> returns <code>23</code>
          */
         register( OperatorName.MINUTE, new SqlDatePartFunction( "MINUTE", TimeUnit.MINUTE ) );
 
-        /**
+        /*
          * The SQL <code>SECOND</code> operator. Returns the Second from a DATETIME  E.g.<br>
          * <code>SECOND(timestamp '2008-9-23 01:23:45')</code> returns <code>45</code>
          */
         register( OperatorName.SECOND, new SqlDatePartFunction( "SECOND", TimeUnit.SECOND ) );
 
-        /**
+        /*
          * The ELEMENT operator, used to convert a multiset with only one item to a "regular" type. Example ... log(ELEMENT(MULTISET[1])) ...
          */
         register(
@@ -2087,7 +2085,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         OperandTypes.COLLECTION,
                         FunctionCategory.SYSTEM ) );
 
-        /**
+        /*
          * The item operator {@code [ ... ]}, used to access a given element of an array or map. For example, {@code myArray[3]} or {@code "myMap['foo']"}.
          *
          * The SQL standard calls the ARRAY variant a &lt;array element reference&gt;. Index is 1-based. The standard says to raise "data exception - array element error"
@@ -2097,17 +2095,17 @@ public class SqlLanguagePlugin extends PolyPlugin {
          */
         register( OperatorName.ITEM, new SqlItemOperator() );
 
-        /**
+        /*
          * The ARRAY Value Constructor. e.g. "<code>ARRAY[1, 2, 3]</code>".
          */
         register( OperatorName.ARRAY_VALUE_CONSTRUCTOR, new SqlArrayValueConstructor() );
 
-        /**
+        /*
          * The MAP Value Constructor, e.g. "<code>MAP['washington', 1, 'obama', 44]</code>".
          */
         register( OperatorName.MAP_VALUE_CONSTRUCTOR, new SqlMapValueConstructor() );
 
-        /**
+        /*
          * The internal "$SLICE" operator takes a multiset of records and returns a multiset of the first column of those records.
          *
          * It is introduced when multisets of scalar types are created, in order to keep types consistent. For example, <code>MULTISET [5]</code> has type <code>INTEGER MULTISET</code> but is translated to an expression of type
@@ -2128,7 +2126,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         OperandTypes.RECORD_COLLECTION ) {
                 } );
 
-        /**
+        /*
          * The internal "$ELEMENT_SLICE" operator returns the first field of the only element of a multiset.
          *
          * It is introduced when multisets of scalar types are created, in order to keep types consistent. For example, <code>ELEMENT(MULTISET [5])</code> is translated to <code>$ELEMENT_SLICE(MULTISET (VALUES ROW (5 EXPR$0))</code>
@@ -2152,7 +2150,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                     }
                 } );
 
-        /**
+        /*
          * The internal "$SCALAR_QUERY" operator returns a scalar value from a record type. It assumes the record type only has one field, and returns that field as the output.
          */
         register(
@@ -2180,14 +2178,14 @@ public class SqlLanguagePlugin extends PolyPlugin {
                     }
                 } );
 
-        /**
+        /*
          * The internal {@code $STRUCT_ACCESS} operator is used to access a field of a record.
          *
          * In contrast with {@link #DOT} operator, it never appears in an {@link SqlNode} tree and allows to access fields by position and not by name.
          */
         register( OperatorName.STRUCT_ACCESS, new SqlInternalOperator( "$STRUCT_ACCESS", Kind.OTHER ) );
 
-        /**
+        /*
          * The CARDINALITY operator, used to retrieve the number of elements in a MULTISET, ARRAY or MAP.
          */
         register(
@@ -2200,7 +2198,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         OperandTypes.COLLECTION_OR_MAP,
                         FunctionCategory.SYSTEM ) );
 
-        /**
+        /*
          * The COLLECT operator. Multiset aggregator function.
          */
         register(
@@ -2218,7 +2216,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         Optionality.OPTIONAL ) {
                 } );
 
-        /**
+        /*
          * The FUSION operator. Multiset aggregator function.
          */
         register(
@@ -2236,17 +2234,17 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         Optionality.FORBIDDEN ) {
                 } );
 
-        /**
+        /*
          * The sequence next value function: <code>NEXT VALUE FOR sequence</code>
          */
         register( OperatorName.NEXT_VALUE, new SqlSequenceValueOperator( Kind.NEXT_VALUE ) );
 
-        /**
+        /*
          * The sequence current value function: <code>CURRENT VALUE FOR sequence</code>
          */
         register( OperatorName.CURRENT_VALUE, new SqlSequenceValueOperator( Kind.CURRENT_VALUE ) );
 
-        /**
+        /*
          * The <code>TABLESAMPLE</code> operator.
          *
          * Examples:
@@ -2277,7 +2275,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                     }
                 } );
 
-        /**
+        /*
          * The {@code TUMBLE} group function.
          */
         register(
@@ -2298,17 +2296,17 @@ public class SqlLanguagePlugin extends PolyPlugin {
                     }
                 } );
 
-        /**
+        /*
          * The {@code TUMBLE_START} auxiliary function of the {@code TUMBLE} group function.
          */
         register( OperatorName.TUMBLE_START, OperatorRegistry.get( OperatorName.TUMBLE, SqlGroupedWindowFunction.class ).auxiliary( Kind.TUMBLE_START ) );
 
-        /**
+        /*
          * The {@code TUMBLE_END} auxiliary function of the {@code TUMBLE} group function.
          */
         register( OperatorName.TUMBLE_END, OperatorRegistry.get( OperatorName.TUMBLE, SqlGroupedWindowFunction.class ).auxiliary( Kind.TUMBLE_END ) );
 
-        /**
+        /*
          * The {@code HOP} group function.
          */
         register(
@@ -2330,17 +2328,17 @@ public class SqlLanguagePlugin extends PolyPlugin {
                     }
                 } );
 
-        /**
+        /*
          * The {@code HOP_START} auxiliary function of the {@code HOP} group function.
          */
         register( OperatorName.HOP_START, OperatorRegistry.get( OperatorName.HOP, SqlGroupedWindowFunction.class ).auxiliary( Kind.HOP_START ) );
 
-        /**
+        /*
          * The {@code HOP_END} auxiliary function of the {@code HOP} group function.
          */
         register( OperatorName.HOP_END, OperatorRegistry.get( OperatorName.HOP, SqlGroupedWindowFunction.class ).auxiliary( Kind.HOP_END ) );
 
-        /**
+        /*
          * The {@code SESSION} group function.
          */
         register(
@@ -2362,17 +2360,17 @@ public class SqlLanguagePlugin extends PolyPlugin {
                     }
                 } );
 
-        /**
+        /*
          * The {@code SESSION_START} auxiliary function of the {@code SESSION} group function.
          */
         register( OperatorName.SESSION_START, OperatorRegistry.get( OperatorName.SESSION, SqlGroupedWindowFunction.class ).auxiliary( Kind.SESSION_START ) );
 
-        /**
+        /*
          * The {@code SESSION_END} auxiliary function of the {@code SESSION} group function.
          */
         register( OperatorName.SESSION_END, OperatorRegistry.get( OperatorName.SESSION, SqlGroupedWindowFunction.class ).auxiliary( Kind.SESSION_END ) );
 
-        /**
+        /*
          * {@code |} operator to create alternate patterns within {@code MATCH_RECOGNIZE}.
          *
          * If {@code p1} and {@code p2} are patterns then {@code p1 | p2} is a pattern that matches {@code p1} or {@code p2}.
@@ -2388,7 +2386,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         null,
                         null ) );
 
-        /**
+        /*
          * Operator to concatenate patterns within {@code MATCH_RECOGNIZE}.
          *
          * If {@code p1} and {@code p2} are patterns then {@code p1 p2} is a pattern that matches {@code p1} followed by {@code p2}.
@@ -2404,7 +2402,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         null,
                         null ) );
 
-        /**
+        /*
          * Operator to quantify patterns within {@code MATCH_RECOGNIZE}.
          *
          * If {@code p} is a pattern then {@code p{3, 5}} is a pattern that matches between 3 and 5 occurrences of {@code p}.
@@ -2446,7 +2444,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                     }
                 } );
 
-        /**
+        /*
          * {@code PERMUTE} operator to combine patterns within {@code MATCH_RECOGNIZE}.
          *
          * If {@code p1} and {@code p2} are patterns then {@code PERMUTE (p1, p2)} is a pattern that matches all permutations of {@code p1} and {@code p2}.
@@ -2469,7 +2467,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                     }
                 } );
 
-        /**
+        /*
          * {@code EXCLUDE} operator within {@code MATCH_RECOGNIZE}.
          *
          * If {@code p} is a pattern then {@code {- p -} }} is a pattern that excludes {@code p} from the output.

@@ -97,6 +97,7 @@ import org.polypheny.db.sql.language.SqlNodeList;
 import org.polypheny.db.sql.language.SqlSelect;
 import org.polypheny.db.sql.language.SqlSetOperator;
 import org.polypheny.db.sql.language.SqlUpdate;
+import org.polypheny.db.sql.language.fun.SqlMinMaxAggFunction;
 import org.polypheny.db.sql.language.fun.SqlRowOperator;
 import org.polypheny.db.sql.language.fun.SqlSingleValueAggFunction;
 import org.polypheny.db.sql.language.validate.SqlValidatorUtil;
@@ -163,6 +164,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements AlgPro
         throw new AssertionError( "Need to implement " + e.getClass().getName() );
     }
 
+
     public Result visit( Join e ) {
         final Result leftResult = visitChild( 0, e.getLeft() ).resetAlias();
         final Result rightResult = visitChild( 1, e.getRight() ).resetAlias();
@@ -200,7 +202,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements AlgPro
         parseCorrelTable( e, x );
         if ( input instanceof Aggregate ) {
             final Builder builder;
-            if ( ((Aggregate) input).getInput() instanceof Project ) {
+            if ( input.unwrap( Aggregate.class ).orElseThrow().getInput() instanceof Project ) {
                 builder = x.builder( e, true );
                 builder.clauses.add( Clause.HAVING );
             } else {
@@ -256,6 +258,9 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements AlgPro
             if ( aggCall.getAggregation() instanceof SqlSingleValueAggFunction ) {
                 aggCallSqlNode = dialect.rewriteSingleValueExpr( aggCallSqlNode );
             }
+            if ( aggCall.getAggregation() instanceof SqlMinMaxAggFunction ) {
+                aggCallSqlNode = dialect.rewriteMinMax( aggCallSqlNode );
+            }
             addSelect( selectList, aggCallSqlNode, e.getTupleType() );
         }
         builder.setSelect( new SqlNodeList( selectList, POS ) );
@@ -265,6 +270,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements AlgPro
         }
         return builder.result();
     }
+
 
     public Result visit( RelScan<?> e ) {
         return result( new SqlIdentifier( List.of( e.getEntity().unwrap( LogicalTable.class ).orElseThrow().getNamespaceName(), e.getEntity().name ), ParserPos.ZERO ),

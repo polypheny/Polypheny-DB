@@ -77,29 +77,29 @@ public class Cql2AlgConverter {
      */
     public AlgRoot convert2Alg( AlgBuilder algBuilder, RexBuilder rexBuilder ) {
         algBuilder = generateScan( algBuilder, rexBuilder );
-        if ( cqlQuery.filters != null ) {
+        if ( cqlQuery.filters() != null ) {
             algBuilder = generateProjections( algBuilder, rexBuilder );
             algBuilder = generateFilters( algBuilder, rexBuilder );
-            if ( cqlQuery.projections.exists() ) {
-                algBuilder = cqlQuery.projections.convert2Rel( tableScanColumnOrdinalities, algBuilder, rexBuilder );
-                projectionColumnOrdinalities.putAll( cqlQuery.projections.getProjectionColumnOrdinalities() );
+            if ( cqlQuery.projections().exists() ) {
+                algBuilder = cqlQuery.projections().convert2Rel( tableScanColumnOrdinalities, algBuilder, rexBuilder );
+                projectionColumnOrdinalities.putAll( cqlQuery.projections().getProjectionColumnOrdinalities() );
             }
         } else {
-            if ( cqlQuery.projections.exists() ) {
+            if ( cqlQuery.projections().exists() ) {
                 setScanColumnOrdinalities();
-                if ( cqlQuery.projections.hasAggregations() ) {
-                    algBuilder = cqlQuery.projections
+                if ( cqlQuery.projections().hasAggregations() ) {
+                    algBuilder = cqlQuery.projections()
                             .convert2Rel( tableScanColumnOrdinalities, algBuilder, rexBuilder );
                 } else {
-                    algBuilder = cqlQuery.projections
+                    algBuilder = cqlQuery.projections()
                             .convert2RelForSingleProjection( tableScanColumnOrdinalities, algBuilder, rexBuilder );
                 }
-                projectionColumnOrdinalities.putAll( cqlQuery.projections.getProjectionColumnOrdinalities() );
+                projectionColumnOrdinalities.putAll( cqlQuery.projections().getProjectionColumnOrdinalities() );
             } else {
                 algBuilder = generateProjections( algBuilder, rexBuilder );
             }
         }
-        if ( cqlQuery.sortSpecifications != null && cqlQuery.sortSpecifications.size() != 0 ) {
+        if ( cqlQuery.sortSpecifications() != null && !cqlQuery.sortSpecifications().isEmpty() ) {
             algBuilder = generateSort( algBuilder, rexBuilder );
         }
         AlgNode algNode = algBuilder.build();
@@ -117,7 +117,7 @@ public class Cql2AlgConverter {
 
 
     private void setScanColumnOrdinalities() {
-        cqlQuery.queryRelation.traverse( TraversalType.INORDER, ( treeNode, nodeType, direction, frame ) -> {
+        cqlQuery.queryRelation().traverse( TraversalType.INORDER, ( treeNode, nodeType, direction, frame ) -> {
             if ( nodeType == NodeType.DESTINATION_NODE && treeNode.isLeaf() ) {
                 TableIndex tableIndex = treeNode.getExternalNode();
                 for ( Long id : tableIndex.catalogTable.getColumnIds() ) {
@@ -139,7 +139,7 @@ public class Cql2AlgConverter {
      */
     private AlgBuilder generateScan( AlgBuilder algBuilder, RexBuilder rexBuilder ) {
         log.debug( "Generating table scan." );
-        Tree<Combiner, TableIndex> tableOperations = cqlQuery.queryRelation;
+        Tree<Combiner, TableIndex> tableOperations = cqlQuery.queryRelation();
         AtomicReference<AlgBuilder> algBuilderAtomicReference = new AtomicReference<>( algBuilder );
 
         tableOperations.traverse( TraversalType.POSTORDER, ( treeNode, nodeType, direction, frame ) -> {
@@ -172,7 +172,7 @@ public class Cql2AlgConverter {
      * Generate initial projection and set the ordinalities for all columns.
      * This projection, simply, maps the order in which tables were scanned
      * to the order in which columns are placed.
-     *
+     * <p>
      * These projections and ordinalities will be later used for getting column
      * references for filtering ({@link #generateFilters(AlgBuilder, RexBuilder)}),
      * sorting ({@link #generateSort(AlgBuilder, RexBuilder)}), aggregating
@@ -184,7 +184,7 @@ public class Cql2AlgConverter {
      */
     private AlgBuilder generateProjections( AlgBuilder algBuilder, RexBuilder rexBuilder ) {
         log.debug( "Generating initial projection." );
-        Tree<Combiner, TableIndex> queryRelation = cqlQuery.queryRelation;
+        Tree<Combiner, TableIndex> queryRelation = cqlQuery.queryRelation();
         AlgNode baseNode = algBuilder.peek();
         List<RexNode> inputRefs = new ArrayList<>();
         List<String> columnNames = new ArrayList<>();
@@ -226,7 +226,7 @@ public class Cql2AlgConverter {
      */
     private AlgBuilder generateFilters( AlgBuilder algBuilder, RexBuilder rexBuilder ) {
         log.debug( "Generating filters." );
-        Tree<BooleanGroup<ColumnOpsBooleanOperator>, Filter> filters = cqlQuery.filters;
+        Tree<BooleanGroup<ColumnOpsBooleanOperator>, Filter> filters = cqlQuery.filters();
         if ( filters == null ) {
             return algBuilder;
         }
@@ -305,7 +305,7 @@ public class Cql2AlgConverter {
      */
     private AlgBuilder generateSort( AlgBuilder algBuilder, RexBuilder rexBuilder ) {
         log.debug( "Generating sort." );
-        List<Pair<ColumnIndex, Map<String, Modifier>>> sortSpecifications = cqlQuery.sortSpecifications;
+        List<Pair<ColumnIndex, Map<String, Modifier>>> sortSpecifications = cqlQuery.sortSpecifications();
         List<RexNode> sortingNodes = new ArrayList<>();
         AlgNode baseNode = algBuilder.peek();
         for ( Pair<ColumnIndex, Map<String, Modifier>> sortSpecification : sortSpecifications ) {

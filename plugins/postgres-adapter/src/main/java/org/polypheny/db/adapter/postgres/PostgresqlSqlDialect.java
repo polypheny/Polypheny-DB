@@ -27,6 +27,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgDataTypeSystemImpl;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.sql.language.SqlBasicCall;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlDataTypeSpec;
 import org.polypheny.db.sql.language.SqlDialect;
@@ -190,7 +191,7 @@ public class PostgresqlSqlDialect extends SqlDialect {
                 }
 
                 final SqlLiteral timeUnitNode = call.operand( 1 );
-                final TimeUnitRange timeUnit = timeUnitNode.getValueAs( TimeUnitRange.class );
+                final TimeUnitRange timeUnit = timeUnitNode.value.asSymbol().asEnum( TimeUnitRange.class );
 
                 SqlCall call2 = SqlFloorFunction.replaceTimeUnitOperand( call, timeUnit.name(), timeUnitNode.getPos() );
                 SqlFloorFunction.unparseDatetimeFunction( writer, call2, "DATE_TRUNC", false );
@@ -212,6 +213,23 @@ public class PostgresqlSqlDialect extends SqlDialect {
                     } else {
                         super.unparseCall( writer, call, leftPrec, rightPrec );
                     }
+                } else {
+                    super.unparseCall( writer, call, leftPrec, rightPrec );
+                }
+                break;
+            case MIN:
+                // min( boolean ) should stay boolean and return true if one value is true else false, this is not the case in postgres
+                SqlBasicCall basicCall = (SqlBasicCall) call;
+                if ( basicCall.getOperandList().size() == 1
+                        && basicCall.getOperandList().get( 0 ) instanceof SqlBasicCall childCall
+                        && childCall.getOperandList().size() == 2
+                        && childCall.getOperator().getKind() == Kind.CAST
+                        && childCall.getOperandList().get( 1 ) instanceof SqlDataTypeSpec dataTypeSpec
+                        && dataTypeSpec.getType() == PolyType.BOOLEAN ) {
+                    writer.print( "bool_or(" );
+                    childCall.unparse( writer, leftPrec, rightPrec );
+                    writer.print( ")" );
+                    return;
                 } else {
                     super.unparseCall( writer, call, leftPrec, rightPrec );
                 }
