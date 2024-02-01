@@ -33,7 +33,6 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
 @Tag("adapter")
-@Tag("monetdb")
 public class LogExponentialFunctionsTest {
 
 

@@ -156,17 +156,12 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
         MaterializedCriteria materializedCriteria = new MaterializedCriteria();
 
         if ( freshnessType != null ) {
-            switch ( freshnessType ) {
-                case "UPDATE":
-                    materializedCriteria = new MaterializedCriteria( CriteriaType.UPDATE, freshnessTime );
-                    break;
-                case "INTERVAL":
-                    materializedCriteria = new MaterializedCriteria( CriteriaType.INTERVAL, freshnessTime, getFreshnessType( freshnessId.toString().toLowerCase( Locale.ROOT ) ) );
-                    break;
-                case "MANUAL":
-                    materializedCriteria = new MaterializedCriteria( CriteriaType.MANUAL );
-                    break;
-            }
+            materializedCriteria = switch ( freshnessType ) {
+                case "UPDATE" -> new MaterializedCriteria( CriteriaType.UPDATE, freshnessTime );
+                case "INTERVAL" -> new MaterializedCriteria( CriteriaType.INTERVAL, freshnessTime, getFreshnessType( freshnessId.toString().toLowerCase( Locale.ROOT ) ) );
+                case "MANUAL" -> new MaterializedCriteria( CriteriaType.MANUAL );
+                default -> materializedCriteria;
+            };
         }
 
         boolean ordered = query.getKind().belongsTo( Kind.ORDER );
@@ -191,32 +186,14 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
 
 
     private TimeUnit getFreshnessType( String freshnessId ) {
-        TimeUnit timeUnit;
-        switch ( freshnessId ) {
-            case "min":
-            case "minutes":
-                timeUnit = TimeUnit.MINUTES;
-                break;
-            case "hours":
-                timeUnit = TimeUnit.HOURS;
-                break;
-            case "sec":
-            case "seconds":
-                timeUnit = TimeUnit.SECONDS;
-                break;
-            case "days":
-            case "day":
-                timeUnit = TimeUnit.DAYS;
-                break;
-            case "millisec":
-            case "milliseconds":
-                timeUnit = TimeUnit.MILLISECONDS;
-                break;
-            default:
-                timeUnit = TimeUnit.MINUTES;
-                break;
-        }
-        return timeUnit;
+        return switch ( freshnessId ) {
+            case "min", "minutes" -> TimeUnit.MINUTES;
+            case "hours" -> TimeUnit.HOURS;
+            case "sec", "seconds" -> TimeUnit.SECONDS;
+            case "days", "day" -> TimeUnit.DAYS;
+            case "millisec", "milliseconds" -> TimeUnit.MILLISECONDS;
+            default -> TimeUnit.MINUTES;
+        };
     }
 
 
@@ -224,8 +201,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
         List<String> columnName = new ArrayList<>();
 
         for ( Ord<SqlNode> c : Ord.zip( columnList.getSqlList() ) ) {
-            if ( c.e instanceof SqlIdentifier ) {
-                SqlIdentifier sqlIdentifier = (SqlIdentifier) c.e;
+            if ( c.e instanceof SqlIdentifier sqlIdentifier ) {
                 columnName.add( sqlIdentifier.getSimple() );
 
             } else {

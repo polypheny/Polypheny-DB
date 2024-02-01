@@ -504,7 +504,7 @@ public class ComplexViewTest {
                 statement.executeUpdate( ORDERS_TABLE_DATA );
 
                 try {
-                    String query = "SELECT o_orderdate FROM orders";
+                    String query = "SELECT o_orderdate FROM orders;";
                     TestHelper.checkResultSet(
                             statement.executeQuery( query ),
                             ImmutableList.of( date_TEST_DATA )

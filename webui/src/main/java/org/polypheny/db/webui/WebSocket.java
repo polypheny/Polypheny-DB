@@ -159,13 +159,11 @@ public class WebSocket implements Consumer<WsConfig> {
                     UIRequest uiRequest = ctx.messageAsClass( UIRequest.class );
                     try {
                         LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( uiRequest.namespace ).orElse( null );
-                        switch ( namespace == null ? DataModel.RELATIONAL : namespace.dataModel ) {
-                            case RELATIONAL:
-                                result = crud.getTable( uiRequest );
-                                break;
-                            case DOCUMENT:
+                        result = switch ( namespace == null ? DataModel.RELATIONAL : namespace.dataModel ) {
+                            case RELATIONAL -> crud.getTable( uiRequest );
+                            case DOCUMENT -> {
                                 String entity = Catalog.snapshot().doc().getCollection( uiRequest.entityId ).map( c -> c.name ).orElse( "" );
-                                result = LanguageCrud.anyQueryResult(
+                                yield LanguageCrud.anyQueryResult(
                                         QueryContext.builder()
                                                 .query( String.format( "db.%s.find({})", entity ) )
                                                 .language( QueryLanguage.from( "mongo" ) )
@@ -175,20 +173,18 @@ public class WebSocket implements Consumer<WsConfig> {
                                                 .informationTarget( i -> i.setSession( ctx.session ) )
                                                 .namespaceId( namespace == null ? Catalog.defaultNamespaceId : namespace.id )
                                                 .build(), uiRequest ).get( 0 );
-                                break;
-                            case GRAPH:
-                                result = LanguageCrud.anyQueryResult(
-                                        QueryContext.builder()
-                                                .query( "MATCH (n) RETURN n" )
-                                                .language( QueryLanguage.from( "cypher" ) )
-                                                .origin( POLYPHENY_UI )
-                                                .batch( uiRequest.noLimit ? -1 : crud.getPageSize() )
-                                                .namespaceId( namespace == null ? Catalog.defaultNamespaceId : namespace.id )
-                                                .transactionManager( crud.getTransactionManager() )
-                                                .informationTarget( i -> i.setSession( ctx.session ) )
-                                                .build(), uiRequest ).get( 0 );
-                                break;
-                        }
+                            }
+                            case GRAPH -> LanguageCrud.anyQueryResult(
+                                    QueryContext.builder()
+                                            .query( "MATCH (n) RETURN n" )
+                                            .language( QueryLanguage.from( "cypher" ) )
+                                            .origin( POLYPHENY_UI )
+                                            .batch( uiRequest.noLimit ? -1 : crud.getPageSize() )
+                                            .namespaceId( namespace == null ? Catalog.defaultNamespaceId : namespace.id )
+                                            .transactionManager( crud.getTransactionManager() )
+                                            .informationTarget( i -> i.setSession( ctx.session ) )
+                                            .build(), uiRequest ).get( 0 );
+                        };
                         if ( result == null ) {
                             throw new GenericRuntimeException( "Could not load data." );
                         }

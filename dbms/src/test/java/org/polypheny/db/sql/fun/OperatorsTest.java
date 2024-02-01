@@ -102,7 +102,7 @@ public class OperatorsTest {
                         new Object[]{ 2, "dataC" }
                 );
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT ID, TextData FROM TestTable AS A Where A.ID<>A.NumberData" ),
+                        statement.executeQuery( "SELECT ID, TextData FROM TestTable AS A Where A.ID <> A.NumberData" ),
                         expectedResult,
                         true
                 );

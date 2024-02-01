@@ -26,11 +26,14 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.UnaryExpression;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.NullCollation;
+import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
@@ -92,6 +95,9 @@ public class MonetdbSqlDialect extends SqlDialect {
     public SqlNode getCastSpec( AlgDataType type ) {
         String castSpec;
         switch ( type.getPolyType() ) {
+            case TINYINT:
+                castSpec = "_SMALLINT";
+                break;
             case ARRAY:
                 // We need to flag the type with a underscore to flag the type (the underscore is removed in the unparse method)
                 castSpec = "_TEXT";
@@ -146,7 +152,15 @@ public class MonetdbSqlDialect extends SqlDialect {
     public boolean supportsProject( Project project ) {
         MonetdbRexVisitor visitor = new MonetdbRexVisitor();
         project.getProjects().forEach( p -> p.accept( visitor ) );
-        return visitor.supportsProject;
+        return visitor.supportsRex;
+    }
+
+
+    @Override
+    public boolean supportsFilter( Filter filter ) {
+        MonetdbRexVisitor visitor = new MonetdbRexVisitor();
+        filter.getCondition().accept( visitor );
+        return visitor.supportsRex;
     }
 
 
@@ -191,7 +205,7 @@ public class MonetdbSqlDialect extends SqlDialect {
     @Getter
     private static class MonetdbRexVisitor extends RexShuttle {
 
-        boolean supportsProject = true;
+        boolean supportsRex = true;
 
 
         @Override
@@ -201,8 +215,16 @@ public class MonetdbSqlDialect extends SqlDialect {
                         && call.getOperands().get( 1 ) instanceof RexLiteral type
                         && type.value.isSymbol()
                         && type.value.asSymbol().value instanceof TimeUnitRange ) {
-                    supportsProject = false;
+                    supportsRex = false;
                 }
+            } else if ( call.getKind() == Kind.IS_NOT_TRUE || call.getKind() == Kind.IS_NOT_FALSE ) {
+                supportsRex = false;
+            } else if ( call.getKind() == Kind.LIKE && call.getOperands().size() == 3 && call.getOperands().get( 2 ) instanceof RexDynamicParam ) {
+                supportsRex = false;
+            } else if ( call.op.getOperatorName() == OperatorName.OVERLAY ) {
+                supportsRex = false;
+            } else if ( call.op.getOperatorName() == OperatorName.ATAN2 ) {
+                supportsRex = false;
             }
             return super.visitCall( call );
         }

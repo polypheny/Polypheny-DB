@@ -813,13 +813,13 @@ public class HorizontalPartitioningTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "CREATE TABLE multiinsert( "
-                        + "tprimary INTEGER NOT NULL, "
-                        + "tvarchar VARCHAR(20) NULL, "
-                        + "tinteger INTEGER NULL, "
-                        + "PRIMARY KEY (tprimary) )"
-                        + "PARTITION BY HASH (tvarchar) "
-                        + "PARTITIONS 20" );
+                statement.executeUpdate( """
+                        CREATE TABLE multiinsert(
+                            tprimary INTEGER NOT NULL,
+                            tvarchar VARCHAR(20) NULL,
+                            tinteger INTEGER NULL,
+                            PRIMARY KEY (tprimary) )
+                        PARTITION BY HASH (tvarchar) PARTITIONS 20""" );
 
                 try {
                     statement.executeUpdate( "INSERT INTO multiinsert(tprimary,tvarchar,tinteger) VALUES (1,'Hans',5),(2,'Eva',7),(3,'Alice',89)" );
@@ -859,13 +859,14 @@ public class HorizontalPartitioningTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "CREATE TABLE batchtest( "
-                        + "tprimary INTEGER NOT NULL, "
-                        + "tvarchar VARCHAR(20) NULL, "
-                        + "tinteger INTEGER NULL, "
-                        + "PRIMARY KEY (tprimary) )"
-                        + "PARTITION BY HASH (tvarchar) "
-                        + "PARTITIONS 20" );
+                statement.executeUpdate( """
+                        CREATE TABLE batchtest(
+                            tprimary INTEGER NOT NULL,
+                            tvarchar VARCHAR(20) NULL,
+                            tinteger INTEGER NULL,
+                            PRIMARY KEY (tprimary) )
+                            PARTITION BY HASH (tvarchar)
+                        PARTITIONS 20""" );
 
                 try {
                     //

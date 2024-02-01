@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -49,7 +48,6 @@ import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
-import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalMaterializedView;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalView;
@@ -127,7 +125,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      * @param materializedId id from materialized view
      */
     @Override
-    public synchronized void deleteMaterializedViewFromInfo( Long materializedId ) {
+    public synchronized void deleteMaterializedViewFromInfo( long materializedId ) {
         materializedInfo.remove( materializedId );
     }
 
@@ -165,7 +163,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      * @param matViewCriteria information about the materialized view
      */
     @Override
-    public synchronized void addMaterializedInfo( Long materializedId, MaterializedCriteria matViewCriteria ) {
+    public synchronized void addMaterializedInfo( long materializedId, MaterializedCriteria matViewCriteria ) {
         materializedInfo.put( materializedId, matViewCriteria );
     }
 
@@ -310,12 +308,11 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      */
     @Override
     public void addData( Transaction transaction, @Nullable List<DataStore<?>> stores, @NonNull AlgRoot algRoot, @NonNull LogicalMaterializedView materializedView ) {
-        addMaterializedInfo( materializedView.id, materializedView.getMaterializedCriteria() );
 
         DataMigrator dataMigrator = transaction.getDataMigrator();
         for ( AllocationEntity allocation : transaction.getSnapshot().alloc().getFromLogical( materializedView.id ) ) {
             Statement sourceStatement = transaction.createStatement();
-            prepareSourceRel( sourceStatement, materializedView.getAlgCollation(), algRoot.alg );
+            prepareSourceAlg( sourceStatement, materializedView.getAlgCollation(), algRoot.alg );
             Statement targetStatement = transaction.createStatement();
 
             if ( allocation.unwrap( AllocationTable.class ).isPresent() ) {
@@ -323,13 +320,15 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
                 //columns.get( placement.adapterId ).forEach( column -> columnPlacements.add( snapshot.alloc().getColumnPlacement( placement.adapterId, column.id ) ) );
                 // If partitions should be allowed for materialized views this needs to be changed that all partitions are considered
-                AlgRoot targetRel = dataMigrator.buildInsertStatement( targetStatement, allocColumns, allocation );
+                AlgRoot targetAlg = dataMigrator.buildInsertStatement( targetStatement, allocColumns, allocation );
 
-                dataMigrator.executeQuery( allocColumns, algRoot, sourceStatement, targetStatement, targetRel, true, materializedView.isOrdered() );
+                dataMigrator.executeQuery( allocColumns, algRoot, sourceStatement, targetStatement, targetAlg, true, materializedView.isOrdered() );
             } else {
                 throw new GenericRuntimeException( "MaterializedViews are only supported for relational entites at the moment." );
             }
         }
+
+        addMaterializedInfo( materializedView.id, materializedView.getMaterializedCriteria() );
     }
 
 
@@ -344,79 +343,42 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
         DataMigrator dataMigrator = transaction.getDataMigrator();
 
-        List<AllocationColumn> columnPlacements = new LinkedList<>();
-        Map<Long, List<LogicalColumn>> columns = new HashMap<>();
+        List<AllocationColumn> columnPlacements = new ArrayList<>();
 
-        //List<Long> ids = new ArrayList<>();
-        if ( transaction.getSnapshot().getLogicalEntity( materializedId ).isPresent() && materializedInfo.containsKey( materializedId ) ) {
-            LogicalMaterializedView catalogMaterializedView = transaction.getSnapshot().getLogicalEntity( materializedId ).map( e -> e.unwrap( LogicalMaterializedView.class ).orElseThrow() ).orElseThrow();
-            /*List<CatalogDataPlacement> dataPlacements = snapshot.alloc().getDataPlacements( catalogMaterializedView.id );
-            for ( AllocationEntity allocation :  ) {
-                ids.add( allocation.adapterId );
-                List<LogicalColumn> logicalColumns = new ArrayList<>();
+        if ( Catalog.snapshot().getLogicalEntity( materializedId ).isPresent() && materializedInfo.containsKey( materializedId ) ) {
+            LogicalMaterializedView catalogMaterializedView = Catalog.snapshot().getLogicalEntity( materializedId ).map( e -> e.unwrap( LogicalMaterializedView.class ).orElseThrow() ).orElseThrow();
 
-                int localAdapterIndex = dataPlacements.indexOf( placement );
-                snapshot.alloc().getPlacement( dataPlacements.stream().map( p -> p.adapterId ).toList().get( localAdapterIndex ), catalogMaterializedView.id )
-                        .columnPlacementsOnAdapter.forEach( col ->
-                                logicalColumns.add( snapshot.rel().getColumn( col ) ) );
-                columns.put( placement.adapterId, logicalColumns );
-            }*/
-            transaction.getSnapshot().rel().getColumns( materializedId );
+            Catalog.snapshot().rel().getColumns( materializedId );
 
-            for ( AllocationEntity allocation : transaction.getSnapshot().alloc().getFromLogical( materializedId ) ) {
-                //Statement sourceStatement = transaction.createStatement();
+            for ( AllocationEntity allocation : Catalog.snapshot().alloc().getFromLogical( materializedId ) ) {
                 Statement deleteStatement = transaction.createStatement();
-                //Statement insertStatement = transaction.createStatement();
-                //prepareSourceRel( sourceStatement, catalogMaterializedView.getAlgCollation(), catalogMaterializedView.getDefinition() );
-
-                // columnPlacements.clear();
-
-                //columns.get( id ).forEach( column -> columnPlacements.add( snapshot.alloc().getColumn( id, column.id ) ) );
 
                 // Build {@link AlgNode} to build delete Statement from materialized view
                 AlgBuilder deleteAlgBuilder = AlgBuilder.create( deleteStatement );
-                AlgNode deleteRel = deleteAlgBuilder.scan( catalogMaterializedView ).build();
+                AlgNode deleteAlg = deleteAlgBuilder.scan( catalogMaterializedView ).build();
 
                 // Build {@link AlgNode} to build insert Statement from materialized view
-                //AlgBuilder insertAlgBuilder = AlgBuilder.create( insertStatement );
-                //AlgNode insertRel = insertAlgBuilder.push( catalogMaterializedView.getDefinition() ).build();
-
                 Statement targetStatementDelete = transaction.createStatement();
                 // Delete all data
-                AlgRoot targetRel = dataMigrator.buildDeleteStatement(
+                AlgRoot targetAlg = dataMigrator.buildDeleteStatement(
                         targetStatementDelete,
                         columnPlacements,
                         allocation );
                 dataMigrator.executeQuery(
-                        transaction.getSnapshot().alloc().getColumns( allocation.id ),
-                        AlgRoot.of( deleteRel, Kind.SELECT ),
+                        Catalog.snapshot().alloc().getColumns( allocation.id ),
+                        AlgRoot.of( deleteAlg, Kind.SELECT ),
                         deleteStatement,
                         targetStatementDelete,
-                        targetRel,
+                        targetAlg,
                         true,
                         catalogMaterializedView.isOrdered() );
 
-                //Statement targetStatementInsert = transaction.createStatement();
-
-                // Insert new data
-                /*targetRel = dataMigrator.buildInsertStatement(
-                        targetStatementInsert,
-                        columnPlacements,
-                        allocation );
-                dataMigrator.executeQuery(
-                        transaction.getSnapshot().alloc().getColumns( allocation.id ),
-                        AlgRoot.of( insertRel, Kind.SELECT ),
-                        sourceStatement,
-                        targetStatementInsert,
-                        targetRel,
-                        true,
-                        catalogMaterializedView.isOrdered() );*/
             }
             addData(
                     transaction,
                     List.of(),
-                    AlgRoot.of( transaction.getSnapshot().rel().getNodeInfo( materializedId ), Kind.SELECT ),
-                    transaction.getSnapshot().rel().getTable( materializedId ).orElseThrow().unwrap( LogicalMaterializedView.class ).orElseThrow() );
+                    AlgRoot.of( Catalog.snapshot().rel().getNodeInfo( materializedId ), Kind.SELECT ),
+                    Catalog.snapshot().rel().getTable( materializedId ).orElseThrow().unwrap( LogicalMaterializedView.class ).orElseThrow() );
         }
     }
 
@@ -439,7 +401,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
     }
 
 
-    private void prepareSourceRel( Statement sourceStatement, AlgCollation algCollation, AlgNode sourceRel ) {
+    private void prepareSourceAlg( Statement sourceStatement, AlgCollation algCollation, AlgNode sourceRel ) {
         AlgOptCluster cluster = AlgOptCluster.create(
                 sourceStatement.getQueryProcessor().getPlanner(),
                 new RexBuilder( sourceStatement.getTransaction().getTypeFactory() ), null, sourceStatement.getDataContext().getSnapshot() );
@@ -449,8 +411,8 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
 
     public void prepareNode( AlgNode viewLogicalRoot, AlgOptCluster algOptCluster, AlgCollation algCollation ) {
-        if ( viewLogicalRoot instanceof AbstractAlgNode ) {
-            ((AbstractAlgNode) viewLogicalRoot).setCluster( algOptCluster );
+        if ( viewLogicalRoot instanceof AbstractAlgNode abstractAlgNode ) {
+            abstractAlgNode.setCluster( algOptCluster );
 
             List<AlgCollation> algCollations = new ArrayList<>();
             algCollations.add( algCollation );
@@ -465,16 +427,16 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                                         return ImmutableList.of();
                                     } );
 
-            ((AbstractAlgNode) viewLogicalRoot).setTraitSet( traitSetTest );
+            abstractAlgNode.setTraitSet( traitSetTest );
         }
-        if ( viewLogicalRoot instanceof BiAlg ) {
-            prepareNode( ((BiAlg) viewLogicalRoot).getLeft(), algOptCluster, algCollation );
-            prepareNode( ((BiAlg) viewLogicalRoot).getRight(), algOptCluster, algCollation );
-        } else if ( viewLogicalRoot instanceof SingleAlg ) {
-            prepareNode( ((SingleAlg) viewLogicalRoot).getInput(), algOptCluster, algCollation );
+        if ( viewLogicalRoot instanceof BiAlg biAlg ) {
+            prepareNode( biAlg.getLeft(), algOptCluster, algCollation );
+            prepareNode( biAlg.getRight(), algOptCluster, algCollation );
+        } else if ( viewLogicalRoot instanceof SingleAlg singleAlg ) {
+            prepareNode( singleAlg.getInput(), algOptCluster, algCollation );
         }
-        if ( viewLogicalRoot instanceof LogicalRelViewScan ) {
-            prepareNode( ((LogicalRelViewScan) viewLogicalRoot).getAlgNode(), algOptCluster, algCollation );
+        if ( viewLogicalRoot instanceof LogicalRelViewScan scan ) {
+            prepareNode( scan.getAlgNode(), algOptCluster, algCollation );
         }
     }
 

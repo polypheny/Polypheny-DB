@@ -62,7 +62,7 @@ public abstract class MaterializedViewManager {
     }
 
 
-    public abstract void deleteMaterializedViewFromInfo( Long tableId );
+    public abstract void deleteMaterializedViewFromInfo( long tableId );
 
     public abstract void addData(
             Transaction transaction,
@@ -78,15 +78,15 @@ public abstract class MaterializedViewManager {
 
     public abstract void updateMaterializedTime( Long materializedId );
 
-    public abstract void addMaterializedInfo( Long materializedId, MaterializedCriteria matViewCriteria );
+    public abstract void addMaterializedInfo( long materializedId, MaterializedCriteria matViewCriteria );
 
 
     /**
      * to track updates on tables for materialized views with update freshness
      */
+    @Getter
     public static class TableUpdateVisitor extends AlgShuttleImpl {
 
-        @Getter
         private final List<Long> ids = new ArrayList<>();
 
 
