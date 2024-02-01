@@ -419,6 +419,8 @@ public class BasicMaterializedViewTest {
 
                 try {
                     statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS INTERVAL 100 \"milliseconds\" " );
+
+                    //noinspection ResultOfMethodCallIgnored
                     waiter.await( 2, TimeUnit.SECONDS );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
@@ -476,12 +478,14 @@ public class BasicMaterializedViewTest {
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS INTERVAL 100 \"milliseconds\" " );
+                //noinspection ResultOfMethodCallIgnored
                 waiter.await( 2, TimeUnit.SECONDS );
 
                 try {
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
                     connection.commit();
 
+                    //noinspection ResultOfMethodCallIgnored
                     waiter.await( 2, TimeUnit.SECONDS );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
@@ -492,6 +496,7 @@ public class BasicMaterializedViewTest {
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 2, 'Ernst', 'Walter', 2), ( 3, 'Elsa', 'Kuster', 3 )" );
                     connection.commit();
 
+                    //noinspection ResultOfMethodCallIgnored
                     waiter.await( 2, TimeUnit.SECONDS );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
@@ -526,12 +531,14 @@ public class BasicMaterializedViewTest {
                 statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
 
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable ON STORE \"store3\" FRESHNESS INTERVAL 100 \"milliseconds\" " );
+                //noinspection ResultOfMethodCallIgnored
                 waiter.await( 2, TimeUnit.SECONDS );
 
                 try {
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
                     connection.commit();
 
+                    //noinspection ResultOfMethodCallIgnored
                     waiter.await( 2, TimeUnit.SECONDS );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
@@ -542,6 +549,7 @@ public class BasicMaterializedViewTest {
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 2, 'Ernst', 'Walter', 2), ( 3, 'Elsa', 'Kuster', 3 )" );
                     connection.commit();
 
+                    //noinspection ResultOfMethodCallIgnored
                     waiter.await( 2, TimeUnit.SECONDS );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
@@ -579,6 +587,7 @@ public class BasicMaterializedViewTest {
                 statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
 
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable ON STORE \"store2\", \"store3\" FRESHNESS MANUAL" );
+                //noinspection ResultOfMethodCallIgnored
                 waiter.await( 2, TimeUnit.SECONDS );
 
                 try {
@@ -586,6 +595,7 @@ public class BasicMaterializedViewTest {
                     connection.commit();
                     statement.executeUpdate( "ALTER MATERIALIZED VIEW viewTestEmp FRESHNESS MANUAL" );
 
+                    //noinspection ResultOfMethodCallIgnored
                     waiter.await( 2, TimeUnit.SECONDS );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
@@ -597,6 +607,7 @@ public class BasicMaterializedViewTest {
                     connection.commit();
 
                     statement.executeUpdate( "ALTER MATERIALIZED VIEW viewTestEmp FRESHNESS MANUAL" );
+                    //noinspection ResultOfMethodCallIgnored
                     waiter.await( 2, TimeUnit.SECONDS );
 
                     TestHelper.checkResultSet(
@@ -636,6 +647,7 @@ public class BasicMaterializedViewTest {
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 2, 'Ernst', 'Walter', 2), ( 3, 'Elsa', 'Kuster', 3 )" );
                     connection.commit();
 
+                    //noinspection ResultOfMethodCallIgnored
                     waiter.await( 2, TimeUnit.SECONDS );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
@@ -651,6 +663,7 @@ public class BasicMaterializedViewTest {
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
                     connection.commit();
 
+                    //noinspection ResultOfMethodCallIgnored
                     waiter.await( 2, TimeUnit.SECONDS );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
@@ -684,6 +697,7 @@ public class BasicMaterializedViewTest {
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 2, 'Ernst', 'Walter', 2), ( 3, 'Elsa', 'Kuster', 3 )" );
                     connection.commit();
 
+                    //noinspection ResultOfMethodCallIgnored
                     waiter.await( 1, TimeUnit.SECONDS );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
@@ -692,6 +706,7 @@ public class BasicMaterializedViewTest {
 
                     statement.executeUpdate( "ALTER MATERIALIZED VIEW viewTestEmp FRESHNESS MANUAL" );
 
+                    //noinspection ResultOfMethodCallIgnored
                     waiter.await( 1, TimeUnit.SECONDS );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
@@ -727,6 +742,7 @@ public class BasicMaterializedViewTest {
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 2, 'Ernst', 'Walter', 2), ( 3, 'Elsa', 'Kuster', 3 )" );
                     connection.commit();
 
+                    //noinspection ResultOfMethodCallIgnored
                     waiter.await( 1, TimeUnit.SECONDS );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
@@ -735,6 +751,7 @@ public class BasicMaterializedViewTest {
 
                     statement.executeUpdate( "ALTER MATERIALIZED VIEW viewTestEmp FRESHNESS MANUAL" );
 
+                    //noinspection ResultOfMethodCallIgnored
                     waiter.await( 1, TimeUnit.SECONDS );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
@@ -770,6 +787,7 @@ public class BasicMaterializedViewTest {
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 2, 'Ernst', 'Walter', 2), ( 3, 'Elsa', 'Kuster', 3 )" );
                     connection.commit();
 
+                    //noinspection ResultOfMethodCallIgnored
                     waiter.await( 1, TimeUnit.SECONDS );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
@@ -778,6 +796,7 @@ public class BasicMaterializedViewTest {
 
                     statement.executeUpdate( "ALTER MATERIALIZED VIEW viewTestEmp FRESHNESS MANUAL" );
 
+                    //noinspection ResultOfMethodCallIgnored
                     waiter.await( 1, TimeUnit.SECONDS );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
@@ -811,6 +830,7 @@ public class BasicMaterializedViewTest {
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
                     connection.commit();
 
+                    //noinspection ResultOfMethodCallIgnored
                     waiter.await( 1, TimeUnit.SECONDS );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
@@ -820,6 +840,7 @@ public class BasicMaterializedViewTest {
                     statement.executeUpdate( "ALTER MATERIALIZED VIEW viewTestEmp FRESHNESS MANUAL" );
                     connection.commit();
 
+                    //noinspection ResultOfMethodCallIgnored
                     waiter.await( 1, TimeUnit.SECONDS );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
@@ -830,7 +851,7 @@ public class BasicMaterializedViewTest {
 
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 2, 'Ernst', 'Walter', 2), ( 3, 'Elsa', 'Kuster', 3 )" );
                     connection.commit();
-
+                    //noinspection ResultOfMethodCallIgnored
                     waiter.await( 1, TimeUnit.SECONDS );
 
                     TestHelper.checkResultSet(
@@ -843,6 +864,7 @@ public class BasicMaterializedViewTest {
                     statement.executeUpdate( "ALTER MATERIALIZED VIEW viewTestEmp FRESHNESS MANUAL" );
                     connection.commit();
 
+                    //noinspection ResultOfMethodCallIgnored
                     waiter.await( 1, TimeUnit.SECONDS );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
@@ -874,6 +896,7 @@ public class BasicMaterializedViewTest {
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestDep AS SELECT * FROM viewTestDepTable FRESHNESS INTERVAL 150 \"milliseconds\"" );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS INTERVAL 100 \"milliseconds\" " );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp1 AS SELECT * FROM viewTestEmpTable FRESHNESS INTERVAL 200 \"milliseconds\" " );
+                //noinspection ResultOfMethodCallIgnored
                 waiter.await( 2, TimeUnit.SECONDS );
 
                 try {
@@ -881,6 +904,7 @@ public class BasicMaterializedViewTest {
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
                     connection.commit();
 
+                    //noinspection ResultOfMethodCallIgnored
                     waiter.await( 2, TimeUnit.SECONDS );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
@@ -904,6 +928,7 @@ public class BasicMaterializedViewTest {
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 2, 'Ernst', 'Walter', 2), ( 3, 'Elsa', 'Kuster', 3 )" );
                     connection.commit();
 
+                    //noinspection ResultOfMethodCallIgnored
                     waiter.await( 2, TimeUnit.SECONDS );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
@@ -964,6 +989,7 @@ public class BasicMaterializedViewTest {
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
                     connection.commit();
 
+                    //noinspection ResultOfMethodCallIgnored
                     waiter.await( 2, TimeUnit.SECONDS );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
@@ -980,6 +1006,7 @@ public class BasicMaterializedViewTest {
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 2, 'Ernst', 'Walter', 2), ( 3, 'Elsa', 'Kuster', 3 )" );
                     connection.commit();
 
+                    //noinspection ResultOfMethodCallIgnored
                     waiter.await( 2, TimeUnit.SECONDS );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
@@ -1003,6 +1030,7 @@ public class BasicMaterializedViewTest {
                     statement.executeUpdate( "TRUNCATE TABLE viewTestDepTable" );
                     connection.commit();
 
+                    //noinspection ResultOfMethodCallIgnored
                     waiter.await( 2, TimeUnit.SECONDS );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
@@ -1037,7 +1065,7 @@ public class BasicMaterializedViewTest {
 
     @Test
     public void testUpdateFreshnessIntervals() throws SQLException {
-        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
@@ -1045,6 +1073,7 @@ public class BasicMaterializedViewTest {
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestDep AS SELECT * FROM viewTestDepTable FRESHNESS INTERVAL 500 \"milliseconds\"" );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS INTERVAL 100 \"milliseconds\" " );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp1 AS SELECT * FROM viewTestEmpTable FRESHNESS INTERVAL 400 \"milliseconds\" " );
+                //noinspection ResultOfMethodCallIgnored
                 waiter.await( 2, TimeUnit.SECONDS );
 
                 try {
@@ -1052,6 +1081,7 @@ public class BasicMaterializedViewTest {
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
                     connection.commit();
 
+                    //noinspection ResultOfMethodCallIgnored
                     waiter.await( 2, TimeUnit.SECONDS );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
@@ -1075,6 +1105,7 @@ public class BasicMaterializedViewTest {
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 2, 'Ernst', 'Walter', 2), ( 3, 'Elsa', 'Kuster', 3 )" );
                     connection.commit();
 
+                    //noinspection ResultOfMethodCallIgnored
                     waiter.await( 2, TimeUnit.SECONDS );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
@@ -1107,6 +1138,7 @@ public class BasicMaterializedViewTest {
                     statement.executeUpdate( "TRUNCATE TABLE viewTestDepTable" );
                     connection.commit();
 
+                    //noinspection ResultOfMethodCallIgnored
                     waiter.await( 5, TimeUnit.SECONDS );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
@@ -1124,6 +1156,7 @@ public class BasicMaterializedViewTest {
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
                     connection.commit();
 
+                    //noinspection ResultOfMethodCallIgnored
                     waiter.await( 5, TimeUnit.SECONDS );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
@@ -1166,6 +1199,7 @@ public class BasicMaterializedViewTest {
                 statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
                 statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable FRESHNESS INTERVAL 100 \"milliseconds\" " );
+                //noinspection ResultOfMethodCallIgnored
                 waiter.await( 2, TimeUnit.SECONDS );
 
                 try {
@@ -1178,6 +1212,7 @@ public class BasicMaterializedViewTest {
                     statement.executeUpdate( "DELETE FROM viewTestEmpTable" );
                     connection.commit();
 
+                    //noinspection ResultOfMethodCallIgnored
                     waiter.await( 2, TimeUnit.SECONDS );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),

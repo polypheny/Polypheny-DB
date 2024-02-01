@@ -223,7 +223,6 @@ public class StringFunctionsTest {
 
 
     @Test
-    @Tag("monetdbExcluded")
     public void stringOverlay() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

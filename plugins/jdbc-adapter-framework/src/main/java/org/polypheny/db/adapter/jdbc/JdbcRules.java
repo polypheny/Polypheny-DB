@@ -604,6 +604,7 @@ public class JdbcRules {
                                     && (!geoFunctionInFilter( filter ) || supportsGeoFunctionInFilter( out.dialect, filter ))
                                     && !DocumentRules.containsJson( filter )
                                     && !DocumentRules.containsDocument( filter )
+                                    && out.dialect.supportsFilter( filter )
                                     && (out.dialect.supportsNestedArrays() || (!itemOperatorInFilter( filter ) && isStringComparableArrayType( filter )))),
                     Convention.NONE, out, algBuilderFactory, JdbcFilterRule.class.getSimpleName() + "." + out );
         }

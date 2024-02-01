@@ -242,10 +242,9 @@ public class LanguageManager {
 
     public static List<ParsedQueryContext> toQueryNodes( QueryContext queries ) {
         Processor processor = queries.getLanguage().getProcessorSupplier().get();
-        List<? extends Node> statements = processor.parse( queries.getQuery() );
+        List<String> splitQueries = Arrays.stream( queries.getQuery().split( ";" ) ).filter( q -> !q.trim().isEmpty() ).toList();
 
-        return Pair.zip( statements, Arrays.stream( queries.getQuery().split( ";" ) ).filter( q -> !q.trim().isEmpty() ).toList() )
-                .stream()
+        return splitQueries.stream().flatMap( q -> processor.parse( q ).stream().map( single -> Pair.of( single, q ) ) )
                 .map( p -> ParsedQueryContext.fromQuery( p.right, p.left, queries ) )
                 .toList();
     }

@@ -349,7 +349,6 @@ public class TrigonometricFunctionsTest {
 
 
     @Test
-    @Tag("monetdbExcluded")
     public void arctangent() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
