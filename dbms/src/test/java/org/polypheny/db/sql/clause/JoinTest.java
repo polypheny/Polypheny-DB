@@ -187,6 +187,26 @@ public class JoinTest {
 
 
     @Test
+    public void nestedJoinTest() throws SQLException {
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                List<Object[]> expectedResult = ImmutableList.of(
+                        new Object[]{ 10000, "Ab", "Name1", "Name1", "Name1" },
+                        new Object[]{ 5000, "Bc", "Name2", "Name2", "Name2" },
+                        new Object[]{ 7000, "Cd", "Name3", "Name3", "Name3" }
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT * FROM (SELECT id, name FROM TableA) AS S INNER JOIN (SELECT name, Amount  FROM TableA) AS T ON S.name = T.name NATURAL JOIN (SELECT name, Amount  FROM TableA) AS X" ),
+                        expectedResult,
+                        true );
+            }
+        }
+    }
+
+
+    @Test
     public void leftJoinTest() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -197,7 +217,7 @@ public class JoinTest {
                         new Object[]{ "Cd", "Name3", "Name3", 7000 }
                 );
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT * FROM (SELECT id, name FROM TableA) AS S LEFT JOIN (SELECT name, Amount  FROM TableA) AS T ON S.name = T.name" ),
+                        statement.executeQuery( "SELECT * FROM (SELECT id, name FROM TableA) AS S LEFT JOIN (SELECT name, Amount  FROM TableA) AS T ON S.name = T.name GROUP BY T.name, S.name, S.id, T.Amount ORDER BY SUM(T.Amount + 1)" ),
                         expectedResult,
                         true );
             }

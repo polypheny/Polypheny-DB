@@ -42,8 +42,11 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.NullCollation;
+import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
@@ -51,6 +54,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystemImpl;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.language.dialect.JethroDataSqlDialect;
 import org.polypheny.db.sql.language.dialect.JethroDataSqlDialect.JethroInfo;
 import org.polypheny.db.sql.language.util.SqlBuilder;
@@ -789,6 +793,21 @@ public class SqlDialect {
 
 
     public boolean supportsFilter( Filter filter ) {
+        return true;
+    }
+
+
+    public boolean supportsSort( Sort sort ) {
+        return true;
+    }
+
+
+    public boolean supportsAggregate( Aggregate aggregate ) {
+        return true;
+    }
+
+
+    public boolean supportsJoin( Join join ) {
         return true;
     }
 

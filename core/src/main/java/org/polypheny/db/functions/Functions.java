@@ -1053,6 +1053,11 @@ public class Functions {
     }
 
 
+    public static PolyValue minus( PolyValue b0, PolyValue b1 ) {
+        return minusAny( b0, b1 );
+    }
+
+
     /**
      * SQL <code>-</code> operator applied to Object values (at least one operand has ANY type; either may be null).
      */

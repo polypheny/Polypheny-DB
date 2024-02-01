@@ -64,7 +64,7 @@ import org.polypheny.db.util.ValidatorUtil;
 
 /**
  * Relational expression that combines two relational expressions according to some condition.
- *
+ * <p>
  * Each output row has columns from the left and right inputs. The set of output rows is a subset of the cartesian product
  * of the two inputs; precisely which subset depends on the join condition.
  */
@@ -86,7 +86,7 @@ public abstract class Join extends BiAlg {
 
     /**
      * Creates a Join.
-     *
+     * <p>
      * Note: We plan to change the {@code variablesStopped} parameter to {@code Set&lt;CorrelationId&gt; variablesSet}
      * because {@link #getVariablesSet()} is preferred over {@link #getVariablesStopped()}. This constructor is not
      * deprecated, for now, because maintaining overloaded constructors in multiple sub-classes would be onerous.
@@ -191,7 +191,7 @@ public abstract class Join extends BiAlg {
 
     /**
      * Returns whether this LogicalJoin has already spawned a {@link SemiJoin} via {@link JoinAddRedundantSemiJoinRule}.
-     *
+     * <p>
      * The base implementation returns false.
      *
      * @return whether this join has already spawned a semi join
@@ -231,7 +231,14 @@ public abstract class Join extends BiAlg {
      * @param semiJoinDone Whether this join has been translated to a semi-join
      * @return Copy of this join
      */
+    @SuppressWarnings("JavadocBlankLines")
     public abstract Join copy( AlgTraitSet traitSet, RexNode conditionExpr, AlgNode left, AlgNode right, JoinAlgType joinType, boolean semiJoinDone );
+
+
+    @Override
+    public boolean containsJoin() {
+        return true;
+    }
 
 
     /**

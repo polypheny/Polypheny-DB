@@ -378,6 +378,10 @@ public interface AlgNode extends AlgOptNode, Cloneable {
         return getInputs().stream().anyMatch( AlgNode::isCrossModel );
     }
 
+    default boolean containsJoin() {
+        return getInputs().stream().anyMatch( AlgNode::containsJoin );
+    }
+
     /**
      * Context of a relational expression, for purposes of checking validity.
      */

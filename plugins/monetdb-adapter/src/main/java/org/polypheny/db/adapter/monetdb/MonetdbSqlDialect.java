@@ -24,10 +24,13 @@ import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.UnaryExpression;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.NullCollation;
 import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -165,6 +168,20 @@ public class MonetdbSqlDialect extends SqlDialect {
 
 
     @Override
+    public boolean supportsJoin( Join join ) {
+        return join.getInputs().stream().noneMatch( AlgNode::containsJoin );// monetdb seems to have an error with nested joins and aliases
+    }
+
+
+    @Override
+    public boolean supportsSort( Sort sort ) {
+        MonetdbRexVisitor visitor = new MonetdbRexVisitor();
+        sort.getChildExps().forEach( n -> n.accept( visitor ) );
+        return visitor.supportsRex;
+    }
+
+
+    @Override
     public void unparseOffsetFetch( SqlWriter writer, SqlNode offset, SqlNode fetch ) {
         unparseFetchUsingLimit( writer, offset, fetch );
     }
@@ -197,8 +214,6 @@ public class MonetdbSqlDialect extends SqlDialect {
         }
 
         super.unparseCall( writer, call, leftPrec, rightPrec );
-
-
     }
 
 

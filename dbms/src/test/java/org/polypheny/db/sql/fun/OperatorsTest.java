@@ -81,7 +81,6 @@ public class OperatorsTest {
 
     @Test
     @Tag("fileExcluded")
-    @Tag("monetdbExcluded")
     public void comparisonOperatorsTest() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

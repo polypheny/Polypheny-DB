@@ -156,7 +156,6 @@ public class AggregateTest extends MqlTestTemplate {
 
 
     @Test
-    @Tag("monetdbExcluded") // MonetClob instead of String
     public void countTest() {
         List<String> expected = MongoConnection.arrayToDoc( ImmutableList.of(
                         new Object[]{ 3 } ),
