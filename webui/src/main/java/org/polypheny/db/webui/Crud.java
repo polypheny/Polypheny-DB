@@ -3014,6 +3014,15 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
+    void pingDockerInstance( final Context ctx ) {
+        try {
+            DockerManager.getInstance().getInstanceById( Integer.parseInt( ctx.pathParam( "dockerId" ) ) ).orElseThrow( () -> new DockerUserException( 404, "No instance with that id" ) ).ping();
+        } catch ( DockerUserException e ) {
+            ctx.status( e.getStatus() ).result( e.getMessage() );
+        }
+    }
+
+
     void deleteDockerInstance( final Context ctx ) {
         try {
             DockerSetupHelper.removeDockerInstance( Integer.parseInt( ctx.pathParam( "dockerId" ) ) );

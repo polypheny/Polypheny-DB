@@ -297,6 +297,8 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/docker/instances/{dockerId}/reconnect", crud::reconnectToDockerInstance );
 
+        webuiServer.post( "/docker/instances/{dockerId}/ping", crud::pingDockerInstance );
+
         webuiServer.delete( "/docker/instances/{dockerId}", crud::deleteDockerInstance );
 
         webuiServer.get( "/docker/auto", crud::getAutoDockerStatus );

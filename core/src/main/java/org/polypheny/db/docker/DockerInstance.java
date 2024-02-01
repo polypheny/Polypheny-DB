@@ -152,7 +152,7 @@ public final class DockerInstance {
     }
 
 
-     boolean isConnected() {
+    boolean isConnected() {
         try {
             checkConnection();
             return true;
@@ -176,6 +176,21 @@ public final class DockerInstance {
     }
 
 
+    public void ping() {
+        synchronized ( this ) {
+            if ( status == Status.CONNECTED && client != null && client.isConnected() ) {
+                try {
+                    client.ping();
+                } catch ( IOException e ) {
+                    throw new DockerUserException( e );
+                }
+            } else {
+                throw new DockerUserException( "Not connected" );
+            }
+        }
+    }
+
+
     public DockerInstanceInfo getInfo() {
         synchronized ( this ) {
             int numberOfContainers = -1;
@@ -186,7 +201,7 @@ public final class DockerInstance {
             } catch ( IOException e ) {
                 // ignore
             }
-            return new DockerInstanceInfo( instanceId, isConnected(), numberOfContainers, host );
+            return new DockerInstanceInfo( instanceId, status == Status.CONNECTED, numberOfContainers, host );
         }
     }
 
