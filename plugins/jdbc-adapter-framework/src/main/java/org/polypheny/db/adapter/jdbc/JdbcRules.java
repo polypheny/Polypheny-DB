@@ -173,7 +173,7 @@ public class JdbcRules {
         public JdbcJoinRule( JdbcConvention out, AlgBuilderFactory algBuilderFactory ) {
             super(
                     Join.class,
-                    (Predicate<AlgNode>) r -> true,
+                    out.dialect::supportsJoin,
                     Convention.NONE,
                     out,
                     algBuilderFactory,
@@ -713,7 +713,7 @@ public class JdbcRules {
          * Creates a JdbcAggregateRule.
          */
         public JdbcAggregateRule( JdbcConvention out, AlgBuilderFactory algBuilderFactory ) {
-            super( Aggregate.class, (Predicate<AlgNode>) r -> true, Convention.NONE, out, algBuilderFactory, "JdbcAggregateRule." + out );
+            super( Aggregate.class, out.dialect::supportsAggregate, Convention.NONE, out, algBuilderFactory, "JdbcAggregateRule." + out );
         }
 
 
@@ -813,7 +813,7 @@ public class JdbcRules {
          * Creates a JdbcSortRule.
          */
         public JdbcSortRule( JdbcConvention out, AlgBuilderFactory algBuilderFactory ) {
-            super( Sort.class, (Predicate<AlgNode>) r -> true, Convention.NONE, out, algBuilderFactory, "JdbcSortRule." + out );
+            super( Sort.class, out.dialect::supportsSort, Convention.NONE, out, algBuilderFactory, "JdbcSortRule." + out );
         }
 
 

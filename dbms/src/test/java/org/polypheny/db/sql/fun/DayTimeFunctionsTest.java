@@ -92,7 +92,6 @@ public class DayTimeFunctionsTest {
 
 
     @Test
-    @Tag("monetdbExcluded")
     public void dateTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -284,7 +283,6 @@ public class DayTimeFunctionsTest {
 
 
     @Test
-    @Tag("monetdbExcluded")
     @Tag("fileExcluded")
     public void timeStampTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -307,7 +305,6 @@ public class DayTimeFunctionsTest {
 
 
     @Test
-    @Tag("monetdbExcluded")
     @Tag("fileExcluded")
     public void timeStampExtractTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -331,7 +328,6 @@ public class DayTimeFunctionsTest {
 
 
     @Test
-    @Tag("monetdbExcluded")
     @Tag("fileExcluded")
     public void timeStampQuarterTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -355,7 +351,6 @@ public class DayTimeFunctionsTest {
 
 
     @Test
-    @Tag("monetdbExcluded")
     @Tag("fileExcluded")
     public void timeStampMonthTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -379,7 +374,6 @@ public class DayTimeFunctionsTest {
 
 
     @Test
-    @Tag("monetdbExcluded")
     @Tag("fileExcluded")
     public void timeStampWeekTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -403,7 +397,6 @@ public class DayTimeFunctionsTest {
 
 
     @Test
-    @Tag("monetdbExcluded")
     @Tag("fileExcluded")
     public void timeStampDoyTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -427,7 +420,6 @@ public class DayTimeFunctionsTest {
 
 
     @Test
-    @Tag("monetdbExcluded")
     @Tag("fileExcluded")
     public void timeStampDomTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -451,7 +443,6 @@ public class DayTimeFunctionsTest {
 
 
     @Test
-    @Tag("monetdbExcluded")
     @Tag("fileExcluded")
     public void timeStampDowTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -475,7 +466,6 @@ public class DayTimeFunctionsTest {
 
 
     @Test
-    @Tag("monetdbExcluded")
     @Tag("fileExcluded")
     public void timeStampHourTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -499,7 +489,6 @@ public class DayTimeFunctionsTest {
 
 
     @Test
-    @Tag("monetdbExcluded")
     @Tag("fileExcluded")
     public void timeStampMinuteTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -523,7 +512,6 @@ public class DayTimeFunctionsTest {
 
 
     @Test
-    @Tag("monetdbExcluded")
     @Tag("fileExcluded")
     public void timeStampSecondsTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -547,7 +535,6 @@ public class DayTimeFunctionsTest {
 
 
     @Test
-    @Tag("monetdbExcluded")
     @Tag("fileExcluded")
     public void timeStampFloorTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -572,7 +559,6 @@ public class DayTimeFunctionsTest {
 
 
     @Test
-    @Tag("monetdbExcluded")
     @Tag("fileExcluded")
     public void timeStampAddTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {

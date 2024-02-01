@@ -20,6 +20,7 @@ package org.polypheny.db.sql.language;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nonnull;
+import lombok.Setter;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.languages.ParserPos;
@@ -43,14 +44,22 @@ public class SqlSelect extends SqlCall implements Select {
     public static final int HAVING_OPERAND = 5;
 
     SqlNodeList keywordList;
+    @Setter
     SqlNodeList selectList;
+    @Setter
     SqlNode from;
+    @Setter
     SqlNode where;
+    @Setter
     SqlNodeList groupBy;
+    @Setter
     SqlNode having;
     SqlNodeList windowDecls;
+    @Setter
     SqlNodeList orderBy;
+    @Setter
     SqlNode offset;
+    @Setter
     SqlNode fetch;
 
 
@@ -182,28 +191,13 @@ public class SqlSelect extends SqlCall implements Select {
     }
 
 
-    public void setFrom( SqlNode from ) {
-        this.from = from;
-    }
-
-
     public final SqlNodeList getGroup() {
         return groupBy;
     }
 
 
-    public void setGroupBy( SqlNodeList groupBy ) {
-        this.groupBy = groupBy;
-    }
-
-
     public final SqlNode getHaving() {
         return having;
-    }
-
-
-    public void setHaving( SqlNode having ) {
-        this.having = having;
     }
 
 
@@ -218,18 +212,8 @@ public class SqlSelect extends SqlCall implements Select {
     }
 
 
-    public void setSelectList( SqlNodeList selectList ) {
-        this.selectList = selectList;
-    }
-
-
     public final SqlNode getWhere() {
         return where;
-    }
-
-
-    public void setWhere( SqlNode whereClause ) {
-        this.where = whereClause;
     }
 
 
@@ -244,28 +228,13 @@ public class SqlSelect extends SqlCall implements Select {
     }
 
 
-    public void setOrderBy( SqlNodeList orderBy ) {
-        this.orderBy = orderBy;
-    }
-
-
     public final SqlNode getOffset() {
         return offset;
     }
 
 
-    public void setOffset( SqlNode offset ) {
-        this.offset = offset;
-    }
-
-
     public final SqlNode getFetch() {
         return fetch;
-    }
-
-
-    public void setFetch( SqlNode fetch ) {
-        this.fetch = fetch;
     }
 
 

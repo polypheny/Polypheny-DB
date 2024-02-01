@@ -41,6 +41,7 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import lombok.Getter;
 import org.apache.calcite.linq4j.Linq4j;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
@@ -64,10 +65,10 @@ import org.slf4j.Logger;
 
 /**
  * Subset of an equivalence class where all algebra expressions have the same physical properties.
- *
+ * <p>
  * Physical properties are instances of the {@link AlgTraitSet}, and consist of traits such as calling convention and
  * collation (sort-order).
- *
+ * <p>
  * For some traits, a algebra expression can have more than one instance. For example, R can be sorted on both [X]
  * and [Y, Z]. In which case, R would belong to the sub-sets for [X] and [Y, Z]; and also the leading edges [Y] and [].
  *
@@ -93,6 +94,7 @@ public class AlgSubset extends AbstractAlgNode {
     /**
      * best known plan
      */
+    @Getter
     AlgNode best;
 
     /**
@@ -118,7 +120,7 @@ public class AlgSubset extends AbstractAlgNode {
 
     /**
      * Computes the best {@link AlgNode} in this subset.
-     *
+     * <p>
      * Only necessary when a subset is created in a set that has subsets that subsume it. Rationale:
      *
      * <ol>
@@ -139,8 +141,9 @@ public class AlgSubset extends AbstractAlgNode {
     }
 
 
-    public AlgNode getBest() {
-        return best;
+    @Override
+    public boolean containsJoin() {
+        return set.alg.containsJoin();
     }
 
 
@@ -203,7 +206,7 @@ public class AlgSubset extends AbstractAlgNode {
     protected String computeDigest() {
         StringBuilder digest = new StringBuilder( "Subset#" );
         digest.append( set.id );
-        for ( AlgTrait trait : traitSet ) {
+        for ( AlgTrait<?> trait : traitSet ) {
             digest.append( '.' ).append( trait );
         }
         return digest.toString();
@@ -438,8 +441,7 @@ public class AlgSubset extends AbstractAlgNode {
 
 
         public AlgNode visit( AlgNode p, int ordinal, AlgNode parent ) {
-            if ( p instanceof AlgSubset ) {
-                AlgSubset subset = (AlgSubset) p;
+            if ( p instanceof AlgSubset subset ) {
                 AlgNode cheapest = subset.best;
                 if ( cheapest == null ) {
                     AlgOptCost cost = planner.getCost( p, p.getCluster().getMetadataQuery() );

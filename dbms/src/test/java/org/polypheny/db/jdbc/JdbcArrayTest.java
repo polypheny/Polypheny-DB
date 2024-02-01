@@ -337,8 +337,6 @@ public class JdbcArrayTest {
     @Test
     //@Ignore
     @Tag("fileExcluded")
-    @Tag("hsqldbExcluded")
-    @Tag("monetdbExcluded")
     public void itemOperatorTest2() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

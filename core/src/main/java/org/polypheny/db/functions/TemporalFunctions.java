@@ -72,7 +72,7 @@ public class TemporalFunctions {
 
     @SuppressWarnings("unused")
     public static PolyLong unixDateExtract( TimeUnitRange unitRange, PolyTemporal date ) {
-        return PolyLong.of( DateTimeUtils.unixDateExtract( unitRange, date.getMillisSinceEpoch() ) );
+        return PolyLong.of( DateTimeUtils.unixDateExtract( unitRange, date.getDaysSinceEpoch() ) );
     }
 
 
