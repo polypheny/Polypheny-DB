@@ -457,6 +457,10 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_REMOVE_LABELS ), BuiltInMethod.CYPHER_REMOVE_LABELS.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_REMOVE_PROPERTY ), BuiltInMethod.CYPHER_REMOVE_PROPERTY.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_GRAPH_ONLY_LABEL ), BuiltInMethod.X_MODEL_GRAPH_ONLY_LABEL.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_GEO_DISTANCE ), BuiltInMethod.CYPHER_GEO_DISTANCE.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_GEO_CONTAINS ), BuiltInMethod.CYPHER_GEO_CONTAINS.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_GEO_INTERSECTS ), BuiltInMethod.CYPHER_GEO_INTERSECTS.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_GEO_WITHIN ), BuiltInMethod.CYPHER_GEO_WITHIN.method, NullPolicy.NONE );
     }
 
 

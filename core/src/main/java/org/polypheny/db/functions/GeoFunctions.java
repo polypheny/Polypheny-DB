@@ -21,10 +21,11 @@ import static org.polypheny.db.functions.Functions.toUnchecked;
 import java.util.Objects;
 import org.polypheny.db.functions.spatial.GeoTransformFunctions;
 import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
-import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.spatial.GeometryTopologicalException;
 import org.polypheny.db.type.entity.spatial.InvalidGeometryException;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
@@ -278,6 +279,22 @@ public class GeoFunctions {
 
 
     @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stIntersects( PolyValue g1, PolyValue g2 ) {
+        try {
+            PolyGeometry geom1 = validateAndCreateGeometry( g1 );
+            PolyGeometry geom2 = validateAndCreateGeometry( g2 );
+            if ( geom1 == null || geom2 == null ) {
+                throw new InvalidGeometryException( "Could not analyze spatial relationship of null geometries" );
+            }
+            return PolyBoolean.of( geom1.intersects( geom2 ) );
+        } catch ( InvalidGeometryException e ) {
+            // could not throw exceptions in Cypher for now
+            return PolyBoolean.of( Boolean.FALSE );
+        }
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean stCrosses( PolyGeometry g1, PolyGeometry g2 ) {
         restrictToSrid( g1, g2 );
         return PolyBoolean.of( g1.crosses( g2 ) );
@@ -292,9 +309,41 @@ public class GeoFunctions {
 
 
     @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stWithin( PolyValue g1, PolyValue g2 ) {
+        try {
+            PolyGeometry geom1 = validateAndCreateGeometry( g1 );
+            PolyGeometry geom2 = validateAndCreateGeometry( g2 );
+            if ( geom1 == null || geom2 == null ) {
+                throw new InvalidGeometryException( "Could not analyze spatial relationship of null geometries" );
+            }
+            return PolyBoolean.of( geom1.within( geom2 ) );
+        } catch ( InvalidGeometryException e ) {
+            // could not throw exceptions in Cypher for now
+            return PolyBoolean.of( Boolean.FALSE );
+        }
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean stContains( PolyGeometry g1, PolyGeometry g2 ) {
         restrictToSrid( g1, g2 );
         return PolyBoolean.of( g1.contains( g2 ) );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stContains( PolyValue g1, PolyValue g2 ) {
+        try {
+            PolyGeometry geom1 = validateAndCreateGeometry( g1 );
+            PolyGeometry geom2 = validateAndCreateGeometry( g2 );
+            if ( geom1 == null || geom2 == null ) {
+                throw new InvalidGeometryException( "Could not analyze spatial relationship of null geometries" );
+            }
+            return PolyBoolean.of( geom1.contains( geom2 ) );
+        } catch ( InvalidGeometryException e ) {
+            // could not throw exceptions in Cypher for now
+            return PolyBoolean.of( Boolean.FALSE );
+        }
     }
 
 
@@ -343,6 +392,29 @@ public class GeoFunctions {
             return PolyFloat.of( g1.distance( g2 ) );
         } catch ( GeometryTopologicalException e ) {
             throw toUnchecked( e );
+        }
+    }
+
+
+    /**
+     * Calculate the distance for WKT input (Cypher data model). Use WGS 84 SRID.
+     *
+     * @param g1 WKT with the geometry
+     * @param g2 WKT with the other geometry
+     * @return spherical distance between two geometries
+     */
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyNumber stDistance( PolyValue g1, PolyValue g2 ) {
+        try {
+            PolyGeometry geom1 = validateAndCreateGeometry( g1 );
+            PolyGeometry geom2 = validateAndCreateGeometry( g2 );
+            if ( geom1 == null || geom2 == null ) {
+                throw new InvalidGeometryException( "Could not calculate distance of null geometries" );
+            }
+            return PolyFloat.of( geom1.distance( geom2 ) );
+        } catch ( InvalidGeometryException | GeometryTopologicalException e ) {
+            // could not throw exceptions in Cypher for now
+            return PolyFloat.of( 0 );
         }
     }
 
@@ -552,6 +624,14 @@ public class GeoFunctions {
         if ( !Objects.equals( g1.getSRID(), g2.getSRID() ) ) {
             throw toUnchecked( new GeometryTopologicalException( SRID_RESTRICTION ) );
         }
+    }
+
+
+    private static PolyGeometry validateAndCreateGeometry( PolyValue input ) throws InvalidGeometryException {
+        if ( input == null || !input.isString() ) {
+            return null;
+        }
+        return PolyGeometry.fromWKT( input.asString().getValue(), PolyGeometry.WGS_84 );
     }
 
 }

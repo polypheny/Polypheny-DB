@@ -1710,6 +1710,14 @@ public enum OperatorName {
 
     CYPHER_GRAPH_ONLY_LABEL( LangFunctionOperator.class ),
 
+    CYPHER_GEO_DISTANCE( LangFunctionOperator.class ),
+
+    CYPHER_GEO_CONTAINS( LangFunctionOperator.class ),
+
+    CYPHER_GEO_INTERSECTS( LangFunctionOperator.class ),
+
+    CYPHER_GEO_WITHIN( LangFunctionOperator.class ),
+
     // CROSS MODEL FUNCTION
 
     CROSS_MODEL_ITEM( LangFunctionOperator.class ),

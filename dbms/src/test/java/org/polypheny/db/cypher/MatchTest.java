@@ -142,6 +142,36 @@ public class MatchTest extends CypherTestTemplate {
         assert is( res, Type.ANY, 1 );
     }
 
+
+    @Test
+    public void functionProjectTest() {
+        execute( SINGLE_NODE_GEOM );
+        GraphResult res = execute( "MATCH (c:City) RETURN c.name, geo_Distance(c.location, 'POINT (7.852923 47.998949)') as distance" );
+        assert is( res, Type.ANY, 0 );
+        assert containsIn( res, true, 0, "c.name", TestLiteral.from( "Basel" ) );
+        assert containsIn( res, true, 1, "distance", TestLiteral.from( "52812.52" ) );
+    }
+
+
+    @Test
+    public void functionGeoIntersectsTest() {
+        execute( SINGLE_NODE_GEOM );
+        GraphResult res = execute( "MATCH (c:City) RETURN c.name, Geo_Intersects(c.location, 'POINT (7.852923 47.998949)')" );
+        assert is( res, Type.ANY, 0 );
+        assert containsIn( res, true, 0, "c.name", TestLiteral.from( "Basel" ) );
+        assert containsIn( res, true, 1, "CYPHER_GEO_INTERSECTS", TestLiteral.from( "false" ) );
+    }
+
+
+    @Test
+    public void functionGeoWithinTest() {
+        execute( SINGLE_NODE_GEOM );
+        GraphResult res = execute( "MATCH (c:City) RETURN c.name, Geo_Within('POLYGON ((7.579962 47.551795, 7.579962 47.559905, 7.600045 47.559905, 7.600045 47.551795, 7.579962 47.551795))', c.location) as geo_within" );
+        assert is( res, Type.ANY, 0 );
+        assert containsIn( res, true, 0, "c.name", TestLiteral.from( "Basel" ) );
+        assert containsIn( res, true, 1, "geo_within", TestLiteral.from( "false" ) );
+    }
+
     ///////////////////////////////////////////////
     ///////// EDGE
     ///////////////////////////////////////////////

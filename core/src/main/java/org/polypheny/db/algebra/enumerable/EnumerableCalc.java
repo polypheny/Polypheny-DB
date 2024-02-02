@@ -96,7 +96,7 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
 
     @Override
     public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        return planner.getCostFactory().makeInfiniteCost();
+        return super.computeSelfCost( planner, mq ).multiplyBy( EnumerableConvention.COST_MULTIPLIER );
     }
 
 
