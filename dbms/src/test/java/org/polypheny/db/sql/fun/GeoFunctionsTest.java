@@ -48,7 +48,6 @@ public class GeoFunctionsTest {
                 statement.executeUpdate( "CREATE TABLE TEST_GIS(ID INTEGER NOT NULL, WKT GEOMETRY, PRIMARY KEY (ID))" );
                 statement.executeUpdate( "INSERT INTO TEST_GIS VALUES (1, ST_GeomFromText('POINT (7.852923 47.998949)', 4326))" );
                 statement.executeUpdate( "INSERT INTO TEST_GIS VALUES (2, ST_GeomFromText('POINT (9.289382 48.741588)', 4326))" );
-                // statement.executeUpdate( "INSERT INTO TEST_GIS VALUES (3, ST_GeomFromText('MULTIPOLYGON(((-95.58358199999999 31.75272,-95.583542 31.751756,-95.58359 31.751768,-95.58397599999999 31.751911999999997,-95.584453 31.752079,-95.584716 31.752173,-95.58653299999999 31.752824999999998,-95.58699899999999 31.753007,-95.587229 31.753089,-95.587459 31.753145,-95.587657 31.753207,-95.58771499999999 31.753207,-95.58811899999999 31.753204,-95.588354 31.753224,-95.58863699999999 31.753199,-95.588644 31.753594999999997,-95.58864899999999 31.75394,-95.587313 31.753967,-95.587316 31.755177999999997,-95.583674 31.754368999999997,-95.58358199999999 31.75272)))', 4326))" );
                 connection.commit();
             }
         }
@@ -180,6 +179,13 @@ public class GeoFunctionsTest {
                         ImmutableList.of(
                                 new Object[]{ "SRID=0;POLYGON ((-1 -1, -1 2, 2 2, -1 -1))" }
                         ) );
+                // get the convex hull of the geometry from the database
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ST_ConvexHull(WKT) from TEST_GIS" ),
+                        ImmutableList.of(
+                                new Object[]{ "SRID=4326;POINT (7.852923 47.998949)" },
+                                new Object[]{ "SRID=4326;POINT (9.289382 48.741588)" }
+                        ) );
                 // get the centroid of the geometry
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT ST_Centroid(ST_GeomFromText('POLYGON ( (-1 -1, 2 2, -1 2, -1 -1 ) )'))" ),
@@ -287,6 +293,24 @@ public class GeoFunctionsTest {
                         statement.executeQuery( "SELECT ST_Relate(ST_GeomFromText('POINT (9.3 48)', 4326), ST_GeomFromText('POLYGON ((9.289382 48.741588, 10.289382 47.741588, 9.289382 47.741588, 9.289382 48.741588))', 4326), 'T********')" ),
                         ImmutableList.of(
                                 new Object[]{ true }
+                        ) );
+                // check that area contains the point
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT count(*) from TEST_GIS where ST_Contains(ST_GeomFromText('POLYGON ((9.2 48.8, 10.289382 48.8, 10.289382 47.741588, 9.2 47.741588, 9.2 48.8))', 4326), WKT) and id = 2" ),
+                        ImmutableList.of(
+                                new Object[]{ 1 }
+                        ) );
+                // check that point is within area
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT count(*) from TEST_GIS where ST_Within(wkt, ST_GeomFromText('POLYGON ((9.2 48.8, 10.289382 48.8, 10.289382 47.741588, 9.2 47.741588, 9.2 48.8))', 4326))" ),
+                        ImmutableList.of(
+                                new Object[]{ 1 }
+                        ) );
+                // spatial join
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT count(*) from TEST_GIS g1, TEST_GIS g2  where ST_Contains(g1.wkt, g2.wkt)" ),
+                        ImmutableList.of(
+                                new Object[]{ 0 }
                         ) );
             }
         }

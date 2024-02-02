@@ -142,7 +142,7 @@ public abstract class AlgDataTypeSystemImpl implements AlgDataTypeSystem {
             case JSON:
             case VARCHAR:
             case CHAR:
-                return 65536;
+                return 524288;
             case VARBINARY:
             case BINARY:
                 return 65536;

@@ -42,10 +42,13 @@ import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.enumerable.impl.AggAddContextImpl;
 import org.polypheny.db.algebra.enumerable.impl.AggResultContextImpl;
 import org.polypheny.db.algebra.fun.AggFunction;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl.SyntheticRecordType;
 import org.polypheny.db.rex.RexIndexRef;
@@ -87,6 +90,11 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
             // Semantic error not possible. Must be a bug. Convert to internal error.
             throw new AssertionError( e );
         }
+    }
+
+    @Override
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+         return planner.getCostFactory().makeInfiniteCost();
     }
 
 

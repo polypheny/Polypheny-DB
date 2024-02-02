@@ -552,7 +552,7 @@ public class JdbcRules {
 
         @Override
         public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-            return super.computeSelfCost( planner, mq ).multiplyBy( JdbcConvention.COST_MULTIPLIER );
+            return super.computeSelfCost( planner, mq ).multiplyBy( .1 );
         }
 
 
@@ -747,6 +747,11 @@ public class JdbcRules {
             return implementor.implement( this );
         }
 
+        @Override
+        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+            return super.computeSelfCost( planner, mq ).multiplyBy( .1 );
+        }
+
     }
 
 
@@ -840,6 +845,11 @@ public class JdbcRules {
                 // Semantic error not possible. Must be a bug. Convert to internal error.
                 throw new AssertionError( e );
             }
+        }
+
+        @Override
+        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+            return super.computeSelfCost( planner, mq ).multiplyBy( .1 );
         }
 
 
@@ -1154,7 +1164,6 @@ public class JdbcRules {
 
         @Override
         public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-            double cost = super.computeSelfCost( planner, mq ).getCosts();
             return super.computeSelfCost( planner, mq ).multiplyBy( .1 );
         }
 

@@ -165,18 +165,18 @@ public class PolyGeometry extends PolyValue {
     }
 
 
-    public static PolyGeometry of( String wkt ) throws InvalidGeometryException {
-        return new PolyGeometry( wkt );
-    }
-
-
-    public static PolyGeometry ofNullable( String wkt ) {
+    public static PolyGeometry of( String wkt ) {
         try {
-            return wkt == null ? null : of( wkt );
+            return new PolyGeometry( wkt );
         } catch ( InvalidGeometryException e ) {
             // hack to deal that InvalidGeometryException is not caught in code generation
             return null;
         }
+    }
+
+
+    public static PolyGeometry ofNullable( String wkt ) {
+        return wkt == null ? null : of( wkt );
     }
 
 
@@ -200,6 +200,7 @@ public class PolyGeometry extends PolyValue {
     }
 
 
+    @SuppressWarnings( "unused" )
     public static PolyGeometry fromWKT( String wkt, int srid ) throws InvalidGeometryException {
         return new PolyGeometry( wkt, srid );
     }
@@ -215,6 +216,7 @@ public class PolyGeometry extends PolyValue {
     }
 
 
+    @SuppressWarnings( "unused" )
     public static PolyGeometry fromNullableGeoJson( String geoJson ) {
         try {
             return geoJson == null ? null : fromGeoJson( geoJson );

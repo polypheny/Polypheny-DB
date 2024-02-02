@@ -42,6 +42,8 @@ import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMdDistribution;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptPredicateList;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexBuilder;
@@ -90,6 +92,11 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
     public EnumerableCalc copy( AlgTraitSet traitSet, AlgNode child, RexProgram program ) {
         // we do not need to copy program; it is immutable
         return new EnumerableCalc( getCluster(), traitSet, child, program );
+    }
+
+    @Override
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        return planner.getCostFactory().makeInfiniteCost();
     }
 
 

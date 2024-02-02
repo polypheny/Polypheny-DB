@@ -104,7 +104,7 @@ public class PostgresqlSqlDialect extends SqlDialect {
     }
 
     public List<OperatorName> supportedGeoFunctions() {
-        return ImmutableList.of(OperatorName.ST_GEOMFROMTEXT, OperatorName.ST_TRANSFORM,
+        return ImmutableList.of(OperatorName.ST_GEOMFROMTEXT, OperatorName.ST_TRANSFORM, OperatorName.ST_EQUALS,
                 OperatorName.ST_ISSIMPLE, OperatorName.ST_ISCLOSED, OperatorName.ST_ISEMPTY,  OperatorName.ST_ISRING,
                 OperatorName.ST_NUMPOINTS, OperatorName.ST_DIMENSION, OperatorName.ST_LENGTH, OperatorName.ST_AREA,
                 OperatorName.ST_ENVELOPE, OperatorName.ST_BOUNDARY, OperatorName.ST_CONVEXHULL, OperatorName.ST_CENTROID,

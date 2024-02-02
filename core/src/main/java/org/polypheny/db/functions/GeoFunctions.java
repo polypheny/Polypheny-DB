@@ -54,7 +54,7 @@ public class GeoFunctions {
     @SuppressWarnings("UnusedDeclaration")
     public static PolyGeometry stGeomFromText( PolyString wkt ) {
         try {
-            return PolyGeometry.of( wkt.value );
+            return PolyGeometry.fromWKT( wkt.value );
         } catch ( InvalidGeometryException e ) {
             throw toUnchecked( e );
         }
@@ -64,7 +64,7 @@ public class GeoFunctions {
     @SuppressWarnings("UnusedDeclaration")
     public static PolyGeometry stGeomFromText( PolyString wkt, PolyNumber srid ) {
         try {
-            return PolyGeometry.of( wkt.value, srid.intValue() );
+            return PolyGeometry.fromWKT( wkt.value, srid.intValue() );
         } catch ( InvalidGeometryException e ) {
             throw toUnchecked( e );
         }
