@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,14 +29,21 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.annotation.Nullable;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerator;
+import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.commons.io.FileUtils;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileAlg.FileImplementor.Operation;
 import org.polypheny.db.adapter.file.FilePlugin.FileStore;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -62,7 +68,7 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
     Long updateDeleteCount = 0L;
     boolean updatedOrDeleted = false;
     final int numOfCols;
-    final DataContext dataContext;
+    final EnumerableDataContext dataContext;
     final Condition condition;
     final Integer[] projectionMapping;
     final PolyType[] columnTypes;
@@ -97,16 +103,17 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
             final Condition condition,
             final Value[] updates ) {
 
-        if ( dataContext.getParameterValues().size() > 1 && (operation == Operation.UPDATE || operation == Operation.DELETE) ) {
+        /*if ( dataContext.getParameterValues().size() > 1 && (operation == Operation.UPDATE || operation == Operation.DELETE) ) {
             throw new GenericRuntimeException( "The file store does not support batch update or delete statements!" );
-        }
+        }*/
 
         this.operation = operation;
         if ( operation == Operation.DELETE || operation == Operation.UPDATE ) {
             //fix to make sure current is never null
             current = new PolyLong[]{ PolyLong.of( Long.valueOf( 0L ) ) };
         }
-        this.dataContext = dataContext;
+        this.dataContext = new EnumerableDataContext( dataContext );
+
         this.condition = condition;
         this.projectionMapping = projectionMapping;
 
@@ -177,9 +184,22 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
 
     @Override
     public boolean moveNext() {
+        if ( operation == Operation.INSERT || operation == Operation.SELECT ) {
+            return singleNext();
+        }
+        List<Boolean> result = new ArrayList<>();
+        for ( int i = 0; i < dataContext.getBatches(); i++ ) {
+            fileListPosition = 0;
+            result.add( singleNext() );
+            dataContext.next();
+        }
+        return result.get( result.size() - 1 );
+    }
+
+
+    private boolean singleNext() {
         //todo make sure that all requirements of the interface are satisfied
         try {
-            outer:
             for ( ; ; ) {
                 if ( dataContext.getStatement().getTransaction().getCancelFlag().get() ) {
                     return false;
@@ -210,7 +230,7 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
                 PolyValue[] curr;
 
                 if ( condition != null ) {
-                    Object pkLookup = condition.getPKLookup( new HashSet<>( Arrays.asList( pkMapping ) ), columnTypes, numOfCols, dataContext );
+                    Object pkLookup = condition.getPKLookup( new HashSet<>( List.of( pkMapping ) ), columnTypes, numOfCols, dataContext );
                     if ( pkLookup != null ) {
                         int hash = hashRow( pkLookup );
                         File lookupFile = new File( FileStore.SHA.hashString( String.valueOf( hash ), FileStore.CHARSET ).toString() );
@@ -276,75 +296,9 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
                     fileListPosition++;
                     return true;
                 } else if ( operation == Operation.DELETE ) {
-                    for ( File colFolder : columnFolders ) {
-                        File source = new File( colFolder, currentFile.getName() );
-                        File target = new File( colFolder, getNewFileName( Operation.DELETE, currentFile.getName() ) );
-                        if ( source.exists() ) {
-                            Files.move( source.toPath(), target.toPath() );
-                        }
-                    }
-                    updateDeleteCount++;
-                    current = new PolyLong[]{ PolyLong.of( Long.valueOf( updateDeleteCount ) ) };
-                    fileListPosition++;
-                    //continue;
+                    handleDelete( currentFile );
                 } else if ( operation == Operation.UPDATE ) {
-                    Object[] updateObj = new Object[columnFolders.size()];
-                    Set<Integer> updatedColumns = new HashSet<>();
-                    for ( int c = 0; c < columnFolders.size(); c++ ) {
-                        if ( updates.containsKey( c ) ) {
-                            updateObj[c] = updates.get( c ).getValue( dataContext, 0 ).toJson();
-                            updatedColumns.add( c );
-                        } else {
-                            //needed for the hash
-                            updateObj[c] = ((Object[]) curr)[c];
-                        }
-                    }
-                    int newHash = hashRow( updateObj );
-                    String oldFileName = FileStore.SHA.hashString( String.valueOf( hashRow( curr ) ), FileStore.CHARSET ).toString();
-
-                    int j = 0;
-                    for ( File colFolder : columnFolders ) {
-                        File source = new File( colFolder, oldFileName );
-
-                        // write new file
-                        if ( updateObj[j] != null ) {
-                            File insertFile = new File( colFolder, getNewFileName( Operation.INSERT, String.valueOf( newHash ) ) );
-
-                            //if column has not been updated: just copy the old file to the new one with the PK in the new fileName
-                            if ( !updatedColumns.contains( j ) && source.exists() ) {
-                                Files.copy( source.toPath(), insertFile.toPath() );
-                            } else {
-                                // Write updated value. Overrides file if it exists (if you have a double update on the same item)
-                                if ( updateObj[j] instanceof FileInputHandle ) {
-                                    if ( insertFile.exists() && !insertFile.delete() ) {
-                                        throw new GenericRuntimeException( "Could not delete temporary insert file" );
-                                    }
-                                    ((FileInputHandle) updateObj[j]).materializeAsFile( insertFile.toPath() );
-                                } else if ( updateObj[j] instanceof InputStream ) {
-                                    FileUtils.copyInputStreamToFile( ((InputStream) updateObj[j]), insertFile );
-                                } else if ( updateObj[j] instanceof TimestampString ) {
-                                    Files.write( insertFile.toPath(), ("" + ((TimestampString) updateObj[j]).getMillisSinceEpoch()).getBytes( StandardCharsets.UTF_8 ) );
-                                } else if ( updateObj[j] instanceof DateString ) {
-                                    Files.write( insertFile.toPath(), ("" + ((DateString) updateObj[j]).getDaysSinceEpoch()).getBytes( StandardCharsets.UTF_8 ) );
-                                } else if ( updateObj[j] instanceof TimeString ) {
-                                    Files.write( insertFile.toPath(), ("" + ((TimeString) updateObj[j]).getMillisOfDay()).getBytes( StandardCharsets.UTF_8 ) );
-                                } else {
-                                    Files.write( insertFile.toPath(), updateObj[j].toString().getBytes( FileStore.CHARSET ) );
-                                }
-                            }
-                        }
-
-                        File deleteFile = new File( colFolder, getNewFileName( Operation.DELETE, String.valueOf( hashRow( curr ) ) ) );
-                        if ( source.exists() ) {
-                            Files.move( source.toPath(), deleteFile.toPath() );
-                        }
-                        j++;
-                    }
-
-                    updateDeleteCount++;
-                    current = new PolyLong[]{ PolyLong.of( Long.valueOf( updateDeleteCount ) ) };
-                    fileListPosition++;
-                    //continue;
+                    handleUpdate( curr );
                 } else {
                     throw new GenericRuntimeException( operation + " operation is not supported in FileEnumerator" );
                 }
@@ -352,6 +306,82 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
         } catch ( IOException | RuntimeException e ) {
             throw new GenericRuntimeException( e );
         }
+    }
+
+
+    private void handleDelete( File currentFile ) throws IOException {
+        for ( File colFolder : columnFolders ) {
+            File source = new File( colFolder, currentFile.getName() );
+            File target = new File( colFolder, getNewFileName( Operation.DELETE, currentFile.getName() ) );
+            if ( source.exists() ) {
+                Files.move( source.toPath(), target.toPath() );
+            }
+        }
+        updateDeleteCount++;
+        current = new PolyLong[]{ PolyLong.of( Long.valueOf( updateDeleteCount ) ) };
+        fileListPosition++;
+        //continue;
+    }
+
+
+    private void handleUpdate( PolyValue[] curr ) throws IOException {
+        Object[] updateObj = new Object[columnFolders.size()];
+        Set<Integer> updatedColumns = new HashSet<>();
+        for ( int c = 0; c < columnFolders.size(); c++ ) {
+            if ( updates.containsKey( c ) ) {
+                updateObj[c] = updates.get( c ).getValue( dataContext, 0 ).toJson();
+                updatedColumns.add( c );
+            } else {
+                //needed for the hash
+                updateObj[c] = ((Object[]) curr)[c];
+            }
+        }
+        int newHash = hashRow( updateObj );
+        String oldFileName = FileStore.SHA.hashString( String.valueOf( hashRow( curr ) ), FileStore.CHARSET ).toString();
+
+        int j = 0;
+        for ( File colFolder : columnFolders ) {
+            File source = new File( colFolder, oldFileName );
+
+            // write new file
+            if ( updateObj[j] != null ) {
+                File insertFile = new File( colFolder, getNewFileName( Operation.INSERT, String.valueOf( newHash ) ) );
+
+                //if column has not been updated: just copy the old file to the new one with the PK in the new fileName
+                if ( !updatedColumns.contains( j ) && source.exists() ) {
+                    Files.copy( source.toPath(), insertFile.toPath() );
+                } else {
+                    // Write updated value. Overrides file if it exists (if you have a double update on the same item)
+                    if ( updateObj[j] instanceof FileInputHandle ) {
+                        if ( insertFile.exists() && !insertFile.delete() ) {
+                            throw new GenericRuntimeException( "Could not delete temporary insert file" );
+                        }
+                        ((FileInputHandle) updateObj[j]).materializeAsFile( insertFile.toPath() );
+                    } else if ( updateObj[j] instanceof InputStream ) {
+                        FileUtils.copyInputStreamToFile( ((InputStream) updateObj[j]), insertFile );
+                    } else if ( updateObj[j] instanceof TimestampString ) {
+                        Files.writeString( insertFile.toPath(), "" + ((TimestampString) updateObj[j]).getMillisSinceEpoch() );
+                    } else if ( updateObj[j] instanceof DateString ) {
+                        Files.writeString( insertFile.toPath(), "" + ((DateString) updateObj[j]).getDaysSinceEpoch() );
+                    } else if ( updateObj[j] instanceof TimeString ) {
+                        Files.writeString( insertFile.toPath(), "" + ((TimeString) updateObj[j]).getMillisOfDay() );
+                    } else {
+                        Files.writeString( insertFile.toPath(), updateObj[j].toString(), FileStore.CHARSET );
+                    }
+                }
+            }
+
+            File deleteFile = new File( colFolder, getNewFileName( Operation.DELETE, String.valueOf( hashRow( curr ) ) ) );
+            if ( source.exists() ) {
+                Files.move( source.toPath(), deleteFile.toPath() );
+            }
+            j++;
+        }
+
+        updateDeleteCount++;
+        current = new PolyLong[]{ PolyLong.of( Long.valueOf( updateDeleteCount ) ) };
+        fileListPosition++;
+        //continue;
     }
 
 
@@ -411,11 +441,10 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
 
 
     private PolyValue[] project( final PolyValue[] o1, PolyType[] columnTypes ) {
-        PolyValue[] o = o1;//Pair.zip( o1, columnTypes ).stream().map( p -> PolyTypeUtil.stringToObject( (String) p.left, p.right ) ).toArray( PolyValue[]::new );
         assert (projectionMapping != null);
         PolyValue[] out = new PolyValue[projectionMapping.length];
         for ( int i = 0; i < projectionMapping.length; i++ ) {
-            out[i] = o[projectionMapping[i]];
+            out[i] = o1[projectionMapping[i]];
         }
         return out;
     }
@@ -447,17 +476,11 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
 
 
     String getNewFileName( final Operation operation, final String hashCode ) {
-        String operationAbbreviation;//must be of length 3!
-        switch ( operation ) {
-            case INSERT:
-                operationAbbreviation = "ins";
-                break;
-            case DELETE:
-                operationAbbreviation = "del";
-                break;
-            default:
-                throw new GenericRuntimeException( "Did not expect operation " + operation );
-        }
+        String operationAbbreviation = switch ( operation ) {
+            case INSERT -> "ins";
+            case DELETE -> "del";
+            default -> throw new GenericRuntimeException( "Did not expect operation " + operation );
+        };//must be of length 3!
         return "_"// underline at the beginning of files that are not yet committed
                 + operationAbbreviation
                 + "_"
@@ -466,6 +489,88 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
                 + "_"
                 //PK hash
                 + FileStore.SHA.hashString( hashCode, FileStore.CHARSET );
+    }
+
+
+    public static class EnumerableDataContext implements DataContext {
+
+        private final DataContext dataContext;
+        @Getter
+        private final Snapshot snapshot;
+        @Getter
+        private final JavaTypeFactory typeFactory;
+        @Getter
+        private final QueryProvider queryProvider;
+        @Getter
+        private final Statement statement;
+        @Getter
+        private final int batches;
+
+        AtomicLong couter = new AtomicLong();
+
+
+        public EnumerableDataContext( DataContext dataContext ) {
+            this.dataContext = dataContext;
+            this.snapshot = dataContext.getSnapshot();
+            this.typeFactory = dataContext.getTypeFactory();
+            this.queryProvider = dataContext.getQueryProvider();
+            this.statement = dataContext.getStatement();
+            this.batches = dataContext.getParameterValues().size();
+        }
+
+
+        public void next() {
+            couter.incrementAndGet();
+        }
+
+
+        @Override
+        public Object get( String name ) {
+            return dataContext.get( name );
+        }
+
+
+        @Override
+        public void addAll( Map<String, Object> map ) {
+            throw new GenericRuntimeException( "Not supported" );
+        }
+
+
+        @Override
+        public void addParameterValues( long index, AlgDataType type, List<PolyValue> data ) {
+            throw new GenericRuntimeException( "Not supported" );
+        }
+
+
+        @Override
+        public AlgDataType getParameterType( long index ) {
+            return dataContext.getParameterType( index + couter.get() );
+        }
+
+
+        @Override
+        public List<Map<Long, PolyValue>> getParameterValues() {
+            return List.of( dataContext.getParameterValues().get( couter.intValue() ) );
+        }
+
+
+        @Override
+        public void setParameterValues( List<Map<Long, PolyValue>> values ) {
+            throw new GenericRuntimeException( "Not supported" );
+        }
+
+
+        @Override
+        public Map<Long, AlgDataType> getParameterTypes() {
+            return dataContext.getParameterTypes();
+        }
+
+
+        @Override
+        public void setParameterTypes( Map<Long, AlgDataType> types ) {
+            throw new GenericRuntimeException( "Not supported" );
+        }
+
     }
 
 }

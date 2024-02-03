@@ -214,12 +214,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
 
 
     public void attachPrimaryKey( List<String> pkNames, StringBuilder builder ) {
-        if ( pkNames.isEmpty() ) {
-            return;
-        }
-        builder.append( ", PRIMARY KEY ( " );
-        builder.append( String.join( ",", pkNames ) );
-        builder.append( " )" );
+        // empty on purpose
     }
 
 
@@ -264,7 +259,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
         } else if ( column.collectionsType == PolyType.MAP ) {
             builder.append( getTypeString( PolyType.ARRAY ) );
         } else {
-            PolyType type = column.dimension != null ? PolyType.TEXT : column.type; // nested array was not suppored
+            PolyType type = column.dimension != null ? PolyType.TEXT : column.type; // nested array was not supported
             PolyType collectionsType = column.collectionsType == PolyType.ARRAY ? null : column.collectionsType; // nested array was not suppored
 
             builder.append( " " ).append( getTypeString( type ) );

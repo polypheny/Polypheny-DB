@@ -17,7 +17,6 @@
 package org.polypheny.db.adapter.file.algebra;
 
 
-import com.google.gson.Gson;
 import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.adapter.file.FileAlg;
@@ -69,7 +68,6 @@ public class FileProject extends Project implements FileAlg {
             // Visit FileValues only if there are RexInputRefs. Else the values will be in the exps field
             // For non-array inserts, there is no FileProject
             Value[] row = new Value[exps.size()];
-            Gson gson = new Gson();
             int i = 0;
             boolean containsInputRefs = false;
             for ( RexNode node : exps ) {

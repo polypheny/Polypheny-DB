@@ -32,7 +32,6 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.PolyValue;
@@ -42,6 +41,7 @@ import org.polypheny.db.util.Advisor;
 /**
  * Runtime context allowing access to the tables in a database.
  */
+
 public interface DataContext {
 
     ParameterExpression ROOT = Expressions.parameter( Modifier.FINAL, DataContext.class, "root" );
@@ -96,7 +96,7 @@ public interface DataContext {
 
     default PolyValue getParameterValue( long index ) {
         if ( getParameterValues().size() != 1 ) {
-            throw new GenericRuntimeException( "Illegal number of parameter sets" );
+            //throw new GenericRuntimeException( "Illegal number of parameter sets" );
         }
         return getParameterValues().get( 0 ).get( index );
     }

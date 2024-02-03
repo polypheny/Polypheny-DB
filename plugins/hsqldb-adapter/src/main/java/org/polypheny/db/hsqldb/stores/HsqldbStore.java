@@ -207,7 +207,7 @@ public class HsqldbStore extends AbstractJdbcStore {
             case DATE -> "DATE";
             case TIME -> "TIME";
             case TIMESTAMP -> "TIMESTAMP";
-            case TEXT -> "VARCHAR(20000)"; // clob can sadly not be used as pk which puts arbitrary limit on the value
+            case TEXT -> "VARCHAR(200000)"; // clob can sadly not be used as pk which puts arbitrary limit on the value
             case JSON, NODE, EDGE, DOCUMENT, ARRAY, GEOMETRY -> "LONGVARCHAR";
             default -> throw new GenericRuntimeException( "Unknown type: " + type.name() );
         };

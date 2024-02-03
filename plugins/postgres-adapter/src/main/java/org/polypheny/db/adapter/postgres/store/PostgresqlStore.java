@@ -298,17 +298,6 @@ public class PostgresqlStore extends AbstractJdbcStore {
     }
 
 
-    @Override
-    public void attachPrimaryKey( List<String> pkNames, StringBuilder builder ) {
-        if ( pkNames.isEmpty() ) {
-            // we let postgres handle this
-            return;
-        }
-        builder.append( ", PRIMARY KEY ( " );
-        builder.append( String.join( ",", pkNames ) );
-        builder.append( " ) DEFERRABLE INITIALLY IMMEDIATE" );
-    }
-
 
     @Override
     public List<IndexMethodModel> getAvailableIndexMethods() {

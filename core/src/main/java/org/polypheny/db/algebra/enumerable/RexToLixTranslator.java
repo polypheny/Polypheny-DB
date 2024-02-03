@@ -571,7 +571,7 @@ public class RexToLixTranslator {
                 String fieldName = fieldAccess.getField().getName();
                 if ( Objects.requireNonNull( target.getKind() ) == Kind.CORREL_VARIABLE ) {
                     if ( correlates == null ) {
-                        throw new RuntimeException( "Cannot translate " + expr + " since correlate variables resolver is not defined" );
+                        throw new GenericRuntimeException( "Cannot translate " + expr + " since correlate variables resolver is not defined" );
                     }
 
                     if ( target.getType().getPolyType() == PolyType.DOCUMENT ) {
@@ -887,8 +887,7 @@ public class RexToLixTranslator {
             // E.g. from "int" to "Long".
             // Generate Long.valueOf(x)
             // Eliminate primitive casts like Long.valueOf((long) x)
-            if ( operand instanceof UnaryExpression ) {
-                UnaryExpression una = (UnaryExpression) operand;
+            if ( operand instanceof UnaryExpression una ) {
                 if ( una.nodeType == ExpressionType.Convert || Primitive.of( una.getType() ) == toBox ) {
                     return Expressions.box( una.expression, toBox );
                 }

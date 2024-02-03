@@ -37,6 +37,7 @@ package org.polypheny.db.algebra.core;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.BiAlg;
@@ -55,12 +56,12 @@ import org.polypheny.db.util.ValidatorUtil;
 
 /**
  * A relational operator that performs nested-loop joins.
- *
+ * <p>
  * It behaves like a kind of {@link org.polypheny.db.algebra.core.Join}, but works by setting variables in its environment and
  * restarting its right-hand input.
- *
+ * <p>
  * Correlate is not a join since: typical rules should not match Correlate.
- *
+ * <p>
  * A Correlate is used to represent a correlated query. One implementation strategy is to de-correlate the expression.
  *
  * <table>
@@ -78,6 +79,7 @@ import org.polypheny.db.util.ValidatorUtil;
  *
  * @see CorrelationId
  */
+@Getter
 public abstract class Correlate extends BiAlg {
 
     protected final CorrelationId correlationId;
@@ -119,29 +121,19 @@ public abstract class Correlate extends BiAlg {
     public abstract Correlate copy( AlgTraitSet traitSet, AlgNode left, AlgNode right, CorrelationId correlationId, ImmutableBitSet requiredColumns, SemiJoinType joinType );
 
 
-    public SemiJoinType getJoinType() {
-        return joinType;
-    }
-
-
     @Override
     protected AlgDataType deriveRowType() {
-        switch ( joinType ) {
-            case LEFT:
-            case INNER:
-                return ValidatorUtil.deriveJoinRowType(
-                        left.getTupleType(),
-                        right.getTupleType(),
-                        joinType.toJoinType(),
-                        getCluster().getTypeFactory(),
-                        null,
-                        ImmutableList.of() );
-            case ANTI:
-            case SEMI:
-                return left.getTupleType();
-            default:
-                throw new IllegalStateException( "Unknown join type " + joinType );
-        }
+        return switch ( joinType ) {
+            case LEFT, INNER -> ValidatorUtil.deriveJoinRowType(
+                    left.getTupleType(),
+                    right.getTupleType(),
+                    joinType.toJoinType(),
+                    getCluster().getTypeFactory(),
+                    null,
+                    ImmutableList.of() );
+            case ANTI, SEMI -> left.getTupleType();
+            default -> throw new IllegalStateException( "Unknown join type " + joinType );
+        };
     }
 
 
@@ -154,29 +146,9 @@ public abstract class Correlate extends BiAlg {
     }
 
 
-    /**
-     * Returns the correlating expressions.
-     *
-     * @return correlating expressions
-     */
-    public CorrelationId getCorrelationId() {
-        return correlationId;
-    }
-
-
     @Override
     public String getCorrelVariable() {
         return correlationId.getName();
-    }
-
-
-    /**
-     * Returns the required columns in left relation required for the correlation in the right.
-     *
-     * @return columns in left relation required for the correlation in the right
-     */
-    public ImmutableBitSet getRequiredColumns() {
-        return requiredColumns;
     }
 
 

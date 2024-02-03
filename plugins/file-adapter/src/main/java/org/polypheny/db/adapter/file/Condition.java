@@ -42,7 +42,7 @@ public class Condition {
     private Integer columnReference;
     private Long literalIndex;
     private PolyValue literal;
-    private ArrayList<Condition> operands = new ArrayList<>();
+    private final ArrayList<Condition> operands = new ArrayList<>();
 
 
     public Condition( final RexCall call ) {
@@ -154,16 +154,6 @@ public class Condition {
         } else {
             out = this.literal;
         }
-        /*if ( out instanceof Calendar ) {
-            switch ( polyType ) {
-                case TIME:
-                case TIMESTAMP:
-                    return ((Calendar) out).getTimeInMillis();
-                case DATE:
-                    Calendar cal = ((Calendar) out);
-                    return LocalDateTime.ofInstant( cal.toInstant(), cal.getTimeZone().toZoneId() ).toLocalDate().toEpochDay();
-            }
-        }*/
         return out;
     }
 
@@ -211,24 +201,25 @@ public class Condition {
 
     public boolean matches( final PolyValue[] columnValues, final PolyType[] columnTypes, final DataContext dataContext ) {
         if ( columnReference == null ) { // || literalIndex == null ) {
-            switch ( operator ) {
-                case AND:
+            return switch ( operator ) {
+                case AND -> {
                     for ( Condition c : operands ) {
                         if ( !c.matches( columnValues, columnTypes, dataContext ) ) {
-                            return false;
+                            yield false;
                         }
                     }
-                    return true;
-                case OR:
+                    yield true;
+                }
+                case OR -> {
                     for ( Condition c : operands ) {
                         if ( c.matches( columnValues, columnTypes, dataContext ) ) {
-                            return true;
+                            yield true;
                         }
                     }
-                    return false;
-                default:
-                    throw new GenericRuntimeException( operator + " not supported in condition without columnReference" );
-            }
+                    yield false;
+                }
+                default -> throw new GenericRuntimeException( operator + " not supported in condition without columnReference" );
+            };
         }
         // don't allow comparison of files and return false if Objects are not comparable
         /*if ( columnValues[columnReference] == null ) {
@@ -292,38 +283,32 @@ public class Condition {
         }*/
         comparison = columnValue.compareTo( parameterValue );
 
-        switch ( operator ) {
-            case AND:
+        return switch ( operator ) {
+            case AND -> {
                 for ( Condition c : operands ) {
                     if ( !c.matches( columnValues, columnTypes, dataContext ) ) {
-                        return false;
+                        yield false;
                     }
                 }
-                return true;
-            case OR:
+                yield true;
+            }
+            case OR -> {
                 for ( Condition c : operands ) {
                     if ( c.matches( columnValues, columnTypes, dataContext ) ) {
-                        return true;
+                        yield true;
                     }
                 }
-                return false;
-            case EQUALS:
-                return comparison == 0;
-            case NOT_EQUALS:
-                return comparison != 0;
-            case GREATER_THAN:
-                return comparison > 0;
-            case GREATER_THAN_OR_EQUAL:
-                return comparison >= 0;
-            case LESS_THAN:
-                return comparison < 0;
-            case LESS_THAN_OR_EQUAL:
-                return comparison <= 0;
-            case LIKE:
-                return like( columnValue.toString(), parameterValue.toString() );
-            default:
-                throw new GenericRuntimeException( operator + " comparison not supported by file adapter." );
-        }
+                yield false;
+            }
+            case EQUALS -> comparison == 0;
+            case NOT_EQUALS -> comparison != 0;
+            case GREATER_THAN -> comparison > 0;
+            case GREATER_THAN_OR_EQUAL -> comparison >= 0;
+            case LESS_THAN -> comparison < 0;
+            case LESS_THAN_OR_EQUAL -> comparison <= 0;
+            case LIKE -> like( columnValue.toString(), parameterValue.toString() );
+            default -> throw new GenericRuntimeException( operator + " comparison not supported by file adapter." );
+        };
     }
 
 }

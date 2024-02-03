@@ -30,7 +30,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -303,7 +302,7 @@ public class FilePlugin extends PolyPlugin {
 
         @Override
         public void commit( PolyXid xid ) {
-            addWAL( xid, "commit" );
+            addWAL( xid, TerminateAction.COMMIT );
             commitOrRollback( xid, true );
             removeWAL( xid );
         }
@@ -311,19 +310,19 @@ public class FilePlugin extends PolyPlugin {
 
         @Override
         public void rollback( PolyXid xid ) {
-            addWAL( xid, "rollback" );
+            addWAL( xid, TerminateAction.ROLLBACK );
             commitOrRollback( xid, false );
             removeWAL( xid );
         }
 
 
-        void addWAL( final PolyXid key, final String value ) {
+        void addWAL( final PolyXid key, final TerminateAction action ) {
             String fileName = SHA.hashString( key.toString(), CHARSET ).toString();
             File wal = new File( WAL, fileName );
             try ( PrintWriter pw = new PrintWriter( new FileWriter( wal ) ) ) {
                 pw.println( Hex.encodeHexString( key.getGlobalTransactionId() ) );
                 pw.println( Hex.encodeHexString( key.getBranchQualifier() ) );
-                pw.println( value );
+                pw.println( action.name() );
             } catch ( IOException e ) {
                 throw new GenericRuntimeException( "Could not add entry to WAL", e );
             }
@@ -350,18 +349,18 @@ public class FilePlugin extends PolyPlugin {
                 for ( File f : walFiles ) {
                     String GID;
                     String BID;
-                    String action;
+                    TerminateAction action;
                     try ( BufferedReader br = new BufferedReader( new FileReader( f ) ) ) {
                         GID = br.readLine();
                         BID = br.readLine();
-                        action = br.readLine();
+                        action = TerminateAction.valueOf( br.readLine() );
                     }
                     PolyXid xid = new PolyXid( Hex.decodeHex( GID ), Hex.decodeHex( BID ) );
                     switch ( action ) {
-                        case "commit":
+                        case COMMIT:
                             commitOrRollback( xid, true );
                             break;
-                        case "rollback":
+                        case ROLLBACK:
                             commitOrRollback( xid, false );
                             break;
                         default:
@@ -460,7 +459,7 @@ public class FilePlugin extends PolyPlugin {
 
         @Override
         public List<IndexMethodModel> getAvailableIndexMethods() {
-            return new ArrayList<>();
+            return ImmutableList.of();
         }
 
 
@@ -511,6 +510,11 @@ public class FilePlugin extends PolyPlugin {
             return new File( rootDir, getPhysicalColumnName( columnId, partitionId ) );
         }
 
+    }
+
+
+    private enum TerminateAction {
+        COMMIT, ROLLBACK
     }
 
 

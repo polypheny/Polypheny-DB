@@ -396,7 +396,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             statement.getProcessingDuration().stop( "Parameterize" );
         }
 
-        //
         // Implementation Caching
         if ( isAnalyze ) {
             statement.getProcessingDuration().start( "Implementation Caching" );

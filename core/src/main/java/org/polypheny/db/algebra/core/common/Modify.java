@@ -41,7 +41,6 @@ public abstract class Modify<E extends Entity> extends SingleAlg {
      * Creates a <code>SingleRel</code>.
      *
      * @param cluster Cluster this relational expression belongs to
-     * @param traits
      * @param input Input relational expression
      */
     protected Modify( AlgOptCluster cluster, AlgTraitSet traits, E target, AlgNode input ) {

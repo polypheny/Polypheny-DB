@@ -310,7 +310,16 @@ public class Cql2AlgConverter {
         AlgNode baseNode = algBuilder.peek();
         for ( Pair<ColumnIndex, Map<String, Modifier>> sortSpecification : sortSpecifications ) {
             ColumnIndex columnIndex = sortSpecification.left;
-            int ordinality = projectionColumnOrdinalities.get( columnIndex.logicalColumn.id );
+
+            int ordinality;
+            if ( projectionColumnOrdinalities.containsKey( columnIndex.logicalColumn.id ) ) {
+                ordinality = projectionColumnOrdinalities.get( columnIndex.logicalColumn.id );
+            } else if ( tableScanColumnOrdinalities.containsKey( columnIndex.logicalColumn.id ) ) {
+                ordinality = tableScanColumnOrdinalities.get( columnIndex.logicalColumn.id );
+            } else {
+                throw new GenericRuntimeException( "Column ordinality not found for column: " + columnIndex.logicalColumn.name );
+            }
+
             RexNode sortingNode = rexBuilder.makeInputRef( baseNode, ordinality );
 
             // TODO: Handle Modifiers
