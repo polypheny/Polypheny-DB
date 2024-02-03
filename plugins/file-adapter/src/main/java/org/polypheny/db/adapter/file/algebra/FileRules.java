@@ -29,6 +29,7 @@ import org.polypheny.db.adapter.file.FileSchema;
 import org.polypheny.db.adapter.file.FileTranslatableEntity;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.UnsupportedFromInsertShuttle;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Filter;
@@ -38,8 +39,6 @@ import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
-import org.polypheny.db.nodes.Function;
-import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -176,7 +175,7 @@ public class FileRules {
          */
         @Override
         public boolean matches( AlgOptRuleCall call ) {
-            if ( call.alg( 0 ) instanceof LogicalProject && ((LogicalProject) call.alg( 0 )).getProjects().size() > 0 ) {
+            if ( call.alg( 0 ) instanceof LogicalProject && !((LogicalProject) call.alg( 0 )).getProjects().isEmpty() ) {
                 //RexInputRef occurs in a select query, RexLiteral/RexCall/RexDynamicParam occur in insert/update/delete queries
                 boolean isSelect = true;
                 for ( RexNode node : ((LogicalProject) call.alg( 0 )).getProjects() ) {
@@ -343,11 +342,11 @@ public class FileRules {
 
         @Override
         public Void visitCall( RexCall call ) {
-            Operator operator = call.getOperator();
-            if ( operator instanceof Function ) {
-                containsFunction = true;
+            if ( call.getKind() == Kind.EQUALS ) {
+                return super.visitCall( call );
             }
-            return super.visitCall( call );
+            containsFunction = true;
+            return null;
         }
 
     }

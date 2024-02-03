@@ -103,8 +103,7 @@ public class SimpleSqlTest {
         );
         TestHelper.executeSql(
                 ( c, s ) -> s.executeUpdate( "CREATE TABLE Person(ID INTEGER NOT NULL, NAME VARCHAR(20), PRIMARY KEY (ID))" ),
-                ( c, s ) -> s.executeUpdate( "INSERT INTO Person VALUES (1, 'Name1')" ),
-                ( c, s ) -> s.executeUpdate( "INSERT INTO Person VALUES (2, 'Name2')" ),
+                ( c, s ) -> s.executeUpdate( "INSERT INTO Person VALUES (1, 'Name1'),(2, 'Name2')" ),
                 ( c, s ) -> s.executeUpdate( "INSERT INTO Person VALUES (3, 'Name3')" ),
                 ( c, s ) -> s.executeUpdate( "INSERT INTO Person VALUES (4, 'Name4')" ),
                 ( c, s ) -> TestHelper.checkResultSet( s.executeQuery( "SELECT test, name FROM (SELECT COUNT(id) as test, name FROM Person GROUP BY name)" ), data, true ),

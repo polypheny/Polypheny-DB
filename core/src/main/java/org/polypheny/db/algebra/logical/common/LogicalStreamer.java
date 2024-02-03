@@ -44,8 +44,10 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexFieldAccess;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.tools.AlgBuilder;
 
 @EqualsAndHashCode(callSuper = true)
@@ -78,11 +80,10 @@ public class LogicalStreamer extends Streamer {
     public static LogicalStreamer create( Modify<?> allModify, AlgBuilder algBuilder ) {
         RexBuilder rexBuilder = algBuilder.getRexBuilder();
 
-        if ( !(allModify instanceof RelModify<?>) ) {
+        if ( !(allModify instanceof RelModify<?> modify) ) {
             log.debug( "non relational nodes are not supported for toModify streamer rule" );
             return null;
         }
-        RelModify<?> modify = (RelModify<?>) allModify;
 
         if ( !isModifyApplicable( modify ) ) {
             return null;
@@ -112,7 +113,7 @@ public class LogicalStreamer extends Streamer {
         if ( modify.getUpdateColumns() != null && modify.getSourceExpressions() != null ) {
             // update and source list are not null
             update.addAll( modify.getUpdateColumns() );
-            source.addAll( modify.getSourceExpressions() );
+            source.addAll( modify.getSourceExpressions().stream().map( s -> replaceCorrelates( s, modify.getEntity() ) ).toList() );
 
             // we project the needed sources out and modify them to fit the prepared
             query = LogicalProject.create( modify.getInput(), source, update );
@@ -144,6 +145,11 @@ public class LogicalStreamer extends Streamer {
     }
 
 
+    private static RexNode replaceCorrelates( RexNode node, Entity entity ) {
+        return node.accept( new CorrelationReplacer( entity ) );
+    }
+
+
     @NotNull
     public static LogicalProject getCollector( RexBuilder rexBuilder, AlgNode input ) {
         return LogicalProject.create(
@@ -152,7 +158,7 @@ public class LogicalStreamer extends Streamer {
                         .getFields()
                         .stream()
                         .map( f -> rexBuilder.makeDynamicParam( f.getType(), f.getIndex() ) )
-                        .collect( Collectors.toList() ),
+                        .toList(),
                 input.getTupleType() );
     }
 
@@ -163,13 +169,13 @@ public class LogicalStreamer extends Streamer {
                 .map( name -> {
                     int size = modify.getTupleType().getFields().size();
                     int index = modify.getEntity().getRowType().getFieldNames().indexOf( name );
-                    return rexBuilder.makeDynamicParam( modify.getEntity().getRowType().getFields().get( index ).getType(), size + index );
-                } ).collect( Collectors.toList() );
+                    return (RexNode) rexBuilder.makeDynamicParam( modify.getEntity().getRowType().getFields().get( index ).getType(), size + index );
+                } ).toList();
     }
 
 
     public static void attachFilter( AlgNode modify, AlgBuilder algBuilder, RexBuilder rexBuilder ) {
-        attachFilter( modify.getEntity(), algBuilder, rexBuilder, IntStream.range( 0, modify.getTupleType().getFieldCount() ).boxed().collect( Collectors.toList() ) );
+        attachFilter( modify.getEntity(), algBuilder, rexBuilder, IntStream.range( 0, modify.getTupleType().getFieldCount() ).boxed().toList() );
     }
 
 
@@ -228,5 +234,24 @@ public class LogicalStreamer extends Streamer {
         return new LogicalStreamer( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), inputs.get( 1 ) );
     }
 
+
+    private static class CorrelationReplacer extends RexShuttle {
+
+        private final Entity entity;
+
+
+        public CorrelationReplacer( Entity entity ) {
+            this.entity = entity;
+        }
+
+
+        @Override
+        public RexNode visitFieldAccess( RexFieldAccess fieldAccess ) {
+            int index = fieldAccess.getField().getIndex();
+            return new RexIndexRef( index, entity.getRowType().getFields().get( index ).getType() );
+        }
+
+
+    }
 
 }

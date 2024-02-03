@@ -133,8 +133,8 @@ public class ConstraintEnforceAttacher {
     }
 
 
-    public static List<EnforcementInformation> getConstraintAlg( Set<LogicalTable> catalogTables, Statement statement, EnforcementTime enforcementTime ) {
-        return catalogTables
+    public static List<EnforcementInformation> getConstraintAlg( Set<LogicalTable> tables, Statement statement, EnforcementTime enforcementTime ) {
+        return tables
                 .stream()
                 .map( t -> LogicalConstraintEnforcer.getControl( t, statement, enforcementTime ) )
                 .filter( i -> i.control() != null )

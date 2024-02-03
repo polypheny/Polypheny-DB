@@ -116,14 +116,14 @@ public class Value {
         for ( int i = offset; i < implementor.getFileTable().columns.size() + offset; i++ ) {
             if ( noCheck || exps.size() > i ) {
                 RexNode lit = exps.get( i );
-                if ( lit instanceof RexLiteral ) {
-                    valueList.add( new Value( null, ((RexLiteral) lit).value, false ) );
-                } else if ( lit instanceof RexDynamicParam ) {
-                    valueList.add( new Value( null, PolyLong.of( ((RexDynamicParam) lit).getIndex() ), true ) );
-                } else if ( lit instanceof RexIndexRef ) {
-                    valueList.add( new Value( ((RexIndexRef) lit).getIndex(), null, false ) );
-                } else if ( lit instanceof RexCall && lit.getType().getPolyType() == PolyType.ARRAY ) {
-                    valueList.add( fromArrayRexCall( (RexCall) lit ) );
+                if ( lit instanceof RexLiteral literal ) {
+                    valueList.add( new Value( null, literal.value, false ) );
+                } else if ( lit instanceof RexDynamicParam dynamicParam ) {
+                    valueList.add( new Value( null, PolyLong.of( dynamicParam.getIndex() ), true ) );
+                } else if ( lit instanceof RexIndexRef indexRef ) {
+                    valueList.add( new Value( indexRef.getIndex(), null, false ) );
+                } else if ( lit instanceof RexCall call && lit.getType().getPolyType() == PolyType.ARRAY ) {
+                    valueList.add( fromArrayRexCall( call ) );
                 } else {
                     throw new GenericRuntimeException( "Could not implement " + lit.getClass().getSimpleName() + " " + lit );
                 }

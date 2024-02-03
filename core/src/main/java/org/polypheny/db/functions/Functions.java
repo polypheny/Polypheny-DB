@@ -1112,6 +1112,11 @@ public class Functions {
     }
 
 
+    public static PolyValue multiply( PolyValue b0, PolyValue b1 ) {
+        return multiplyAny( b1, b0 );
+    }
+
+
     /**
      * SQL <code>*</code> operator applied to Object values (at least one operand has ANY type; either may be null).
      */

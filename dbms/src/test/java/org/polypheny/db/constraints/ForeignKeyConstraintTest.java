@@ -43,15 +43,15 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 public class ForeignKeyConstraintTest {
 
 
-    private static final String CREATE_TABLE_CONSTRAINT_TEST =
-            "CREATE TABLE IF NOT EXISTS constraint_test (" +
-                    "ctid INTEGER NOT NULL, " +
-                    "a INTEGER NOT NULL, " +
-                    "b INTEGER NOT NULL, " +
-                    "c INTEGER NOT NULL, " +
-                    "PRIMARY KEY (ctid), " +
-                    "CONSTRAINT u_ab UNIQUE (a, b)" +
-                    ")";
+    private static final String CREATE_TABLE_CONSTRAINT_TEST = """
+            CREATE TABLE IF NOT EXISTS constraint_test (
+                ctid INTEGER NOT NULL,\s
+                a INTEGER NOT NULL,\s
+                b INTEGER NOT NULL,\s
+                c INTEGER NOT NULL,\s
+                PRIMARY KEY (ctid),\s
+                CONSTRAINT u_ab UNIQUE (a, b)
+            )""";
 
     private static final String CREATE_TABLE_CONSTRAINT_TEST2 =
             "CREATE TABLE IF NOT EXISTS constraint_test2 (" +
@@ -351,11 +351,13 @@ public class ForeignKeyConstraintTest {
                     statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 1, 1, 1), (2, 2, 2, 2), (3, 3, 3, 3)" );
                     statement.executeUpdate( "INSERT INTO constraint_test2 VALUES (3, 3), (1, 1)" );
                     connection.commit();
+
                     try {
                         statement.executeUpdate( "UPDATE constraint_test2 SET ctid = ctid + 2" );
+
                         connection.commit();
                         Assertions.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( AvaticaClientRuntimeException e ) {
+                    } catch ( RuntimeException e ) {
                         if ( !(e.getMessage().contains( "Remote driver error:" )
                                 && e.getMessage().contains( "Transaction violates foreign key constraint" )) ) {
                             throw new RuntimeException( "Unexpected exception", e );
