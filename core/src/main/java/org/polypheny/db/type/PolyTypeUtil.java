@@ -37,7 +37,6 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
-import com.google.gson.Gson;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.nio.charset.Charset;
@@ -49,7 +48,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.IntStream;
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.reflect.TypeUtils;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -61,17 +59,7 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.nodes.validate.ValidatorScope;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.type.entity.PolyBoolean;
-import org.polypheny.db.type.entity.PolyLong;
-import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
-import org.polypheny.db.type.entity.numerical.PolyDouble;
-import org.polypheny.db.type.entity.numerical.PolyFloat;
-import org.polypheny.db.type.entity.numerical.PolyInteger;
-import org.polypheny.db.type.entity.temporal.PolyDate;
-import org.polypheny.db.type.entity.temporal.PolyTime;
-import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.NumberUtil;
 import org.polypheny.db.util.Pair;
@@ -866,7 +854,7 @@ public abstract class PolyTypeUtil {
 
     /**
      * Returns whether two types are equal, ignoring nullability.
-     *
+     * <p>
      * They need not come from the same factory.
      *
      * @param factory Type factory
@@ -1243,12 +1231,13 @@ public abstract class PolyTypeUtil {
      * @param polyType PolyType to know how to convert the string
      * @return The converted object
      */
-    public static PolyValue stringToObject( final String s, final PolyType polyType ) {
+    public static PolyValue stringToObject( final String s, final AlgDataTypeField polyType ) {
         if ( s == null || s.isEmpty() ) {
             return null;
         }
-        Gson gson = new Gson();
-        return switch ( polyType ) {
+        return PolyValue.fromTypedJson( s, PolyValue.class );
+        /*Gson gson = new Gson();
+        return switch ( polyType.getType().getPolyType() ) {
             case BOOLEAN -> PolyBoolean.of( gson.fromJson( s, Boolean.class ) );
             case TINYINT, SMALLINT, INTEGER -> PolyInteger.of( Integer.parseInt( s ) );
             case TIME -> PolyTime.of( Integer.parseInt( s ) );
@@ -1259,8 +1248,10 @@ public abstract class PolyTypeUtil {
             case REAL, FLOAT -> PolyFloat.of( Float.parseFloat( s ) );
             case DECIMAL -> PolyBigDecimal.of( new BigDecimal( s ) );
             case VARCHAR, TEXT -> PolyString.of( s );
+            case ARRAY -> PolyValue.deserialize( s );
             default -> throw new NotImplementedException();
         };
+         */
     }
 
 }

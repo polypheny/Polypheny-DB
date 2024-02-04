@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.file.algebra;
 
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -25,15 +26,18 @@ import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Blocks;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileAlg.FileImplementor;
 import org.polypheny.db.adapter.file.FileAlg.FileImplementor.Operation;
 import org.polypheny.db.adapter.file.FileConvention;
 import org.polypheny.db.adapter.file.FileMethod;
 import org.polypheny.db.adapter.file.FileSchema;
+import org.polypheny.db.adapter.file.FileTranslatableEntity;
 import org.polypheny.db.adapter.file.Value;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterImpl;
+import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
 import org.polypheny.db.algebra.enumerable.PhysType;
@@ -46,6 +50,7 @@ import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 public class FileToEnumerableConverter extends ConverterImpl implements EnumerableAlg {
@@ -90,17 +95,20 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
         }
 
         Expression _insertValues = Expressions.constant( null );
+        Type resType = Types.of( List.class, Types.of( List.class, PolyValue.class ) );
+
         if ( fileImplementor.getOperation() != Operation.SELECT ) {
             ArrayList<Expression> rowExpressions = new ArrayList<>();
             for ( Value[] row : fileImplementor.getInsertValues() ) {
                 rowExpressions.add( Value.getValuesExpression( Arrays.asList( row ) ) );
             }
-            _insertValues = Expressions.newArrayInit( Object[].class, rowExpressions );
+
+            _insertValues = EnumUtils.constantArrayList( rowExpressions, resType );
         }
 
         Expression _updates;
         if ( fileImplementor.getUpdates() != null ) {
-            _updates = Value.getValuesExpression( fileImplementor.getUpdates() );
+            _updates = EnumUtils.constantArrayList( List.of( Value.getValuesExpression( fileImplementor.getUpdates() ) ), resType );
         } else {
             _updates = Expressions.constant( null );
         }
@@ -125,7 +133,8 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
                             DataContext.ROOT,
                             Expressions.constant( fileSchema.getRootDir().getAbsolutePath() ),
                             Expressions.newArrayInit( Long.class, columnIds.toArray( new Expression[0] ) ),
-                            Expressions.newArrayInit( PolyType.class, columnTypes.toArray( new Expression[0] ) ),
+                            fileImplementor.getFileTable().asExpression( FileTranslatableEntity.class ),
+                            //.Expressions.newArrayInit( PolyType.class, columnTypes.toArray( new Expression[0] ) ),
                             Expressions.constant( fileImplementor.getFileTable().getPkIds() ),
                             Expressions.constant( fileImplementor.getProjectionMapping() ),
                             conditionExpression,
@@ -142,7 +151,7 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
                             DataContext.ROOT,
                             Expressions.constant( fileSchema.getRootDir().getAbsolutePath() ),
                             Expressions.newArrayInit( Long.class, columnIds.toArray( new Expression[0] ) ),
-                            Expressions.newArrayInit( PolyType.class, columnTypes.toArray( new Expression[0] ) ),
+                            fileImplementor.getFileTable().asExpression( FileTranslatableEntity.class ),
                             Expressions.constant( fileImplementor.getFileTable().getPkIds() ),
                             Expressions.constant( fileImplementor.isBatchInsert() ),
                             _insertValues,
@@ -154,5 +163,6 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
 
         return implementor.result( physType, Blocks.toBlock( list.toBlock() ) );
     }
+
 
 }

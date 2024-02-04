@@ -51,6 +51,7 @@ import org.polypheny.db.algebra.constant.SemiJoinType;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.impl.Expressible;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
@@ -312,7 +313,7 @@ public class EnumUtils {
      * @param clazz Type of values
      * @return expression
      */
-    public static <T> MethodCallExpression constantArrayList( List<T> values, Class<?> clazz ) {
+    public static <T> MethodCallExpression constantArrayList( List<T> values, Type clazz ) {
         return Expressions.call( BuiltInMethod.ARRAYS_AS_LIST.method, Expressions.newArrayInit( clazz, constantList( values ) ) );
     }
 
@@ -455,6 +456,10 @@ public class EnumUtils {
         return Expressions.lambda( Predicate2.class, builder.toBlock(), left_, right_ );
     }
 
+
+    public static Expression convertAlgFields( List<AlgDataTypeField> fields ) {
+        return Expressions.newArrayInit( PolyType.class, fields.stream().map( Expressible::asExpression ).toList() );
+    }
 
 }
 

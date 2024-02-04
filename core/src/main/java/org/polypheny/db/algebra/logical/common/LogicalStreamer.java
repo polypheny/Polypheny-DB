@@ -175,7 +175,8 @@ public class LogicalStreamer extends Streamer {
 
 
     public static void attachFilter( AlgNode modify, AlgBuilder algBuilder, RexBuilder rexBuilder ) {
-        attachFilter( modify.getEntity(), algBuilder, rexBuilder, IntStream.range( 0, modify.getTupleType().getFieldCount() ).boxed().toList() );
+        List<Integer> indexes = IntStream.range( 0, modify.getEntity().getRowType().getFieldCount() ).boxed().toList();
+        attachFilter( modify.getEntity(), algBuilder, rexBuilder, indexes );
     }
 
 
@@ -225,7 +226,7 @@ public class LogicalStreamer extends Streamer {
 
 
     private static List<String> getOldFieldsNames( List<String> names ) {
-        return names.stream().map( name -> name + "$old" ).collect( Collectors.toList() );
+        return names.stream().map( name -> name + "$old" ).toList();
     }
 
 

@@ -158,4 +158,14 @@ public class PolyBlob extends PolyValue {
         return Base64.encodeBytes( asByteArray() );
     }
 
+
+    public boolean isHandle() {
+        throw new UnsupportedOperationException( "Not yet implemented" );
+    }
+
+
+    public FileInputHandle getHandle() {
+        throw new UnsupportedOperationException( "Not yet implemented" );
+    }
+
 }

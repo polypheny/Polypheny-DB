@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.file;
 
 
 import java.io.File;
+import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.plan.Convention;
 
 
@@ -27,5 +28,6 @@ public interface FileSchema {
 
     File getRootDir();
 
+    Adapter<?> getAdapter();
 
 }

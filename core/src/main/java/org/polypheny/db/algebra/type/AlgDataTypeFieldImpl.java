@@ -37,6 +37,8 @@ package org.polypheny.db.algebra.type;
 import java.io.Serializable;
 import lombok.Getter;
 import lombok.Value;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Triple;
 
@@ -104,6 +106,12 @@ public class AlgDataTypeFieldImpl extends Triple<String, Long, AlgDataType> impl
     @Override
     public boolean isDynamicStar() {
         return type.getPolyType() == PolyType.DYNAMIC_STAR;
+    }
+
+
+    @Override
+    public Expression asExpression() {
+        return Expressions.new_( AlgDataTypeField.class, Expressions.constant( id ), Expressions.constant( name ), Expressions.constant( physicalName ), Expressions.constant( index ), type.asExpression() );
     }
 
 }

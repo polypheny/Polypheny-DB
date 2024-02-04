@@ -392,12 +392,13 @@ public class PolyNull extends PolyValue {
             return new BinarySerializer<>() {
                 @Override
                 public void encode( BinaryOutput out, PolyNull item ) {
-
+                    out.writeUTF8Nullable( null );
                 }
 
 
                 @Override
                 public PolyNull decode( BinaryInput in ) throws CorruptedDataException {
+                    in.readUTF8Nullable();
                     return PolyNull.NULL;
                 }
             };

@@ -34,6 +34,8 @@
 package org.polypheny.db.algebra.type;
 
 
+import org.polypheny.db.catalog.impl.Expressible;
+
 /**
  * RelDataTypeField represents the definition of a field in a structured {@link AlgDataType}.
  * <p>
@@ -41,7 +43,7 @@ package org.polypheny.db.algebra.type;
  * In any implementation of this interface, {@link #getName()} must be equivalent to {@link #getName()} and {@link #getName()} ()}
  * must be equivalent to {@link #getType()}.
  */
-public interface AlgDataTypeField {
+public interface AlgDataTypeField extends Expressible {
 
     /**
      * Gets the name of this field, which is unique within its containing type.

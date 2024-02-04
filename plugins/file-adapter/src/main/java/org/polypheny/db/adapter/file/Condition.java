@@ -19,6 +19,7 @@ package org.polypheny.db.adapter.file;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import javax.annotation.Nullable;
@@ -26,13 +27,14 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.functions.Functions;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 
 
@@ -95,12 +97,12 @@ public class Condition {
 
 
     private void assignRexNode( final RexNode rexNode ) {
-        if ( rexNode instanceof RexIndexRef ) {
-            this.columnReference = ((RexIndexRef) rexNode).getIndex();
-        } else if ( rexNode instanceof RexDynamicParam ) {
-            this.literalIndex = ((RexDynamicParam) rexNode).getIndex();
-        } else if ( rexNode instanceof RexLiteral ) {
-            this.literal = ((RexLiteral) rexNode).value;
+        if ( rexNode instanceof RexIndexRef rexIndexRef ) {
+            this.columnReference = rexIndexRef.getIndex();
+        } else if ( rexNode instanceof RexDynamicParam dynamicParam ) {
+            this.literalIndex = dynamicParam.getIndex();
+        } else if ( rexNode instanceof RexLiteral lit ) {
+            this.literal = lit.value;
         }
     }
 
@@ -113,11 +115,11 @@ public class Condition {
      * @return {@code Null} if it is not a PK lookup, or an Object array with the lookups to hash, if it is a PK lookup
      */
     @Nullable
-    public Object getPKLookup( final Set<Integer> pkColumnReferences, final PolyType[] columnTypes, final int colSize, final DataContext dataContext ) {
-        Object[] lookups = new Object[colSize];
+    public List<PolyValue> getPKLookup( final Set<Integer> pkColumnReferences, final List<AlgDataTypeField> columnTypes, final int colSize, final DataContext dataContext ) {
+        List<PolyValue> lookups = new ArrayList<>( Collections.nCopies( colSize, null ) );
         if ( operator == Kind.EQUALS && pkColumnReferences.size() == 1 ) {
             if ( pkColumnReferences.contains( columnReference ) ) {
-                lookups[columnReference] = getParamValue( dataContext, columnTypes[columnReference] );
+                lookups.set( columnReference, getParamValue( dataContext ) );
                 return lookups;
             } else {
                 return null;
@@ -147,7 +149,7 @@ public class Condition {
     /**
      * Get the value of the condition parameter, either from the literal or literalIndex
      */
-    PolyValue getParamValue( final DataContext dataContext, final PolyType polyType ) {
+    PolyValue getParamValue( final DataContext dataContext ) {
         PolyValue out;
         if ( this.literalIndex != null ) {
             out = dataContext.getParameterValue( literalIndex );
@@ -165,41 +167,19 @@ public class Condition {
      * @param expr String in SQL statement
      * @return boolean
      */
-    private static boolean like( final String str, String expr ) {
-        // No wildcards，return directly
-        if ( !expr.contains( "%" ) && !expr.contains( "_" ) ) {
-            return str.matches( expr );
+    private static boolean like( final PolyValue str, PolyValue expr ) {
+        if ( str == null || expr == null ) {
+            return false;
         }
-        final String[] parts = expr.split( "%" );
-        final boolean traillingOp = expr.endsWith( "%" );
-        StringBuffer exprBuffer = new StringBuffer( "" );
-        for ( int i = 0; i < parts.length; ++i ) {
-            final String[] p = parts[i].split( "\\\\\\?" );
-            if ( p.length > 1 ) {
-                for ( int y = 0; y < p.length; ++y ) {
-                    exprBuffer.append( p[y] );
-                    if ( i + 1 < p.length ) {
-                        exprBuffer.append( "." );
-                    }
-                }
-            } else {
-                exprBuffer.append( parts[i] );
-            }
-            if ( i + 1 < parts.length ) {
-                exprBuffer.append( "%" );
-            }
+        if ( !str.isString() || !expr.isString() ) {
+            return false;
         }
-        if ( traillingOp ) {
-            exprBuffer.append( "%" );
-        }
-        String exprMatch = exprBuffer.toString();
-        exprMatch = exprMatch.replace( "_", "." );
-        exprMatch = exprMatch.replace( "%", ".*" );
-        return str.matches( exprMatch );
+
+        return Functions.like( str.asString(), expr.asString() ).value;
     }
 
 
-    public boolean matches( final PolyValue[] columnValues, final PolyType[] columnTypes, final DataContext dataContext ) {
+    public boolean matches( final List<PolyValue> columnValues, final List<AlgDataTypeField> columnTypes, final DataContext dataContext ) {
         if ( columnReference == null ) { // || literalIndex == null ) {
             return switch ( operator ) {
                 case AND -> {
@@ -225,20 +205,20 @@ public class Condition {
         /*if ( columnValues[columnReference] == null ) {
             return false;
         }*/
-        PolyValue columnValue = columnValues[columnReference];//don't do the projectionMapping here
-        PolyType polyType = columnTypes[columnReference];
+        PolyValue columnValue = columnValues.get( columnReference );//don't do the projectionMapping here
+        AlgDataTypeField polyType = columnTypes.get( columnReference );
         switch ( operator ) {
             case IS_NULL:
-                return columnValue == null;
+                return columnValue == null || columnValue.isNull();
             case IS_NOT_NULL:
-                return columnValue != null;
+                return columnValue != null && !columnValue.isNull();
         }
-        if ( columnValue == null ) {
+        if ( columnValue == null || columnValue.isNull() ) {
             //if there is no null check and the column value is null, any check on the column value would return false
             return false;
         }
-        PolyValue parameterValue = getParamValue( dataContext, polyType );
-        if ( parameterValue == null ) {
+        PolyValue parameterValue = getParamValue( dataContext );
+        if ( parameterValue == null || parameterValue.isNull() ) {
             //WHERE x = null is always false, see https://stackoverflow.com/questions/9581745/sql-is-null-and-null
             return false;
         }
@@ -306,9 +286,14 @@ public class Condition {
             case GREATER_THAN_OR_EQUAL -> comparison >= 0;
             case LESS_THAN -> comparison < 0;
             case LESS_THAN_OR_EQUAL -> comparison <= 0;
-            case LIKE -> like( columnValue.toString(), parameterValue.toString() );
+            case LIKE -> like( columnValue, parameterValue );
             default -> throw new GenericRuntimeException( operator + " comparison not supported by file adapter." );
         };
+    }
+
+
+    public void adjust( Integer[] projectionMapping ) {
+        this.columnReference = projectionMapping[columnReference];
     }
 
 }

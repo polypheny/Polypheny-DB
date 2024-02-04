@@ -198,7 +198,7 @@ public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue
 
 
     @Override
-    public @Nullable String toTypedJson() {
+    public @NotNull String toTypedJson() {
         try {
             return JSON_WRAPPER.writerFor( new TypeReference<PolyMap<PolyValue, PolyValue>>() {
             } ).writeValueAsString( this );

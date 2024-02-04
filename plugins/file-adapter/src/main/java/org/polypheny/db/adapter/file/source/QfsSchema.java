@@ -34,11 +34,10 @@ import org.polypheny.db.adapter.file.FileAlg.FileImplementor.Operation;
 import org.polypheny.db.adapter.file.FileConvention;
 import org.polypheny.db.adapter.file.FileSchema;
 import org.polypheny.db.adapter.file.FileTranslatableEntity;
-import org.polypheny.db.adapter.file.Value;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.schema.Namespace.Schema;
 import org.polypheny.db.schema.impl.AbstractNamespace;
-import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 public class QfsSchema extends AbstractNamespace implements FileSchema, Schema {
@@ -67,6 +66,12 @@ public class QfsSchema extends AbstractNamespace implements FileSchema, Schema {
     }
 
 
+    @Override
+    public Qfs getAdapter() {
+        return null;
+    }
+
+
     public FileTranslatableEntity createFileTable( PhysicalTable table ) {
 
         List<Long> pkIds;
@@ -89,23 +94,23 @@ public class QfsSchema extends AbstractNamespace implements FileSchema, Schema {
      * Called from generated code
      */
     @SuppressWarnings("unused")
-    public static Enumerable<Object[]> execute(
+    public static Enumerable<PolyValue[]> execute(
             final Operation operation,
             final Long adapterId,
             final Long partitionId,
             final DataContext dataContext,
             final String path,
             final Long[] columnIds,
-            final PolyType[] columnTypes,
+            final FileTranslatableEntity entity,
             final List<Long> pkIds,
             final Integer[] projectionMapping,
             final Condition condition,
-            final Value[] updates ) {
+            final List<List<PolyValue>> updates ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getAdapter( adapterId ).orElseThrow() );
         return new AbstractEnumerable<>() {
             @Override
-            public Enumerator<Object[]> enumerator() {
-                return new QfsEnumerator<>( dataContext, path, columnIds, projectionMapping, condition );
+            public Enumerator<PolyValue[]> enumerator() {
+                return new QfsEnumerator( dataContext, path, columnIds, projectionMapping, condition );
             }
         };
     }

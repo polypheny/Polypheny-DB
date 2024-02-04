@@ -16,7 +16,6 @@
 
 package org.polypheny.db.adapter.file.util;
 
-import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.type.entity.PolyValue;
 
 public class FileUtil {
@@ -26,11 +25,12 @@ public class FileUtil {
     }
 
 
-    public static Object fromValue( PolyValue value ) {
+    public static PolyValue fromValue( PolyValue value ) {
         if ( value == null ) {
             return null;
         }
-        return switch ( value.type ) {
+        return value;
+        /*return switch ( value.type ) {
             case INTEGER, TINYINT, SMALLINT -> value.asNumber().IntValue();
             case REAL, FLOAT -> value.asNumber().FloatValue();
             case VARCHAR, CHAR -> value.asString().value;
@@ -43,7 +43,7 @@ public class FileUtil {
             case TIMESTAMP -> value.asTimestamp().millisSinceEpoch;
             case ARRAY -> value.asList().toJson();
             default -> throw new NotImplementedException();
-        };
+        };*/
     }
 
 }

@@ -36,6 +36,8 @@ package org.polypheny.db.algebra.type;
 
 import java.nio.charset.Charset;
 import java.util.List;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.polypheny.db.catalog.impl.Expressible;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Collation;
@@ -48,7 +50,7 @@ import org.polypheny.db.util.Wrapper;
  * This is a somewhat "fat" interface which unions the attributes of many different type classes into one. Inelegant,
  * but since our type system was defined before the advent of Java generics, it avoids a lot of typecasting.
  */
-public interface AlgDataType extends Wrapper {
+public interface AlgDataType extends Wrapper, Expressible {
 
     int SCALE_NOT_SPECIFIED = Integer.MIN_VALUE;
     int PRECISION_NOT_SPECIFIED = -1;
@@ -92,7 +94,7 @@ public interface AlgDataType extends Wrapper {
 
     /**
      * Returns the number of fields in a struct type.
-     *
+     * <p>
      * This method is equivalent to <code>{@link #getFields}.size()</code>.
      */
     int getFieldCount();
@@ -106,7 +108,7 @@ public interface AlgDataType extends Wrapper {
 
     /**
      * Looks up a field by name.
-     *
+     * <p>
      * NOTE: Be careful choosing the value of {@code caseSensitive}:
      * <ul>
      * <li>If the field name was supplied by an end-user (e.g. as a column alias in SQL), use your session's case-sensitivity setting.</li>
@@ -159,7 +161,7 @@ public interface AlgDataType extends Wrapper {
     /**
      * Gets the JDBC-defined precision for values of this type. Note that this is not always the same as the user-specified
      * precision. For example, the type INTEGER has no user-specified precision, but this method returns 10 for an INTEGER type.
-     *
+     * <p>
      * Returns {@link #PRECISION_NOT_SPECIFIED} (-1) if precision is not applicable for this type or  in Class BasicPolyType the defaultPrecision for the Datatype
      *
      * @return number of decimal digits for exact numeric types; number of decimal digits in mantissa for approximate numeric types; number of decimal digits for fractional seconds of datetime types; length in characters for character types; length in bytes for binary types; length in bits for bit types; 1 for BOOLEAN; -1 if precision is not valid for this type
@@ -169,7 +171,7 @@ public interface AlgDataType extends Wrapper {
     /**
      * Gets the JDBC-defined precision for values of this type. Note that this is not always the same as the user-specified
      * precision. For example, the type INTEGER has no user-specified precision, but this method returns 10 for an INTEGER type.
-     *
+     * <p>
      * Returns {@link #PRECISION_NOT_SPECIFIED} (-1) if precision is not applicable for this type.
      *
      * @return number of decimal digits for exact numeric types; number of decimal digits in mantissa for approximate numeric types; number of decimal digits for fractional seconds of datetime types; length in characters for character types; length in bytes for binary types; length in bits for bit types; 1 for BOOLEAN; -1 if precision is not valid for this type
@@ -231,6 +233,9 @@ public interface AlgDataType extends Wrapper {
     boolean isDynamicStruct();
 
 
+    default Expression asExpression() {
+        throw new UnsupportedOperationException();
+    }
 
 }
 

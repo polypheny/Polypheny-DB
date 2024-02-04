@@ -23,17 +23,22 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileAlg.FileImplementor;
+import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyValue;
 
 
@@ -42,7 +47,7 @@ import org.polypheny.db.type.entity.PolyValue;
  * The value can be fetched via the {@code getValue} method.
  * It comes from either a RexLiteral or from the dataContext parameterValues
  */
-public class Value {
+public class Value extends PolyValue {
 
     @Getter
     @Setter
@@ -59,11 +64,12 @@ public class Value {
      * @param isLiteralIndex True if the second parameter is a literalIndex. In this case, it has to be a Long
      */
     public Value( final Integer columnReference, final PolyValue literalOrIndex, final boolean isLiteralIndex ) {
+        super( PolyType.FILE );
         this.columnReference = columnReference;
         if ( isLiteralIndex ) {
             this.literalIndex = literalOrIndex;
         } else {
-            this.literal = literalOrIndex;
+            this.literal = literalOrIndex == null ? PolyNull.NULL : literalOrIndex;
         }
     }
 
@@ -98,7 +104,7 @@ public class Value {
         for ( Value value : values ) {
             valueConstructors.add( value.getExpression() );
         }
-        return Expressions.newArrayInit( Value[].class, valueConstructors );
+        return EnumUtils.constantArrayList( valueConstructors, PolyValue.class );
     }
 
 
@@ -139,6 +145,36 @@ public class Value {
             arrayValues.add( ((RexLiteral) node).value );
         }
         return new Value( null, PolyList.of( arrayValues ), false );
+    }
+
+
+    @Override
+    public @Nullable Long deriveByteSize() {
+        return null;
+    }
+
+
+    @Override
+    public Object toJava() {
+        return null;
+    }
+
+
+    @Override
+    public int compareTo( @NotNull PolyValue o ) {
+        return 0;
+    }
+
+
+    @Override
+    public Expression asExpression() {
+        return null;
+    }
+
+
+    @Override
+    public PolySerializable copy() {
+        return PolySerializable.deserialize( serialize(), Value.class );
     }
 
 }

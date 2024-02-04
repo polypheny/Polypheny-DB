@@ -54,6 +54,9 @@ public class FileFilter extends Filter implements FileAlg {
     public void implement( FileImplementor implementor ) {
         implementor.visitChild( 0, getInput() );
         Condition condition = new Condition( (RexCall) this.condition );//projectionMapping is not available yet
+        if ( implementor.getProjectionMapping() != null ) {
+            condition.adjust( implementor.getProjectionMapping() );
+        }
         implementor.setCondition( condition );
     }
 

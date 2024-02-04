@@ -79,8 +79,7 @@ public class FileProject extends Project implements FileAlg {
                     }
                     containsInputRefs = true;
                     implementor.visitChild( 0, getInput() );
-                } else if ( node instanceof RexCall ) {
-                    RexCall call = (RexCall) node;
+                } else if ( node instanceof RexCall call ) {
                     List<PolyValue> arrayValues = new ArrayList<>();
                     for ( RexNode node1 : call.getOperands() ) {
                         arrayValues.add( ((RexLiteral) node1).value );

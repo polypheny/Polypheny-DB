@@ -256,7 +256,7 @@ public class CrossModelFunctions {
      */
     private static void nodeTableInsert( DataContext context, List<Function0<Enumerable<?>>> enumerables, int i, AlgDataType idType, AlgDataType labelType, PolyNode node ) {
         List<PolyValue> labels = new ArrayList<>( node.labels );
-        labels.add( 0, PolyString.of( "" ) ); // id + key (null ) is required for each node to enable label-less nodes
+        labels.add( 0, PolyString.of( "$" ) ); // id + key (null ) is required for each node to enable label-less nodes
         context.addParameterValues( 0, idType, Collections.nCopies( labels.size(), node.id ) );
         context.addParameterValues( 1, labelType, labels );
         drainInserts( enumerables.get( i ), labels.size() );
