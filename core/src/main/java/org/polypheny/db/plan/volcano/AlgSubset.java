@@ -147,6 +147,12 @@ public class AlgSubset extends AbstractAlgNode {
     }
 
 
+    @Override
+    public boolean containsScan() {
+        return set.alg.containsScan();
+    }
+
+
     public AlgNode getOriginal() {
         return set.alg;
     }

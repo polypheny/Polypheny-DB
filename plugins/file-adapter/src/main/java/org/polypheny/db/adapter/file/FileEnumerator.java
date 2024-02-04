@@ -68,7 +68,7 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
     Long updateDeleteCount = 0L;
     boolean updatedOrDeleted = false;
     final int numOfCols;
-    final EnumerableDataContext dataContext;
+    final DataContext dataContext;
     final Condition condition;
     final Integer[] projectionMapping;
     final PolyType[] columnTypes;
@@ -112,7 +112,7 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
             //fix to make sure current is never null
             current = new PolyLong[]{ PolyLong.of( Long.valueOf( 0L ) ) };
         }
-        this.dataContext = new EnumerableDataContext( dataContext );
+        this.dataContext = operation == Operation.INSERT ? dataContext : new EnumerableDataContext( dataContext );
 
         this.condition = condition;
         this.projectionMapping = projectionMapping;
@@ -176,6 +176,13 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
     }
 
 
+    public void toDefault() {
+        fileListPosition = 0;
+        updateDeleteCount = 0L;
+        updatedOrDeleted = false;
+    }
+
+
     @Override
     public PolyValue[] current() {
         return current;
@@ -184,16 +191,19 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
 
     @Override
     public boolean moveNext() {
-        if ( operation == Operation.INSERT || operation == Operation.SELECT ) {
+        if ( operation == Operation.SELECT ) {
             return singleNext();
+        } else if ( operation == Operation.INSERT ) {
+            throw new GenericRuntimeException( "Not supported" );
         }
-        List<Boolean> result = new ArrayList<>();
-        for ( int i = 0; i < dataContext.getBatches(); i++ ) {
-            fileListPosition = 0;
-            result.add( singleNext() );
-            dataContext.next();
+
+        boolean moveNext = singleNext();
+        if ( ((EnumerableDataContext) dataContext).isEmpty() ) {
+            return false;
         }
-        return result.get( result.size() - 1 );
+        toDefault();
+        ((EnumerableDataContext) dataContext).next();
+        return moveNext;
     }
 
 
@@ -246,19 +256,19 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
                         //if a PK lookup did not match at all
                         if ( curr == null ) {
                             if ( operation != Operation.SELECT ) {
-                                current = new PolyLong[]{ PolyLong.of( Long.valueOf( 0L ) ) };
+                                current = new PolyLong[]{ PolyLong.of( 0L ) };
                                 return true;
                             }
                             return false;
                         }
                         currentFile = lookupFile;
-                        current = new PolyLong[]{ PolyLong.of( Long.valueOf( 1L ) ) };
+                        current = new PolyLong[]{ PolyLong.of( 1L ) };
                     } else {
                         curr = fileToRow( currentFile );
                         //todo
                         if ( curr == null ) {
                             if ( operation != Operation.SELECT ) {
-                                current = new PolyLong[]{ PolyLong.of( Long.valueOf( updateDeleteCount ) ) };
+                                current = new PolyLong[]{ PolyLong.of( updateDeleteCount ) };
                                 return true;
                             }
                             return false;
@@ -287,10 +297,6 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
                     } else {
                         // If all values are null: continue
                         //this can happen, if we iterate over multiple nullable columns, because the fileList comes from a PK-column that is NOT NULL
-                        if ( curr == null ) {
-                            fileListPosition++;
-                            continue;
-                        }
                         current = curr;
                     }
                     fileListPosition++;
@@ -318,7 +324,7 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
             }
         }
         updateDeleteCount++;
-        current = new PolyLong[]{ PolyLong.of( Long.valueOf( updateDeleteCount ) ) };
+        current = new PolyLong[]{ PolyLong.of( updateDeleteCount ) };
         fileListPosition++;
         //continue;
     }
@@ -379,7 +385,7 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
         }
 
         updateDeleteCount++;
-        current = new PolyLong[]{ PolyLong.of( Long.valueOf( updateDeleteCount ) ) };
+        current = new PolyLong[]{ PolyLong.of( updateDeleteCount ) };
         fileListPosition++;
         //continue;
     }
@@ -521,6 +527,11 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
 
         public void next() {
             couter.incrementAndGet();
+        }
+
+
+        public boolean isEmpty() {
+            return couter.get() >= batches - 1;
         }
 
 

@@ -119,7 +119,6 @@ public class FilePlugin extends PolyPlugin {
          * Hash function to use the hash of a primary key to name a file.
          * If you change this function, make sure to change the offset in the {@link FileStore#commitOrRollback} method!
          */
-        @SuppressWarnings("UnstableApiUsage") // see https://stackoverflow.com/questions/53060907/is-it-safe-to-use-hashing-class-from-com-google-common-hash
         public static final HashFunction SHA = Hashing.sha256();
 
         @Getter
@@ -193,6 +192,8 @@ public class FilePlugin extends PolyPlugin {
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
             String physicalTableName = getPhysicalTableName( allocationWrapper.table.id );
 
+            updateNamespace( logical.table.getNamespaceName(), logical.table.namespaceId );
+
             PhysicalTable table = storeCatalog.createTable(
                     logical.table.getNamespaceName(),
                     physicalTableName,
@@ -226,7 +227,7 @@ public class FilePlugin extends PolyPlugin {
             // TODO check if it is on this store?
 
             PhysicalTable table = storeCatalog.fromAllocation( allocId );
-            for ( Long colId : table.getColumnIds() ) {
+            for ( long colId : table.getColumnIds() ) {
                 File f = getColumnFolder( colId, allocId );
                 try {
                     FileUtils.deleteDirectory( f );
@@ -402,6 +403,9 @@ public class FilePlugin extends PolyPlugin {
                             String hash = data.getName().substring( 70 );// 3 + 3 + 64 (three underlines + "ins" + xid hash)
                             target = new File( columnFolder, hash );
                             if ( commit ) {
+                                if ( target.exists() ) {
+                                    throw new GenericRuntimeException( "Could not commit uniqueness constraint was invalidated" );
+                                }
                                 Files.move( data.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING );
                             } else {
                                 Files.move( data.toPath(), target.toPath() );

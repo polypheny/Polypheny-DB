@@ -99,6 +99,7 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalSort;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -2552,7 +2553,13 @@ public class AlgBuilder {
                 builder.makeInputRef( nodesScan.getTupleType().getFields().get( 0 ).getType(), 0 ),
                 builder.makeInputRef( propertiesScan.getTupleType().getFields().get( 0 ).getType(), nodesScan.getTupleType().getFields().size() ) );
 
-        return new LogicalJoin( nodesScan.getCluster(), out, nodesScan, propertiesScan, nodeCondition, Set.of(), JoinAlgType.LEFT, false, ImmutableList.of() );
+        LogicalJoin join = new LogicalJoin( nodesScan.getCluster(), out, nodesScan, propertiesScan, nodeCondition, Set.of(), JoinAlgType.LEFT, false, ImmutableList.of() );
+        return LogicalSort.create(
+                join,
+                ImmutableList.of( RexIndexRef.of( 0, join.getTupleType().getFields() ) ),
+                AlgCollations.of( 0 ),
+                null,
+                null );
     }
 
 

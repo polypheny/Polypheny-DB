@@ -38,7 +38,6 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 @Slf4j
 @Tag("adapter")
 @Tag("cottontailExclude")
-@Tag("fileExclude")
 @Tag("neo4jExclude")
 public class ForeignKeyConstraintTest {
 
@@ -354,6 +353,14 @@ public class ForeignKeyConstraintTest {
 
                     try {
                         statement.executeUpdate( "UPDATE constraint_test2 SET ctid = ctid + 2" );
+
+                        TestHelper.checkResultSet(
+                                statement.executeQuery( "SELECT * FROM constraint_test2 ORDER BY ct2id" ),
+                                ImmutableList.of(
+                                        new Object[]{ 1, 3 },
+                                        new Object[]{ 3, 5 }
+                                )
+                        );
 
                         connection.commit();
                         Assertions.fail( "Expected ConstraintViolationException was not thrown" );

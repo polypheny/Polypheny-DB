@@ -38,7 +38,6 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 @Slf4j
 @Tag("adapter")
 @Tag("cottontailExclude")
-@Tag("fileExclude")
 public class UniqueConstraintTest {
 
 
@@ -267,6 +266,15 @@ public class UniqueConstraintTest {
 
                     try {
                         statement.executeUpdate( "INSERT INTO constraint_test SELECT * FROM constraint_test" );
+
+                        TestHelper.checkResultSet(
+                                statement.executeQuery( "SELECT * FROM constraint_test ORDER BY ctid" ),
+                                ImmutableList.of(
+                                        new Object[]{ 1, 1, 1, 1 },
+                                        new Object[]{ 2, 2, 2, 2 }
+                                )
+                        );
+
                         connection.commit();
                         Assertions.fail( "Expected ConstraintViolationException was not thrown" );
                     } catch ( AvaticaSqlException e ) {
@@ -532,7 +540,6 @@ public class UniqueConstraintTest {
                     if ( !useIndex ) {
                         // this leads to conflicts for index true if adapters check the index on a row by row basis, e.g. PostgreSQL
                         statement.executeUpdate( "UPDATE constraint_test SET a = 2 * ctid, b = 2 * ctid" );
-
 
                     }
 

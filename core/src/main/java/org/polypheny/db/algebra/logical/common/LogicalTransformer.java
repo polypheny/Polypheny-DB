@@ -18,6 +18,7 @@ package org.polypheny.db.algebra.logical.common;
 
 import java.util.List;
 import lombok.Setter;
+import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.common.Transformer;
@@ -54,7 +55,7 @@ public class LogicalTransformer extends Transformer {
 
 
     public static LogicalTransformer create( AlgOptCluster cluster, List<AlgNode> inputs, List<String> names, ModelTrait inTraitSet, ModelTrait outTraitSet, AlgDataType rowType, boolean isCrossModel ) {
-        return new LogicalTransformer( cluster, inputs.get( 0 ).getTraitSet(), inputs, names, inTraitSet, outTraitSet, rowType, isCrossModel );
+        return new LogicalTransformer( cluster, inputs.get( 0 ).getTraitSet().replace( AlgCollations.EMPTY ), inputs, names, inTraitSet, outTraitSet, rowType, isCrossModel );
     }
 
 

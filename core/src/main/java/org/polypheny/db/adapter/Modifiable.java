@@ -452,7 +452,6 @@ public interface Modifiable extends Scannable {
                 break;
             case UPDATE:
                 return attachRelationalGraphUpdate( modifiable, raw, (LogicalLpgModify) alg, builder, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable );
-
             case DELETE:
                 return attachRelationalGraphDelete( modifiable, raw, (LogicalLpgModify) alg, builder, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable );
             case MERGE:

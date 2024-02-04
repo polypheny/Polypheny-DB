@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
 import org.apache.commons.io.IOUtils;
@@ -68,7 +67,6 @@ public class FileModifier extends FileEnumerator {
     @Override
     public boolean moveNext() {
         try {
-            outer:
             for ( ; ; ) {
                 if ( dataContext.getStatement().getTransaction().getCancelFlag().get() || inserted ) {
                     return false;
@@ -119,16 +117,16 @@ public class FileModifier extends FileEnumerator {
             }
         } else if ( FileHelper.isSqlDateOrTimeOrTS( value ) ) {
             Long l = FileHelper.sqlToLong( value );
-            Files.write( newFile.toPath(), l.toString().getBytes( FileStore.CHARSET ) );
+            Files.writeString( newFile.toPath(), l.toString(), FileStore.CHARSET );
         } else if ( value instanceof TimestampString ) {
-            Files.write( newFile.toPath(), ("" + ((TimestampString) value).getMillisSinceEpoch()).getBytes( StandardCharsets.UTF_8 ) );
+            Files.writeString( newFile.toPath(), "" + ((TimestampString) value).getMillisSinceEpoch() );
         } else if ( value instanceof DateString ) {
-            Files.write( newFile.toPath(), ("" + ((DateString) value).getDaysSinceEpoch()).getBytes( StandardCharsets.UTF_8 ) );
+            Files.writeString( newFile.toPath(), "" + ((DateString) value).getDaysSinceEpoch() );
         } else if ( value instanceof TimeString ) {
-            Files.write( newFile.toPath(), ("" + ((TimeString) value).getMillisOfDay()).getBytes( StandardCharsets.UTF_8 ) );
+            Files.writeString( newFile.toPath(), "" + ((TimeString) value).getMillisOfDay() );
         } else {
             String writeString = value.toString();
-            Files.write( newFile.toPath(), writeString.getBytes( FileStore.CHARSET ) );
+            Files.writeString( newFile.toPath(), writeString, FileStore.CHARSET );
         }
     }
 
@@ -138,10 +136,5 @@ public class FileModifier extends FileEnumerator {
         //insertPosition = 0;
     }
 
-
-    @Override
-    public void close() {
-
-    }
 
 }

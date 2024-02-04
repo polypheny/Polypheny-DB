@@ -127,8 +127,8 @@ public class CypherFunctions {
             PolyString sourceId = value[2].asString();
             PolyString targetId = value[3].asString();
             // id is 4
-            PolyString key = value[5].asString();
-            PolyString val = value[6].asString();
+            PolyString key = value[5] == null ? PolyString.of( null ) : value[5].asString();
+            PolyString val = value[6] == null ? PolyString.of( null ) : value[6].asString();
 
             if ( !id.isNull() && !id.equals( oldId ) ) {
                 if ( oldId != null && !oldId.isNull() ) {
@@ -174,8 +174,8 @@ public class CypherFunctions {
             PolyString id = value[0].asString();
             PolyString label = value[1].asString();
             // id is 2
-            PolyString key = value[3].asString();
-            PolyString val = value[4].asString();
+            PolyString key = value[3] == null ? PolyString.of( null ) : value[3].asString();
+            PolyString val = value[4] == null ? PolyString.of( null ) : value[4].asString();
 
             if ( !id.isNull() && !id.equals( oldId ) ) {
                 if ( oldId != null ) {

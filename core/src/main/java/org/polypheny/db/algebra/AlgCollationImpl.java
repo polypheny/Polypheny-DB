@@ -50,9 +50,9 @@ import org.polypheny.db.util.Util;
 /**
  * Simple implementation of {@link AlgCollation}.
  */
+@Getter
 public class AlgCollationImpl implements AlgCollation {
 
-    @Getter
     private final ImmutableList<AlgFieldCollation> fieldCollations;
 
 
@@ -77,8 +77,7 @@ public class AlgCollationImpl implements AlgCollation {
         if ( this == obj ) {
             return true;
         }
-        if ( obj instanceof AlgCollationImpl ) {
-            AlgCollationImpl that = (AlgCollationImpl) obj;
+        if ( obj instanceof AlgCollationImpl that ) {
             return this.fieldCollations.equals( that.fieldCollations );
         }
         return false;

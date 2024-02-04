@@ -1258,8 +1258,7 @@ public abstract class PolyTypeUtil {
             case DOUBLE -> PolyDouble.of( Double.parseDouble( s ) );
             case REAL, FLOAT -> PolyFloat.of( Float.parseFloat( s ) );
             case DECIMAL -> PolyBigDecimal.of( new BigDecimal( s ) );
-            case VARCHAR -> PolyString.of( s );
-            //case ARRAY:
+            case VARCHAR, TEXT -> PolyString.of( s );
             default -> throw new NotImplementedException();
         };
     }
