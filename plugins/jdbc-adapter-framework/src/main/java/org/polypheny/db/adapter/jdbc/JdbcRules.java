@@ -50,6 +50,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.InvalidAlgException;
 import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
@@ -98,7 +99,9 @@ import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlFunction;
 import org.polypheny.db.sql.language.fun.SqlItemOperator;
 import org.polypheny.db.tools.AlgBuilderFactory;
+import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.UnsupportedRexCallVisitor;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
@@ -236,8 +239,7 @@ public class JdbcRules {
         private boolean canJoinOnCondition( RexNode node ) {
             final List<RexNode> operands;
             switch ( node.getKind() ) {
-                case AND:
-                case OR:
+                case AND, OR, GEO:
                     operands = ((RexCall) node).getOperands();
                     for ( RexNode operand : operands ) {
                         if ( !canJoinOnCondition( operand ) ) {
@@ -245,20 +247,14 @@ public class JdbcRules {
                         }
                     }
                     return true;
-
-                case EQUALS:
-                case IS_NOT_DISTINCT_FROM:
-                case NOT_EQUALS:
-                case GREATER_THAN:
-                case GREATER_THAN_OR_EQUAL:
-                case LESS_THAN:
-                case LESS_THAN_OR_EQUAL:
+                case INPUT_REF:
+                    return true;
+                case EQUALS, IS_NOT_DISTINCT_FROM, NOT_EQUALS, GREATER_THAN, GREATER_THAN_OR_EQUAL, LESS_THAN, LESS_THAN_OR_EQUAL:
                     operands = ((RexCall) node).getOperands();
                     if ( (operands.get( 0 ) instanceof RexIndexRef) && (operands.get( 1 ) instanceof RexIndexRef) ) {
                         return true;
                     }
                     // fall through
-
                 default:
                     return false;
             }

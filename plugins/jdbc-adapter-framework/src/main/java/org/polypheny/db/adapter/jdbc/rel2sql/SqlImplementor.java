@@ -217,8 +217,7 @@ public abstract class SqlImplementor {
         final SqlOperator op;
         final Context joinContext;
         switch ( node.getKind() ) {
-            case AND:
-            case OR:
+            case AND, OR, GEO:
                 operands = ((RexCall) node).getOperands();
                 op = (SqlOperator) ((RexCall) node).getOperator();
                 SqlNode sqlCondition = null;
@@ -231,14 +230,7 @@ public abstract class SqlImplementor {
                     }
                 }
                 return sqlCondition;
-
-            case EQUALS:
-            case IS_NOT_DISTINCT_FROM:
-            case NOT_EQUALS:
-            case GREATER_THAN:
-            case GREATER_THAN_OR_EQUAL:
-            case LESS_THAN:
-            case LESS_THAN_OR_EQUAL:
+            case EQUALS, IS_NOT_DISTINCT_FROM, NOT_EQUALS, GREATER_THAN, GREATER_THAN_OR_EQUAL, LESS_THAN, LESS_THAN_OR_EQUAL:
                 node = stripCastFromString( node );
                 operands = node.unwrap( RexCall.class ).orElseThrow().getOperands();
                 op = (SqlOperator) node.unwrap( RexCall.class ).orElseThrow().getOperator();
@@ -263,8 +255,7 @@ public abstract class SqlImplementor {
                 }
                 joinContext = leftContext.implementor().joinContext( leftContext, rightContext );
                 return joinContext.toSql( null, node );
-            case IS_NULL:
-            case IS_NOT_NULL:
+            case IS_NULL, IS_NOT_NULL:
                 operands = ((RexCall) node).getOperands();
                 if ( operands.size() == 1 && operands.get( 0 ) instanceof RexIndexRef op0 ) {
                     op = (SqlOperator) ((RexCall) node).getOperator();

@@ -166,10 +166,10 @@ public class MatchTest extends CypherTestTemplate {
     @Test
     public void functionGeoWithinTest() {
         execute( SINGLE_NODE_GEOM );
-        GraphResult res = execute( "MATCH (c:City) RETURN c.name, Geo_Within('POLYGON ((7.579962 47.551795, 7.579962 47.559905, 7.600045 47.559905, 7.600045 47.551795, 7.579962 47.551795))', c.location) as geo_within" );
+        GraphResult res = execute( "MATCH (c:City) RETURN c.name, Geo_Within(c.location, 'POLYGON ((7.579962 47.551795, 7.579962 47.559905, 7.600045 47.559905, 7.600045 47.551795, 7.579962 47.551795))') as geo_within" );
         assert is( res, Type.ANY, 0 );
         assert containsIn( res, true, 0, "c.name", TestLiteral.from( "Basel" ) );
-        assert containsIn( res, true, 1, "geo_within", TestLiteral.from( "false" ) );
+        assert containsIn( res, true, 1, "geo_within", TestLiteral.from( "true" ) );
     }
 
     ///////////////////////////////////////////////
