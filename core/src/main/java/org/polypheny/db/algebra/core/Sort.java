@@ -38,6 +38,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import org.apache.calcite.linq4j.Ord;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgCollation;
@@ -60,6 +61,20 @@ import org.polypheny.db.util.Util;
  */
 public abstract class Sort extends SingleAlg {
 
+    /**
+     * -- GETTER --
+     *  Returns the array of
+     * s asked for by the sort specification, from most significant to least significant.
+     *  See also
+     * , which lists all known collations. For example,
+     *  <code>ORDER BY time_id</code> might also be sorted by
+     *  <code>the_year, the_month</code> because of a known monotonicity constraint among the columns.
+     *  would return
+     *  <code>[time_id]</code> and
+     *  would return
+     *  <code>[ [time_id], [the_year, the_month] ]</code>.
+     */
+    @Getter
     public final AlgCollation collation;
     protected final ImmutableList<RexNode> fieldExps;
     public final RexNode offset;
@@ -147,20 +162,6 @@ public abstract class Sort extends SingleAlg {
             return this;
         }
         return copy( traitSet, getInput(), collation, ImmutableList.copyOf( fieldExps ), offset, fetch );
-    }
-
-
-    /**
-     * Returns the array of {@link AlgFieldCollation}s asked for by the sort specification, from most significant to least significant.
-     *
-     * See also {@link AlgMetadataQuery#collations(AlgNode)}, which lists all known collations. For example,
-     * <code>ORDER BY time_id</code> might also be sorted by
-     * <code>the_year, the_month</code> because of a known monotonicity constraint among the columns. {@code getCollation} would return
-     * <code>[time_id]</code> and {@code collations} would return
-     * <code>[ [time_id], [the_year, the_month] ]</code>.
-     */
-    public AlgCollation getCollation() {
-        return collation;
     }
 
 

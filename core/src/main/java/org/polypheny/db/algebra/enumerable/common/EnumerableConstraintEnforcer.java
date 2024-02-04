@@ -17,18 +17,12 @@
 package org.polypheny.db.algebra.enumerable.common;
 
 
-import java.lang.reflect.Modifier;
 import java.util.List;
-import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.function.Function;
-import org.apache.calcite.linq4j.function.Function0;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
-import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.FunctionExpression;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
-import org.apache.calcite.linq4j.tree.ParameterExpression;
-import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.ConstraintEnforcer;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
@@ -72,19 +66,17 @@ public class EnumerableConstraintEnforcer extends ConstraintEnforcer implements 
         Result modify = implementor.visitChild( this, 0, (EnumerableAlg) getLeft(), pref );
         Result control = implementor.visitChild( this, 1, (EnumerableAlg) getRight(), pref );
 
-        // Move into lambda
-        Expression executor = builder.append( builder.newName( "executor" + System.nanoTime() ), modify.block );
-
-        ParameterExpression exp = Expressions.parameter( Types.of( Function0.class, Enumerable.class ), builder.newName( "executor" + System.nanoTime() ) );
-
         // Move executor enumerable into a lambda so parameters get not prematurely
-        FunctionExpression<Function<?>> expCall = Expressions.lambda( Expressions.block( Expressions.return_( null, executor ) ) );
-        builder.add( Expressions.declare( Modifier.FINAL, exp, expCall ) );
+        FunctionExpression<Function<?>> expCall = Expressions.lambda( modify.block );
+
+        // we wrap the control query into a lambda, so we can call it later with adjusted parameters
+        //Expression cont = builder.append( builder.newName( "control" + System.nanoTime() ), control.block );
+        FunctionExpression<Function<?>> controlLambda = Expressions.lambda( control.block );
 
         MethodCallExpression transformContext = Expressions.call(
                 BuiltInMethod.ENFORCE_CONSTRAINT.method,
-                exp,
-                builder.append( builder.newName( "control" + System.nanoTime() ), control.block ),
+                expCall,
+                controlLambda,
                 Expressions.constant( this.getExceptionClasses() ),
                 Expressions.constant( this.getExceptionMessages() ) );
 

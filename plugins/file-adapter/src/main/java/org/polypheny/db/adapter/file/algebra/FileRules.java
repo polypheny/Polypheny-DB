@@ -46,6 +46,7 @@ import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexUtil.FieldAccessFinder;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.schema.document.DocumentRules;
 import org.polypheny.db.schema.types.ModifiableTable;
@@ -80,6 +81,21 @@ public class FileRules {
 
 
         private static boolean supports( RelModify<?> node ) {
+            if ( node.isInsert() && node.containsScan() ) {
+                // insert from select is not implemented
+                return false;
+            }
+            if ( node.getSourceExpressions() != null ) {
+                FieldAccessFinder fieldAccessFinder = new FieldAccessFinder();
+                for ( RexNode node1 : node.getSourceExpressions() ) {
+                    node1.accept( fieldAccessFinder );
+                    if ( !fieldAccessFinder.getFieldAccessList().isEmpty() ) {
+                        return false;
+                    }
+                }
+            }
+
+
             if ( node.getSourceExpressions() != null ) {
                 return !UnsupportedRexCallVisitor.containsModelItem( node.getSourceExpressions() );
             }

@@ -30,35 +30,20 @@ public class FileUtil {
         if ( value == null ) {
             return null;
         }
-        switch ( value.type ) {
-            case INTEGER:
-            case TINYINT:
-            case SMALLINT:
-                return value.asNumber().IntValue();
-            case REAL:
-            case FLOAT:
-                return value.asNumber().FloatValue();
-            case VARCHAR:
-            case CHAR:
-                return value.asString().value;
-            case BIGINT:
-            case DECIMAL:
-                return value.asNumber().BigDecimalValue();
-            case BINARY:
-            case VARBINARY:
-                return value.asBinary().value.getBytes();
-            case DOUBLE:
-                return value.asNumber().DoubleValue();
-            case BOOLEAN:
-                return value.asBoolean().value;
-            case DATE:
-                return value.asDate().getDaysSinceEpoch();
-            case TIME:
-                return value.asTime().ofDay;
-            case TIMESTAMP:
-                return value.asTimestamp().millisSinceEpoch;
-        }
-        throw new NotImplementedException();
+        return switch ( value.type ) {
+            case INTEGER, TINYINT, SMALLINT -> value.asNumber().IntValue();
+            case REAL, FLOAT -> value.asNumber().FloatValue();
+            case VARCHAR, CHAR -> value.asString().value;
+            case BIGINT, DECIMAL -> value.asNumber().BigDecimalValue();
+            case BINARY, VARBINARY -> value.asBinary().value.getBytes();
+            case DOUBLE -> value.asNumber().DoubleValue();
+            case BOOLEAN -> value.asBoolean().value;
+            case DATE -> value.asDate().getDaysSinceEpoch();
+            case TIME -> value.asTime().ofDay;
+            case TIMESTAMP -> value.asTimestamp().millisSinceEpoch;
+            case ARRAY -> value.asList().toJson();
+            default -> throw new NotImplementedException();
+        };
     }
 
 }

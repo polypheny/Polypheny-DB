@@ -167,7 +167,7 @@ public class LogicalStreamer extends Streamer {
         return modify.getUpdateColumns()
                 .stream()
                 .map( name -> {
-                    int size = modify.getTupleType().getFields().size();
+                    int size = modify.getEntity().getRowType().getFields().size();
                     int index = modify.getEntity().getRowType().getFieldNames().indexOf( name );
                     return (RexNode) rexBuilder.makeDynamicParam( modify.getEntity().getRowType().getFields().get( index ).getType(), size + index );
                 } ).toList();

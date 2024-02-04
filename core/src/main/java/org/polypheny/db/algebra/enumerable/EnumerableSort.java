@@ -53,7 +53,7 @@ public class EnumerableSort extends Sort implements EnumerableAlg {
      */
     public static EnumerableSort create( AlgNode child, AlgCollation collation, RexNode offset, RexNode fetch ) {
         final AlgOptCluster cluster = child.getCluster();
-        final AlgTraitSet traitSet = cluster.traitSetOf( EnumerableConvention.INSTANCE ).replace( collation );
+        final AlgTraitSet traitSet = child.getTraitSet().replace( collation );
         return new EnumerableSort( cluster, traitSet, child, collation, offset, fetch );
     }
 

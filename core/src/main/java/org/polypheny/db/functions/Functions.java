@@ -338,7 +338,7 @@ public class Functions {
 
 
     @SuppressWarnings("unused")
-    public static Enumerable<?> enforceConstraint( Function0<Enumerable<PolyValue[]>> modify, Enumerable<PolyValue[]> control, List<Class<? extends Exception>> exceptions, List<String> msgs ) {
+    public static Enumerable<?> enforceConstraint( Function0<Enumerable<PolyValue[]>> modify, Function0<Enumerable<PolyValue[]>> control, List<Class<? extends Exception>> exceptions, List<String> msgs ) {
         List<PolyValue> results = new ArrayList<>();
         try {
             for ( PolyValue[] object : modify.apply() ) {
@@ -349,7 +349,7 @@ public class Functions {
         }
 
         List<PolyNumber> validationIndexes = new ArrayList<>();
-        for ( PolyValue[] object : control ) {
+        for ( PolyValue[] object : control.apply() ) {
             validationIndexes.add( object[1].asNumber() );
         }
         if ( validationIndexes.isEmpty() ) {

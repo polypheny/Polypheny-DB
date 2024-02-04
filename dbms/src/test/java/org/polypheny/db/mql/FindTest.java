@@ -28,7 +28,6 @@ import org.polypheny.db.TestHelper.MongoConnection;
 import org.polypheny.db.webui.models.results.DocResult;
 
 @Tag("adapter")
-@Tag("fileExcluded")
 public class FindTest extends MqlTestTemplate {
 
     private final List<String> DATA_0 = Arrays.asList(

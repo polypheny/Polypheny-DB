@@ -77,7 +77,7 @@ public class Value {
     public PolyValue getValue( final DataContext context, final int i ) {
         //don't switch the two if conditions, because a literal assignment can be "null"
         if ( literalIndex != null ) {
-            return context.getParameterValues().get( i ).get( literalIndex.asNumber().LongValue() );
+            return context.getParameterValues().get( i ).get( literalIndex.asNumber().longValue() );
         } else {
             return literal;
         }

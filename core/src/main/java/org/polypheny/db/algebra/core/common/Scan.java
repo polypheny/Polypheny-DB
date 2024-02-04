@@ -31,15 +31,20 @@ public abstract class Scan<E extends Entity> extends AbstractAlgNode {
 
 
     /**
-     * Creates an <code>AbstractRelNode</code>.
+     * Creates an <code>AbstractAlgNode</code>.
      *
-     * @param cluster
-     * @param traitSet
+     * @param cluster the cluster this node uses to optimize itself
+     * @param traitSet traits that describes the traits of the node
      */
     public Scan( AlgOptCluster cluster, AlgTraitSet traitSet, E entity ) {
         super( cluster, traitSet );
         this.entity = entity;
     }
 
+
+    @Override
+    public boolean containsScan() {
+        return true;
+    }
 
 }
