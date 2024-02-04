@@ -16,6 +16,8 @@
 
 package org.polypheny.db.type.entity.temporal;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonToken;
 import java.sql.Time;
 import lombok.EqualsAndHashCode;
@@ -36,10 +38,12 @@ import org.polypheny.db.util.TimeString;
 @Value
 public class PolyTime extends PolyTemporal {
 
+    @JsonProperty
     public Integer ofDay;
 
 
-    public PolyTime( Integer ofDay ) {
+    @JsonCreator
+    public PolyTime( @JsonProperty("ofDay") Integer ofDay ) {
         super( PolyType.TIME );
         this.ofDay = ofDay;
     }

@@ -16,6 +16,8 @@
 
 package org.polypheny.db.type.entity.temporal;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonToken;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -41,10 +43,12 @@ public class PolyDate extends PolyTemporal {
 
     public static final DateFormat dateFormat = new SimpleDateFormat( "yyyy-MM-dd" );
 
+    @JsonProperty
     public Long millisSinceEpoch;
 
 
-    public PolyDate( Long millisSinceEpoch ) {
+    @JsonCreator
+    public PolyDate( @JsonProperty("millisSinceEpoch") Long millisSinceEpoch ) {
         super( PolyType.DATE );
         this.millisSinceEpoch = millisSinceEpoch == null ? null : millisSinceEpoch - millisSinceEpoch % DateTimeUtils.MILLIS_PER_DAY; // move to 00:00:00
     }

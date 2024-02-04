@@ -27,16 +27,15 @@ import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileAlg.FileImplementor.Operation;
 import org.polypheny.db.adapter.file.FilePlugin.FileStore;
-import org.polypheny.db.adapter.file.util.FileUtil;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.schema.Namespace.Schema;
 import org.polypheny.db.schema.impl.AbstractNamespace;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 
 
@@ -45,6 +44,7 @@ public class FileStoreSchema extends AbstractNamespace implements FileSchema, Sc
 
     private final String schemaName;
     private final Map<String, Entity> tables = new HashMap<>();
+    @Getter
     private final FileStore store;
     private final FileConvention convention;
 
@@ -61,6 +61,12 @@ public class FileStoreSchema extends AbstractNamespace implements FileSchema, Sc
     @Override
     public File getRootDir() {
         return store.getRootDir();
+    }
+
+
+    @Override
+    public Adapter<?> getAdapter() {
+        return store;
     }
 
 
@@ -91,16 +97,16 @@ public class FileStoreSchema extends AbstractNamespace implements FileSchema, Sc
             final DataContext dataContext,
             final String path,
             final Long[] columnIds,
-            final PolyType[] columnTypes,
+            final FileTranslatableEntity entity,
             final List<Long> pkIds,
             final Integer[] projectionMapping,
             final Condition condition,
-            final Value[] updates ) {
+            final List<List<PolyValue>> updates ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getAdapter( adapterId ).orElseThrow() );
         return new AbstractEnumerable<>() {
             @Override
             public Enumerator<PolyValue[]> enumerator() {
-                return new FileEnumerator( operation, path, allocId, columnIds, columnTypes, pkIds, projectionMapping, dataContext, condition, updates );
+                return new FileEnumerator( operation, path, allocId, columnIds, entity, pkIds, projectionMapping, dataContext, condition, updates );
             }
         };
     }
@@ -119,44 +125,42 @@ public class FileStoreSchema extends AbstractNamespace implements FileSchema, Sc
             final DataContext dataContext,
             final String path,
             final Long[] columnIds,
-            final PolyType[] columnTypes,
+            final FileTranslatableEntity entity,
             final List<Long> pkIds,
             final Boolean isBatch,
-            final Object[] insertValues,
+            final List<List<PolyValue>> insertValues,
             final Condition condition ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getAdapter( adapterId ).orElseThrow() );
-        final Object[] insert;
+        final List<List<PolyValue>> insert;
 
-        List<Object[]> rows = new ArrayList<>();
-        List<Object> row = new ArrayList<>();
+        List<List<PolyValue>> rows = new ArrayList<>();
         int i = 0;
         if ( !dataContext.getParameterValues().isEmpty() ) {
             for ( Map<Long, PolyValue> map : dataContext.getParameterValues() ) {
-                row.clear();
+                List<PolyValue> row = new ArrayList<>();
                 //insertValues[] has length 1 if the dataContext is set
-                for ( Value values : ((Value[]) insertValues[0]) ) {
-                    row.add( FileUtil.fromValue( values.getValue( dataContext, i ) ) );
+                for ( PolyValue values : insertValues.get( 0 ) ) {
+                    row.add( ((Value) values).getValue( dataContext, i ) );
                 }
-                rows.add( row.toArray( new Object[0] ) );
+                rows.add( row );
                 i++;
             }
         } else {
-            for ( Object insertRow : insertValues ) {
-                row.clear();
-                Value[] values = (Value[]) insertRow;
-                for ( Value value : values ) {
-                    row.add( value.getValue( dataContext, i ) );
+            for ( List<PolyValue> values : insertValues ) {
+                List<PolyValue> row = new ArrayList<>();
+                for ( PolyValue value : values ) {
+                    row.add( ((Value) value).getValue( dataContext, i ) );
                 }
-                rows.add( row.toArray( new Object[0] ) );
+                rows.add( row );
                 i++;
             }
         }
-        insert = rows.toArray( new Object[0] );
+        insert = rows;
 
         return new AbstractEnumerable<>() {
             @Override
             public Enumerator<PolyValue[]> enumerator() {
-                return new FileModifier( operation, path, allocId, columnIds, columnTypes, pkIds, dataContext, insert, condition );
+                return new FileModifier( operation, path, allocId, columnIds, entity, pkIds, dataContext, insert, condition );
             }
         };
     }

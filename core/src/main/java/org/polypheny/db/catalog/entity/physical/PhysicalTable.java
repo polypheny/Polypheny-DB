@@ -62,6 +62,7 @@ public class PhysicalTable extends PhysicalEntity {
     }
 
 
+
     @Override
     public AlgDataType getRowType() {
         return buildProto().apply( AlgDataTypeFactory.DEFAULT );
@@ -106,6 +107,11 @@ public class PhysicalTable extends PhysicalEntity {
     @Override
     public PhysicalEntity normalize() {
         return new PhysicalTable( id, allocationId, logicalId, name, columns, namespaceId, namespaceName, adapterId );
+    }
+
+
+    public ImmutableList<Long> getPrimaryColumns() {
+        return Catalog.snapshot().rel().getPrimaryKey( Catalog.snapshot().rel().getTable( logicalId ).orElseThrow().primaryKey ).orElseThrow().columnIds;
     }
 
 }

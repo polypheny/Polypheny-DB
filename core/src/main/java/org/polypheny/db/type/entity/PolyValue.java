@@ -226,7 +226,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case BOOLEAN -> o -> o.asBoolean().value;
             case ARRAY -> {
                 Function1<PolyValue, Object> elTrans = getPolyToJava( getAndDecreaseArrayDimensionIfNecessary( (ArrayType) type ), arrayAsList );
-                yield o -> o == null
+                yield o -> o == null || o.isNull()
                         ? null
                         : arrayAsList
                                 ? (o.asList().value.stream().map( elTrans::apply ).toList())
@@ -256,7 +256,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
 
 
     public static Function1<PolyValue, Object> wrapNullableIfNecessary( Function1<PolyValue, Object> polyToExternalizer, boolean nullable ) {
-        return nullable ? o -> o == null ? null : polyToExternalizer.apply( o ) : polyToExternalizer;
+        return nullable ? o -> o == null || o.isNull() ? null : polyToExternalizer.apply( o ) : polyToExternalizer;
     }
 
 
@@ -278,6 +278,17 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             throw new GenericRuntimeException( e );
         }
 
+    }
+
+
+    @NotNull
+    public String toTypedJson() {
+        try {
+            return JSON_WRAPPER.writeValueAsString( this );
+        } catch ( JsonProcessingException e ) {
+            log.warn( "Error on serializing typed JSON." );
+            return PolyNull.NULL.toTypedJson();
+        }
     }
 
 
@@ -415,16 +426,6 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
         return PolySerializable.deserialize( json, serializer );
     }
 
-
-    @Nullable
-    public String toTypedJson() {
-        try {
-            return JSON_WRAPPER.writeValueAsString( this );
-        } catch ( JsonProcessingException e ) {
-            log.warn( "Error on serializing typed JSON." );
-            return null;
-        }
-    }
 
 
     @Override

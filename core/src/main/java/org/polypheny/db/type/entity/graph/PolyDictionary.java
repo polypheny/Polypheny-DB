@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.entity.PolyString;
@@ -82,7 +82,7 @@ public class PolyDictionary extends PolyMap<PolyString, PolyValue> {
 
 
     @Override
-    public @Nullable String toTypedJson() {
+    public @NotNull String toTypedJson() {
         try {
             return JSON_WRAPPER.writerFor( new TypeReference<PolyDictionary>() {
             } ).writeValueAsString( this );

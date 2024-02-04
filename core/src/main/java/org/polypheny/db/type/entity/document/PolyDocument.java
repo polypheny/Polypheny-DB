@@ -43,7 +43,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang3.NotImplementedException;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
@@ -116,7 +116,7 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
 
 
     @Override
-    public @Nullable String toTypedJson() {
+    public @NotNull String toTypedJson() {
         try {
             return JSON_WRAPPER.writerFor( new TypeReference<PolyDocument>() {
             } ).writeValueAsString( this );

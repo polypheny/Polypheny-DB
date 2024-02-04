@@ -16,6 +16,8 @@
 
 package org.polypheny.db.type.entity.temporal;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonToken;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -53,10 +55,12 @@ public class PolyTimestamp extends PolyTemporal {
     }
 
 
+    @JsonProperty
     public Long millisSinceEpoch; // normalized to UTC
 
 
-    public PolyTimestamp( Long millisSinceEpoch ) {
+    @JsonCreator
+    public PolyTimestamp( @JsonProperty("millisSinceEpoch") Long millisSinceEpoch ) {
         super( PolyType.TIMESTAMP );
         this.millisSinceEpoch = millisSinceEpoch;
     }

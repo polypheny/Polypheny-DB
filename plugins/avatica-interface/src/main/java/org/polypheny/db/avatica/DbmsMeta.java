@@ -1363,9 +1363,7 @@ public class DbmsMeta implements ProtobufMeta {
 
                     Object[] objects = new Object[row.length];
                     for ( int i = 0, rowLength = objects.length; i < rowLength; i++ ) {
-                        //if ( ((PolyValue[]) row)[i] != null ) {
                         objects[i] = transform.get( i ).apply( row[i] );
-                        //}
                     }
                     return objects;
                 } );

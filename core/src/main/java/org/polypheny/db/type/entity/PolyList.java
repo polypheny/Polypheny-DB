@@ -115,7 +115,7 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
 
 
     @Override
-    public @Nullable String toTypedJson() {
+    public @NotNull String toTypedJson() {
         try {
             return JSON_WRAPPER.writerFor( new TypeReference<PolyList<PolyValue>>() {
             } ).writeValueAsString( this );

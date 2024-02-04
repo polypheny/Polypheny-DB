@@ -69,6 +69,8 @@ import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyNull;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 
 
@@ -242,10 +244,21 @@ public class FilePlugin extends PolyPlugin {
 
 
         @Override
+        public void renameLogicalColumn( long id, String newColumnName ) {
+            long allocId = storeCatalog.fields.values().stream().filter( c -> c.id == id ).map( c -> c.allocId ).findFirst().orElseThrow();
+            FileTranslatableEntity table = storeCatalog.fromAllocation( allocId ).unwrap( FileTranslatableEntity.class ).orElseThrow();
+
+            storeCatalog.renameLogicalColumn( id, newColumnName );
+
+            storeCatalog.fields.values().stream().filter( c -> c.id == id ).forEach( c -> updateNativePhysical( c.allocId, table.getPkIds() ) );
+        }
+
+
+        @Override
         public void addColumn( Context context, long allocId, LogicalColumn logicalColumn ) {
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
 
-            PhysicalTable table = storeCatalog.fromAllocation( allocId );
+            FileTranslatableEntity table = storeCatalog.fromAllocation( allocId ).unwrap( FileTranslatableEntity.class ).orElseThrow();
             PhysicalColumn column = storeCatalog.addColumn( getPhysicalColumnName( logicalColumn.id, allocId ), allocId, table.columns.size() - 1, logicalColumn );
 
             File newColumnFolder = getColumnFolder( column.id, allocId );
@@ -253,25 +266,36 @@ public class FilePlugin extends PolyPlugin {
                 throw new GenericRuntimeException( "Could not create column folder " + newColumnFolder.getName() );
             }
 
+            PolyValue value = PolyNull.NULL;
             // Add default values
             if ( column.defaultValue != null ) {
-                try {
-                    //CatalogPrimaryKey primaryKey = Catalog.snapshot().rel().getPrimaryKey( );
-                    File primaryKeyDir = new File( rootDir, getPhysicalColumnName( column.id, allocId ) );
-                    for ( File entry : Objects.requireNonNull( primaryKeyDir.listFiles() ) ) {
-                        FileModifier.write( new File( newColumnFolder, entry.getName() ), logicalColumn.defaultValue.value );
-                    }
-                } catch ( IOException e ) {
-                    throw new GenericRuntimeException( "Caught exception while inserting default values", e );
+                value = column.defaultValue.value;
+            }
+            try {
+                File primaryKeyDir = new File( rootDir, getPhysicalColumnName( table.columns.get( 0 ).id, allocId ) );
+                for ( File entry : Objects.requireNonNull( primaryKeyDir.listFiles() ) ) {
+                    FileModifier.write( new File( newColumnFolder, entry.getName() ), value );
                 }
+            } catch ( IOException e ) {
+                throw new GenericRuntimeException( "Caught exception while inserting default values", e );
             }
 
+            updateNativePhysical( allocId, table.getPkIds() );
+
+        }
+
+
+        protected void updateNativePhysical( long allocId, List<Long> pkIds ) {
+            PhysicalTable table = storeCatalog.fromAllocation( allocId );
+            storeCatalog.replacePhysical( this.currentNamespace.createFileTable( table, pkIds ) );
         }
 
 
         @Override
         public void dropColumn( Context context, long allocId, long columnId ) {
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
+            FileTranslatableEntity fileTranslatableEntity = storeCatalog.fromAllocation( allocId ).unwrap( FileTranslatableEntity.class ).orElseThrow();
+
             storeCatalog.dropColumn( allocId, columnId );
             File columnFile = getColumnFolder( columnId, allocId );
             try {
@@ -279,6 +303,8 @@ public class FilePlugin extends PolyPlugin {
             } catch ( IOException e ) {
                 throw new GenericRuntimeException( "Could not delete column folder", e );
             }
+
+            updateNativePhysical( allocId, fileTranslatableEntity.getPkIds() );
 
         }
 
@@ -440,10 +466,9 @@ public class FilePlugin extends PolyPlugin {
         @Override
         public void truncate( Context context, long allocId ) {
             //context.getStatement().getTransaction().registerInvolvedStore( this );
-            PhysicalTable physical = storeCatalog.fromAllocation( allocId );
-            FileTranslatableEntity fileTable = (FileTranslatableEntity) currentNamespace.getEntity( physical.name + "_" + allocId );
+            PhysicalTable table = storeCatalog.fromAllocation( allocId ).unwrap( FileTranslatableEntity.class ).orElseThrow();
             try {
-                for ( PhysicalColumn column : fileTable.columns ) {
+                for ( PhysicalColumn column : table.columns ) {
                     File columnFolder = getColumnFolder( column.id, allocId );
                     FileUtils.cleanDirectory( columnFolder );
                 }
@@ -524,6 +549,8 @@ public class FilePlugin extends PolyPlugin {
 
     @SuppressWarnings("unused")
     public interface Exclude {
+
+        void renameLogicalColumn( long id, String name );
 
         void dropIndex( Context context, LogicalIndex catalogIndex, long allocId );
 
