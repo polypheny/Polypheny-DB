@@ -56,7 +56,7 @@ public class JdbcScan extends RelScan<JdbcTable> implements JdbcAlg {
 
     @Override
     public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        return super.computeSelfCost( planner, mq ).multiplyBy( 0.9 );
+        return super.computeSelfCost( planner, mq ).multiplyBy( JdbcConvention.COST_MULTIPLIER );
     }
 
 
