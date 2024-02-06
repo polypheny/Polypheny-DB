@@ -23,13 +23,12 @@ import io.javalin.http.Context;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.linq4j.Enumerable;
 import org.polypheny.db.PolyImplementation;
+import org.polypheny.db.ResultIterator;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollations;
@@ -555,9 +554,8 @@ public class Rest {
             PolyImplementation result = statement.getQueryProcessor().prepareQuery( algRoot, true );
             log.debug( "AlgRoot was prepared." );
 
-            final Enumerable<PolyValue[]> iterable = result.enumerable( statement.getDataContext() );
-            Iterator<PolyValue[]> iterator = iterable.iterator();
-            restResult = new RestResult( algRoot.kind, iterator, result.rowType, result.getColumns() );
+            final ResultIterator iter = result.execute( statement, 1 );
+            restResult = new RestResult( algRoot.kind, iter, result.rowType, result.getColumns() );
             restResult.transform();
             long executionTime = restResult.getExecutionTime();
             if ( !algRoot.kind.belongsTo( Kind.DML ) ) {

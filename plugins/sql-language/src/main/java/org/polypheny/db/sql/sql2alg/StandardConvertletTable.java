@@ -1388,24 +1388,19 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
             RexNode interval2Add;
             SqlIntervalQualifier qualifier = new SqlIntervalQualifier( unit, null, unitLiteral.getPos() );
             RexNode op1 = cx.convertExpression( call.operand( 1 ) );
-            switch ( unit ) {
-                case MICROSECOND:
-                case NANOSECOND:
-                    interval2Add =
-                            divide(
-                                    rexBuilder,
-                                    multiply(
-                                            rexBuilder,
-                                            rexBuilder.makeIntervalLiteral( BigDecimal.ONE, qualifier ),
-                                            op1 ),
-                                    BigDecimal.ONE.divide( unit.multiplier, RoundingMode.UNNECESSARY ) );
-                    break;
-                default:
-                    interval2Add = multiply(
-                            rexBuilder,
-                            rexBuilder.makeIntervalLiteral( unit.multiplier, qualifier ),
-                            op1 );
-            }
+            interval2Add = switch ( unit ) {
+                case MICROSECOND, NANOSECOND -> divide(
+                        rexBuilder,
+                        multiply(
+                                rexBuilder,
+                                rexBuilder.makeIntervalLiteral( BigDecimal.ONE, qualifier ),
+                                op1 ),
+                        BigDecimal.ONE.divide( unit.multiplier, RoundingMode.UNNECESSARY ) );
+                default -> multiply(
+                        rexBuilder,
+                        rexBuilder.makeIntervalLiteral( unit.multiplier, qualifier ),
+                        op1 );
+            };
 
             return rexBuilder.makeCall(
                     OperatorRegistry.get( OperatorName.DATETIME_PLUS ),

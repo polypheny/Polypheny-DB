@@ -2154,8 +2154,8 @@ public class RexImpTable {
                                     Expressions.call( BuiltInMethod.TIME_ZONE.method, translator.getRoot() ) );
                             // fall through
                         case TIMESTAMP:
-                            operand = Expressions.divide( EnumUtils.unwrapPolyValue( operand, "longValue" ), Expressions.constant( TimeUnit.DAY.multiplier.longValue() ) );
-                            return Expressions.call( BuiltInMethod.UNIX_DATE_EXTRACT.method, translatedOperands.get( 0 ), EnumUtils.wrapPolyValue( PolyType.TIMESTAMP, operand ) );
+                            //operand = EnumUtils.unwrapPolyValue( operand, "longValue" );
+                            return Expressions.call( BuiltInMethod.UNIX_DATE_EXTRACT.method, translatedOperands.get( 0 ), operand );
 
                         case DATE:
                             return Expressions.call( BuiltInMethod.UNIX_DATE_EXTRACT.method, translatedOperands.get( 0 ), operand );

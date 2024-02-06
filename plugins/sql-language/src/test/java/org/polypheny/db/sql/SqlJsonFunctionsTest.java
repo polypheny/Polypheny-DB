@@ -585,7 +585,7 @@ public class SqlJsonFunctionsTest extends SqlLanguageDependent {
     }
 
 
-    private void assertJsonObjectAggAdd( Map<?, ?> map, String k, Object v, JsonConstructorNullClause nullClause, Matcher<? super Map<?, ?>> matcher ) {
+    private void assertJsonObjectAggAdd( Map<String, Object> map, String k, Object v, JsonConstructorNullClause nullClause, Matcher<? super Map<?, ?>> matcher ) {
         Functions.jsonObjectAggAdd( map, k, v, nullClause );
         assertThat(
                 invocationDesc( INVOC_DESC_JSON_OBJECT_AGG_ADD, map, k, v, nullClause ), map, matcher );

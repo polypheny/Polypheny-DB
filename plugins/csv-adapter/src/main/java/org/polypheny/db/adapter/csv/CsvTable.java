@@ -61,6 +61,7 @@ public abstract class CsvTable extends PhysicalTable {
                 table.columns,
                 table.namespaceId,
                 table.namespaceName,
+                table.uniqueFieldIds,
                 table.adapterId );
         this.source = source;
         this.fieldTypes = fieldTypes;

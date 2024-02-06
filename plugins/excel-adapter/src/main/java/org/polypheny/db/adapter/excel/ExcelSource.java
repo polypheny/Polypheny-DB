@@ -141,7 +141,7 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> {
                 logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
                 logical.table,
                 logical.columns.stream().collect( Collectors.toMap( t -> t.id, t -> t ) ),
-                allocation );
+                logical.pkIds, allocation );
 
         ExcelTable physical = currentNamespace.createExcelTable( table, this );
 

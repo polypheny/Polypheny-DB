@@ -134,7 +134,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
      * Creates a MongoTable.
      */
     MongoEntity( PhysicalEntity physical, List<? extends PhysicalField> fields, MongoNamespace namespace, TransactionProvider transactionProvider ) {
-        super( physical.id, physical.allocationId, physical.logicalId, physical.name, physical.namespaceId, physical.namespaceName, physical.dataModel, physical.adapterId );
+        super( physical.id, physical.allocationId, physical.logicalId, physical.name, physical.namespaceId, physical.namespaceName, physical.getUniqueFieldIds(), physical.dataModel, physical.adapterId );
         this.physical = physical;
         this.mongoNamespace = namespace;
         this.transactionProvider = transactionProvider;
@@ -389,21 +389,6 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
         return fields.stream().filter( f -> f.logicalName.equals( logicalName ) ).map( f -> f.name ).findFirst().orElse( null );
     }
 
-
-
-
-    /*@Override
-    public Modify<?> toModificationGraph(
-            AlgOptCluster cluster,
-            AlgTraitSet traitSet,
-            CatalogEntity entity,
-            AlgNode child,
-            Operation operation,
-            List<String> keys,
-            List<RexNode> updates ) {
-        mongoSchema.getConvention().register( cluster.getPlanner() );
-        return new LogicalDocumentModify( child.getTraitSet(), entity, catalogReader, child, operation, keys, updates );
-    }*/
 
 
     /**

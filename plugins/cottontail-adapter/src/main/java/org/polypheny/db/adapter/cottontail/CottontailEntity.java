@@ -25,7 +25,6 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.cottontail.CottontailPlugin.CottontailStore;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailScan;
 import org.polypheny.db.adapter.cottontail.enumberable.CottontailQueryEnumerable;
-import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
@@ -75,13 +74,15 @@ public class CottontailEntity extends PhysicalTable implements TranslatableEntit
             String physicalSchemaName,
             PhysicalTable physical,
             CottontailStore cottontailStore ) {
-        super( physical.id,
+        super(
+                physical.id,
                 physical.allocationId,
                 physical.logicalId,
                 physical.name,
                 physical.columns,
                 physical.namespaceId,
                 physical.namespaceName,
+                physical.uniqueFieldIds,
                 physical.adapterId );
 
         this.store = cottontailStore;
@@ -100,7 +101,7 @@ public class CottontailEntity extends PhysicalTable implements TranslatableEntit
 
 
     public String getPhysicalColumnName( String logicalColumnName ) {
-        return this.physicalColumnNames.get( this.table.columns.indexOf( logicalColumnName ) );
+        throw new UnsupportedOperationException( "Not yet implemented" );
     }
 
 
@@ -168,7 +169,6 @@ public class CottontailEntity extends PhysicalTable implements TranslatableEntit
 
         @Override
         public Enumerator<PolyValue[]> enumerator() {
-            final JavaTypeFactory typeFactory = dataContext.getTypeFactory();
             final CottontailEntity cottontailTable = entity;
             final long txId = cottontailTable.cottontailNamespace.getWrapper().beginOrContinue( this.dataContext.getStatement().getTransaction() );
             final Query query = Query.newBuilder()

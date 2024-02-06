@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.entity.physical;
 
 import io.activej.serializer.annotations.Deserialize;
+import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
@@ -39,7 +40,7 @@ public class PhysicalCollection extends PhysicalEntity {
             @Deserialize("name") String name,
             @Deserialize("namespaceName") String namespaceName,
             @Deserialize("adapterId") long adapterId ) {
-        super( id, allocationId, logicalId, name, namespaceId, namespaceName, DataModel.DOCUMENT, adapterId );
+        super( id, allocationId, logicalId, name, namespaceId, namespaceName, List.of(), DataModel.DOCUMENT, adapterId );
     }
 
 

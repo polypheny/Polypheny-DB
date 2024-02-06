@@ -50,7 +50,7 @@ public class FileValues extends Values implements FileAlg {
     @Override
     public void implement( final FileImplementor implementor ) {
         AlgRecordType recordType = (AlgRecordType) getTupleType();
-        if ( recordType.toString().equals( "RecordType(INTEGER ZERO)" ) ) {
+        if ( recordType.isPrepared() ) {
             implementor.setBatchInsert( true );
             return;
         }
@@ -63,7 +63,7 @@ public class FileValues extends Values implements FileAlg {
         for ( ImmutableList<RexLiteral> literalList : tuples ) {
             Value[] row = new Value[literalList.size()];
             int i = 0;
-            for ( RexLiteral literal : literalList.asList() ) {
+            for ( RexLiteral literal : literalList ) {
                 row[i] = new Value( i, literal.value, false );
                 i++;
             }

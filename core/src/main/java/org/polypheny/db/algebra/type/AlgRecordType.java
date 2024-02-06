@@ -137,18 +137,16 @@ public class AlgRecordType extends AlgDataTypeImpl implements Serializable {
     }
 
 
+    public boolean isPrepared() {
+        return fields.size() == 1 && fields.get( 0 ).getName().equals( "ZERO" ) && fields.get( 0 ).getType().getPolyType() == PolyType.INTEGER;
+    }
+
+
     /**
      * Skinny object which has the same information content as a {@link AlgRecordType} but skips redundant stuff like
      * digest and the immutable list.
      */
-    private static class SerializableAlgRecordType implements Serializable {
-
-        private final List<AlgDataTypeField> fields;
-
-
-        private SerializableAlgRecordType( List<AlgDataTypeField> fields ) {
-            this.fields = fields;
-        }
+    private record SerializableAlgRecordType(List<AlgDataTypeField> fields) implements Serializable {
 
 
         /**

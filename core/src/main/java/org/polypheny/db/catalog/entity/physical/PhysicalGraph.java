@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.entity.physical;
 
 import io.activej.serializer.annotations.Deserialize;
+import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
@@ -37,7 +38,7 @@ public class PhysicalGraph extends PhysicalEntity {
             @Deserialize("logicalId") long logicalId,
             @Deserialize("name") String name,
             @Deserialize("adapterId") long adapterId ) {
-        super( id, allocationId, logicalId, name, id, name, DataModel.GRAPH, adapterId ); // for graph both name and namespaceName are the same
+        super( id, allocationId, logicalId, name, id, name, List.of(), DataModel.GRAPH, adapterId ); // for graph both name and namespaceName are the same
     }
 
 

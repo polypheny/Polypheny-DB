@@ -66,6 +66,7 @@ public class FileTranslatableEntity extends PhysicalTable implements Translatabl
                 physical.columns,
                 physical.namespaceId,
                 physical.namespaceName,
+                physical.uniqueFieldIds,
                 physical.adapterId );
         this.fileSchema = fileSchema;
         this.rootDir = fileSchema.getRootDir();
