@@ -18,6 +18,7 @@ package org.polypheny.db.catalog.entity.physical;
 
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeClass;
+import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
@@ -46,9 +47,13 @@ public abstract class PhysicalEntity extends Entity {
     @Serialize
     public long logicalId;
 
+    @Serialize
+    public List<Long> uniqueFieldIds;
 
-    protected PhysicalEntity( long id, long allocationId, long logicalId, String name, long namespaceId, String namespaceName, DataModel dataModel, long adapterId ) {
+
+    protected PhysicalEntity( long id, long allocationId, long logicalId, String name, long namespaceId, String namespaceName, List<Long> uniqueFieldIds, DataModel dataModel, long adapterId ) {
         super( id, name, namespaceId, EntityType.ENTITY, dataModel, true );
+        this.uniqueFieldIds = uniqueFieldIds;
         this.allocationId = allocationId;
         this.namespaceName = namespaceName;
         this.adapterId = adapterId;

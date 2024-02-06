@@ -202,7 +202,7 @@ public class FilePlugin extends PolyPlugin {
                     allocationWrapper.columns.stream().collect( Collectors.toMap( c -> c.columnId, c -> getPhysicalColumnName( c.columnId, allocationWrapper.table.id ) ) ),
                     logical.table,
                     logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c ) ),
-                    allocationWrapper );
+                    logical.pkIds, allocationWrapper );
 
             for ( LogicalColumn col : logical.columns ) {
                 File newColumnFolder = getColumnFolder( col.id, allocationWrapper.table.id );

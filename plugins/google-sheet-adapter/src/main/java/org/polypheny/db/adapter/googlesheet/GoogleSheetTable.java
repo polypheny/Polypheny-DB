@@ -66,6 +66,7 @@ public class GoogleSheetTable extends PhysicalTable implements TranslatableEntit
                 table.columns,
                 table.namespaceId,
                 table.namespaceName,
+                table.uniqueFieldIds,
                 table.adapterId );
         this.sheetsUrl = sheetsUrl;
         this.querySize = querySize;

@@ -485,14 +485,14 @@ public class JdbcPreparedStatementsTest {
                 try {
                     // Insert data
                     PreparedStatement preparedInsert = connection.prepareStatement( "INSERT INTO pstest(tinteger,tsmallint,tvarchar) VALUES (?,?,?)" );
-                    preparedInsert.setInt( 1, 1 );
-                    preparedInsert.setShort( 2, (short) 5 );
-                    preparedInsert.setString( 3, "Foo" );
+                    preparedInsert.setInt( 1, 1 ); // integer
+                    preparedInsert.setShort( 2, (short) 5 ); // smallint + 3 + 1
+                    preparedInsert.setString( 3, "Foo" ); // varchar
                     preparedInsert.addBatch();
 
-                    preparedInsert.setInt( 1, 2 );
-                    preparedInsert.setShort( 2, (short) 5 );
-                    preparedInsert.setString( 3, "Bar" );
+                    preparedInsert.setInt( 1, 2 ); // integer
+                    preparedInsert.setShort( 2, (short) 5 ); // smallint
+                    preparedInsert.setString( 3, "Bar" ); // varchar
                     preparedInsert.addBatch();
 
                     // Update

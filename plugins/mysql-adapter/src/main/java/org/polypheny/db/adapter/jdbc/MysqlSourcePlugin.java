@@ -103,7 +103,7 @@ public class MysqlSourcePlugin extends PolyPlugin {
                     logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
                     logical.table,
                     logical.columns.stream().collect( Collectors.toMap( t -> t.id, t -> t ) ),
-                    allocation );
+                    logical.pkIds, allocation );
 
             JdbcTable physical = currentJdbcSchema.createJdbcTable( table );
 

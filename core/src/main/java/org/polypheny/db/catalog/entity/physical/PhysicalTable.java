@@ -56,11 +56,11 @@ public class PhysicalTable extends PhysicalEntity {
             @Deserialize("columns") List<PhysicalColumn> columns,
             @Deserialize("namespaceId") long namespaceId,
             @Deserialize("namespaceName") String namespaceName,
+            @Deserialize("uniqueFieldIds") List<Long> uniqueFieldIds,
             @Deserialize("adapterId") long adapterId ) {
-        super( id, allocationId, logicalId, name, namespaceId, namespaceName, DataModel.RELATIONAL, adapterId );
+        super( id, allocationId, logicalId, name, namespaceId, namespaceName, uniqueFieldIds, DataModel.RELATIONAL, adapterId );
         this.columns = ImmutableList.copyOf( columns.stream().sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() ) );
     }
-
 
 
     @Override
@@ -98,7 +98,6 @@ public class PhysicalTable extends PhysicalEntity {
     }
 
 
-
     public List<Long> getColumnIds() {
         return columns.stream().map( c -> c.id ).collect( Collectors.toList() );
     }
@@ -106,7 +105,7 @@ public class PhysicalTable extends PhysicalEntity {
 
     @Override
     public PhysicalEntity normalize() {
-        return new PhysicalTable( id, allocationId, logicalId, name, columns, namespaceId, namespaceName, adapterId );
+        return new PhysicalTable( id, allocationId, logicalId, name, columns, namespaceId, namespaceName, uniqueFieldIds, adapterId );
     }
 
 

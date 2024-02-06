@@ -84,6 +84,7 @@ import org.apache.calcite.linq4j.function.Predicate2;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.bson.BsonDocument;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.enumerable.JavaRowFormat;
 import org.polypheny.db.algebra.exceptions.ConstraintViolationException;
@@ -293,6 +294,49 @@ public class Functions {
 
         boolean single = polyTypes.size() == 1;
 
+        List<PolyValue[]> results = new ArrayList<>();
+        List<Map<Long, PolyValue>> valuesBackup = context.getParameterValues();
+        Map<Long, AlgDataType> typesBackup = context.getParameterTypes();
+
+        if ( context.getParameterValues().isEmpty() ) {
+            Enumerable<PolyValue[]> values = handleContextBatch( context, baz, executorCall, null, typesBackup, algDataTypes, results );
+            if ( values != null ) {
+                return values;
+            }
+        } else {
+            // batches of inserts or selects do not care if they execute before the prepared side(right)
+            // but updates need the full execution before the next batch
+            for ( Map<Long, PolyValue> contextBatch : valuesBackup ) {
+                Enumerable<PolyValue[]> values = handleContextBatch( context, baz, executorCall, contextBatch, typesBackup, algDataTypes, results );
+                if ( values != null ) {
+                    return values;
+                }
+            }
+        }
+
+        context.resetParameterValues();
+
+        context.setParameterTypes( typesBackup );
+        context.setParameterValues( valuesBackup );
+
+        return Linq4j.asEnumerable( results );
+    }
+
+
+    @Nullable
+    private static Enumerable<PolyValue[]> handleContextBatch(
+            DataContext context,
+            Enumerable<PolyValue[]> baz,
+            Function0<Enumerable<PolyValue[]>> executorCall,
+            @Nullable Map<Long, PolyValue> contextBatch,
+            Map<Long, AlgDataType> typesBackup,
+            List<AlgDataType> algDataTypes,
+            List<PolyValue[]> results ) {
+        context.setParameterTypes( typesBackup );
+        if ( contextBatch != null ) {
+            context.setParameterValues( List.of( contextBatch ) );
+        }
+
         List<PolyValue[]> values = new ArrayList<>();
         for ( PolyValue[] o : baz ) {
             values.add( o );
@@ -303,10 +347,8 @@ public class Functions {
             return Linq4j.asEnumerable( values );
         }
 
-        List<Map<Long, PolyValue>> valuesBackup = context.getParameterValues();
-        Map<Long, AlgDataType> typesBackup = context.getParameterTypes();
-
         context.resetParameterValues();
+
         Map<Integer, List<PolyValue>> vals = new HashMap<>();
         for ( int i = 0; i < values.get( 0 ).length; i++ ) {
             vals.put( i, new ArrayList<>() );
@@ -322,18 +364,11 @@ public class Functions {
             context.addParameterValues( i, algDataTypes.get( i ), vals.get( i ) );
         }
 
-        List<PolyValue[]> results = new ArrayList<>();
         Enumerable<PolyValue[]> executor = executorCall.apply();
         for ( PolyValue[] o : executor ) {
             results.add( o );
         }
-
-        context.resetParameterValues();
-
-        context.setParameterTypes( typesBackup );
-        context.setParameterValues( valuesBackup );
-
-        return Linq4j.asEnumerable( results );
+        return null;
     }
 
 
@@ -2643,7 +2678,7 @@ public class Functions {
     }
 
 
-    public static void jsonObjectAggAdd( Map map, String k, Object v, JsonConstructorNullClause nullClause ) {
+    public static void jsonObjectAggAdd( Map<String, Object> map, String k, Object v, JsonConstructorNullClause nullClause ) {
         if ( k == null ) {
             throw Static.RESOURCE.nullKeyOfJsonObjectNotAllowed().ex();
         }

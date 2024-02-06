@@ -33,7 +33,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
@@ -45,6 +44,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.polypheny.db.ResultIterator;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -58,7 +58,7 @@ import org.polypheny.db.util.Pair;
 public class RestResult {
 
     private final Kind kind;
-    private final Iterator<PolyValue[]> iterator;
+    private final ResultIterator iterator;
     private final AlgDataType dataType;
     List<ColumnMetaData> columns;
     private List<Map<String, Object>> result;
@@ -71,7 +71,7 @@ public class RestResult {
     ZipOutputStream zipOut;
 
 
-    public RestResult( Kind Kind, Iterator<PolyValue[]> iterator, AlgDataType dataType, List<ColumnMetaData> columns ) {
+    public RestResult( Kind Kind, ResultIterator iterator, AlgDataType dataType, List<ColumnMetaData> columns ) {
         this.kind = Kind;
         this.iterator = iterator;
         this.dataType = dataType;
@@ -90,13 +90,13 @@ public class RestResult {
 
 
     private void transformDML() {
-        PolyValue[] object;
+        List<PolyValue[]> object;
         int rowsChanged = -1;
-        while ( iterator.hasNext() ) {
-            object = iterator.next();
+        while ( iterator.hasMoreRows() ) {
+            object = iterator.getArrayRows();
             int num;
-            if ( object != null && object.getClass().isArray() ) {
-                num = object[0].asNumber().intValue();
+            if ( object != null && object.get( 0 ).getClass().isArray() ) {
+                num = object.get( 0 )[0].asNumber().intValue();
             } else {
                 throw new GenericRuntimeException( "Result is null" );
             }
@@ -107,7 +107,7 @@ public class RestResult {
             rowsChanged = num;
         }
         List<Map<String, Object>> result = new ArrayList<>();
-        HashMap<String, Object> map = new HashMap<>();
+        Map<String, Object> map = new HashMap<>();
         map.put( columns.get( 0 ).columnName, rowsChanged );
         result.add( map );
         this.result = result;
@@ -118,11 +118,10 @@ public class RestResult {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         List<Map<String, Object>> result = new ArrayList<>();
-        while ( iterator.hasNext() ) {
-            Object next = iterator.next();
-            PolyValue[] row = (PolyValue[]) next;
+        while ( iterator.hasMoreRows() ) {
+            PolyValue[] row = iterator.getArrayRows().get( 0 );
 
-            HashMap<String, Object> temp = new HashMap<>();
+            Map<String, Object> temp = new HashMap<>();
             int i = 0;
             for ( AlgDataTypeField type : dataType.getFields() ) {
                 PolyValue o = row[i];
@@ -134,14 +133,6 @@ public class RestResult {
                 }
 
                 if ( type.getType().getPolyType().getFamily() == PolyTypeFamily.MULTIMEDIA ) {
-                    /*
-                    if ( o.isBlob() ) {//file
-                        o = addZipEntry( o );
-                    } else if ( o instanceof InputStream || o instanceof Blob ) {
-                        o = addZipEntry( o );
-                    } else if ( o instanceof byte[] ) {
-                        o = addZipEntry( o );
-                    }*///todo dl rest
                     temp.put( columnName, o );
                 } else {
                     switch ( type.getType().getPolyType() ) {

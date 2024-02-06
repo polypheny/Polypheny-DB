@@ -111,7 +111,7 @@ public class Qfs extends DataSource<RelAdapterCatalog> {
                 logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
                 logical.table,
                 logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c ) ),
-                allocation );
+                logical.pkIds, allocation );
         FileTranslatableEntity physical = currentNamespace.createFileTable( table );
         storeCatalog.replacePhysical( physical );
         return List.of( physical );

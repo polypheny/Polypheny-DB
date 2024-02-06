@@ -58,6 +58,7 @@ public class EthereumTable extends PhysicalTable implements FilterableEntity {
                 table.columns,
                 table.namespaceId,
                 table.namespaceName,
+                table.uniqueFieldIds,
                 table.adapterId );
         this.clientUrl = clientUrl;
         this.protoRowType = protoRowType;

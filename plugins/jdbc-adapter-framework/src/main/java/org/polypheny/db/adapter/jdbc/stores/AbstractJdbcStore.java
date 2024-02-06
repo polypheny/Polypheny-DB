@@ -161,7 +161,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
                 allocationWrapper.columns.stream().collect( Collectors.toMap( c -> c.columnId, c -> getPhysicalColumnName( c.columnId ) ) ),
                 logical.table,
                 logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c ) ),
-                allocationWrapper );
+                logical.pkIds, allocationWrapper );
 
         executeCreateTable( context, table, logical.pkIds );
 

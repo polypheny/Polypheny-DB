@@ -75,7 +75,7 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
 
 
     protected NeoEntity( PhysicalEntity physical, List<? extends PhysicalField> fields, NeoNamespace namespace ) {
-        super( physical.id, physical.allocationId, physical.logicalId, physical.name, physical.namespaceId, physical.namespaceName, physical.dataModel, physical.adapterId );
+        super( physical.id, physical.allocationId, physical.logicalId, physical.name, physical.namespaceId, physical.namespaceName, physical.uniqueFieldIds, physical.dataModel, physical.adapterId );
         this.fields = fields;
         this.namespace = namespace;
     }
@@ -112,7 +112,6 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
                 sources
         );
     }
-
 
 
     @Override
@@ -167,6 +166,7 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
 
         return AlgDataTypeImpl.proto( fieldInfo.build() );
     }
+
 
     public static class NeoQueryable extends AbstractEntityQueryable<PolyValue[], NeoEntity> {
 

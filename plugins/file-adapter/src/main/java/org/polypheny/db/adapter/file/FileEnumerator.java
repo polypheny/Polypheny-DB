@@ -72,6 +72,7 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
     final Map<Integer, Value> updates = new HashMap<>();
     final Integer[] pkMapping;
     final File hardlinkFolder;
+    private boolean ongoing = true;
 
 
     /**
@@ -190,14 +191,18 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
         } else if ( operation == Operation.INSERT ) {
             throw new GenericRuntimeException( "Not supported" );
         }
-
-        boolean moveNext = singleNext();
-        if ( ((EnumerableDataContext) dataContext).isEmpty() ) {
+        if ( !ongoing ) {
             return false;
+        }
+
+        ongoing = singleNext();
+        if ( ((EnumerableDataContext) dataContext).isEmpty() ) {
+            ongoing = false;
+            return true;
         }
         toDefault();
         ((EnumerableDataContext) dataContext).next();
-        return moveNext;
+        return true;
     }
 
 

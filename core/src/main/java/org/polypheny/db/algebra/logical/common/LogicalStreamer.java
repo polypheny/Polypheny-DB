@@ -39,6 +39,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -139,7 +140,7 @@ public class LogicalStreamer extends Streamer {
                 algBuilder.build(),
                 modify.getOperation(),
                 modify.getUpdateColumns(),
-                modify.getSourceExpressions() == null ? null : createSourceList( modify, rexBuilder ),
+                modify.getSourceExpressions() == null ? null : createSourceList( modify, query, rexBuilder ),
                 false ).streamed( true );
         return new LogicalStreamer( modify.getCluster(), modify.getTraitSet(), query, prepared );
     }
@@ -163,19 +164,27 @@ public class LogicalStreamer extends Streamer {
     }
 
 
-    private static List<RexNode> createSourceList( RelModify<?> modify, RexBuilder rexBuilder ) {
+    private static List<RexNode> createSourceList( RelModify<?> modify, AlgNode query, RexBuilder rexBuilder ) {
         return modify.getUpdateColumns()
                 .stream()
                 .map( name -> {
-                    int size = modify.getEntity().getRowType().getFields().size();
-                    int index = modify.getEntity().getRowType().getFieldNames().indexOf( name );
-                    return (RexNode) rexBuilder.makeDynamicParam( modify.getEntity().getRowType().getFields().get( index ).getType(), size + index );
+                    int index = query.getTupleType().getFieldNames().indexOf( name );
+                    return (RexNode) rexBuilder.makeDynamicParam( query.getTupleType().getFields().get( index ).getType(), index );
                 } ).toList();
     }
 
 
     public static void attachFilter( AlgNode modify, AlgBuilder algBuilder, RexBuilder rexBuilder ) {
         List<Integer> indexes = IntStream.range( 0, modify.getEntity().getRowType().getFieldCount() ).boxed().toList();
+
+        if ( modify.getEntity().unwrap( PhysicalTable.class ).isPresent() ) {
+            indexes = new ArrayList<>();
+            for ( long fieldId : modify.getEntity().unwrap( PhysicalTable.class ).orElseThrow().getUniqueFieldIds() ) {
+                indexes.add( modify.getEntity().getRowType().getFieldIds().indexOf( fieldId ) );
+            }
+        }
+
+
         attachFilter( modify.getEntity(), algBuilder, rexBuilder, indexes );
     }
 
@@ -183,6 +192,7 @@ public class LogicalStreamer extends Streamer {
     public static void attachFilter( Entity entity, AlgBuilder algBuilder, RexBuilder rexBuilder, List<Integer> indexes ) {
         List<RexNode> fields = new ArrayList<>();
         int i = 0;
+        int j = 0;
         for ( AlgDataTypeField field : entity.getRowType().getFields() ) {
             if ( !indexes.contains( i ) ) {
                 i++;
@@ -193,6 +203,7 @@ public class LogicalStreamer extends Streamer {
                             rexBuilder.makeInputRef( entity.getRowType(), i ),
                             rexBuilder.makeDynamicParam( field.getType(), i ) ) );
             i++;
+            j++;
         }
         algBuilder.filter( fields.size() == 1
                 ? fields.get( 0 )

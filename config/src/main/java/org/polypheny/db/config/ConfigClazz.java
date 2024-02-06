@@ -187,7 +187,7 @@ public class ConfigClazz extends Config {
     }
 
 
-    class ValueAdapter extends TypeAdapter<Class> {
+    static class ValueAdapter extends TypeAdapter<Class> {
 
         @Override
         public void write( final JsonWriter out, final Class value ) throws IOException {

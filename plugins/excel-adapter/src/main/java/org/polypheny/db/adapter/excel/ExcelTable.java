@@ -46,6 +46,7 @@ public class ExcelTable extends PhysicalTable {
                 table.columns,
                 table.namespaceId,
                 table.namespaceName,
+                table.uniqueFieldIds,
                 table.adapterId );
         this.source = source;
         this.protoRowType = protoRowType;

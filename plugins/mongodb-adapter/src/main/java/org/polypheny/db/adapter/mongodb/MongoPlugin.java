@@ -577,6 +577,7 @@ public class MongoPlugin extends PolyPlugin {
                     allocation.columns.stream().collect( Collectors.toMap( c -> c.columnId, c -> getPhysicalColumnName( c.columnId ) ) ),
                     logical.table,
                     logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c ) ),
+                    logical.pkIds,
                     allocation );
 
             this.storeCatalog.addPhysical( allocation.table, this.currentNamespace.createEntity( physical, physical.columns ) );

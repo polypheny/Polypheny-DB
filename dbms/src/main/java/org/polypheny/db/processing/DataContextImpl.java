@@ -18,7 +18,6 @@ package org.polypheny.db.processing;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
@@ -84,7 +83,7 @@ public class DataContextImpl implements DataContext {
 
 
     public DataContextImpl( QueryProvider queryProvider, Map<String, Object> parameters, Snapshot snapshot, JavaTypeFactory typeFactory, Statement statement ) {
-        this( queryProvider, parameters, snapshot, typeFactory, statement, new HashMap<>(), new LinkedList<>() );
+        this( queryProvider, parameters, snapshot, typeFactory, statement, new HashMap<>(), new ArrayList<>() );
     }
 
 

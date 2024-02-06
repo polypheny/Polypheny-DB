@@ -99,4 +99,13 @@ public class PolyInterval extends PolyValue {
     }
 
 
+    public long getMillis() {
+        log.warn( "might adjust" );
+        return switch ( qualifier.getTimeUnitRange() ) {
+            case YEAR -> value.longValue() * 24 * 60 * 60 * 1000;
+            case MONTH -> value.longValue();
+            default -> throw new NotImplementedException( "since Epoch" );
+        };
+    }
+
 }

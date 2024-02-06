@@ -103,6 +103,7 @@ public class JdbcTable extends PhysicalTable implements TranslatableEntity, Scan
                 physical.columns,
                 physical.namespaceId,
                 physical.namespaceName,
+                physical.uniqueFieldIds,
                 physical.adapterId );
         this.jdbcSchema = jdbcSchema;
     }

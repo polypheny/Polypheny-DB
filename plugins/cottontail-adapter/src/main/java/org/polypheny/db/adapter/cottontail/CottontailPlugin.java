@@ -222,6 +222,7 @@ public class CottontailPlugin extends PolyPlugin {
                     allocationWrapper.columns.stream().collect( Collectors.toMap( c -> c.columnId, c -> CottontailNameUtil.createPhysicalColumnName( c.columnId ) ) ),
                     logical.table,
                     logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c ) ),
+                    logical.pkIds,
                     allocationWrapper );
 
             /* Prepare CREATE TABLE message. */
@@ -368,7 +369,7 @@ public class CottontailPlugin extends PolyPlugin {
             this.wrapper.dropEntityBlocking( DropEntityMessage.newBuilder().setMetadata( Metadata.newBuilder().setTransactionId( txId ) ).setEntity( tableEntity ).build() );
 
             // Update column placement physical table names
-            storeCatalog.replacePhysical( new PhysicalTable( table.id, table.allocationId, table.logicalId, newPhysicalTableName, pColumns, table.namespaceId, table.namespaceName, table.adapterId ) );
+            storeCatalog.replacePhysical( new PhysicalTable( table.id, table.allocationId, table.logicalId, newPhysicalTableName, pColumns, table.namespaceId, table.namespaceName, table.uniqueFieldIds, table.adapterId ) );
 
         }
 
@@ -430,7 +431,7 @@ public class CottontailPlugin extends PolyPlugin {
                 }
             } );
 
-            storeCatalog.replacePhysical( new PhysicalTable( table.id, table.allocationId, table.logicalId, newPhysicalTableName, pColumns, table.namespaceId, table.namespaceName, table.adapterId ) );
+            storeCatalog.replacePhysical( new PhysicalTable( table.id, table.allocationId, table.logicalId, newPhysicalTableName, pColumns, table.namespaceId, table.namespaceName, table.uniqueFieldIds, table.adapterId ) );
 
             // Delete old table
             this.wrapper.dropEntityBlocking( DropEntityMessage.newBuilder().setMetadata( Metadata.newBuilder().setTransactionId( txId ) ).setEntity( tableEntity ).build() );
@@ -585,7 +586,7 @@ public class CottontailPlugin extends PolyPlugin {
                     .setMetadata( Metadata.newBuilder().setTransactionId( txId ).build() )
                     .setEntity( tableEntity ).build() );
 
-            storeCatalog.replacePhysical( new PhysicalTable( physicalTable.id, physicalTable.allocationId, physicalTable.logicalId, newPhysicalTableName, pColumns, physicalTable.namespaceId, physicalTable.namespaceName, physicalTable.adapterId ) );
+            storeCatalog.replacePhysical( new PhysicalTable( physicalTable.id, physicalTable.allocationId, physicalTable.logicalId, newPhysicalTableName, pColumns, physicalTable.namespaceId, physicalTable.namespaceName, physicalTable.uniqueFieldIds, physicalTable.adapterId ) );
 
         }
 
