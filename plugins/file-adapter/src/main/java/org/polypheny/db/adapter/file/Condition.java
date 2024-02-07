@@ -18,33 +18,35 @@ package org.polypheny.db.adapter.file;
 
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
+import java.util.Objects;
 import javax.annotation.Nullable;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.file.Value.DynamicValue;
+import org.polypheny.db.adapter.file.Value.InputValue;
+import org.polypheny.db.adapter.file.Value.LiteralValue;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.functions.Functions;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyValue;
 
 
 public class Condition {
 
     private final Kind operator;
-    private Integer columnReference;
-    private Long literalIndex;
-    private PolyValue literal;
-    private final ArrayList<Condition> operands = new ArrayList<>();
+
+    private List<Value> values = new ArrayList<>();
+    private final List<Condition> operands = new ArrayList<>();
 
 
     public Condition( final RexCall call ) {
@@ -52,27 +54,40 @@ public class Condition {
         for ( RexNode rex : call.getOperands() ) {
             if ( rex instanceof RexCall ) {
                 this.operands.add( new Condition( (RexCall) rex ) );
+            } else if ( rex instanceof RexLiteral ) {
+                this.values.add( new LiteralValue( null, ((RexLiteral) rex).value ) );
+            } else if ( rex instanceof RexIndexRef ) {
+                this.values.add( new InputValue( null, ((RexIndexRef) rex).getIndex() ) );
+            } else if ( rex instanceof RexDynamicParam ) {
+                this.values.add( new DynamicValue( null, ((RexDynamicParam) rex).getIndex() ) );
             } else {
-                RexNode n0 = call.getOperands().get( 0 );
-                assignRexNode( n0 );
-                if ( call.getOperands().size() > 1 ) { // IS NULL and IS NOT NULL have no literal/literalIndex
-                    RexNode n1 = call.getOperands().get( 1 );
-                    assignRexNode( n1 );
-                }
+                throw new GenericRuntimeException( "Unsupported RexNode type: " + rex.getClass().getName() );
             }
         }
     }
 
 
-    /**
-     * Called by generated code, see {@link Condition#getExpression}
-     */
-    public Condition( final Kind operator, final Integer columnReference, final Long literalIndex, final PolyValue literal, final Condition[] operands ) {
+    public Condition( final RexDynamicParam dynamicParam ) {
+        this.operator = Kind.DYNAMIC_PARAM;
+        this.values = List.of( new DynamicValue( null, dynamicParam.getIndex() ) );
+    }
+
+
+    @SuppressWarnings("unused")
+    public Condition( final Kind operator, final List<Condition> operands, final List<Value> values ) {
         this.operator = operator;
-        this.columnReference = columnReference;
-        this.literalIndex = literalIndex;
-        this.literal = literal;
-        this.operands.addAll( Arrays.asList( operands.clone() ) );
+        this.values.addAll( values );
+        this.operands.addAll( operands );
+    }
+
+
+    public static Condition create( RexNode node ) {
+        if ( node instanceof RexCall call ) {
+            return new Condition( call );
+        } else if ( node instanceof RexDynamicParam dynamicParam ) {
+            return new Condition( dynamicParam );
+        }
+        throw new GenericRuntimeException( "Unsupported RexNode type: " + node.getClass().getName() );
     }
 
 
@@ -80,30 +95,12 @@ public class Condition {
      * For linq4j Expressions
      */
     public Expression getExpression() {
-        List<Expression> operandsExpressions = new ArrayList<>();
-        for ( Condition operand : operands ) {
-            operandsExpressions.add( operand.getExpression() );
-        }
 
         return Expressions.new_(
                 Condition.class,
-                Expressions.constant( operator, Kind.class ),
-                Expressions.constant( columnReference, Integer.class ),
-                Expressions.constant( literalIndex, Long.class ),
-                this.literal == null ? Expressions.constant( null ) : this.literal.asExpression(),
-                Expressions.newArrayInit( Condition.class, operandsExpressions )
-        );
-    }
-
-
-    private void assignRexNode( final RexNode rexNode ) {
-        if ( rexNode instanceof RexIndexRef rexIndexRef ) {
-            this.columnReference = rexIndexRef.getIndex();
-        } else if ( rexNode instanceof RexDynamicParam dynamicParam ) {
-            this.literalIndex = dynamicParam.getIndex();
-        } else if ( rexNode instanceof RexLiteral lit ) {
-            this.literal = lit.value;
-        }
+                Expressions.constant( operator ),
+                EnumUtils.constantArrayList( operands.stream().map( Condition::getExpression ).toList(), Condition.class ),
+                EnumUtils.constantArrayList( values.stream().map( Value::asExpression ).toList(), Value.class ) );
     }
 
 
@@ -115,72 +112,43 @@ public class Condition {
      * @return {@code Null} if it is not a PK lookup, or an Object array with the lookups to hash, if it is a PK lookup
      */
     @Nullable
-    public List<PolyValue> getPKLookup( final Set<Integer> pkColumnReferences, final List<AlgDataTypeField> columnTypes, final int colSize, final DataContext dataContext ) {
+    public List<PolyValue> extractPks( final List<Integer> pkColumnReferences, final List<AlgDataTypeField> columnTypes, final int colSize, final DataContext dataContext ) {
         List<PolyValue> lookups = new ArrayList<>( Collections.nCopies( colSize, null ) );
-        if ( operator == Kind.EQUALS && pkColumnReferences.size() == 1 ) {
-            if ( pkColumnReferences.contains( columnReference ) ) {
-                lookups.set( columnReference, getParamValue( dataContext ) );
-                return lookups;
-            } else {
+
+        for ( Condition operand : operands ) {
+            List<PolyValue> operandLookups = operand.extractPks( pkColumnReferences, columnTypes, colSize, dataContext );
+            if ( operandLookups == null ) {
                 return null;
             }
-        } else if ( operator == Kind.AND ) {
-            for ( Condition operand : operands ) {
-                if ( operand.operator == Kind.EQUALS ) {
-                    if ( !pkColumnReferences.contains( operand.columnReference ) ) {
-                        return null;
-                    } else {
-                        pkColumnReferences.remove( operand.columnReference );
-                    }
-                } else {
-                    return null;
+            for ( int i = 0; i < operandLookups.size(); i++ ) {
+                if ( operandLookups.get( i ) != null ) {
+                    lookups.set( i, operandLookups.get( i ) );
                 }
             }
-            if ( pkColumnReferences.isEmpty() ) {
-                return lookups;
-            } else {
-                return null;
+        }
+
+        for ( Integer refIndex : getInputRefs() ) {
+            if ( pkColumnReferences.contains( refIndex ) ) {
+                PolyValue value = PolyLong.of( pkColumnReferences.get( refIndex ) );
+                lookups.set( refIndex, value );
             }
         }
-        return null;
+
+        if ( lookups.stream().allMatch( Objects::isNull ) ) {
+            return null;
+        }
+        return lookups;
     }
 
 
-    /**
-     * Get the value of the condition parameter, either from the literal or literalIndex
-     */
-    PolyValue getParamValue( final DataContext dataContext ) {
-        PolyValue out;
-        if ( this.literalIndex != null ) {
-            out = dataContext.getParameterValue( literalIndex );
-        } else {
-            out = this.literal;
-        }
-        return out;
-    }
-
-
-    /**
-     * Implement the like keyword
-     *
-     * @param str Data in database
-     * @param expr String in SQL statement
-     * @return boolean
-     */
-    private static boolean like( final PolyValue str, PolyValue expr ) {
-        if ( str == null || expr == null ) {
-            return false;
-        }
-        if ( !str.isString() || !expr.isString() ) {
-            return false;
-        }
-
-        return Functions.like( str.asString(), expr.asString() ).value;
+    private List<Integer> getInputRefs() {
+        return values.stream().filter( v -> v instanceof InputValue ).map( v -> ((InputValue) v).getIndex() ).toList();
     }
 
 
     public boolean matches( final List<PolyValue> columnValues, final List<AlgDataTypeField> columnTypes, final DataContext dataContext ) {
-        if ( columnReference == null ) { // || literalIndex == null ) {
+
+        if ( !operands.isEmpty() ) { // || literalIndex == null ) {
             return switch ( operator ) {
                 case AND -> {
                     for ( Condition c : operands ) {
@@ -201,67 +169,36 @@ public class Condition {
                 default -> throw new GenericRuntimeException( operator + " not supported in condition without columnReference" );
             };
         }
-        // don't allow comparison of files and return false if Objects are not comparable
-        /*if ( columnValues[columnReference] == null ) {
-            return false;
-        }*/
-        PolyValue columnValue = columnValues.get( columnReference );//don't do the projectionMapping here
-        AlgDataTypeField polyType = columnTypes.get( columnReference );
-        switch ( operator ) {
-            case IS_NULL:
-                return columnValue == null || columnValue.isNull();
-            case IS_NOT_NULL:
-                return columnValue != null && !columnValue.isNull();
-        }
-        if ( columnValue == null || columnValue.isNull() ) {
-            //if there is no null check and the column value is null, any check on the column value would return false
-            return false;
-        }
-        PolyValue parameterValue = getParamValue( dataContext );
-        if ( parameterValue == null || parameterValue.isNull() ) {
-            //WHERE x = null is always false, see https://stackoverflow.com/questions/9581745/sql-is-null-and-null
-            return false;
-        }
-        /*if ( columnValue.isNumber() && parameterValue.isNumber() ) {
-            columnValue = columnValue;//.doubleValue();
-            parameterValue = parameterValue;//).doubleValue();
-        }*/
 
-        int comparison;
+        List<PolyValue> parameterValues = values.stream().map( v -> v.getValue( columnValues, dataContext, 0 ) ).toList();
+        Integer comparison = null;
+        PolyValue value = parameterValues.get( 0 );
+        if ( parameterValues.size() == 1 ) {
+            switch ( operator ) {
+                case IS_NULL:
+                    return value == null || value.isNull();
+                case IS_NOT_NULL:
+                    return value != null && !value.isNull();
+                case DYNAMIC_PARAM:
+                    if ( value == null || value.isNull() ) {
+                        return false;
+                    }
+                    return value.asBoolean().value;
+            }
 
-        /*if ( parameterValue instanceof Calendar ) {
-            //could be improved with precision..
-            switch ( polyType ) {
-                case DATE:
-                    LocalDate ld = LocalDate.ofEpochDay( (Integer) columnValue );
-                    comparison = ld.compareTo( ((GregorianCalendar) parameterValue).toZonedDateTime().toLocalDate() );
-                    break;
-                case TIME:
-                    //see https://howtoprogram.xyz/2017/02/11/convert-milliseconds-localdatetime-java/
-                    LocalTime dt = Instant.ofEpochMilli( (Integer) columnValue ).atZone( DateTimeUtils.UTC_ZONE.toZoneId() ).toLocalTime();
-                    comparison = dt.compareTo( ((GregorianCalendar) parameterValue).toZonedDateTime().toLocalTime() );
-                    break;
-                case TIMESTAMP:
-                    LocalDateTime ldt = Instant.ofEpochMilli( (Long) columnValue ).atZone( DateTimeUtils.UTC_ZONE.toZoneId() ).toLocalDateTime();
-                    comparison = ldt.compareTo( ((GregorianCalendar) parameterValue).toZonedDateTime().toLocalDateTime() );
-                    break;
-                default:
-                    comparison = ((Comparable) columnValue).compareTo( parameterValue );
+            if ( values.size() == 1 && value == null || value.isNull() ) {
+                //WHERE x = null is always false
+                return false;
             }
-        } else if ( FileHelper.isSqlDateOrTimeOrTS( parameterValue ) ) {
-            switch ( polyType ) {
-                case TIME:
-                case DATE:
-                    comparison = Long.valueOf( (Integer) columnValue ).compareTo( FileHelper.sqlToLong( parameterValue ) );
-                    break;
-                case TIMESTAMP:
-                default:
-                    comparison = ((Comparable) columnValue).compareTo( FileHelper.sqlToLong( parameterValue ) );
-            }
+        } else if ( parameterValues.size() == 2 ) {
+            comparison = value.compareTo( parameterValues.get( 1 ) );
         } else {
-            comparison = ((Comparable) columnValue).compareTo( parameterValue );
-        }*/
-        comparison = columnValue.compareTo( parameterValue );
+            throw new GenericRuntimeException( "Unsupported number of values in condition: " + values.size() );
+        }
+
+        if ( comparison == null ) {
+            return false;
+        }
 
         return switch ( operator ) {
             case AND -> {
@@ -280,20 +217,22 @@ public class Condition {
                 }
                 yield false;
             }
+
             case EQUALS -> comparison == 0;
             case NOT_EQUALS -> comparison != 0;
             case GREATER_THAN -> comparison > 0;
             case GREATER_THAN_OR_EQUAL -> comparison >= 0;
             case LESS_THAN -> comparison < 0;
             case LESS_THAN_OR_EQUAL -> comparison <= 0;
-            case LIKE -> like( columnValue, parameterValue );
             default -> throw new GenericRuntimeException( operator + " comparison not supported by file adapter." );
         };
     }
 
 
-    public void adjust( Integer[] projectionMapping ) {
-        this.columnReference = projectionMapping[columnReference];
+    public void adjust( Value[] projectionMapping ) {
+        operands.forEach( operand -> operand.adjust( projectionMapping ) );
+        values.forEach( value -> value.adjust( List.of( projectionMapping ) ) );
     }
+
 
 }

@@ -359,7 +359,8 @@ public class ForeignKeyConstraintTest {
                                 ImmutableList.of(
                                         new Object[]{ 1, 3 },
                                         new Object[]{ 3, 5 }
-                                )
+                                ),
+                                false
                         );
 
                         connection.commit();

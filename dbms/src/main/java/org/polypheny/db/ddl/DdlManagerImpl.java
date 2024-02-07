@@ -1684,8 +1684,10 @@ public class DdlManagerImpl extends DdlManager {
         for ( FieldInformation field : fields ) {
             ids.put( field.name, addColumn( namespaceId, field.name, field.typeInformation, field.collation, field.defaultValue, view.id, field.position ) );
         }
+
         // Sets previously created primary key
-        //catalog.getLogicalRel( namespaceId ).createPrimaryKey( view.id, columnIds );
+        long pkId = ids.get( fields.get( fields.size() - 1 ).name ).id;
+        catalog.getLogicalRel( namespaceId ).addPrimaryKey( view.id, List.of( pkId ) );
 
         AllocationPartitionGroup group = catalog.getAllocRel( namespaceId ).addPartitionGroup( view.id, UNPARTITIONED, namespaceId, PartitionType.NONE, 1, false );
         AllocationPartition partition = catalog.getAllocRel( namespaceId ).addPartition( view.id, namespaceId, group.id, null, false, PlacementType.AUTOMATIC, DataPlacementRole.UP_TO_DATE, null, PartitionType.NONE );
@@ -1693,8 +1695,7 @@ public class DdlManagerImpl extends DdlManager {
         for ( DataStore<?> store : stores ) {
             AllocationPlacement placement = catalog.getAllocRel( namespaceId ).addPlacement( view.id, namespaceId, store.adapterId );
 
-            addAllocationsForPlacement( namespaceId, statement, view, placement.id, List.copyOf( ids.values() ), List.of(), List.of( partition.id ), store );
-
+            addAllocationsForPlacement( namespaceId, statement, view, placement.id, List.copyOf( ids.values() ), List.of( pkId ), List.of( partition.id ), store );
         }
         addBlankPartition( namespaceId, view.id, List.of( group.id ), List.of( partition.id ) );
 

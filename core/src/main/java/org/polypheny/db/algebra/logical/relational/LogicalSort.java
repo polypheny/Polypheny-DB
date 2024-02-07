@@ -76,7 +76,6 @@ public final class LogicalSort extends Sort implements RelAlg {
 
 
     public static AlgNode create( AlgNode input, List<RexNode> fieldExps, AlgCollation collation, RexNode offset, RexNode fetch ) {
-        AlgOptCluster cluster = input.getCluster();
         collation = AlgCollationTraitDef.INSTANCE.canonize( collation );
         AlgTraitSet traitSet = input.getTraitSet().replace( Convention.NONE ).replace( collation );
         return new LogicalSort( input.getCluster(), traitSet, input, collation, fieldExps, offset, fetch );

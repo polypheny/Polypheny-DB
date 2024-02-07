@@ -81,6 +81,11 @@ public class PolyTimestamp extends PolyTemporal {
     }
 
 
+    public static PolyTimestamp ofNullable( Timestamp value ) {
+        return value == null ? null : PolyTimestamp.of( value );
+    }
+
+
     public static PolyTimestamp of( long value ) {
         return new PolyTimestamp( value );
     }

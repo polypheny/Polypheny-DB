@@ -34,6 +34,7 @@ import org.polypheny.db.adapter.file.FileAlg.FileImplementor.Operation;
 import org.polypheny.db.adapter.file.FileConvention;
 import org.polypheny.db.adapter.file.FileSchema;
 import org.polypheny.db.adapter.file.FileTranslatableEntity;
+import org.polypheny.db.adapter.file.Value;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.schema.Namespace.Schema;
 import org.polypheny.db.schema.impl.AbstractNamespace;
@@ -103,7 +104,7 @@ public class QfsSchema extends AbstractNamespace implements FileSchema, Schema {
             final Long[] columnIds,
             final FileTranslatableEntity entity,
             final List<Long> pkIds,
-            final Integer[] projectionMapping,
+            final List<Value> projectionMapping,
             final Condition condition,
             final List<List<PolyValue>> updates ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getAdapter( adapterId ).orElseThrow() );

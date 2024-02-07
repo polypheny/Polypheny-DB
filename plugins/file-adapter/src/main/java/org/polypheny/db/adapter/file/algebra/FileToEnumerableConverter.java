@@ -35,6 +35,7 @@ import org.polypheny.db.adapter.file.FileMethod;
 import org.polypheny.db.adapter.file.FileSchema;
 import org.polypheny.db.adapter.file.FileTranslatableEntity;
 import org.polypheny.db.adapter.file.Value;
+import org.polypheny.db.adapter.file.util.FileUtil;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterImpl;
 import org.polypheny.db.algebra.enumerable.EnumUtils;
@@ -100,7 +101,7 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
         if ( fileImplementor.getOperation() != Operation.SELECT ) {
             ArrayList<Expression> rowExpressions = new ArrayList<>();
             for ( Value[] row : fileImplementor.getInsertValues() ) {
-                rowExpressions.add( Value.getValuesExpression( Arrays.asList( row ) ) );
+                rowExpressions.add( FileUtil.getValuesExpression( Arrays.asList( row ) ) );
             }
 
             _insertValues = EnumUtils.constantArrayList( rowExpressions, resType );
@@ -108,7 +109,7 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
 
         Expression _updates;
         if ( fileImplementor.getUpdates() != null ) {
-            _updates = EnumUtils.constantArrayList( List.of( Value.getValuesExpression( fileImplementor.getUpdates() ) ), resType );
+            _updates = EnumUtils.constantArrayList( List.of( FileUtil.getValuesExpression( fileImplementor.getUpdates() ) ), resType );
         } else {
             _updates = Expressions.constant( null );
         }
@@ -136,7 +137,7 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
                             fileImplementor.getFileTable().asExpression( FileTranslatableEntity.class ),
                             //.Expressions.newArrayInit( PolyType.class, columnTypes.toArray( new Expression[0] ) ),
                             Expressions.constant( fileImplementor.getFileTable().getPkIds() ),
-                            Expressions.constant( fileImplementor.getProjectionMapping() ),
+                            fileImplementor.getProjectExpressions(),
                             conditionExpression,
                             _updates
                     ) );

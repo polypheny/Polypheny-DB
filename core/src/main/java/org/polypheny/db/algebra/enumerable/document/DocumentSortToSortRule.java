@@ -16,10 +16,20 @@
 
 package org.polypheny.db.algebra.enumerable.document;
 
+import java.util.List;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import org.polypheny.db.algebra.enumerable.document.DocumentFilterToCalcRule.NameRefReplacer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentSort;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.logical.relational.LogicalSort;
+import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.rex.RexIndexRef;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.tools.AlgBuilder;
 
 public class DocumentSortToSortRule extends AlgOptRule {
 
@@ -34,7 +44,27 @@ public class DocumentSortToSortRule extends AlgOptRule {
     @Override
     public void onMatch( AlgOptRuleCall call ) {
         LogicalDocumentSort sort = call.alg( 0 );
-        call.transformTo( LogicalSort.create( sort.getInput(), sort.fieldExps, sort.collation, sort.offset, sort.fetch ) );
+        AlgBuilder builder = call.builder();
+        builder.push( sort.getInput() );
+
+        if ( !sort.fieldExps.isEmpty() ) {
+            // we have to project the target keys out to use it in the sort
+            builder.transform( ModelTrait.RELATIONAL, DocumentType.ofRelational(), false, null );
+            NameRefReplacer visitor = new NameRefReplacer( sort.getCluster(), false );
+            List<RexNode> inputs = Stream.concat( Stream.of( RexIndexRef.of( 0, DocumentType.ofId().asRelational().getFields() ), RexIndexRef.of( 1, DocumentType.ofId().asRelational().getFields() ) ), sort.fieldExps.stream().map( f -> f.accept( visitor ) ) ).toList();
+            builder.push( LogicalProject.create( builder.build(), inputs, IntStream.range( 0, inputs.size() ).mapToObj( i -> "in" + i ).toList() ) );
+        }
+        builder.push( LogicalSort.create( builder.build(), sort.fieldExps, sort.collation, sort.offset, sort.fetch ) );
+
+        if ( !sort.fieldExps.isEmpty() ) {
+            // we have to restore the initial structure
+            builder.push( LogicalProject.create( builder.build(),
+                    List.of( RexIndexRef.of( 0, DocumentType.ofRelational().getFields() ), RexIndexRef.of( 1, DocumentType.ofRelational().getFields() ) ),
+                    List.of( DocumentType.DOCUMENT_ID, DocumentType.DOCUMENT_DATA ) ) );
+            builder.transform( ModelTrait.DOCUMENT, DocumentType.ofId(), false, null );
+        }
+
+        call.transformTo( builder.build() );
     }
 
 }

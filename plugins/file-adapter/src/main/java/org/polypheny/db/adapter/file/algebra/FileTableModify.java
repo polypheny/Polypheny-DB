@@ -22,6 +22,9 @@ import java.util.List;
 import org.polypheny.db.adapter.file.FileAlg;
 import org.polypheny.db.adapter.file.FileTranslatableEntity;
 import org.polypheny.db.adapter.file.Value;
+import org.polypheny.db.adapter.file.Value.DynamicValue;
+import org.polypheny.db.adapter.file.Value.LiteralValue;
+import org.polypheny.db.adapter.file.util.FileUtil;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.relational.RelModify;
@@ -37,7 +40,6 @@ import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyLong;
 
 
 public class FileTableModify extends RelModify<FileTranslatableEntity> implements FileAlg {
@@ -91,13 +93,13 @@ public class FileTableModify extends RelModify<FileTranslatableEntity> implement
                     if ( src instanceof RexLiteral ) {
                         String logicalName = getUpdateColumns().get( i );
                         AlgDataTypeField field = entity.getRowType().getField( logicalName, false, false );
-                        values.add( new Value( Math.toIntExact( field.getId() ), ((RexLiteral) src).value, false ) );
+                        values.add( new LiteralValue( Math.toIntExact( field.getId() ), ((RexLiteral) src).value ) );
                     } else if ( src instanceof RexDynamicParam ) {
                         String logicalName = getUpdateColumns().get( i );
                         AlgDataTypeField field = entity.getRowType().getField( logicalName, false, false );
-                        values.add( new Value( Math.toIntExact( field.getId() ), PolyLong.of( ((RexDynamicParam) src).getIndex() ), true ) );
+                        values.add( new DynamicValue( Math.toIntExact( field.getId() ), ((RexDynamicParam) src).getIndex() ) );
                     } else if ( src instanceof RexCall && src.getType().getPolyType() == PolyType.ARRAY ) {
-                        values.add( Value.fromArrayRexCall( (RexCall) src ) );
+                        values.add( FileUtil.fromArrayRexCall( (RexCall) src ) );
                     } else {
                         throw new GenericRuntimeException( "Unknown element in sourceExpressionList: " + src.toString() );
                     }

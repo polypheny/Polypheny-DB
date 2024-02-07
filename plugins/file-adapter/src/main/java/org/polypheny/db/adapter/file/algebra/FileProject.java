@@ -22,6 +22,10 @@ import java.util.List;
 import org.polypheny.db.adapter.file.FileAlg;
 import org.polypheny.db.adapter.file.FileAlg.FileImplementor.Operation;
 import org.polypheny.db.adapter.file.Value;
+import org.polypheny.db.adapter.file.Value.DynamicValue;
+import org.polypheny.db.adapter.file.Value.InputValue;
+import org.polypheny.db.adapter.file.Value.LiteralValue;
+import org.polypheny.db.adapter.file.util.FileUtil;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
@@ -39,8 +43,8 @@ import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.entity.PolyList;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.util.Pair;
 
 
 public class FileProject extends Project implements FileAlg {
@@ -72,7 +76,7 @@ public class FileProject extends Project implements FileAlg {
             boolean containsInputRefs = false;
             for ( RexNode node : exps ) {
                 if ( node instanceof RexLiteral ) {
-                    row[i] = new Value( i, ((RexLiteral) node).value, false );
+                    row[i] = new LiteralValue( i, ((RexLiteral) node).value );
                 } else if ( node instanceof RexIndexRef ) {
                     if ( containsInputRefs ) {
                         continue;
@@ -84,9 +88,9 @@ public class FileProject extends Project implements FileAlg {
                     for ( RexNode node1 : call.getOperands() ) {
                         arrayValues.add( ((RexLiteral) node1).value );
                     }
-                    row[i] = new Value( i, PolyList.of( arrayValues ), false );
+                    row[i] = new LiteralValue( i, PolyList.of( arrayValues ) );
                 } else if ( node instanceof RexDynamicParam ) {
-                    row[i] = new Value( i, PolyLong.of( ((RexDynamicParam) node).getIndex() ), true );
+                    row[i] = new DynamicValue( i, ((RexDynamicParam) node).getIndex() );
                 } else {
                     throw new GenericRuntimeException( "Could not implement " + node.getClass().getSimpleName() + " " + node );
                 }
@@ -99,22 +103,30 @@ public class FileProject extends Project implements FileAlg {
             implementor.visitChild( 0, getInput() );
         }
         if ( implementor.getOperation() == Operation.UPDATE ) {
-            implementor.setUpdates( Value.getUpdates( exps, implementor ) );
+            implementor.setUpdates( FileUtil.getUpdates( exps, implementor ) );
         }
         AlgRecordType rowType = (AlgRecordType) getTupleType();
         List<String> fields = new ArrayList<>();
 
-        List<Integer> mapping = new ArrayList<>();
+        List<Value> mapping = new ArrayList<>();
         boolean inputRefsOnly = true;
-        for ( RexNode e : exps ) {
-            if ( e instanceof RexIndexRef ) {
-                mapping.add( Long.valueOf( ((RexIndexRef) e).getIndex() ).intValue() );
+        for ( Pair<AlgDataTypeField, RexNode> fieldNode : Pair.zip( rowType.getFields(), exps ) ) {
+            fields.add( fieldNode.left.getName() );
+
+            if ( fieldNode.right instanceof RexIndexRef ) {
+                mapping.add( new InputValue( fieldNode.left.getIndex(), ((RexIndexRef) fieldNode.right).getIndex() ) );
+            } else if ( fieldNode.right instanceof RexDynamicParam ) {
+                mapping.add( new DynamicValue( fieldNode.left.getIndex(), ((RexDynamicParam) fieldNode.right).getIndex() ) );
+            } else if ( fieldNode.right instanceof RexLiteral ) {
+                mapping.add( new LiteralValue( fieldNode.left.getIndex(), ((RexLiteral) fieldNode.right).value ) );
             } else {
                 inputRefsOnly = false;
-                break;
+                //break;
             }
         }
-        if ( inputRefsOnly ) {
+
+        implementor.project( fields, mapping );
+        /*if ( inputRefsOnly ) {
             implementor.project( null, mapping );
         } else {
             for ( AlgDataTypeField field : rowType.getFields() ) {
@@ -125,7 +137,7 @@ public class FileProject extends Project implements FileAlg {
                 fields.add( field.getName() );
             }
             implementor.project( fields, null );
-        }
+        }*/
     }
 
 }

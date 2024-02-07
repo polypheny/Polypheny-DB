@@ -318,7 +318,6 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
             if ( allocation.unwrap( AllocationTable.class ).isPresent() ) {
                 List<AllocationColumn> allocColumns = Catalog.snapshot().alloc().getColumns( allocation.placementId );
 
-                //columns.get( placement.adapterId ).forEach( column -> columnPlacements.add( snapshot.alloc().getColumnPlacement( placement.adapterId, column.id ) ) );
                 // If partitions should be allowed for materialized views this needs to be changed that all partitions are considered
                 AlgRoot targetAlg = dataMigrator.buildInsertStatement( targetStatement, allocColumns, allocation );
 

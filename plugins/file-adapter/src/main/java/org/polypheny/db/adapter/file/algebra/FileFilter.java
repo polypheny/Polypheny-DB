@@ -26,7 +26,6 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
 
@@ -53,7 +52,7 @@ public class FileFilter extends Filter implements FileAlg {
     @Override
     public void implement( FileImplementor implementor ) {
         implementor.visitChild( 0, getInput() );
-        Condition condition = new Condition( (RexCall) this.condition );//projectionMapping is not available yet
+        Condition condition = Condition.create( this.condition );//projectionMapping is not available yet
         if ( implementor.getProjectionMapping() != null ) {
             condition.adjust( implementor.getProjectionMapping() );
         }

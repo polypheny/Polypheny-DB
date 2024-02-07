@@ -233,7 +233,6 @@ public class LogExponentialFunctionsTest {
 
 
     @Test
-    @Tag("fileExcluded")
     public void sqrtTest() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

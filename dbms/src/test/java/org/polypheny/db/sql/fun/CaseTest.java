@@ -78,7 +78,6 @@ public class CaseTest {
 
 
     @Test
-    @Tag("fileExcluded")
     public void simpleCaseTest() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -102,7 +101,6 @@ public class CaseTest {
 
 
     @Test
-    @Tag("fileExcluded")
     public void searchedCaseTest() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -126,7 +124,6 @@ public class CaseTest {
 
 
     @Test
-    @Tag("fileExcluded")
     public void nullIfTest() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -150,7 +147,6 @@ public class CaseTest {
 
 
     @Test
-    @Tag("fileExcluded")
     @Tag("cottontailRequired")
     public void coalesceTest() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {

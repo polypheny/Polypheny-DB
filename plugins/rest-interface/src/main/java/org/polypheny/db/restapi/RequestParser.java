@@ -31,7 +31,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.servlet.http.HttpServletRequest;
@@ -592,28 +591,28 @@ public class RequestParser {
         String rightHandSide;
         if ( filterString.startsWith( "<=" ) ) {
             callOperator = OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL );
-            rightHandSide = filterString.substring( 2, filterString.length() );
+            rightHandSide = filterString.substring( 2 );
         } else if ( filterString.startsWith( "<" ) ) {
             callOperator = OperatorRegistry.get( OperatorName.LESS_THAN );
-            rightHandSide = filterString.substring( 1, filterString.length() );
+            rightHandSide = filterString.substring( 1 );
         } else if ( filterString.startsWith( ">=" ) ) {
             callOperator = OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL );
-            rightHandSide = filterString.substring( 2, filterString.length() );
+            rightHandSide = filterString.substring( 2 );
         } else if ( filterString.startsWith( ">" ) ) {
             callOperator = OperatorRegistry.get( OperatorName.GREATER_THAN );
-            rightHandSide = filterString.substring( 1, filterString.length() );
+            rightHandSide = filterString.substring( 1 );
         } else if ( filterString.startsWith( "=" ) ) {
             callOperator = OperatorRegistry.get( OperatorName.EQUALS );
-            rightHandSide = filterString.substring( 1, filterString.length() );
+            rightHandSide = filterString.substring( 1 );
         } else if ( filterString.startsWith( "!=" ) ) {
             callOperator = OperatorRegistry.get( OperatorName.NOT_EQUALS );
-            rightHandSide = filterString.substring( 2, filterString.length() );
+            rightHandSide = filterString.substring( 2 );
         } else if ( filterString.startsWith( "%" ) ) {
             callOperator = OperatorRegistry.get( OperatorName.LIKE );
-            rightHandSide = filterString.substring( 1, filterString.length() );
+            rightHandSide = filterString.substring( 1 );
         } else if ( filterString.startsWith( "!%" ) ) {
             callOperator = OperatorRegistry.get( OperatorName.NOT_LIKE );
-            rightHandSide = filterString.substring( 2, filterString.length() );
+            rightHandSide = filterString.substring( 2 );
         } else {
             log.warn( "Unable to parse filter operation comparator. Returning null." );
             throw new ParserException( ParserErrorCode.FILTER_GENERIC, filterString );
@@ -626,7 +625,7 @@ public class RequestParser {
     // TODO: REWRITE THIS METHOD
     @VisibleForTesting
     PolyValue parseLiteralValue( PolyType type, Object objectLiteral ) throws ParserException {
-        if ( !(objectLiteral instanceof String) ) {
+        if ( !(objectLiteral instanceof String literal) ) {
             if ( PolyType.FRACTIONAL_TYPES.contains( type ) ) {
                 if ( objectLiteral instanceof Number ) {
                     return PolyBigDecimal.of( BigDecimal.valueOf( ((Number) objectLiteral).doubleValue() ) );
@@ -643,7 +642,6 @@ public class RequestParser {
             throw new NotImplementedException( "Rest to Poly: " + objectLiteral );
         } else {
             PolyValue parsedLiteral;
-            String literal = (String) objectLiteral;
             if ( PolyType.BOOLEAN_TYPES.contains( type ) ) {
                 parsedLiteral = PolyBoolean.of( Boolean.valueOf( literal ) );
             } else if ( PolyType.INT_TYPES.contains( type ) ) {
@@ -667,7 +665,7 @@ public class RequestParser {
                         parsedLiteral = PolyTimestamp.of( millisecondsSinceEpoch );
                         break;
                     case TIME:
-                        parsedLiteral = PolyTime.of( new TimeString( literal ).getMillisOfDay() - TimeZone.getDefault().getRawOffset() );
+                        parsedLiteral = PolyTime.of( new TimeString( literal ).getMillisOfDay() );//- TimeZone.getDefault().getRawOffset() );
                         break;
                     default:
                         return null;

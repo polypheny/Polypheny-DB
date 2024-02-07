@@ -416,7 +416,6 @@ public class JdbcPreparedStatementsTest {
 
     @Test
     @Tag("cottontailExcluded")
-    @Tag("fileExcluded")
     public void updateTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -475,7 +474,6 @@ public class JdbcPreparedStatementsTest {
 
     @Test
     @Tag("cottontailExcluded")
-    @Tag("fileExcluded")
     public void batchUpdateTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -585,7 +583,6 @@ public class JdbcPreparedStatementsTest {
 
 
     @Test
-    @Tag("fileExcluded")
     public void arrayTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -631,7 +628,6 @@ public class JdbcPreparedStatementsTest {
 
 
     @Test
-    @Tag("fileExcluded")
     public void arrayBatchTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

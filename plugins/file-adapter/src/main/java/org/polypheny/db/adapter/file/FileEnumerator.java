@@ -39,6 +39,8 @@ import org.apache.commons.io.FileUtils;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileAlg.FileImplementor.Operation;
 import org.polypheny.db.adapter.file.FilePlugin.FileStore;
+import org.polypheny.db.adapter.file.Value.InputValue;
+import org.polypheny.db.adapter.file.Value.ValueType;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -57,18 +59,22 @@ import org.polypheny.db.type.entity.category.PolyBlob;
 @Slf4j
 public class FileEnumerator implements Enumerator<PolyValue[]> {
 
+    private final Runnable updateFiles;
+    private final FileTranslatableEntity entity;
     PolyValue[] current;
     final Operation operation;
     final List<File> columnFolders = new ArrayList<>();
-    final File[] fileList;
+    File[] fileList;
     Integer fileListPosition = 0;
     Long updateDeleteCount = 0L;
     boolean updatedOrDeleted = false;
     final int numOfCols;
     final DataContext dataContext;
     final Condition condition;
-    final Integer[] projectionMapping;
-    final List<AlgDataTypeField> columnTypes;
+    final List<Value> projectionMapping;
+    List<AlgDataTypeField> columnTypes;
+
+    List<AlgDataTypeField> projectedTypes;
     final Map<Integer, Value> updates = new HashMap<>();
     final Integer[] pkMapping;
     final File hardlinkFolder;
@@ -96,7 +102,7 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
             final Long[] columnIds,
             final FileTranslatableEntity entity,
             final List<Long> pkIds,
-            final Integer[] projectionMapping,
+            final @Nullable List<Value> projectionMapping,
             final DataContext dataContext,
             final @Nullable Condition condition,
             final @Nullable List<List<PolyValue>> updates ) {
@@ -104,6 +110,8 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
         /*if ( dataContext.getParameterValues().size() > 1 && (operation == Operation.UPDATE || operation == Operation.DELETE) ) {
             throw new GenericRuntimeException( "The file store does not support batch update or delete statements!" );
         }*/
+
+        this.entity = entity;
 
         this.operation = operation;
         if ( operation == Operation.DELETE || operation == Operation.UPDATE ) {
@@ -132,35 +140,40 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
         }
         this.pkMapping = pkMapping;
 
-        Long[] columnsToIterate = columnIds;
         // If there is a projection and no filter, it is sufficient to just load the data of the projected columns.
         // If a filter is given, the whole table has to be loaded (because of the column references)
         // If we have an UPDATE operation, the whole table has to be loaded as well, to generate the hashes
+        this.columnTypes = entity.getRowType().getFields();
+        this.projectedTypes = entity.getRowType().getFields();
+
         if ( condition == null && projectionMapping != null && operation != Operation.UPDATE ) {
-            Long[] projection = new Long[projectionMapping.length];
-            List<AlgDataTypeField> projectedTypes = new ArrayList<>( Collections.nCopies( projectionMapping.length, null ) );
-            for ( int i = 0; i < projectionMapping.length; i++ ) {
-                projection[i] = columnIds[projectionMapping[i]];
-                projectedTypes.set( i, entity.getRowType().getFields().get( projectionMapping[i] ) );
+            List<AlgDataTypeField> projectedTypes = new ArrayList<>( Collections.nCopies( projectionMapping.size(), null ) );
+            for ( int i = 0; i < projectionMapping.size(); i++ ) {
+                Value value = projectionMapping.get( i );
+                AlgDataTypeField field = null;
+                if ( value.valueType == ValueType.INPUT ) {
+                    int index = ((InputValue) projectionMapping.get( i )).getIndex();
+                    field = entity.getRowType().getFields().get( index );
+                }
+                projectedTypes.set( i, field );
             }
-            columnsToIterate = projection;
-            this.columnTypes = projectedTypes;
-        } else {
-            this.columnTypes = entity.getRowType().getFields();
+            this.projectedTypes = projectedTypes;
         }
         // We want to read data where an insert has been prepared and skip data where a deletion has been prepared.
         String xidHash = FileStore.SHA.hashString( dataContext.getStatement().getTransaction().getXid().toString(), FileStore.CHARSET ).toString();
         FileFilter fileFilter = file -> !file.isHidden() && !file.getName().startsWith( "~$" ) && (!file.getName().startsWith( "_" ) || file.getName().startsWith( "_ins_" + xidHash ));
-        for ( long colId : columnsToIterate ) {
+        for ( long colId : columnIds ) {
             File columnFolder = FileStore.getColumnFolder( rootPath, colId, partitionId );
             columnFolders.add( columnFolder );
         }
 
         // If we go over a single column, we can iterate it, even if null values are not present as files
-        this.fileList = FileStore.getColumnFolder( rootPath, columnsToIterate[0], partitionId ).listFiles( fileFilter );
+        this.updateFiles = () -> {
+            this.fileList = FileStore.getColumnFolder( rootPath, columnIds[0], partitionId ).listFiles( fileFilter );
+        };
+        this.updateFiles.run();
 
         numOfCols = columnFolders.size();
-
         // create folder for the hardlinks
         this.hardlinkFolder = new File( rootPath, "hardlinks/" + xidHash );
         if ( !hardlinkFolder.exists() ) {
@@ -175,6 +188,8 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
         fileListPosition = 0;
         updateDeleteCount = 0L;
         updatedOrDeleted = false;
+        // we have to update the files, because the files might have changed
+        updateFiles.run();
     }
 
 
@@ -239,44 +254,19 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
                 List<PolyValue> curr;
 
                 if ( condition != null ) {
-                    List<PolyValue> pkLookup = condition.getPKLookup( new HashSet<>( List.of( pkMapping ) ), columnTypes, numOfCols, dataContext );
-                    if ( pkLookup != null ) {
-                        int hash = hashRow( pkLookup );
-                        File lookupFile = new File( FileStore.SHA.hashString( String.valueOf( hash ), FileStore.CHARSET ).toString() );
-                        curr = fileToRow( lookupFile );
-                        //set -2, as a flag, so the enumerator knows that it doesn't have to continue
-                        //the flag will be increased to -1 in the select/update/delete operation below
-                        fileListPosition = -2;
-                        //if the first attempt did not match, check if there is an _ins_xid_hash file
-                        if ( curr == null ) {
-                            lookupFile = new File( getNewFileName( Operation.INSERT, String.valueOf( hash ) ) );
-                            curr = fileToRow( lookupFile );
-                        }
-                        //if a PK lookup did not match at all
-                        if ( curr == null ) {
-                            if ( operation != Operation.SELECT ) {
-                                current = new PolyLong[]{ PolyLong.of( 0L ) };
-                                return true;
-                            }
-                            return false;
-                        }
-                        currentFile = lookupFile;
-                        current = new PolyLong[]{ PolyLong.of( 1L ) };
-                    } else {
-                        curr = fileToRow( currentFile );
+                    curr = fileToRow( currentFile );
 
-                        if ( curr == null ) {
-                            if ( operation != Operation.SELECT ) {
-                                current = new PolyLong[]{ PolyLong.of( updateDeleteCount ) };
-                                return true;
-                            }
-                            return false;
+                    if ( curr == null ) {
+                        if ( operation != Operation.SELECT ) {
+                            current = new PolyLong[]{ PolyLong.of( updateDeleteCount ) };
+                            return true;
                         }
+                        return false;
+                    }
 
-                        if ( !condition.matches( curr, columnTypes, dataContext ) ) {
-                            fileListPosition++;
-                            continue;
-                        }
+                    if ( !condition.matches( curr, columnTypes, dataContext ) ) {
+                        fileListPosition++;
+                        continue;
                     }
                 } else {
                     curr = fileToRow( currentFile );
@@ -288,8 +278,8 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
 
                 if ( operation == Operation.SELECT ) {
                     //project only if necessary (if a projection and condition is given)
-                    if ( projectionMapping != null && condition != null ) {
-                        curr = project( curr, columnTypes );
+                    if ( projectionMapping != null ) {//|| condition != null ) {
+                        curr = project( curr, dataContext );
                     }
 
                     // If all values are null: continue
@@ -332,7 +322,7 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
         Set<Integer> updatedColumns = new HashSet<>();
         for ( int c = 0; c < columnFolders.size(); c++ ) {
             if ( updates.containsKey( c ) ) {
-                updateObj.set( c, updates.get( c ).getValue( dataContext, 0 ) );
+                updateObj.set( c, updates.get( c ).getValue( curr, dataContext, 0 ) );
                 updatedColumns.add( c );
             } else {
                 //needed for the hash
@@ -396,10 +386,9 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
         boolean allNull = true;
         for ( File colFolder : columnFolders ) {
             File f = new File( colFolder, currentFile.getName() );
-            String s = null;
+            String s;
 
             if ( f.exists() ) {
-
                 s = Files.readString( f.toPath(), FileStore.CHARSET );
                 if ( s.isEmpty() ) {
                     curr.set( i, null );
@@ -432,11 +421,11 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
     }
 
 
-    private List<PolyValue> project( final List<PolyValue> o1, List<AlgDataTypeField> columnTypes ) {
+    private List<PolyValue> project( final List<PolyValue> o1, DataContext dataContext ) {
         assert (projectionMapping != null);
-        List<PolyValue> out = new ArrayList<>( Collections.nCopies( projectionMapping.length, null ) );
-        for ( int i = 0; i < projectionMapping.length; i++ ) {
-            out.set( i, o1.get( projectionMapping[i] ) );
+        List<PolyValue> out = new ArrayList<>( Collections.nCopies( projectionMapping.size(), null ) );
+        for ( int i = 0; i < projectionMapping.size(); i++ ) {
+            out.set( i, projectionMapping.get( i ).getValue( o1, dataContext, 0 ) );
         }
         return out;
     }

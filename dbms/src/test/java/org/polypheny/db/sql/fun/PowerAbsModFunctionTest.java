@@ -190,7 +190,6 @@ public class PowerAbsModFunctionTest {
 
 
     @Test
-    @Tag("fileExcluded")
     public void modTest() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

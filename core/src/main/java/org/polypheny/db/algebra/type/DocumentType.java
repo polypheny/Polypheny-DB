@@ -74,9 +74,21 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
 
     public static AlgDataType ofRelational() {
         return new AlgRecordType( List.of(
-                new AlgDataTypeFieldImpl( -1L, DOCUMENT_ID, 0, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.TEXT ) ),
-                new AlgDataTypeFieldImpl( -1L, DOCUMENT_DATA, 1, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.TEXT ) )
+                getRelationalId(),
+                getRelationalData()
         ) );
+    }
+
+
+    @NotNull
+    private static AlgDataTypeFieldImpl getRelationalData() {
+        return new AlgDataTypeFieldImpl( -1L, DOCUMENT_DATA, 1, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.TEXT ) );
+    }
+
+
+    @NotNull
+    public static AlgDataTypeFieldImpl getRelationalId() {
+        return new AlgDataTypeFieldImpl( -1L, DOCUMENT_ID, 0, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.TEXT ) );
     }
 
 

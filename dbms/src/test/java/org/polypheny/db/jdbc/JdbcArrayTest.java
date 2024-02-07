@@ -177,7 +177,6 @@ public class JdbcArrayTest {
 
 
     @Test
-    @Tag("fileExcluded")
     public void arrayTypesViewTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -239,7 +238,6 @@ public class JdbcArrayTest {
 
 
     @Test
-    @Tag("fileExcluded")
     public void arrayTypesMaterializedTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -301,7 +299,6 @@ public class JdbcArrayTest {
 
 
     @Test
-    @Tag("fileExcluded")
     public void itemOperatorTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -335,8 +332,6 @@ public class JdbcArrayTest {
 
 
     @Test
-    //@Ignore
-    @Tag("fileExcluded")
     public void itemOperatorTest2() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -366,7 +361,6 @@ public class JdbcArrayTest {
 
 
     @Test
-    @Tag("fileExcluded")
     public void nullTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -390,7 +384,6 @@ public class JdbcArrayTest {
 
 
     @Test
-    @Tag("fileExcluded")
     public void arrayFilterTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

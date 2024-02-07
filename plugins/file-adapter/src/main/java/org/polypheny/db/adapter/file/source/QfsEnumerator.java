@@ -27,6 +27,8 @@ import java.util.List;
 import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.Condition;
+import org.polypheny.db.adapter.file.Value;
+import org.polypheny.db.adapter.file.Value.InputValue;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
@@ -40,13 +42,13 @@ public class QfsEnumerator implements Enumerator<PolyValue[]> {
     private final DataContext dataContext;
     private final List<String> columns;
     private final List<AlgDataTypeField> columnTypes;
-    private final Integer[] projectionMapping;
+    private final List<Value> projectionMapping;
     private final Condition condition;
     private final Iterator<Path> iterator;
     private PolyValue[] current;
 
 
-    public QfsEnumerator( final DataContext dataContext, final String path, final Long[] columnIds, final Integer[] projectionMapping, final Condition condition ) {
+    public QfsEnumerator( final DataContext dataContext, final String path, final Long[] columnIds, final List<Value> projectionMapping, final Condition condition ) {
         this.dataContext = dataContext;
         File root = new File( path );
 
@@ -149,9 +151,9 @@ public class QfsEnumerator implements Enumerator<PolyValue[]> {
         if ( this.projectionMapping == null || condition == null ) {
             return row;
         }
-        List<PolyValue> out = new ArrayList<>( this.projectionMapping.length );
-        for ( int i = 0; i < this.projectionMapping.length; i++ ) {
-            out.set( i, row.get( this.projectionMapping[i] ) );
+        List<PolyValue> out = new ArrayList<>( this.projectionMapping.size() );
+        for ( int i = 0; i < this.projectionMapping.size(); i++ ) {
+            out.set( i, row.get( ((InputValue) this.projectionMapping.get( i )).getIndex() ) );
         }
         return out;
     }

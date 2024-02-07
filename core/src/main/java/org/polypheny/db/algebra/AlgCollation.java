@@ -41,7 +41,7 @@ import org.polypheny.db.plan.AlgMultipleTrait;
 
 /**
  * Description of the physical ordering of a relational expression.
- *
+ * <p>
  * An ordering consists of a list of one or more column ordinals and the direction of the ordering.
  */
 public interface AlgCollation extends AlgMultipleTrait<AlgCollationTraitDef>, Serializable {

@@ -101,7 +101,6 @@ public class SelectTest {
 
 
     @Test
-    @Tag("fileExcluded")
     @Tag("cottontailExcluded")
     public void nestedSelect() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {

@@ -26,17 +26,15 @@ import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.Convention;
 
 
+@Getter
 public class FileConvention extends Convention.Impl {
 
-    @Getter
     private final Expression fileSchemaExpression;
-    @Getter
     private final FileSchema fileSchema;
     /**
      * Whether the query is a modification (insert, update, delete) or a select query.
      * Needed for the org.polypheny.db.adapter.file.alg.FileRules.FileUnionRule
      */
-    @Getter
     @Setter
     private boolean isModification = false;
 

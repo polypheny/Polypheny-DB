@@ -412,6 +412,12 @@ public class EnumUtils {
 
 
     @NotNull
+    public static Expression convertPolyValue( Type type, Expression operand ) {
+        return Expressions.call( type, "convert", operand );
+    }
+
+
+    @NotNull
     public static MethodCallExpression wrapPolyValue( PolyType outputType, Expression operand ) {
         return wrapPolyValue( PolyValue.classFrom( outputType ), operand );
     }

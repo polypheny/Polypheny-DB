@@ -30,7 +30,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import kong.unirest.HttpRequest;
@@ -188,7 +188,7 @@ public class RestTest {
                 executeRest( request ).getBody() );
 
         // Update
-        Map<String, String> where = new LinkedHashMap<>();
+        Map<String, String> where = new HashMap<>();
         where.put( "restschema.resttest.tsmallint", "=" + 45 );
         request = buildRestUpdate( "restschema.resttest", getTestRow( 1 ), where );
         Assertions.assertEquals(
@@ -196,7 +196,7 @@ public class RestTest {
                 executeRest( request ).getBody() );
 
         // Update
-        Map<String, String> where2 = new LinkedHashMap<>();
+        Map<String, String> where2 = new HashMap<>();
         where2.put( "restschema.resttest.tsmallint", "=" + 46 );
         request = buildRestUpdate( "restschema.resttest", getTestRow( 0 ), where2 );
         Assertions.assertEquals(
@@ -213,7 +213,7 @@ public class RestTest {
         Assertions.assertEquals( jsonExpected, jsonResult );
 
         // Delete
-        where = new LinkedHashMap<>();
+        where = new HashMap<>();
         where.put( "restschema.resttest.tvarchar", "=" + "hallo" );
         request = buildRestDelete( "restschema.resttest", where );
         Assertions.assertEquals(

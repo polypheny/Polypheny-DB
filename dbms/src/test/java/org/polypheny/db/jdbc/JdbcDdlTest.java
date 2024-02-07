@@ -553,7 +553,6 @@ public class JdbcDdlTest {
 
 
     @Test
-    @Tag("fileExcluded")
     public void addColumnTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -608,7 +607,6 @@ public class JdbcDdlTest {
 
 
     @Test
-    @Tag("fileExcluded")
     public void addColumnArrayTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -649,7 +647,7 @@ public class JdbcDdlTest {
 
 
     @Test
-    @Tag("fileExcluded")
+    @Tag("fileExcluded") // we have to add convert methods for all PolyValues, then we can enable
     public void changeColumnTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

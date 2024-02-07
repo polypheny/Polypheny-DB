@@ -95,7 +95,6 @@ public class FileRules {
                 }
             }
 
-
             if ( node.getSourceExpressions() != null ) {
                 return !UnsupportedRexCallVisitor.containsModelItem( node.getSourceExpressions() );
             }
@@ -126,11 +125,9 @@ public class FileRules {
             Optional<ModifiableTable> oModifiableTable = modify.getEntity().unwrap( ModifiableTable.class );
 
             if ( oModifiableTable.isEmpty() ) {
-                log.warn( "Returning null during conversion" );
                 return null;
             }
             if ( modify.getEntity().unwrap( FileTranslatableEntity.class ).isEmpty() ) {
-                log.warn( "Returning null during conversion" );
                 return null;
             }
 
@@ -178,9 +175,12 @@ public class FileRules {
 
 
         public FileProjectRule( FileConvention out, AlgBuilderFactory algBuilderFactory ) {
-            super( Project.class, p -> !functionInProject( p ) && !UnsupportedRexCallVisitor.containsModelItem( p.getProjects() ), Convention.NONE, out, algBuilderFactory, "FileProjectRule:" + out.getName() );
+            super( Project.class, p ->
+                    !functionInProject( p )
+                            && !UnsupportedRexCallVisitor.containsModelItem( p.getProjects() ), Convention.NONE, out, algBuilderFactory, "FileProjectRule:" + out.getName() );
             this.convention = out;
         }
+
 
 
         /**
@@ -225,7 +225,7 @@ public class FileRules {
 
 
         private static boolean functionInProject( Project project ) {
-            CheckingFunctionVisitor visitor = new CheckingFunctionVisitor();
+            CheckingFunctionVisitor visitor = new CheckingFunctionVisitor( project );
             for ( RexNode node : project.getChildExps() ) {
                 node.accept( visitor );
                 if ( visitor.containsFunction() ) {
@@ -331,7 +331,7 @@ public class FileRules {
 
 
         private static boolean functionInFilter( Filter filter ) {
-            CheckingFunctionVisitor visitor = new CheckingFunctionVisitor();
+            CheckingFunctionVisitor visitor = new CheckingFunctionVisitor( filter );
             for ( RexNode node : filter.getChildExps() ) {
                 node.accept( visitor );
                 if ( visitor.containsFunction() ) {
@@ -350,15 +350,18 @@ public class FileRules {
         @Accessors(fluent = true)
         private boolean containsFunction = false;
 
+        private boolean isProject;
 
-        CheckingFunctionVisitor() {
+
+        CheckingFunctionVisitor( AlgNode node ) {
             super( true );
+            isProject = node instanceof LogicalProject;
         }
 
 
         @Override
         public Void visitCall( RexCall call ) {
-            if ( call.getKind() == Kind.EQUALS ) {
+            if ( !isProject && call.getKind() == Kind.EQUALS ) {
                 return super.visitCall( call );
             }
             containsFunction = true;

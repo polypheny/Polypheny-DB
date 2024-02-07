@@ -44,6 +44,8 @@ public abstract class MaterializedViewManager {
     public boolean isCreatingMaterialized = false;
     public boolean isUpdatingMaterialized = false;
 
+    public static final String materializedPk = "mat_id";
+
 
     public static MaterializedViewManager setAndGetInstance( MaterializedViewManager transaction ) {
         if ( INSTANCE != null ) {

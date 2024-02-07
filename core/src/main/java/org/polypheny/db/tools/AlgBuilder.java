@@ -1628,16 +1628,14 @@ public class AlgBuilder {
                 fieldNameList.set( i, name );
             }
             AlgDataTypeField fieldType = new AlgDataTypeFieldImpl( -1L, name, i, node.getType() );
-            switch ( node.getKind() ) {
-                case INPUT_REF:
+            relField = switch ( node.getKind() ) {
+                case INPUT_REF -> {
                     // preserve alg aliases for INPUT_REF fields
                     final int index = ((RexIndexRef) node).getIndex();
-                    relField = new RelField( frame.structured.get( index ).left, fieldType );
-                    break;
-                default:
-                    relField = new RelField( ImmutableSet.of(), fieldType );
-                    break;
-            }
+                    yield new RelField( frame.structured.get( index ).left, fieldType );
+                }
+                default -> new RelField( ImmutableSet.of(), fieldType );
+            };
             uniqueNameList.add( name );
             fields.add( relField );
         }

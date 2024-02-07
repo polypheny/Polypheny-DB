@@ -40,7 +40,6 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
 @Tag("adapter")
-@Tag("fileExcluded")
 public class SqlDistanceFunctionTest {
 
 
