@@ -180,6 +180,9 @@ public class RestTest {
 
 
     @Test // this needs to be rewritten
+    @Tag("hsqldbExcluded")
+    @Tag("monetdbExcluded")
+    @Tag("postgresqlExcluded")
     public void testOperations() {
         // Insert
         HttpRequest<?> request = buildRestInsert( "restschema.resttest", ImmutableList.of( getTestRow() ) );

@@ -35,7 +35,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TimeZone;
 import java.util.UUID;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -141,7 +140,7 @@ public class RestResult {
                             temp.put( columnName, localDateTime.toString() );
                             break;
                         case TIME:
-                            temp.put( columnName, o.asTime().asSqlTime().toLocalTime().toSecondOfDay() * 1000 - TimeZone.getDefault().getRawOffset() );
+                            temp.put( columnName, o.asTime().ofDay );
                             break;
                         case VARCHAR:
                             temp.put( columnName, o.asString().value );

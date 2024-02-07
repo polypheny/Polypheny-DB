@@ -83,15 +83,11 @@ public abstract class Entity implements PolyObject, Wrapper, Serializable, Catal
 
 
     public AlgDataType getRowType() {
-        switch ( dataModel ) {
-            case RELATIONAL:
-                throw new UnsupportedOperationException( "Should be overwritten by child" );
-            case DOCUMENT:
-                return DocumentType.ofId();
-            case GRAPH:
-                return GraphType.of();
-        }
-        throw new RuntimeException( "Error while generating the RowType" );
+        return switch ( dataModel ) {
+            case RELATIONAL -> throw new UnsupportedOperationException( "Should be overwritten by child" );
+            case DOCUMENT -> DocumentType.ofId();
+            case GRAPH -> GraphType.of();
+        };
     }
 
 
@@ -114,6 +110,11 @@ public abstract class Entity implements PolyObject, Wrapper, Serializable, Catal
 
 
     public double getRowCount() {
+        return getRowCount( id );
+    }
+
+
+    public double getRowCount( long id ) {
         Long count = StatisticsManager.getInstance().rowCountPerTable( id );
         if ( count == null ) {
             return 0;

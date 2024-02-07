@@ -74,6 +74,12 @@ public abstract class AllocationEntity extends Entity {
     }
 
 
+    @Override
+    public double getRowCount() {
+        return getRowCount( logicalId );
+    }
+
+
     public PartitionType getPartitionType() {
         log.warn( "change me" );
         return PartitionType.NONE;

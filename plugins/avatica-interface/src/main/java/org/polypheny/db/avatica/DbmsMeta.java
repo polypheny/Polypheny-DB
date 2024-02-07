@@ -97,6 +97,7 @@ import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.EntityType.PrimitiveTableType;
 import org.polypheny.db.catalog.logistic.Pattern;
+import org.polypheny.db.functions.TemporalFunctions;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.information.InformationGroup;
@@ -1318,7 +1319,7 @@ public class DbmsMeta implements ProtobufMeta {
             case BOOLEAN -> PolyBoolean.of( (Boolean) jdbc );
             case JAVA_SQL_DATE -> PolyDate.of( (Date) jdbc );
             case JAVA_SQL_TIME -> PolyTime.of( (Time) jdbc );
-            case JAVA_SQL_TIMESTAMP -> PolyTimestamp.of( (Timestamp) jdbc );
+            case JAVA_SQL_TIMESTAMP -> PolyTimestamp.of( ((Timestamp) jdbc).getTime() + TemporalFunctions.LOCAL_TZ.getRawOffset() );
             case NUMBER -> PolyBigDecimal.of( (BigDecimal) jdbc );
             case DOUBLE -> PolyDouble.of( (Double) jdbc );
             case SHORT -> PolyInteger.of( (Short) jdbc );
