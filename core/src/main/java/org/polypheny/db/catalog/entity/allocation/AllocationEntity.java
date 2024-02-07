@@ -24,6 +24,7 @@ import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
@@ -80,5 +81,15 @@ public abstract class AllocationEntity extends Entity {
 
 
     public abstract Entity withName( String name );
+
+
+    @Override
+    public double getRowCount() {
+        Long count = StatisticsManager.getInstance().rowCountPerTable( logicalId );
+        if ( count == null ) {
+            return 0;
+        }
+        return count;
+    }
 
 }

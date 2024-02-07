@@ -22,6 +22,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
+import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
@@ -62,5 +63,15 @@ public abstract class PhysicalEntity extends Entity {
 
 
     public abstract PhysicalEntity normalize();
+
+
+    @Override
+    public double getRowCount() {
+        Long count = StatisticsManager.getInstance().rowCountPerTable( logicalId );
+        if ( count == null ) {
+            return 0;
+        }
+        return count;
+    }
 
 }

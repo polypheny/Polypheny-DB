@@ -403,9 +403,7 @@ public class AlgSubset extends AbstractAlgNode {
      * @return all the algs in the subset
      */
     public Iterable<AlgNode> getAlgs() {
-        return () -> Linq4j.asEnumerable( set.algs )
-                .where( v1 -> v1.getTraitSet().satisfies( traitSet ) )
-                .iterator();
+        return set.algs.stream().filter( v1 -> v1.getTraitSet().satisfies( traitSet ) ).toList();
     }
 
 
