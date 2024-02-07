@@ -72,6 +72,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.functions.Functions;
+import org.polypheny.db.functions.TemporalFunctions;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
@@ -109,10 +110,14 @@ import org.polypheny.db.util.BuiltInMethod;
 @Slf4j
 public class JdbcToEnumerableConverter extends ConverterImpl implements EnumerableAlg {
 
+    @SuppressWarnings("unused")
     public static final Calendar utc = Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) );
+
+    public static final Calendar local = Calendar.getInstance( TemporalFunctions.LOCAL_TZ );
 
     private static final Expression UTC_EXPRESSION = Expressions.field( null, JdbcToEnumerableConverter.class, "utc" );
 
+    private static final Expression LOCAL_EXPRESSION = Expressions.field( null, JdbcToEnumerableConverter.class, "local" );
     public static final Method JDBC_SCHEMA_GET_CONNECTION_HANDLER_METHOD = Types.lookupMethod(
             JdbcSchema.class,
             "getConnectionHandler",
@@ -325,7 +330,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             //  add nullability stuff as well
             case ARRAY -> getPreprocessArrayExpression( resultSet_, i, dialect, fieldType );
             case DATE -> Expressions.call( resultSet_, "getDate", Expressions.constant( i + 1 ), UTC_EXPRESSION );
-            case TIME -> Expressions.call( resultSet_, "getTime", Expressions.constant( i + 1 ), UTC_EXPRESSION );
+            case TIME -> Expressions.call( resultSet_, "getTime", Expressions.constant( i + 1 ), LOCAL_EXPRESSION );
             case TIMESTAMP -> Expressions.call( resultSet_, "getTimestamp", Expressions.constant( i + 1 ), UTC_EXPRESSION );
             /*case DATE, TIME, TIMESTAMP -> Expressions.call(
                     getMethod( polyType, fieldType.isNullable(), offset ),
