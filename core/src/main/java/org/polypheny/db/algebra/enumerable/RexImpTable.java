@@ -2094,7 +2094,7 @@ public class RexImpTable {
 
         @Override
         public Expression implement( RexToLixTranslator translator, RexCall call, List<Expression> translatedOperands ) {
-            final Expression operand = translatedOperands.get( 0 );
+            final Expression operand = Expressions.convert_( translatedOperands.get( 0 ), PolyNumber.class );
             //final UnaryExpression e = Expressions.makeUnary( expressionType, operand );
             final Expression e = Expressions.call( operand, "negate" );
             if ( e.type.equals( operand.type ) ) {

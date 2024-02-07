@@ -103,26 +103,6 @@ public class FileModifier extends FileEnumerator {
             throw new GenericRuntimeException( "Primary key conflict! You are trying to insert a row with a primary key that already exists." );
         }
         Files.writeString( newFile.toPath(), value.toTypedJson(), FileStore.CHARSET );
-        /*if ( value instanceof byte[] ) {
-            Files.write( newFile.toPath(), (byte[]) value );
-        } else if ( value instanceof InputStream ) {
-            //see https://attacomsian.com/blog/java-convert-inputstream-to-outputstream
-            try ( InputStream is = (InputStream) value; FileOutputStream os = new FileOutputStream( newFile ) ) {
-                IOUtils.copyLarge( is, os );
-            }
-        } else if ( FileHelper.isSqlDateOrTimeOrTS( value ) ) {
-            Long l = FileHelper.sqlToLong( value );
-            Files.writeString( newFile.toPath(), l.toString(), FileStore.CHARSET );
-        } else if ( value instanceof TimestampString ) {
-            Files.writeString( newFile.toPath(), "" + ((TimestampString) value).getMillisSinceEpoch() );
-        } else if ( value instanceof DateString ) {
-            Files.writeString( newFile.toPath(), "" + ((DateString) value).getDaysSinceEpoch() );
-        } else if ( value instanceof TimeString ) {
-            Files.writeString( newFile.toPath(), "" + ((TimeString) value).getMillisOfDay() );
-        } else {
-            String writeString = value.toString();
-            Files.writeString( newFile.toPath(), writeString, FileStore.CHARSET );
-        }*/
     }
 
 

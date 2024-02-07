@@ -28,7 +28,6 @@ import org.polypheny.db.TestHelper.MongoConnection;
 import org.polypheny.db.webui.models.results.DocResult;
 
 @Tag("adapter")
-@Tag("fileExcluded")
 public class AggregateTest extends MqlTestTemplate {
 
 
@@ -243,11 +242,11 @@ public class AggregateTest extends MqlTestTemplate {
                 "{\"test\":\"val1\",\"key\":1}" );
         insertMany( DATA_1 );
 
-        DocResult result = aggregate( $limit( 1 ) );
+        DocResult result = aggregate( $sort( document( kv( string( "key" ), 1 ) ) ), $limit( 1 ) );
 
         MongoConnection.checkDocResultSet( result, expected, true, true );
 
-        result = aggregate( $limit( 2 ) );
+        result = aggregate( $sort( document( kv( string( "key" ), 1 ) ) ), $limit( 2 ) );
 
         expected = ImmutableList.of(
                 "{\"test\":\"val1\",\"key\":1}",
@@ -350,14 +349,15 @@ public class AggregateTest extends MqlTestTemplate {
 
         insertMany( DATA_0 );
 
-        DocResult result = aggregate( $skip( 1 ) );
+        // we sort to assure correct order
+        DocResult result = aggregate( $sort( document( kv( string( "key" ), 1 ) ) ), $skip( 1 ) );
 
         MongoConnection.checkDocResultSet( result, expected, true, true );
 
         expected = ImmutableList.of(
                 "{\"test\":\"test\",\"key\":13}" );
 
-        result = aggregate( $skip( 2 ) );
+        result = aggregate( $sort( document( kv( string( "key" ), 1 ) ) ), $skip( 2 ) );
 
         MongoConnection.checkDocResultSet( result, expected, true, true );
     }

@@ -29,7 +29,6 @@ import org.polypheny.db.mql.MqlTestTemplate;
 import org.polypheny.db.webui.models.results.DocResult;
 
 @Tag("adapter")
-@Tag("fileExcluded") // todo fix error with filter in file
 public class UnsupportedDmlTest extends MqlTestTemplate {
 
     @Test

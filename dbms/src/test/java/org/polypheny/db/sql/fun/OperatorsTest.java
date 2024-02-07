@@ -80,7 +80,6 @@ public class OperatorsTest {
 
 
     @Test
-    @Tag("fileExcluded")
     public void comparisonOperatorsTest() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -238,7 +237,6 @@ public class OperatorsTest {
 
 
     @Test
-    @Tag("fileExcluded")
     public void logicalOperators() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -329,7 +327,6 @@ public class OperatorsTest {
 
 
     @Test
-    @Tag("fileExcluded")
     public void arithmeticOperators() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

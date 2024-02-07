@@ -35,7 +35,7 @@ public abstract class PolyNumber extends PolyValue {
 
 
     public static int compareTo( PolyNumber b0, PolyNumber b1 ) {
-        if ( b0 == null || b1 == null ) {
+        if ( b0 == null || b1 == null || b0.isNull() || b1.isNull() ) {
             return -1;
         }
         if ( b0.isApprox() || b1.isApprox() ) {
@@ -46,7 +46,7 @@ public abstract class PolyNumber extends PolyValue {
 
 
     private boolean isApprox() {
-        return PolyType.APPROX_TYPES.contains( getType() );
+        return PolyType.APPROX_TYPES.contains( getType() ) || getType() == PolyType.DECIMAL;
     }
 
 

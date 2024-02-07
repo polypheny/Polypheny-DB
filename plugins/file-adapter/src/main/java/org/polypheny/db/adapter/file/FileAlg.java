@@ -18,12 +18,18 @@ package org.polypheny.db.adapter.file;
 
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
+import org.polypheny.db.adapter.file.Value.InputValue;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.schema.types.Expressible;
 
 
 public interface FileAlg extends AlgNode {
@@ -50,7 +56,7 @@ public interface FileAlg extends AlgNode {
         @Getter
         private final List<String> columnNames = new ArrayList<>();
         private final List<String> project = new ArrayList<>();
-        private List<Integer> projectionMapping;
+        private List<? extends Value> projectionMapping;
         @Getter
         private final List<Value[]> insertValues = new ArrayList<>();
         @Getter
@@ -81,7 +87,7 @@ public interface FileAlg extends AlgNode {
         /**
          * A FileProject can directly provide the projectionMapping, a FileModify will provide the columnNames only
          */
-        public void project( final List<String> columnNames, final List<Integer> projectionMapping ) {
+        public void project( final List<String> columnNames, final List<? extends Value> projectionMapping ) {
             if ( projectionMapping != null ) {
                 this.projectionMapping = projectionMapping;
                 projectInsertValues( projectionMapping );
@@ -99,12 +105,12 @@ public interface FileAlg extends AlgNode {
                     return;
                 }
                 int i = 0;
-                List<Integer> mapping = new ArrayList<>();
+                List<Value> mapping = new ArrayList<>();
                 for ( Value update : updates ) {
                     AlgDataTypeField field = getFileTable().getRowType().getField( columnNames.get( i ), false, false );
                     int index = field.getIndex();
                     update.setColumnReference( index );
-                    mapping.add( index );
+                    mapping.add( new InputValue( update.columnReference, index ) );
                     i++;
                 }
                 this.projectionMapping = mapping;
@@ -115,14 +121,14 @@ public interface FileAlg extends AlgNode {
         /**
          * For multi-store inserts, it may be necessary to project the insert values
          */
-        private void projectInsertValues( final List<Integer> mapping ) {
+        private void projectInsertValues( final List<? extends Value> mapping ) {
             if ( !insertValues.isEmpty() && insertValues.get( 0 ).length > mapping.size() ) {
                 for ( int i = 0; i < insertValues.size(); i++ ) {
                     Value[] values = insertValues.get( i );
                     Value[] projected = new Value[mapping.size()];
                     int j = 0;
-                    for ( Integer m : mapping ) {
-                        projected[j++] = values[m];
+                    for ( Value m : mapping ) {
+                        projected[j++] = values[(int) ((InputValue) m).getIndex()];
                     }
                     insertValues.set( i, projected );
                 }
@@ -130,14 +136,14 @@ public interface FileAlg extends AlgNode {
         }
 
 
-        public Integer[] getProjectionMapping() {
+        public Value[] getProjectionMapping() {
             if ( projectionMapping != null ) {
-                return projectionMapping.toArray( new Integer[0] );
+                return projectionMapping.toArray( new Value[0] );
             }
             if ( project.isEmpty() ) {
                 return null;
             } else {
-                Integer[] projectionMapping = new Integer[project.size()];
+                Value[] projectionMapping = new Value[project.size()];
                 for ( int i = 0; i < project.size(); i++ ) {
                     String ithProject = project.get( i );
                     if ( ithProject.contains( "." ) ) {
@@ -147,10 +153,15 @@ public interface FileAlg extends AlgNode {
                     if ( indexOf == -1 ) {
                         throw new GenericRuntimeException( "Could not perform the projection." );
                     }
-                    projectionMapping[i] = indexOf;
+                    projectionMapping[i] = new InputValue( i, indexOf );
                 }
                 return projectionMapping;
             }
+        }
+
+
+        public Expression getProjectExpressions() {
+            return getProjectionMapping() == null ? Expressions.constant( null ) : EnumUtils.constantArrayList( Arrays.stream( getProjectionMapping() ).map( Expressible::asExpression ).toList(), Value.class );
         }
 
 

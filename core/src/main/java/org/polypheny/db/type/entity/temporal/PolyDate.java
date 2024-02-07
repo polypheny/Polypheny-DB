@@ -74,7 +74,7 @@ public class PolyDate extends PolyTemporal {
 
 
     public static PolyDate ofNullable( java.sql.Date date ) {
-        return PolyDate.of( date );
+        return date == null ? null : PolyDate.of( date );
     }
 
 

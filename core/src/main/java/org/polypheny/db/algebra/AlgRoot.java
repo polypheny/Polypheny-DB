@@ -152,7 +152,7 @@ public class AlgRoot {
     @Override
     public String toString() {
         return "Root {kind: " + kind
-                + ", rel: " + alg
+                + ", alg: " + alg
                 + ", rowType: " + validatedRowType
                 + ", fields: " + fields
                 + ", collation: " + collation + "}";

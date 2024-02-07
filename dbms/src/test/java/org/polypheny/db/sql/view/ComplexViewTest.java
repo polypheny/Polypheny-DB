@@ -528,7 +528,6 @@ public class ComplexViewTest {
 
 
     @Test
-    @Tag("fileExcluded")
     public void testDecimal() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -601,7 +600,6 @@ public class ComplexViewTest {
 
 
     @Test
-    @Tag("fileExcluded")
     public void testDecimalDateInt() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -644,7 +642,6 @@ public class ComplexViewTest {
 
 
     @Test
-    @Tag("fileExcluded")
     public void testDateOrderBy() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -693,7 +690,6 @@ public class ComplexViewTest {
 
 
     @Test
-    @Tag("fileExcluded")
     public void testTimeInterval() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -730,7 +726,6 @@ public class ComplexViewTest {
 
 
     @Test
-    @Tag("fileExcluded")
     public void testQ1() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -885,7 +880,6 @@ public class ComplexViewTest {
 
 
     @Test
-    @Tag("fileExcluded")
     public void testQ3() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -940,7 +934,6 @@ public class ComplexViewTest {
 
 
     @Test
-    @Tag("fileExcluded")
     public void testQ4() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -996,7 +989,6 @@ public class ComplexViewTest {
     // Original TPC-H query with l_discount between 20.15 - 0.01 and ? + 0.01 does not return a result
     // changed to and l_discount between 20.14 and 20.16
     @Test
-    @Tag("fileExcluded")
     public void testQ6() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -1038,7 +1030,6 @@ public class ComplexViewTest {
 
     // deleted "or (n1.n_name = ? and n2.n_name = ?) " because there is only one nation in this table
     @Test
-    @Tag("fileExcluded")
     public void testQ7() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -1107,7 +1098,6 @@ public class ComplexViewTest {
 
 
     @Test
-    @Tag("fileExcluded")
     public void testQ8() throws SQLException {
         assumeFalse( System.getProperty( "java.version" ).startsWith( "1.8" ) ); // Out of memory error on Java 8
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -1177,7 +1167,6 @@ public class ComplexViewTest {
 
 
     @Test
-    @Tag("fileExcluded")
     public void testQ9() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -1241,7 +1230,6 @@ public class ComplexViewTest {
 
 
     @Test
-    @Tag("fileExcluded")
     public void testQ10() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -1478,7 +1466,6 @@ public class ComplexViewTest {
 
 
     @Test
-    @Tag("fileExcluded")
     public void testQ14() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -1526,7 +1513,6 @@ public class ComplexViewTest {
 
     // changed max(total_revenue) to total_revenue // Not possible in normal to SELECT aggregate within inner query
     @Test
-    @Tag("fileExcluded")
     public void testQ15() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

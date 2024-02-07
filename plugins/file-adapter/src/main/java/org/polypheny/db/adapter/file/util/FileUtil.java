@@ -16,34 +16,73 @@
 
 package org.polypheny.db.adapter.file.util;
 
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.polypheny.db.adapter.file.FileAlg.FileImplementor;
+import org.polypheny.db.adapter.file.Value;
+import org.polypheny.db.adapter.file.Value.DynamicValue;
+import org.polypheny.db.adapter.file.Value.InputValue;
+import org.polypheny.db.adapter.file.Value.LiteralValue;
+import org.polypheny.db.algebra.enumerable.EnumUtils;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexIndexRef;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyValue;
 
 public class FileUtil {
 
-    public static Object toObject( PolyValue value ) {
-        return value == null ? null : value.toJson();
+    public static List<Value> getUpdates( final List<RexNode> exps, FileImplementor implementor ) {
+        List<Value> valueList = new ArrayList<>();
+        int offset;
+        boolean noCheck;
+        if ( exps.size() == implementor.getFileTable().columns.size() ) {
+            noCheck = true;
+            offset = 0;
+        } else {
+            noCheck = false;
+            offset = implementor.getFileTable().columns.size();
+        }
+        for ( int i = offset; i < implementor.getFileTable().columns.size() + offset; i++ ) {
+            if ( noCheck || exps.size() > i ) {
+                RexNode lit = exps.get( i );
+                if ( lit instanceof RexLiteral literal ) {
+                    valueList.add( new LiteralValue( null, literal.value ) );
+                } else if ( lit instanceof RexDynamicParam dynamicParam ) {
+                    valueList.add( new DynamicValue( null, dynamicParam.getIndex() ) );
+                } else if ( lit instanceof RexIndexRef indexRef ) {
+                    valueList.add( new InputValue( indexRef.getIndex(), indexRef.getIndex() ) );
+                } else if ( lit instanceof RexCall call && lit.getType().getPolyType() == PolyType.ARRAY ) {
+                    valueList.add( fromArrayRexCall( call ) );
+                } else {
+                    throw new GenericRuntimeException( "Could not implement " + lit.getClass().getSimpleName() + " " + lit );
+                }
+            }
+        }
+        return valueList;
     }
 
 
-    public static PolyValue fromValue( PolyValue value ) {
-        if ( value == null ) {
-            return null;
+    public static Value fromArrayRexCall( final RexCall call ) {
+        List<PolyValue> arrayValues = new ArrayList<>();
+        for ( RexNode node : call.getOperands() ) {
+            arrayValues.add( ((RexLiteral) node).value );
         }
-        return value;
-        /*return switch ( value.type ) {
-            case INTEGER, TINYINT, SMALLINT -> value.asNumber().IntValue();
-            case REAL, FLOAT -> value.asNumber().FloatValue();
-            case VARCHAR, CHAR -> value.asString().value;
-            case BIGINT, DECIMAL -> value.asNumber().BigDecimalValue();
-            case BINARY, VARBINARY -> value.asBinary().value.getBytes();
-            case DOUBLE -> value.asNumber().DoubleValue();
-            case BOOLEAN -> value.asBoolean().value;
-            case DATE -> value.asDate().getDaysSinceEpoch();
-            case TIME -> value.asTime().ofDay;
-            case TIMESTAMP -> value.asTimestamp().millisSinceEpoch;
-            case ARRAY -> value.asList().toJson();
-            default -> throw new NotImplementedException();
-        };*/
+        return new LiteralValue( null, PolyList.of( arrayValues ) );
+    }
+
+
+    public static Expression getValuesExpression( final List<Value> values ) {
+        List<Expression> valueConstructors = new ArrayList<>();
+        for ( Value value : values ) {
+            valueConstructors.add( value.asExpression() );
+        }
+        return EnumUtils.constantArrayList( valueConstructors, PolyValue.class );
     }
 
 }

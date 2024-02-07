@@ -120,7 +120,6 @@ public class GroupByTest {
 
 
     @Test
-    @Tag("fileExcluded")
     public void groupByWithInnerSelect() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -131,7 +130,7 @@ public class GroupByTest {
                         new Object[]{ 2, "Name2" }
                 );
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT s.id, s.name FROM TestTableC s, TestTableB t WHERE s.id = t.id AND Frequencies > (SELECT AVG (Frequencies) FROM TestTableB WHERE row_code = 'C' GROUP BY row_code='C')\n" ),
+                        statement.executeQuery( "SELECT s.id, s.name FROM TestTableC s, TestTableB t WHERE s.id = t.id AND Frequencies > (SELECT AVG (Frequencies) FROM TestTableB WHERE row_code = 'C' GROUP BY row_code='C')" ),
                         expectedResult,
                         true
                 );

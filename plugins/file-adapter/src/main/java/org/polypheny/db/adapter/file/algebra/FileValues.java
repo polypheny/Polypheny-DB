@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.adapter.file.FileAlg;
 import org.polypheny.db.adapter.file.Value;
+import org.polypheny.db.adapter.file.Value.LiteralValue;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -64,7 +65,7 @@ public class FileValues extends Values implements FileAlg {
             Value[] row = new Value[literalList.size()];
             int i = 0;
             for ( RexLiteral literal : literalList ) {
-                row[i] = new Value( i, literal.value, false );
+                row[i] = new LiteralValue( i, literal.value );
                 i++;
             }
             implementor.addInsertValue( row );

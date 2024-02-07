@@ -56,7 +56,7 @@ public class AlgCrossType extends AlgDataTypeImpl {
     public AlgCrossType( List<AlgDataType> types, List<AlgDataTypeField> fields ) {
         super( fields );
         this.types = ImmutableList.copyOf( types );
-        assert types.size() >= 1;
+        assert !types.isEmpty();
         for ( AlgDataType type : types ) {
             assert !(type instanceof AlgCrossType);
         }

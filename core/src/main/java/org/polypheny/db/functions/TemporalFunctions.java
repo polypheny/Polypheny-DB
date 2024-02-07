@@ -116,7 +116,17 @@ public class TemporalFunctions {
      */
     @SuppressWarnings("unused")
     public static PolyDate addMonths( PolyDate date, PolyNumber m ) {
-        return PolyDate.ofDays( (int) (date.getDaysSinceEpoch() + m.intValue()) );
+        int y0 = (int) DateTimeUtils.unixDateExtract( TimeUnitRange.YEAR, date.millisSinceEpoch / DateTimeUtils.MILLIS_PER_DAY );
+        int m0 = (int) DateTimeUtils.unixDateExtract( TimeUnitRange.MONTH, date.millisSinceEpoch / DateTimeUtils.MILLIS_PER_DAY );
+        int d0 = (int) DateTimeUtils.unixDateExtract( TimeUnitRange.DAY, date.millisSinceEpoch / DateTimeUtils.MILLIS_PER_DAY );
+        int y = m.intValue() / 12;
+        y0 += y;
+        m0 += m.intValue() - y * 12;
+        int last = lastDay( y0, m0 );
+        if ( d0 > last ) {
+            d0 = last;
+        }
+        return PolyDate.ofDays( DateTimeUtils.ymdToUnixDate( y0, m0, d0 ) );
     }
 
 

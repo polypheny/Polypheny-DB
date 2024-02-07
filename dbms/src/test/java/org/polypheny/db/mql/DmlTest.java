@@ -76,7 +76,6 @@ public class DmlTest extends MqlTestTemplate {
 
 
     @Test
-    @Tag("fileExcluded")
     public void insertManyTest() {
         List<String> data = Arrays.asList( "{\"test\":1}", "{\"test\":2}", "{\"test\":3}" );
         insertMany( data );
@@ -93,7 +92,6 @@ public class DmlTest extends MqlTestTemplate {
 
 
     @Test
-    @Tag("fileExcluded")
     public void updateTest() {
         List<String> data = List.of( "{\"test\":1}", "{\"test\":2}", "{\"test\":3}" );
         insertMany( data );
@@ -114,7 +112,6 @@ public class DmlTest extends MqlTestTemplate {
 
 
     @Test
-    @Tag("fileExcluded")
     public void updateIdTest() {
         List<Object> data = Arrays.asList( 1, 2, 3 );
         insertMany( data.stream().map( d -> toDoc( "test", d ) ).toList() );

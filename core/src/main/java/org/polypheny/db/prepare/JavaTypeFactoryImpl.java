@@ -213,6 +213,7 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                 case JSON:
                 case VARCHAR:
                 case CHAR:
+                case TEXT:
                     return PolyString.class;
                 case DOCUMENT:
                     return PolyValue.class;

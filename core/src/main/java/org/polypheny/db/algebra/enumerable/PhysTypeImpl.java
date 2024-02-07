@@ -34,6 +34,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.MemberDeclaration;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
+import org.apache.calcite.linq4j.tree.Primitive.Flavor;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgCollation;
@@ -243,11 +244,10 @@ public class PhysTypeImpl implements PhysType {
         if ( collations.size() == 1 ) {
             AlgFieldCollation collation = collations.get( 0 );
             ParameterExpression parameter = Expressions.parameter( javaRowClass, "v" );
-            selector =
-                    Expressions.lambda(
-                            Function1.class,
-                            fieldReference( parameter, collation.getFieldIndex() ),
-                            parameter );
+            selector = Expressions.lambda(
+                    Function1.class,
+                    fieldReference( parameter, collation.getFieldIndex() ),
+                    parameter );
             return Pair.of(
                     selector,
                     Expressions.call(
@@ -272,10 +272,9 @@ public class PhysTypeImpl implements PhysType {
             final int index = collation.getFieldIndex();
             Expression arg0 = fieldReference( parameterV0, index );
             Expression arg1 = fieldReference( parameterV1, index );
-            switch ( Primitive.flavor( fieldClass( index ) ) ) {
-                case OBJECT:
-                    arg0 = Types.castIfNecessary( Comparable.class, arg0 );
-                    arg1 = Types.castIfNecessary( Comparable.class, arg1 );
+            if ( Objects.requireNonNull( Primitive.flavor( fieldClass( index ) ) ) == Flavor.OBJECT ) {
+                arg0 = Types.castIfNecessary( Comparable.class, arg0 );
+                arg1 = Types.castIfNecessary( Comparable.class, arg1 );
             }
             final boolean nullsFirst = collation.nullDirection == AlgFieldCollation.NullDirection.FIRST;
             final boolean descending = collation.getDirection() == AlgFieldCollation.Direction.DESCENDING;

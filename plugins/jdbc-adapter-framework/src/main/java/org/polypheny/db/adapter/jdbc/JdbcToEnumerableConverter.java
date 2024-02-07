@@ -36,8 +36,11 @@ package org.polypheny.db.adapter.jdbc;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -105,6 +108,10 @@ import org.polypheny.db.util.BuiltInMethod;
  */
 @Slf4j
 public class JdbcToEnumerableConverter extends ConverterImpl implements EnumerableAlg {
+
+    public static final Calendar utc = Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) );
+
+    private static final Expression UTC_EXPRESSION = Expressions.field( null, JdbcToEnumerableConverter.class, "utc" );
 
     public static final Method JDBC_SCHEMA_GET_CONNECTION_HANDLER_METHOD = Types.lookupMethod(
             JdbcSchema.class,
@@ -317,11 +324,14 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             // TODO js(knn): Make sure this is more than just a hotfix.
             //  add nullability stuff as well
             case ARRAY -> getPreprocessArrayExpression( resultSet_, i, dialect, fieldType );
-            case DATE, TIME, TIMESTAMP -> Expressions.call(
+            case DATE -> Expressions.call( resultSet_, "getDate", Expressions.constant( i + 1 ), UTC_EXPRESSION );
+            case TIME -> Expressions.call( resultSet_, "getTime", Expressions.constant( i + 1 ), UTC_EXPRESSION );
+            case TIMESTAMP -> Expressions.call( resultSet_, "getTimestamp", Expressions.constant( i + 1 ), UTC_EXPRESSION );
+            /*case DATE, TIME, TIMESTAMP -> Expressions.call(
                     getMethod( polyType, fieldType.isNullable(), offset ),
                     Expressions.<Expression>list()
                             .append( Expressions.call( resultSet_, getMethod2( polyType ), dateTimeArgs ) )
-                            .appendIf( offset, getTimeZoneExpression( implementor ) ) );
+                            .appendIf( offset, getTimeZoneExpression( implementor ) ) );*/
             case FILE, AUDIO, IMAGE, VIDEO -> Expressions.call( resultSet_, BuiltInMethod.RESULTSET_GETBYTES.method, Expressions.constant( i + 1 ) );
             default -> Expressions.call( resultSet_, jdbcGetMethod( primitive ), Expressions.constant( i + 1 ) );
         };
@@ -397,13 +407,13 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 poly = Expressions.call( PolyDouble.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Number.class ) );
                 break;
             case TIME:
-                poly = Expressions.call( PolyTime.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Long.class ) );
+                poly = Expressions.call( PolyTime.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Time.class ) );
                 break;
             case TIMESTAMP:
-                poly = Expressions.call( PolyTimestamp.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Long.class ) );
+                poly = Expressions.call( PolyTimestamp.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Timestamp.class ) );
                 break;
             case DATE:
-                poly = Expressions.call( PolyDate.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Long.class ) );
+                poly = Expressions.call( PolyDate.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Date.class ) );
                 break;
             case DECIMAL:
                 poly = Expressions.call( PolyBigDecimal.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Number.class ), Expressions.constant( fieldType.getPrecision() ), Expressions.constant( fieldType.getScale() ) );
@@ -438,7 +448,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
     private Method getMethod( PolyType polyType, boolean nullable, boolean offset ) {
         return switch ( polyType ) {
             case ARRAY -> BuiltInMethod.JDBC_DEEP_ARRAY_TO_LIST.method;
-            case DATE -> (nullable
+            /*case DATE -> (nullable
                     ? BuiltInMethod.DATE_TO_LONG_OPTIONAL
                     : BuiltInMethod.DATE_TO_LONG).method;
             case TIME -> (nullable
@@ -450,7 +460,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                     : BuiltInMethod.DATE_TO_LONG_OPTIONAL)
                     : (offset
                             ? BuiltInMethod.TIMESTAMP_TO_LONG_OFFSET
-                            : BuiltInMethod.DATE_TO_LONG)).method;
+                            : BuiltInMethod.DATE_TO_LONG)).method;*/
             default -> throw new AssertionError( polyType + ":" + nullable );
         };
     }

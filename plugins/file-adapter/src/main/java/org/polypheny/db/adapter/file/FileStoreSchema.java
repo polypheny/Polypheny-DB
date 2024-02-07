@@ -27,6 +27,7 @@ import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
@@ -87,7 +88,7 @@ public class FileStoreSchema extends AbstractNamespace implements FileSchema, Sc
     /**
      * Called from generated code
      * Executes SELECT, UPDATE and DELETE operations
-     * see {@link FileMethod#EXECUTE} and {@link org.polypheny.db.adapter.file.algebra.FileToEnumerableConverter#implement}
+     * see {@link FileMethod#EXECUTE} and
      */
     @SuppressWarnings("unused")
     public static Enumerable<PolyValue[]> execute(
@@ -99,7 +100,7 @@ public class FileStoreSchema extends AbstractNamespace implements FileSchema, Sc
             final Long[] columnIds,
             final FileTranslatableEntity entity,
             final List<Long> pkIds,
-            final Integer[] projectionMapping,
+            final @Nullable List<Value> projectionMapping,
             final Condition condition,
             final List<List<PolyValue>> updates ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getAdapter( adapterId ).orElseThrow() );
@@ -115,7 +116,7 @@ public class FileStoreSchema extends AbstractNamespace implements FileSchema, Sc
     /**
      * Called from generated code
      * Executes INSERT operations
-     * see {@link FileMethod#EXECUTE_MODIFY} and {@link org.polypheny.db.adapter.file.algebra.FileToEnumerableConverter#implement}
+     * see {@link FileMethod#EXECUTE_MODIFY} and
      */
     @SuppressWarnings("unused")
     public static Enumerable<PolyValue[]> executeModify(
@@ -140,7 +141,7 @@ public class FileStoreSchema extends AbstractNamespace implements FileSchema, Sc
                 List<PolyValue> row = new ArrayList<>();
                 //insertValues[] has length 1 if the dataContext is set
                 for ( PolyValue values : insertValues.get( 0 ) ) {
-                    row.add( ((Value) values).getValue( dataContext, i ) );
+                    row.add( ((Value) values).getValue( null, dataContext, i ) );
                 }
                 rows.add( row );
                 i++;
@@ -149,7 +150,7 @@ public class FileStoreSchema extends AbstractNamespace implements FileSchema, Sc
             for ( List<PolyValue> values : insertValues ) {
                 List<PolyValue> row = new ArrayList<>();
                 for ( PolyValue value : values ) {
-                    row.add( ((Value) value).getValue( dataContext, i ) );
+                    row.add( ((Value) value).getValue( null, dataContext, i ) );
                 }
                 rows.add( row );
                 i++;
