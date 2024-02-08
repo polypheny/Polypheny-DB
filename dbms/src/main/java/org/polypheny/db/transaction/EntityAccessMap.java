@@ -28,7 +28,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -112,13 +111,13 @@ public class EntityAccessMap {
     public EntityAccessMap( AlgNode alg, Map<Long, List<Long>> accessedPartitions ) {
         // NOTE: This method must NOT retain a reference to the input alg, because we use it for cached statements, and we
         // don't want to retain any alg references after preparation completes.
-        accessMap = new HashMap<>();
+        this.accessMap = new HashMap<>();
 
         //TODO @HENNLO remove this and rather integrate EntityAccessMap directly into Query Processor when DML Partitions can be queried
         this.accessedPartitions = accessedPartitions;
 
-        AlgOptUtil.go( new TableRelVisitor(), alg );
-        accessLockMap = evaluateAccessLockMap();
+        AlgOptUtil.go( new TableAlgVisitor(), alg );
+        this.accessLockMap = evaluateAccessLockMap();
     }
 
 
@@ -236,7 +235,7 @@ public class EntityAccessMap {
     /**
      * Visitor that finds all tables in a tree.
      */
-    private class TableRelVisitor extends AlgVisitor {
+    private class TableAlgVisitor extends AlgVisitor {
 
 
         @Override
@@ -261,7 +260,7 @@ public class EntityAccessMap {
             //  FIXME: Don't rely on object type here; eventually someone is going to write a rule which transforms to
             //  something which doesn't inherit TableModify, and this will break. Need to make this explicit in the
             //  {@link AlgNode} interface.
-            if ( p instanceof RelModify ) {
+            if ( p.unwrap( RelModify.class ).isPresent() ) {
                 newAccess = Mode.WRITE_ACCESS;
                 if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
                     extractWriteConstraints( table.unwrap( LogicalTable.class ).orElseThrow() );
@@ -273,21 +272,21 @@ public class EntityAccessMap {
             // TODO @HENNLO Integrate PartitionIds into Entities
             // If table has no info which partitions are accessed, ergo has no concrete entries in map
             // assume that all are accessed. --> Add all to AccessMap
-            List<Long> relevantPartitions;
-            if ( accessedPartitions.containsKey( p.getId() ) ) {
-                relevantPartitions = accessedPartitions.get( p.getId() );
+            List<Long> relevantAllocations;
+            if ( accessedPartitions.containsKey( p.getEntity().id ) ) {
+                relevantAllocations = accessedPartitions.get( p.getEntity().id );
             } else {
                 if ( table.dataModel == DataModel.RELATIONAL ) {
                     List<AllocationEntity> allocations = Catalog.getInstance().getSnapshot().alloc().getFromLogical( table.id );
-                    relevantPartitions = allocations.stream().map( a -> a.id ).collect( Collectors.toList() );
+                    relevantAllocations = allocations.stream().map( a -> a.id ).toList();
                 } else {
-                    relevantPartitions = List.of();
+                    relevantAllocations = List.of();
                 }
 
             }
 
-            for ( long partitionId : relevantPartitions ) {
-                EntityIdentifier key = getQualifiedName( table, partitionId );
+            for ( long allocationId : relevantAllocations ) {
+                EntityIdentifier key = getQualifiedName( table, allocationId );
                 Mode oldAccess = accessMap.get( key );
                 if ( (oldAccess != null) && (oldAccess != newAccess) ) {
                     newAccess = Mode.READWRITE_ACCESS;
@@ -351,20 +350,47 @@ public class EntityAccessMap {
 
     @Data
     @AllArgsConstructor
-    @EqualsAndHashCode
     public static class EntityIdentifier {
 
-        long tableId;
-        long partitionId;
+        long entityId;
+
+        long allocationId;
         // the locking checks for an existing EntityIdentifier, which is identified, by its id an partition
         // this is done on the entity level, the graph model defines the graph on the namespace level and this could lead to conflicts
         // therefore we can add the level to the identifier
         NamespaceLevel namespaceLevel;
 
 
-        enum NamespaceLevel {
+        public enum NamespaceLevel {
             NAMESPACE_LEVEL,
             ENTITY_LEVEL
+        }
+
+
+        @Override
+        public boolean equals( Object o ) {
+            if ( this == o ) {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() ) {
+                return false;
+            }
+
+            EntityIdentifier that = (EntityIdentifier) o;
+
+            if ( entityId != that.entityId ) {
+                return false;
+            }
+            return allocationId == that.allocationId;
+        }
+
+
+        @Override
+        public int hashCode() {
+            int result = (int) (entityId ^ (entityId >>> 32));
+            result = 31 * result + (int) (allocationId ^ (allocationId >>> 32));
+            result = 31 * result + (namespaceLevel != null ? namespaceLevel.hashCode() : 0);
+            return result;
         }
 
     }

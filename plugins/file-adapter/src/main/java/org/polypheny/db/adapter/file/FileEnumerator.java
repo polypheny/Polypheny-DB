@@ -38,7 +38,6 @@ import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.commons.io.FileUtils;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileAlg.FileImplementor.Operation;
-import org.polypheny.db.adapter.file.FilePlugin.FileStore;
 import org.polypheny.db.adapter.file.Value.InputValue;
 import org.polypheny.db.adapter.file.Value.ValueType;
 import org.polypheny.db.adapter.java.JavaTypeFactory;

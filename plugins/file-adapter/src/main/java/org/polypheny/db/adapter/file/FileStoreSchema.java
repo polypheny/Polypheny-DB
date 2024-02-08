@@ -32,7 +32,6 @@ import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileAlg.FileImplementor.Operation;
-import org.polypheny.db.adapter.file.FilePlugin.FileStore;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.schema.Namespace.Schema;

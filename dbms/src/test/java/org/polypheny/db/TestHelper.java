@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import java.lang.reflect.Field;
@@ -164,6 +165,33 @@ public class TestHelper {
         }
 
         throw new NotImplementedException();
+    }
+
+
+    public static void checkResultSetWithDelay( int tries, int waitSeconds, ResultSet resultSet, ImmutableList<Object[]> expected ) {
+        checkResultSetWithDelay( tries, waitSeconds, resultSet, expected, false );
+    }
+
+
+    public static void checkResultSetWithDelay( int tries, int waitSeconds, ResultSet resultSet, ImmutableList<Object[]> expected, boolean ignoreOrder ) {
+
+        try {
+            TimeUnit.SECONDS.sleep( waitSeconds );
+
+            try {
+                checkResultSet( resultSet, expected, ignoreOrder );
+            } catch ( Throwable e ) {
+                if ( tries > 0 ) {
+                    checkResultSetWithDelay( tries - 1, waitSeconds, resultSet, expected, ignoreOrder );
+                } else {
+                    throw new RuntimeException( e );
+                }
+            }
+        } catch ( InterruptedException interruptedException ) {
+            log.error( "Interrupted exception", interruptedException );
+        }
+
+
     }
 
 

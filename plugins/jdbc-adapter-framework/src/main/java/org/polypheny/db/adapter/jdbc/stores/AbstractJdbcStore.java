@@ -334,10 +334,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
 
 
     public boolean doesTypeUseLength( PolyType type ) {
-        if ( type == PolyType.TEXT ) {
-            return false;
-        }
-        return true;
+        return type != PolyType.TEXT;
     }
 
 
@@ -371,7 +368,6 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
 
     @Override
     public void dropColumn( Context context, long allocId, long columnId ) {
-        //for ( CatalogPartitionPlacement partitionPlacement : context.getSnapshot().alloc().getEntity( columnPlacement.tableId ) ) {
         PhysicalTable table = storeCatalog.fromAllocation( allocId );
         PhysicalColumn column = storeCatalog.getColumn( columnId, allocId );
         StringBuilder builder = new StringBuilder();
@@ -384,7 +380,6 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
         storeCatalog.dropColumn( allocId, columnId );
 
         updateNativePhysical( allocId );
-        //}
     }
 
 
