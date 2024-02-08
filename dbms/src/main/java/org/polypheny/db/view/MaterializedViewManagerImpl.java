@@ -63,7 +63,6 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.EntityAccessMap;
 import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier;
-import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier.NamespaceLevel;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.PolyXid;
@@ -293,9 +292,6 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
             // Get locks for individual tables
             EntityAccessMap access = new EntityAccessMap( table.unwrap( LogicalMaterializedView.class ).orElseThrow().getDefinition(), new HashMap<>() );
             idAccesses.addAll( access.getAccessedEntityPair() );
-            // lock for materialized view
-            catalog.getSnapshot().alloc().getFromLogical( materializedId )
-                    .forEach( allocation -> idAccesses.add( Pair.of( new EntityIdentifier( allocation.logicalId, allocation.id, NamespaceLevel.ENTITY_LEVEL ), LockMode.EXCLUSIVE ) ) );
 
             LockManager.INSTANCE.lock( idAccesses, (TransactionImpl) statement.getTransaction() );
         } catch ( DeadlockException e ) {

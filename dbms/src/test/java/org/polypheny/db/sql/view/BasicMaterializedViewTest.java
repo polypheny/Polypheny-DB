@@ -1095,23 +1095,15 @@ public class BasicMaterializedViewTest {
 
                     TestHelper.checkResultSetWithDelay(
                             2,
-                            20,
-                            statement.executeQuery( "SELECT * FROM viewTestEmp" ),
+                            5,
+                            () -> statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(
                                     new Object[]{ 1, "Max", "Muster", 1, 0 }
                             ) );
                     TestHelper.checkResultSetWithDelay(
                             2,
                             2,
-                            statement.executeQuery( "SELECT * FROM viewTestEmp" ),
-                            ImmutableList.of(
-                                    new Object[]{ 1, "Max", "Muster", 1, 0 }
-                            ) );
-
-                    TestHelper.checkResultSetWithDelay(
-                            2,
-                            2,
-                            statement.executeQuery( "SELECT * FROM viewTestEmp1" ),
+                            () -> statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(
                                     new Object[]{ 1, "Max", "Muster", 1, 0 }
                             ) );
@@ -1119,7 +1111,15 @@ public class BasicMaterializedViewTest {
                     TestHelper.checkResultSetWithDelay(
                             2,
                             2,
-                            statement.executeQuery( "SELECT * FROM viewTestDep" ),
+                            () -> statement.executeQuery( "SELECT * FROM viewTestEmp1" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Max", "Muster", 1, 0 }
+                            ) );
+
+                    TestHelper.checkResultSetWithDelay(
+                            2,
+                            2,
+                            () -> statement.executeQuery( "SELECT * FROM viewTestDep" ),
                             ImmutableList.of(
                                     new Object[]{ 1, "IT", 1, 0 }
                             ) );
@@ -1131,7 +1131,7 @@ public class BasicMaterializedViewTest {
                     TestHelper.checkResultSetWithDelay(
                             2,
                             20,
-                            statement.executeQuery( "SELECT * FROM viewTestEmp" ),
+                            () -> statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(
                                     new Object[]{ 1, "Max", "Muster", 1, 0 },
                                     new Object[]{ 2, "Ernst", "Walter", 2, 1 },
@@ -1142,7 +1142,7 @@ public class BasicMaterializedViewTest {
                     TestHelper.checkResultSetWithDelay(
                             2,
                             2,
-                            statement.executeQuery( "SELECT * FROM viewTestEmp1" ),
+                            () -> statement.executeQuery( "SELECT * FROM viewTestEmp1" ),
                             ImmutableList.of(
                                     new Object[]{ 1, "Max", "Muster", 1, 0 },
                                     new Object[]{ 2, "Ernst", "Walter", 2, 1 },
@@ -1153,7 +1153,7 @@ public class BasicMaterializedViewTest {
                     TestHelper.checkResultSetWithDelay(
                             2,
                             2,
-                            statement.executeQuery( "SELECT depId,depName,locationId FROM viewTestDep" ),
+                            () -> statement.executeQuery( "SELECT depId,depName,locationId FROM viewTestDep" ),
                             ImmutableList.of(
                                     new Object[]{ 1, "IT", 1 },
                                     new Object[]{ 2, "Sales", 2 },
@@ -1169,19 +1169,19 @@ public class BasicMaterializedViewTest {
                     TestHelper.checkResultSetWithDelay(
                             2,
                             5,
-                            statement.executeQuery( "SELECT * FROM viewTestEmp" ),
+                            () -> statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of() );
 
                     TestHelper.checkResultSetWithDelay(
                             2,
                             5,
-                            statement.executeQuery( "SELECT * FROM viewTestEmp1" ),
+                            () -> statement.executeQuery( "SELECT * FROM viewTestEmp1" ),
                             ImmutableList.of() );
 
                     TestHelper.checkResultSetWithDelay(
                             2,
                             5,
-                            statement.executeQuery( "SELECT * FROM viewTestDep" ),
+                            () -> statement.executeQuery( "SELECT * FROM viewTestDep" ),
                             ImmutableList.of() );
 
                     statement.executeUpdate( "INSERT INTO viewTestDepTable VALUES ( 1, 'IT', 1)" );
@@ -1191,7 +1191,7 @@ public class BasicMaterializedViewTest {
                     TestHelper.checkResultSetWithDelay(
                             2,
                             5,
-                            statement.executeQuery( "SELECT * FROM viewTestEmp" ),
+                            () -> statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(
                                     new Object[]{ 1, "Max", "Muster", 1, 0 }
                             ) );
@@ -1199,7 +1199,7 @@ public class BasicMaterializedViewTest {
                     TestHelper.checkResultSetWithDelay(
                             2,
                             5,
-                            statement.executeQuery( "SELECT * FROM viewTestEmp1" ),
+                            () -> statement.executeQuery( "SELECT * FROM viewTestEmp1" ),
                             ImmutableList.of(
                                     new Object[]{ 1, "Max", "Muster", 1, 0 }
                             ) );
@@ -1207,7 +1207,7 @@ public class BasicMaterializedViewTest {
                     TestHelper.checkResultSetWithDelay(
                             2,
                             5,
-                            statement.executeQuery( "SELECT * FROM viewTestDep" ),
+                            () -> statement.executeQuery( "SELECT * FROM viewTestDep" ),
                             ImmutableList.of(
                                     new Object[]{ 1, "IT", 1, 0 }
                             ) );
