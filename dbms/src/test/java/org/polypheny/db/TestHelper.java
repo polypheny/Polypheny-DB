@@ -168,18 +168,18 @@ public class TestHelper {
     }
 
 
-    public static void checkResultSetWithDelay( int tries, int waitSeconds, ResultSet resultSet, ImmutableList<Object[]> expected ) {
+    public static void checkResultSetWithDelay( int tries, int waitSeconds, DelayedSupplier<ResultSet> resultSet, ImmutableList<Object[]> expected ) {
         checkResultSetWithDelay( tries, waitSeconds, resultSet, expected, false );
     }
 
 
-    public static void checkResultSetWithDelay( int tries, int waitSeconds, ResultSet resultSet, ImmutableList<Object[]> expected, boolean ignoreOrder ) {
+    public static void checkResultSetWithDelay( int tries, int waitSeconds, DelayedSupplier<ResultSet> resultSet, ImmutableList<Object[]> expected, boolean ignoreOrder ) {
 
         try {
             TimeUnit.SECONDS.sleep( waitSeconds );
 
             try {
-                checkResultSet( resultSet, expected, ignoreOrder );
+                checkResultSet( resultSet.get(), expected, ignoreOrder );
             } catch ( Throwable e ) {
                 if ( tries > 0 ) {
                     checkResultSetWithDelay( tries - 1, waitSeconds, resultSet, expected, ignoreOrder );
@@ -782,6 +782,23 @@ public class TestHelper {
         }
 
         void acceptThrows( C elemC, T elem ) throws SQLException;
+
+    }
+
+
+    @FunctionalInterface
+    public interface DelayedSupplier<T extends ResultSet> extends Supplier<T> {
+
+        @Override
+        default T get() {
+            try {
+                return getThrows();
+            } catch ( final SQLException e ) {
+                throw new RuntimeException( e );
+            }
+        }
+
+        T getThrows() throws SQLException;
 
     }
 
