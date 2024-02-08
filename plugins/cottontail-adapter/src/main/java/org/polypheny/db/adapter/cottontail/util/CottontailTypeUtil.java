@@ -26,7 +26,6 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
-import org.apache.calcite.linq4j.tree.ConstantExpression;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
@@ -116,23 +115,14 @@ public class CottontailTypeUtil {
                 return Type.STRING;
             }
 
-            switch ( logicalType ) {
-                case TINYINT:
-                case SMALLINT:
-                case INTEGER:
-                    return Type.INT_VEC;
-                case BIGINT:
-                    return Type.LONG_VEC;
-                case FLOAT:
-                case REAL:
-                    return Type.FLOAT_VEC;
-                case DOUBLE:
-                    return Type.DOUBLE_VEC;
-                case BOOLEAN:
-                    return Type.BOOL_VEC;
-                default:
-                    return Type.STRING;
-            }
+            return switch ( logicalType ) {
+                case TINYINT, SMALLINT, INTEGER -> Type.INT_VEC;
+                case BIGINT -> Type.LONG_VEC;
+                case FLOAT, REAL -> Type.FLOAT_VEC;
+                case DOUBLE -> Type.DOUBLE_VEC;
+                case BOOLEAN -> Type.BOOL_VEC;
+                default -> Type.STRING;
+            };
         } else if ( collectionType == null ) {
 
             switch ( logicalType ) {
@@ -163,6 +153,7 @@ public class CottontailTypeUtil {
                 case DECIMAL:
                 case VARBINARY:
                 case BINARY:
+                case TEXT:
                     return Type.STRING;
                 case FILE:
                 case IMAGE:
@@ -193,61 +184,14 @@ public class CottontailTypeUtil {
 
 
     public static Expression rexLiteralToDataExpression( RexLiteral rexLiteral, PolyType actualType ) {
-        ConstantExpression constantExpression;
+        Expression constantExpression;
         if ( rexLiteral.isNull() ) {
             constantExpression = Expressions.constant( null );
         } else {
-            switch ( actualType ) {
-                case BOOLEAN:
-                    constantExpression = Expressions.constant( rexLiteral.getValue() );
-                    break;
-                case INTEGER:
-                    constantExpression = Expressions.constant( rexLiteral.getValue() );
-                    break;
-                case BIGINT:
-                    constantExpression = Expressions.constant( rexLiteral.getValue() );
-                    break;
-                case DOUBLE:
-                    constantExpression = Expressions.constant( rexLiteral.getValue() );
-                    break;
-                case REAL:
-                case FLOAT:
-                    constantExpression = Expressions.constant( rexLiteral.getValue() );
-                    break;
-                case VARCHAR:
-                case CHAR:
-                case JSON:
-                    constantExpression = Expressions.constant( rexLiteral.getValue() );
-                    break;
-                case DATE:
-                case TIME:
-                    constantExpression = Expressions.constant( rexLiteral.getValue() );
-                    break;
-                case TIMESTAMP:
-                    constantExpression = Expressions.constant( rexLiteral.getValue() );
-                    break;
-                case TINYINT:
-                    constantExpression = Expressions.constant( rexLiteral.getValue() );
-                    break;
-                case SMALLINT:
-                    constantExpression = Expressions.constant( rexLiteral.getValue() );
-                    break;
-                case DECIMAL:
-                    BigDecimal bigDecimal = rexLiteral.value.asNumber().BigDecimalValue();
-                    constantExpression = Expressions.constant( (bigDecimal != null) ? bigDecimal.toString() : null );
-                    break;
-                case VARBINARY:
-                    constantExpression = Expressions.constant( rexLiteral.value.asBinary().value.toBase64String() );
-                case BINARY:
-                case FILE:
-                case AUDIO:
-                case IMAGE:
-                case VIDEO:
-                    constantExpression = Expressions.constant( rexLiteral.value.asBlob().as64String() );
-                    break;
-                default:
-                    throw new GenericRuntimeException( "Type " + rexLiteral.type + " is not supported by the cottontail adapter." );
-            }
+            constantExpression = switch ( actualType ) {
+                case BOOLEAN, INTEGER, BIGINT, DOUBLE, REAL, FLOAT, VARCHAR, CHAR, TEXT, JSON, DATE, TIME, TIMESTAMP, TINYINT, SMALLINT, DECIMAL, VARBINARY, BINARY, FILE, AUDIO, IMAGE, VIDEO -> rexLiteral.getValue().asExpression();
+                default -> throw new GenericRuntimeException( "Type " + rexLiteral.type + " is not supported by the cottontail adapter." );
+            };
         }
 
         return Expressions.call( COTTONTAIL_SIMPLE_CONSTANT_TO_DATA_METHOD, constantExpression, Expressions.constant( actualType ), Expressions.constant( null ) );
@@ -275,7 +219,7 @@ public class CottontailTypeUtil {
             // type decimal (which is encoded as string since cottontail does not support the data type decimal))
             if ( parameterComponentType == PolyType.DECIMAL && actualType != PolyType.DECIMAL && actualType != PolyType.ARRAY && value.asList().get( 0 ).isBigDecimal() ) {
                 List<PolyValue> numbers = new ArrayList<>( value.asList().size() );
-                value.asList().forEach( e -> numbers.add( PolyDouble.of( e.asNumber().doubleValue() ) ) );
+                ((List<PolyValue>) value.asList()).forEach( e -> numbers.add( PolyDouble.of( e.asNumber().doubleValue() ) ) );
                 value = PolyList.of( numbers );
             }
             final Vector vector = toVectorData( value );
@@ -322,6 +266,7 @@ public class CottontailTypeUtil {
                 break;
             }
             case JSON:
+            case TEXT:
             case VARCHAR: {
                 if ( value.isString() ) {
                     return builder.setStringData( value.asString().value ).build();
@@ -376,34 +321,33 @@ public class CottontailTypeUtil {
      */
     public static Vector toVectorCallData( Object vectorObject, PolyType dstElementType ) {
         final Vector.Builder builder = Vector.newBuilder();
-        switch ( dstElementType ) {
-            case TINYINT:
-            case SMALLINT:
-            case INTEGER:
+        return switch ( dstElementType ) {
+            case TINYINT, SMALLINT, INTEGER -> {
                 for ( Number o : (List<Number>) vectorObject ) {
                     builder.getIntVectorBuilder().addVector( o.intValue() );
                 }
-                return builder.build();
-            case BIGINT:
+                yield builder.build();
+            }
+            case BIGINT -> {
                 for ( Number o : (List<Number>) vectorObject ) {
                     builder.getLongVectorBuilder().addVector( o.longValue() );
                 }
-                return builder.build();
-            case DECIMAL:
-            case DOUBLE:
+                yield builder.build();
+            }
+            case DECIMAL, DOUBLE -> {
                 for ( Number o : (List<Number>) vectorObject ) {
                     builder.getDoubleVectorBuilder().addVector( o.doubleValue() );
                 }
-                return builder.build();
-            case FLOAT:
-            case REAL:
+                yield builder.build();
+            }
+            case FLOAT, REAL -> {
                 for ( Number o : (List<Number>) vectorObject ) {
                     builder.getFloatVectorBuilder().addVector( o.floatValue() );
                 }
-                return builder.build();
-            default:
-                throw new GenericRuntimeException( "Unsupported type: " + dstElementType.getName() );
-        }
+                yield builder.build();
+            }
+            default -> throw new GenericRuntimeException( "Unsupported type: " + dstElementType.getName() );
+        };
     }
 
 
@@ -448,16 +392,15 @@ public class CottontailTypeUtil {
     private static Expression arrayListToExpression( List<RexNode> operands, PolyType innerType ) {
         List<Object> list = arrayCallToList( operands, innerType );
 
-        switch ( innerType ) {
-            case DECIMAL: {
+        return switch ( innerType ) {
+            case DECIMAL -> {
                 List<Object> stringEncoded = convertBigDecimalArray( list );
-                return Expressions.call(
+                yield Expressions.call(
                         Types.lookupMethod( Linq4JFixer.class, "fixBigDecimalArray", List.class ),
                         Expressions.constant( stringEncoded ) );
             }
-            default:
-                return Expressions.constant( list );
-        }
+            default -> Expressions.constant( list );
+        };
     }
 
 
@@ -465,7 +408,7 @@ public class CottontailTypeUtil {
         List<Object> fixedList = new ArrayList<>( bigDecimalArray.size() );
         for ( Object o : bigDecimalArray ) {
             if ( o instanceof BigDecimal ) {
-                fixedList.add( ((BigDecimal) o).toString() );
+                fixedList.add( o.toString() );
             } else {
                 fixedList.add( convertBigDecimalArray( (List) o ) );
             }
@@ -491,39 +434,21 @@ public class CottontailTypeUtil {
 
 
     private static Object rexLiteralToJavaClass( RexLiteral rexLiteral, PolyType actualType ) {
-        switch ( actualType ) {
-            case BOOLEAN:
-                return rexLiteral.getValue();
-            case INTEGER:
-                return rexLiteral.getValue();
-            case BIGINT:
-                return rexLiteral.getValue();
-            case DOUBLE:
-                return rexLiteral.getValue();
-            case REAL:
-            case FLOAT:
-                return rexLiteral.getValue();
-            case VARCHAR:
-            case CHAR:
-            case JSON:
-                return rexLiteral.getValue();
-            case TIMESTAMP:
-                return rexLiteral.getValue();
-            case DATE:
-            case TIME:
-                return rexLiteral.getValue();
-            case DECIMAL:
-                return rexLiteral.getValue();
-            case VARBINARY:
-            case BINARY:
-                return rexLiteral.getValue();
-            case TINYINT:
-                return rexLiteral.getValue();
-            case SMALLINT:
-                return rexLiteral.getValue();
-            default:
-                throw new GenericRuntimeException( "Type " + actualType + " is not supported by the cottontail adapter." );
-        }
+        return switch ( actualType ) {
+            case BOOLEAN -> rexLiteral.getValue();
+            case INTEGER -> rexLiteral.getValue();
+            case BIGINT -> rexLiteral.getValue();
+            case DOUBLE -> rexLiteral.getValue();
+            case REAL, FLOAT -> rexLiteral.getValue();
+            case VARCHAR, CHAR, JSON -> rexLiteral.getValue();
+            case TIMESTAMP -> rexLiteral.getValue();
+            case DATE, TIME -> rexLiteral.getValue();
+            case DECIMAL -> rexLiteral.getValue();
+            case VARBINARY, BINARY -> rexLiteral.getValue();
+            case TINYINT -> rexLiteral.getValue();
+            case SMALLINT -> rexLiteral.getValue();
+            default -> throw new GenericRuntimeException( "Type " + actualType + " is not supported by the cottontail adapter." );
+        };
     }
 
 
@@ -558,11 +483,9 @@ public class CottontailTypeUtil {
      * @return {@link Expression}
      */
     private static Expression knnCallTargetColumn( RexNode node, List<String> physicalColumnNames, ParameterExpression dynamicParamMap ) {
-        if ( node instanceof RexIndexRef ) {
-            RexIndexRef inputRef = (RexIndexRef) node;
+        if ( node instanceof RexIndexRef inputRef ) {
             return Expressions.constant( physicalColumnNames.get( inputRef.getIndex() ) );
-        } else if ( node instanceof RexDynamicParam ) {
-            RexDynamicParam dynamicParam = (RexDynamicParam) node;
+        } else if ( node instanceof RexDynamicParam dynamicParam ) {
             return Expressions.call( dynamicParamMap, BuiltInMethod.MAP_GET.method, Expressions.constant( dynamicParam.getIndex() ) );
         }
 
@@ -581,8 +504,7 @@ public class CottontailTypeUtil {
         if ( (node instanceof RexCall) && (((RexCall) node).getOperator() instanceof SqlArrayValueConstructor) ) {
             final Expression arrayList = arrayListToExpression( ((RexCall) node).getOperands(), actualType );
             return Expressions.call( CottontailTypeUtil.class, "toVectorCallData", arrayList, Expressions.constant( actualType ) );
-        } else if ( node instanceof RexDynamicParam ) {
-            final RexDynamicParam dynamicParam = (RexDynamicParam) node;
+        } else if ( node instanceof RexDynamicParam dynamicParam ) {
             final MethodCallExpression listExpression = Expressions.call( dynamicParamMap, BuiltInMethod.MAP_GET.method, Expressions.constant( dynamicParam.getIndex() ) );
             return Expressions.call( CottontailTypeUtil.class, "toVectorCallData", listExpression, Expressions.constant( actualType ) );
         }
@@ -600,8 +522,7 @@ public class CottontailTypeUtil {
     private static Expression knnCallDistance( RexNode node, ParameterExpression dynamicParamMap ) {
         if ( node instanceof RexLiteral ) {
             return Expressions.constant( ((RexLiteral) node).getValue() );
-        } else if ( node instanceof RexDynamicParam ) {
-            RexDynamicParam dynamicParam = (RexDynamicParam) node;
+        } else if ( node instanceof RexDynamicParam dynamicParam ) {
             return Expressions.call( dynamicParamMap, BuiltInMethod.MAP_GET.method,
                     Expressions.constant( dynamicParam.getIndex() ) );
         }

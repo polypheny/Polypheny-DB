@@ -22,7 +22,6 @@ import io.grpc.StatusRuntimeException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.cottontail.CottontailPlugin.CottontailStore;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Transaction;
