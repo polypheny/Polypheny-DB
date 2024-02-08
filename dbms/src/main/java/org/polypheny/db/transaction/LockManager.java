@@ -70,7 +70,7 @@ public class LockManager {
             Lock lock = lockTable.get( pair.getKey() );
 
             try {
-                if ( hasLock( transaction, pair.getKey() ) && (pair.getValue() == lock.getMode()) ) {
+                if ( hasLock( transaction, pair.getKey() ) && pair.getValue() == lock.getMode() ) {
                     continue;
                 } else if ( pair.getValue() == Lock.LockMode.SHARED && hasLock( transaction, pair.getKey() ) && lock.getMode() == Lock.LockMode.EXCLUSIVE ) {
                     continue;
@@ -127,11 +127,11 @@ public class LockManager {
 
 
     public boolean hasLock( @NonNull TransactionImpl transaction, @NonNull EntityAccessMap.EntityIdentifier entityIdentifier ) {
-        Set<Lock> lockList = transaction.getLocks();
-        if ( lockList == null ) {
+        Set<Lock> locks = transaction.getLocks();
+        if ( locks == null ) {
             return false;
         }
-        for ( Lock txnLock : lockList ) {
+        for ( Lock txnLock : locks ) {
             if ( txnLock == lockTable.get( entityIdentifier ) ) {
                 return true;
             }

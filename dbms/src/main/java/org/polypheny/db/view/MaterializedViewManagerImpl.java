@@ -63,6 +63,7 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.EntityAccessMap;
 import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier;
+import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier.NamespaceLevel;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.PolyXid;
@@ -109,7 +110,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      */
     public synchronized Map<Long, MaterializedCriteria> updateMaterializedViewInfo() {
         List<Long> toRemove = new ArrayList<>();
-        for ( Long id : materializedInfo.keySet() ) {
+        for ( long id : materializedInfo.keySet() ) {
             if ( Catalog.getInstance().getSnapshot().getLogicalEntity( id ).isEmpty() ) {
                 toRemove.add( id );
             }
@@ -136,7 +137,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      * @param materializedId id from materialized view
      */
     @Override
-    public synchronized void updateMaterializedTime( Long materializedId ) {
+    public synchronized void updateMaterializedTime( long materializedId ) {
         if ( materializedInfo.containsKey( materializedId ) ) {
             materializedInfo.get( materializedId ).setLastUpdate( new Timestamp( System.currentTimeMillis() ) );
             Catalog.getInstance().getLogicalRel( 0 ).updateMaterializedViewRefreshTime( materializedId );
@@ -257,16 +258,16 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
     private void updatingIntervalMaterialized() {
         Map<Long, MaterializedCriteria> materializedViewInfo;
         materializedViewInfo = ImmutableMap.copyOf( updateMaterializedViewInfo() );
-        materializedViewInfo.forEach( ( k, v ) -> {
-            if ( v.getCriteriaType() == CriteriaType.INTERVAL ) {
-                if ( v.getLastUpdate().getTime() + v.getTimeInMillis() < System.currentTimeMillis() ) {
-                    if ( !isDroppingMaterialized && !isCreatingMaterialized && !isUpdatingMaterialized ) {
-                        prepareToUpdate( k );
-                        updateMaterializedTime( k );
-                    }
-                }
+        for ( Entry<Long, MaterializedCriteria> entry : materializedViewInfo.entrySet() ) {
+            Long k = entry.getKey();
+            MaterializedCriteria v = entry.getValue();
+            if ( v.getCriteriaType() == CriteriaType.INTERVAL
+                    && v.getLastUpdate().getTime() + v.getTimeInMillis() < System.currentTimeMillis()
+                    && !isDroppingMaterialized && !isCreatingMaterialized && !isUpdatingMaterialized ) {
+                prepareToUpdate( k );
+                updateMaterializedTime( k );
             }
-        } );
+        }
     }
 
 
@@ -275,9 +276,9 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      *
      * @param materializedId of materialized view, which is updated
      */
-    public void prepareToUpdate( Long materializedId ) {
+    public void prepareToUpdate( long materializedId ) {
         Catalog catalog = Catalog.getInstance();
-        LogicalTable catalogTable = catalog.getSnapshot().getLogicalEntity( materializedId ).map( e -> e.unwrap( LogicalTable.class ).orElseThrow() ).orElseThrow();
+        LogicalTable table = catalog.getSnapshot().getLogicalEntity( materializedId ).map( e -> e.unwrap( LogicalTable.class ).orElseThrow() ).orElseThrow();
 
         Transaction transaction = getTransactionManager().startTransaction(
                 Catalog.defaultUserId,
@@ -286,13 +287,17 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
         try {
             Statement statement = transaction.createStatement();
-            Collection<Entry<EntityIdentifier, LockMode>> idAccessMap = new ArrayList<>();
+            Collection<Entry<EntityIdentifier, LockMode>> idAccesses = new ArrayList<>();
             // Get a shared global schema lock (only DDLs acquire an exclusive global schema lock)
-            idAccessMap.add( Pair.of( LockManager.GLOBAL_LOCK, LockMode.SHARED ) );
+            idAccesses.add( Pair.of( LockManager.GLOBAL_LOCK, LockMode.SHARED ) );
             // Get locks for individual tables
-            EntityAccessMap accessMap = new EntityAccessMap( ((LogicalMaterializedView) catalogTable).getDefinition(), new HashMap<>() );
-            idAccessMap.addAll( accessMap.getAccessedEntityPair() );
-            LockManager.INSTANCE.lock( idAccessMap, (TransactionImpl) statement.getTransaction() );
+            EntityAccessMap access = new EntityAccessMap( table.unwrap( LogicalMaterializedView.class ).orElseThrow().getDefinition(), new HashMap<>() );
+            idAccesses.addAll( access.getAccessedEntityPair() );
+            // lock for materialized view
+            catalog.getSnapshot().alloc().getFromLogical( materializedId )
+                    .forEach( allocation -> idAccesses.add( Pair.of( new EntityIdentifier( allocation.logicalId, allocation.id, NamespaceLevel.ENTITY_LEVEL ), LockMode.EXCLUSIVE ) ) );
+
+            LockManager.INSTANCE.lock( idAccesses, (TransactionImpl) statement.getTransaction() );
         } catch ( DeadlockException e ) {
             throw new GenericRuntimeException( "DeadLock while locking for materialized view update", e );
         }
@@ -345,7 +350,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
         List<AllocationColumn> columnPlacements = new ArrayList<>();
 
         if ( Catalog.snapshot().getLogicalEntity( materializedId ).isPresent() && materializedInfo.containsKey( materializedId ) ) {
-            LogicalMaterializedView catalogMaterializedView = Catalog.snapshot().getLogicalEntity( materializedId ).map( e -> e.unwrap( LogicalMaterializedView.class ).orElseThrow() ).orElseThrow();
+            LogicalMaterializedView materializedView = Catalog.snapshot().getLogicalEntity( materializedId ).map( e -> e.unwrap( LogicalMaterializedView.class ).orElseThrow() ).orElseThrow();
 
             Catalog.snapshot().rel().getColumns( materializedId );
 
@@ -354,7 +359,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
                 // Build {@link AlgNode} to build delete Statement from materialized view
                 AlgBuilder deleteAlgBuilder = AlgBuilder.create( deleteStatement );
-                AlgNode deleteAlg = deleteAlgBuilder.scan( catalogMaterializedView ).build();
+                AlgNode deleteAlg = deleteAlgBuilder.scan( materializedView ).build();
 
                 // Build {@link AlgNode} to build insert Statement from materialized view
                 Statement targetStatementDelete = transaction.createStatement();
@@ -370,7 +375,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                         targetStatementDelete,
                         targetAlg,
                         true,
-                        catalogMaterializedView.isOrdered() );
+                        materializedView.isOrdered() );
 
             }
             addData(

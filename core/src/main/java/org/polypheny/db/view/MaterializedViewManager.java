@@ -78,7 +78,7 @@ public abstract class MaterializedViewManager {
 
     public abstract void updateCommittedXid( PolyXid xid );
 
-    public abstract void updateMaterializedTime( Long materializedId );
+    public abstract void updateMaterializedTime( long materializedId );
 
     public abstract void addMaterializedInfo( long materializedId, MaterializedCriteria matViewCriteria );
 

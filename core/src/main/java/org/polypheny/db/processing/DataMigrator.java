@@ -71,10 +71,10 @@ public interface DataMigrator {
     //is used within copyData
     void executeQuery(
             List<AllocationColumn> columns,
-            AlgRoot sourceRel,
+            AlgRoot sourceAlg,
             Statement sourceStatement,
             Statement targetStatement,
-            AlgRoot targetRel,
+            AlgRoot targetAlg,
             boolean isMaterializedView,
             boolean doesSubstituteOrderBy );
 
