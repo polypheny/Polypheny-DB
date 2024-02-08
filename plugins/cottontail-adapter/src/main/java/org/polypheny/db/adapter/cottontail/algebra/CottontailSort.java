@@ -31,6 +31,7 @@ import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
@@ -70,7 +71,7 @@ public class CottontailSort extends Sort implements CottontailAlg {
             context.offsetBuilder = numberBuilderBuilder( this.offset );
         }
         if ( this.collation != null && !this.collation.getFieldCollations().isEmpty() ) {
-            context.sortMap = sortMapBuilder( this.collation, context, getTupleType().getFieldNames() );
+            context.sortMap = sortMapBuilder( this.collation, context, getTupleType().getFields() );
         }
     }
 
@@ -89,29 +90,18 @@ public class CottontailSort extends Sort implements CottontailAlg {
      * @param columnNames List of column names.
      * @return {@link ParameterExpression}
      */
-    private static ParameterExpression sortMapBuilder( AlgCollation node, CottontailImplementContext context, List<String> columnNames ) {
+    private static ParameterExpression sortMapBuilder( AlgCollation node, CottontailImplementContext context, List<AlgDataTypeField> columns ) {
         final BlockBuilder builder = context.blockBuilder;
         final ParameterExpression orderMap_ = Expressions.variable( Map.class, builder.newName( "orderMap" ) );
         final NewExpression orderMapCreator = Expressions.new_( LinkedHashMap.class );
         builder.add( Expressions.declare( Modifier.FINAL, orderMap_, orderMapCreator ) );
         for ( AlgFieldCollation c : node.getFieldCollations() ) {
-            final String logicalName = columnNames.get( c.getFieldIndex() );
-            String physicalName;
-            try {
-                physicalName = context.table.getPhysicalColumnName( logicalName );
-            } catch ( IndexOutOfBoundsException e ) {
-                physicalName = logicalName; /* Case of column being calculated and there being no physical column. */
-            }
-            final Expression sortOrder;
-            switch ( c.direction ) {
-                case DESCENDING:
-                case STRICTLY_DESCENDING:
-                    sortOrder = Expressions.constant( CottontailGrpc.Order.Direction.DESCENDING.toString() );
-                    break;
-                default:
-                    sortOrder = Expressions.constant( CottontailGrpc.Order.Direction.ASCENDING.toString() );
-                    break;
-            }
+            final AlgDataTypeField column = columns.get( c.getFieldIndex() );
+            String physicalName = (column.getPhysicalName() == null ? column.getName() : column.getPhysicalName());
+            final Expression sortOrder = switch ( c.direction ) {
+                case DESCENDING, STRICTLY_DESCENDING -> Expressions.constant( CottontailGrpc.Order.Direction.DESCENDING.toString() );
+                default -> Expressions.constant( CottontailGrpc.Order.Direction.ASCENDING.toString() );
+            };
             builder.add( Expressions.statement( Expressions.call( orderMap_, BuiltInMethod.MAP_PUT.method, Expressions.constant( physicalName ), sortOrder ) ) );
         }
         return orderMap_;

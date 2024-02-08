@@ -22,7 +22,6 @@ import lombok.Getter;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Queryable;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.cottontail.CottontailPlugin.CottontailStore;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailScan;
 import org.polypheny.db.adapter.cottontail.enumberable.CottontailQueryEnumerable;
 import org.polypheny.db.algebra.AlgNode;
