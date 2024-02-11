@@ -653,7 +653,8 @@ public class DdlManagerImpl extends DdlManager {
 
         String physicalName = location.addIndex(
                 statement.getPrepareContext(),
-                index, alloc );
+                index,
+                alloc );
         catalog.getLogicalRel( table.namespaceId ).setIndexPhysicalName( index.id, physicalName );
 
     }

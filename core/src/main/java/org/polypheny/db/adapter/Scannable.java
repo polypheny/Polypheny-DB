@@ -50,6 +50,10 @@ import org.polypheny.db.type.PolyType;
 public interface Scannable {
 
     static PhysicalTable createSubstitutionTable( Scannable scannable, Context context, LogicalEntity logical, AllocationEntity allocation, String name, List<ColumnContext> nameLength, int amountPk ) {
+        return createSubstitutionEntity( scannable, context, logical, allocation, name, nameLength, amountPk ).unwrap( PhysicalTable.class ).orElseThrow();
+    }
+
+    static PhysicalEntity createSubstitutionEntity( Scannable scannable, Context context, LogicalEntity logical, AllocationEntity allocation, String name, List<ColumnContext> nameLength, int amountPk ) {
         IdBuilder builder = IdBuilder.getInstance();
         LogicalTable table = new LogicalTable( builder.getNewLogicalId(), name + logical.id, logical.namespaceId, logical.entityType, null, logical.modifiable );
         List<LogicalColumn> columns = new ArrayList<>();
@@ -70,7 +74,7 @@ public interface Scannable {
         }
         // we use first as pk
         scannable.createTable( context, LogicalTableWrapper.of( table, columns, columns.subList( 0, amountPk ).stream().map( c -> c.id ).toList() ), AllocationTableWrapper.of( allocSubTable, allocColumns ) );
-        return scannable.getCatalog().getPhysicalsFromAllocs( allocSubTable.id ).get( 0 ).unwrap( PhysicalTable.class ).orElseThrow();
+        return scannable.getCatalog().getPhysicalsFromAllocs( allocSubTable.id ).get( 0 );
     }
 
 
@@ -165,22 +169,22 @@ public interface Scannable {
 
 
     static List<PhysicalEntity> createGraphSubstitute( Scannable scannable, Context context, LogicalGraph logical, AllocationGraph allocation ) {
-        PhysicalTable node = createSubstitutionTable( scannable, context, logical, allocation, "_node_", List.of(
+        PhysicalEntity node = createSubstitutionEntity( scannable, context, logical, allocation, "_node_", List.of(
                 new ColumnContext( "id", GraphType.ID_SIZE, PolyType.VARCHAR, false ),
                 new ColumnContext( "label", null, PolyType.TEXT, false ) ), 2 );
 
-        PhysicalTable nProperties = createSubstitutionTable( scannable, context, logical, allocation, "_nProperties_", List.of(
+        PhysicalEntity nProperties = createSubstitutionEntity( scannable, context, logical, allocation, "_nProperties_", List.of(
                 new ColumnContext( "id", GraphType.ID_SIZE, PolyType.VARCHAR, false ),
                 new ColumnContext( "key", null, PolyType.TEXT, false ),
                 new ColumnContext( "value", null, PolyType.TEXT, true ) ), 2 );
 
-        PhysicalTable edge = createSubstitutionTable( scannable, context, logical, allocation, "_edge_", List.of(
+        PhysicalEntity edge = createSubstitutionEntity( scannable, context, logical, allocation, "_edge_", List.of(
                 new ColumnContext( "id", GraphType.ID_SIZE, PolyType.VARCHAR, false ),
                 new ColumnContext( "label", null, PolyType.TEXT, true ),
                 new ColumnContext( "_l_id_", GraphType.ID_SIZE, PolyType.VARCHAR, true ),
                 new ColumnContext( "_r_id_", GraphType.ID_SIZE, PolyType.VARCHAR, true ) ), 1 );
 
-        PhysicalTable eProperties = createSubstitutionTable( scannable, context, logical, allocation, "_eProperties_", List.of(
+        PhysicalEntity eProperties = createSubstitutionEntity( scannable, context, logical, allocation, "_eProperties_", List.of(
                 new ColumnContext( "id", GraphType.ID_SIZE, PolyType.VARCHAR, false ),
                 new ColumnContext( "key", null, PolyType.TEXT, false ),
                 new ColumnContext( "value", null, PolyType.TEXT, true ) ), 2 );
@@ -204,6 +208,7 @@ public interface Scannable {
         for ( PhysicalEntity physical : physicals ) {
             scannable.dropTable( context, physical.allocationId );
         }
+        scannable.getCatalog().removeAllocAndPhysical( allocation.id );
     }
 
 
@@ -216,7 +221,7 @@ public interface Scannable {
 
 
     static List<PhysicalEntity> createCollectionSubstitute( Scannable scannable, Context context, LogicalCollection logical, AllocationCollection allocation ) {
-        PhysicalTable doc = createSubstitutionTable( scannable, context, logical, allocation, "_doc_", List.of(
+        PhysicalEntity doc = createSubstitutionEntity( scannable, context, logical, allocation, "_doc_", List.of(
                 new ColumnContext( DocumentType.DOCUMENT_ID, null, PolyType.TEXT, false ),
                 new ColumnContext( DocumentType.DOCUMENT_DATA, null, PolyType.TEXT, false ) ), 1 );
 

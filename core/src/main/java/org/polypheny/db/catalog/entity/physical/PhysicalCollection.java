@@ -21,6 +21,7 @@ import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
+import lombok.experimental.SuperBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
@@ -30,6 +31,7 @@ import org.polypheny.db.type.entity.PolyValue;
 @EqualsAndHashCode(callSuper = true)
 @Value
 @NonFinal
+@SuperBuilder(toBuilder = true)
 public class PhysicalCollection extends PhysicalEntity {
 
     public PhysicalCollection(

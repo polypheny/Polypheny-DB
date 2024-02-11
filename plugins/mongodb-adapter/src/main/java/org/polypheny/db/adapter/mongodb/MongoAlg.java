@@ -54,7 +54,7 @@ import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.util.Pair;
@@ -135,9 +135,10 @@ public interface MongoAlg extends AlgNode {
 
 
         public String getPhysicalName( String name ) {
-            int index = entity.physical.unwrap( PhysicalTable.class ).orElseThrow().columns.stream().map( c -> c.name ).toList().indexOf( name );
+            MongoEntity mongoEntity = entity.physical.unwrap( PhysicalEntity.class ).orElseThrow().unwrap( MongoEntity.class ).orElseThrow();
+            int index = mongoEntity.fields.stream().map( c -> c.logicalName ).toList().indexOf( name );
             if ( index != -1 ) {
-                return MongoStore.getPhysicalColumnName( entity.physical.unwrap( PhysicalTable.class ).orElseThrow().columns.stream().map( c -> c.id ).collect( Collectors.toList() ).get( index ) );
+                return MongoStore.getPhysicalColumnName( mongoEntity.fields.stream().map( c -> c.id ).toList().get( index ) );
             }
             throw new GenericRuntimeException( "This column is not part of the table." );
         }
