@@ -1634,7 +1634,7 @@ public class DbmsMeta implements ProtobufMeta {
 
             try {
                 transaction.commit();
-            } catch ( TransactionException e ) {
+            } catch ( Throwable e ) {
                 throw new GenericRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
             } finally {
                 connection.endCurrentTransaction();

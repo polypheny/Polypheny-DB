@@ -25,6 +25,7 @@ import org.bson.BsonString;
 import org.polypheny.db.adapter.mongodb.MongoAlg;
 import org.polypheny.db.adapter.mongodb.MongoEntity;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.common.Scan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -71,7 +72,7 @@ public class MongoScan extends Scan<MongoEntity> implements MongoAlg {
 
     @Override
     public AlgDataType deriveRowType() {
-        return super.deriveRowType();
+        return entity.getRowType( getCluster().getTypeFactory() );
     }
 
 
@@ -95,6 +96,14 @@ public class MongoScan extends Scan<MongoEntity> implements MongoAlg {
     public String algCompareString() {
         return this.getClass().getSimpleName() + "$" +
                 entity.id + "&";
+    }
+
+
+    @Override
+    public AlgWriter explainTerms( AlgWriter pw ) {
+        return super.explainTerms( pw )
+                .item( "collection", entity.id )
+                .item( "layer", entity.getLayer() );
     }
 
 

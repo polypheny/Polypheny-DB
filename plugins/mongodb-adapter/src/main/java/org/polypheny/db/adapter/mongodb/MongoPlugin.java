@@ -301,7 +301,7 @@ public class MongoPlugin extends PolyPlugin {
         @Override
         public List<PhysicalEntity> createCollection( Context context, LogicalCollection logical, AllocationCollection allocation ) {
             commitAll();
-            String name = getPhysicalTableName( allocation.id );
+            String name = getPhysicalEntityName( allocation.id );
 
             if ( storeCatalog.getNamespace( allocation.namespaceId ) == null ) {
                 updateNamespace( DEFAULT_DATABASE, allocation.namespaceId );
@@ -350,10 +350,10 @@ public class MongoPlugin extends PolyPlugin {
         public void addColumn( Context context, long allocId, LogicalColumn logicalColumn ) {
             commitAll();
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
-            PhysicalTable physical = storeCatalog.fromAllocation( allocId, PhysicalTable.class );
+            MongoEntity physical = storeCatalog.fromAllocation( allocId, MongoEntity.class );
             String physicalName = getPhysicalColumnName( logicalColumn );
             // updates all columns with this field if a default value is provided
-            storeCatalog.createColumn( physicalName, allocId, physical.columns.size() - 1, logicalColumn );
+            storeCatalog.createColumn( physicalName, allocId, physical.fields.size() - 1, logicalColumn );
 
             Document field;
             if ( logicalColumn.defaultValue != null ) {
@@ -381,7 +381,7 @@ public class MongoPlugin extends PolyPlugin {
         @Override
         public void dropColumn( Context context, long allocId, long columnId ) {
             commitAll();
-            PhysicalTable physical = storeCatalog.fromAllocation( allocId, PhysicalTable.class );
+            MongoEntity physical = storeCatalog.fromAllocation( allocId, MongoEntity.class );
             PhysicalColumn column = storeCatalog.getColumn( columnId, allocId );
 
             Document field = new Document().append( column.name, 1 );
@@ -397,7 +397,7 @@ public class MongoPlugin extends PolyPlugin {
         @Override
         public String addIndex( Context context, LogicalIndex index, AllocationTable allocation ) {
             commitAll();
-            PhysicalTable physical = storeCatalog.fromAllocation( allocation.id, PhysicalTable.class );
+            MongoEntity physical = storeCatalog.fromAllocation( allocation.id, MongoEntity.class );
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
             IndexTypes type = IndexTypes.valueOf( index.method.toUpperCase( Locale.ROOT ) );
 
@@ -433,7 +433,7 @@ public class MongoPlugin extends PolyPlugin {
         @Override
         public void dropIndex( Context context, LogicalIndex index, long allocId ) {
             commitAll();
-            PhysicalTable physical = storeCatalog.fromAllocation( allocId, PhysicalTable.class );
+            MongoEntity physical = storeCatalog.fromAllocation( allocId, MongoEntity.class );
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
 
             this.currentNamespace.database.getCollection( physical.name ).dropIndex( index.physicalName + "_" + allocId );
@@ -441,8 +441,8 @@ public class MongoPlugin extends PolyPlugin {
         }
 
 
-        private String getPhysicalIndexName( LogicalIndex catalogIndex ) {
-            return "idx" + catalogIndex.key.entityId + "_" + catalogIndex.id;
+        private String getPhysicalIndexName( LogicalIndex index ) {
+            return "idx" + index.key.entityId + "_" + index.id + "_" + index.name;
         }
 
 
@@ -456,6 +456,13 @@ public class MongoPlugin extends PolyPlugin {
             options.name( physicalIndexName );
 
             this.currentNamespace.database
+                    .getCollection( physical.name ).listIndexes().forEach( i -> {
+                        if ( i.get( "key" ).equals( doc ) ) {
+                            this.currentNamespace.database.getCollection( physical.name ).dropIndex( i.getString( "name" ) );
+                        }
+                    } );
+
+            this.currentNamespace.database
                     .getCollection( physical.name )
                     .createIndex( doc, options );
         }
@@ -464,7 +471,7 @@ public class MongoPlugin extends PolyPlugin {
         @Override
         public void updateColumnType( Context context, long allocId, LogicalColumn newCol ) {
             storeCatalog.updateColumnType( allocId, newCol );
-            PhysicalTable physical = storeCatalog.fromAllocation( allocId, PhysicalTable.class );
+            MongoEntity physical = storeCatalog.fromAllocation( allocId, MongoEntity.class );
 
             BsonDocument filter = new BsonDocument();
             List<BsonDocument> updates = Collections.singletonList( new BsonDocument( "$set", new BsonDocument( physical.name, new BsonDocument( "$convert", new BsonDocument()
@@ -504,9 +511,9 @@ public class MongoPlugin extends PolyPlugin {
         }
 
 
-        public static String getPhysicalTableName( long tableId ) {
+        public static String getPhysicalEntityName( long tableId ) {
 
-            return "tab-" + tableId;
+            return "e-" + tableId;
         }
 
 
@@ -570,7 +577,7 @@ public class MongoPlugin extends PolyPlugin {
                 storeCatalog.addNamespace( allocation.table.namespaceId, currentNamespace );
             }
 
-            String physicalTableName = getPhysicalTableName( logical.table.id );
+            String physicalTableName = getPhysicalEntityName( logical.table.id );
             PhysicalTable physical = storeCatalog.createTable(
                     logical.getTable().getNamespaceName(),
                     physicalTableName,

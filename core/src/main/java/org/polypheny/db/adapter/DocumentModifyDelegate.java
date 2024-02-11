@@ -38,7 +38,8 @@ public class DocumentModifyDelegate extends DocumentScanDelegate implements Modi
 
     @Override
     public AlgNode getGraphModify( long allocId, LpgModify<?> modify, AlgBuilder builder ) {
-        return null;
+        // todo long term add a more natural way to do this
+        return Modifiable.getGraphModifySubstitute( modifiable, allocId, modify, builder );
     }
 
 
