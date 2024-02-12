@@ -190,9 +190,9 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
     @Override
     public void updateColumnType( Context context, long allocId, LogicalColumn newCol ) {
-        PhysicalColumn column = storeCatalog.updateColumnType( allocId, newCol );
+        PhysicalColumn column = adapterCatalog.updateColumnType( allocId, newCol );
 
-        PhysicalTable physicalTable = storeCatalog.fromAllocation( allocId );
+        PhysicalTable physicalTable = adapterCatalog.fromAllocation( allocId );
 
         StringBuilder builder = new StringBuilder();
         builder.append( "ALTER TABLE " )
@@ -228,7 +228,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
     @Override
     public String addIndex( Context context, LogicalIndex index, AllocationTable allocation ) {
-        PhysicalTable physical = storeCatalog.fromAllocation( allocation.id );
+        PhysicalTable physical = adapterCatalog.fromAllocation( allocation.id );
         String physicalIndexName = getPhysicalIndexName( physical.id, index.id );
 
         StringBuilder builder = new StringBuilder();
@@ -283,7 +283,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
     @Override
     public void dropIndex( Context context, LogicalIndex index, long allocId ) {
-        PhysicalTable table = storeCatalog.fromAllocation( allocId );
+        PhysicalTable table = adapterCatalog.fromAllocation( allocId );
 
         StringBuilder builder = new StringBuilder();
         builder.append( "DROP INDEX " );
@@ -422,7 +422,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
     public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities ) {
         PhysicalEntity table = entities.get( 0 );
         updateNamespace( table.namespaceName, table.namespaceId );
-        storeCatalog.addPhysical( alloc, currentJdbcSchema.createJdbcTable( table.unwrap( PhysicalTable.class ).orElseThrow() ) );
+        adapterCatalog.addPhysical( alloc, currentJdbcSchema.createJdbcTable( table.unwrap( PhysicalTable.class ).orElseThrow() ) );
     }
 
 }

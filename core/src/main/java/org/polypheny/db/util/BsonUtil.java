@@ -67,6 +67,7 @@ import org.polypheny.db.runtime.PolyCollections.FlatMap;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
@@ -227,7 +228,7 @@ public class BsonUtil {
     public static Function<PolyValue, BsonValue> getBsonTransformer( Queue<PolyType> types, GridFSBucket bucket ) {
         Function<PolyValue, BsonValue> function = getBsonTransformerPrimitive( types, bucket );
         return ( o ) -> {
-            if ( o == null ) {
+            if ( o == null || o.isNull() ) {
                 return new BsonNull();
             } else {
                 return function.apply( o );
@@ -698,8 +699,10 @@ public class BsonUtil {
                 return PolyBoolean.of( input.asBoolean().getValue() );
             case NULL:
                 return PolyNull.NULL;
-            case INT32, INT64:
-                return PolyInteger.of( input.asInt32().getValue() );
+            case INT32:
+                return PolyInteger.of( input.asInt32().intValue() );
+            case INT64:
+                return PolyLong.of( input.asInt64().getValue() );
             case DECIMAL128:
                 return PolyBigDecimal.of( input.asDecimal128().getValue().bigDecimalValue() );
         }

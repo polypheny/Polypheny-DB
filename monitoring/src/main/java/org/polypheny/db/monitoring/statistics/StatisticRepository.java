@@ -87,7 +87,7 @@ public class StatisticRepository implements MonitoringRepository {
 
             if ( isOneTable ) {
                 long tableId = values.stream().findFirst().get();
-                if ( catalog.getSnapshot().getLogicalEntity( tableId ) != null ) {
+                if ( catalog.getSnapshot().getLogicalEntity( tableId ).isPresent() ) {
                     statisticsManager.setTableCalls( tableId, dataPoint.getMonitoringType() );
 
                     // RowCount from UI is only used if there is no other possibility

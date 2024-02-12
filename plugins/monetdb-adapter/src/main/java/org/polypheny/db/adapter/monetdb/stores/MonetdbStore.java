@@ -178,9 +178,9 @@ public class MonetdbStore extends AbstractJdbcStore {
         if ( !this.dialect.supportsNestedArrays() && newCol.collectionsType != null ) {
             return;
         }
-        PhysicalColumn column = storeCatalog.updateColumnType( allocId, newCol );
+        PhysicalColumn column = adapterCatalog.updateColumnType( allocId, newCol );
 
-        PhysicalTable table = storeCatalog.fromAllocation( allocId );
+        PhysicalTable table = adapterCatalog.fromAllocation( allocId );
         // MonetDB does not support updating the column type directly. We need to do a work-around
 
         String tmpColName = column.name + "tmp";
@@ -389,7 +389,7 @@ public class MonetdbStore extends AbstractJdbcStore {
     public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities ) {
         PhysicalEntity table = entities.get( 0 );
         updateNamespace( table.namespaceName, table.namespaceId );
-        storeCatalog.addPhysical( alloc, currentJdbcSchema.createJdbcTable( table.unwrap( PhysicalTable.class ).orElseThrow() ) );
+        adapterCatalog.addPhysical( alloc, currentJdbcSchema.createJdbcTable( table.unwrap( PhysicalTable.class ).orElseThrow() ) );
     }
 
 }

@@ -84,7 +84,7 @@ public class Qfs extends DataSource<RelAdapterCatalog> {
         super( adapterId, uniqueName, settings, true, new RelAdapterCatalog( adapterId ) );
         init( settings );
         registerInformationPage( uniqueName );
-        this.delegate = new RelationalScanDelegate( this, storeCatalog );
+        this.delegate = new RelationalScanDelegate( this, adapterCatalog );
     }
 
 
@@ -105,7 +105,7 @@ public class Qfs extends DataSource<RelAdapterCatalog> {
     @Override
     public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
         //Todo
-        PhysicalTable table = storeCatalog.createTable(
+        PhysicalTable table = adapterCatalog.createTable(
                 logical.table.getNamespaceName(),
                 logical.getTable().name,
                 logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
@@ -113,7 +113,7 @@ public class Qfs extends DataSource<RelAdapterCatalog> {
                 logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c ) ),
                 logical.pkIds, allocation );
         FileTranslatableEntity physical = currentNamespace.createFileTable( table );
-        storeCatalog.replacePhysical( physical );
+        adapterCatalog.replacePhysical( physical );
         return List.of( physical );
     }
 

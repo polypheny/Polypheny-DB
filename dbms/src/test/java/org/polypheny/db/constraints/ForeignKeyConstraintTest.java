@@ -143,8 +143,6 @@ public class ForeignKeyConstraintTest {
 
     @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
-    @Tag("mongoExclude") // COUNT() on empty collection returns no result and not 0...
-    // https://jira.mongodb.org/browse/SERVER-54958
     public void testInsertConflict( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

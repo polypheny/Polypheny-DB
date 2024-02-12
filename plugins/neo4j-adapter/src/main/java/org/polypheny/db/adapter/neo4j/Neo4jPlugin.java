@@ -224,7 +224,7 @@ public class Neo4jPlugin extends PolyPlugin {
             addInformationPhysicalNames();
             enableInformationPage();
 
-            this.delegate = new GraphModifyDelegate( this, storeCatalog );
+            this.delegate = new GraphModifyDelegate( this, adapterCatalog );
         }
 
 
@@ -282,12 +282,12 @@ public class Neo4jPlugin extends PolyPlugin {
         public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
             if ( this.currentNamespace == null ) {
                 updateNamespace( DEFAULT_DATABASE, allocation.table.id );
-                storeCatalog.addNamespace( allocation.table.namespaceId, currentNamespace );
+                adapterCatalog.addNamespace( allocation.table.namespaceId, currentNamespace );
             }
 
             String physicalName = getPhysicalEntityName( logical.table.namespaceId, allocation.table.id );
 
-            PhysicalTable physical = storeCatalog.createTable(
+            PhysicalTable physical = adapterCatalog.createTable(
                     logical.getTable().getNamespaceName(),
                     physicalName,
                     allocation.columns.stream().collect( Collectors.toMap( c -> c.columnId, c -> getPhysicalFieldName( c.columnId ) ) ),
@@ -296,15 +296,15 @@ public class Neo4jPlugin extends PolyPlugin {
                     logical.pkIds,
                     allocation );
 
-            this.storeCatalog.addPhysical( allocation.table, this.currentNamespace.createEntity( physical, physical.columns, currentNamespace ) );
+            this.adapterCatalog.addPhysical( allocation.table, this.currentNamespace.createEntity( physical, physical.columns, currentNamespace ) );
             return refreshTable( allocation.table.id );
         }
 
 
         public List<PhysicalEntity> refreshTable( long allocId ) {
-            PhysicalEntity physical = storeCatalog.fromAllocation( allocId, PhysicalEntity.class );
-            List<? extends PhysicalField> fields = storeCatalog.getFields( allocId );
-            storeCatalog.replacePhysical( currentNamespace.createEntity( physical, fields, this.currentNamespace ) );
+            PhysicalEntity physical = adapterCatalog.fromAllocation( allocId, PhysicalEntity.class );
+            List<? extends PhysicalField> fields = adapterCatalog.getFields( allocId );
+            adapterCatalog.replacePhysical( currentNamespace.createEntity( physical, fields, this.currentNamespace ) );
             return List.of( physical );
         }
 
@@ -312,7 +312,7 @@ public class Neo4jPlugin extends PolyPlugin {
         @Override
         public void dropTable( Context context, long allocId ) {
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
-            PhysicalTable physical = storeCatalog.fromAllocation( allocId, PhysicalTable.class );
+            PhysicalTable physical = adapterCatalog.fromAllocation( allocId, PhysicalTable.class );
 
             executeDdlTrx(
                     context.getStatement().getTransaction().getXid(),
@@ -324,9 +324,9 @@ public class Neo4jPlugin extends PolyPlugin {
         public void addColumn( Context context, long allocId, LogicalColumn logicalColumn ) {
             transactionProvider.commitAll();
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
-            PhysicalTable physical = storeCatalog.fromAllocation( allocId, PhysicalTable.class );
+            PhysicalTable physical = adapterCatalog.fromAllocation( allocId, PhysicalTable.class );
             String physicalName = getPhysicalFieldName( logicalColumn.id );
-            storeCatalog.createColumn( physicalName, allocId, physical.columns.size() - 1, logicalColumn );
+            adapterCatalog.createColumn( physicalName, allocId, physical.columns.size() - 1, logicalColumn );
 
             if ( logicalColumn.defaultValue != null ) {
                 executeDdlTrx( context.getStatement().getTransaction().getXid(), format(
@@ -349,8 +349,8 @@ public class Neo4jPlugin extends PolyPlugin {
 
         @Override
         public void dropColumn( Context context, long allocId, long columnId ) {
-            PhysicalTable physical = storeCatalog.fromAllocation( allocId, PhysicalTable.class );
-            PhysicalColumn column = storeCatalog.getField( columnId, allocId ).unwrap( PhysicalColumn.class ).orElseThrow();
+            PhysicalTable physical = adapterCatalog.fromAllocation( allocId, PhysicalTable.class );
+            PhysicalColumn column = adapterCatalog.getField( columnId, allocId ).unwrap( PhysicalColumn.class ).orElseThrow();
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
             executeDdlTrx(
                     context.getStatement().getTransaction().getXid(),
@@ -361,7 +361,7 @@ public class Neo4jPlugin extends PolyPlugin {
         @Override
         public String addIndex( Context context, LogicalIndex index, AllocationTable allocation ) {
             Catalog catalog = Catalog.getInstance();
-            PhysicalTable physical = storeCatalog.fromAllocation( allocation.id, PhysicalTable.class );
+            PhysicalTable physical = adapterCatalog.fromAllocation( allocation.id, PhysicalTable.class );
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
             IndexTypes type = IndexTypes.valueOf( index.method.toUpperCase( Locale.ROOT ) );
             List<Long> columns = index.key.columnIds;
@@ -446,7 +446,7 @@ public class Neo4jPlugin extends PolyPlugin {
             transactionProvider.commitAll();
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
 
-            PhysicalTable physical = storeCatalog.fromAllocation( allocId, PhysicalTable.class );
+            PhysicalTable physical = adapterCatalog.fromAllocation( allocId, PhysicalTable.class );
             executeDdlTrx(
                     context.getStatement().getTransaction().getXid(),
                     format( "MATCH (n:%s) DETACH DELETE n", physical.name ) );
@@ -457,19 +457,19 @@ public class Neo4jPlugin extends PolyPlugin {
         @Override
         public List<PhysicalEntity> createGraph( Context context, LogicalGraph logical, AllocationGraph allocation ) {
             String mappingLabel = getMappingLabel( allocation.id );
-            PhysicalGraph physical = storeCatalog.createGraph(
+            PhysicalGraph physical = adapterCatalog.createGraph(
                     getPhysicalGraphName( allocation.id ),
                     logical,
                     allocation );
 
-            this.storeCatalog.addPhysical( allocation, new NeoGraph( physical, List.of(), this.transactionProvider, this.db, getMappingLabel( physical.id ), this ) );
+            this.adapterCatalog.addPhysical( allocation, new NeoGraph( physical, List.of(), this.transactionProvider, this.db, getMappingLabel( physical.id ), this ) );
             return refreshGraph( allocation.id );
         }
 
 
         public List<PhysicalEntity> refreshGraph( long allocId ) {
-            PhysicalGraph physical = storeCatalog.fromAllocation( allocId, PhysicalGraph.class );
-            storeCatalog.replacePhysical( new NeoGraph( physical, List.of(), this.transactionProvider, this.db, getMappingLabel( physical.id ), this ) );
+            PhysicalGraph physical = adapterCatalog.fromAllocation( allocId, PhysicalGraph.class );
+            adapterCatalog.replacePhysical( new NeoGraph( physical, List.of(), this.transactionProvider, this.db, getMappingLabel( physical.id ), this ) );
             return List.of( physical );
         }
 
@@ -477,7 +477,7 @@ public class Neo4jPlugin extends PolyPlugin {
         @Override
         public void dropGraph( Context context, AllocationGraph allocation ) {
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
-            PhysicalGraph physical = storeCatalog.fromAllocation( allocation.id, PhysicalGraph.class );
+            PhysicalGraph physical = adapterCatalog.fromAllocation( allocation.id, PhysicalGraph.class );
             executeDdlTrx(
                     context.getStatement().getTransaction().getXid(),
                     format( "MATCH (n:%s) DETACH DELETE n", getMappingLabel( physical.id ) ) );

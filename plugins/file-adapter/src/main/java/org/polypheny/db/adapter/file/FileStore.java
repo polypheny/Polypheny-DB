@@ -114,7 +114,7 @@ public class FileStore extends DataStore<RelAdapterCatalog> {
         trxRecovery();
         setInformationPage();
 
-        this.delegate = new RelationalModifyDelegate( this, storeCatalog );
+        this.delegate = new RelationalModifyDelegate( this, adapterCatalog );
     }
 
 
@@ -166,7 +166,7 @@ public class FileStore extends DataStore<RelAdapterCatalog> {
 
         updateNamespace( logical.table.getNamespaceName(), logical.table.namespaceId );
 
-        PhysicalTable table = storeCatalog.createTable(
+        PhysicalTable table = adapterCatalog.createTable(
                 logical.table.getNamespaceName(),
                 physicalTableName,
                 allocationWrapper.columns.stream().collect( Collectors.toMap( c -> c.columnId, c -> getPhysicalColumnName( c.columnId, allocationWrapper.table.id ) ) ),
@@ -183,7 +183,7 @@ public class FileStore extends DataStore<RelAdapterCatalog> {
 
         FileTranslatableEntity physical = currentNamespace.createFileTable( table, logical.pkIds );
 
-        storeCatalog.replacePhysical( physical );
+        adapterCatalog.replacePhysical( physical );
         return List.of( physical );
     }
 
@@ -198,7 +198,7 @@ public class FileStore extends DataStore<RelAdapterCatalog> {
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
         // TODO check if it is on this store?
 
-        PhysicalTable table = storeCatalog.fromAllocation( allocId );
+        PhysicalTable table = adapterCatalog.fromAllocation( allocId );
         for ( long colId : table.getColumnIds() ) {
             File f = getColumnFolder( colId, allocId );
             try {
@@ -208,19 +208,19 @@ public class FileStore extends DataStore<RelAdapterCatalog> {
             }
         }
 
-        storeCatalog.removeAllocAndPhysical( allocId );
+        adapterCatalog.removeAllocAndPhysical( allocId );
 
     }
 
 
     @Override
     public void renameLogicalColumn( long id, String newColumnName ) {
-        long allocId = storeCatalog.fields.values().stream().filter( c -> c.id == id ).map( c -> c.allocId ).findFirst().orElseThrow();
-        FileTranslatableEntity table = storeCatalog.fromAllocation( allocId ).unwrap( FileTranslatableEntity.class ).orElseThrow();
+        long allocId = adapterCatalog.fields.values().stream().filter( c -> c.id == id ).map( c -> c.allocId ).findFirst().orElseThrow();
+        FileTranslatableEntity table = adapterCatalog.fromAllocation( allocId ).unwrap( FileTranslatableEntity.class ).orElseThrow();
 
-        storeCatalog.renameLogicalColumn( id, newColumnName );
+        adapterCatalog.renameLogicalColumn( id, newColumnName );
 
-        storeCatalog.fields.values().stream().filter( c -> c.id == id ).forEach( c -> updateNativePhysical( c.allocId, table.getPkIds() ) );
+        adapterCatalog.fields.values().stream().filter( c -> c.id == id ).forEach( c -> updateNativePhysical( c.allocId, table.getPkIds() ) );
 
         updateNativePhysical( allocId, table.getPkIds() );
     }
@@ -230,9 +230,9 @@ public class FileStore extends DataStore<RelAdapterCatalog> {
     public void addColumn( Context context, long allocId, LogicalColumn logicalColumn ) {
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
 
-        FileTranslatableEntity table = storeCatalog.fromAllocation( allocId ).unwrap( FileTranslatableEntity.class ).orElseThrow();
-        int max = storeCatalog.getColumns( allocId ).stream().max( Comparator.comparingInt( a -> a.position ) ).orElseThrow().position;
-        PhysicalColumn column = storeCatalog.addColumn( getPhysicalColumnName( logicalColumn.id, allocId ), allocId, max + 1, logicalColumn );
+        FileTranslatableEntity table = adapterCatalog.fromAllocation( allocId ).unwrap( FileTranslatableEntity.class ).orElseThrow();
+        int max = adapterCatalog.getColumns( allocId ).stream().max( Comparator.comparingInt( a -> a.position ) ).orElseThrow().position;
+        PhysicalColumn column = adapterCatalog.addColumn( getPhysicalColumnName( logicalColumn.id, allocId ), allocId, max + 1, logicalColumn );
 
         File newColumnFolder = getColumnFolder( column.id, allocId );
         if ( !newColumnFolder.mkdir() ) {
@@ -259,17 +259,17 @@ public class FileStore extends DataStore<RelAdapterCatalog> {
 
 
     protected void updateNativePhysical( long allocId, List<Long> pkIds ) {
-        PhysicalTable table = storeCatalog.fromAllocation( allocId );
-        storeCatalog.replacePhysical( this.currentNamespace.createFileTable( table, pkIds ) );
+        PhysicalTable table = adapterCatalog.fromAllocation( allocId );
+        adapterCatalog.replacePhysical( this.currentNamespace.createFileTable( table, pkIds ) );
     }
 
 
     @Override
     public void dropColumn( Context context, long allocId, long columnId ) {
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
-        FileTranslatableEntity fileTranslatableEntity = storeCatalog.fromAllocation( allocId ).unwrap( FileTranslatableEntity.class ).orElseThrow();
+        FileTranslatableEntity fileTranslatableEntity = adapterCatalog.fromAllocation( allocId ).unwrap( FileTranslatableEntity.class ).orElseThrow();
 
-        storeCatalog.dropColumn( allocId, columnId );
+        adapterCatalog.dropColumn( allocId, columnId );
         File columnFile = getColumnFolder( columnId, allocId );
         try {
             FileUtils.deleteDirectory( columnFile );
@@ -440,7 +440,7 @@ public class FileStore extends DataStore<RelAdapterCatalog> {
     @Override
     public void truncate( Context context, long allocId ) {
         //context.getStatement().getTransaction().registerInvolvedStore( this );
-        PhysicalTable table = storeCatalog.fromAllocation( allocId ).unwrap( FileTranslatableEntity.class ).orElseThrow();
+        PhysicalTable table = adapterCatalog.fromAllocation( allocId ).unwrap( FileTranslatableEntity.class ).orElseThrow();
         try {
             for ( PhysicalColumn column : table.columns ) {
                 File columnFolder = getColumnFolder( column.id, allocId );

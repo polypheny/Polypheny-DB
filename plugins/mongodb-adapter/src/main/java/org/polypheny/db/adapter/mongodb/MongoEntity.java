@@ -54,6 +54,7 @@ import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Value;
+import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
@@ -115,6 +116,7 @@ import org.polypheny.db.util.Util;
 @EqualsAndHashCode(callSuper = true)
 @Slf4j
 @Value
+@SuperBuilder(toBuilder = true)
 public class MongoEntity extends PhysicalEntity implements TranslatableEntity, ModifiableTable, ModifiableCollection, QueryableEntity {
 
     @Getter
@@ -256,7 +258,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
 
         final Function1<Document, PolyValue[]> getter = MongoEnumerator.getter( tupleType );
 
-        if ( log.isDebugEnabled() ) {
+        if ( true ) {
             log.warn( list.stream().map( el -> el.toBsonDocument().toJson( JsonWriterSettings.builder().outputMode( JsonMode.SHELL ).build() ) ).collect( Collectors.joining( ",\n" ) ) );
         }
 
@@ -295,17 +297,6 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
             }
         }
         return new BsonDocument( "$project", projections );
-    }
-
-
-    /**
-     * Helper method to strip non-numerics from a string.
-     * <p>
-     * Currently used to determine mongod versioning numbers
-     * from buildInfo.versionArray for use in aggregate method logic.
-     */
-    private static Integer parseIntString( String valueString ) {
-        return Integer.parseInt( valueString.replaceAll( "[^0-9]", "" ) );
     }
 
 
@@ -388,7 +379,6 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
     public String getPhysicalName( String logicalName ) {
         return fields.stream().filter( f -> f.logicalName.equals( logicalName ) ).map( f -> f.name ).findFirst().orElse( null );
     }
-
 
 
     /**
@@ -550,12 +540,12 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
                         if ( onlyOne ) {
                             changes = entity
                                     .getCollection()
-                                    .updateOne( session, BsonDocument.parse( filter ), BsonDocument.parse( operations.get( 0 ) ) )
+                                    .updateOne( session, BsonDocument.parse( filter ), List.of( BsonDocument.parse( operations.get( 0 ) ) ) )
                                     .getModifiedCount();
                         } else {
                             changes = entity
                                     .getCollection()
-                                    .updateMany( session, BsonDocument.parse( filter ), BsonDocument.parse( operations.get( 0 ) ) )
+                                    .updateMany( session, BsonDocument.parse( filter ), List.of( BsonDocument.parse( operations.get( 0 ) ) ) )
                                     .getModifiedCount();
                         }
 
