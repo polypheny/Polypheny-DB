@@ -93,7 +93,12 @@ public class MongoAggregate extends Aggregate implements MongoAlg {
                 implementor.physicalMapper.add( inName );
                 ++i;
             }
-            list.add( "_id: " + Util.toString( keys, "{", ", ", "}" ) );
+            if ( keys.isEmpty() ) {
+                list.add( "_id: null" );
+            } else {
+                list.add( "_id: " + Util.toString( keys, "{", ", ", "}" ) );
+            }
+
         }
         for ( AggregateCall aggCall : aggCalls ) {
             list.add( MongoRules.maybeQuote( outNames.get( i++ ) ) + ": " + toMongo( aggCall.getAggregation(), inNames, aggCall.getArgList(), implementor ) );

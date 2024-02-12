@@ -259,27 +259,17 @@ class MongoEnumerator implements Enumerator<PolyValue[]> {
             return new PolyNull();
         }
 
-        switch ( type.type ) {
-            case BIGINT:
-                return PolyLong.of( o.asNumber().longValue() );
-            case INTEGER:
-            case SMALLINT:
-            case TINYINT:
-                return PolyInteger.of( o.asNumber().longValue() );
-            case VARCHAR:
-                return PolyString.of( o.asString().getValue() );
-            case DECIMAL:
-                return PolyBigDecimal.of( o.asNumber().decimal128Value().bigDecimalValue() );
-            case TIMESTAMP:
-                return PolyTimestamp.of( o.asNumber().longValue() );
-            case TIME:
-                return PolyTime.of( o.asNumber().longValue() );
-            case DATE:
-                return PolyDate.of( o.asNumber().longValue() );
-            case DOCUMENT:
-                return polyDocumentFromBson( o.asDocument() );
-        }
-        throw new NotImplementedException();
+        return switch ( type.type ) {
+            case BIGINT -> PolyLong.of( o.asNumber().longValue() );
+            case INTEGER, SMALLINT, TINYINT -> PolyInteger.of( o.asNumber().longValue() );
+            case VARCHAR -> PolyString.of( o.asString().getValue() );
+            case DECIMAL -> PolyBigDecimal.of( o.asNumber().decimal128Value().bigDecimalValue() );
+            case TIMESTAMP -> PolyTimestamp.of( o.asNumber().longValue() );
+            case TIME -> PolyTime.of( o.asNumber().longValue() );
+            case DATE -> PolyDate.of( o.asNumber().longValue() );
+            case DOCUMENT -> polyDocumentFromBson( o.asDocument() );
+            default -> throw new NotImplementedException();
+        };
 
         /*if ( o == null ) {
             return null;
@@ -321,36 +311,22 @@ class MongoEnumerator implements Enumerator<PolyValue[]> {
 
 
     private static PolyValue convert( BsonValue value, BsonType bsonType ) {
-        switch ( bsonType ) {
-            case DOUBLE:
-                return PolyDouble.of( value.asDouble().getValue() );
-            case STRING:
-                return PolyString.of( value.asString().getValue() );
-            case DOCUMENT:
-                return polyDocumentFromBson( value.asDocument() );
-            case ARRAY:
-                return PolyList.of( value.asArray().getValues().stream().map( v -> convert( v, v.getBsonType() ) ).toArray( PolyValue[]::new ) );
-            case BINARY:
-                return PolyBinary.of( value.asBinary().getData() );
-            case OBJECT_ID:
-                return PolyString.of( value.asObjectId().getValue().toHexString() );
-            case BOOLEAN:
-                return PolyBoolean.of( value.asBoolean().getValue() );
-            case DATE_TIME:
-                return PolyTimestamp.of( value.asDateTime().getValue() );
-            case NULL:
-                return PolyNull.NULL;
-            case INT32:
-                return PolyInteger.of( value.asInt32().getValue() );
-            case TIMESTAMP:
-                return PolyTimestamp.of( value.asTimestamp().getValue() );
-            case INT64:
-                return PolyLong.of( value.asInt64().getValue() );
-            case DECIMAL128:
-                return PolyBigDecimal.of( value.asDecimal128().decimal128Value().bigDecimalValue() );
-            default:
-                throw new NotImplementedException();
-        }
+        return switch ( bsonType ) {
+            case DOUBLE -> PolyDouble.of( value.asDouble().getValue() );
+            case STRING -> PolyString.of( value.asString().getValue() );
+            case DOCUMENT -> polyDocumentFromBson( value.asDocument() );
+            case ARRAY -> PolyList.of( value.asArray().getValues().stream().map( v -> convert( v, v.getBsonType() ) ).toArray( PolyValue[]::new ) );
+            case BINARY -> PolyBinary.of( value.asBinary().getData() );
+            case OBJECT_ID -> PolyString.of( value.asObjectId().getValue().toHexString() );
+            case BOOLEAN -> PolyBoolean.of( value.asBoolean().getValue() );
+            case DATE_TIME -> PolyTimestamp.of( value.asDateTime().getValue() );
+            case NULL -> PolyNull.NULL;
+            case INT32 -> PolyInteger.of( value.asInt32().getValue() );
+            case TIMESTAMP -> PolyTimestamp.of( value.asTimestamp().getValue() );
+            case INT64 -> PolyLong.of( value.asInt64().getValue() );
+            case DECIMAL128 -> PolyBigDecimal.of( value.asDecimal128().decimal128Value().bigDecimalValue() );
+            default -> throw new NotImplementedException();
+        };
     }
 
 

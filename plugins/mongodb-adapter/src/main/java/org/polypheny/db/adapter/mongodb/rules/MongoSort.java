@@ -97,15 +97,10 @@ public class MongoSort extends Sort implements MongoAlg {
 
 
     private int direction( AlgFieldCollation fieldCollation ) {
-        switch ( fieldCollation.getDirection() ) {
-            case DESCENDING:
-            case STRICTLY_DESCENDING:
-                return -1;
-            case ASCENDING:
-            case STRICTLY_ASCENDING:
-            default:
-                return 1;
-        }
+        return switch ( fieldCollation.getDirection() ) {
+            case DESCENDING, STRICTLY_DESCENDING -> -1;
+            default -> 1;
+        };
     }
 
 }
