@@ -18,8 +18,10 @@ package org.polypheny.db.adapter.mongodb.rules;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import org.polypheny.db.adapter.mongodb.MongoAlg;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.LaxAggregateCall;
 import org.polypheny.db.algebra.core.document.DocumentAggregate;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -74,12 +76,10 @@ public class MongoDocumentAggregate extends DocumentAggregate implements MongoAl
 
     private void handleSpecificAggregate( Implementor implementor, List<String> list, LaxAggregateCall call ) {
 
-        switch ( call.function.getKind() ) {
-            case COUNT:
-                implementor.add( null, "{$count: \"" + call.name + "\" }" );
-                break;
-            default:
-                throw new GenericRuntimeException( "unknown aggregate " + call.function );
+        if ( Objects.requireNonNull( call.function.getKind() ) == Kind.COUNT ) {
+            implementor.add( null, "{$count: \"" + call.name + "\" }" );
+        } else {
+            throw new GenericRuntimeException( "unknown aggregate " + call.function );
         }
 
     }

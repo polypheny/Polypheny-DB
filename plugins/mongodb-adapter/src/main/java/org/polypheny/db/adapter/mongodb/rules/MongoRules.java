@@ -31,6 +31,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.InvalidAlgException;
 import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.AlgFactories;
@@ -670,7 +671,7 @@ public class MongoRules {
 
         private static boolean supported( LogicalAggregate aggregate ) {
             return aggregate.getAggCallList().stream().noneMatch( AggregateCall::isDistinct )
-                    && aggregate.getModel() != DataModel.DOCUMENT;
+                    && aggregate.getModel() != DataModel.DOCUMENT && aggregate.getAggCallList().stream().noneMatch( a -> a.getAggregation().getKind() == Kind.COUNT ); // mongodb returns no result when we count and there is nothing in the collection...
         }
 
 
