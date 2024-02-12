@@ -97,7 +97,7 @@ public class MysqlSourcePlugin extends PolyPlugin {
 
         @Override
         public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
-            PhysicalTable table = storeCatalog.createTable(
+            PhysicalTable table = adapterCatalog.createTable(
                     logical.table.getNamespaceName(),
                     logical.table.name,
                     logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
@@ -107,7 +107,7 @@ public class MysqlSourcePlugin extends PolyPlugin {
 
             JdbcTable physical = currentJdbcSchema.createJdbcTable( table );
 
-            storeCatalog.replacePhysical( physical );
+            adapterCatalog.replacePhysical( physical );
 
             return List.of( physical );
         }

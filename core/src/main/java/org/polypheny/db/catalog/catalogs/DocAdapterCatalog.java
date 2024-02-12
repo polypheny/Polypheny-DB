@@ -16,7 +16,6 @@
 
 package org.polypheny.db.catalog.catalogs;
 
-import com.google.common.collect.ImmutableList;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import java.util.ArrayList;
@@ -68,11 +67,6 @@ public class DocAdapterCatalog extends AdapterCatalog {
             }
         }
         for ( PhysicalColumn u : updates ) {
-            PhysicalTable table = physicals.get( u.logicalEntityId ).unwrap( PhysicalTable.class ).orElseThrow();
-            List<PhysicalColumn> newColumns = new ArrayList<>( table.columns );
-            newColumns.remove( u );
-            newColumns.add( u );
-            physicals.put( table.id, table.toBuilder().columns( ImmutableList.copyOf( newColumns ) ).build() );
             fields.put( Pair.of( u.allocId, u.id ), u );
         }
     }
@@ -124,11 +118,6 @@ public class DocAdapterCatalog extends AdapterCatalog {
 
 
     public void dropColumn( long allocId, long columnId ) {
-        PhysicalColumn column = fields.get( Pair.of( allocId, columnId ) ).unwrap( PhysicalColumn.class ).orElseThrow();
-        PhysicalTable table = fromAllocation( allocId, PhysicalTable.class );
-        List<PhysicalColumn> pColumns = new ArrayList<>( table.columns );
-        pColumns.remove( column );
-        addPhysical( getAlloc( allocId ), table.toBuilder().columns( ImmutableList.copyOf( pColumns ) ).build() );
         fields.remove( Pair.of( allocId, columnId ) );
     }
 

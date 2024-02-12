@@ -97,7 +97,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
         // Create udfs
         createUdfs();
 
-        this.delegate = new RelationalModifyDelegate( this, storeCatalog );
+        this.delegate = new RelationalModifyDelegate( this, adapterCatalog );
     }
 
 
@@ -125,9 +125,9 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
 
     @Override
     public void updateNamespace( String name, long id ) {
-        if ( storeCatalog.getNamespace( id ) == null ) {
+        if ( adapterCatalog.getNamespace( id ) == null ) {
             currentJdbcSchema = JdbcSchema.create( id, getDefaultPhysicalNamespaceName(), connectionFactory, dialect, this );
-            storeCatalog.addNamespace( id, currentJdbcSchema );
+            adapterCatalog.addNamespace( id, currentJdbcSchema );
         }
         putNamespace( currentJdbcSchema );
     }
@@ -155,7 +155,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
 
         updateNamespace( logical.table.getNamespaceName(), logical.table.namespaceId );
 
-        PhysicalTable table = storeCatalog.createTable(
+        PhysicalTable table = adapterCatalog.createTable(
                 namespaceName,
                 tableName,
                 allocationWrapper.columns.stream().collect( Collectors.toMap( c -> c.columnId, c -> getPhysicalColumnName( c.columnId ) ) ),
@@ -166,7 +166,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
         executeCreateTable( context, table, logical.pkIds );
 
         JdbcTable physical = this.currentJdbcSchema.createJdbcTable( table );
-        storeCatalog.replacePhysical( physical );
+        adapterCatalog.replacePhysical( physical );
         return List.of( physical );
     }
 
@@ -221,9 +221,9 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
     @Override
     public void addColumn( Context context, long allocId, LogicalColumn logicalColumn ) {
         String physicalColumnName = getPhysicalColumnName( logicalColumn.id );
-        PhysicalTable table = storeCatalog.fromAllocation( allocId );
-        int max = storeCatalog.getColumns( allocId ).stream().max( Comparator.comparingInt( a -> a.position ) ).orElseThrow().position;
-        PhysicalColumn column = storeCatalog.addColumn( physicalColumnName, allocId, max + 1, logicalColumn );
+        PhysicalTable table = adapterCatalog.fromAllocation( allocId );
+        int max = adapterCatalog.getColumns( allocId ).stream().max( Comparator.comparingInt( a -> a.position ) ).orElseThrow().position;
+        PhysicalColumn column = adapterCatalog.addColumn( physicalColumnName, allocId, max + 1, logicalColumn );
 
         StringBuilder query = buildAddColumnQuery( table, column );
         executeUpdate( query, context );
@@ -304,12 +304,12 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
     // Make sure to update overridden methods as well
     @Override
     public void updateColumnType( Context context, long allocId, LogicalColumn newCol ) {
-        PhysicalColumn column = storeCatalog.updateColumnType( allocId, newCol );
+        PhysicalColumn column = adapterCatalog.updateColumnType( allocId, newCol );
 
         if ( !this.dialect.supportsNestedArrays() && column.collectionsType != null ) {
             return;
         }
-        PhysicalTable physicalTable = storeCatalog.fromAllocation( allocId );
+        PhysicalTable physicalTable = adapterCatalog.fromAllocation( allocId );
 
         StringBuilder builder = new StringBuilder();
         builder.append( "ALTER TABLE " )
@@ -343,7 +343,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
         // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
         // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
         // approach rather than using the default physical schema / table names is that this approach allows dropping linked tables.
-        PhysicalTable table = storeCatalog.fromAllocation( allocId );
+        PhysicalTable table = adapterCatalog.fromAllocation( allocId );
         StringBuilder builder = new StringBuilder();
 
         builder.append( "DROP TABLE " )
@@ -355,21 +355,21 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
             log.info( "{} from store {}", builder, this.getUniqueName() );
         }
         executeUpdate( builder, context );
-        storeCatalog.removeAllocAndPhysical( allocId );
+        adapterCatalog.removeAllocAndPhysical( allocId );
     }
 
 
     @Override
     public void renameLogicalColumn( long id, String newColumnName ) {
-        storeCatalog.renameLogicalColumn( id, newColumnName );
-        storeCatalog.fields.values().stream().filter( c -> c.id == id ).forEach( c -> updateNativePhysical( c.allocId ) );
+        adapterCatalog.renameLogicalColumn( id, newColumnName );
+        adapterCatalog.fields.values().stream().filter( c -> c.id == id ).forEach( c -> updateNativePhysical( c.allocId ) );
     }
 
 
     @Override
     public void dropColumn( Context context, long allocId, long columnId ) {
-        PhysicalTable table = storeCatalog.fromAllocation( allocId );
-        PhysicalColumn column = storeCatalog.getColumn( columnId, allocId );
+        PhysicalTable table = adapterCatalog.fromAllocation( allocId );
+        PhysicalColumn column = adapterCatalog.getColumn( columnId, allocId );
         StringBuilder builder = new StringBuilder();
         builder.append( "ALTER TABLE " )
                 .append( dialect.quoteIdentifier( table.namespaceName ) )
@@ -377,15 +377,15 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
                 .append( dialect.quoteIdentifier( table.name ) );
         builder.append( " DROP " ).append( dialect.quoteIdentifier( column.name ) );
         executeUpdate( builder, context );
-        storeCatalog.dropColumn( allocId, columnId );
+        adapterCatalog.dropColumn( allocId, columnId );
 
         updateNativePhysical( allocId );
     }
 
 
     protected void updateNativePhysical( long allocId ) {
-        PhysicalTable table = storeCatalog.fromAllocation( allocId );
-        storeCatalog.replacePhysical( this.currentJdbcSchema.createJdbcTable( table ) );
+        PhysicalTable table = adapterCatalog.fromAllocation( allocId );
+        adapterCatalog.replacePhysical( this.currentJdbcSchema.createJdbcTable( table ) );
     }
 
 
@@ -394,7 +394,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
         // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
         // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
         // approach rather than using the default physical schema / table names is that this approach allows truncating linked tables.
-        PhysicalTable physical = storeCatalog.fromAllocation( allocId );
+        PhysicalTable physical = adapterCatalog.fromAllocation( allocId );
 
         StringBuilder builder = new StringBuilder();
         builder.append( "TRUNCATE TABLE " )

@@ -159,8 +159,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
                 doc.append(
                         physicalName,//getPhysicalName( getUpdateColumns().get( pos ), implementor ),
                         BsonUtil.getAsBson( (RexLiteral) el, bucket ) );
-            } else if ( el instanceof RexCall ) {
-                RexCall call = ((RexCall) el);
+            } else if ( el instanceof RexCall call ) {
                 if ( Arrays.asList( Kind.PLUS, Kind.PLUS, Kind.TIMES, Kind.DIVIDE ).contains( call.op.getKind() ) ) {
                     doc.append(
                             physicalName,//rowType.getPhysicalName( getUpdateColumns().get( pos ), implementor ),
@@ -180,7 +179,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
                 doc.append(
                         physicalName,//rowType.getPhysicalName( getUpdateColumns().get( pos ), implementor ),
                         new BsonString(
-                                "$" + physicalName ) );//rowType.getPhysicalName( ((RexFieldAccess) el).getField().getName(), implementor ) ) );
+                                "$" + rowType.getFields().get( el.unwrap( RexFieldAccess.class ).orElseThrow().getField().getIndex() ).getPhysicalName() ) );//rowType.getPhysicalName( ((RexFieldAccess) el).getField().getName(), implementor ) ) );
             }
             pos++;
         }
@@ -294,10 +293,9 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
 
         int pos = 0;
         for ( RexNode operand : call.operands ) {
-            if ( !(operand instanceof RexCall) ) {
+            if ( !(operand instanceof RexCall op) ) {
                 doc.append( "$set", new BsonDocument( keys.get( pos ), BsonUtil.getAsBson( (RexLiteral) operand, bucket ) ) );
             } else {
-                RexCall op = (RexCall) operand;
                 implementor.isDocumentUpdate = true;
                 switch ( op.getKind() ) {
                     case PLUS:
@@ -441,7 +439,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
                     return getBsonArray( (RexCall) operand, type, bucket );
                 }
                 throw new RuntimeException( "The given RexCall could not be transformed correctly." );
-            } ).collect( Collectors.toList() ) );
+            } ).toList() );
             return array;
         }
         throw new RuntimeException( "The given RexCall could not be transformed correctly." );

@@ -102,7 +102,7 @@ public class HsqldbStore extends AbstractJdbcStore {
 
     @Override
     public String addIndex( Context context, LogicalIndex index, AllocationTable allocation ) {
-        PhysicalTable physical = storeCatalog.fromAllocation( allocation.id );
+        PhysicalTable physical = adapterCatalog.fromAllocation( allocation.id );
 
         String physicalIndexName = getPhysicalIndexName( physical.id, index.id );
 
@@ -138,7 +138,7 @@ public class HsqldbStore extends AbstractJdbcStore {
     @Override
     public void dropIndex( Context context, LogicalIndex index, long allocId ) {
 
-        PhysicalTable physical = storeCatalog.fromAllocation( allocId );
+        PhysicalTable physical = adapterCatalog.fromAllocation( allocId );
 
         String physicalIndexName = getPhysicalIndexName( physical.id, index.id );
 
@@ -224,7 +224,7 @@ public class HsqldbStore extends AbstractJdbcStore {
     public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities ) {
         PhysicalEntity table = entities.get( 0 );
         updateNamespace( table.namespaceName, table.namespaceId );
-        storeCatalog.addPhysical( alloc, currentJdbcSchema.createJdbcTable( table.unwrap( PhysicalTable.class ).orElseThrow() ) );
+        adapterCatalog.addPhysical( alloc, currentJdbcSchema.createJdbcTable( table.unwrap( PhysicalTable.class ).orElseThrow() ) );
     }
 
 }

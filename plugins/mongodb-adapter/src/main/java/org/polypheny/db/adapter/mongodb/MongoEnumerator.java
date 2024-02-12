@@ -64,6 +64,7 @@ import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
+import org.polypheny.db.util.BsonUtil;
 
 
 /**
@@ -262,42 +263,35 @@ class MongoEnumerator implements Enumerator<PolyValue[]> {
         return switch ( type.type ) {
             case BIGINT -> PolyLong.of( o.asNumber().longValue() );
             case INTEGER, SMALLINT, TINYINT -> PolyInteger.of( o.asNumber().longValue() );
-            case VARCHAR -> PolyString.of( o.asString().getValue() );
-            case DECIMAL -> PolyBigDecimal.of( o.asNumber().decimal128Value().bigDecimalValue() );
+            case BOOLEAN -> PolyBoolean.of( o.asBoolean().getValue() );
+            case TEXT, CHAR, VARCHAR -> PolyString.of( o.asString().getValue() );
+            case DECIMAL -> {
+                if ( o.isNumber() ) {
+                    yield PolyBigDecimal.of( o.asNumber().doubleValue() );
+                } else if ( o.isDecimal128() ) {
+                    yield PolyBigDecimal.of( o.asDecimal128().decimal128Value().bigDecimalValue() );
+                } else {
+                    throw new NotImplementedException();
+                }
+            }
+            case FLOAT, REAL, DOUBLE -> {
+                if ( o.isNumber() ) {
+                    yield PolyDouble.of( o.asNumber().doubleValue() );
+                } else if ( o.isDecimal128() ) {
+                    yield PolyDouble.of( o.asDecimal128().decimal128Value().bigDecimalValue().doubleValue() );
+                } else {
+                    throw new NotImplementedException();
+                }
+            }
+            case BINARY -> PolyBinary.of( o.asBinary().getData() );
             case TIMESTAMP -> PolyTimestamp.of( o.asNumber().longValue() );
             case TIME -> PolyTime.of( o.asNumber().longValue() );
             case DATE -> PolyDate.of( o.asNumber().longValue() );
             case DOCUMENT -> polyDocumentFromBson( o.asDocument() );
+            case ARRAY -> BsonUtil.toPolyValue( o.asArray() );
             default -> throw new NotImplementedException();
         };
 
-        /*if ( o == null ) {
-            return null;
-        }
-        Primitive primitive = Primitive.of( clazz );
-        if ( primitive != null ) {
-            clazz = primitive.boxClass;
-        } else {
-            primitive = Primitive.ofBox( clazz );
-        }
-        if ( clazz.isInstance( o ) ) {
-            return o;
-        }
-        if ( o instanceof Date && primitive != null ) {
-            o = ((Date) o).getTime() / DateTimeUtils.MILLIS_PER_DAY;
-        }
-        if ( o instanceof Number && primitive != null ) {
-            return primitive.number( (Number) o );
-        }
-        if ( clazz == BigDecimal.class ) {
-            if ( o instanceof Decimal128 ) {
-                return ((Decimal128) o).bigDecimalValue();
-            } else {
-                return BigDecimal.valueOf( (Double) o );
-            }
-        }
-
-        return o;*/
     }
 
 

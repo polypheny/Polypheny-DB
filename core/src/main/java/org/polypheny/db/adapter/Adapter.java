@@ -53,14 +53,14 @@ import org.polypheny.db.transaction.PolyXid;
 
 @Getter
 @Slf4j
-public abstract class Adapter<S extends AdapterCatalog> implements Scannable, Expressible {
+public abstract class Adapter<ACatalog extends AdapterCatalog> implements Scannable, Expressible {
 
     private final AdapterProperties properties;
     protected final DeployMode deployMode;
     protected String deploymentId;
     @Getter
     private final String adapterName;
-    public final S storeCatalog;
+    public final ACatalog adapterCatalog;
 
 
     @Getter
@@ -78,8 +78,8 @@ public abstract class Adapter<S extends AdapterCatalog> implements Scannable, Ex
     private final Map<Long, Namespace> namespaces = new ConcurrentHashMap<>();
 
 
-    public Adapter( long adapterId, String uniqueName, Map<String, String> settings, S catalog ) {
-        this.storeCatalog = catalog;
+    public Adapter( long adapterId, String uniqueName, Map<String, String> settings, ACatalog catalog ) {
+        this.adapterCatalog = catalog;
         this.properties = getClass().getAnnotation( AdapterProperties.class );
         if ( getClass().getAnnotation( AdapterProperties.class ) == null ) {
             throw new GenericRuntimeException( "The used adapter does not annotate its properties correctly." );
@@ -116,7 +116,7 @@ public abstract class Adapter<S extends AdapterCatalog> implements Scannable, Ex
 
 
     public Expression getCatalogAsExpression() {
-        return Expressions.field( asExpression(), "storeCatalog" );
+        return Expressions.field( asExpression(), "adapterCatalog" );
     }
 
 

@@ -20,7 +20,6 @@ package org.polypheny.db.adapter.mongodb.rules;
 import com.google.common.collect.Streams;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.Getter;
 import org.bson.BsonDocument;
@@ -157,8 +156,7 @@ public class MongoProject extends Project implements MongoAlg {
 
         if ( !documents.isEmpty() ) {
             String functions = documents.toJson( JsonWriterSettings.builder().outputMode( JsonMode.RELAXED ).build() );
-            mergedItems = Streams.concat( items.stream(), Stream.of( functions.substring( 1, functions.length() - 1 ) ) )
-                    .collect( Collectors.toList() );
+            mergedItems = Streams.concat( items.stream(), Stream.of( functions.substring( 1, functions.length() - 1 ) ) ).toList();
         } else {
             mergedItems = items;
         }

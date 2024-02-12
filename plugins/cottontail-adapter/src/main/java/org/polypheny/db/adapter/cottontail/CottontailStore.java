@@ -165,7 +165,7 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
         this.wrapper.checkedCreateSchemaBlocking(
                 CottontailGrpc.CreateSchemaMessage.newBuilder().setSchema( SchemaName.newBuilder().setName( this.dbName ) ).build() );
 
-        this.delegate = new RelationalModifyDelegate( this, storeCatalog );
+        this.delegate = new RelationalModifyDelegate( this, adapterCatalog );
     }
 
 
@@ -183,7 +183,7 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
 
         final String physicalTableName = CottontailNameUtil.createPhysicalTableName( logical.table.id, allocationWrapper.table.id );
 
-        PhysicalTable table = storeCatalog.createTable(
+        PhysicalTable table = adapterCatalog.createTable(
                 logical.table.getNamespaceName(),
                 physicalTableName,
                 allocationWrapper.columns.stream().collect( Collectors.toMap( c -> c.columnId, c -> CottontailNameUtil.createPhysicalColumnName( c.columnId ) ) ),
@@ -212,7 +212,7 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
             throw new GenericRuntimeException( "Unable to create table." );
         }
 
-        storeCatalog.replacePhysical( new CottontailEntity( currentNamespace, this.currentNamespace.getCottontailSchema().getName(), table, this ) );
+        adapterCatalog.replacePhysical( new CottontailEntity( currentNamespace, this.currentNamespace.getCottontailSchema().getName(), table, this ) );
 
         return List.of( table );
     }
@@ -248,7 +248,7 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
 
 
         /* Prepare DROP TABLE message. */
-        PhysicalTable table = storeCatalog.fromAllocation( allocId );
+        PhysicalTable table = adapterCatalog.fromAllocation( allocId );
         final EntityName tableEntity = EntityName.newBuilder()
                 .setSchema( this.currentNamespace.getCottontailSchema() )
                 .setName( table.name )
@@ -258,7 +258,7 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
                 .setMetadata( Metadata.newBuilder().setTransactionId( txId ).build() )
                 .setEntity( tableEntity ).build() );
 
-        storeCatalog.removeAllocAndPhysical( allocId );
+        adapterCatalog.removeAllocAndPhysical( allocId );
     }
 
 
@@ -267,10 +267,10 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
         /* Begin or continue Cottontail DB transaction. */
         final long txId = this.wrapper.beginOrContinue( context.getStatement().getTransaction() );
         final String newPhysicalColumnName = CottontailNameUtil.createPhysicalColumnName( logicalColumn.id );
-        PhysicalTable table = storeCatalog.fromAllocation( allocId );
-        PhysicalColumn column = storeCatalog.addColumn( newPhysicalColumnName, allocId, table.columns.size() - 1, logicalColumn );
+        PhysicalTable table = adapterCatalog.fromAllocation( allocId );
+        PhysicalColumn column = adapterCatalog.addColumn( newPhysicalColumnName, allocId, table.columns.size() - 1, logicalColumn );
 
-        List<PhysicalColumn> pColumns = new ArrayList<>( storeCatalog.getColumns( allocId ) );
+        List<PhysicalColumn> pColumns = new ArrayList<>( adapterCatalog.getColumns( allocId ) );
         final List<ColumnDefinition> columns = this.buildColumnDefinitions( pColumns );
         //Since only one partition is available
         final String currentPhysicalTableName = table.name;
@@ -336,15 +336,15 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
         this.wrapper.dropEntityBlocking( DropEntityMessage.newBuilder().setMetadata( Metadata.newBuilder().setTransactionId( txId ) ).setEntity( tableEntity ).build() );
 
         // Update column placement physical table names
-        storeCatalog.replacePhysical( new PhysicalTable( table.id, table.allocationId, table.logicalId, newPhysicalTableName, pColumns, table.namespaceId, table.namespaceName, table.uniqueFieldIds, table.adapterId ) );
+        adapterCatalog.replacePhysical( new PhysicalTable( table.id, table.allocationId, table.logicalId, newPhysicalTableName, pColumns, table.namespaceId, table.namespaceName, table.uniqueFieldIds, table.adapterId ) );
 
         updateNativePhysical( allocId );
     }
 
 
     protected void updateNativePhysical( long allocId ) {
-        PhysicalTable table = storeCatalog.fromAllocation( allocId );
-        storeCatalog.replacePhysical( new CottontailEntity( currentNamespace, this.currentNamespace.getCottontailSchema().getName(), table, this ) );
+        PhysicalTable table = adapterCatalog.fromAllocation( allocId );
+        adapterCatalog.replacePhysical( new CottontailEntity( currentNamespace, this.currentNamespace.getCottontailSchema().getName(), table, this ) );
     }
 
 
@@ -353,10 +353,10 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
         /* Begin or continue Cottontail DB transaction. */
         final long txId = this.wrapper.beginOrContinue( context.getStatement().getTransaction() );
 
-        PhysicalTable table = storeCatalog.fromAllocation( allocId );
-        PhysicalColumn column = storeCatalog.getColumn( columnId, allocId );
-        storeCatalog.dropColumn( allocId, columnId );
-        List<PhysicalColumn> pColumns = storeCatalog.getColumns( allocId );
+        PhysicalTable table = adapterCatalog.fromAllocation( allocId );
+        PhysicalColumn column = adapterCatalog.getColumn( columnId, allocId );
+        adapterCatalog.dropColumn( allocId, columnId );
+        List<PhysicalColumn> pColumns = adapterCatalog.getColumns( allocId );
         final List<ColumnDefinition> columns = this.buildColumnDefinitions( pColumns );
 
         final String currentPhysicalTableName = table.name;
@@ -405,7 +405,7 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
             }
         } );
 
-        storeCatalog.replacePhysical( new PhysicalTable( table.id, table.allocationId, table.logicalId, newPhysicalTableName, pColumns, table.namespaceId, table.namespaceName, table.uniqueFieldIds, table.adapterId ) );
+        adapterCatalog.replacePhysical( new PhysicalTable( table.id, table.allocationId, table.logicalId, newPhysicalTableName, pColumns, table.namespaceId, table.namespaceName, table.uniqueFieldIds, table.adapterId ) );
 
         // Delete old table
         this.wrapper.dropEntityBlocking( DropEntityMessage.newBuilder().setMetadata( Metadata.newBuilder().setTransactionId( txId ) ).setEntity( tableEntity ).build() );
@@ -420,7 +420,7 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
     public String addIndex( Context context, LogicalIndex index, AllocationTable allocation ) {
         /* Begin or continue Cottontail DB transaction. */
         final long txId = this.wrapper.beginOrContinue( context.getStatement().getTransaction() );
-        PhysicalTable physical = storeCatalog.fromAllocation( allocation.id );
+        PhysicalTable physical = adapterCatalog.fromAllocation( allocation.id );
 
         /* Prepare CREATE INDEX message. */
         final IndexType indexType;
@@ -437,7 +437,7 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
 
         final IndexDefinition.Builder definition = IndexDefinition.newBuilder().setType( indexType ).setName( indexName );
         for ( long columnId : index.key.columnIds ) {
-            PhysicalColumn column = storeCatalog.getColumn( columnId, allocation.id );
+            PhysicalColumn column = adapterCatalog.getColumn( columnId, allocation.id );
             definition.addColumns( ColumnName.newBuilder().setName( column.name ) );
         }
 
@@ -453,7 +453,7 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
     public void dropIndex( Context context, LogicalIndex catalogIndex, long allocId ) {
         /* Begin or continue Cottontail DB transaction. */
         final long txId = this.wrapper.beginOrContinue( context.getStatement().getTransaction() );
-        PhysicalTable table = storeCatalog.fromAllocation( allocId );
+        PhysicalTable table = adapterCatalog.fromAllocation( allocId );
 
         /* Prepare DROP INDEX message. */
         final DropIndexMessage.Builder dropIndex = DropIndexMessage.newBuilder().setMetadata( Metadata.newBuilder().setTransactionId( txId ).build() );
@@ -490,7 +490,7 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
     public void truncate( Context context, long allocId ) {
         /* Begin or continue Cottontail DB transaction. */
         final long txId = this.wrapper.beginOrContinue( context.getStatement().getTransaction() );
-        PhysicalTable physical = storeCatalog.fromAllocation( allocId );
+        PhysicalTable physical = adapterCatalog.fromAllocation( allocId );
 
 
         /* Prepare TRUNCATE message. */
@@ -509,9 +509,9 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
         /* Begin or continue Cottontail DB transaction. */
         final long txId = this.wrapper.beginOrContinue( context.getStatement().getTransaction() );
 
-        PhysicalColumn column = storeCatalog.updateColumnType( allocId, newCol );
-        PhysicalTable physicalTable = storeCatalog.fromAllocation( allocId );
-        List<PhysicalColumn> pColumns = storeCatalog.getColumns( allocId );
+        PhysicalColumn column = adapterCatalog.updateColumnType( allocId, newCol );
+        PhysicalTable physicalTable = adapterCatalog.fromAllocation( allocId );
+        List<PhysicalColumn> pColumns = adapterCatalog.getColumns( allocId );
 
         final List<ColumnDefinition> columns = this.buildColumnDefinitions( pColumns );
 
@@ -561,7 +561,7 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
                 .setMetadata( Metadata.newBuilder().setTransactionId( txId ).build() )
                 .setEntity( tableEntity ).build() );
 
-        storeCatalog.replacePhysical( new PhysicalTable( physicalTable.id, physicalTable.allocationId, physicalTable.logicalId, newPhysicalTableName, pColumns, physicalTable.namespaceId, physicalTable.namespaceName, physicalTable.uniqueFieldIds, physicalTable.adapterId ) );
+        adapterCatalog.replacePhysical( new PhysicalTable( physicalTable.id, physicalTable.allocationId, physicalTable.logicalId, newPhysicalTableName, pColumns, physicalTable.namespaceId, physicalTable.namespaceName, physicalTable.uniqueFieldIds, physicalTable.adapterId ) );
 
         updateNativePhysical( allocId );
     }

@@ -77,7 +77,7 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
         // Register the JDBC Pool Size as information in the information manager and enable it
         registerInformationPage();
 
-        this.delegate = new RelationalScanDelegate( this, storeCatalog );
+        this.delegate = new RelationalScanDelegate( this, adapterCatalog );
     }
 
 
@@ -148,7 +148,7 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
         // approach rather than using the default physical schema / table names is that this approach allows truncating linked tables.
         // String physicalTableName = context.getSnapshot().alloc().getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogTable.id ).get( 0 ).physicalTableName;
         // String physicalSchemaName = context.getSnapshot().alloc().getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogTable.id ).get( 0 ).physicalSchemaName;
-        PhysicalTable table = storeCatalog.getTable( allocId );
+        PhysicalTable table = adapterCatalog.getTable( allocId );
         StringBuilder builder = new StringBuilder();
         builder.append( "TRUNCATE TABLE " )
                 .append( dialect.quoteIdentifier( table.namespaceName ) )
