@@ -243,7 +243,8 @@ public class SelectTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( sql ),
-                        expectedResult
+                        expectedResult,
+                        true
                 );
             }
         }
