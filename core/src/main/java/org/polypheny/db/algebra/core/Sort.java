@@ -47,12 +47,14 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.schema.trait.ModelTraitDef;
 import org.polypheny.db.util.Util;
 
 
@@ -110,7 +112,7 @@ public abstract class Sort extends SingleAlg {
         this.offset = offset;
         this.fetch = fetch;
 
-        assert traits.containsIfApplicable( collation ) : "traits=" + traits + ", collation=" + collation;
+        assert Objects.requireNonNull( getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).getDataModel() == DataModel.DOCUMENT || traits.containsIfApplicable( collation ) : "traits=" + traits + ", collation=" + collation;
         assert !(fetch == null && offset == null && collation.getFieldCollations().isEmpty()) : "trivial sort";
 
         if ( fieldExpr != null ) {
