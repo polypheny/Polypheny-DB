@@ -1230,7 +1230,7 @@ public class MongoFilter extends Filter implements MongoAlg {
                     if ( this.tempElem == null ) {
                         yield false;
                     }
-                    attachCondition( op, getPhysicalName( (RexIndexRef) this.tempElem ), new BsonDynamic( right ) );
+                    attachCondition( op, this.tempElem.unwrap( RexNameRef.class ).orElseThrow().getName(), new BsonDynamic( right ) );
                     yield true;
                 }
                 case DISTANCE -> translateFunction( op, (RexCall) left, right );

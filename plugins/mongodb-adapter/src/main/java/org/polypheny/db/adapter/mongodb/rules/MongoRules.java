@@ -313,11 +313,16 @@ public class MongoRules {
         private MongoFilterRule() {
             super(
                     LogicalFilter.class,
-                    project -> (MongoConvention.mapsDocuments || !DocumentRules.containsDocument( project ))
-                            && !containsIncompatible( project ),
+                    MongoFilterRule::supports,
                     Convention.NONE,
                     MongoAlg.CONVENTION,
                     MongoFilterRule.class.getSimpleName() );
+        }
+
+
+        private static boolean supports( LogicalFilter filter ) {
+            return (MongoConvention.mapsDocuments || !DocumentRules.containsDocument( filter ))
+                    && !containsIncompatible( filter );
         }
 
 
@@ -677,7 +682,9 @@ public class MongoRules {
 
         private static boolean supported( LogicalAggregate aggregate ) {
             return aggregate.getAggCallList().stream().noneMatch( AggregateCall::isDistinct )
-                    && aggregate.getModel() != DataModel.DOCUMENT && aggregate.getAggCallList().stream().noneMatch( a -> a.getAggregation().getKind() == Kind.COUNT ); // mongodb returns no result when we count and there is nothing in the collection...
+                    && aggregate.getModel() != DataModel.DOCUMENT
+                    && aggregate.getAggCallList().stream().noneMatch( a -> a.getAggregation().getKind() == Kind.SINGLE_VALUE )
+                    && aggregate.getAggCallList().stream().noneMatch( a -> a.getAggregation().getKind() == Kind.COUNT ); // mongodb returns no result when we count and there is nothing in the collection...
         }
 
 

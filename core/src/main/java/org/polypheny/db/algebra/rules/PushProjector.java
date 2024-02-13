@@ -539,7 +539,7 @@ public class PushProjector {
             }
         } else {
             for ( Ord<AlgDataTypeField> field : Ord.zip( childFields ) ) {
-                projects.add( Pair.of( (RexNode) rexBuilder.makeInputRef( field.e.getType(), field.i ), field.e.getName() ) );
+                projects.add( Pair.of( rexBuilder.makeInputRef( field.e.getType(), field.i ), field.e.getName() ) );
             }
         }
         return algBuilder.push( projChild )

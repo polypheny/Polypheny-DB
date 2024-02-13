@@ -434,7 +434,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
                     tupleType,
                     operations,
                     values,
-                    preProjections.stream().map( BsonDocument::parse ).collect( Collectors.toList() ) );
+                    preProjections.stream().map( BsonDocument::parse ).toList() );
         }
 
 

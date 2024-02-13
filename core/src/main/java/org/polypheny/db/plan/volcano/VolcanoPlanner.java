@@ -57,6 +57,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -217,7 +218,15 @@ public class VolcanoPlanner extends AbstractAlgOptPlanner {
 
     /**
      * Whether the planner can accept new rules.
+     * -- SETTER --
+     *  Sets whether this planner is locked. A locked planner does not accept new rules.
+     *
+     *  will do nothing and return false.
+     *
+     * @param locked Whether planner is locked
+
      */
+    @Setter
     private boolean locked;
 
     final Map<AlgNode, Provenance> provenances = new HashMap<>();
@@ -1632,17 +1641,6 @@ public class VolcanoPlanner extends AbstractAlgOptPlanner {
             final String token = matcher.group(); // e.g. "Subset#23."
             plan = plan.replace( token, "Subset#{" + i++ + "}." );
         }
-    }
-
-
-    /**
-     * Sets whether this planner is locked. A locked planner does not accept new rules.
-     * {@link #addRule(AlgOptRule)} will do nothing and return false.
-     *
-     * @param locked Whether planner is locked
-     */
-    public void setLocked( boolean locked ) {
-        this.locked = locked;
     }
 
 
