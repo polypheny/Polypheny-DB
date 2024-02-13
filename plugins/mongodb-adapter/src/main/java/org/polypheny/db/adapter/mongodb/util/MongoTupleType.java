@@ -42,7 +42,7 @@ public class MongoTupleType implements Expressible {
         this.type = type;
         this.subs = subs;
         this.nullable = nullable;
-        this.name = name;
+        this.name = name == null ? null : name.split( "\\." )[name.split( "\\." ).length - 1];
     }
 
 
@@ -58,8 +58,7 @@ public class MongoTupleType implements Expressible {
 
         List<MongoTupleType> types = new ArrayList<>();
         switch ( type.getPolyType() ) {
-            case ROW:
-                type.getFields().forEach( field -> types.add( from( field ) ) );
+            case ROW -> type.getFields().forEach( field -> types.add( from( field ) ) );
         }
         return new MongoTupleType( null, type.getPolyType(), types, type.isNullable() );
     }
@@ -93,8 +92,9 @@ public class MongoTupleType implements Expressible {
 
     public boolean isStruct() {
         switch ( type ) {
-            case ROW:
+            case ROW -> {
                 return true;
+            }
         }
         return false;
     }

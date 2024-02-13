@@ -130,7 +130,7 @@ public class Rest {
         AlgNode algNode = algBuilder.build();
         log.debug( "AlgNode was built." );
 
-        // Wrap {@link AlgNode} into a RelRoot
+        // Wrap {@link AlgNode} into a AlgRoot
         final AlgDataType rowType = algNode.getTupleType();
         final List<Pair<Integer, String>> fields = Pair.zip( PolyTypeUtil.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
         final AlgCollation collation =

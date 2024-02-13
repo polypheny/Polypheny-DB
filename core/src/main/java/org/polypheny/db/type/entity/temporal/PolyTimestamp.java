@@ -32,6 +32,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
@@ -118,8 +119,9 @@ public class PolyTimestamp extends PolyTemporal {
     }
 
 
+    @Nullable
     public Timestamp asSqlTimestamp() {
-        return new Timestamp( millisSinceEpoch );
+        return millisSinceEpoch == null ? null : new Timestamp( millisSinceEpoch );
     }
 
 
