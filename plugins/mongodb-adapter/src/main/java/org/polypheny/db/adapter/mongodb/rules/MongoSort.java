@@ -90,8 +90,13 @@ public class MongoSort extends Sort implements MongoAlg {
         if ( offset != null ) {
             implementor.add( null, "{$skip: " + ((RexLiteral) offset).getValue().toJson() + "}" );
         }
-        if ( fetch != null ) {
-            implementor.add( null, "{$limit: " + ((RexLiteral) fetch).getValue().toJson() + "}" );
+
+        if ( fetch != null && fetch instanceof RexLiteral literal ) {
+            if ( implementor.isDML() && literal.value.asNumber().intValue() == 1 ) {
+                implementor.onlyOne = true;
+            } else {
+                implementor.add( null, "{$limit: " + literal.value.toJson() + "}" );
+            }
         }
     }
 

@@ -470,7 +470,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
                             BsonUtil.getAsBson( literal, bucket ) );
                 } else {
                     doc.append(
-                            rowType.getFieldNames().get( pos ),
+                            valRowType.getFieldNames().get( pos ),
                             BsonUtil.getAsBson( literal, bucket ) );
                 }
                 pos++;

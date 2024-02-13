@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
@@ -261,7 +262,7 @@ public class MongoFilter extends Filter implements MongoAlg {
 
         /**
          * Returns whether {@code v0} is a stronger value for operator {@code key} than {@code v1}.
-         *
+         * <p>
          * For example, {@code stronger("$lt", 100, 200)} returns true, because "&lt; 100" is a more powerful condition than "&lt; 200".
          */
         private boolean stronger( String key, Object v0, Object v1 ) {
@@ -483,7 +484,7 @@ public class MongoFilter extends Filter implements MongoAlg {
         /**
          * Normally, negation can be handled by just prefixing with "$not":
          * key: value -> $not:{key:value}
-         *
+         * <p>
          * but especially for complex queries it has to be pushed into the statement
          * key: value -> key:{$not:value}
          *
@@ -924,6 +925,7 @@ public class MongoFilter extends Filter implements MongoAlg {
                 }
             }
 
+
             throw new AssertionError( "cannot translate op " + op + " call " + call );
         }
 
@@ -948,11 +950,7 @@ public class MongoFilter extends Filter implements MongoAlg {
             }
 
             this.inExpr = true;
-            if ( op == null ) {
-                attachCondition( null, "$expr", new BsonDocument( "$eq", new BsonArray( Arrays.asList( l, r ) ) ) );
-            } else {
-                attachCondition( null, "$expr", new BsonDocument( op, new BsonArray( Arrays.asList( l, r ) ) ) );
-            }
+            attachCondition( null, "$expr", new BsonDocument( Objects.requireNonNullElse( op, "$eq" ), new BsonArray( Arrays.asList( l, r ) ) ) );
             this.inExpr = false;
             return true;
 
@@ -1017,7 +1015,7 @@ public class MongoFilter extends Filter implements MongoAlg {
 
         /**
          * Translates the RexCall into its appropriate form
-         *
+         * <p>
          * left:[right]
          *
          * @param left the corresponding field
@@ -1161,14 +1159,11 @@ public class MongoFilter extends Filter implements MongoAlg {
          * Translates a call to a binary operator. Returns whether successful.
          */
         private boolean translateBinary2( String op, RexNode left, RexNode right ) {
-            switch ( right.getKind() ) {
-                case LITERAL:
-                    return translateLiteral( op, left, (RexLiteral) right );
-                case DYNAMIC_PARAM:
-                    return translateDynamic( op, left, (RexDynamicParam) right );
-                default:
-                    return false;
-            }
+            return switch ( right.getKind() ) {
+                case LITERAL -> translateLiteral( op, left, (RexLiteral) right );
+                case DYNAMIC_PARAM -> translateDynamic( op, left, (RexDynamicParam) right );
+                default -> false;
+            };
         }
 
 
@@ -1199,6 +1194,16 @@ public class MongoFilter extends Filter implements MongoAlg {
                 case MQL_QUERY_VALUE:
                     return translateDocValue( op, (RexNameRef) left, right );
 
+                case ELEMENT_REF:
+                    if ( this.tempElem != null ) {
+                        translateOp2( op, getPhysicalName( (RexIndexRef) left ), right );
+                        return false;
+                    }
+
+                    translateElemMatch( (RexCall) left );
+                    return true;
+
+
                 // fall through
 
                 default:
@@ -1216,23 +1221,26 @@ public class MongoFilter extends Filter implements MongoAlg {
          * @return if the translation was possible
          */
         private boolean translateDynamic( String op, RexNode left, RexDynamicParam right ) {
-            switch ( left.getKind() ) {
-                case INPUT_REF:
+            return switch ( left.getKind() ) {
+                case INPUT_REF -> {
                     attachCondition( op, getPhysicalName( (RexIndexRef) left ), new BsonDynamic( right ) );
-                    return true;
-                case DISTANCE:
-                    return translateFunction( op, (RexCall) left, right );
-                case OTHER_FUNCTION:
-                    return translateItem( op, (RexCall) left, right );
-                case MOD:
-                    return translateMod( (RexCall) left, right );
-                case NAME_INDEX_REF:
-                    return translateDocValue( op, (RexNameRef) left, right );
-                case CAST:
-                    return translateDynamic( op, ((RexCall) left).operands.get( 0 ), right );
-            }
+                    yield true;
+                }
+                case ELEMENT_REF -> {
+                    if ( this.tempElem == null ) {
+                        yield false;
+                    }
+                    attachCondition( op, getPhysicalName( (RexIndexRef) this.tempElem ), new BsonDynamic( right ) );
+                    yield true;
+                }
+                case DISTANCE -> translateFunction( op, (RexCall) left, right );
+                case OTHER_FUNCTION -> translateItem( op, (RexCall) left, right );
+                case MOD -> translateMod( (RexCall) left, right );
+                case NAME_INDEX_REF -> translateDocValue( op, (RexNameRef) left, right );
+                case CAST -> translateDynamic( op, ((RexCall) left).operands.get( 0 ), right );
+                default -> false;
+            };
 
-            return false;
         }
 
 

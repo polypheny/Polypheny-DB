@@ -34,9 +34,11 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexFieldAccess;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNameRef;
@@ -62,6 +64,7 @@ public class RexToMongoTranslator extends RexVisitorImpl<String> {
         MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.MULTIPLY ), "$multiply" );
         MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.MOD ), "$mod" );
         MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.PLUS ), "$add" );
+        MONGO_OPERATORS.put( OperatorRegistry.get( QueryLanguage.from( "mql" ), OperatorName.PLUS ), "$add" );
         MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.MINUS ), "$subtract" );
         // Boolean
         MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.AND ), "$and" );
@@ -166,9 +169,7 @@ public class RexToMongoTranslator extends RexVisitorImpl<String> {
         if ( call.getOperator().getOperatorName() == OperatorName.ITEM ) {
             final RexNode op1 = call.operands.get( 1 );
             // normal
-            if ( op1 instanceof RexLiteral && op1.getType().
-
-                    getPolyType() == PolyType.INTEGER ) {
+            if ( op1 instanceof RexLiteral && op1.getType().getPolyType() == PolyType.INTEGER ) {
                 return "{$arrayElemAt:[" + strings.get( 0 ) + "," + (((RexLiteral) op1).value.asNumber().intValue() - 1) + "]}";
             }
             // prepared
@@ -213,9 +214,6 @@ public class RexToMongoTranslator extends RexVisitorImpl<String> {
         if ( special != null ) {
             return special;
         }
-        /*if ( call.op.getOperatorName() == OperatorName.MQL ) {
-            return call.operands.get( 0 ).accept( this );
-        }*/
 
         if ( call.op.getOperatorName() == OperatorName.SIGN ) {
             // x < 0, -1
@@ -223,24 +221,24 @@ public class RexToMongoTranslator extends RexVisitorImpl<String> {
             // x > 0, 1
             StringBuilder sb = new StringBuilder();
             String oper = call.operands.get( 0 ).accept( this );
-            sb.append( "{\"$switch\":\n"
-                    + "            {\n"
-                    + "              \"branches\": [\n"
-                    + "                {\n"
-                    + "                  \"case\": { \"$lt\" : [ " );
+            sb.append( """
+                    {"$switch":
+                                {
+                                  "branches": [
+                                    {
+                                      "case": { "$lt" : [\s""" );
             sb.append( oper );
-            sb.append( ", 0 ] },\n"
-                    + "                  \"then\": -1.0"
-                    + "                },\n"
-                    + "                {\n"
-                    + "                  \"case\": { \"$gt\" : [ " );
+            sb.append( """
+                    , 0 ] },
+                                      "then": -1.0                },
+                                    {
+                                      "case": { "$gt" : [\s""" );
             sb.append( oper );
-            sb.append( ", 0 ] },\n"
-                    + "                  \"then\": 1.0"
-                    + "                },\n"
-                    + "              ],\n"
-                    + "              \"default\": 0.0"
-                    + "            }}" );
+            sb.append( """
+                    , 0 ] },
+                                      "then": 1.0                },
+                                  ],
+                                  "default": 0.0            }}""" );
 
             return sb.toString();
         }
@@ -279,10 +277,9 @@ public class RexToMongoTranslator extends RexVisitorImpl<String> {
                     .getFieldNames()
                     .get( ((RexIndexRef) call.operands.get( 0 )).getIndex() );
 
-            if ( !(call.operands.get( 1 ) instanceof RexCall) || call.operands.size() != 2 ) {
+            if ( !(call.operands.get( 1 ) instanceof RexCall excludes) || call.operands.size() != 2 ) {
                 return null;
             }
-            RexCall excludes = (RexCall) call.operands.get( 1 );
             List<String> fields = new ArrayList<>();
             for ( RexNode operand : excludes.operands ) {
                 if ( !(operand instanceof RexCall) ) {
@@ -309,9 +306,9 @@ public class RexToMongoTranslator extends RexVisitorImpl<String> {
 
     @NotNull
     private String handleAddFieldsFunctions( RexCall call ) {
-        String names = call.operands.get( 0 ).accept( this );
-        String value = call.operands.get( 1 ).accept( this );
-        if ( call.operands.get( 0 ).isA( Kind.DYNAMIC_PARAM ) ) {
+        String names = call.operands.get( 1 ).accept( this );
+        String value = call.operands.get( 2 ).accept( this );
+        if ( call.operands.get( 1 ).isA( Kind.DYNAMIC_PARAM ) ) {
             BsonKeyValue kv = new BsonKeyValue( BsonDynamic.changeType( BsonDynamic.addFunction( BsonDocument.parse( names ), "joinPoint" ), PolyType.VARCHAR ), BsonDocument.parse( value ) );
             return "{\"$addFields\": {" + MongoRules.maybeQuote( kv.placeholderKey ) + ":" + kv.toJson() + "}}";
         }
@@ -343,6 +340,12 @@ public class RexToMongoTranslator extends RexVisitorImpl<String> {
             strings.add( node.accept( this ) );
         }
         return strings;
+    }
+
+
+    @Override
+    public String visitFieldAccess( RexFieldAccess fieldAccess ) {
+        return MongoRules.maybeQuote( "$" + fieldAccess.getField().getName() );
     }
 
 }

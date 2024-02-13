@@ -77,6 +77,11 @@ public class MongoDocumentModify extends DocumentModify<MongoEntity> implements 
         Implementor condImplementor = new Implementor( true );
         input.unwrap( MongoAlg.class ).orElseThrow().implement( condImplementor );
 
+        // carry over the onlyOne flag
+        if ( condImplementor.onlyOne ) {
+            implementor.onlyOne = true;
+        }
+
         implementor.filter = condImplementor.filter;
 
         if ( updates.isEmpty() ) {
