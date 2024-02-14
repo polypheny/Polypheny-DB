@@ -64,7 +64,7 @@ public enum MongoMethod {
     }
 
 
-    MongoMethod( Class clazz, String methodName, Class... argumentTypes ) {
+    MongoMethod( Class<?> clazz, String methodName, Class<?>... argumentTypes ) {
         this.method = Types.lookupMethod( clazz, methodName, argumentTypes );
     }
 }

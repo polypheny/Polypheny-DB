@@ -99,9 +99,6 @@ class MongoEnumerator implements Enumerator<PolyValue[]> {
         try {
             if ( cursor.hasNext() ) {
                 current = cursor.next();
-
-                //current = handleTransforms( current );
-
                 return true;
             } else {
                 current = null;
@@ -111,43 +108,6 @@ class MongoEnumerator implements Enumerator<PolyValue[]> {
             throw new GenericRuntimeException( e );
         }
     }
-
-
-    /*protected PolyValue handleTransforms( Bson current ) {
-        if ( current == null ) {
-            return null;
-        }
-        if ( current.getClass().isArray() ) {
-            List<PolyValue> temp = new ArrayList<>();
-            for ( Bson el : (Bson[]) current ) {
-                temp.add( handleTransforms( el ) );
-            }
-            return temp.toArray();
-        } else {
-            if ( current instanceof List ) {
-                return PolyList.of((List<Bson>) current).stream().map( this::handleTransforms ).toList();
-            } else if ( current instanceof Document ) {
-                return handleDocument( (Document) current );
-            }
-        }
-        return current;
-    }*/
-
-    // s -> stream
-    /*private PolyValue handleDocument( Document el ) {
-        if ( el.containsKey( "_type" ) ) {
-            String type = el.getString( "_type" );
-            if ( type.equals( "s" ) ) {
-                // if we have inserted a document and have distributed chunks which we have to fetch
-                ObjectId objectId = new ObjectId( (String) ((Document) current).get( "_id" ) );
-                GridFSDownloadStream stream = bucket.openDownloadStream( objectId );
-                return new PushbackInputStream( stream );
-            }
-            throw new GenericRuntimeException( "The document type was not recognized" );
-        } else {
-            return el.toJson();
-        }
-    }*/
 
 
     @Override
@@ -170,71 +130,15 @@ class MongoEnumerator implements Enumerator<PolyValue[]> {
     }
 
 
-    /**
-     * This method is needed to translate the special types back to their initial ones in Arrays,
-     * for example Float is not available in MongoDB and has to be stored as Double,
-     * This needs to be fixed when retrieving the arrays.
-     * Additionally, for array we cannot be sure how the value is stored, as we lose this information on insert
-     */
-    static List<PolyValue> arrayGetter( List<Object> objects, Class<? extends PolyValue> arrayFieldClass ) {
-        /*if ( arrayFieldClass == Float.class || arrayFieldClass == float.class ) {
-            if ( objects.size() > 1 ) {
-                if ( objects.get( 0 ) instanceof Double ) {
-                    return objects.stream().map( o -> ((Double) o).floatValue() ).collect( Collectors.toList() );
-                } else if ( objects.get( 0 ) instanceof Decimal128 ) {
-                    return objects.stream().map( obj -> ((Decimal128) obj).floatValue() ).collect( Collectors.toList() );
-                }
-            }
-            return objects;
-        } else if ( arrayFieldClass == BigDecimal.class ) {
-            return objects.stream().map( obj -> ((Decimal128) obj).bigDecimalValue() ).collect( Collectors.toList() );
-        } else if ( arrayFieldClass == double.class ) {
-            if ( objects.size() > 1 ) {
-                if ( objects.get( 0 ) instanceof Decimal128 ) {
-                    return objects.stream().map( o -> ((Decimal128) o).doubleValue() ).collect( Collectors.toList() );
-                }
-            }
-            return objects;
-        } else if ( arrayFieldClass == long.class ) {
-            if ( objects.size() > 1 ) {
-                if ( objects.get( 0 ) instanceof Integer ) {
-                    return objects.stream().map( o -> Long.valueOf( (Integer) o ) ).collect( Collectors.toList() );
-                }
-            }
-            return objects;
-        } else {
-            return objects;
-        }*/
-        return null;
-    }
-
-
-    static Function1<Document, PolyValue> singletonGetter( final MongoTupleType type ) {
-        return a0 -> convert( a0.toBsonDocument().get( type.name ), type );
-    }
-
 
     /**
      *
      */
     static Function1<Document, PolyValue[]> listGetter( final MongoTupleType type ) {
-        /*return a0 -> {
-            PolyValue[] objects = new PolyValue[fields.size()];
-            for ( int i = 0; i < fields.size(); i++ ) {
-                final Map.Entry<String, Class<? extends PolyValue>> field = fields.get( i );
-                final String name = field.getKey();
-
-                objects[i] = convert( a0.get( name ), field.getValue() );
-
-                if ( field.getValue() == List.class ) {
-                    objects[i] = arrayGetter( (List) objects[i], arrayFields.get( i ).getValue() );
-                }
-            }
-            return objects;
-        };*/
         List<Function<BsonValue, PolyValue>> trans = new ArrayList<>();
         for ( MongoTupleType sub : type.subs ) {
-            trans.add( o -> convert( o.asDocument().get( sub.name ), sub ) );
+            String adjustedName = sub.name.startsWith( "$f" ) ? "_" + sub.name.substring( 2 ) : sub.name;
+            trans.add( o -> convert( o.asDocument().get( adjustedName ), sub ) );
         }
         if ( type.type == PolyType.DOCUMENT ) {
             trans.add( o -> convert( o, type ) );
@@ -262,7 +166,16 @@ class MongoEnumerator implements Enumerator<PolyValue[]> {
 
         return switch ( type.type ) {
             case BIGINT -> PolyLong.of( o.asNumber().longValue() );
-            case INTEGER, SMALLINT, TINYINT -> PolyInteger.of( o.asNumber().longValue() );
+            case INTEGER, SMALLINT, TINYINT -> {
+                if ( o.isNumber() ) {
+                    yield PolyInteger.of( o.asNumber().intValue() );
+                } else if ( o.isDecimal128() ) {
+                    // mongodb handles -0 separately to 0
+                    yield PolyInteger.of( o.asDecimal128().decimal128Value().doubleValue() );
+                } else {
+                    throw new NotImplementedException();
+                }
+            }
             case BOOLEAN -> PolyBoolean.of( o.asBoolean().getValue() );
             case TEXT, CHAR, VARCHAR -> PolyString.of( o.asString().getValue() );
             case DECIMAL -> {

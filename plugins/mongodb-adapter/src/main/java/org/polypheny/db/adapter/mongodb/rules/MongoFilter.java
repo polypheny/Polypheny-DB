@@ -177,7 +177,13 @@ public class MongoFilter extends Filter implements MongoAlg {
                 this.map = new HashMap<>();
                 translateAnd( node );
 
-                mergeMaps( this.map, shallowCopy, "$or" );
+                String op = "$or";
+                if ( modifier != null ) {
+                    // we have a negation and have to flip the operator
+                    op = modifier.equals( "$not" ) ? "$and" : "$or";
+                }
+
+                mergeMaps( this.map, shallowCopy, op );
                 this.map = shallowCopy;
             }
 
@@ -254,7 +260,12 @@ public class MongoFilter extends Filter implements MongoAlg {
                 Map<String, List<BsonValue>> shallowCopy = new HashMap<>( this.map );
                 this.map = new HashMap<>();
                 translateMatch2( node );
-                mergeMaps( this.map, shallowCopy, "$and" );
+                String op = "$and";
+                if ( modifier != null ) {
+                    // we have a negation and have to flip the operator
+                    op = "$or";
+                }
+                mergeMaps( this.map, shallowCopy, op );
                 this.map = shallowCopy;
             }
         }
@@ -925,7 +936,6 @@ public class MongoFilter extends Filter implements MongoAlg {
                 }
             }
 
-
             throw new AssertionError( "cannot translate op " + op + " call " + call );
         }
 
@@ -1203,7 +1213,6 @@ public class MongoFilter extends Filter implements MongoAlg {
                     translateElemMatch( (RexCall) left );
                     return true;
 
-
                 // fall through
 
                 default:
@@ -1411,7 +1420,12 @@ public class MongoFilter extends Filter implements MongoAlg {
                     // $op : {keyValue}
                     adjustedRight = ((BsonKeyValue) adjustedRight).wrapValue( v -> new BsonDocument( modifier, v ) );
                 } else {
+                    if ( !adjustedRight.isDocument() || (adjustedRight instanceof BsonDynamic dynamic && !dynamic.isRegex()) ) {
+                        // $op : [value]
+                        modifier = "$ne";
+                    }
                     adjustedRight = new BsonDocument( modifier, adjustedRight );
+
                 }
             }
 
