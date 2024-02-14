@@ -252,13 +252,9 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
             }
         }
 
-        /*if ( logicalCols.size() != 0 && logical != null ) {
-            list.add( 0, getPhysicalProjections( logicalCols, logical.getColumnNames(), logical.fieldIds ) );
-        }*/
-
         final Function1<Document, PolyValue[]> getter = MongoEnumerator.getter( tupleType );
 
-        if ( true ) {
+        if ( log.isDebugEnabled() ) {
             log.warn( list.stream().map( el -> el.toBsonDocument().toJson( JsonWriterSettings.builder().outputMode( JsonMode.SHELL ).build() ) ).collect( Collectors.joining( ",\n" ) ) );
         }
 

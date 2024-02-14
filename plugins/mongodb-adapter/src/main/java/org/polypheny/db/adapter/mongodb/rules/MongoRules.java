@@ -319,7 +319,7 @@ public class MongoRules {
 
 
         private static boolean supports( LogicalFilter filter ) {
-            return MongoConvention.mapsDocuments || !DocumentRules.containsDocument( filter );
+            return (MongoConvention.mapsDocuments || !DocumentRules.containsDocument( filter )) && !containsIncompatible( filter );
         }
 
 
@@ -378,7 +378,8 @@ public class MongoRules {
             super(
                     LogicalProject.class,
                     project -> (MongoConvention.mapsDocuments || !DocumentRules.containsDocument( project ))
-                            && !containsIncompatible( project ) && !UnsupportedRexCallVisitor.containsModelItem( project.getProjects() ),
+                            && !containsIncompatible( project )
+                            && !UnsupportedRexCallVisitor.containsModelItem( project.getProjects() ),
                     Convention.NONE,
                     MongoAlg.CONVENTION,
                     MongoProjectRule.class.getSimpleName() );
@@ -468,8 +469,8 @@ public class MongoRules {
                     || operator.getOperatorName() == OperatorName.OVERLAY
                     || operator.getOperatorName() == OperatorName.COT
                     || operator.getOperatorName() == OperatorName.FLOOR
-                    || (operator.getOperatorName() == OperatorName.CAST
-                    && call.operands.get( 0 ).getType().getPolyType() == PolyType.DATE)
+                    || operator.getOperatorName() == OperatorName.DISTANCE
+                    || (operator.getOperatorName() == OperatorName.CAST && call.operands.get( 0 ).getType().getPolyType() == PolyType.DATE)
                     || operator instanceof SqlDatetimeSubtractionOperator
                     || operator instanceof SqlDatetimePlusOperator ) {
                 containsIncompatible = true;

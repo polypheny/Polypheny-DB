@@ -71,6 +71,11 @@ public class BsonDynamic extends BsonDocument {
     }
 
 
+    public boolean isRegex() {
+        return getBoolean( "_reg" ).getValue();
+    }
+
+
     public BsonDynamic setIsFunc( boolean isFunc ) {
         append( "_func", new BsonBoolean( isFunc ) );
         return this;
