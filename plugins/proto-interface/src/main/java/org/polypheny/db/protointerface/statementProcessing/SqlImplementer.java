@@ -48,7 +48,7 @@ public class SqlImplementer extends StatementImplementer {
         }
         Statement statement = piStatement.getStatement();
         if ( statement == null ) {
-            throw new PIServiceException( "Statement is not linked to a polypheny statement",
+            throw new PIServiceException( "Statement is not linked to a PolyphenyStatement",
                     "I9003",
                     9003
             );
