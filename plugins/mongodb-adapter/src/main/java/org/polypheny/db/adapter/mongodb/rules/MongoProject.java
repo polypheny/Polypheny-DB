@@ -96,9 +96,6 @@ public class MongoProject extends Project implements MongoAlg {
         final List<String> unwinds = new ArrayList<>();
         // We use our specialized rowType to derive the mapped underlying column identifiers
         AlgDataType mongoRowType = implementor.getRowType();
-        /*if ( implementor.getStaticRowType() instanceof MongoRowType ) {
-            mongoRowType = ((MongoRowType) implementor.getStaticRowType());
-        }*/
 
         BsonDocument documents = new BsonDocument();
 
@@ -120,7 +117,7 @@ public class MongoProject extends Project implements MongoAlg {
                     Pair<String, RexNode> ret = MongoRules.getAddFields( (RexCall) ((RexCall) pair.left).operands.get( 0 ), rowType );
                     String expr = ret.right.accept( translator );
                     implementor.preProjections.add( new BsonDocument( ret.left, BsonDocument.parse( expr ) ) );
-                    items.add( ret.left.split( "\\." )[0] + ":1" );
+                    items.add( "'" + ret.left.split( "\\." )[0] + "':1" );
                     continue;
                 }
             }
@@ -150,7 +147,7 @@ public class MongoProject extends Project implements MongoAlg {
 
             items.add( expr.equals( "'$" + name + "'" )
                     ? MongoRules.maybeQuote( name ) + ": " + 1
-                    : MongoRules.maybeQuote( name ) + ": " + expr );
+                    : "\"" + MongoRules.maybeQuote( name ) + "\": " + expr );
         }
         List<String> mergedItems;
 

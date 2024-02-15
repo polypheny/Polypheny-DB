@@ -31,6 +31,7 @@ import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.graph.GraphObject;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.graph.PolyEdge;
@@ -435,11 +436,11 @@ public interface NeoStatements {
         return props;
     }
 
-    static NeoStatement _literalOrString( Object value ) {
-        if ( value instanceof String ) {
+    static NeoStatement _literalOrString( PolyValue value ) {
+        if ( value.isString() ) {
             return string_( value );
-        } else if ( value instanceof List ) {
-            return literal_( String.format( "[%s]", ((List<Object>) value).stream().map( value1 -> _literalOrString( value1 ).build() ).collect( Collectors.joining( ", " ) ) ) );
+        } else if ( value.isList() ) {
+            return literal_( PolyString.of( String.format( "[%s]", value.asList().stream().map( value1 -> _literalOrString( (PolyValue) value1 ).build() ).collect( Collectors.joining( ", " ) ) ) ) );
         } else {
             return literal_( value );
         }
@@ -518,12 +519,12 @@ public interface NeoStatements {
 
     }
 
-    static LiteralStatement literal_( Object value ) {
+    static LiteralStatement literal_( PolyValue value ) {
         return new LiteralStatement( value == null ? null : value.toString() );
     }
 
-    static LiteralStatement string_( Object value ) {
-        return new LiteralStatement( value == null ? null : "'" + value + "'" );
+    static LiteralStatement string_( PolyValue value ) {
+        return new LiteralStatement( value == null || value.isNull() ? null : "'" + value + "'" );
     }
 
     static LiteralStatement literal_( RexLiteral literal ) {
@@ -531,10 +532,10 @@ public interface NeoStatements {
         if ( PolyTypeFamily.CHARACTER.contains( literal.getType() ) ) {
             prePostFix = "\"";
         }
-        return literal_( String.format( "%s%s%s",
+        return literal_( PolyString.of( String.format( "%s%s%s",
                 prePostFix,
                 NeoUtil.rexAsString( literal, null, false ),
-                prePostFix ) );
+                prePostFix ) ) );
 
     }
 
@@ -756,7 +757,7 @@ public interface NeoStatements {
 
     }
 
-    static LimitStatement limit_( int limit ) {
+    static LimitStatement limit_( PolyNumber limit ) {
         return new LimitStatement( literal_( limit ) );
     }
 
@@ -768,7 +769,7 @@ public interface NeoStatements {
 
     }
 
-    static SkipStatement skip_( int offset ) {
+    static SkipStatement skip_( PolyNumber offset ) {
         return new SkipStatement( literal_( offset ) );
     }
 

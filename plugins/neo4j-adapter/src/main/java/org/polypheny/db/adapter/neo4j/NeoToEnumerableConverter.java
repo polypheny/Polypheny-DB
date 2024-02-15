@@ -23,8 +23,6 @@ import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.neo4j.NeoGraph.NeoQueryable;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterImpl;
@@ -41,8 +39,6 @@ import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.ConventionTraitDef;
-import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
@@ -102,41 +98,23 @@ public class NeoToEnumerableConverter extends ConverterImpl implements Enumerabl
         // PhysType is Enumerable Adapter class that maps database types (getRowType) with physical Java types (getJavaTypes())
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), rowType, pref.prefer( JavaRowFormat.ARRAY ) );
 
-        final Expression graph = blockBuilder.append( "graph", Expressions.convert_(
-                Expressions.call( Schemas.class, "graph", DataContext.ROOT,
-                        Expressions.convert_(
-                                Expressions.call(
-                                        Expressions.call(
-                                                DataContext.ROOT,
-                                                BuiltInMethod.DATA_CONTEXT_GET_ROOT_SCHEMA.method ),
-                                        BuiltInMethod.SCHEMA_GET_SUB_SCHEMA.method,
-                                        Expressions.constant( graphImplementor.getGraph().name, String.class ) ), SchemaPlus.class ) ), NeoQueryable.class ) );
+        final Expression graph = blockBuilder.append( "graph", graphImplementor.getGraph().asExpression() );
 
         Expression enumerable;
-        /*if ( graphImplementor.isAll() && rowType.getFieldCount() == 1 && rowType.getFieldList().get( 0 ).getType().getPolyType() == PolyType.GRAPH ) {
-            Pair<String, String> queries = graphImplementor.getAllQueries();
 
-            enumerable = blockBuilder.append(
-                    blockBuilder.newName( "enumerable" ),
-                    Expressions.call(
-                            graph,
-                            NeoMethod.GRAPH_ALL.method, Expressions.constant( queries.left ), Expressions.constant( queries.right ) ) );
+        final Expression fields = getFields( blockBuilder, rowType, AlgDataType::getPolyType );
 
-        } else {*/
-            final Expression fields = getFields( blockBuilder, rowType, AlgDataType::getPolyType );
+        final Expression arrayFields = getFields( blockBuilder, rowType, NeoUtil::getComponentTypeOrParent );
 
-            final Expression arrayFields = getFields( blockBuilder, rowType, NeoUtil::getComponentTypeOrParent );
+        final Expression parameterClasses = Expressions.constant( null );
 
-            final Expression parameterClasses = Expressions.constant( null );
+        final String query = graphImplementor.build();
 
-            final String query = graphImplementor.build();
-
-            enumerable = blockBuilder.append(
-                    blockBuilder.newName( "enumerable" ),
-                    Expressions.call(
-                            graph,
-                            NeoMethod.GRAPH_EXECUTE.method, Expressions.constant( query ), fields, arrayFields, parameterClasses ) );
-        //}
+        enumerable = blockBuilder.append(
+                blockBuilder.newName( "enumerable" ),
+                Expressions.call(
+                        graph,
+                        NeoMethod.GRAPH_EXECUTE.method, Expressions.constant( query ), fields, arrayFields, parameterClasses ) );
 
         blockBuilder.add( Expressions.return_( null, enumerable ) );
 

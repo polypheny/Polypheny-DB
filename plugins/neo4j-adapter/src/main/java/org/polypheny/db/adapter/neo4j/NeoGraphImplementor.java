@@ -49,6 +49,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.type.PathType;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.util.Pair;
 
 
@@ -95,7 +96,7 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
 
 
     private void addRowCount( int size ) {
-        statements.add( return_( as_( literal_( size ), literal_( "ROWCOUNT" ) ) ) );
+        statements.add( return_( as_( literal_( PolyInteger.of( size ) ), literal_( PolyString.of( "ROWCOUNT" ) ) ) ) );
     }
 
 
@@ -182,7 +183,7 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
                 }
                 return path_( path );
         }
-        return literal_( field.getName() );
+        return literal_( PolyString.of( field.getName() ) );
     }
 
 
@@ -194,12 +195,12 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
     public Pair<String, String> getAllQueries() {
         String nodes = String.join( "\n", List.of(
                 match_( node_( PolyString.of( "n" ), labels_( PolyString.of( graph.mappingLabel ) ) ) ).build(),
-                return_( distinct_( literal_( "n" ) ) ).build()
+                return_( distinct_( literal_( PolyString.of( "n" ) ) ) ).build()
         ) );
         String edges = String.join(
                 "\n",
                 match_( path_( node_( PolyString.of( "n" ), labels_( PolyString.of( graph.mappingLabel ) ) ), edge_( "r" ), node_( "m" ) ) ).build(),
-                return_( distinct_( literal_( "r" ) ) ).build() );
+                return_( distinct_( literal_( PolyString.of( "r" ) ) ) ).build() );
 
         return Pair.of( nodes, edges );
     }

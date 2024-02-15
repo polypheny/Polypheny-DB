@@ -99,8 +99,7 @@ public class NeoLpgModify extends LpgModify<NeoGraph> implements NeoGraphAlg {
 
 
     private void handleInsert( NeoGraphImplementor implementor ) {
-        if ( implementor.getLast() instanceof LpgValues ) {
-            LpgValues values = ((LpgValues) implementor.getLast());
+        if ( implementor.getLast() instanceof LpgValues values ) {
             if ( values.getValues().isEmpty() ) {
                 // node / edge insert
                 implementor.statements.add( create_( list_( getCreatePath( values.getNodes(), values.getEdges(), implementor ) ) ) );
@@ -127,7 +126,7 @@ public class NeoLpgModify extends LpgModify<NeoGraph> implements NeoGraphAlg {
         List<NeoStatement> statements = new ArrayList<>();
         for ( RexNode projectProject : project.getProjects() ) {
             Translator translator = new Translator( project.getTupleType(), project.getInput().getTupleType(), new HashMap<>(), null, mappingLabel, true );
-            statements.add( literal_( projectProject.accept( translator ) ) );
+            statements.add( literal_( PolyString.of( projectProject.accept( translator ) ) ) );
         }
         return statements;
     }
@@ -161,12 +160,10 @@ public class NeoLpgModify extends LpgModify<NeoGraph> implements NeoGraphAlg {
 
         List<NeoStatement> statements = new ArrayList<>();
 
-        int i = 0;
         for ( PolyNode node : nodes ) {
             //String name = "n" + i;
             uuidNameMapping.put( node.id, node.getVariableName() );
             statements.add( node_( node, PolyString.of( implementor.getGraph().mappingLabel ), true ) );
-            i++;
         }
         for ( PolyEdge edge : edges ) {
             statements.add( path_( node_( uuidNameMapping.get( edge.source ) ), edge_( edge, true ), node_( uuidNameMapping.get( edge.target ) ) ) );
@@ -180,7 +177,7 @@ public class NeoLpgModify extends LpgModify<NeoGraph> implements NeoGraphAlg {
         List<NeoStatement> ops = new ArrayList<>();
         for ( RexNode rexNode : operations ) {
             Translator translator = new Translator( getTupleType(), implementor.getLast().getTupleType(), new HashMap<>(), null, implementor.getGraph().mappingLabel, false );
-            ops.add( literal_( rexNode.accept( translator ) ) );
+            ops.add( literal_( PolyString.of( rexNode.accept( translator ) ) ) );
         }
 
         implementor.add( set_( list_( ops ) ) );

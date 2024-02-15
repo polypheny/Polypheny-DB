@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
@@ -45,7 +46,6 @@ import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.GraphModifyDelegate;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.GraphAdapterCatalog;
 import org.polypheny.db.catalog.entity.LogicalDefaultValue;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
@@ -312,7 +312,7 @@ public class Neo4jPlugin extends PolyPlugin {
         @Override
         public void dropTable( Context context, long allocId ) {
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
-            PhysicalTable physical = adapterCatalog.fromAllocation( allocId, PhysicalTable.class );
+            PhysicalEntity physical = adapterCatalog.fromAllocation( allocId, PhysicalEntity.class );
 
             executeDdlTrx(
                     context.getStatement().getTransaction().getXid(),
@@ -324,9 +324,9 @@ public class Neo4jPlugin extends PolyPlugin {
         public void addColumn( Context context, long allocId, LogicalColumn logicalColumn ) {
             transactionProvider.commitAll();
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
-            PhysicalTable physical = adapterCatalog.fromAllocation( allocId, PhysicalTable.class );
+            NeoEntity physical = adapterCatalog.fromAllocation( allocId, NeoEntity.class );
             String physicalName = getPhysicalFieldName( logicalColumn.id );
-            adapterCatalog.createColumn( physicalName, allocId, physical.columns.size() - 1, logicalColumn );
+            adapterCatalog.createColumn( physicalName, allocId, physical.getFields().size() - 1, logicalColumn );
 
             if ( logicalColumn.defaultValue != null ) {
                 executeDdlTrx( context.getStatement().getTransaction().getXid(), format(
@@ -349,7 +349,7 @@ public class Neo4jPlugin extends PolyPlugin {
 
         @Override
         public void dropColumn( Context context, long allocId, long columnId ) {
-            PhysicalTable physical = adapterCatalog.fromAllocation( allocId, PhysicalTable.class );
+            NeoEntity physical = adapterCatalog.fromAllocation( allocId, NeoEntity.class );
             PhysicalColumn column = adapterCatalog.getField( columnId, allocId ).unwrap( PhysicalColumn.class ).orElseThrow();
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
             executeDdlTrx(
@@ -360,8 +360,7 @@ public class Neo4jPlugin extends PolyPlugin {
 
         @Override
         public String addIndex( Context context, LogicalIndex index, AllocationTable allocation ) {
-            Catalog catalog = Catalog.getInstance();
-            PhysicalTable physical = adapterCatalog.fromAllocation( allocation.id, PhysicalTable.class );
+            NeoEntity physical = adapterCatalog.fromAllocation( allocation.id, NeoEntity.class );
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
             IndexTypes type = IndexTypes.valueOf( index.method.toUpperCase( Locale.ROOT ) );
             List<Long> columns = index.key.columnIds;
@@ -384,13 +383,14 @@ public class Neo4jPlugin extends PolyPlugin {
         }
 
 
-        private void addCompositeIndex( PolyXid xid, LogicalIndex index, List<Long> columnIds, PhysicalTable physical, String physicalIndexName ) {
+        private void addCompositeIndex( PolyXid xid, LogicalIndex index, List<Long> columnIds, NeoEntity physical, String physicalIndexName ) {
             String fields = columnIds.stream()
                     .map( id -> format( "n.%s", getPhysicalFieldName( id ) ) )
                     .collect( Collectors.joining( ", " ) );
+
             executeDdlTrx( xid, format(
-                    "CREATE INDEX %s FOR (n:%s) on (%s)",
-                    physicalIndexName + "_" + physical.id,
+                    "CREATE INDEX %s IF NOT EXISTS FOR (n:%s) on (%s)",
+                    physicalIndexName + "_" + physical.id + "_" + index.id,
                     getPhysicalEntityName( index.key.namespaceId, physical.id ),
                     fields ) );
         }
@@ -402,7 +402,7 @@ public class Neo4jPlugin extends PolyPlugin {
 
             executeDdlTrx(
                     context.getStatement().getTransaction().getXid(),
-                    format( "DROP INDEX %s", index.physicalName + "_" + allocId ) );
+                    format( "DROP INDEX %s IF EXISTS", index.physicalName + "_" + allocId + "_" + index.id ) );
 
         }
 
@@ -446,7 +446,7 @@ public class Neo4jPlugin extends PolyPlugin {
             transactionProvider.commitAll();
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
 
-            PhysicalTable physical = adapterCatalog.fromAllocation( allocId, PhysicalTable.class );
+            NeoEntity physical = adapterCatalog.fromAllocation( allocId, NeoEntity.class );
             executeDdlTrx(
                     context.getStatement().getTransaction().getXid(),
                     format( "MATCH (n:%s) DETACH DELETE n", physical.name ) );
@@ -456,7 +456,6 @@ public class Neo4jPlugin extends PolyPlugin {
 
         @Override
         public List<PhysicalEntity> createGraph( Context context, LogicalGraph logical, AllocationGraph allocation ) {
-            String mappingLabel = getMappingLabel( allocation.id );
             PhysicalGraph physical = adapterCatalog.createGraph(
                     getPhysicalGraphName( allocation.id ),
                     logical,
@@ -481,6 +480,17 @@ public class Neo4jPlugin extends PolyPlugin {
             executeDdlTrx(
                     context.getStatement().getTransaction().getXid(),
                     format( "MATCH (n:%s) DETACH DELETE n", getMappingLabel( physical.id ) ) );
+        }
+
+
+        @Override
+        public void renameLogicalColumn( long id, String newColumnName ) {
+            Stream<Long> allocIds = adapterCatalog.fields.values().stream().filter( f -> f.id == id ).map( f -> f.allocId ).distinct();
+            adapterCatalog.renameLogicalColumn( id, newColumnName );
+            allocIds.forEach( allocId -> {
+                NeoEntity entity = adapterCatalog.fromAllocation( allocId, NeoEntity.class );
+                this.currentNamespace.createEntity( entity, adapterCatalog.getFields( allocId ), this.currentNamespace );
+            } );
         }
 
 
@@ -554,6 +564,8 @@ public class Neo4jPlugin extends PolyPlugin {
         String addIndex( Context context, LogicalIndex logicalIndex, AllocationTable allocation );
 
         void dropIndex( Context context, LogicalIndex index, long allocId );
+
+        void renameLogicalColumn( long id, String newColumnName );
 
     }
 

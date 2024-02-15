@@ -373,7 +373,7 @@ public class Functions {
 
 
     @SuppressWarnings("unused")
-    public static Enumerable<?> enforceConstraint( Function0<Enumerable<PolyValue[]>> modify, Function0<Enumerable<PolyValue[]>> control, List<Class<? extends Exception>> exceptions, List<String> msgs ) {
+    public static Enumerable<?> enforceConstraint( DataContext context, Function0<Enumerable<PolyValue[]>> modify, Function0<Enumerable<PolyValue[]>> control, List<Class<? extends Exception>> exceptions, List<String> msgs ) {
         List<PolyValue> results = new ArrayList<>();
         try {
             for ( PolyValue[] object : modify.apply() ) {
@@ -384,6 +384,13 @@ public class Functions {
         }
 
         List<PolyNumber> validationIndexes = new ArrayList<>();
+
+        // constraint is not parameterized atm, as it would require asymmetric parameterization
+        Map<Long, AlgDataType> backupTypes = context.getParameterTypes();
+        List<Map<Long, PolyValue>> backupValues = context.getParameterValues();
+        context.resetParameterValues();
+
+
         for ( PolyValue[] object : control.apply() ) {
             validationIndexes.add( object[1].asNumber() );
         }
