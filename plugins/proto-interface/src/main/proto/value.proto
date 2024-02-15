@@ -78,7 +78,7 @@ message ProtoValue {
     ProtoFloat float = 7;
     ProtoString string = 8;
     ProtoTime time = 9;
-    ProtoTimeStamp time_stamp = 10;
+    ProtoTimestamp timestamp = 10;
     ProtoNull null = 11;
     ProtoBigDecimal big_decimal = 12;
     ProtoInterval interval = 13;
@@ -134,8 +134,8 @@ message ProtoTime {
   int32 value = 1;
 }
 
-message ProtoTimeStamp {
-  int64 time_stamp = 1;
+message ProtoTimestamp {
+  int64 timestamp = 1;
 }
 
 message ProtoBigDecimal {

@@ -47,17 +47,24 @@ import org.polypheny.db.protointerface.proto.ProtoPolyType;
 import org.polypheny.db.protointerface.proto.ProtoSegment;
 import org.polypheny.db.protointerface.proto.ProtoString;
 import org.polypheny.db.protointerface.proto.ProtoTime;
-import org.polypheny.db.protointerface.proto.ProtoTimeStamp;
+import org.polypheny.db.protointerface.proto.ProtoTimestamp;
 import org.polypheny.db.protointerface.proto.ProtoUserDefinedType;
 import org.polypheny.db.protointerface.proto.ProtoValue;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.temporal.PolyDate;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyFloat;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.temporal.PolyTime;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.type.entity.PolyUserDefinedValue;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyBlob;
@@ -144,7 +151,7 @@ public class PolyValueSerializer {
             case TIMESTAMP:
                 // used by PolyTimeStamp
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                return serializeAsProtoTimeStamp( polyValue.asTimestamp() );
+                return serializeAsProtoTimestamp( polyValue.asTimestamp() );
             case INTERVAL_SECOND:
                 // used by PolyInterval
             case INTERVAL_MINUTE_SECOND:
@@ -503,12 +510,12 @@ public class PolyValueSerializer {
     }
 
 
-    public static ProtoValue serializeAsProtoTimeStamp( PolyTimestamp polyTimeStamp ) {
-        ProtoTimeStamp protoTimeStamp = ProtoTimeStamp.newBuilder()
-                .setTimeStamp( polyTimeStamp.getMillisSinceEpoch() )
+    public static ProtoValue serializeAsProtoTimestamp( PolyTimestamp polyTimestamp ) {
+        ProtoTimestamp protoTimestamp = ProtoTimestamp.newBuilder()
+                .setTimestamp( polyTimestamp.getMillisSinceEpoch() )
                 .build();
         return ProtoValue.newBuilder()
-                .setTimeStamp( protoTimeStamp )
+                .setTimestamp( protoTimestamp )
                 .build();
     }
 
