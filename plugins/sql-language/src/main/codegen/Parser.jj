@@ -1950,17 +1950,33 @@ void TableElement(List<SqlNode> list) :
     final String collation;
     SqlIdentifier refTable;
     SqlIdentifier refColumn;
+    final boolean primary;
 }
 {
     id = SimpleIdentifier()
     (
         type = DataType()
         (
-            <NULL> { nullable = true; }
+            <PRIMARY> <KEY>
+            {
+              primary = true;
+              nullable = false;
+            }
             |
-            <NOT> <NULL> { nullable = false; }
+            <NULL> {
+              primary = false;
+              nullable = true;
+            }
             |
-            { nullable = true; }
+            <NOT> <NULL> {
+              primary = false;
+              nullable = false;
+            }
+            |
+            {
+              nullable = true;
+              primary = false;
+            }
         )
         (
             [ <GENERATED> <ALWAYS> ]
@@ -1998,6 +2014,9 @@ void TableElement(List<SqlNode> list) :
         )
         {
             list.add( SqlDdlNodes.column(s.add(id).end(this), id, type.withNullable(nullable), collation, e, strategy));
+            if ( primary ) {
+                list.add( SqlDdlNodes.primary( s.add(id ).end( this ), id, new SqlNodeList( List.of( id ), s.end(this) ) ) );
+            }
         }
         |
             { list.add(id); }
