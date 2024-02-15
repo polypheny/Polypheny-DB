@@ -588,8 +588,12 @@ public abstract class PolyTypeUtil {
             if ( toType.getPolyType() != PolyType.ARRAY ) {
                 return false;
             }
-            ArrayType fromPolyType = (ArrayType) fromType;
-            ArrayType toPolyType = (ArrayType) toType;
+            if ( fromType instanceof BasicPolyType && fromType.getPolyType() == toType.getPolyType() ) {
+                return true;
+            }
+            if ( !(fromType instanceof ArrayType fromPolyType) || !(toType instanceof ArrayType toPolyType) ) {
+                return false;
+            }
             //check if the nested types can be assigned
             AlgDataType fromComponentType = fromPolyType.getNestedComponentType();
             AlgDataType toComponentType = toPolyType.getNestedComponentType();
