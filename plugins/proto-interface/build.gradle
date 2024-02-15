@@ -44,6 +44,17 @@ def generatedDirName = "${project.buildDir}/generated"
 // compile protos on build
 compileJava.dependsOn(generateProto)
 
+extractIncludeProto {
+    dependsOn(':core:generateVersionProperties')
+    dependsOn(':information:compileJava')
+    dependsOn(':core:compileJava')
+    dependsOn(':webui:compileJava')
+    dependsOn(':monitoring:compileJava')
+    dependsOn(':dbms:compileJava')
+    dependsOn(':plugins:sql-language:compileJava')
+    dependsOn(':plugins:mql-language:compileJava')
+}
+
 
 protobuf {
     protoc {
@@ -90,6 +101,9 @@ sourceSets {
 
 delombok {
     dependsOn(":monitoring:processResources")
+    dependsOn(':plugins:proto-interface:generateProto')
+    dependsOn(':plugins:mql-language:processResources')
+    dependsOn(':plugins:mql-language:processResources')
 }
 
 compileJava {
@@ -126,6 +140,7 @@ jar {
 java {
     withJavadocJar()
     withSourcesJar()
+    sourcesJar.dependsOn(':plugins:proto-interface:generateProto')
 }
 
 
