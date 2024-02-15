@@ -130,7 +130,6 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     }
 
 
-    @SneakyThrows
     @Override
     public void disconnect( DisconnectRequest request, StreamObserver<DisconnectionResponse> responseObserver ) {
         PIClient client = getClient();
@@ -306,9 +305,11 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
         PIClient client = getClient();
         PIUnparameterizedStatement statement = client.getStatementManager().createUnparameterizedStatement( request );
         responseObserver.onNext( ProtoUtils.createResult( statement ) );
-        StatementResult result = request.hasFetchSize()
-                ? statement.execute( request.getFetchSize() )
-                : statement.execute( PropertyUtils.DEFAULT_FETCH_SIZE );
+        StatementResult result = statement.execute(
+                request.hasFetchSize()
+                        ? request.getFetchSize()
+                        : PropertyUtils.DEFAULT_FETCH_SIZE
+        );
         responseObserver.onNext( ProtoUtils.createResult( statement, result ) );
         responseObserver.onCompleted();
     }
