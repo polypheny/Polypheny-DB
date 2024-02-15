@@ -132,11 +132,7 @@ public class GraphAdapterCatalog extends AdapterCatalog {
             int position,
             LogicalColumn logicalColumn ) {
         PhysicalColumn column = new PhysicalColumn( name, logicalColumn.tableId, allocId, adapterId, position, logicalColumn );
-        PhysicalTable table = fromAllocation( allocId, PhysicalTable.class );
-        List<PhysicalColumn> columns = new ArrayList<>( table.columns );
-        columns.add( position - 1, column );
         addColumn( column );
-        addPhysical( getAlloc( table.allocationId ), table.toBuilder().columns( ImmutableList.copyOf( columns ) ).build() );
         return column;
     }
 

@@ -158,7 +158,7 @@ public enum BuiltInMethod {
     SWITCH_CONTEXT( DataContext.class, "switchContext" ),
     BATCH( Functions.class, "batch", DataContext.class, Enumerable.class ),
     STREAM_RIGHT( Functions.class, "streamRight", DataContext.class, Enumerable.class, Function0.class, List.class ),
-    ENFORCE_CONSTRAINT( Functions.class, "enforceConstraint", Function0.class, Function0.class, List.class, List.class ),
+    ENFORCE_CONSTRAINT( Functions.class, "enforceConstraint", DataContext.class, Function0.class, Function0.class, List.class, List.class ),
     PARSE_ARRAY_FROM_TEXT( Functions.class, "reparse", String.class ),
     QUERYABLE_SELECT( Queryable.class, "select", FunctionExpression.class ),
     QUERYABLE_AS_ENUMERABLE( Queryable.class, "asEnumerable" ),

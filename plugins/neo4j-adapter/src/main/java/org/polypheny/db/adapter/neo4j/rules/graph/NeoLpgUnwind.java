@@ -31,6 +31,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.type.entity.PolyString;
 
 public class NeoLpgUnwind extends LpgUnwind implements NeoGraphAlg {
 
@@ -55,7 +56,7 @@ public class NeoLpgUnwind extends LpgUnwind implements NeoGraphAlg {
     @Override
     public void implement( NeoGraphImplementor implementor ) {
         implementor.visitChild( 0, getInput() ); // todo fix subfield
-        implementor.add( unwind_( as_( literal_( implementor.getLast().getTupleType().getFieldNames().get( index ) ), literal_( alias ) ) ) );
+        implementor.add( unwind_( as_( literal_( PolyString.of( implementor.getLast().getTupleType().getFieldNames().get( index ) ) ), literal_( PolyString.of( alias ) ) ) ) );
     }
 
 

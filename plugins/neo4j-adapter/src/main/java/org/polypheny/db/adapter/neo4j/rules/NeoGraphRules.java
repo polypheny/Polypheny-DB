@@ -74,7 +74,7 @@ public interface NeoGraphRules {
 
     class NeoGraphModifyRule extends NeoConverterRule {
 
-        public static NeoGraphModifyRule INSTANCE = new NeoGraphModifyRule( LpgModify.class, r -> true, "NeoGraphModifyRule" );
+        public static NeoGraphModifyRule INSTANCE = new NeoGraphModifyRule( LpgModify.class, r -> true, NeoGraphMatchRule.class.getSimpleName() );
 
 
         private <R extends AlgNode> NeoGraphModifyRule( Class<R> clazz, Predicate<? super R> supports, String description ) {
@@ -84,6 +84,12 @@ public interface NeoGraphRules {
 
         @Override
         public AlgNode convert( AlgNode alg ) {
+            LpgModify<?> mod = (LpgModify<?>) alg;
+
+            if ( !(mod.entity instanceof NeoGraph) ) {
+                return null;
+            }
+
             LpgModify<NeoGraph> modify = (LpgModify<NeoGraph>) alg;
             return new NeoLpgModify(
                     modify.getCluster(),

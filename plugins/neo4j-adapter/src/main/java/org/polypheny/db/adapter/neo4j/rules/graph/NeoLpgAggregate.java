@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.neo4j.rules.graph;
 
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.list_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.literal_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.with_;
 
 import java.util.ArrayList;
@@ -25,7 +26,6 @@ import java.util.Objects;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.neo4j.NeoGraphImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
-import org.polypheny.db.adapter.neo4j.util.NeoStatements;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.OperatorStatement;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil;
 import org.polypheny.db.algebra.AlgNode;
@@ -41,6 +41,7 @@ import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNameRef;
+import org.polypheny.db.type.entity.PolyString;
 
 public class NeoLpgAggregate extends LpgAggregate implements NeoGraphAlg {
 
@@ -94,7 +95,7 @@ public class NeoLpgAggregate extends LpgAggregate implements NeoGraphAlg {
                 finalRow.set( currentNames.indexOf( agg.name ), Objects.requireNonNull( NeoUtil.getOpAsNeo( agg.function.getOperatorName(), List.of(), null ) ).apply( refs ) );
             }
 
-            implementor.add( with_( list_( finalRow.stream().map( NeoStatements::literal_ ).toList() ) ) );
+            implementor.add( with_( list_( finalRow.stream().map( e -> literal_( PolyString.of( e ) ) ).toList() ) ) );
 
         }
 

@@ -63,6 +63,7 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.util.Pair;
 
 
@@ -139,7 +140,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
      * @param size the modified rows
      */
     private void addRowCount( int size ) {
-        add( return_( as_( literal_( size ), literal_( "ROWCOUNT" ) ) ) );
+        add( return_( as_( literal_( PolyInteger.of( size ) ), literal_( PolyString.of( "ROWCOUNT" ) ) ) ) );
     }
 
 
@@ -186,7 +187,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
                 if ( pos >= rowType.getFieldCount() ) {
                     continue;
                 }
-                props.add( property_( rowType.getFields().get( pos ).getPhysicalName(), literal_( NeoUtil.rexAsString( value, null, false ) ) ) );
+                props.add( property_( rowType.getFields().get( pos ).getPhysicalName(), literal_( value ) ) );
                 pos++;
             }
             String name = entity.name;
@@ -209,7 +210,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
             String res = project.accept( translator );
             assert res != null : "Unsupported operation encountered for projects in Neo4j.";
 
-            nodes.add( as_( literal_( res ), literal_( fields.get( i ).getName() ) ) );
+            nodes.add( as_( literal_( PolyString.of( res ) ), literal_( PolyString.of( fields.get( i ).getName() ) ) ) );
             i++;
         }
 
@@ -265,7 +266,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
                 statements.add( return_( statement.statements ) );
             } else {//if ( statement.type == StatementType.WHERE ) {
                 // have to add
-                statements.add( return_( list_( last.getTupleType().getFieldNames().stream().map( f -> literal_( NeoUtil.fixParameter( f ) ) ).toList() ) ) );
+                statements.add( return_( list_( last.getTupleType().getFieldNames().stream().map( f -> literal_( PolyString.of( NeoUtil.fixParameter( f ) ) ) ).toList() ) ) );
             }
         }
     }
@@ -273,7 +274,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
 
     public void addFilter( NeoFilter filter ) {
         Translator translator = new Translator( last.getTupleType(), last.getTupleType(), isDml ? getToPhysicalMapping( null ) : new HashMap<>(), this, null, true );
-        add( where_( literal_( filter.getCondition().accept( translator ) ) ) );
+        add( where_( literal_( PolyString.of( filter.getCondition().accept( translator ) ) ) ) );
     }
 
 
@@ -283,8 +284,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
             mapping.put( field.getName(), entity.name + "." + field.getPhysicalName() );
         }
 
-        if ( node instanceof NeoProject ) {
-            NeoProject project = (NeoProject) node;
+        if ( node instanceof NeoProject project ) {
             for ( AlgDataTypeField field : project.getTupleType().getFields() ) {
                 if ( !mapping.containsKey( field.getName() ) ) {
                     Translator translator = new Translator( project.getTupleType(), project.getTupleType(), new HashMap<>(), this, null, true );
@@ -298,7 +298,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
 
 
     public void addDelete() {
-        add( delete_( false, literal_( entity.name ) ) );
+        add( delete_( false, literal_( PolyString.of( entity.name ) ) ) );
     }
 
 
@@ -309,7 +309,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
         int i = 0;
         for ( RexNode node : neoModify.getSourceExpressions() ) {
             Translator translator = new Translator( last.getTupleType(), last.getTupleType(), mapping, this, null, true );
-            nodes.add( assign_( literal_( mapping.get( neoModify.getUpdateColumns().get( i ) ) ), literal_( node.accept( translator ) ) ) );
+            nodes.add( assign_( literal_( PolyString.of( mapping.get( neoModify.getUpdateColumns().get( i ) ) ) ), literal_( PolyString.of( node.accept( translator ) ) ) ) );
             i++;
         }
 

@@ -63,9 +63,9 @@ public class NeoLpgProject extends LpgProject implements NeoGraphAlg {
                 Translator translator = new Translator( getTupleType(), implementor.getLast().getTupleType(), new HashMap<>(), null, implementor.getGraph().mappingLabel, false );
                 String name = project.accept( translator );
                 if ( names.get( i ) != null && !name.equals( names.get( i ).value ) && !names.get( i ).value.contains( "." ) ) {
-                    statements.add( as_( literal_( project.accept( translator ) ), literal_( names.get( i ) ) ) );
+                    statements.add( as_( literal_( PolyString.of( project.accept( translator ) ) ), literal_( names.get( i ) ) ) );
                 } else {
-                    statements.add( literal_( project.accept( translator ) ) );
+                    statements.add( literal_( PolyString.of( project.accept( translator ) ) ) );
                 }
 
                 i++;

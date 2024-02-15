@@ -38,6 +38,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.type.entity.PolyString;
 
 public class NeoLpgSort extends LpgSort implements NeoGraphAlg {
 
@@ -73,15 +74,15 @@ public class NeoLpgSort extends LpgSort implements NeoGraphAlg {
         }
 
         if ( !groups.isEmpty() ) {
-            implementor.add( orderBy_( list_( groups.stream().map( NeoStatements::literal_ ).toList() ) ) );
+            implementor.add( orderBy_( list_( groups.stream().map( e -> NeoStatements.literal_( PolyString.of( e ) ) ).toList() ) ) );
         }
 
         if ( offset != null ) {
-            implementor.add( skip_( ((RexLiteral) offset).value.asNumber().intValue() ) );
+            implementor.add( skip_( ((RexLiteral) offset).value.asNumber() ) );
         }
 
         if ( fetch != null ) {
-            implementor.add( limit_( ((RexLiteral) fetch).value.asNumber().intValue() ) );
+            implementor.add( limit_( ((RexLiteral) fetch).value.asNumber() ) );
         }
 
     }

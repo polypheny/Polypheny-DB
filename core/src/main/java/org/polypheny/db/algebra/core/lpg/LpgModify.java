@@ -19,6 +19,7 @@ package org.polypheny.db.algebra.core.lpg;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.Entity;
@@ -53,9 +54,22 @@ public abstract class LpgModify<E extends Entity> extends Modify<E> implements L
     @Override
     public String algCompareString() {
         return "$" + getClass().getSimpleName() +
+                "$" + entity.id +
+                "$" + entity.getLayer() +
                 "$" + (ids != null ? ids.hashCode() : "[]") +
                 "$" + (operations != null ? operations.hashCode() : "[]") +
                 "{" + input.algCompareString() + "}";
+    }
+
+
+    @Override
+    public AlgWriter explainTerms( AlgWriter pw ) {
+        return super.explainTerms( pw )
+                .input( "input", getInput() )
+                .item( "entity", entity.id )
+                .item( "layer", entity.getLayer() )
+                .item( "operation", getOperation() )
+                .item( "ids", ids );
     }
 
 

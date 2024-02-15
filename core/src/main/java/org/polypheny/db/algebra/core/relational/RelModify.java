@@ -148,18 +148,6 @@ public abstract class RelModify<E extends Entity> extends Modify<E> implements R
         final AlgDataTypeFactory typeFactory = getCluster().getTypeFactory();
         final AlgDataType rowType = entity.getRowType();
         switch ( operation ) {
-            /*case UPDATE:
-                inputRowType =
-                        typeFactory.createJoinType(
-                                rowType,
-                                getCatalogReader().createTypeFromProjection( rowType, updateColumnList ) );
-                break;
-            case MERGE:
-                inputRowType =
-                        typeFactory.createJoinType(
-                                typeFactory.createJoinType( rowType, rowType ),
-                                getCatalogReader().createTypeFromProjection( rowType, updateColumnList ) );
-                break;*/ // todo dl rewrite
             default:
                 inputRowType = rowType;
                 break;

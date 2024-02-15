@@ -19,10 +19,8 @@ package org.polypheny.db.adapter.neo4j.util;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.edge_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.node_;
 
-import java.sql.Time;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -71,7 +69,6 @@ import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.UnsupportedRexCallVisitor;
 
 public interface NeoUtil {
@@ -133,7 +130,7 @@ public interface NeoUtil {
                 break;
             case CHAR:
             case VARCHAR:
-                return v -> PolyString.of( v.toString() );
+                return v -> PolyString.of( v.asString() );
             case BINARY:
             case VARBINARY:
                 return v -> PolyBinary.of( v.asByteArray() );
@@ -152,9 +149,7 @@ public interface NeoUtil {
                 return value -> PolyString.of( value.asString() );
             case DOCUMENT:
             case JSON:
-                return value -> {
-                    return PolyDocument.deserialize( value.asString() );
-                };
+                return value -> PolyDocument.deserialize( value.asString() );
             case GRAPH:
                 return null;
             case NODE:
@@ -576,49 +571,21 @@ public interface NeoUtil {
             return value.asList().value.stream().map( e -> fixParameterValue( e, Pair.of( type.right, type.right ) ) ).toList();
         }
 
-        switch ( type.left ) {
-            case DATE:
-                return value.asTemporal().getDaysSinceEpoch();
-            case TIME:
-                return value.asTemporal().getMillisSinceEpoch();//handleFixTime( value );
-            case TIMESTAMP:
-                /*if ( value instanceof Long ) {
-                    return value;
-                } else if ( value instanceof java.sql.Timestamp ) {
-                    int offset = Calendar.getInstance().getTimeZone().getRawOffset();
-                    return ((Timestamp) value).getTime() + offset;
-                }
-                return ((TimestampString) value).getMillisSinceEpoch();*/
-                return value.asTemporal().getMillisSinceEpoch();
-            case DOCUMENT:
-                return value.asDocument().toTypedJson();//.toString();
-            case INTEGER:
-                return value.asNumber().intValue();
-            case BIGINT:
-                return value.asNumber().longValue();
-            case VARCHAR:
-                return value.asString().value;
-        }
-        throw new NotImplementedException();
-    }
-
-    private static long handleFixTime( Object value ) {
-        if ( value instanceof Integer ) {
-            return Long.valueOf( (Integer) value );
-        } else if ( value instanceof TimeString ) {
-            return ((TimeString) value).getMillisOfDay();
-        } else if ( value instanceof Time ) {
-            return ((Time) value).toLocalTime().toNanoOfDay() / 1000000;
-        } else if ( value instanceof GregorianCalendar ) {
-            return ((GregorianCalendar) value).toZonedDateTime().toEpochSecond();
-        }
-        throw new UnsupportedOperationException( "Cannot handle Time format." );
+        return switch ( type.left ) {
+            case DATE -> value.asTemporal().getDaysSinceEpoch();
+            case TIME -> value.asTemporal().getMillisSinceEpoch();
+            case TIMESTAMP -> value.asTemporal().getMillisSinceEpoch();
+            case DOCUMENT -> value.asDocument().toTypedJson();
+            case INTEGER -> value.asNumber().intValue();
+            case BIGINT -> value.asNumber().longValue();
+            case VARCHAR, TEXT, CHAR -> value.asString().value;
+            default -> throw new NotImplementedException();
+        };
     }
 
     @Getter
     class NeoSupportVisitor extends RexVisitorImpl<Void> {
 
-        @Getter
         private boolean supports;
 
 

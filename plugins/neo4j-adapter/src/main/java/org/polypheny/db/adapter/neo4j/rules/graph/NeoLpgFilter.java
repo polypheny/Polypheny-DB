@@ -31,6 +31,7 @@ import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.entity.PolyString;
 
 public class NeoLpgFilter extends LpgFilter implements NeoGraphAlg {
 
@@ -57,7 +58,7 @@ public class NeoLpgFilter extends LpgFilter implements NeoGraphAlg {
     public void implement( NeoGraphImplementor implementor ) {
         implementor.visitChild( 0, getInput() );
         Translator translator = new Translator( getTupleType(), implementor.getLast().getTupleType(), new HashMap<>(), null, implementor.getGraph().mappingLabel, false );
-        implementor.add( where_( list_( List.of( literal_( getCondition().accept( translator ) ) ) ) ) );
+        implementor.add( where_( list_( List.of( literal_( PolyString.of( getCondition().accept( translator ) ) ) ) ) ) );
     }
 
 
