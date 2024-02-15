@@ -558,6 +558,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         // This currently only works for queries. Since DMLs are evaluated during routing.
         // This SHOULD be adjusted
 
+        if ( accessedPartitions.isEmpty() ) { // TODO: Does this happen for create table?
+            // Do not acquire any locks if nothing is accessed
+            return;
+        }
         // Locking
         try {
             Collection<Entry<EntityIdentifier, LockMode>> idAccessMap = new ArrayList<>();
@@ -1069,7 +1073,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         final AlgDataType jdbcType = QueryProcessorHelpers.makeStruct( root.alg.getCluster().getTypeFactory(), root.validatedRowType );
         //TODO DL: get metadata instead of null
-        List<List<String>> fieldOrigins = Collections.nCopies( jdbcType.getFieldCount(), null);
+        List<List<String>> fieldOrigins = Collections.nCopies( jdbcType.getFieldCount(), null );
 
         final Prefer prefer = Prefer.ARRAY;
         final Convention resultConvention =
