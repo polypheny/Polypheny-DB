@@ -127,6 +127,7 @@ import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.type.ArrayType;
+import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.MultisetPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -1443,6 +1444,9 @@ public abstract class AlgOptUtil {
         // This is why we have to handle it differently here and actually compare the properties
         // of the array types.
         // This means we are comparing the component type, cardinality, and dimension.
+        if ( type1 instanceof BasicPolyType && type1.getPolyType() == PolyType.ARRAY && type1.getPolyType() == type2.getPolyType() ) {
+            return litmus.succeed();
+        }
         if ( type1.getPolyType() == PolyType.ARRAY && type2.getPolyType() == PolyType.ARRAY ) {
             ArrayType arrayType1 = (ArrayType) type1;
             ArrayType arrayType2 = (ArrayType) type2;
