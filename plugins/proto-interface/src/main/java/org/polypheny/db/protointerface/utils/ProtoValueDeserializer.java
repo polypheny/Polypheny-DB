@@ -16,6 +16,10 @@
 
 package org.polypheny.db.protointerface.utils;
 
+import org.polypheny.db.protointerface.proto.IndexedParameters;
+import org.polypheny.db.protointerface.proto.ProtoBigDecimal;
+import org.polypheny.db.protointerface.proto.ProtoValue;
+import org.polypheny.db.type.entity.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
@@ -24,16 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.polypheny.db.protointerface.proto.IndexedParameters;
-import org.polypheny.db.protointerface.proto.ProtoBigDecimal;
-import org.polypheny.db.protointerface.proto.ProtoValue;
-import org.polypheny.db.type.entity.PolyBinary;
-import org.polypheny.db.type.entity.PolyBoolean;
-import org.polypheny.db.type.entity.PolyList;
-import org.polypheny.db.type.entity.PolyLong;
-import org.polypheny.db.type.entity.PolyNull;
-import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
@@ -88,7 +82,7 @@ public class ProtoValueDeserializer {
             case FLOAT -> deserializeToPolyFloat( protoValue );
             case STRING -> deserializeToPolyString( protoValue );
             case TIME -> deserializeToPolyTime( protoValue );
-            case TIME_STAMP -> deserializeToPolyTimeStamp( protoValue );
+            case TIMESTAMP -> deserializeToPolyTimestamp( protoValue );
             case NULL -> deserializeToPolyNull( protoValue );
             case BIG_DECIMAL -> deserializeToPolyBigDecimal( protoValue );
             case LIST -> deserializeToPolyList( protoValue );
@@ -147,12 +141,12 @@ public class ProtoValueDeserializer {
 
 
     private static PolyTime deserializeToPolyTime( ProtoValue protoValue ) {
-        return new PolyTime( protoValue.getTime().getValue() );
+        return new PolyTime( protoValue.getTime().getValue());
     }
 
 
-    private static PolyTimestamp deserializeToPolyTimeStamp( ProtoValue protoValue ) {
-        return new PolyTimestamp( protoValue.getTimeStamp().getTimeStamp() );
+    private static PolyTimestamp deserializeToPolyTimestamp( ProtoValue protoValue ) {
+        return new PolyTimestamp( protoValue.getTimestamp().getTimestamp() );
     }
 
 
@@ -172,6 +166,5 @@ public class ProtoValueDeserializer {
         byte[] unscaledValue = protoBigDecimal.getUnscaledValue().toByteArray();
         return new BigDecimal( new BigInteger( unscaledValue ), protoBigDecimal.getScale(), context );
     }
-
 
 }
