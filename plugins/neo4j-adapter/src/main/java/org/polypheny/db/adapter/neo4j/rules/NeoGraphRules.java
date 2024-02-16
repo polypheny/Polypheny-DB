@@ -74,7 +74,7 @@ public interface NeoGraphRules {
 
     class NeoGraphModifyRule extends NeoConverterRule {
 
-        public static NeoGraphModifyRule INSTANCE = new NeoGraphModifyRule( LpgModify.class, r -> true, NeoGraphMatchRule.class.getSimpleName() );
+        public static NeoGraphModifyRule INSTANCE = new NeoGraphModifyRule( LpgModify.class, r -> true, NeoGraphModifyRule.class.getSimpleName() );
 
 
         private <R extends AlgNode> NeoGraphModifyRule( Class<R> clazz, Predicate<? super R> supports, String description ) {

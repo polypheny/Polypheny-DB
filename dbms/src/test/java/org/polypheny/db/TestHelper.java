@@ -587,9 +587,9 @@ public class TestHelper {
          * This is needed because the order of the elements in the result is not guaranteed
          * The document model does not guarantee specific types like 8.0 and 8 are treated as equal
          *
-         * @param parsedExpected
-         * @param parsedResults
-         * @return
+         * @param parsedExpected list of expected documents
+         * @param parsedResults list of actual documents
+         * @return true if all elements of parsedExpected are in parsedResults and vice versa
          */
         private static boolean areDocumentEqual( List<BsonValue> parsedExpected, List<BsonValue> parsedResults ) {
             for ( BsonValue bsonValue : parsedExpected ) {

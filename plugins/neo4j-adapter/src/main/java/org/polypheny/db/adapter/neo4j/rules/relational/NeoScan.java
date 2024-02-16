@@ -24,9 +24,9 @@ import static org.polypheny.db.adapter.neo4j.util.NeoStatements.match_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.node_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.with_;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import org.polypheny.db.adapter.neo4j.NeoEntity;
 import org.polypheny.db.adapter.neo4j.NeoRelationalImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoRelAlg;
@@ -56,12 +56,17 @@ public class NeoScan extends RelScan<NeoEntity> implements NeoRelAlg {
 
         implementor.add( match_( node_( PolyString.of( entity.name ), labels_( PolyString.of( entity.name ) ) ) ) );
 
-        if ( !implementor.isDml() ) {
+        if ( !implementor.isDml() || !implementor.isPrepared() ) {
             List<NeoStatement> mapping = entity
                     .getRowType()
                     .getFields()
-                    .stream().map( f -> as_( literal_( PolyString.of( entity.name + "." + f.getPhysicalName() ) ), literal_( PolyString.of( f.getName() ) ) ) )
-                    .collect( Collectors.toList() );
+                    .stream().map( f -> (NeoStatement) as_( literal_( PolyString.of( entity.name + "." + f.getPhysicalName() ) ), literal_( PolyString.of( f.getName() ) ) ) )
+                    .toList();
+
+            if ( implementor.isDml() ) {
+                mapping = new ArrayList<>( mapping );
+                mapping.add( literal_( PolyString.of( entity.name ) ) );
+            }
 
             implementor.add( with_( list_( mapping ) ) );
         }

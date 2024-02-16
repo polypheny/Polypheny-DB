@@ -31,10 +31,10 @@ public class TestLiteral implements TestObject {
 
     @Override
     public boolean matches( PolyValue other, boolean exclusive ) {
-        if ( value == null && other == null ) {
+        if ( value == null && (other == null || other.isNull()) ) {
             return true;
         }
-        if ( value == null || other == null ) {
+        if ( value == null || (other == null || other.isNull()) ) {
             return false;
         }
 

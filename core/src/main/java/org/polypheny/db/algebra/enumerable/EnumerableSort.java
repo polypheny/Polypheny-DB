@@ -24,7 +24,10 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
@@ -84,6 +87,12 @@ public class EnumerableSort extends Sort implements EnumerableAlg {
                                 Expressions.list( builder.append( "keySelector", pair.left ) )
                                         .appendIfNotNull( builder.appendIfNotNull( "comparator", pair.right ) ) ) ) );
         return implementor.result( physType, builder.toBlock() );
+    }
+
+
+    @Override
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        return super.computeSelfCost( planner, mq ).multiplyBy( 10 );
     }
 
 }

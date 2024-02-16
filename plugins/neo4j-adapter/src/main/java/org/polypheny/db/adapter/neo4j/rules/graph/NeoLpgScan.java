@@ -20,11 +20,9 @@ import org.polypheny.db.adapter.neo4j.NeoGraph;
 import org.polypheny.db.adapter.neo4j.NeoGraphImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
 import org.polypheny.db.algebra.core.lpg.LpgScan;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.trait.ModelTrait;
-import org.polypheny.db.type.PolyType;
 
 public class NeoLpgScan extends LpgScan<NeoGraph> implements NeoGraphAlg {
 
@@ -44,13 +42,14 @@ public class NeoLpgScan extends LpgScan<NeoGraph> implements NeoGraphAlg {
     public void implement( NeoGraphImplementor implementor ) {
         implementor.setGraph( entity );
 
-        if ( rowType.getFields().size() == 1 ) {
-            AlgDataTypeField field = rowType.getFields().get( 0 );
-            if ( field.getType().getPolyType() == PolyType.GRAPH ) {
-                implementor.setAll( true );
-            }
-        }
+        // if ( rowType.getFields().size() == 1 ) {
+        // AlgDataTypeField field = rowType.getFields().get( 0 );
+        // if ( field.getType().getPolyType() == PolyType.GRAPH ) {
+        implementor.setAll( true );
+        // }
+        //}
 
     }
+
 
 }

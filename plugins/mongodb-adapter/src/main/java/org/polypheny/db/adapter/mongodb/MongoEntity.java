@@ -64,15 +64,12 @@ import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.bson.BsonDocument;
-import org.bson.BsonInt32;
-import org.bson.BsonString;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.mongodb.MongoPlugin.MongoStore;
 import org.polypheny.db.adapter.mongodb.rules.MongoScan;
 import org.polypheny.db.adapter.mongodb.util.MongoDynamic;
 import org.polypheny.db.adapter.mongodb.util.MongoTupleType;
@@ -279,20 +276,6 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
                 return new MongoEnumerator( resultIterator, table.getMongoNamespace().getBucket() );
             }
         };
-    }
-
-
-    public static BsonDocument getPhysicalProjections( List<String> logicalCols, List<String> fieldNames, List<Long> fieldIds ) {
-        BsonDocument projections = new BsonDocument();
-        for ( String logicalCol : logicalCols ) {
-            int index = fieldNames.indexOf( logicalCol );
-            if ( index != -1 ) {
-                projections.append( logicalCol, new BsonString( "$" + MongoStore.getPhysicalColumnName( fieldIds.get( index ) ) ) );
-            } else {
-                projections.append( logicalCol, new BsonInt32( 1 ) );
-            }
-        }
-        return new BsonDocument( "$project", projections );
     }
 
 

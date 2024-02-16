@@ -45,6 +45,7 @@ import org.polypheny.db.adapter.DataStore.IndexMethodModel;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.GraphModifyDelegate;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
+import org.polypheny.db.adapter.neo4j.types.NestedSingleType;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil;
 import org.polypheny.db.catalog.catalogs.GraphAdapterCatalog;
 import org.polypheny.db.catalog.entity.LogicalDefaultValue;
@@ -71,7 +72,6 @@ import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.PasswordGenerator;
 
 
@@ -340,7 +340,7 @@ public class Neo4jPlugin extends PolyPlugin {
 
         private Object getDefaultAsNeo( LogicalDefaultValue defaultValue, PolyType type ) {
             if ( defaultValue != null ) {
-                Object value = NeoUtil.fixParameterValue( defaultValue.value, Pair.of( type, type ) );
+                Object value = NeoUtil.fixParameterValue( defaultValue.value, new NestedSingleType( type ), false );
                 return format( "'%s'", value );
             }
             return null;

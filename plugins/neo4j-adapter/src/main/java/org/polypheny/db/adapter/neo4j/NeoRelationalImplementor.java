@@ -20,6 +20,7 @@ import static org.polypheny.db.adapter.neo4j.util.NeoStatements.as_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.assign_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.create_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.delete_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.identityProperties_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.labels_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.list_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.literal_;
@@ -44,6 +45,7 @@ import org.polypheny.db.adapter.neo4j.rules.NeoRelAlg;
 import org.polypheny.db.adapter.neo4j.rules.relational.NeoFilter;
 import org.polypheny.db.adapter.neo4j.rules.relational.NeoModify;
 import org.polypheny.db.adapter.neo4j.rules.relational.NeoProject;
+import org.polypheny.db.adapter.neo4j.types.NestedPolyType;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.ListStatement;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.NeoStatement;
@@ -61,7 +63,6 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.util.Pair;
@@ -89,7 +90,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
     private NeoEntity entity;
 
     @Getter
-    private final Map<Long, Pair<PolyType, PolyType>> preparedTypes = new HashMap<>();
+    private final Map<Long, NestedPolyType> preparedTypes = new HashMap<>();
 
 
     private ImmutableList<ImmutableList<RexLiteral>> values;
@@ -127,6 +128,9 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
             Pair<Integer, OperatorStatement> res = createCreate( values, entity );
             add( res.right );
             addRowCount( res.left );
+        } else if ( !statements.isEmpty() ) {
+            add( create_( node_( PolyString.of( entity.name + "_" ), labels_( PolyString.of( entity.name ) ), identityProperties_( entity.getFields() ) ) ) );
+            addRowCount( 1 );
         } else {
             throw new UnsupportedOperationException( "Neither values nor a source table was selected for the CREATE" );
         }
@@ -167,8 +171,8 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
     /**
      * Attaches a <code>WITH</code> cypher statement which is used to map a SQL project in some cases.
      */
-    public void addWith( NeoProject project ) {
-        add( create( NeoStatements::with_, project, last, this ) );
+    public void addWith( NeoProject project, boolean isDml ) {
+        add( create( NeoStatements::with_, project, last, this, isDml ) );
     }
 
 
@@ -200,7 +204,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
     }
 
 
-    public static NeoStatements.OperatorStatement create( Function1<ListStatement<?>, OperatorStatement> transformer, NeoProject neoProject, AlgNode last, NeoRelationalImplementor implementor ) {
+    public static NeoStatements.OperatorStatement create( Function1<ListStatement<?>, OperatorStatement> transformer, NeoProject neoProject, AlgNode last, NeoRelationalImplementor implementor, boolean isDml ) {
         List<AlgDataTypeField> fields = neoProject.getTupleType().getFields();
 
         List<NeoStatements.NeoStatement> nodes = new ArrayList<>();
@@ -212,6 +216,10 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
 
             nodes.add( as_( literal_( PolyString.of( res ) ), literal_( PolyString.of( fields.get( i ).getName() ) ) ) );
             i++;
+        }
+        // we add the original entity to no lose it for dmls
+        if ( isDml ) {
+            nodes.add( literal_( PolyString.of( implementor.entity.name ) ) );
         }
 
         return transformer.apply( list_( nodes ) );
@@ -244,7 +252,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
     public void addPreparedType( RexDynamicParam dynamicParam ) {
         preparedTypes.put(
                 dynamicParam.getIndex(),
-                Pair.of( dynamicParam.getType().getPolyType(), NeoUtil.getComponentTypeOrParent( dynamicParam.getType() ) ) );
+                NestedPolyType.from( dynamicParam.getType() ) );
     }
 
 
@@ -273,7 +281,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
 
 
     public void addFilter( NeoFilter filter ) {
-        Translator translator = new Translator( last.getTupleType(), last.getTupleType(), isDml ? getToPhysicalMapping( null ) : new HashMap<>(), this, null, true );
+        Translator translator = new Translator( last.getTupleType(), last.getTupleType(), false ? getToPhysicalMapping( null ) : new HashMap<>(), this, null, true );
         add( where_( literal_( PolyString.of( filter.getCondition().accept( translator ) ) ) ) );
     }
 

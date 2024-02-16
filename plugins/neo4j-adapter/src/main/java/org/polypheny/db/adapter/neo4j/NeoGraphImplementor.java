@@ -20,6 +20,7 @@ import static org.polypheny.db.adapter.neo4j.util.NeoStatements.as_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.distinct_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.edge_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.labels_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.list_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.literal_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.match_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.node_;
@@ -45,10 +46,12 @@ import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.lpg.LpgProject;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.type.PathType;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.util.Pair;
 
@@ -123,6 +126,11 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
      * If the finial statement is not a valid end command for cypher, this adds an appropriate <code>RETURN</code> statement.
      */
     public void addReturnIfNecessary() {
+        if ( statements.isEmpty() && isAll ) {
+            statements.add( match_(
+                    node_( PolyString.of( "n" ), labels_( PolyString.of( this.graph.mappingLabel ) ) ),
+                    path_( node_( "" ), edge_( PolyString.of( "e" ), this.graph.mappingLabel, list_( List.of() ), EdgeDirection.NONE ), node_( "" ) ) ) );
+        }
         if ( statements.get( statements.size() - 1 ).type == StatementType.CREATE ) {
             addRowCount( 1 );
         }
@@ -154,6 +162,10 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
      * @return the fields as a collection of {@link NeoStatement}
      */
     private List<NeoStatement> getFields( AlgDataType rowType ) {
+        if ( isAll && rowType instanceof GraphType ) {
+            return List.of( literal_( PolyString.of( "n" ) ), literal_( PolyString.of( "e" ) ) );
+        }
+
         List<NeoStatement> statements = new ArrayList<>();
         for ( AlgDataTypeField field : rowType.getFields() ) {
             statements.add( getField( field ) );

@@ -107,7 +107,6 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
         return copyOf( Lists.newArrayList( iterator ) );
     }
 
-
     @SafeVarargs
     public PolyList( E... value ) {
         this( Arrays.asList( value ) );
@@ -121,10 +120,9 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
             } ).writeValueAsString( this );
         } catch ( JsonProcessingException e ) {
             log.warn( "Error on serializing typed JSON." );
-            return null;
+            return PolyNull.NULL.toTypedJson();
         }
     }
-
 
     public static PolyList<?> convert( @Nullable Object object ) {
         if ( object == null ) {

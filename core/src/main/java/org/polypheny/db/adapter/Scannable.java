@@ -137,7 +137,7 @@ public interface Scannable {
 
     static AlgNode getDocumentScanSubstitute( Scannable scannable, long allocId, AlgBuilder builder ) {
         builder.clear();
-        PhysicalTable table = scannable.getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 ).unwrap( PhysicalTable.class ).orElseThrow();
+        PhysicalEntity table = scannable.getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 ).unwrap( PhysicalEntity.class ).orElseThrow();
         builder.scan( table );
         AlgDataType rowType = DocumentType.ofId();
         builder.transform( ModelTrait.DOCUMENT, rowType, false, null );

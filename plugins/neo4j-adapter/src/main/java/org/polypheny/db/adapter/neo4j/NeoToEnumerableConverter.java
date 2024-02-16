@@ -18,12 +18,10 @@ package org.polypheny.db.adapter.neo4j;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.polypheny.db.adapter.neo4j.util.NeoUtil;
+import org.polypheny.db.adapter.neo4j.types.NestedPolyType;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterImpl;
 import org.polypheny.db.algebra.enumerable.EnumUtils;
@@ -42,7 +40,6 @@ import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
-import org.polypheny.db.util.Pair;
 
 
 /**
@@ -102,19 +99,28 @@ public class NeoToEnumerableConverter extends ConverterImpl implements Enumerabl
 
         Expression enumerable;
 
-        final Expression fields = getFields( blockBuilder, rowType, AlgDataType::getPolyType );
-
-        final Expression arrayFields = getFields( blockBuilder, rowType, NeoUtil::getComponentTypeOrParent );
+        final Expression types = NestedPolyType.from( rowType ).asExpression();
 
         final Expression parameterClasses = Expressions.constant( null );
 
-        final String query = graphImplementor.build();
+        if ( graphImplementor.statements.isEmpty() && graphImplementor.isAll() ) {
+            String nodes = String.format( "MATCH (n:%s) RETURN n", graphImplementor.getGraph().mappingLabel );
+            String edges = String.format( "MATCH (n:%s)-[e]->(m) RETURN e", graphImplementor.getGraph().mappingLabel );
 
-        enumerable = blockBuilder.append(
-                blockBuilder.newName( "enumerable" ),
-                Expressions.call(
-                        graph,
-                        NeoMethod.GRAPH_EXECUTE.method, Expressions.constant( query ), fields, arrayFields, parameterClasses ) );
+            enumerable = blockBuilder.append(
+                    blockBuilder.newName( "enumerable" ),
+                    Expressions.call(
+                            graph,
+                            NeoMethod.GRAPH_ALL.method, Expressions.constant( nodes ), Expressions.constant( edges ) ) );
+        } else {
+            final String query = graphImplementor.build();
+
+            enumerable = blockBuilder.append(
+                    blockBuilder.newName( "enumerable" ),
+                    Expressions.call(
+                            graph,
+                            NeoMethod.GRAPH_EXECUTE.method, Expressions.constant( query ), types, parameterClasses ) );
+        }
 
         blockBuilder.add( Expressions.return_( null, enumerable ) );
 
@@ -142,9 +148,7 @@ public class NeoToEnumerableConverter extends ConverterImpl implements Enumerabl
 
         final Expression entity = blockBuilder.append( "entity", neoImplementor.getEntity().asExpression( NeoEntity.NeoQueryable.class ) );
 
-        final Expression fields = getFields( blockBuilder, rowType, AlgDataType::getPolyType );
-
-        final Expression arrayFields = getFields( blockBuilder, rowType, NeoUtil::getComponentTypeOrParent );
+        final Expression types = NestedPolyType.from( rowType ).asExpression();
 
         final Expression parameterClasses = getPolyMap( blockBuilder, neoImplementor.getPreparedTypes() );
 
@@ -154,7 +158,7 @@ public class NeoToEnumerableConverter extends ConverterImpl implements Enumerabl
                 blockBuilder.newName( "enumerable" ),
                 Expressions.call(
                         entity,
-                        NeoMethod.EXECUTE.method, Expressions.constant( query ), fields, arrayFields, parameterClasses ) );
+                        NeoMethod.EXECUTE.method, Expressions.constant( query ), types, parameterClasses ) );
 
         blockBuilder.add( Expressions.return_( null, enumerable ) );
 
@@ -168,7 +172,7 @@ public class NeoToEnumerableConverter extends ConverterImpl implements Enumerabl
      * @param map the target map to transform
      * @return the map in an expression representation
      */
-    private Expression getPolyMap( BlockBuilder builder, Map<Long, Pair<PolyType, PolyType>> map ) {
+    private Expression getPolyMap( BlockBuilder builder, Map<Long, NestedPolyType> map ) {
         return builder.append(
                 builder.newName( "map" ),
                 Expressions.call(
@@ -177,39 +181,8 @@ public class NeoToEnumerableConverter extends ConverterImpl implements Enumerabl
                                 map.entrySet()
                                         .stream()
                                         .map( p ->
-                                                Expressions.call( BuiltInMethod.PAIR_OF.method, Expressions.constant( p.getKey(), Long.class ),
-                                                        getPair( p.getValue(), PolyType.class, PolyType.class ) ) ).collect( Collectors.toList() ) ) ) );
-    }
-
-
-    /**
-     * Returns the provided pair as {@link Expression}.
-     *
-     * @param pair the target pair
-     * @param classLeft class of the left element
-     * @param classRight class of the right element
-     * @return the pair as Expression e.g. <code>Pair.of( (int) 0, (long) 3 )</code>
-     */
-    public <T, E> Expression getPair( Pair<T, E> pair, Class<T> classLeft, Class<E> classRight ) {
-        return Expressions.call( BuiltInMethod.PAIR_OF.method, Expressions.constant( pair.left, classLeft ), Expressions.constant( pair.left, classRight ) );
-    }
-
-
-    /**
-     * Returns the {@link Expression} for the given {@link AlgDataType} where each field is represented as {@link PolyType}.
-     *
-     * @param builder helper builder to generate expressions
-     * @param rowType the RowType to transform
-     * @param typeGetter function, which transforms a {@link AlgDataType} into a matching {@link PolyType}
-     */
-    public Expression getFields( BlockBuilder builder, AlgDataType rowType, Function1<AlgDataType, PolyType> typeGetter ) {
-        return builder.append(
-                builder.newName( "fields" ),
-                EnumUtils.constantArrayList( rowType
-                        .getFields()
-                        .stream()
-                        .map( f -> typeGetter.apply( f.getType() ) )
-                        .toList(), PolyType.class ) );
+                                                (Expression) Expressions.call( BuiltInMethod.PAIR_OF.method, Expressions.constant( p.getKey(), Long.class ),
+                                                        p.getValue().asExpression() ) ).toList() ) ) );
     }
 
 
