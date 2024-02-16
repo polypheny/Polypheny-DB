@@ -16,6 +16,7 @@
 
 package org.polypheny.db.algebra.core.lpg;
 
+import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.common.Scan;
 import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.catalog.entity.Entity;
@@ -39,7 +40,15 @@ public abstract class LpgScan<E extends Entity> extends Scan<E> implements LpgAl
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + entity.id;
+        return "$" + getClass().getSimpleName() + "$" + entity.id + "$" + entity.id;
+    }
+
+
+    @Override
+    public AlgWriter explainTerms( AlgWriter pw ) {
+        return super.explainTerms( pw )
+                .item( "id", entity.id )
+                .item( "layer", entity.getLayer() );
     }
 
 

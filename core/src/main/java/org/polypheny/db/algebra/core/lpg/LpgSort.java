@@ -41,4 +41,5 @@ public abstract class LpgSort extends Sort implements LpgAlg {
         return NodeType.SORT;
     }
 
+
 }

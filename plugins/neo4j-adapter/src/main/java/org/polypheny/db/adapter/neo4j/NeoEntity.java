@@ -35,6 +35,7 @@ import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.neo4j.rules.relational.NeoScan;
+import org.polypheny.db.adapter.neo4j.types.NestedPolyType;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.Modify;
@@ -63,7 +64,6 @@ import org.polypheny.db.schema.types.QueryableEntity;
 import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.util.Pair;
 
 /**
  * Relational Neo4j representation of a {@link org.polypheny.db.schema.PolyphenyDbSchema} entity
@@ -186,7 +186,6 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
             return execute(
                     String.format( "MATCH (n:%s) RETURN %s", entity.name, buildAllQuery() ),
                     getTypes(),
-                    getComponentType(),
                     Map.of() ).enumerator();
         }
 
@@ -201,8 +200,8 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
         }
 
 
-        private List<PolyType> getTypes() {
-            return rowType.getFields().stream().map( t -> t.getType().getPolyType() ).toList();
+        private NestedPolyType getTypes() {
+            return NestedPolyType.from( rowType );
         }
 
 
@@ -218,23 +217,23 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
          * @param prepared mapping of parameters and their components if they are collections
          */
         @SuppressWarnings("UnusedDeclaration")
-        public Enumerable<PolyValue[]> execute( String query, List<PolyType> types, List<PolyType> componentTypes, Map<Long, Pair<PolyType, PolyType>> prepared ) {
+        public Enumerable<PolyValue[]> execute( String query, NestedPolyType types, Map<Long, NestedPolyType> prepared ) {
             Transaction trx = getTrx();
 
             dataContext.getStatement().getTransaction().registerInvolvedAdapter( entity.namespace.store );
 
             List<Result> results = new ArrayList<>();
             if ( dataContext.getParameterValues().size() == 1 ) {
-                results.add( trx.run( query, toParameters( dataContext.getParameterValues().get( 0 ), prepared ) ) );
+                results.add( trx.run( query, toParameters( dataContext.getParameterValues().get( 0 ), prepared, false ) ) );
             } else if ( !dataContext.getParameterValues().isEmpty() ) {
                 for ( Map<Long, PolyValue> value : dataContext.getParameterValues() ) {
-                    results.add( trx.run( query, toParameters( value, prepared ) ) );
+                    results.add( trx.run( query, toParameters( value, prepared, false ) ) );
                 }
             } else {
                 results.add( trx.run( query ) );
             }
 
-            Function1<Record, PolyValue[]> getter = NeoQueryable.getter( types, componentTypes );
+            Function1<Record, PolyValue[]> getter = NeoQueryable.getter( types );
 
             return new AbstractEnumerable<>() {
                 @Override
@@ -251,19 +250,19 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
          * @param values the values to execute the query with
          * @param parameterTypes the types of the attached values
          */
-        private Map<String, Object> toParameters( Map<Long, PolyValue> values, Map<Long, Pair<PolyType, PolyType>> parameterTypes ) {
+        private Map<String, Object> toParameters( Map<Long, PolyValue> values, Map<Long, NestedPolyType> parameterTypes, boolean nested ) {
             Map<String, Object> parameters = new HashMap<>();
             for ( Entry<Long, PolyValue> entry : values.entrySet().stream().filter( e -> parameterTypes.containsKey( e.getKey() ) ).toList() ) {
                 parameters.put(
                         NeoUtil.asParameter( entry.getKey(), false ),
-                        NeoUtil.fixParameterValue( entry.getValue(), parameterTypes.get( entry.getKey() ) ) );
+                        NeoUtil.fixParameterValue( entry.getValue(), parameterTypes.get( entry.getKey() ), false ) );
             }
             return parameters;
         }
 
 
-        static Function1<Record, PolyValue[]> getter( List<PolyType> types, List<PolyType> componentTypes ) {
-            return NeoUtil.getTypesFunction( types, componentTypes );
+        static Function1<Record, PolyValue[]> getter( NestedPolyType types ) {
+            return NeoUtil.getTypesFunction( types );
         }
 
 

@@ -55,7 +55,6 @@ import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
-import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.volcano.AlgSubset;
@@ -323,7 +322,7 @@ public interface Modifiable extends Scannable {
 
     @Nullable
     static AlgNode getDocModifySubstitute( Modifiable modifiable, long allocId, DocumentModify<?> modify, AlgBuilder builder ) {
-        Optional<PhysicalTable> oTable = modifiable.getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 ).unwrap( PhysicalTable.class );
+        Optional<PhysicalEntity> oTable = modifiable.getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 ).unwrap( PhysicalEntity.class );
         if ( oTable.isEmpty() ) {
             return null;
         }
@@ -353,7 +352,7 @@ public interface Modifiable extends Scannable {
             // right side prepared
             builder.push( LogicalValues.createOneRow( modify.getCluster() ) );
 
-            builder.project( DocumentType.ofRelational().getFields().stream().map( f -> new RexDynamicParam( f.getType(), f.getIndex() ) ).collect( Collectors.toList() ), DocumentType.ofRelational().getFieldNames() );
+            builder.project( DocumentType.ofRelational().getFields().stream().map( f -> new RexDynamicParam( f.getType(), f.getIndex() ) ).toList(), DocumentType.ofRelational().getFieldNames() );
 
             AlgNode collector = oTable.orElseThrow().unwrap( ModifiableTable.class ).orElseThrow().toModificationTable(
                     modify.getCluster(),

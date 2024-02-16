@@ -18,6 +18,7 @@ package org.polypheny.db.adapter;
 
 import java.util.List;
 import lombok.Getter;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.catalogs.GraphAdapterCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
@@ -28,6 +29,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.tools.AlgBuilder;
 
 public class GraphScanDelegate implements Scannable {
 
@@ -41,6 +43,11 @@ public class GraphScanDelegate implements Scannable {
         this.catalog = catalog;
     }
 
+
+    @Override
+    public AlgNode getDocumentScan( long allocId, AlgBuilder builder ) {
+        return Scannable.getDocumentScanSubstitute( scannable, allocId, builder );
+    }
 
     @Override
     public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {

@@ -16,6 +16,8 @@
 
 package org.polypheny.db.type.entity;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -29,11 +31,14 @@ import org.polypheny.db.type.PolyType;
 @Value
 public class PolySymbol extends PolyValue {
 
+    @JsonProperty
     public Enum<?> value;
+    @JsonProperty
     public Object object;
 
 
-    public PolySymbol( Enum<?> value, Object o ) {
+    @JsonCreator
+    public PolySymbol( @JsonProperty("value") Enum<?> value, @JsonProperty("object") Object o ) {
         super( PolyType.SYMBOL );
         this.value = value;
         this.object = o;

@@ -39,6 +39,7 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
+import org.polypheny.db.type.PathType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
@@ -53,7 +54,7 @@ public class Translator extends RexVisitorImpl<String> {
     private final String mappingLabel;
     private final boolean useBrackets;
 
-    private static List<OperatorName> binaries = Arrays.stream( OperatorName.values() )
+    private static final List<OperatorName> binaries = Arrays.stream( OperatorName.values() )
             .filter( o -> o.getClazz() == BinaryOperator.class )
             .toList();
 
@@ -93,16 +94,17 @@ public class Translator extends RexVisitorImpl<String> {
 
 
     private String adjustGraph( AlgDataType type, String name ) {
+        if ( type instanceof PathType && (name == null || name.startsWith( "$" ) && name.endsWith( "$" )) ) {
+            return "*";
+        }
         if ( !useBrackets ) {
             return name;
         }
-        switch ( type.getPolyType() ) {
-            case NODE:
-                return String.format( "(%s)", name );
-            case EDGE:
-                return String.format( "-[%s]-", name );
-        }
-        return name;
+        return switch ( type.getPolyType() ) {
+            case NODE -> String.format( "(%s)", name );
+            case EDGE -> String.format( "-[%s]-", name );
+            default -> name;
+        };
     }
 
 
@@ -215,7 +217,7 @@ public class Translator extends RexVisitorImpl<String> {
         List<String> keys = rexKeys.stream().map( l -> l.asString().value ).toList();
         List<PolyValue> rexValues = ((RexLiteral) call.operands.get( 2 )).value.asList().value;
         List<String> values = rexValues.stream().map( l -> {
-            String literal = l.asString().value;
+            String literal = l.toJson();
             if ( l.isString() ) {
                 return String.format( "'%s'", literal );
             }
@@ -242,7 +244,7 @@ public class Translator extends RexVisitorImpl<String> {
 
     private String handleSetProperty( RexCall call ) {
         String identifier = call.operands.get( 0 ).accept( this );
-        String key = call.operands.get( 1 ).accept( this );
+        String key = call.operands.get( 1 ).unwrap( RexLiteral.class ).orElseThrow().value.asString().value;
         RexLiteral rex = (RexLiteral) call.operands.get( 2 );
         String literal = NeoUtil.rexAsString( rex, null, true );
         if ( PolyType.STRING_TYPES.contains( rex.getType().getPolyType() ) ) {

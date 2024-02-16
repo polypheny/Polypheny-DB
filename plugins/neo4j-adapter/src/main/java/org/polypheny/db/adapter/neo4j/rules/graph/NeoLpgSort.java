@@ -56,7 +56,7 @@ public class NeoLpgSort extends LpgSort implements NeoGraphAlg {
 
     @Override
     public Sort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation, ImmutableList<RexNode> fieldExps, RexNode offset, RexNode fetch ) {
-        return new NeoLpgSort( input.getCluster(), traitSet, input, collation, offset, fetch );
+        return new NeoLpgSort( newInput.getCluster(), traitSet, newInput, newCollation, offset, fetch );
     }
 
 

@@ -71,7 +71,7 @@ public class NeoLpgAggregate extends LpgAggregate implements NeoGraphAlg {
     @Override
     public void implement( NeoGraphImplementor implementor ) {
         implementor.visitChild( 0, getInput() );
-        if ( implementor.getLast() instanceof LpgProject ) {
+        if ( implementor.getLast() instanceof LpgProject || implementor.getLast() instanceof NeoLpgMatch ) {
             OperatorStatement last = implementor.removeLast();
             List<String> finalRow = new ArrayList<>();
             for ( AlgDataTypeField ignored : getTupleType().getFields() ) {
@@ -91,8 +91,12 @@ public class NeoLpgAggregate extends LpgAggregate implements NeoGraphAlg {
                 } else {
                     refs.add( lastNames.get( ((RexIndexRef) agg.getInput().get()).getIndex() ) );
                 }
+                int i = currentNames.indexOf( agg.name );
+                if ( i == -1 ) {
+                    i = currentNames.indexOf( agg.function.getOperatorName().name() );
+                }
 
-                finalRow.set( currentNames.indexOf( agg.name ), Objects.requireNonNull( NeoUtil.getOpAsNeo( agg.function.getOperatorName(), List.of(), null ) ).apply( refs ) );
+                finalRow.set( i, Objects.requireNonNull( NeoUtil.getOpAsNeo( agg.function.getOperatorName(), List.of(), null ) ).apply( refs ) );
             }
 
             implementor.add( with_( list_( finalRow.stream().map( e -> literal_( PolyString.of( e ) ) ).toList() ) ) );

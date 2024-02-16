@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.ElementStatement.ElementType;
+import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -213,6 +214,7 @@ public interface NeoStatements {
         return new CollectionStatement( "properties", identifier );
     }
 
+
     class NodeStatement extends ElementStatement {
 
         private final PolyString identifier;
@@ -224,7 +226,7 @@ public interface NeoStatements {
 
 
         protected NodeStatement( PolyString identifier, LabelsStatement labels, ListStatement<?> properties ) {
-            this.identifier = identifier == null ? PolyString.of( "" ) : identifier;
+            this.identifier = identifier == null || identifier.isNull() ? PolyString.of( "" ) : identifier;
             this.labels = labels;
             this.properties = properties;
         }
@@ -283,7 +285,7 @@ public interface NeoStatements {
 
 
         protected EdgeStatement( @Nullable PolyString identifier, PolyString range, LabelsStatement labelsStatement, ListStatement<PropertyStatement> properties, EdgeDirection direction ) {
-            this.identifier = identifier == null ? PolyString.of( "" ) : identifier;
+            this.identifier = identifier == null || identifier.isNull() ? PolyString.of( "" ) : identifier;
             assert labelsStatement.labels.size() <= 1 : "Edges only allow one label.";
             this.label = labelsStatement;
             this.properties = properties;
@@ -428,6 +430,14 @@ public interface NeoStatements {
         return new PropertyStatement( PolyString.of( key ), value );
     }
 
+    static List<PropertyStatement> identityProperties_( List<? extends PhysicalField> fields ) {
+        List<PropertyStatement> props = new ArrayList<>();
+        for ( PhysicalField field : fields ) {
+            props.add( property_( PolyString.of( field.name ), identifier_( field.logicalName ) ) );
+        }
+        return props;
+    }
+
     static List<PropertyStatement> properties_( PolyDictionary properties ) {
         List<PropertyStatement> props = new ArrayList<>();
         for ( Entry<PolyString, PolyValue> entry : properties.entrySet() ) {
@@ -444,6 +454,10 @@ public interface NeoStatements {
         } else {
             return literal_( value );
         }
+    }
+
+    static NeoStatement identifier_( String identifier ) {
+        return new LiteralStatement( identifier );
     }
 
     class LabelsStatement extends NeoStatement {
