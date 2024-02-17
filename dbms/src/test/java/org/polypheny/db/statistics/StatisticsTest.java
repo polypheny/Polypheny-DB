@@ -206,12 +206,14 @@ public class StatisticsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT * FROM statisticschema.nation" ),
-                        NATION_TEST_DATA
-                );
+                        NATION_TEST_DATA,
+                        true );
+
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT * FROM statisticschema.region" ),
-                        REGION_TEST_DATA
-                );
+                        REGION_TEST_DATA,
+                        true );
+
             } finally {
                 connection.rollback();
             }
@@ -244,12 +246,14 @@ public class StatisticsTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT * FROM statisticschema.nation" ),
-                        NATION_TEST_DATA
-                );
+                        NATION_TEST_DATA,
+                        true );
+
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT * FROM statisticschema.region" ),
-                        REGION_TEST_DATA
-                );
+                        REGION_TEST_DATA,
+                        true );
+
                 waiter.await( 20, TimeUnit.SECONDS );
                 Snapshot snapshot = Catalog.getInstance().getSnapshot();
                 LogicalTable catalogTableNation = snapshot.rel().getTable( "statisticschema", "nation" ).orElseThrow();

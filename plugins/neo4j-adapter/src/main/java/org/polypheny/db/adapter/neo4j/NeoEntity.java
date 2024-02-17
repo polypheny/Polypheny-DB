@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import lombok.experimental.SuperBuilder;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -62,12 +63,12 @@ import org.polypheny.db.schema.impl.AbstractEntityQueryable;
 import org.polypheny.db.schema.types.ModifiableTable;
 import org.polypheny.db.schema.types.QueryableEntity;
 import org.polypheny.db.schema.types.TranslatableEntity;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 
 /**
  * Relational Neo4j representation of a {@link org.polypheny.db.schema.PolyphenyDbSchema} entity
  */
+@SuperBuilder(toBuilder = true)
 public class NeoEntity extends PhysicalEntity implements TranslatableEntity, ModifiableTable, QueryableEntity {
 
     @Getter
@@ -187,16 +188,6 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
                     String.format( "MATCH (n:%s) RETURN %s", entity.name, buildAllQuery() ),
                     getTypes(),
                     Map.of() ).enumerator();
-        }
-
-
-        private List<PolyType> getComponentType() {
-            return rowType.getFields().stream().map( t -> {
-                if ( t.getType().getComponentType() != null ) {
-                    return t.getType().getComponentType().getPolyType();
-                }
-                return null;
-            } ).toList();
         }
 
 

@@ -22,7 +22,9 @@ import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -326,7 +328,7 @@ public class Neo4jPlugin extends PolyPlugin {
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
             NeoEntity physical = adapterCatalog.fromAllocation( allocId, NeoEntity.class );
             String physicalName = getPhysicalFieldName( logicalColumn.id );
-            adapterCatalog.createColumn( physicalName, allocId, physical.getFields().size() - 1, logicalColumn );
+            PhysicalColumn column = adapterCatalog.createColumn( physicalName, allocId, physical.getFields().size() - 1, logicalColumn );
 
             if ( logicalColumn.defaultValue != null ) {
                 executeDdlTrx( context.getStatement().getTransaction().getXid(), format(
@@ -335,13 +337,20 @@ public class Neo4jPlugin extends PolyPlugin {
                         getPhysicalFieldName( logicalColumn.id ),
                         getDefaultAsNeo( logicalColumn.defaultValue, logicalColumn.type ) ) );
             }
+
+            List<PhysicalField> fields = new ArrayList<>( physical.getFields() );
+            fields.add( column );
+            adapterCatalog.replacePhysical(
+                    physical.toBuilder().fields( fields.stream()
+                            .map( f -> f.unwrap( PhysicalColumn.class ).orElseThrow() )
+                            .sorted( Comparator.comparingInt( a -> a.position ) ).toList() ).build() );
         }
 
 
         private Object getDefaultAsNeo( LogicalDefaultValue defaultValue, PolyType type ) {
             if ( defaultValue != null ) {
                 Object value = NeoUtil.fixParameterValue( defaultValue.value, new NestedSingleType( type ), false );
-                return format( "'%s'", value );
+                return format( "%s", value );
             }
             return null;
         }
@@ -352,9 +361,17 @@ public class Neo4jPlugin extends PolyPlugin {
             NeoEntity physical = adapterCatalog.fromAllocation( allocId, NeoEntity.class );
             PhysicalColumn column = adapterCatalog.getField( columnId, allocId ).unwrap( PhysicalColumn.class ).orElseThrow();
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
+
+            adapterCatalog.fields.values().stream().filter( f -> f.id == columnId && f.allocId == allocId ).forEach( f -> {
+                adapterCatalog.dropColumn( f.allocId, f.id );
+            } );
+
             executeDdlTrx(
                     context.getStatement().getTransaction().getXid(),
                     format( "MATCH (n:%s) REMOVE n.%s", physical.name, column.name ) );
+
+            adapterCatalog.replacePhysical(
+                    physical.toBuilder().fields( physical.getFields().stream().filter( f -> f.id != columnId ).toList() ).build() );
         }
 
 
@@ -410,6 +427,11 @@ public class Neo4jPlugin extends PolyPlugin {
         @Override
         public void updateColumnType( Context context, long allocId, LogicalColumn newCol ) {
             // empty on purpose, all string?
+            NeoEntity entity = adapterCatalog.fromAllocation( allocId, NeoEntity.class );
+            PhysicalColumn column = adapterCatalog.updateColumnType( allocId, newCol );
+
+            adapterCatalog.replacePhysical(
+                    entity.toBuilder().fields( entity.getFields().stream().map( f -> f.id == newCol.id ? column : f ).toList() ).build() );
         }
 
 

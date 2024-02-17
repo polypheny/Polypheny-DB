@@ -99,24 +99,24 @@ public interface NeoUtil {
             case TINYINT:
             case SMALLINT:
             case INTEGER:
-                return v -> PolyInteger.of( v.asInt() );
+                return v -> PolyInteger.of( v.asNumber() );
             case DATE:
-                return v -> PolyDate.of( v.asInt() );
+                return v -> PolyDate.of( v.asNumber() );
             case TIME:
             case TIME_WITH_LOCAL_TIME_ZONE:
-                return v -> PolyTime.of( v.asInt() );
+                return v -> PolyTime.of( v.asNumber() );
             case TIMESTAMP:
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                return v -> PolyTimestamp.of( v.asLong() );
+                return v -> PolyTimestamp.of( v.asNumber() );
             case BIGINT:
                 return v -> PolyBigDecimal.of( v.asLong() );
             case DECIMAL:
                 return v -> PolyBigDecimal.of( v.asDouble() );
             case FLOAT:
             case REAL:
-                return v -> PolyFloat.of( v.asDouble() );
+                return v -> PolyFloat.of( v.asNumber() );
             case DOUBLE:
-                return v -> PolyDouble.of( v.asDouble() );
+                return v -> PolyDouble.of( v.asNumber() );
             case INTERVAL_YEAR:
             case INTERVAL_YEAR_MONTH:
             case INTERVAL_MONTH:
@@ -588,7 +588,7 @@ public interface NeoUtil {
         }
 
         if ( value.isNumber() ) {
-            return value.asNumber().doubleValue();
+            return value.asNumber().DoubleValue();
         }
         if ( value.isList() ) {
             if ( isNested ) {
@@ -602,8 +602,8 @@ public interface NeoUtil {
             case TIME -> value.asTemporal().getMillisSinceEpoch();
             case TIMESTAMP -> value.asTemporal().getMillisSinceEpoch();
             case DOCUMENT -> value.asDocument().toTypedJson();
-            case INTEGER -> value.asNumber().intValue();
-            case BIGINT -> value.asNumber().longValue();
+            case INTEGER -> value.asNumber().IntValue();
+            case BIGINT -> value.asNumber().LongValue();
             case VARCHAR, TEXT, CHAR -> value.asString().value;
             case BOOLEAN -> value.asBoolean().value;
             case BINARY, VARBINARY, FILE, IMAGE, VIDEO, AUDIO -> value.asBlob().asByteArray();

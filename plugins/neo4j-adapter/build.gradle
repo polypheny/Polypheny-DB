@@ -75,6 +75,5 @@ java {
 
 licensee {
     allow('Apache-2.0')
-
-    allow('CC0-1.0')
+    allow('MIT-0')
 }

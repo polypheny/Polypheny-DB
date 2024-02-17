@@ -257,7 +257,7 @@ public abstract class Join extends BiAlg {
                 left.algCompareString() + "$" +
                 right.algCompareString() + "$" +
                 (condition != null ? condition.hashCode() : "") + "$" +
-                (joinType != null ? joinType.name() : "") + "&";
+                (joinType != null ? joinType.name() : "") + "$";
     }
 
 

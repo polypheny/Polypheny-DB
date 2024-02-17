@@ -50,7 +50,7 @@ public class NeoProject extends Project implements NeoRelAlg {
             return;
         }
 
-        if ( !implementor.isDml() || !implementor.isPrepared() ) {
+        if ( !implementor.isDml() || (!implementor.isPrepared() && !implementor.isEmpty()) ) {
             implementor.addWith( this, implementor.isDml() );
         }
     }

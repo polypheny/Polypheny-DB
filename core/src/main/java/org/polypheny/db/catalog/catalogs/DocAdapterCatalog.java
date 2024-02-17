@@ -19,10 +19,8 @@ package org.polypheny.db.catalog.catalogs;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.SortedSet;
 import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
@@ -93,11 +91,7 @@ public class DocAdapterCatalog extends AdapterCatalog {
             int position,
             LogicalColumn logicalColumn ) {
         PhysicalColumn column = new PhysicalColumn( name, logicalColumn.tableId, allocId, adapterId, position, logicalColumn );
-        PhysicalEntity table = fromAllocation( allocId, PhysicalEntity.class );
-        // List<PhysicalColumn> columns = new ArrayList<>( getOrderedColumns( allocId ) );
-        // columns.add( position - 1, column );
         addColumn( column );
-        //addPhysical( getAlloc( table.allocationId ), table.toBuilder().columns( ImmutableList.copyOf( columns ) ).build() );
         return column;
     }
 
@@ -126,20 +120,8 @@ public class DocAdapterCatalog extends AdapterCatalog {
         PhysicalColumn old = getColumn( newCol.id, allocId );
         PhysicalColumn column = new PhysicalColumn( old.name, newCol.tableId, allocId, old.adapterId, old.position, newCol );
         addColumn( column );
-        // PhysicalEntity table = fromAllocation( allocId, PhysicalEntity.class );
-        // List<PhysicalColumn> pColumn = new ArrayList<>( getOrderedColumns( allocId ) );
-        // pColumn.remove( old );
-        // pColumn.add( column );
-        //addPhysical( getAlloc( table.allocationId ), table.toBuilder().columns( ImmutableList.copyOf( pColumn ) ).build() );
-
         return column;
     }
-
-
-    public List<PhysicalColumn> getOrderedColumns( long allocId ) {
-        return fields.values().stream().filter( c -> c.allocId == allocId ).map( p -> p.unwrap( PhysicalColumn.class ) ).filter( Optional::isPresent ).map( Optional::get ).sorted( Comparator.comparingInt( c -> c.position ) ).toList();
-    }
-
 
     public PhysicalTable createTable(
             String namespaceName,

@@ -147,11 +147,11 @@ public class CatalogTest {
 
             TestHelper.checkResultSet(
                     connection.getMetaData().getSchemas( "APP", null ),
-                    ImmutableList.of( schemaPublic, schemaTest, schemaPrivate ) );
+                    ImmutableList.of( schemaPublic, schemaTest, schemaPrivate ), true );
 
             TestHelper.checkResultSet(
                     connection.getMetaData().getSchemas( "APP", "schema1" ),
-                    ImmutableList.of( schemaTest ) );
+                    ImmutableList.of( schemaTest ), true );
 
         } catch ( SQLException e ) {
             log.error( "Exception while testing getNamespaces()", e );

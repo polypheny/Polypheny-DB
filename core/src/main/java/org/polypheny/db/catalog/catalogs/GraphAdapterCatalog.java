@@ -16,7 +16,6 @@
 
 package org.polypheny.db.catalog.catalogs;
 
-import com.google.common.collect.ImmutableList;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import java.util.ArrayList;
@@ -76,11 +75,6 @@ public class GraphAdapterCatalog extends AdapterCatalog {
             }
         }
         for ( PhysicalColumn u : updates ) {
-            PhysicalTable table = physicals.get( u.logicalEntityId ).unwrap( PhysicalTable.class ).orElseThrow();
-            List<PhysicalColumn> newColumns = new ArrayList<>( table.columns );
-            newColumns.remove( u );
-            newColumns.add( u );
-            physicals.put( table.id, table.toBuilder().columns( ImmutableList.copyOf( newColumns ) ).build() );
             fields.put( Pair.of( u.allocId, u.id ), u );
         }
     }
@@ -147,9 +141,24 @@ public class GraphAdapterCatalog extends AdapterCatalog {
     }
 
 
+    public void dropColumn( long allocId, long columnId ) {
+        fields.remove( Pair.of( allocId, columnId ) );
+    }
+
+
+
+
     @Override
     public PolySerializable copy() {
         return PolySerializable.deserialize( serialize(), GraphAdapterCatalog.class );
+    }
+
+
+    public PhysicalColumn updateColumnType( long allocId, LogicalColumn newCol ) {
+        PhysicalColumn old = getField( newCol.id, allocId ).unwrap( PhysicalColumn.class ).orElseThrow();
+        PhysicalColumn column = new PhysicalColumn( old.name, newCol.tableId, allocId, old.adapterId, old.position, newCol );
+        addColumn( column );
+        return column;
     }
 
 }

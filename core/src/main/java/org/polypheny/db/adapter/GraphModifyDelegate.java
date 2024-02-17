@@ -58,7 +58,7 @@ public class GraphModifyDelegate extends GraphScanDelegate implements Modifiable
 
     @Override
     public void dropIndex( Context context, LogicalIndex index, long allocId ) {
-        throw new GenericRuntimeException( "Should be overwritten." );
+        modifiable.dropIndex( context, index, allocId );
     }
 
 
