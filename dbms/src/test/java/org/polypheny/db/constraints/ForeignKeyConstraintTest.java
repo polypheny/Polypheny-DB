@@ -38,7 +38,6 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 @Slf4j
 @Tag("adapter")
 @Tag("cottontailExclude")
-@Tag("neo4jExclude")
 public class ForeignKeyConstraintTest {
 
 

@@ -24,6 +24,7 @@ import static org.polypheny.db.adapter.neo4j.util.NeoStatements.identityProperti
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.labels_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.list_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.literal_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.match_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.node_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.prepared_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.property_;
@@ -120,6 +121,11 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
     }
 
 
+    public boolean isEmpty() {
+        return statements.isEmpty();
+    }
+
+
     /**
      * Adds a cypher <code>CREATE</code> statement, which is used to map most SQL <code>DML</code> statements.
      */
@@ -145,6 +151,11 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
      */
     private void addRowCount( int size ) {
         add( return_( as_( literal_( PolyInteger.of( size ) ), literal_( PolyString.of( "ROWCOUNT" ) ) ) ) );
+    }
+
+
+    private void addRowCountEntity() {
+        add( return_( as_( literal_( PolyString.of( String.format( "COUNT(%s)", entity.name ) ) ), literal_( PolyString.of( "ROWCOUNT" ) ) ) ) );
     }
 
 
@@ -267,7 +278,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
         OperatorStatement statement = statements.get( statements.size() - 1 );
         if ( statements.get( statements.size() - 1 ).type != StatementType.RETURN ) {
             if ( isDml ) {
-                addRowCount( 1 );
+                addRowCountEntity();
             } else if ( statement.type == StatementType.WITH ) {
                 // can replace
                 statements.remove( statements.size() - 1 );
@@ -281,7 +292,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
 
 
     public void addFilter( NeoFilter filter ) {
-        Translator translator = new Translator( last.getTupleType(), last.getTupleType(), false ? getToPhysicalMapping( null ) : new HashMap<>(), this, null, true );
+        Translator translator = new Translator( last.getTupleType(), last.getTupleType(), new HashMap<>(), this, null, true );
         add( where_( literal_( PolyString.of( filter.getCondition().accept( translator ) ) ) ) );
     }
 
@@ -306,6 +317,10 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
 
 
     public void addDelete() {
+        if ( isEmpty() ) {
+            add( match_( node_( PolyString.of( entity.name ), labels_( PolyString.of( entity.name ) ) ) ) );
+        }
+
         add( delete_( false, literal_( PolyString.of( entity.name ) ) ) );
     }
 

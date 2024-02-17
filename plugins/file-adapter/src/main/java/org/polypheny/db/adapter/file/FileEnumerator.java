@@ -106,10 +106,6 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
             final @Nullable Condition condition,
             final @Nullable List<List<PolyValue>> updates ) {
 
-        /*if ( dataContext.getParameterValues().size() > 1 && (operation == Operation.UPDATE || operation == Operation.DELETE) ) {
-            throw new GenericRuntimeException( "The file store does not support batch update or delete statements!" );
-        }*/
-
         this.entity = entity;
 
         this.operation = operation;

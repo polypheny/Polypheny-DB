@@ -17,12 +17,14 @@
 package org.polypheny.db.cql.utils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import com.google.gson.JsonObject;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import kong.unirest.HttpRequestWithBody;
 import kong.unirest.HttpResponse;
 import kong.unirest.JsonNode;
@@ -448,7 +450,8 @@ public class CqlInterfaceTest extends CqlTestHelper {
         cqlInterfaceTestHelper(
                 "test.dept.deptname == \"IT\" or test.dept.deptname == \"Marketing\" " +
                         "relation test.dept and test.employee project test.employee.empname",
-                expectedJsonNode, true );
+                expectedJsonNode,
+                true );
     }
 
 
@@ -486,20 +489,49 @@ public class CqlInterfaceTest extends CqlTestHelper {
         // same amount of results
         assertEquals( expectedResults.length(), actualResults.length() );
 
-        int i = 0;
+        List<JSONArray> actuals = new ArrayList<>( actualResults.toList().stream().toList() );
+
         for ( Object result : expectedResults ) {
             JSONObject object = (JSONObject) result;
             assertEquals( actual.getJSONArray( "header" ).length(), object.length() );
-            for ( String key : object.keySet() ) {
-                int keyIndex = keys.indexOf( key );
-                if ( actual.getJSONArray( "header" ).getJSONObject( keyIndex ).getString( "dataType" ).equals( "DATE" ) ) {
-                    assertEquals( LocalDate.ofEpochDay( ((JSONObject) result).getLong( key ) ), Date.valueOf( actualResults.getJSONArray( i ).getString( keyIndex ) ).toLocalDate() );
-                } else {
-                    assertEquals( ((JSONObject) result).get( key ).toString(), actualResults.getJSONArray( i ).get( keyIndex ) );
+
+            JSONArray found = null;
+
+            for ( JSONArray current : actuals ) {
+                if ( compareRow( actual, (JSONObject) result, object, keys, false, current ) ) {
+                    found = current;
+                    break;
                 }
             }
-            i++;
+            if ( found != null ) {
+                actuals.remove( found );
+            } else {
+                fail( "Expected result not found in actual results" );
+            }
+
         }
+
+    }
+
+
+    private static boolean compareRow( JSONObject actual, JSONObject result, JSONObject object, List<String> keys, boolean found, JSONArray current ) {
+        for ( String key : object.keySet() ) {
+            int keyIndex = keys.indexOf( key );
+            found = compareEntry( actual, result, key, keyIndex, current );
+            if ( !found ) {
+                // break current row if not found
+                return false;
+            }
+        }
+        return true;
+    }
+
+
+    private static boolean compareEntry( JSONObject actual, JSONObject result, String key, int keyIndex, JSONArray current ) {
+        if ( actual.getJSONArray( "header" ).getJSONObject( keyIndex ).getString( "dataType" ).equals( "DATE" ) ) {
+            return Objects.equals( LocalDate.ofEpochDay( result.getLong( key ) ), Date.valueOf( current.getString( keyIndex ) ).toLocalDate() );
+        }
+        return Objects.equals( result.get( key ).toString(), current.get( keyIndex ) );
 
     }
 

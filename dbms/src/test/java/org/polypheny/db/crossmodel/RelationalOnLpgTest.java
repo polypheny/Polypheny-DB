@@ -115,7 +115,6 @@ public class RelationalOnLpgTest extends CrossModelTestTemplate {
 
 
     @Test
-    @Tag("neoExcluded") // returns 3.0, this is an inconsistency, which should be expected when working on cross model queries, might adjust the checkResultSet method
     public void simpleProjectTest() {
         executeStatements( ( s, c ) -> {
             ResultSet result = s.executeQuery( String.format( "SELECT properties, labels FROM \"%s\".\"%s\"", GRAPH_NAME, DATA_LABEL ) );
@@ -128,7 +127,6 @@ public class RelationalOnLpgTest extends CrossModelTestTemplate {
 
     @Test
     @Disabled
-    @Tag("neoExcluded") // see simpleProjectTest method
     public void itemSelectTest() {
         executeStatements( ( s, c ) -> {
             ResultSet result = s.executeQuery( String.format( "SELECT properties[\"key\"] FROM \"%s\".\"%s\"", GRAPH_NAME, DATA_LABEL ) );

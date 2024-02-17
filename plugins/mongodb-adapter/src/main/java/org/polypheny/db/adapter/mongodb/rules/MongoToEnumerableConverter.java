@@ -87,7 +87,7 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
 
         final Expression tupleTypes = MongoTupleType.from( rowType ).asExpression();
 
-        final Expression table = list.append( "table", mongoImplementor.getEntity().asExpression()/*.getExpression( MongoEntity.MongoQueryable.class )*/ );
+        final Expression table = list.append( "table", mongoImplementor.getEntity().asExpression() );
 
         List<String> opList = Pair.right( mongoImplementor.list );
 
