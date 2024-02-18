@@ -34,7 +34,7 @@ public abstract class CottontailConverterRule extends ConverterRule {
     <R extends AlgNode> CottontailConverterRule(
             Class<R> clazz,
             Predicate<? super R> predicate,
-            AlgTrait in,
+            AlgTrait<?> in,
             CottontailConvention out,
             AlgBuilderFactory algBuilderFactory,
             String description ) {

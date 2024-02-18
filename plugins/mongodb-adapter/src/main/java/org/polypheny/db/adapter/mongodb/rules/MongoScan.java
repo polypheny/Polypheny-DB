@@ -41,7 +41,7 @@ import org.polypheny.db.util.Pair;
 
 /**
  * Relational expression representing a scan of a MongoDB collection.
- *
+ * <p>
  * Additional operations might be applied, using the "find" or "aggregate" methods.</p>
  */
 public class MongoScan extends Scan<MongoEntity> implements MongoAlg {

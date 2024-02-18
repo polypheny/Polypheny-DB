@@ -167,7 +167,7 @@ public final class AlgTraitSet extends AbstractList<AlgTrait<?>> {
      * @return the old RelTrait at the index
      */
     public AlgTraitSet replace( int index, AlgTrait<?> trait ) {
-        assert traits[index].getTraitDef() == trait.getTraitDef() : "RelTrait has different RelTraitDef than replacement";
+        assert traits[index].getTraitDef() == trait.getTraitDef() : "AlgTrait has different RelTraitDef than replacement";
 
         AlgTrait<?> canonizedTrait = canonize( trait );
         if ( traits[index] == canonizedTrait ) {

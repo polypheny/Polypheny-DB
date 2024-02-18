@@ -45,13 +45,13 @@ import org.polypheny.db.util.UnsupportedRexCallVisitor;
 
 public class CottontailProjectRule extends CottontailConverterRule {
 
-    CottontailProjectRule( CottontailConvention out, AlgBuilderFactory algBuilderFactory ) {
+    CottontailProjectRule( AlgBuilderFactory algBuilderFactory ) {
         super( Project.class,
                 p -> !DocumentRules.containsDocument( p ) && !UnsupportedRexCallVisitor.containsModelItem( p.getProjects() ),
                 Convention.NONE,
-                out,
+                CottontailConvention.INSTANCE,
                 algBuilderFactory,
-                "CottontailProjectRule:" + out.getName() );
+                "CottontailProjectRule" );
     }
 
 
@@ -71,8 +71,7 @@ public class CottontailProjectRule extends CottontailConverterRule {
                 containsInputRefs = true;
             } else if ( (e instanceof RexLiteral) || (e instanceof RexDynamicParam) || ((e instanceof RexCall) && (((RexCall) e).getOperator() instanceof ArrayValueConstructor)) ) {
                 containsValueProjects = true;
-            } else if ( (e instanceof RexCall) && (((RexCall) e).getOperator() instanceof SqlDistanceFunction) ) {
-                RexCall rexCall = (RexCall) e;
+            } else if ( (e instanceof RexCall rexCall) && (((RexCall) e).getOperator() instanceof SqlDistanceFunction) ) {
                 if ( !(CottontailToEnumerableConverter.SUPPORTED_ARRAY_COMPONENT_TYPES.contains( rexCall.getOperands().get( 0 ).getType().getComponentType().getPolyType() )) ) {
                     return false;
                 }

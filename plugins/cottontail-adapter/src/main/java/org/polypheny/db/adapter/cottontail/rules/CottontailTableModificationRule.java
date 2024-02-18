@@ -35,8 +35,8 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 
 public class CottontailTableModificationRule extends CottontailConverterRule {
 
-    CottontailTableModificationRule( CottontailConvention out, AlgBuilderFactory algBuilderFactory ) {
-        super( RelModify.class, CottontailTableModificationRule::supports, Convention.NONE, out, algBuilderFactory, "CottontailTableModificationRule:" + out.getName() );
+    CottontailTableModificationRule( AlgBuilderFactory algBuilderFactory ) {
+        super( RelModify.class, CottontailTableModificationRule::supports, Convention.NONE, CottontailConvention.INSTANCE, algBuilderFactory, "CottontailTableModificationRule" );
     }
 
 

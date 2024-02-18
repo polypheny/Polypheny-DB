@@ -87,7 +87,6 @@ public class CottontailSort extends Sort implements CottontailAlg {
      *
      * @param node The {@link AlgCollation} node to implement.
      * @param context The {@link CottontailImplementContext} instance.
-     * @param columnNames List of column names.
      * @return {@link ParameterExpression}
      */
     private static ParameterExpression sortMapBuilder( AlgCollation node, CottontailImplementContext context, List<AlgDataTypeField> columns ) {

@@ -191,10 +191,4 @@ public class CottontailTableModify extends RelModify<CottontailEntity> implement
         return Expressions.lambda( inner.toBlock(), dynamicParameterMap_ );
     }
 
-
-    @Override
-    public boolean isImplementationCacheable() {
-        return true;
-    }
-
 }

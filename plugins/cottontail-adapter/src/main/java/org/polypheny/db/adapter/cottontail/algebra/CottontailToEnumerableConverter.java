@@ -188,8 +188,6 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                         "enumerable",
                         Expressions.call(
                                 CottontailDeleteEnumerable.CREATE_DELETE_METHOD,
-                                Expressions.constant( cottontailContext.tableName ),
-                                Expressions.constant( cottontailContext.schemaName ),
                                 expressionOrNullExpression( cottontailContext.filterBuilder ),
                                 DataContext.ROOT,
                                 cottontailContext.table.asExpression( CottontailEntity.class )
@@ -251,6 +249,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                 break;
             case CHAR:
             case VARCHAR:
+            case TEXT:
                 source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getStringData", Object.class ), getDataFromMap_ );
                 break;
             case NULL:
@@ -294,32 +293,16 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
             case ARRAY: {
                 ArrayType arrayType = (ArrayType) fieldType;
                 if ( arrayType.getDimension() == 1 && SUPPORTED_ARRAY_COMPONENT_TYPES.contains( arrayType.getComponentType().getPolyType() ) ) {
-                    switch ( arrayType.getComponentType().getPolyType() ) {
-                        case BOOLEAN:
-                            source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getBoolVector", Object.class ), getDataFromMap_ );
-                            break;
-                        case SMALLINT:
-                            source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getSmallIntVector", Object.class ), getDataFromMap_ );
-                            break;
-                        case TINYINT:
-                            source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getTinyIntVector", Object.class ), getDataFromMap_ );
-                            break;
-                        case INTEGER:
-                            source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getIntVector", Object.class ), getDataFromMap_ );
-                            break;
-                        case FLOAT:
-                        case REAL:
-                            source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getFloatVector", Object.class ), getDataFromMap_ );
-                            break;
-                        case DOUBLE:
-                            source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getDoubleVector", Object.class ), getDataFromMap_ );
-                            break;
-                        case BIGINT:
-                            source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getLongVector", Object.class ), getDataFromMap_ );
-                            break;
-                        default:
-                            throw new AssertionError( "No vector access method for inner type: " + arrayType.getPolyType() );
-                    }
+                    source = switch ( arrayType.getComponentType().getPolyType() ) {
+                        case BOOLEAN -> Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getBoolVector", Object.class ), getDataFromMap_ );
+                        case SMALLINT -> Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getSmallIntVector", Object.class ), getDataFromMap_ );
+                        case TINYINT -> Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getTinyIntVector", Object.class ), getDataFromMap_ );
+                        case INTEGER -> Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getIntVector", Object.class ), getDataFromMap_ );
+                        case FLOAT, REAL -> Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getFloatVector", Object.class ), getDataFromMap_ );
+                        case DOUBLE -> Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getDoubleVector", Object.class ), getDataFromMap_ );
+                        case BIGINT -> Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getLongVector", Object.class ), getDataFromMap_ );
+                        default -> throw new AssertionError( "No vector access method for inner type: " + arrayType.getPolyType() );
+                    };
                 } else {
                     source = Expressions.call(
                             BuiltInMethod.PARSE_ARRAY_FROM_TEXT.method,

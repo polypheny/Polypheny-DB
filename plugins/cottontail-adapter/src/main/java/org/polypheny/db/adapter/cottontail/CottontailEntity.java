@@ -18,7 +18,9 @@ package org.polypheny.db.adapter.cottontail;
 
 import java.lang.reflect.Type;
 import java.util.List;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.Value;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Queryable;
 import org.polypheny.db.adapter.DataContext;
@@ -28,7 +30,6 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
-import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.snapshot.Snapshot;
@@ -49,26 +50,25 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc.QueryMessage;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Scan;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.SchemaName;
 
-
+@EqualsAndHashCode(callSuper = true)
+@Value
 public class CottontailEntity extends PhysicalTable implements TranslatableEntity, ModifiableTable, QueryableEntity {
 
-    private final PhysicalTable table;
-    private final CottontailStore store;
-    private AlgProtoDataType protoRowType;
+    CottontailStore store;
     @Getter
-    private CottontailNamespace cottontailNamespace;
+    CottontailNamespace cottontailNamespace;
 
     @Getter
-    private EntityName entityName;
+    EntityName entityName;
 
     @Getter
-    private final String physicalSchemaName;
+    String physicalSchemaName;
     @Getter
-    private final String physicalTableName;
-    private final List<String> physicalColumnNames;
+    String physicalTableName;
+    List<String> physicalColumnNames;
 
 
-    protected CottontailEntity(
+    public CottontailEntity(
             CottontailNamespace cottontailNamespace,
             String physicalSchemaName,
             PhysicalTable physical,
@@ -86,7 +86,6 @@ public class CottontailEntity extends PhysicalTable implements TranslatableEntit
 
         this.store = cottontailStore;
         this.cottontailNamespace = cottontailNamespace;
-        this.table = physical;
 
         this.physicalSchemaName = physicalSchemaName;
         this.physicalTableName = physical.name;
@@ -98,15 +97,9 @@ public class CottontailEntity extends PhysicalTable implements TranslatableEntit
                 .build();
     }
 
-
-    public String getPhysicalColumnName( String logicalColumnName ) {
-        throw new UnsupportedOperationException( "Not yet implemented" );
-    }
-
-
     @Override
     public String toString() {
-        return "CottontailTable {" + physicalSchemaName + "." + physicalTableName + "}";
+        return "CottontailTable {" + physicalTableName + "}";
     }
 
 
@@ -138,7 +131,7 @@ public class CottontailEntity extends PhysicalTable implements TranslatableEntit
 
     @Override
     public AlgNode toAlg( AlgOptCluster cluster, AlgTraitSet traitSet ) {
-        return new CottontailScan( cluster, this, traitSet, this.cottontailNamespace.getConvention() );
+        return new CottontailScan( cluster, this, this.cottontailNamespace.getConvention() );
     }
 
 
