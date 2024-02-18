@@ -28,39 +28,43 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.schema.trait.ModelTrait;
 
 
 public class CottontailScan extends RelScan<CottontailEntity> implements CottontailAlg {
 
-    protected final CottontailEntity cottontailTable;
 
-
-    public CottontailScan( AlgOptCluster cluster, CottontailEntity cottontailTable, AlgTraitSet traitSet, CottontailConvention cottontailConvention ) {
-        super( cluster, traitSet.replace( cottontailConvention ), cottontailTable );
-        this.cottontailTable = cottontailTable;
+    public CottontailScan( AlgOptCluster cluster, CottontailEntity cottontailTable, CottontailConvention cottontailConvention ) {
+        super( cluster, cluster.traitSetOf( cottontailConvention ).replace( ModelTrait.RELATIONAL ), cottontailTable );
     }
 
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         assert inputs.isEmpty();
-        return new CottontailScan( getCluster(), this.cottontailTable, traitSet, (CottontailConvention) this.getConvention() );
+        return new CottontailScan( getCluster(), entity, (CottontailConvention) getConvention() );
     }
 
 
     @Override
+    public String algCompareString() {
+        return this.getClass().getSimpleName()
+                + "$" + entity.id
+                + "$" + entity.getLayer();
+    }
+
+    @Override
     public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        return super.computeSelfCost( planner, mq ).multiplyBy( 0.8 );
+        return super.computeSelfCost( planner, mq ).multiplyBy( 0.1 );
     }
 
 
     @Override
     public void implement( CottontailImplementContext context ) {
-//        context.from = From.newBuilder().setEntity( this.cottontailTable.getLogicalTable() ).build();
         if ( context.queryType == null ) {
-            context.table = this.cottontailTable;
-            context.schemaName = this.cottontailTable.getPhysicalSchemaName();
-            context.tableName = this.cottontailTable.getPhysicalTableName();
+            context.table = this.entity;
+            context.schemaName = this.entity.getPhysicalSchemaName();
+            context.tableName = this.entity.getPhysicalTableName();
             context.queryType = QueryType.SELECT;
         }
     }

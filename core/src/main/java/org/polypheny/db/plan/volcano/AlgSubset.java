@@ -89,6 +89,7 @@ public class AlgSubset extends AbstractAlgNode {
     /**
      * The set this subset belongs to.
      */
+    @Getter
     final AlgSet set;
 
     /**
@@ -280,10 +281,6 @@ public class AlgSubset extends AbstractAlgNode {
         return list;
     }
 
-
-    AlgSet getSet() {
-        return set;
-    }
 
 
     /**

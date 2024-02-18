@@ -29,21 +29,21 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 public class CottontailToEnumerableConverterRule extends ConverterRule {
 
 
-    public CottontailToEnumerableConverterRule( CottontailConvention in, AlgBuilderFactory algBuilderFactory ) {
+    public CottontailToEnumerableConverterRule( AlgBuilderFactory algBuilderFactory ) {
         super(
                 AlgNode.class,
                 r -> true,
-                in,
+                CottontailConvention.INSTANCE,
                 EnumerableConvention.INSTANCE,
                 algBuilderFactory,
-                "CottontailToEnumerableConverterRule:" + in.getName() );
+                "CottontailToEnumerableConverterRule" );
     }
 
 
     @Override
-    public AlgNode convert( AlgNode rel ) {
-        AlgTraitSet newTraitSet = rel.getTraitSet().replace( getOutTrait() );
-        return new CottontailToEnumerableConverter( rel.getCluster(), newTraitSet, rel );
+    public AlgNode convert( AlgNode alg ) {
+        AlgTraitSet newTraitSet = alg.getTraitSet().replace( getOutTrait() );
+        return new CottontailToEnumerableConverter( alg.getCluster(), newTraitSet, alg );
     }
 
 }

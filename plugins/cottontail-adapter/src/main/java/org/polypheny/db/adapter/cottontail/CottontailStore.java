@@ -127,9 +127,6 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
         this.dbPort = Integer.parseInt( settings.get( "port" ) );
 
         engine = Engine.valueOf( settings.get( "engine" ).trim() );
-        if ( engine == null ) {
-            throw new GenericRuntimeException( "Unknown engine: " + engine );
-        }
 
         if ( this.isEmbedded ) {
             PolyphenyHomeDirManager fileSystemManager = PolyphenyHomeDirManager.getInstance();
@@ -181,7 +178,7 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
         /* Begin or continue Cottontail DB transaction. */
         final long txId = this.wrapper.beginOrContinue( context.getStatement().getTransaction() );
 
-        final String physicalTableName = CottontailNameUtil.createPhysicalTableName( logical.table.id, allocationWrapper.table.id );
+        final String physicalTableName = CottontailNameUtil.createPhysicalTableName( allocationWrapper.table.id, 0 );
 
         PhysicalTable table = adapterCatalog.createTable(
                 logical.table.getNamespaceName(),

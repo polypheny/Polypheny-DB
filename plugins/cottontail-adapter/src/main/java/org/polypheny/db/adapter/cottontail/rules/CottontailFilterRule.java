@@ -33,8 +33,8 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 
 public class CottontailFilterRule extends CottontailConverterRule {
 
-    CottontailFilterRule( CottontailConvention out, AlgBuilderFactory algBuilderFactory ) {
-        super( Filter.class, r -> !DocumentRules.containsDocument( r ), Convention.NONE, out, algBuilderFactory, "CottontailFilterRule:" + out.getName() );
+    CottontailFilterRule( AlgBuilderFactory algBuilderFactory ) {
+        super( Filter.class, r -> !DocumentRules.containsDocument( r ), Convention.NONE, CottontailConvention.INSTANCE, algBuilderFactory, "CottontailFilterRule" );
     }
 
 

@@ -227,7 +227,7 @@ public class CottontailTypeUtil {
                 return builder.setVectorData( vector ).build();
             } else {
                 /* TODO (RG): BigDecimals are currently handled by this branch, which excludes them from being usable for native NNS. */
-                return builder.setStringData( org.polypheny.db.adapter.cottontail.util.CottontailSerialisation.GSON.toJson( value ) ).build();
+                return builder.setStringData( value.toTypedJson() ).build();
             }
         }
 

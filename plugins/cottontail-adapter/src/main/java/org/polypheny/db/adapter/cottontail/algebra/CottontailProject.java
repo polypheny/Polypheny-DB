@@ -65,12 +65,6 @@ public class CottontailProject extends Project implements CottontailAlg {
 
 
     @Override
-    public boolean isImplementationCacheable() {
-        return true;
-    }
-
-
-    @Override
     public Project copy( AlgTraitSet traitSet, AlgNode input, List<RexNode> projects, AlgDataType rowType ) {
         return new CottontailProject( getCluster(), traitSet, input, projects, rowType, this.arrayProject );
     }
@@ -78,7 +72,7 @@ public class CottontailProject extends Project implements CottontailAlg {
 
     @Override
     public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        return super.computeSelfCost( planner, mq ).multiplyBy( 0.6 );
+        return super.computeSelfCost( planner, mq ).multiplyBy( 0.1 );
     }
 
 

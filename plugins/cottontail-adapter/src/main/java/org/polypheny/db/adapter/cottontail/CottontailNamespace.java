@@ -36,7 +36,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc;
 public class CottontailNamespace extends AbstractNamespace implements Schema {
 
     @Getter
-    private final CottontailConvention convention;
+    private final CottontailConvention convention = CottontailConvention.INSTANCE;
 
     private final Map<String, CottontailEntity> tableMap;
     private final Map<String, String> physicalToLogicalTableNameMap;
@@ -55,14 +55,12 @@ public class CottontailNamespace extends AbstractNamespace implements Schema {
     private CottontailNamespace(
             long id,
             @NonNull CottontailWrapper wrapper,
-            CottontailConvention convention,
             Map<String, CottontailEntity> tableMap,
             Map<String, String> physicalToLogicalTableNameMap,
             CottontailStore cottontailStore,
             String name ) {
         super( id );
         this.wrapper = wrapper;
-        this.convention = convention;
         this.tableMap = tableMap;
         this.physicalToLogicalTableNameMap = physicalToLogicalTableNameMap;
         this.cottontailStore = cottontailStore;
@@ -74,12 +72,10 @@ public class CottontailNamespace extends AbstractNamespace implements Schema {
     public CottontailNamespace(
             long id,
             CottontailWrapper wrapper,
-            CottontailConvention convention,
             CottontailStore cottontailStore,
             String name ) {
         super( id );
         this.wrapper = wrapper;
-        this.convention = convention;
         this.cottontailStore = cottontailStore;
         this.tableMap = new HashMap<>();
         this.physicalToLogicalTableNameMap = new HashMap<>();
@@ -94,9 +90,8 @@ public class CottontailNamespace extends AbstractNamespace implements Schema {
             CottontailWrapper wrapper,
             CottontailStore cottontailStore
     ) {
-        final Expression expression = null;//Schemas.subSchemaExpression( snapshot, name, CottontailSchema.class );
-        final CottontailConvention convention = CottontailConvention.of( name, expression );
-        return new CottontailNamespace( id, wrapper, convention, cottontailStore, name );
+        //final CottontailConvention convention = CottontailConvention.of( name );
+        return new CottontailNamespace( id, wrapper, cottontailStore, name );
     }
 
 
@@ -107,17 +102,10 @@ public class CottontailNamespace extends AbstractNamespace implements Schema {
 
 
     @Override
-    public boolean isMutable() {
-        return true;
-    }
-
-
-    @Override
     public Namespace snapshot( SchemaVersion version ) {
         return new CottontailNamespace(
                 this.id,
                 this.wrapper,
-                this.convention,
                 this.tableMap,
                 this.physicalToLogicalTableNameMap,
                 this.cottontailStore,

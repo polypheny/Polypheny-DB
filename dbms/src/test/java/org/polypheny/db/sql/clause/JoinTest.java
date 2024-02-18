@@ -282,12 +282,26 @@ public class JoinTest {
                         new Object[]{ "Antonio Moreno Taquería", null }
                 );
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT Join_Customers.CustomerName, Join_Orders.OrderID"
-                                + " FROM Join_Customers"
-                                + " FULL OUTER JOIN Join_Orders ON Join_Customers.CustomerID = Join_Orders.CustomerID"
-                                + " ORDER BY Join_Customers.CustomerName" ),
+                        statement.executeQuery( """
+                                SELECT Join_Customers.CustomerName, Join_Orders.OrderID
+                                FROM Join_Customers
+                                FULL OUTER JOIN Join_Orders ON Join_Customers.CustomerID = Join_Orders.CustomerID
+                                ORDER BY Join_Customers.CustomerName""" ),
                         expectedResult,
                         true );
+            }
+        }
+    }
+
+
+    @Test
+    public void fullTest() throws SQLException {
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeQuery( """
+                        SELECT *
+                        FROM Join_Customers, Join_Orders""" );
             }
         }
     }

@@ -218,13 +218,6 @@ public class VolcanoPlanner extends AbstractAlgOptPlanner {
 
     /**
      * Whether the planner can accept new rules.
-     * -- SETTER --
-     *  Sets whether this planner is locked. A locked planner does not accept new rules.
-     *
-     *  will do nothing and return false.
-     *
-     * @param locked Whether planner is locked
-
      */
     @Setter
     private boolean locked;
@@ -1283,8 +1276,7 @@ public class VolcanoPlanner extends AbstractAlgOptPlanner {
         int changeCount = 0;
         for ( AlgNode input : inputs ) {
             ++i;
-            if ( input instanceof AlgSubset ) {
-                final AlgSubset subset = (AlgSubset) input;
+            if ( input instanceof AlgSubset subset ) {
                 AlgSubset newSubset = canonize( subset );
                 if ( newSubset != subset ) {
                     alg.replaceInput( i, newSubset );

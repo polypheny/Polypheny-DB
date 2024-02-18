@@ -19,7 +19,6 @@ package org.polypheny.db.adapter.cottontail;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailAlg;
 import org.polypheny.db.adapter.cottontail.rules.CottontailRules;
 import org.polypheny.db.plan.AlgOptPlanner;
@@ -27,32 +26,31 @@ import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.Convention;
 
 
+@Setter
+@Getter
 public class CottontailConvention extends Convention.Impl {
 
     public static final double COST_MULTIPLIER = 0.8d;
 
+    public static CottontailConvention INSTANCE = new CottontailConvention( "COTTONTAIL" );
 
-    public final Expression expression;
 
-    @Getter
-    @Setter
     private CottontailNamespace cottontailNamespace;
 
 
-    public CottontailConvention( String name, Expression expression ) {
+    private CottontailConvention( String name ) {
         super( "COTTONTAIL." + name, CottontailAlg.class );
-        this.expression = expression;
     }
 
 
-    public static CottontailConvention of( String name, Expression expression ) {
-        return new CottontailConvention( name, expression );
+    public static CottontailConvention of( String name ) {
+        return new CottontailConvention( name );
     }
 
 
     @Override
     public void register( AlgOptPlanner planner ) {
-        for ( AlgOptRule rule : CottontailRules.rules( this ) ) {
+        for ( AlgOptRule rule : CottontailRules.rules() ) {
             planner.addRuleDuringRuntime( rule );
         }
     }

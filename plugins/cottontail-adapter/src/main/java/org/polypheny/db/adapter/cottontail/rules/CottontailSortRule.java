@@ -31,8 +31,8 @@ import org.polypheny.db.tools.AlgBuilderFactory;
  */
 public class CottontailSortRule extends CottontailConverterRule {
 
-    CottontailSortRule( CottontailConvention out, AlgBuilderFactory algBuilderFactory ) {
-        super( Sort.class, r -> true, Convention.NONE, out, algBuilderFactory, "CottontailSortRule" + out.getName() );
+    CottontailSortRule( AlgBuilderFactory algBuilderFactory ) {
+        super( Sort.class, r -> true, Convention.NONE, CottontailConvention.INSTANCE, algBuilderFactory, "CottontailSortRule" );
     }
 
 

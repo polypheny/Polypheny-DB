@@ -26,8 +26,8 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 
 public class CottontailValuesRule extends CottontailConverterRule {
 
-    CottontailValuesRule( CottontailConvention out, AlgBuilderFactory algBuilderFactory ) {
-        super( Values.class, r -> true, Convention.NONE, out, algBuilderFactory, "CottontailValuesRule:" + out.getName() );
+    CottontailValuesRule( AlgBuilderFactory algBuilderFactory ) {
+        super( Values.class, r -> true, Convention.NONE, CottontailConvention.INSTANCE, algBuilderFactory, "CottontailValuesRule" );
     }
 
 
