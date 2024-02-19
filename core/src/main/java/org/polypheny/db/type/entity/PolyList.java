@@ -92,7 +92,6 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
         this.value = new ArrayList<>( value );
     }
 
-
     public static <E extends PolyValue> PolyList<E> copyOf( List<E> value ) {
         return new PolyList<>( value );
     }
