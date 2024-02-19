@@ -2020,6 +2020,15 @@ public class Functions {
     }
 
 
+    public static PolyList<?> reparse( PolyString value ) {
+        //Type conversionType = PolyTypeUtil.createNestedListType( dimension, innerType );
+        if ( value == null || value.isNull() ) {
+            return null;
+        }
+        return PolyValue.fromTypedJson( value.value, PolyList.class );
+    }
+
+
     /**
      * NULL &rarr; FALSE, FALSE &rarr; FALSE, TRUE &rarr; TRUE.
      */

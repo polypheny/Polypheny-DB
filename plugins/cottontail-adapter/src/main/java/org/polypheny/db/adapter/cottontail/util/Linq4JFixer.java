@@ -222,31 +222,31 @@ public class Linq4JFixer {
         for ( boolean v : ((boolean[]) data) ) {
             list.add( PolyBoolean.of( v ) );
         }
-        return PolyList.of( list );
+        return PolyList.copyOf( list );
     }
 
 
-    public static List<Byte> getTinyIntVector( Object data ) {
+    public static PolyList<PolyInteger> getTinyIntVector( Object data ) {
         if ( data == null ) {
             return null;
         }
-        final List<Byte> list = new ArrayList<>( ((int[]) data).length );
+        final List<PolyInteger> list = new ArrayList<>( ((int[]) data).length );
         for ( int v : ((int[]) data) ) {
-            list.add( (byte) v );
+            list.add( PolyInteger.of( v ) );
         }
-        return list;
+        return PolyList.copyOf( list );
     }
 
 
-    public static List<Short> getSmallIntVector( Object data ) {
+    public static PolyList<PolyInteger> getSmallIntVector( Object data ) {
         if ( data == null ) {
             return null;
         }
-        final List<Short> list = new ArrayList<>( ((int[]) data).length );
+        final List<PolyInteger> list = new ArrayList<>( ((int[]) data).length );
         for ( int v : ((int[]) data) ) {
-            list.add( (short) v );
+            list.add( PolyInteger.of( v ) );
         }
-        return list;
+        return PolyList.copyOf( list );
     }
 
 
@@ -258,7 +258,7 @@ public class Linq4JFixer {
         for ( int v : ((int[]) data) ) {
             list.add( PolyInteger.of( v ) );
         }
-        return PolyList.of( list );
+        return PolyList.copyOf( list );
     }
 
 
@@ -270,7 +270,7 @@ public class Linq4JFixer {
         for ( long v : ((long[]) data) ) {
             list.add( PolyLong.of( v ) );
         }
-        return PolyList.of( list );
+        return PolyList.copyOf( list );
     }
 
 
@@ -282,7 +282,7 @@ public class Linq4JFixer {
         for ( float v : ((float[]) data) ) {
             list.add( PolyFloat.of( v ) );
         }
-        return PolyList.of( list );
+        return PolyList.copyOf( list );
     }
 
 
@@ -294,7 +294,7 @@ public class Linq4JFixer {
         for ( double v : ((double[]) data) ) {
             list.add( PolyDouble.of( v ) );
         }
-        return PolyList.of( list );
+        return PolyList.copyOf( list );
     }
 
 

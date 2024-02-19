@@ -23,7 +23,6 @@ import io.grpc.netty.NettyChannelBuilder;
 import java.io.File;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -216,7 +215,7 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
 
 
     private List<ColumnDefinition> buildColumnDefinitions( List<PhysicalColumn> lColumns ) {
-        final List<ColumnDefinition> columns = new LinkedList<>();
+        final List<ColumnDefinition> columns = new ArrayList<>();
 
         for ( PhysicalColumn column : lColumns ) {
             final ColumnDefinition.Builder columnBuilder = ColumnDefinition.newBuilder();

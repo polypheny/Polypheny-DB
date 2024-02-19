@@ -60,6 +60,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
             PolyType.SMALLINT,
             PolyType.INTEGER,
             PolyType.DOUBLE,
+            PolyType.DECIMAL,
             PolyType.FLOAT,
             PolyType.REAL,
             PolyType.BIGINT,
@@ -299,7 +300,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                         case TINYINT -> Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getTinyIntVector", Object.class ), getDataFromMap_ );
                         case INTEGER -> Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getIntVector", Object.class ), getDataFromMap_ );
                         case FLOAT, REAL -> Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getFloatVector", Object.class ), getDataFromMap_ );
-                        case DOUBLE -> Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getDoubleVector", Object.class ), getDataFromMap_ );
+                        case DOUBLE, DECIMAL -> Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getDoubleVector", Object.class ), getDataFromMap_ );
                         case BIGINT -> Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getLongVector", Object.class ), getDataFromMap_ );
                         default -> throw new AssertionError( "No vector access method for inner type: " + arrayType.getPolyType() );
                     };

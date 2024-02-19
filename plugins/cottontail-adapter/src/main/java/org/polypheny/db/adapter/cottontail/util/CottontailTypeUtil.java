@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -40,8 +39,10 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.language.fun.SqlArrayValueConstructor;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.util.BuiltInMethod;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
@@ -119,7 +120,7 @@ public class CottontailTypeUtil {
                 case TINYINT, SMALLINT, INTEGER -> Type.INT_VEC;
                 case BIGINT -> Type.LONG_VEC;
                 case FLOAT, REAL -> Type.FLOAT_VEC;
-                case DOUBLE -> Type.DOUBLE_VEC;
+                case DOUBLE, DECIMAL -> Type.DOUBLE_VEC;
                 case BOOLEAN -> Type.BOOL_VEC;
                 default -> Type.STRING;
             };
@@ -222,7 +223,7 @@ public class CottontailTypeUtil {
                 ((List<PolyValue>) value.asList()).forEach( e -> numbers.add( PolyDouble.of( e.asNumber().doubleValue() ) ) );
                 value = PolyList.of( numbers );
             }
-            final Vector vector = toVectorData( value );
+            final Vector vector = toVectorData( value.asList(), parameterComponentType );
             if ( vector != null ) {
                 return builder.setVectorData( vector ).build();
             } else {
@@ -356,36 +357,21 @@ public class CottontailTypeUtil {
      * {@link Boolean}) to a {@link Vector} usable by Cottontail DB.
      *
      * @param vectorObject List of {@link Object}s that need to be converted.
+     * @param parameterComponentType
      * @return Converted object or null if conversion is not possible.
      */
-    public static Vector toVectorData( Object vectorObject ) {
+    public static Vector toVectorData( PolyList<PolyValue> vectorObject, PolyType parameterComponentType ) {
         final Vector.Builder vectorBuilder = Vector.newBuilder();
         // TODO js(ct): add list.size() == 0 handling
-        final Object firstItem = ((List) vectorObject).get( 0 );
-        if ( firstItem instanceof Byte ) {
-            return vectorBuilder.setIntVector(
-                    IntVector.newBuilder().addAllVector( ((List<Byte>) vectorObject).stream().map( Byte::intValue ).collect( Collectors.toList() ) ).build() ).build();
-        } else if ( firstItem instanceof Short ) {
-            return vectorBuilder.setIntVector(
-                    IntVector.newBuilder().addAllVector( ((List<Short>) vectorObject).stream().map( Short::intValue ).collect( Collectors.toList() ) ).build() ).build();
-        } else if ( firstItem instanceof Integer ) {
-            return vectorBuilder.setIntVector(
-                    IntVector.newBuilder().addAllVector( (List<Integer>) vectorObject ) ).build();
-        } else if ( firstItem instanceof Double ) {
-            return vectorBuilder.setDoubleVector(
-                    DoubleVector.newBuilder().addAllVector( (List<Double>) vectorObject ) ).build();
-        } else if ( firstItem instanceof Long ) {
-            return vectorBuilder.setLongVector(
-                    LongVector.newBuilder().addAllVector( (List<Long>) vectorObject ) ).build();
-        } else if ( firstItem instanceof Float ) {
-            return vectorBuilder.setFloatVector(
-                    FloatVector.newBuilder().addAllVector( (List<Float>) vectorObject ) ).build();
-        } else if ( firstItem instanceof Boolean ) {
-            return vectorBuilder.setBoolVector(
-                    BoolVector.newBuilder().addAllVector( (List<Boolean>) vectorObject ) ).build();
-        } else {
-            return null;
-        }
+
+        return switch ( parameterComponentType ) {
+            case INTEGER, SMALLINT, TINYINT -> vectorBuilder.setIntVector( IntVector.newBuilder().addAllVector( vectorObject.stream().map( PolyValue::asNumber ).map( PolyNumber::intValue ).toList() ).build() ).build();
+            case DOUBLE, DECIMAL -> vectorBuilder.setDoubleVector( DoubleVector.newBuilder().addAllVector( vectorObject.stream().map( PolyValue::asNumber ).map( PolyNumber::doubleValue ).toList() ).build() ).build();
+            case BIGINT -> vectorBuilder.setLongVector( LongVector.newBuilder().addAllVector( vectorObject.stream().map( PolyValue::asNumber ).map( PolyNumber::longValue ).toList() ).build() ).build();
+            case FLOAT, REAL -> vectorBuilder.setFloatVector( FloatVector.newBuilder().addAllVector( vectorObject.stream().map( PolyValue::asNumber ).map( PolyNumber::floatValue ).toList() ).build() ).build();
+            case BOOLEAN -> vectorBuilder.setBoolVector( BoolVector.newBuilder().addAllVector( vectorObject.stream().map( PolyValue::asBoolean ).map( PolyBoolean::getValue ).toList() ).build() ).build();
+            default -> null;
+        };
     }
 
 
@@ -529,43 +515,5 @@ public class CottontailTypeUtil {
 
         throw new GenericRuntimeException( "Argument is neither an array call nor a dynamic parameter" );
     }
-
-
-    /*
-    public static SqlLiteral defaultValueParser( LogicalDefaultValue logicalDefaultValue, PolyType actualType ) {
-        if ( actualType == PolyType.ARRAY ) {
-            throw new GenericRuntimeException( "Default values are not supported for array types" );
-        }
-
-        SqlLiteral literal;
-        switch ( actualType ) {
-            case BOOLEAN:
-                literal = Boolean.parseBoolean( logicalDefaultValue.value.toJson() );
-                break;
-            case INTEGER:
-                literal = SqlLiteral.createExactNumeric( logicalDefaultValue.value.toJson(), ParserPos.ZERO ).getValue( Integer.class );
-                break;
-            case DECIMAL:
-                literal = SqlLiteral.createExactNumeric( logicalDefaultValue.value.toJson(), ParserPos.ZERO ).getValue( BigDecimal.class );
-                break;
-            case BIGINT:
-                literal = SqlLiteral.createExactNumeric( logicalDefaultValue.value.toJson(), ParserPos.ZERO ).getValue( Long.class );
-                break;
-            case REAL:
-            case FLOAT:
-                literal = SqlLiteral.createApproxNumeric( logicalDefaultValue.value.toJson(), ParserPos.ZERO ).getValue( Float.class );
-                break;
-            case DOUBLE:
-                literal = SqlLiteral.createApproxNumeric( logicalDefaultValue.value.toJson(), ParserPos.ZERO ).getValue( Double.class );
-                break;
-            case VARCHAR:
-                literal = logicalDefaultValue.value;
-                break;
-            default:
-                throw new PolyphenyDbException( "Not yet supported default value type: " + actualType );
-        }
-
-        return literal;
-    }*/
 
 }
