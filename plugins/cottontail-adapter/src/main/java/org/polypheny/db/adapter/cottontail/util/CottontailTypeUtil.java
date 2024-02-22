@@ -360,16 +360,21 @@ public class CottontailTypeUtil {
      * @param parameterComponentType
      * @return Converted object or null if conversion is not possible.
      */
-    public static Vector toVectorData( PolyList<PolyValue> vectorObject, PolyType parameterComponentType ) {
+    public static Vector toVectorData( List<PolyValue> vectorObject, PolyType parameterComponentType ) {
         final Vector.Builder vectorBuilder = Vector.newBuilder();
         // TODO js(ct): add list.size() == 0 handling
 
         return switch ( parameterComponentType ) {
-            case INTEGER, SMALLINT, TINYINT -> vectorBuilder.setIntVector( IntVector.newBuilder().addAllVector( vectorObject.stream().map( PolyValue::asNumber ).map( PolyNumber::intValue ).toList() ).build() ).build();
-            case DOUBLE, DECIMAL -> vectorBuilder.setDoubleVector( DoubleVector.newBuilder().addAllVector( vectorObject.stream().map( PolyValue::asNumber ).map( PolyNumber::doubleValue ).toList() ).build() ).build();
-            case BIGINT -> vectorBuilder.setLongVector( LongVector.newBuilder().addAllVector( vectorObject.stream().map( PolyValue::asNumber ).map( PolyNumber::longValue ).toList() ).build() ).build();
-            case FLOAT, REAL -> vectorBuilder.setFloatVector( FloatVector.newBuilder().addAllVector( vectorObject.stream().map( PolyValue::asNumber ).map( PolyNumber::floatValue ).toList() ).build() ).build();
-            case BOOLEAN -> vectorBuilder.setBoolVector( BoolVector.newBuilder().addAllVector( vectorObject.stream().map( PolyValue::asBoolean ).map( PolyBoolean::getValue ).toList() ).build() ).build();
+            case INTEGER, SMALLINT, TINYINT -> vectorBuilder.setIntVector( IntVector.newBuilder().addAllVector(
+                    vectorObject.stream().map( PolyValue::asNumber ).map( PolyNumber::intValue ).toList() ).build() ).build();
+            case DOUBLE, DECIMAL -> vectorBuilder.setDoubleVector( DoubleVector.newBuilder().addAllVector(
+                    vectorObject.stream().map( PolyValue::asNumber ).map( PolyNumber::doubleValue ).toList() ).build() ).build();
+            case BIGINT -> vectorBuilder.setLongVector( LongVector.newBuilder().addAllVector(
+                    vectorObject.stream().map( PolyValue::asNumber ).map( PolyNumber::longValue ).toList() ).build() ).build();
+            case FLOAT, REAL -> vectorBuilder.setFloatVector( FloatVector.newBuilder().addAllVector(
+                    vectorObject.stream().map( PolyValue::asNumber ).map( PolyNumber::floatValue ).toList() ).build() ).build();
+            case BOOLEAN -> vectorBuilder.setBoolVector( BoolVector.newBuilder().addAllVector(
+                    vectorObject.stream().map( PolyValue::asBoolean ).map( PolyBoolean::getValue ).toList() ).build() ).build();
             default -> null;
         };
     }

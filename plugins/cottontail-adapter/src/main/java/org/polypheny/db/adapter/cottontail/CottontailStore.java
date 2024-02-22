@@ -352,7 +352,7 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
         PhysicalTable table = adapterCatalog.fromAllocation( allocId );
         PhysicalColumn column = adapterCatalog.getColumn( columnId, allocId );
         adapterCatalog.dropColumn( allocId, columnId );
-        List<PhysicalColumn> pColumns = adapterCatalog.getColumns( allocId );
+        List<PhysicalColumn> pColumns = adapterCatalog.getColumns( allocId ).stream().filter( c -> c.id != columnId ).toList();
         final List<ColumnDefinition> columns = this.buildColumnDefinitions( pColumns );
 
         final String currentPhysicalTableName = table.name;
@@ -507,7 +507,7 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
 
         PhysicalColumn column = adapterCatalog.updateColumnType( allocId, newCol );
         PhysicalTable physicalTable = adapterCatalog.fromAllocation( allocId );
-        List<PhysicalColumn> pColumns = adapterCatalog.getColumns( allocId );
+        List<PhysicalColumn> pColumns = adapterCatalog.getColumns( allocId ).stream().map( c -> c.id == column.id ? column : c ).toList();
 
         final List<ColumnDefinition> columns = this.buildColumnDefinitions( pColumns );
 
@@ -537,6 +537,7 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
                 .setMetadata( Metadata.newBuilder().setTransactionId( txId ).build() )
                 .setQuery( Query.newBuilder().setFrom( From.newBuilder().setScan( Scan.newBuilder().setEntity( tableEntity ).build() ) ) )
                 .build();
+
         final TupleIterator iterator = this.wrapper.query( query );
         final From from = From.newBuilder().setScan( Scan.newBuilder().setEntity( newTableEntity ).build() ).build();
         final List<String> columnNames = iterator.getSimpleNames();
@@ -570,6 +571,19 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
             available.add( new IndexMethodModel( indexType.name().toLowerCase(), indexType.name() ) );
         }
         return ImmutableList.copyOf( available );
+    }
+
+
+    @Override
+    public void renameLogicalColumn( long id, String newColumnName ) {
+        long allocId = adapterCatalog.fields.values().stream().filter( c -> c.id == id ).map( c -> c.allocId ).findFirst().orElseThrow();
+        CottontailEntity table = adapterCatalog.fromAllocation( allocId ).unwrap( CottontailEntity.class ).orElseThrow();
+
+        adapterCatalog.renameLogicalColumn( id, newColumnName );
+
+        adapterCatalog.fields.values().stream().filter( c -> c.id == id ).forEach( c -> updateNativePhysical( c.allocId ) );
+
+        updateNativePhysical( allocId );
     }
 
 

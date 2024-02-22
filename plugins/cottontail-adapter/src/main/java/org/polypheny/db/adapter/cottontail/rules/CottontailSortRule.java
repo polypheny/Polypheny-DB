@@ -39,7 +39,7 @@ public class CottontailSortRule extends CottontailConverterRule {
     @Override
     public boolean matches( AlgOptRuleCall call ) {
         final Sort sort = call.alg( 0 );
-        return sort.getCollation().getFieldCollations().size() > 0 || sort.fetch != null || sort.offset != null;
+        return !sort.getCollation().getFieldCollations().isEmpty() || sort.fetch != null || sort.offset != null;
     }
 
 

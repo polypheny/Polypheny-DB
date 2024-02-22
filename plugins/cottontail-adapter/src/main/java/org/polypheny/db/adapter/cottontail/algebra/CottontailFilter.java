@@ -21,7 +21,6 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -130,12 +129,12 @@ public class CottontailFilter extends Filter implements CottontailAlg {
         public Translator( CottontailImplementContext context, AlgDataType rowType ) {
             this.rowType = rowType;
             this.fieldNames = rowType.getFields().stream()
-                    .map( AlgDataTypeField::getPhysicalName )
-                    .collect( Collectors.toList() );
+                    .map( field -> field.getPhysicalName() == null ? context.getPhysicalName( field.getName() ) : field.getPhysicalName() )
+                    .toList();
             this.columnTypes = rowType.getFields().stream()
                     .map( AlgDataTypeField::getType )
                     .map( AlgDataType::getPolyType )
-                    .collect( Collectors.toList() );
+                    .toList();
         }
 
 

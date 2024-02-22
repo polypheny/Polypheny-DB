@@ -846,13 +846,13 @@ public class StatisticsManagerImpl extends StatisticsManager {
         LogicalTable catalogTable = snapshot.getLogicalEntity( tableId ).map( e -> e.unwrap( LogicalTable.class ).orElseThrow() ).orElseThrow();
         List<LogicalColumn> columns = catalogTable.getColumns();
         if ( changedValues.size() != columns.size() ) {
-            log.warn( "non-matching statistics length" );
+            log.debug( "non-matching statistics length" );
             return;
         }
 
         for ( LogicalColumn column : catalogTable.getColumns() ) {
             if ( column.collectionsType != null ) {
-                log.warn( "collections statistics are no yet supported" );
+                log.debug( "collections statistics are no yet supported" );
                 return;
             }
 

@@ -163,7 +163,7 @@ public class Linq4JFixer {
         if ( !(data instanceof Integer) ) {
             return null;
         }
-        return PolyDate.of( (Integer) data );
+        return PolyDate.ofDays( (Integer) data );
     }
 
 
