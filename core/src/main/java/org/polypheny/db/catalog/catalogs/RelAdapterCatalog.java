@@ -130,9 +130,8 @@ public class RelAdapterCatalog extends AdapterCatalog {
         PhysicalColumn old = getColumn( newCol.id, allocId );
         PhysicalColumn column = new PhysicalColumn( old.name, newCol.tableId, allocId, old.adapterId, old.position, newCol );
         PhysicalTable table = fromAllocation( allocId );
-        List<PhysicalColumn> pColumn = new ArrayList<>( table.columns );
-        pColumn.remove( old );
-        pColumn.add( column );
+        addColumn( column );
+        List<PhysicalColumn> pColumn = new ArrayList<>( table.columns ).stream().map( c -> c.id == column.id ? column : c ).toList();
         addPhysical( getAlloc( table.allocationId ), table.toBuilder().columns( ImmutableList.copyOf( pColumn ) ).build() );
 
         return column;

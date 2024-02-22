@@ -96,7 +96,7 @@ public class CottontailSort extends Sort implements CottontailAlg {
         builder.add( Expressions.declare( Modifier.FINAL, orderMap_, orderMapCreator ) );
         for ( AlgFieldCollation c : node.getFieldCollations() ) {
             final AlgDataTypeField column = columns.get( c.getFieldIndex() );
-            String physicalName = (column.getPhysicalName() == null ? column.getName() : column.getPhysicalName());
+            String physicalName = (column.getPhysicalName() == null ? context.getPhysicalName( column.getName() ) : column.getPhysicalName());
             final Expression sortOrder = switch ( c.direction ) {
                 case DESCENDING, STRICTLY_DESCENDING -> Expressions.constant( CottontailGrpc.Order.Direction.DESCENDING.toString() );
                 default -> Expressions.constant( CottontailGrpc.Order.Direction.ASCENDING.toString() );

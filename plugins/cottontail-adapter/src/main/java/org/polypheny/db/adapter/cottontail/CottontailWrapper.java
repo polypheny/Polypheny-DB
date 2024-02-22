@@ -19,6 +19,7 @@ package org.polypheny.db.adapter.cottontail;
 import io.grpc.ManagedChannel;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
@@ -255,11 +256,7 @@ public class CottontailWrapper implements AutoCloseable {
         try {
             final TupleIterator response = this.client.delete( message );
             final Long results = response.next().asLong( 0 );
-            if ( results != null ) {
-                return results; /* Number of deletions as returned by Cottontail DB. */
-            } else {
-                return -1L;
-            }
+            return Objects.requireNonNullElse( results, -1L ); /* Number of deletions as returned by Cottontail DB. */
         } catch ( StatusRuntimeException e ) {
             if ( e.getStatus().getCode() == Status.INVALID_ARGUMENT.getCode() ) {
                 if ( log.isDebugEnabled() ) {
