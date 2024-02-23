@@ -96,8 +96,8 @@ public class CottontailEnumerableFactory {
             String schema,
             Map<Object, String> projection,
             Map<String, String> orderBy,
-            Function1<Map<Long, PolyValue>, Integer> limitBuilder,
-            Function1<Map<Long, PolyValue>, Integer> offsetBuilder,
+            Function1<Map<Long, PolyValue>, PolyValue> limitBuilder,
+            Function1<Map<Long, PolyValue>, PolyValue> offsetBuilder,
             Function1<Map<Long, PolyValue>, Where> whereBuilder,
             DataContext dataContext,
             Function1<Tuple, PolyValue[]> rowParser,
@@ -119,12 +119,12 @@ public class CottontailEnumerableFactory {
 
             Integer limit = null;
             if ( limitBuilder != null ) {
-                limit = limitBuilder.apply( parameterValues );
+                limit = limitBuilder.apply( parameterValues ).asNumber().intValue();
             }
 
             Integer offset = null;
             if ( offsetBuilder != null ) {
-                offset = offsetBuilder.apply( parameterValues );
+                offset = offsetBuilder.apply( parameterValues ).asNumber().intValue();
             }
 
             final Query query = buildSingleQuery( from, schema, projection, orderBy, limit, offset, whereBuilder, parameterValues );
@@ -135,12 +135,12 @@ public class CottontailEnumerableFactory {
 
                 Integer limit = null;
                 if ( limitBuilder != null ) {
-                    limit = limitBuilder.apply( parameterValues );
+                    limit = limitBuilder.apply( parameterValues ).asNumber().intValue();
                 }
 
                 Integer offset = null;
                 if ( offsetBuilder != null ) {
-                    offset = offsetBuilder.apply( parameterValues );
+                    offset = offsetBuilder.apply( parameterValues ).asNumber().intValue();
                 }
 
                 final Query query = buildSingleQuery( from, schema, projection, orderBy, limit, offset, whereBuilder, parameterValues );
