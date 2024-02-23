@@ -23,6 +23,7 @@ import io.grpc.netty.NettyChannelBuilder;
 import java.io.File;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -208,7 +209,9 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
             throw new GenericRuntimeException( "Unable to create table." );
         }
 
-        adapterCatalog.replacePhysical( new CottontailEntity( currentNamespace, this.currentNamespace.getCottontailSchema().getName(), table, this ) );
+        // adapterCatalog.replacePhysical( new CottontailEntity( currentNamespace, this.currentNamespace.getCottontailSchema().getName(), table, this ) );
+
+        updateNativePhysical( table.allocationId );
 
         return List.of( table );
     }
@@ -352,7 +355,7 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
         PhysicalTable table = adapterCatalog.fromAllocation( allocId );
         PhysicalColumn column = adapterCatalog.getColumn( columnId, allocId );
         adapterCatalog.dropColumn( allocId, columnId );
-        List<PhysicalColumn> pColumns = adapterCatalog.getColumns( allocId ).stream().filter( c -> c.id != columnId ).toList();
+        List<PhysicalColumn> pColumns = adapterCatalog.getColumns( allocId ).stream().filter( c -> c.id != columnId ).sorted( Comparator.comparingInt( a -> a.position ) ).toList();
         final List<ColumnDefinition> columns = this.buildColumnDefinitions( pColumns );
 
         final String currentPhysicalTableName = table.name;

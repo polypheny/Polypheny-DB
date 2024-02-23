@@ -127,7 +127,7 @@ public abstract class AdapterCatalog implements PolySerializable {
         if ( entities == null ) {
             return null;
         }
-        return entities.stream().map( physicals::get ).collect( Collectors.toList() );
+        return entities.stream().map( physicals::get ).toList();
     }
 
 

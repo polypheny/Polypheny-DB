@@ -55,6 +55,7 @@ public class CottontailTableModificationRule extends CottontailConverterRule {
         if ( !modify.getEntity().unwrap( CottontailEntity.class ).get().getUnderlyingConvention().equals( this.out ) ) {
             return false;
         }
+
         return modify.getOperation() != Modify.Operation.MERGE;
     }
 
@@ -84,5 +85,6 @@ public class CottontailTableModificationRule extends CottontailConverterRule {
                 modify.isFlattened()
         );
     }
+
 
 }
