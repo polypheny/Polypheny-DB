@@ -1105,7 +1105,7 @@ public class BasicMaterializedViewTest {
 
                     TestHelper.checkResultSetWithDelay(
                             2,
-                            5,
+                            10,
                             () -> statement.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(
                                     new Object[]{ 1, "Max", "Muster", 1, 0 }

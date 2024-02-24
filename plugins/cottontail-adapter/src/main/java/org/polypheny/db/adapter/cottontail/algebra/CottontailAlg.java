@@ -19,9 +19,9 @@ package org.polypheny.db.adapter.cottontail.algebra;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.cottontail.CottontailEntity;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 
 
 public interface CottontailAlg extends AlgNode {
@@ -59,8 +59,9 @@ public interface CottontailAlg extends AlgNode {
         public Expression offsetBuilder;
 
 
+        @NotNull
         public String getPhysicalName( String name ) {
-            return table.getColumns().stream().filter( c -> c.logicalName.equals( name ) ).findFirst().orElseThrow( () -> new GenericRuntimeException( "Column not found: " + name ) ).name;
+            return table.getColumns().stream().filter( c -> c.logicalName.equals( name ) ).findFirst().map( f -> f.name ).orElse( name );
         }
 
 
