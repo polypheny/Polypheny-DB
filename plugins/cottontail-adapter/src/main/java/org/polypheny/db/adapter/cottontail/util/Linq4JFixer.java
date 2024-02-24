@@ -146,6 +146,7 @@ public class Linq4JFixer {
      * @param data The data, expected to be {@link Double}.
      * @return {@link PolyDouble}
      */
+    @SuppressWarnings("unused")
     public static PolyDouble getDoubleData( Object data ) {
         if ( !(data instanceof Double) ) {
             return null;
@@ -181,6 +182,7 @@ public class Linq4JFixer {
     }
 
 
+    @SuppressWarnings("unused")
     public static PolyFloat getRealData( Object data ) {
         if ( data == null ) {
             return null;
@@ -189,6 +191,7 @@ public class Linq4JFixer {
     }
 
 
+    @SuppressWarnings("unused")
     public static PolyLong getBigIntData( Object data ) {
         if ( data == null ) {
             return null;
@@ -197,6 +200,7 @@ public class Linq4JFixer {
     }
 
 
+    @SuppressWarnings("unused")
     public static PolyInteger getIntData( Object data ) {
         if ( data == null ) {
             return null;
@@ -205,6 +209,7 @@ public class Linq4JFixer {
     }
 
 
+    @SuppressWarnings("unused")
     public static PolyBoolean getBoolData( Object data ) {
         if ( data == null ) {
             return null;
@@ -362,10 +367,10 @@ public class Linq4JFixer {
      * @param alias The alias to use for the resulting column.
      * @return The resulting {@link Function} expression.
      */
-    public static Projection.ProjectionElement generateKnn( String p, Vector q, Object distance, String alias ) {
+    public static Projection.ProjectionElement generateKnn( String p, Vector q, PolyValue distance, String alias ) {
         final Projection.ProjectionElement.Builder builder = Projection.ProjectionElement.newBuilder();
         builder.setFunction( Function.newBuilder()
-                .setName( getDistance( (String) distance ) )
+                .setName( getDistance( distance ) )
                 .addArguments( Expression.newBuilder().setColumn( ColumnName.newBuilder().setName( p ) ) )
                 .addArguments( Expression.newBuilder().setLiteral( Literal.newBuilder().setVectorData( q ) ) ) );
         if ( alias != null ) {
@@ -382,27 +387,15 @@ public class Linq4JFixer {
      * @param norm The name of the distance to execute.
      * @return The corresponding {@link FunctionName}
      */
-    public static FunctionName getDistance( String norm ) {
-        final String value;
-        switch ( norm.toUpperCase() ) {
-            case "L1":
-                value = Distances.L1.getFunctionName();
-                break;
-            case "L2":
-                value = Distances.L2.getFunctionName();
-                break;
-            case "L2SQUARED":
-                value = Distances.L2SQUARED.getFunctionName();
-                break;
-            case "CHISQUARED":
-                value = Distances.CHISQUARED.getFunctionName();
-                break;
-            case "COSINE":
-                value = Distances.COSINE.getFunctionName();
-                break;
-            default:
-                throw new IllegalArgumentException( "Unknown norm: " + norm );
-        }
+    public static FunctionName getDistance( PolyValue norm ) {
+        final String value = switch ( norm.asString().value.toUpperCase() ) {
+            case "L1" -> Distances.L1.getFunctionName();
+            case "L2" -> Distances.L2.getFunctionName();
+            case "L2SQUARED" -> Distances.L2SQUARED.getFunctionName();
+            case "CHISQUARED" -> Distances.CHISQUARED.getFunctionName();
+            case "COSINE" -> Distances.COSINE.getFunctionName();
+            default -> throw new IllegalArgumentException( "Unknown norm: " + norm );
+        };
         return FunctionName.newBuilder().setName( value ).build();
     }
 

@@ -40,6 +40,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.util.BuiltInMethod;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
@@ -122,7 +123,7 @@ public class CottontailSort extends Sort implements CottontailAlg {
         if ( node instanceof RexLiteral ) {
             expr = ((RexLiteral) node).getValue().asExpression();
         } else if ( node instanceof RexDynamicParam ) {
-            expr = Expressions.call( dynamicParameterMap_, BuiltInMethod.MAP_GET.method, PolyBigDecimal.of( ((RexDynamicParam) node).getIndex() ).asExpression() );
+            expr = Expressions.convert_( Expressions.call( dynamicParameterMap_, BuiltInMethod.MAP_GET.method, PolyBigDecimal.of( ((RexDynamicParam) node).getIndex() ).asExpression() ), PolyValue.class );
         } else {
             throw new GenericRuntimeException( "Node statement is neither a Literal nor a Dynamic Parameter." );
         }

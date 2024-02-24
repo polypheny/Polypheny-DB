@@ -18,7 +18,7 @@ package org.polypheny.db.adapter.cottontail.algebra;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
@@ -116,7 +116,7 @@ public class CottontailProject extends Project implements CottontailAlg {
      */
     public static ParameterExpression makeProjectionAndKnnBuilder( BlockBuilder builder, List<Pair<RexNode, String>> namedProjects, List<String> physicalColumnNames ) {
         final ParameterExpression projectionMap_ = Expressions.variable( Map.class, builder.newName( "projectionMap" + System.nanoTime() ) );
-        final NewExpression projectionMapCreator = Expressions.new_( LinkedHashMap.class );
+        final NewExpression projectionMapCreator = Expressions.new_( HashMap.class );
         builder.add( Expressions.declare( Modifier.FINAL, projectionMap_, projectionMapCreator ) );
         for ( Pair<RexNode, String> pair : namedProjects ) {
             final String name = pair.right.toLowerCase();
@@ -141,7 +141,7 @@ public class CottontailProject extends Project implements CottontailAlg {
         ParameterExpression dynamicParameterMap_ = Expressions.parameter( Modifier.FINAL, Map.class, inner.newName( "dynamicParameters" ) );
 
         ParameterExpression valuesMap_ = Expressions.variable( Map.class, inner.newName( "valuesMap" ) );
-        NewExpression valuesMapCreator_ = Expressions.new_( LinkedHashMap.class );
+        NewExpression valuesMapCreator_ = Expressions.new_( HashMap.class );
         inner.add( Expressions.declare( Modifier.FINAL, valuesMap_, valuesMapCreator_ ) );
 
         for ( int i = 0; i < namedProjects.size(); i++ ) {
