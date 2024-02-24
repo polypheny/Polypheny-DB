@@ -45,7 +45,7 @@ public class GeoFunctionsTest {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "CREATE TABLE TEST_GIS(ID INTEGER NOT NULL, WKT GEOMETRY, PRIMARY KEY (ID))" );
+                statement.executeUpdate( "CREATE TABLE TEST_GIS(ID INTEGER NOT NULL, geom GEOMETRY, PRIMARY KEY (ID))" );
                 statement.executeUpdate( "INSERT INTO TEST_GIS VALUES (1, ST_GeomFromText('POINT (7.852923 47.998949)', 4326))" );
                 statement.executeUpdate( "INSERT INTO TEST_GIS VALUES (2, ST_GeomFromText('POINT (9.289382 48.741588)', 4326))" );
                 connection.commit();
@@ -74,7 +74,7 @@ public class GeoFunctionsTest {
             try ( Statement statement = connection.createStatement() ) {
                 // scan table for geometries
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT WKT FROM TEST_GIS" ),
+                        statement.executeQuery( "SELECT geom FROM TEST_GIS" ),
                         ImmutableList.of(
                                 new Object[]{ "SRID=4326;POINT (7.852923 47.998949)" },
                                 new Object[]{ "SRID=4326;POINT (9.289382 48.741588)" }
@@ -181,7 +181,7 @@ public class GeoFunctionsTest {
                         ) );
                 // get the convex hull of the geometry from the database
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT ST_ConvexHull(WKT) from TEST_GIS" ),
+                        statement.executeQuery( "SELECT ST_ConvexHull(geom) from TEST_GIS" ),
                         ImmutableList.of(
                                 new Object[]{ "SRID=4326;POINT (7.852923 47.998949)" },
                                 new Object[]{ "SRID=4326;POINT (9.289382 48.741588)" }
@@ -297,21 +297,21 @@ public class GeoFunctionsTest {
                         ) );
                 // check that area contains the point
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT count(*) from TEST_GIS where ST_Contains(ST_GeomFromText('POLYGON ((9.2 48.8, 10.289382 48.8, 10.289382 47.741588, 9.2 47.741588, 9.2 48.8))', 4326), WKT) and id = 2" ),
+                        statement.executeQuery( "SELECT count(*) from TEST_GIS where ST_Contains(ST_GeomFromText('POLYGON ((9.2 48.8, 10.289382 48.8, 10.289382 47.741588, 9.2 47.741588, 9.2 48.8))', 4326), geom) and id = 2" ),
                         ImmutableList.of(
                                 new Object[]{ 1 }
                         ) );
                 // check that point is within area
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT count(*) from TEST_GIS where ST_Within(wkt, ST_GeomFromText('POLYGON ((9.2 48.8, 10.289382 48.8, 10.289382 47.741588, 9.2 47.741588, 9.2 48.8))', 4326))" ),
+                        statement.executeQuery( "SELECT count(*) from TEST_GIS where ST_Within(geom, ST_GeomFromText('POLYGON ((9.2 48.8, 10.289382 48.8, 10.289382 47.741588, 9.2 47.741588, 9.2 48.8))', 4326))" ),
                         ImmutableList.of(
                                 new Object[]{ 1 }
                         ) );
                 // spatial join
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT count(*) from TEST_GIS g1, TEST_GIS g2  where ST_Contains(g1.wkt, g2.wkt)" ),
+                        statement.executeQuery( "SELECT count(*) from TEST_GIS g1, TEST_GIS g2  where ST_Contains(g1.geom, g2.geom)" ),
                         ImmutableList.of(
-                                new Object[]{ 0 }
+                                new Object[]{ 2 }
                         ) );
             }
         }
@@ -323,7 +323,7 @@ public class GeoFunctionsTest {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT count(*) from TEST_GIS where ST_Distance(wkt, ST_GeomFromText('POINT (9.289382 48.741588)', 4326)) < 135555" ),
+                        statement.executeQuery( "SELECT count(*) from TEST_GIS where ST_Distance(geom, ST_GeomFromText('POINT (9.289382 48.741588)', 4326)) < 135555" ),
                         ImmutableList.of(
                                 new Object[]{ 2 }
                         ) );

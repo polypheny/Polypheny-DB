@@ -176,11 +176,35 @@ public class JdbcRules {
         public JdbcJoinRule( JdbcConvention out, AlgBuilderFactory algBuilderFactory ) {
             super(
                     Join.class,
-                    (Predicate<AlgNode>) r -> true,
+                    join -> !geoFunctionInJoin( join ) || supportsGeoFunctionInJoin( out.dialect, join ),
                     Convention.NONE,
                     out,
                     algBuilderFactory,
                     "JdbcJoinRule." + out );
+        }
+
+
+        private static boolean geoFunctionInJoin( Join join ) {
+            CheckingGeoFunctionVisitor visitor = new CheckingGeoFunctionVisitor();
+            for ( RexNode node : join.getChildExps() ) {
+                node.accept( visitor );
+                if ( visitor.containsGeoFunction() ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
+        private static boolean supportsGeoFunctionInJoin( SqlDialect dialect, Join join ) {
+            CheckingGeoFunctionSupportVisitor visitor = new CheckingGeoFunctionSupportVisitor( dialect );
+            for ( RexNode node : join.getChildExps() ) {
+                node.accept( visitor );
+                if ( visitor.supportsGeoFunction() ) {
+                    return true;
+                }
+            }
+            return false;
         }
 
 
