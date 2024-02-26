@@ -16,15 +16,11 @@
 
 package org.polypheny.db.sql.language.validate;
 
-
 import com.google.common.collect.ImmutableList;
-import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.sql.language.SqlNode;
-import org.polypheny.db.util.Util;
 
 
 /**

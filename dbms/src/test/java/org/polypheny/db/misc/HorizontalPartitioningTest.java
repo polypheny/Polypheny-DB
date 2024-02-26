@@ -1430,8 +1430,7 @@ public class HorizontalPartitioningTest {
 
                 statement.executeUpdate( DROP_TABLE_0 );
 
-                TestHelper.dropAdaper( "store1", statement );
-
+                TestHelper.dropAdapter( "store1", statement );
             }
         }
 

@@ -20,12 +20,8 @@ package org.polypheny.db.sql.language;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
-import org.junit.jupiter.api.BeforeAll;
-import org.polypheny.db.PolyphenyDb;
-import org.polypheny.db.TestHelper;
 import org.polypheny.db.algebra.AlgFieldTrimmer;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -36,11 +32,6 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.logistic.ConstraintType;
-import org.polypheny.db.ddl.DdlManager;
-import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
-import org.polypheny.db.ddl.DdlManager.ConstraintInformation;
-import org.polypheny.db.ddl.DdlManager.FieldInformation;
 import org.polypheny.db.languages.NodeToAlgConverter.Config;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Node;
@@ -61,14 +52,10 @@ import org.polypheny.db.test.MockAlgOptPlanner;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.PolyMode;
-import org.polypheny.db.util.PolyphenyHomeDirManager;
 
 
 /**
@@ -431,4 +418,3 @@ public abstract class SqlToAlgTestBase extends SqlLanguageDependent {
     }
 
 }
-

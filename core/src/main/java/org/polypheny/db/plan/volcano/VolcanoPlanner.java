@@ -199,7 +199,7 @@ public class VolcanoPlanner extends AbstractAlgOptPlanner {
     private int nextSetId = 0;
 
     /**
-     * Incremented every time a algebra expression is registered or two sets are merged.
+     * Incremented every time an algebra expression is registered or two sets are merged.
      * Tells us whether anything is going on.
      */
     private int registerCount;
@@ -1719,4 +1719,3 @@ public class VolcanoPlanner extends AbstractAlgOptPlanner {
     }
 
 }
-
