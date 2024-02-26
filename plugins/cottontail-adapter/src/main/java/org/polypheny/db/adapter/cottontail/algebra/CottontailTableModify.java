@@ -19,7 +19,7 @@ package org.polypheny.db.adapter.cottontail.algebra;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
@@ -156,7 +156,7 @@ public class CottontailTableModify extends RelModify<CottontailEntity> implement
         ParameterExpression dynamicParameterMap_ = Expressions.parameter( Modifier.FINAL, Map.class, inner.newName( "dynamicParameters" ) );
 
         ParameterExpression valuesMap_ = Expressions.variable( Map.class, inner.newName( "valuesMap" ) );
-        NewExpression valuesMapCreator_ = Expressions.new_( HashMap.class );
+        NewExpression valuesMapCreator_ = Expressions.new_( LinkedHashMap.class );
         inner.add( Expressions.declare( Modifier.FINAL, valuesMap_, valuesMapCreator_ ) );
 
 //        List<Pair<RexNode, String>> namedProjects = getNamedProjects();

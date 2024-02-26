@@ -179,7 +179,7 @@ public class CottontailEnumerableFactory {
             queryBuilder.setSkip( offset );
         }
 
-        /* Parse and translate projection clause (if available). */
+        // Parse and translate projection clause (if available).
         if ( projection != null && !projection.isEmpty() ) {
             final Projection.Builder projBuilder = queryBuilder.getProjectionBuilder();
             for ( Entry<Object, String> p : projection.entrySet() ) {
@@ -187,18 +187,17 @@ public class CottontailEnumerableFactory {
                 if ( key instanceof String ) {
                     projBuilder.addElementsBuilder().setColumn( ColumnName.newBuilder().setName( (String) key ) );
                 } else if ( key instanceof Function1 ) {
-                    /* Not exactly beautiful i know ;-) */
                     projBuilder.addElements( ((Function1<Map<Long, PolyValue>, ProjectionElement>) key).apply( parameterValues ) );
                 }
             }
         }
 
-        /* Add WHERE clause to query. */
+        // Add WHERE clause to query.
         if ( whereBuilder != null ) {
             queryBuilder.setWhere( whereBuilder.apply( parameterValues ) );
         }
 
-        /* Add ORDER BY to query. */
+        // Add ORDER BY to query.
         if ( order != null && !order.isEmpty() ) {
             final Order.Builder orderBuilder = queryBuilder.getOrderBuilder();
             for ( Entry<String, String> p : order.entrySet() ) {
@@ -221,10 +220,10 @@ public class CottontailEnumerableFactory {
             CottontailEntity entity
     ) {
         CottontailWrapper wrapper = entity.getCottontailNamespace().getWrapper();
-        /* Begin or continue Cottontail DB transaction. */
+        // Begin or continue Cottontail DB transaction.
         final long txId = wrapper.beginOrContinue( dataContext.getStatement().getTransaction() );
 
-        /* Build INSERT messages and create enumerable. */
+        // Build INSERT messages and create enumerable.
         final CottontailGrpc.From from_ = CottontailTypeUtil.fromFromTableAndSchema( from, schema );
         final List<InsertMessage> insertMessages = new ArrayList<>( values.size() );
         for ( Map<String, CottontailGrpc.Literal> value : values ) {
@@ -372,6 +371,12 @@ public class CottontailEnumerableFactory {
         builder.setFrom( from_ );
 
         return builder.build();
+    }
+
+
+    @SuppressWarnings("unused")
+    public static PolyValue getDynamicValue( DataContext dataContext, long index ) {
+        return dataContext.getParameterValues().get( 0 ).get( index );
     }
 
 }

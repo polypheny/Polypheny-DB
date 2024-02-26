@@ -854,7 +854,6 @@ public class HorizontalPartitioningTest {
 
 
     @Test
-    @Tag("file")
     public void batchPartitionTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

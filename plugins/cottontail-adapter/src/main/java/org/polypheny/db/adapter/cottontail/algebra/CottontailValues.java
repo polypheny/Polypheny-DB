@@ -19,7 +19,7 @@ package org.polypheny.db.adapter.cottontail.algebra;
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
@@ -57,20 +57,22 @@ public class CottontailValues extends Values implements CottontailAlg {
         final List<Pair<String, PolyType>> physicalColumnNames = new ArrayList<>();
         List<Integer> tupleIndexes = new ArrayList<>();
         int i = 0;
+        List<String> fieldNames = context.table.getRowType().getFieldNames();
         for ( AlgDataTypeField field : this.rowType.getFields() ) {
-            try {
-                physicalColumnNames.add( new Pair<>( field.getPhysicalName(), field.getType().getPolyType() ) );
-                tupleIndexes.add( i );
-            } catch ( IndexOutOfBoundsException e ) {
-                // ignore; this table seems to be vertically partitioned and this store does not have all columns
-            } finally {
-                i++;
+            if ( !fieldNames.contains( field.getName() ) ) {
+                continue;
             }
+            int index = fieldNames.indexOf( field.getName() );
+            physicalColumnNames.add( new Pair<>(
+                    context.table.getRowType().getFields().get( index ).getPhysicalName(),
+                    field.getType().getPolyType() ) );
+
+            tupleIndexes.add( field.getIndex() );
         }
 
         for ( List<RexLiteral> tuple : tuples ) {
             final ParameterExpression valuesMap_ = Expressions.variable( Map.class, builder.newName( "valuesMap" ) );
-            final NewExpression valuesMapCreator = Expressions.new_( HashMap.class );
+            final NewExpression valuesMapCreator = Expressions.new_( LinkedHashMap.class );
             builder.add( Expressions.declare( Modifier.FINAL, valuesMap_, valuesMapCreator ) );
 
             List<RexLiteral> values;

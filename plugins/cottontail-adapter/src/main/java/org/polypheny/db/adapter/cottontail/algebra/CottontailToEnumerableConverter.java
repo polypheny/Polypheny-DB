@@ -117,6 +117,11 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                         "values",
                         Expressions.newArrayBounds( PolyValue.class, 1, Expressions.constant( fieldCount ) ) );
                 for ( int i = 0; i < fieldCount; i++ ) {
+                    if ( cottontailContext.dynamicParams.containsKey( getTupleType().getFieldNames().get( i ) ) ) {
+                        this.generateDynamicGet( builder, cottontailContext.dynamicParams.get( getTupleType().getFieldNames().get( i ) ), Expressions.arrayIndex( values_, Expressions.constant( i ) ) );
+                        continue;
+                    }
+
                     this.generateGet( rowType, builder, resultMap_, i, Expressions.arrayIndex( values_, Expressions.constant( i ) ) );
                 }
                 builder.add( Expressions.return_( null, values_ ) );
@@ -209,6 +214,11 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
         list.add( Expressions.return_( null, enumerable ) );
 
         return implementor.result( physType, list.toBlock() );
+    }
+
+
+    private void generateDynamicGet( BlockBuilder builder, Long dynamicIndex, Expression target ) {
+        builder.add( Expressions.statement( Expressions.assign( target, Expressions.call( CottontailEnumerableFactory.class, "getDynamicValue", DataContext.ROOT, Expressions.constant( dynamicIndex ) ) ) ) );
     }
 
 

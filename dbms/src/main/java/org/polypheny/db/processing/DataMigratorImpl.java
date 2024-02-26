@@ -404,15 +404,21 @@ public class DataMigratorImpl implements DataMigrator {
         AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
 
         List<String> columnNames = new LinkedList<>();
-        List<RexNode> values = new LinkedList<>();
+        List<RexNode> values = new ArrayList<>();
         for ( AllocationColumn ccp : to ) {
             LogicalColumn logicalColumn = Catalog.getInstance().getSnapshot().rel().getColumn( ccp.columnId ).orElseThrow();
             columnNames.add( ccp.getLogicalColumnName() );
             values.add( new RexDynamicParam( logicalColumn.getAlgDataType( typeFactory ), (int) logicalColumn.id ) );
         }
         AlgBuilder builder = AlgBuilder.create( statement, cluster );
-        builder.push( LogicalValues.createOneRow( cluster ) );
-        builder.project( values, columnNames );
+
+        if ( to.isEmpty() ) {
+            builder.scan( allocation );
+        } else {
+            builder.push( LogicalValues.createOneRow( cluster ) );
+            builder.project( values, columnNames );
+        }
+
 
         AlgNode node = LogicalRelModify.create( allocation, builder.build(), Modify.Operation.DELETE, null, null, false );
 

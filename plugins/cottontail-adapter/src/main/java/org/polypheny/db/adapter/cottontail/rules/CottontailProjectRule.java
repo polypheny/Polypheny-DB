@@ -26,6 +26,7 @@ import org.polypheny.db.adapter.cottontail.algebra.CottontailProject;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailToEnumerableConverter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.nodes.ArrayValueConstructor;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -51,16 +52,16 @@ public class CottontailProjectRule extends CottontailConverterRule {
                 Convention.NONE,
                 CottontailConvention.INSTANCE,
                 algBuilderFactory,
-                "CottontailProjectRule" );
+                CottontailProjectRule.class.getSimpleName() );
     }
 
 
     @Override
     public boolean matches( AlgOptRuleCall call ) {
         Project project = call.alg( 0 );
-        if ( containsInnerProject( project ) ) {
+        /*if ( containsInnerProject( project ) ) {
             return super.matches( call );
-        }
+        }*/
 
         boolean containsInputRefs = false;
         boolean containsValueProjects = false;
@@ -69,9 +70,9 @@ public class CottontailProjectRule extends CottontailConverterRule {
         for ( RexNode e : projects ) {
             if ( e instanceof RexIndexRef ) {
                 containsInputRefs = true;
-            } else if ( (e instanceof RexLiteral) || (e instanceof RexDynamicParam) || ((e instanceof RexCall) && (((RexCall) e).getOperator() instanceof ArrayValueConstructor)) ) {
+            } else if ( (e instanceof RexLiteral) || (e instanceof RexDynamicParam) || (e instanceof RexCall rexCall && rexCall.getOperator() instanceof ArrayValueConstructor) ) {
                 containsValueProjects = true;
-            } else if ( (e instanceof RexCall rexCall) && (((RexCall) e).getOperator() instanceof SqlDistanceFunction) ) {
+            } else if ( e instanceof RexCall rexCall && rexCall.getOperator() instanceof SqlDistanceFunction ) {
                 if ( !(CottontailToEnumerableConverter.SUPPORTED_ARRAY_COMPONENT_TYPES.contains( rexCall.getOperands().get( 0 ).getType().getComponentType().getPolyType() )) ) {
                     return false;
                 }
@@ -88,14 +89,21 @@ public class CottontailProjectRule extends CottontailConverterRule {
     }
 
 
+    private boolean isPreparedDml( Project project ) {
+        // only manually prepared DML statements are supported for operators than index references and knn functions
+        return project.getInput() instanceof AlgSubset subset && subset.getOriginal() instanceof Values;
+    }
+
+
     @Override
     public AlgNode convert( AlgNode alg ) {
         final Project project = (Project) alg;
         final AlgTraitSet traitSet = project.getTraitSet().replace( out );
         boolean arrayValueProject = true;
         for ( RexNode e : project.getProjects() ) {
-            if ( !((e instanceof RexCall) && (((RexCall) e).getOperator() instanceof SqlArrayValueConstructor))
-                    && !(e instanceof RexLiteral) && !(e instanceof RexDynamicParam) ) {
+            if ( !(e instanceof RexCall call && call.getOperator() instanceof SqlArrayValueConstructor)
+                    && !(e instanceof RexLiteral)
+                    && !(e instanceof RexDynamicParam) ) {
                 arrayValueProject = false;
                 break;
             }

@@ -55,10 +55,8 @@ public class DataContextImpl implements DataContext {
     private final Statement statement;
 
     @Getter
-    @Setter
     private Map<Long, AlgDataType> parameterTypes; // ParameterIndex -> Data ExpressionType
     @Getter
-    @Setter
     private List<Map<Long, PolyValue>> parameterValues; // List of ( ParameterIndex -> Value )
 
     private final Map<Integer, List<Map<Long, PolyValue>>> otherParameterValues;
@@ -77,7 +75,7 @@ public class DataContextImpl implements DataContext {
         this.statement = statement;
         this.map = getMedaInfo( parameters );
         this.parameterTypes = parameterTypes;
-        this.parameterValues = parameterValues;
+        this.parameterValues = new ArrayList<>( parameterValues );
         otherParameterValues = new HashMap<>();
     }
 
@@ -151,6 +149,18 @@ public class DataContextImpl implements DataContext {
     @Override
     public AlgDataType getParameterType( long index ) {
         return parameterTypes.get( index );
+    }
+
+
+    @Override
+    public void setParameterValues( List<Map<Long, PolyValue>> values ) {
+        parameterValues = new ArrayList<>( values );
+    }
+
+
+    @Override
+    public void setParameterTypes( Map<Long, AlgDataType> types ) {
+        parameterTypes = new HashMap<>( types );
     }
 
 

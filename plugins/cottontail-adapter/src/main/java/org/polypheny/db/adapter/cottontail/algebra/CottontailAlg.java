@@ -16,6 +16,8 @@
 
 package org.polypheny.db.adapter.cottontail.algebra;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
@@ -58,10 +60,17 @@ public interface CottontailAlg extends AlgNode {
         public int offset = -1;
         public Expression offsetBuilder;
 
+        Map<String, Long> dynamicParams = new HashMap<>();
+
 
         @NotNull
         public String getPhysicalName( String name ) {
             return table.getColumns().stream().filter( c -> c.logicalName.equals( name ) ).findFirst().map( f -> f.name ).orElse( name );
+        }
+
+
+        public void addDynamicParam( String name, long index ) {
+            dynamicParams.put( name, index );
         }
 
 
