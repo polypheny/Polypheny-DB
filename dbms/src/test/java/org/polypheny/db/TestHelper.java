@@ -16,8 +16,8 @@
 
 package org.polypheny.db;
 
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -57,7 +57,6 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Assertions;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.Catalog;
@@ -174,10 +173,8 @@ public class TestHelper {
 
 
     public static void checkResultSetWithDelay( int tries, int waitSeconds, DelayedSupplier<ResultSet> resultSet, ImmutableList<Object[]> expected, boolean ignoreOrder ) {
-
         try {
             TimeUnit.SECONDS.sleep( waitSeconds );
-
             try {
                 checkResultSet( resultSet.get(), expected, ignoreOrder );
             } catch ( Throwable e ) {
@@ -190,8 +187,6 @@ public class TestHelper {
         } catch ( InterruptedException interruptedException ) {
             log.error( "Interrupted exception", interruptedException );
         }
-
-
     }
 
 
@@ -218,7 +213,7 @@ public class TestHelper {
     }
 
 
-    public static void dropAdaper( String name, Statement statement ) throws SQLException {
+    public static void dropAdapter( String name, Statement statement ) throws SQLException {
         executeSQL( statement, "ALTER ADAPTERS DROP \"" + name + "\"" );
     }
 
@@ -303,7 +298,7 @@ public class TestHelper {
                     int columnType = rsmd.getColumnType( j + 1 );
                     if ( columnType == Types.BINARY ) {
                         if ( expectedRow[j] == null ) {
-                            Assertions.assertNull( row[j], "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': " );
+                            assertNull( row[j], "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': " );
                         } else {
                             assertEquals(
                                     new String( (byte[]) expectedRow[j] ),
@@ -364,7 +359,7 @@ public class TestHelper {
         List<?> resultList = (List<?>) row[j];
 
         if ( expectedRow[j] == null ) {
-            Assertions.assertNull( resultList, "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': " );
+            assertNull( resultList, "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': " );
             return;
         }
 
@@ -376,7 +371,6 @@ public class TestHelper {
                     resultList.get( k ),
                     "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "' at position: " + k + 1 );
         }
-
     }
 
 
@@ -640,7 +634,6 @@ public class TestHelper {
                 return bsonValue.asNumber().doubleValue() == parsedResult.asNumber().doubleValue();
             }
             return false;
-
         }
 
 
@@ -677,7 +670,6 @@ public class TestHelper {
                         + "}" );
             }
             return docs;
-
         }
 
     }
@@ -801,6 +793,5 @@ public class TestHelper {
         T getThrows() throws SQLException;
 
     }
-
 
 }

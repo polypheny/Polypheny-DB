@@ -68,7 +68,7 @@ public abstract class AbstractAdapterSetting {
         this.appliesTo = appliesTo;
         this.defaultValue = defaultValue;
         assert this.subOf == null || this.subOf.split( "_" ).length == 2
-                : "SubOf needs to be null or has to be seperated by \"_\" and requires link and value due to limitation in Java";
+                : "SubOf needs to be null or has to be separated by \"_\" and requires link and value due to limitation in Java";
     }
 
 
