@@ -290,7 +290,7 @@ public class Functions {
     @SuppressWarnings("unused")
     public static <T> Enumerable<PolyValue[]> streamRight( final DataContext context, final Enumerable<PolyValue[]> baz, final Function0<Enumerable<PolyValue[]>> executorCall, final List<PolyType> polyTypes ) {
         AlgDataTypeFactory factory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
-        List<AlgDataType> algDataTypes = polyTypes.stream().map( factory::createPolyType ).toList();
+        List<AlgDataType> algDataTypes = polyTypes.stream().map( typeName -> typeName == PolyType.ARRAY ? factory.createArrayType( factory.createPolyType( PolyType.ANY ), -1 ) : factory.createPolyType( typeName ) ).toList();
 
         boolean single = polyTypes.size() == 1;
 
@@ -389,7 +389,6 @@ public class Functions {
         Map<Long, AlgDataType> backupTypes = context.getParameterTypes();
         List<Map<Long, PolyValue>> backupValues = context.getParameterValues();
         context.resetParameterValues();
-
 
         for ( PolyValue[] object : control.apply() ) {
             validationIndexes.add( object[1].asNumber() );

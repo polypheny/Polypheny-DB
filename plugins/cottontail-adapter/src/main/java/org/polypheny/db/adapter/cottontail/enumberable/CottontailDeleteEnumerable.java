@@ -134,7 +134,7 @@ public class CottontailDeleteEnumerable extends AbstractEnumerable<PolyValue[]> 
 
                 this.currentResult = new PolyValue[]{ PolyLong.of( wrapper.delete( deleteMessage ) ) };
 
-                return !this.currentResult.equals( PolyLong.of( -1L ) );
+                return !this.currentResult[0].equals( PolyLong.of( -1L ) );
             }
             return false;
         }
