@@ -263,7 +263,10 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
             MaterializedCriteria v = entry.getValue();
             if ( v.getCriteriaType() == CriteriaType.INTERVAL
                     && v.getLastUpdate().getTime() + v.getTimeInMillis() < System.currentTimeMillis()
-                    && !isDroppingMaterialized && !isCreatingMaterialized && !isUpdatingMaterialized ) {
+                    && !isDroppingMaterialized
+                    && !isCreatingMaterialized
+                    && !isUpdatingMaterialized ) {
+
                 prepareToUpdate( k );
                 updateMaterializedTime( k );
             }
@@ -287,12 +290,17 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
         try {
             Statement statement = transaction.createStatement();
-            Collection<Entry<EntityIdentifier, LockMode>> idAccesses = new ArrayList<>();
             // Get a shared global schema lock (only DDLs acquire an exclusive global schema lock)
-            idAccesses.add( Pair.of( LockManager.GLOBAL_LOCK, LockMode.SHARED ) );
+            //idAccesses.add( Pair.of( LockManager.GLOBAL_LOCK, LockMode.SHARED ) );
+            Optional<LogicalMaterializedView> optionalTable = table.unwrap( LogicalMaterializedView.class );
+            if ( optionalTable.isEmpty() ) {
+                log.warn( "Materialized view with id {} does not longer exist", materializedId );
+                return;
+            }
+
             // Get locks for individual tables
-            EntityAccessMap access = new EntityAccessMap( table.unwrap( LogicalMaterializedView.class ).orElseThrow().getDefinition(), new HashMap<>() );
-            idAccesses.addAll( access.getAccessedEntityPair() );
+            EntityAccessMap access = new EntityAccessMap( optionalTable.get().getDefinition(), new HashMap<>() );
+            Collection<Entry<EntityIdentifier, LockMode>> idAccesses = new ArrayList<>( access.getAccessedEntityPair() );
             // if we don't lock exclusively for the target here we can produce deadlocks on underlying stores,
             // as we could end up with two concurrent shared locks waiting for an exclusive lock on the same entity or each other's entities
             catalog.getSnapshot().alloc().getFromLogical( materializedId )
@@ -304,6 +312,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
         }
 
         updateData( transaction, materializedId );
+
         commitTransaction( transaction );
 
         updateMaterializedTime( materializedId );

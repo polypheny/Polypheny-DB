@@ -102,8 +102,8 @@ public class WaitForGraph {
 
     class DepthFirstSearch {
 
-        private Set<TransactionImpl> visited = new HashSet<>();
-        private List<List<TransactionImpl>> cycles = new ArrayList<>();
+        private final Set<TransactionImpl> visited = new HashSet<>();
+        private final List<List<TransactionImpl>> cycles = new ArrayList<>();
 
 
         void start() {

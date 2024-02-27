@@ -103,6 +103,8 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
     @Delegate(excludes = Exclude.class)
     private final RelationalModifyDelegate delegate;
 
+    public static final String DEFAULT_DATABASE = "public";
+
     // Running embedded
     private final boolean isEmbedded;
     @Expose(serialize = false, deserialize = false)
@@ -179,6 +181,11 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
         final long txId = this.wrapper.beginOrContinue( context.getStatement().getTransaction() );
 
         final String physicalTableName = CottontailNameUtil.createPhysicalTableName( allocationWrapper.table.id, 0 );
+
+        if ( this.currentNamespace == null ) {
+            updateNamespace( DEFAULT_DATABASE, allocationWrapper.table.id );
+            adapterCatalog.addNamespace( allocationWrapper.table.namespaceId, currentNamespace );
+        }
 
         PhysicalTable table = adapterCatalog.createTable(
                 logical.table.getNamespaceName(),

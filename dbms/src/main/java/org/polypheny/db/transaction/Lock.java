@@ -81,7 +81,7 @@ public class Lock {
                 return;
             }
             while ( isXLocked() || sLockCount > 1 ) {
-                Set<TransactionImpl> ownersWithSelfRemoved = owners.stream().filter( ( ownerTxn ) -> !ownerTxn.equals( txn ) ).collect( Collectors.toSet() );
+                Set<TransactionImpl> ownersWithSelfRemoved = owners.stream().filter( ownerTxn -> !ownerTxn.equals( txn ) ).collect( Collectors.toSet() );
                 waitForGraph.add( txn, ownersWithSelfRemoved );
                 waitForGraph.detectDeadlock( txn );
                 waiters.await();
