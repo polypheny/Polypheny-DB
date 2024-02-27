@@ -83,7 +83,6 @@ public class ClientManager {
         Transaction transaction = transactionManager.startTransaction( user.id, false, "proto-interface" );
         transaction.commit();
         LogicalNamespace namespace = getNamespaceOrDefault( connectionRequest );
-        assert namespace != null;
         boolean isAutocommit = getAutocommitOrDefault( connectionRequest );
         PIClient client = new PIClient(
                 connectionRequest.getClientUuid(),

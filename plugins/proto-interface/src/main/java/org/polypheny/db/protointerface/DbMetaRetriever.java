@@ -274,7 +274,7 @@ public class DbMetaRetriever {
         Database database = Database.newBuilder()
                 .setDatabaseName( Catalog.DATABASE_NAME )
                 .setOwnerName( "system" )
-                .setDefaultNamespaceName( Catalog.defaultNamespaceName )
+                .setDefaultNamespaceName( Catalog.DEFAULT_NAMESPACE_NAME )
                 .build();
         return DatabasesResponse.newBuilder()
                 .addDatabases( database )
@@ -283,7 +283,7 @@ public class DbMetaRetriever {
 
 
     public static synchronized TableTypesResponse getTableTypes() {
-        List<String> tableTypes = Arrays.stream( EntityType.values() ).map( EntityType::name ).collect( Collectors.toList() );
+        List<String> tableTypes = Arrays.stream( EntityType.values() ).map( EntityType::name ).toList();
         TableTypesResponse.Builder responseBuilder = TableTypesResponse.newBuilder();
         tableTypes.forEach( tableType -> responseBuilder.addTableTypes( getTableTypeMeta( tableType ) ) );
         return responseBuilder.build();
@@ -390,21 +390,19 @@ public class DbMetaRetriever {
             }
             int minorVersion = Integer.parseInt( versionName.substring( 0, nextSeparatorIndex ) );
 
-            DbmsVersionResponse dbmsVersionResponse = DbmsVersionResponse.newBuilder()
+            return DbmsVersionResponse.newBuilder()
                     .setDbmsName( "Polypheny-DB" )
                     .setVersionName( PolyphenyDb.class.getPackage().getImplementationVersion() )
                     .setMajorVersion( majorVersion )
                     .setMinorVersion( minorVersion )
                     .build();
-            return dbmsVersionResponse;
         } catch ( Exception e ) {
-            DbmsVersionResponse dbmsVersionResponse = DbmsVersionResponse.newBuilder()
+            return DbmsVersionResponse.newBuilder()
                     .setDbmsName( "Polypheny-DB" )
                     .setVersionName( "DEVELOPMENT VERSION" )
                     .setMajorVersion( -1 )
                     .setMinorVersion( -1 )
                     .build();
-            return dbmsVersionResponse;
         }
     }
 

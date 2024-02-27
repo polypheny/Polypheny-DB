@@ -21,7 +21,7 @@ import org.polypheny.db.catalog.Catalog;
 public class PropertyUtils {
 
     public static final boolean AUTOCOMMIT_DEFAULT = true;
-    public static final String DEFAULT_NAMESPACE_NAME = Catalog.defaultNamespaceName;
+    public static final String DEFAULT_NAMESPACE_NAME = Catalog.DEFAULT_NAMESPACE_NAME;
     public static final int DEFAULT_FETCH_SIZE = 100;
 
 }

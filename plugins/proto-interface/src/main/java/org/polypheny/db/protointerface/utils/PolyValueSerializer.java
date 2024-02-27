@@ -50,20 +50,13 @@ import org.polypheny.db.protointerface.proto.ProtoTimeStamp;
 import org.polypheny.db.protointerface.proto.ProtoUserDefinedType;
 import org.polypheny.db.protointerface.proto.ProtoValue;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
-import org.polypheny.db.type.entity.PolyDate;
-import org.polypheny.db.type.entity.PolyDouble;
-import org.polypheny.db.type.entity.PolyFloat;
-import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyTime;
-import org.polypheny.db.type.entity.PolyTimeStamp;
 import org.polypheny.db.type.entity.PolyUserDefinedValue;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyBlob;
@@ -74,7 +67,14 @@ import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.type.entity.graph.PolyPath.PolySegment;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyFloat;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.relational.PolyMap;
+import org.polypheny.db.type.entity.temporal.PolyDate;
+import org.polypheny.db.type.entity.temporal.PolyTime;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 
 public class PolyValueSerializer {
 
@@ -143,7 +143,7 @@ public class PolyValueSerializer {
             case TIMESTAMP:
                 // used by PolyTimeStamp
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                return serializeAsProtoTimeStamp( polyValue.asTimeStamp() );
+                return serializeAsProtoTimeStamp( polyValue.asTimestamp() );
             case INTERVAL_SECOND:
                 // used by PolyInterval
             case INTERVAL_MINUTE_SECOND:
@@ -307,13 +307,13 @@ public class PolyValueSerializer {
     }
 
 
-    private static List<ProtoGraphPropertyHolder> serializeToProtoGraphPropertyHolderList( PolyList<GraphPropertyHolder> polyGraphPropertyHolders ) {
+    private static List<ProtoGraphPropertyHolder> serializeToProtoGraphPropertyHolderList( List<GraphPropertyHolder> polyGraphPropertyHolders ) {
         return polyGraphPropertyHolders.stream().map( PolyValueSerializer::serializeToProtoGraphPropertyHolder ).collect( Collectors.toList() );
     }
 
 
-    private static List<ProtoSegment> serializeToProtoSegmentList( PolyList<PolySegment> polySegments ) {
-        return polySegments.stream().map( PolyValueSerializer::serializeToProtoSegment ).collect( Collectors.toList() );
+    private static List<ProtoSegment> serializeToProtoSegmentList( List<PolySegment> polySegments ) {
+        return polySegments.stream().map( PolyValueSerializer::serializeToProtoSegment ).toList();
     }
 
 
@@ -321,8 +321,8 @@ public class PolyValueSerializer {
         ProtoGraph protoGraph = ProtoGraph.newBuilder()
                 .setId( serializeToProtoString( polyGraph.getId() ) )
                 .setVariableName( serializeToProtoString( polyGraph.getVariableName() ) )
-                .setNodes( serializeToProtoMap( new PolyMap<>( polyGraph.getNodes() ).asMap() ) )
-                .setEdges( serializeToProtoMap( new PolyMap<>( polyGraph.getEdges() ).asMap() ) )
+                .setNodes( serializeToProtoMap( polyGraph.getNodes().asMap() ) )
+                .setEdges( serializeToProtoMap( polyGraph.getEdges().asMap() ) )
                 .build();
         return ProtoValue.newBuilder()
                 .setGraph( protoGraph )
@@ -456,7 +456,7 @@ public class PolyValueSerializer {
 
     public static ProtoValue serializeAsProtoDate( PolyDate polyDate ) {
         ProtoDate protoDate = ProtoDate.newBuilder()
-                .setDate( polyDate.getMilliSinceEpoch() )
+                .setDate( polyDate.getMillisSinceEpoch() )
                 .build();
         return ProtoValue.newBuilder()
                 .setDate( protoDate )
@@ -501,7 +501,6 @@ public class PolyValueSerializer {
     public static ProtoValue serializeAsProtoTime( PolyTime polyTime ) {
         ProtoTime protoTime = ProtoTime.newBuilder()
                 .setValue( polyTime.ofDay )
-                .setTimeUnit( ProtoTime.TimeUnit.valueOf( polyTime.getTimeUnit().name() ) )
                 .build();
         return ProtoValue.newBuilder()
                 .setTime( protoTime )
@@ -509,9 +508,9 @@ public class PolyValueSerializer {
     }
 
 
-    public static ProtoValue serializeAsProtoTimeStamp( PolyTimeStamp polyTimeStamp ) {
+    public static ProtoValue serializeAsProtoTimeStamp( PolyTimestamp polyTimeStamp ) {
         ProtoTimeStamp protoTimeStamp = ProtoTimeStamp.newBuilder()
-                .setTimeStamp( polyTimeStamp.getMilliSinceEpoch() )
+                .setTimeStamp( polyTimeStamp.getMillisSinceEpoch() )
                 .build();
         return ProtoValue.newBuilder()
                 .setTimeStamp( protoTimeStamp )

@@ -132,29 +132,6 @@ message ProtoString {
 
 message ProtoTime {
   int32 value = 1;
-  TimeUnit time_unit = 2;
-  enum TimeUnit {
-    UNSPECIFIED = 0;
-    YEAR = 1;
-    MONTH = 2;
-    DAY = 3;
-    HOUR = 4;
-    MINUTE = 5;
-    SECOND = 6;
-    QUARTER = 7;
-    ISOYEAR = 8;
-    WEEK = 9;
-    MILLISECOND = 10;
-    MICROSECOND = 11;
-    NANOSECOND = 12;
-    DOW = 13;
-    ISODOW = 14;
-    DOY = 15;
-    EPOCH = 16;
-    DECADE = 17;
-    CENTURY = 18;
-    MILLENNIUM = 19;
-  }
 }
 
 message ProtoTimeStamp {

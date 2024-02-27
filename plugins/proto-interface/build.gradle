@@ -71,7 +71,6 @@ sourceSets {
         }
         java {
             srcDirs = ["src/main/java", "build/generated-sources", 'build/generated/source/proto/main/grpc', 'build/generated/source/proto/main/java']
-            outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {
             srcDirs = ["src/main/resources"]
@@ -81,7 +80,6 @@ sourceSets {
     test {
         java {
             srcDirs = ["src/test/java"]
-            outputDir = file(project.buildDir.absolutePath + "/test-classes")
         }
         resources {
             srcDirs = ["src/test/resources", "src/main/resources"]
@@ -97,6 +95,14 @@ delombok {
 compileJava {
     dependsOn(":core:processResources")
     dependsOn(":monitoring:processResources")
+}
+
+extractIncludeProto {
+    dependsOn(":core:compileJava")
+    dependsOn(":monitoring:compileJava")
+    dependsOn(":plugins:mql-language:compileJava")
+    dependsOn(":webui:compileJava")
+    dependsOn(":plugins:sql-language:compileJava")
 }
 
 /**
