@@ -16,6 +16,8 @@
 
 package org.polypheny.db.protointerface;
 
+import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 import java.util.Timer;
@@ -70,32 +72,35 @@ public class ClientManager {
 
 
     public String registerConnection( ConnectionRequest connectionRequest ) throws AuthenticationException, TransactionException, PIServiceException {
+        byte[] raw = new byte[32];
+        new SecureRandom().nextBytes( raw );
+        String uuid = Base64.getUrlEncoder().encodeToString( raw );
+
         if ( log.isTraceEnabled() ) {
-            log.trace( "User {} tries to establish connection via proto interface.", connectionRequest.getClientUuid() );
-        }
-        // reject already connected user
-        if ( isConnected( connectionRequest.getClientUuid() ) ) {
-            throw new PIServiceException( "A user with uid " + connectionRequest.getClientUuid() + " is already connected." );
+            log.trace( "User {} tries to establish connection via proto interface.", uuid );
         }
         String username = connectionRequest.hasUsername() ? connectionRequest.getUsername() : Catalog.USER_NAME;
         String password = connectionRequest.hasPassword() ? connectionRequest.getPassword() : null;
+        if ( password == null ) {
+            throw new AuthenticationException( "A password is required" );
+        }
         LogicalUser user = authenticator.authenticate( username, password );
         Transaction transaction = transactionManager.startTransaction( user.id, false, "proto-interface" );
         transaction.commit();
         LogicalNamespace namespace = getNamespaceOrDefault( connectionRequest );
         boolean isAutocommit = getAutocommitOrDefault( connectionRequest );
         PIClient client = new PIClient(
-                connectionRequest.getClientUuid(),
+                uuid,
                 user,
                 transactionManager,
                 namespace,
                 isAutocommit
         );
-        openConnections.put( connectionRequest.getClientUuid(), client );
+        openConnections.put( uuid, client );
         if ( log.isTraceEnabled() ) {
-            log.trace( "proto-interface established connection to user {}.", connectionRequest.getClientUuid() );
+            log.trace( "proto-interface established connection to user {}.", uuid );
         }
-        return connectionRequest.getClientUuid();
+        return uuid;
     }
 
 
