@@ -44,7 +44,7 @@ public class ClientManager {
     @Getter
     private long heartbeatInterval;
 
-    private ConcurrentHashMap<String, PIClient> openConnections;
+    private final ConcurrentHashMap<String, PIClient> openConnections;
     private final Authenticator authenticator;
     private final TransactionManager transactionManager;
     private Timer cleanupTimer;
@@ -147,7 +147,7 @@ public class ClientManager {
 
     private void unregisterInactiveClients() {
         List<PIClient> inactiveClients = openConnections.values().stream()
-                .filter( c -> !c.returnAndResetIsActive() ).collect( Collectors.toList() );
+                .filter( c -> !c.returnAndResetIsActive() ).toList();
         inactiveClients.forEach( this::unregisterConnection );
     }
 

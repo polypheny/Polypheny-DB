@@ -113,7 +113,7 @@ public class PIService {
 
     private static final int majorApiVersion = 2;
     private static final int minorApiVersion = 0;
-    private ClientManager clientManager;
+    private final ClientManager clientManager;
     private final Socket con;
     private String uuid = null;
 
@@ -162,7 +162,7 @@ public class PIService {
     }
 
 
-    private void handleMessage( Request req, OutputStream os, AtomicBoolean done ) throws TransactionException, AuthenticationException {
+    private void handleMessage( Request req, OutputStream os, AtomicBoolean done ) throws TransactionException, AuthenticationException, EOFException {
         switch ( req.getTypeCase() ) {
             case DBMS_VERSION_REQUEST, LANGUAGE_REQUEST, DATABASES_REQUEST, TABLE_TYPES_REQUEST, TYPES_REQUEST, USER_DEFINED_TYPES_REQUEST, CLIENT_INFO_PROPERTY_META_REQUEST, PROCEDURES_REQUEST, FUNCTIONS_REQUEST, NAMESPACES_REQUEST, NAMESPACE_REQUEST, ENTITIES_REQUEST, SQL_STRING_FUNCTIONS_REQUEST, SQL_SYSTEM_FUNCTIONS_REQUEST, SQL_TIME_DATE_FUNCTIONS_REQUEST, SQL_NUMERIC_FUNCTIONS_REQUEST, SQL_KEYWORDS_REQUEST -> throw new NotImplementedException( "Unsupported call " + req.getTypeCase() );
             case CONNECTION_REQUEST -> connect( req.getConnectionRequest(), new StreamObserver<>( req, os, "connection_response", done ) );
@@ -204,12 +204,15 @@ public class PIService {
                 // TODO: log?
                 throw new EOFException(); // TODO: Better way to communicate close connection w/o error
             }
+            if ( e instanceof EOFException eof) {
+                throw eof;
+            }
             throw new GenericRuntimeException( e );
         }
     }
 
 
-    public void connect( ConnectionRequest request, StreamObserver<ConnectionResponse> responseObserver ) throws TransactionException, AuthenticationException {
+    public void connect( ConnectionRequest request, StreamObserver<ConnectionResponse> responseObserver ) throws TransactionException, AuthenticationException, EOFException {
         if ( uuid != null ) {
             throw new PIServiceException( "Can only connect once per session" );
         }
@@ -223,7 +226,8 @@ public class PIService {
         if ( !isCompatible ) {
             responseObserver.onNext( ConnectionResponse );
             responseObserver.onCompleted();
-            throw new GenericRuntimeException( "Incompatible" );
+            log.info( "Incompatible client and server version" );
+            throw new EOFException(); // TODO: Close this socket workaround
         }
 
         uuid = clientManager.registerConnection( request );
@@ -235,6 +239,7 @@ public class PIService {
     public void disconnect( DisconnectRequest request, StreamObserver<DisconnectResponse> responseObserver ) {
         PIClient client = getClient();
         clientManager.unregisterConnection( client );
+        uuid = null;
         responseObserver.onNext( DisconnectResponse.newBuilder().build() );
         responseObserver.onCompleted();
     }
