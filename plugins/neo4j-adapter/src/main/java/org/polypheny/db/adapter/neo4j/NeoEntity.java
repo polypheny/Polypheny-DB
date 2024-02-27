@@ -25,6 +25,7 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -68,6 +69,7 @@ import org.polypheny.db.type.entity.PolyValue;
 /**
  * Relational Neo4j representation of a {@link org.polypheny.db.schema.PolyphenyDbSchema} entity
  */
+@Slf4j
 @SuperBuilder(toBuilder = true)
 public class NeoEntity extends PhysicalEntity implements TranslatableEntity, ModifiableTable, QueryableEntity {
 
@@ -212,6 +214,10 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
             Transaction trx = getTrx();
 
             dataContext.getStatement().getTransaction().registerInvolvedAdapter( entity.namespace.store );
+
+            if ( true ) {
+                log.warn( "Executing query: {}", query );
+            }
 
             List<Result> results = new ArrayList<>();
             if ( dataContext.getParameterValues().size() == 1 ) {

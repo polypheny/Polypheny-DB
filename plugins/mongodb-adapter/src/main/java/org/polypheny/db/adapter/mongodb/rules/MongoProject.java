@@ -112,9 +112,9 @@ public class MongoProject extends Project implements MongoAlg {
                 continue;
             }
 
-            if ( pair.left instanceof RexCall ) {
-                if ( ((RexCall) pair.left).operands.get( 0 ).isA( Kind.MQL_ADD_FIELDS ) ) {
-                    Pair<String, RexNode> ret = MongoRules.getAddFields( (RexCall) ((RexCall) pair.left).operands.get( 0 ), rowType );
+            if ( pair.left instanceof RexCall call ) {
+                if ( call.operands.get( 0 ).isA( Kind.MQL_ADD_FIELDS ) ) {
+                    Pair<String, RexNode> ret = MongoRules.getAddFields( (RexCall) call.operands.get( 0 ), rowType );
                     String expr = ret.right.accept( translator );
                     implementor.preProjections.add( new BsonDocument( ret.left, BsonDocument.parse( expr ) ) );
                     items.add( "'" + ret.left.split( "\\." )[0] + "':1" );
@@ -147,7 +147,7 @@ public class MongoProject extends Project implements MongoAlg {
 
             items.add( expr.equals( "'$" + name + "'" )
                     ? MongoRules.maybeQuote( name ) + ": " + 1
-                    : "\"" + MongoRules.maybeQuote( name ) + "\": " + expr );
+                    : "\"" + name + "\": " + expr );
         }
         List<String> mergedItems;
 
@@ -197,11 +197,10 @@ public class MongoProject extends Project implements MongoAlg {
         public Void visitCall( RexCall call ) {
             if ( call.isA( kind ) ) {
                 containsKind = true;
-                return null;
             } else {
                 call.operands.forEach( node -> node.accept( this ) );
-                return null;
             }
+            return null;
         }
 
     }

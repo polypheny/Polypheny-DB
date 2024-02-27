@@ -572,6 +572,10 @@ public interface NeoUtil {
         if ( p.getTraitSet().contains( ModelTrait.GRAPH ) ) {
             return false;
         }
+        if ( p.getTupleType().getFieldNames().stream().anyMatch( n -> n.matches( "^[0-9].*" ) ) ) {
+            return false;
+        }
+
         NeoSupportVisitor visitor = new NeoSupportVisitor();
         for ( RexNode project : p.getProjects() ) {
             project.accept( visitor );
