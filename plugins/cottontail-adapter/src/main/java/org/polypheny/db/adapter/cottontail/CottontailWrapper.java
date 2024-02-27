@@ -257,8 +257,8 @@ public class CottontailWrapper implements AutoCloseable {
             final TupleIterator response = this.client.delete( message );
             final Long results = response.next().asLong( 0 );
             return Objects.requireNonNullElse( results, -1L ); /* Number of deletions as returned by Cottontail DB. */
-        } catch ( StatusRuntimeException e ) {
-            if ( e.getStatus().getCode() == Status.INVALID_ARGUMENT.getCode() ) {
+        } catch ( Throwable e ) {
+            if ( e instanceof StatusRuntimeException exception && exception.getStatus().getCode() == Status.INVALID_ARGUMENT.getCode() ) {
                 if ( log.isDebugEnabled() ) {
                     log.debug( "Deletion failed due to user error: {}", e.getMessage() );
                 }

@@ -25,6 +25,7 @@ import java.util.Map;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.Meta.CursorFactory;
@@ -58,6 +59,7 @@ import org.polypheny.db.type.entity.numerical.PolyInteger;
 
 
 @Getter
+@Slf4j
 public class PolyImplementation {
 
     public final AlgDataType rowType;

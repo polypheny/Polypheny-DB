@@ -63,6 +63,7 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.EntityAccessMap;
 import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier;
+import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier.NamespaceLevel;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.PolyXid;
@@ -292,11 +293,16 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
             // Get locks for individual tables
             EntityAccessMap access = new EntityAccessMap( table.unwrap( LogicalMaterializedView.class ).orElseThrow().getDefinition(), new HashMap<>() );
             idAccesses.addAll( access.getAccessedEntityPair() );
+            // if we don't lock exclusively for the target here we can produce deadlocks on underlying stores,
+            // as we could end up with two concurrent shared locks waiting for an exclusive lock on the same entity or each other's entities
+            catalog.getSnapshot().alloc().getFromLogical( materializedId )
+                    .forEach( allocation -> idAccesses.add( Pair.of( new EntityIdentifier( table.id, allocation.id, NamespaceLevel.ENTITY_LEVEL ), LockMode.EXCLUSIVE ) ) );
 
             LockManager.INSTANCE.lock( idAccesses, (TransactionImpl) statement.getTransaction() );
         } catch ( DeadlockException e ) {
             throw new GenericRuntimeException( "DeadLock while locking for materialized view update", e );
         }
+
         updateData( transaction, materializedId );
         commitTransaction( transaction );
 
@@ -364,6 +370,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                         targetStatementDelete,
                         columnPlacements,
                         allocation );
+
                 dataMigrator.executeQuery(
                         Catalog.snapshot().alloc().getColumns( allocation.id ),
                         AlgRoot.of( deleteAlg, Kind.SELECT ),
@@ -374,6 +381,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                         materializedView.isOrdered() );
 
             }
+
             addData(
                     transaction,
                     List.of(),
