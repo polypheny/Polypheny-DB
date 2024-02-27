@@ -19,6 +19,7 @@ package org.polypheny.db.protointerface.statementProcessing;
 import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Node;
@@ -71,7 +72,7 @@ public class StatementProcessor {
     }
 
 
-    public static StatementResult executeAndGetResult( PIStatement piStatement, int fetchSize ) throws Exception {
+    public static StatementResult executeAndGetResult( PIStatement piStatement, int fetchSize ) {
         Executor executor = RESULT_RETRIEVERS.get( piStatement.getLanguage().dataModel() );
         if ( executor == null ) {
             throw new PIServiceException( "No result retriever registered for namespace type "
@@ -80,7 +81,11 @@ public class StatementProcessor {
                     9004
             );
         }
-        return executor.executeAndGetResult( piStatement, fetchSize );
+        try {
+            return executor.executeAndGetResult( piStatement, fetchSize );
+        } catch ( Exception e ) {
+            throw new GenericRuntimeException( e ); // TODO: check if this is still needed, or if executeAndGetResult throws another exception by now
+        }
     }
 
 

@@ -16,6 +16,7 @@
 
 package org.polypheny.db.protointerface;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -26,6 +27,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.catalog.Catalog;
@@ -106,6 +108,7 @@ import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Util;
 
+@Slf4j
 public class PIService {
 
     private static final int majorApiVersion = 2;
@@ -136,7 +139,9 @@ public class PIService {
             }
 
             Util.closeNoThrow( con );
-            throw new GenericRuntimeException( e );
+            if ( !(e instanceof EOFException) ) {
+                throw new GenericRuntimeException( e );
+            }
         }
     }
 
@@ -144,6 +149,9 @@ public class PIService {
     private static Request readRequest( InputStream in ) throws IOException {
         byte[] b = in.readNBytes( 8 );
         if ( b.length != 8 ) {
+            if ( b.length == 0 ) { // EOF
+                throw new EOFException();
+            }
             throw new IOException( "short read" );
         }
         ByteBuffer bb = ByteBuffer.wrap( b );
@@ -160,7 +168,16 @@ public class PIService {
             case CONNECTION_REQUEST -> connect( req.getConnectionRequest(), new StreamObserver<>( req, os, "connection_response", done ) );
             case CONNECTION_CHECK_REQUEST -> throw new GenericRuntimeException( "ee" );
             case DISCONNECT_REQUEST -> disconnect( req.getDisconnectRequest(), new StreamObserver<>( req, os, "disconnect_response", done ) );
-            case CLIENT_INFO_PROPERTIES_REQUEST, CLIENT_INFO_PROPERTIES, EXECUTE_UNPARAMETERIZED_STATEMENT_REQUEST, EXECUTE_UNPARAMETERIZED_STATEMENT_BATCH_REQUEST, PREPARE_INDEXED_STATEMENT_REQUEST, EXECUTE_INDEXED_STATEMENT_REQUEST, EXECUTE_INDEXED_STATEMENT_BATCH_REQUEST, PREPARE_NAMED_STATEMENT_REQUEST, EXECUTE_NAMED_STATEMENT_REQUEST, FETCH_REQUEST, CLOSE_STATEMENT_REQUEST -> throw new NotImplementedException( "Unsupported call " + req.getTypeCase() );
+            case CLIENT_INFO_PROPERTIES_REQUEST, CLIENT_INFO_PROPERTIES -> throw new NotImplementedException( "Unsupported call " + req.getTypeCase() );
+            case EXECUTE_UNPARAMETERIZED_STATEMENT_REQUEST -> executeUnparameterizedStatement( req.getExecuteUnparameterizedStatementRequest(), new StreamObserver<>( req, os, "statement_response", done ) );
+            case EXECUTE_UNPARAMETERIZED_STATEMENT_BATCH_REQUEST -> throw new GenericRuntimeException( "eee" );
+            case PREPARE_INDEXED_STATEMENT_REQUEST -> prepareIndexedStatement( req.getPrepareIndexedStatementRequest(), new StreamObserver<>( req, os, "prepared_statement_signature", done ) );
+            case EXECUTE_INDEXED_STATEMENT_REQUEST -> executeIndexedStatement( req.getExecuteIndexedStatementRequest(), new StreamObserver<>( req, os, "statement_result", done ) );
+            case EXECUTE_INDEXED_STATEMENT_BATCH_REQUEST -> throw new GenericRuntimeException( "eee" );
+            case PREPARE_NAMED_STATEMENT_REQUEST -> prepareNamedStatement( req.getPrepareNamedStatementRequest(), new StreamObserver<>( req, os, "prepared_statement_signature", done ) );
+            case EXECUTE_NAMED_STATEMENT_REQUEST -> executeNamedStatement( req.getExecuteNamedStatementRequest(), new StreamObserver<>( req, os, "statement_result", done ) );
+            case FETCH_REQUEST -> fetchResult( req.getFetchRequest(), new StreamObserver<>( req, os, "frame", done ) );
+            case CLOSE_STATEMENT_REQUEST -> closeStatement( req.getCloseStatementRequest(), new StreamObserver<>( req, os, "close_statement_response", done ) );
             case COMMIT_REQUEST -> commitTransaction( req.getCommitRequest(), new StreamObserver<>( req, os, "commit_response", done ) );
             case ROLLBACK_REQUEST -> rollbackTransaction( req.getRollbackRequest(), new StreamObserver<>( req, os, "rollback_response", done ) );
             case CONNECTION_PROPERTIES_UPDATE_REQUEST, TYPE_NOT_SET -> throw new NotImplementedException( "Unsupported call " + req.getTypeCase() );
@@ -175,18 +192,19 @@ public class PIService {
             throw new GenericRuntimeException( "client send message with invalid id" );
         }
         try {
-            try {
-                handleMessage( req, out, done );
-            } catch ( TransactionException | AuthenticationException e ) {
-                throw new GenericRuntimeException( e );
-            }
-        } catch ( Exception e ) {
+            handleMessage( req, out, done );
+        } catch ( Exception | TransactionException e ) {
             if ( !done.get() ) {
                 StreamObserver<ErrorResponse> s = new StreamObserver<>( req, out, "error_response", new AtomicBoolean() );
                 ErrorResponse resp = ErrorResponse.newBuilder().setMessage( e.getMessage() ).build();
                 s.onNext( resp );
+                s.onCompleted();
             }
-            throw e;
+            if ( e instanceof AuthenticationException ) {
+                // TODO: log?
+                throw new EOFException(); // TODO: Better way to communicate close connection w/o error
+            }
+            throw new GenericRuntimeException( e );
         }
     }
 
@@ -363,10 +381,10 @@ public class PIService {
     }
 
 
-    public void executeUnparameterizedStatement( ExecuteUnparameterizedStatementRequest request, StreamObserver<StatementResponse> responseObserver ) throws Exception {
+    public void executeUnparameterizedStatement( ExecuteUnparameterizedStatementRequest request, StreamObserver<StatementResponse> responseObserver ) {
         PIClient client = getClient();
         PIUnparameterizedStatement statement = client.getStatementManager().createUnparameterizedStatement( request );
-        responseObserver.onNext( ProtoUtils.createResult( statement ) );
+        responseObserver.onNext( ProtoUtils.createResult( statement ), false );
         StatementResult result = statement.execute(
                 request.hasFetchSize()
                         ? request.getFetchSize()
@@ -395,13 +413,17 @@ public class PIService {
     }
 
 
-    public void executeIndexedStatement( ExecuteIndexedStatementRequest request, StreamObserver<StatementResult> responseObserver ) throws Exception {
+    public void executeIndexedStatement( ExecuteIndexedStatementRequest request, StreamObserver<StatementResult> responseObserver ) {
         PIClient client = getClient();
         PIPreparedIndexedStatement statement = client.getStatementManager().getIndexedPreparedStatement( request.getStatementId() );
         int fetchSize = request.hasFetchSize()
                 ? request.getFetchSize()
                 : PropertyUtils.DEFAULT_FETCH_SIZE;
-        responseObserver.onNext( statement.execute( ProtoValueDeserializer.deserializeParameterList( request.getParameters().getParametersList() ), fetchSize ) );
+        try {
+            responseObserver.onNext( statement.execute( ProtoValueDeserializer.deserializeParameterList( request.getParameters().getParametersList() ), fetchSize ) );
+        } catch ( Exception e ) {
+            throw new GenericRuntimeException( e );
+        }
         responseObserver.onCompleted();
     }
 
@@ -424,13 +446,17 @@ public class PIService {
     }
 
 
-    public void executeNamedStatement( ExecuteNamedStatementRequest request, StreamObserver<StatementResult> responseObserver ) throws Exception {
+    public void executeNamedStatement( ExecuteNamedStatementRequest request, StreamObserver<StatementResult> responseObserver ) {
         PIClient client = getClient();
         PIPreparedNamedStatement statement = client.getStatementManager().getNamedPreparedStatement( request.getStatementId() );
         int fetchSize = request.hasFetchSize()
                 ? request.getFetchSize()
                 : PropertyUtils.DEFAULT_FETCH_SIZE;
-        responseObserver.onNext( statement.execute( ProtoValueDeserializer.deserilaizeParameterMap( request.getParameters().getParametersMap() ), fetchSize ) );
+        try {
+            responseObserver.onNext( statement.execute( ProtoValueDeserializer.deserilaizeParameterMap( request.getParameters().getParametersMap() ), fetchSize ) );
+        } catch ( Exception e ) {
+            throw new GenericRuntimeException( e );
+        }
         responseObserver.onCompleted();
     }
 

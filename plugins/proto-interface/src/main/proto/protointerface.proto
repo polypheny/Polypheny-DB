@@ -83,9 +83,10 @@ message Response {
     StatementResult statement_result = 16;
     PreparedStatementSignature prepared_statement_signature = 17;
     Frame frame = 18;
-    CommitResponse commit_response = 19;
-    RollbackResponse rollback_response = 20;
-    ConnectionPropertiesUpdateResponse connection_properties_update_response = 21;
+    CloseStatementResponse close_statement_response = 19;
+    CommitResponse commit_response = 20;
+    RollbackResponse rollback_response = 21;
+    ConnectionPropertiesUpdateResponse connection_properties_update_response = 22;
   }
 }
 
