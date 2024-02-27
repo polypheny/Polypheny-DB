@@ -28,7 +28,7 @@ import org.polypheny.db.transaction.Statement;
 
 public class SqlImplementer extends StatementImplementer {
 
-    private static QueryLanguage language = QueryLanguage.from( "sql" );
+    private static final QueryLanguage language = QueryLanguage.from( "sql" );
 
 
     @Override

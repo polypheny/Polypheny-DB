@@ -33,7 +33,7 @@ import org.polypheny.db.type.entity.PolyValue;
 
 public class DocumentExecutor extends Executor {
 
-    private static DataModel namespaceType = DataModel.DOCUMENT;
+    private static final DataModel namespaceType = DataModel.DOCUMENT;
 
 
     @Override

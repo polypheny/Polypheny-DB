@@ -74,9 +74,9 @@ public class PIPlugin extends PolyPlugin {
         @Getter
         private final long heartbeatInterval;
         @Getter
-        private TransactionManager transactionManager;
+        private final TransactionManager transactionManager;
         @Getter
-        private Authenticator authenticator;
+        private final Authenticator authenticator;
         @Getter
         private ClientManager clientManager;
         private PIServer protoInterfaceServer;
