@@ -17,6 +17,7 @@
 package org.polypheny.db.protointerface.statementProcessing;
 
 import java.util.List;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.processing.ImplementationContext;
@@ -60,6 +61,9 @@ public class SqlImplementer extends StatementImplementer {
                 .origin( ORIGIN )
                 .build();
         List<ImplementationContext> implementations = LanguageManager.getINSTANCE().anyPrepareQuery( context, statement );
+        if ( implementations.get( 0 ).getImplementation() == null ) {
+            throw new GenericRuntimeException( implementations.get( 0 ).getException().orElseThrow() );
+        }
         piStatement.setImplementation( implementations.get( 0 ).getImplementation() );
     }
 

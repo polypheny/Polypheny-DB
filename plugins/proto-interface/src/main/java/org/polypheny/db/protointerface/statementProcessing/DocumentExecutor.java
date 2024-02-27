@@ -73,7 +73,7 @@ public class DocumentExecutor extends Executor {
 
 
     @Override
-    StatementResult executeAndGetResult( PIStatement piStatement, int fetchSize ) throws Exception {
+    StatementResult executeAndGetResult( PIStatement piStatement, int fetchSize ) {
         if ( hasInvalidNamespaceType( piStatement ) ) {
             throw new PIServiceException( "The results of type "
                     + piStatement.getLanguage().dataModel()
