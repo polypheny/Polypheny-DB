@@ -56,6 +56,10 @@ public class CottontailTableModificationRule extends CottontailConverterRule {
             return false;
         }
 
+        if ( modify.isInsert() && modify.containsScan() ) {
+            return false;
+        }
+
         return modify.getOperation() != Modify.Operation.MERGE;
     }
 
