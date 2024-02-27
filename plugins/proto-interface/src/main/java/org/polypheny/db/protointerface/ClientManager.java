@@ -69,7 +69,7 @@ public class ClientManager {
     }
 
 
-    public void registerConnection( ConnectionRequest connectionRequest ) throws AuthenticationException, TransactionException, PIServiceException {
+    public String registerConnection( ConnectionRequest connectionRequest ) throws AuthenticationException, TransactionException, PIServiceException {
         if ( log.isTraceEnabled() ) {
             log.trace( "User {} tries to establish connection via proto interface.", connectionRequest.getClientUuid() );
         }
@@ -95,6 +95,7 @@ public class ClientManager {
         if ( log.isTraceEnabled() ) {
             log.trace( "proto-interface established connection to user {}.", connectionRequest.getClientUuid() );
         }
+        return connectionRequest.getClientUuid();
     }
 
 

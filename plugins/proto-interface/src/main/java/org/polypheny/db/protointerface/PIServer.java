@@ -16,51 +16,51 @@
 
 package org.polypheny.db.protointerface;
 
-import io.grpc.Grpc;
-import io.grpc.InsecureServerCredentials;
-import io.grpc.Server;
-import io.grpc.ServerBuilder;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class PIServer {
 
-    private final Server server;
-    private final int port;
+    private final ServerSocket server;
+    private final int port = 20590; // TODO: configurable
+
+    private final Thread acceptor;
 
 
-    public PIServer( PIPlugin.ProtoInterface protoInterface ) {
-        this.port = protoInterface.getPort();
-        ServerBuilder<?> serverBuilder = Grpc.newServerBuilderForPort( port, InsecureServerCredentials.create() );
-        server = serverBuilder
-                .addService( new PIService( protoInterface.getClientManager() ) )
-                .intercept( new ClientMetaInterceptor() )
-                .intercept( new ExceptionHandler() )
-                .build();
-    }
-
-
-    public void start() throws IOException {
-        server.start();
+    public PIServer( ClientManager clientManager ) throws IOException {
+        server = new ServerSocket( port, 16, InetAddress.getLoopbackAddress() );
         if ( log.isTraceEnabled() ) {
             log.trace( "proto-interface server started on port {}", port );
         }
+        acceptor = new Thread( () -> {
+            while ( true ) {
+                try {
+                    Socket s = server.accept();
+                    new PIService( s, clientManager );
+                } catch ( IOException e ) {
+                    log.error( e.getMessage() );
+                }
+            }
+        } );
+        acceptor.start();
         // used to handle unexpected shutdown of the JVM
         Runtime.getRuntime().addShutdownHook( getShutdownHook() );
     }
 
 
-    public void shutdown() throws InterruptedException {
+    public void shutdown() throws InterruptedException, IOException {
         if ( server == null ) {
             return;
         }
         if ( log.isTraceEnabled() ) {
             log.trace( "proto-interface server shutdown requested" );
         }
-        server.shutdown().awaitTermination( 60, TimeUnit.SECONDS );
+        server.close();
     }
 
 
@@ -70,7 +70,7 @@ public class PIServer {
             System.err.println( "shutting down gRPC server since JVM is shutting down" );
             try {
                 PIServer.this.shutdown();
-            } catch ( InterruptedException e ) {
+            } catch ( IOException | InterruptedException e ) {
                 e.printStackTrace( System.err );
             }
             System.err.println( "server shut down" );

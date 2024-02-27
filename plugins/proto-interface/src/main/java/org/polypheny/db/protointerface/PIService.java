@@ -16,14 +16,22 @@
 
 package org.polypheny.db.protointerface;
 
-import io.grpc.stub.StreamObserver;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.Socket;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
-import lombok.SneakyThrows;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.proto.ClientInfoProperties;
 import org.polypheny.db.protointerface.proto.ClientInfoPropertiesRequest;
@@ -39,14 +47,16 @@ import org.polypheny.db.protointerface.proto.ConnectionPropertiesUpdateRequest;
 import org.polypheny.db.protointerface.proto.ConnectionPropertiesUpdateResponse;
 import org.polypheny.db.protointerface.proto.ConnectionRequest;
 import org.polypheny.db.protointerface.proto.ConnectionResponse;
+import org.polypheny.db.protointerface.proto.ConnectionResponse.Builder;
 import org.polypheny.db.protointerface.proto.DatabasesRequest;
 import org.polypheny.db.protointerface.proto.DatabasesResponse;
 import org.polypheny.db.protointerface.proto.DbmsVersionRequest;
 import org.polypheny.db.protointerface.proto.DbmsVersionResponse;
 import org.polypheny.db.protointerface.proto.DisconnectRequest;
-import org.polypheny.db.protointerface.proto.DisconnectionResponse;
+import org.polypheny.db.protointerface.proto.DisconnectResponse;
 import org.polypheny.db.protointerface.proto.EntitiesRequest;
 import org.polypheny.db.protointerface.proto.EntitiesResponse;
+import org.polypheny.db.protointerface.proto.ErrorResponse;
 import org.polypheny.db.protointerface.proto.ExecuteIndexedStatementBatchRequest;
 import org.polypheny.db.protointerface.proto.ExecuteIndexedStatementRequest;
 import org.polypheny.db.protointerface.proto.ExecuteNamedStatementRequest;
@@ -67,7 +77,7 @@ import org.polypheny.db.protointerface.proto.PrepareStatementRequest;
 import org.polypheny.db.protointerface.proto.PreparedStatementSignature;
 import org.polypheny.db.protointerface.proto.ProceduresRequest;
 import org.polypheny.db.protointerface.proto.ProceduresResponse;
-import org.polypheny.db.protointerface.proto.ProtoInterfaceGrpc;
+import org.polypheny.db.protointerface.proto.Request;
 import org.polypheny.db.protointerface.proto.RollbackRequest;
 import org.polypheny.db.protointerface.proto.RollbackResponse;
 import org.polypheny.db.protointerface.proto.SqlKeywordsRequest;
@@ -92,29 +102,99 @@ import org.polypheny.db.protointerface.utils.PropertyUtils;
 import org.polypheny.db.protointerface.utils.ProtoUtils;
 import org.polypheny.db.protointerface.utils.ProtoValueDeserializer;
 import org.polypheny.db.sql.language.SqlJdbcFunctionCall;
+import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.util.Util;
 
-public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
+public class PIService {
 
     private static final int majorApiVersion = 2;
     private static final int minorApiVersion = 0;
     private ClientManager clientManager;
+    private final Socket con;
+    private String uuid = null;
 
 
-    public PIService( ClientManager clientManager ) {
+    public PIService( Socket con, ClientManager clientManager ) {
+        this.con = con;
         this.clientManager = clientManager;
+        Thread t = new Thread( this::acceptLoop );
+        t.start();
     }
 
 
-    @SneakyThrows
-    @Override
-    public void connect( ConnectionRequest request, StreamObserver<ConnectionResponse> responseObserver ) {
-        ConnectionResponse.Builder responseBuilder = ConnectionResponse.newBuilder()
+    private void acceptLoop() {
+        try {
+            InputStream in = con.getInputStream();
+            OutputStream out = con.getOutputStream();
+            while ( true ) {
+                readAndHandleOneMessage( in, out );
+            }
+        } catch ( IOException e ) {
+            if ( uuid != null ) {
+                clientManager.unregisterConnection( clientManager.getClient( uuid ) );
+            }
+
+            Util.closeNoThrow( con );
+            throw new GenericRuntimeException( e );
+        }
+    }
+
+
+    private static Request readRequest( InputStream in ) throws IOException {
+        byte[] b = in.readNBytes( 8 );
+        if ( b.length != 8 ) {
+            throw new IOException( "short read" );
+        }
+        ByteBuffer bb = ByteBuffer.wrap( b );
+        bb.order( ByteOrder.LITTLE_ENDIAN ); // TODO Big endian like other network protocols?
+        long length = bb.getLong();
+        byte[] msg = in.readNBytes( (int) length );
+        return Request.parseFrom( msg );
+    }
+
+
+    private void handleMessage( Request req, OutputStream os, AtomicBoolean done ) throws TransactionException, AuthenticationException {
+        switch ( req.getTypeCase() ) {
+            case DBMS_VERSION_REQUEST, LANGUAGE_REQUEST, DATABASES_REQUEST, TABLE_TYPES_REQUEST, TYPES_REQUEST, USER_DEFINED_TYPES_REQUEST, CLIENT_INFO_PROPERTY_META_REQUEST, PROCEDURES_REQUEST, FUNCTIONS_REQUEST, NAMESPACES_REQUEST, NAMESPACE_REQUEST, ENTITIES_REQUEST, SQL_STRING_FUNCTIONS_REQUEST, SQL_SYSTEM_FUNCTIONS_REQUEST, SQL_TIME_DATE_FUNCTIONS_REQUEST, SQL_NUMERIC_FUNCTIONS_REQUEST, SQL_KEYWORDS_REQUEST -> throw new NotImplementedException( "Unsupported call " + req.getTypeCase() );
+            case CONNECTION_REQUEST -> connect( req.getConnectionRequest(), new StreamObserver<>( req, os, "connection_response", done ) );
+            case CONNECTION_CHECK_REQUEST -> throw new GenericRuntimeException( "ee" );
+            case DISCONNECT_REQUEST -> disconnect( req.getDisconnectRequest(), new StreamObserver<>( req, os, "disconnect_response", done ) );
+            case CLIENT_INFO_PROPERTIES_REQUEST, CLIENT_INFO_PROPERTIES, EXECUTE_UNPARAMETERIZED_STATEMENT_REQUEST, EXECUTE_UNPARAMETERIZED_STATEMENT_BATCH_REQUEST, PREPARE_INDEXED_STATEMENT_REQUEST, EXECUTE_INDEXED_STATEMENT_REQUEST, EXECUTE_INDEXED_STATEMENT_BATCH_REQUEST, PREPARE_NAMED_STATEMENT_REQUEST, EXECUTE_NAMED_STATEMENT_REQUEST, FETCH_REQUEST, CLOSE_STATEMENT_REQUEST -> throw new NotImplementedException( "Unsupported call " + req.getTypeCase() );
+            case COMMIT_REQUEST -> commitTransaction( req.getCommitRequest(), new StreamObserver<>( req, os, "commit_response", done ) );
+            case ROLLBACK_REQUEST -> rollbackTransaction( req.getRollbackRequest(), new StreamObserver<>( req, os, "rollback_response", done ) );
+            case CONNECTION_PROPERTIES_UPDATE_REQUEST, TYPE_NOT_SET -> throw new NotImplementedException( "Unsupported call " + req.getTypeCase() );
+        }
+    }
+
+
+    private void readAndHandleOneMessage( InputStream in, OutputStream out ) throws IOException {
+        Request req = readRequest( in );
+        AtomicBoolean done = new AtomicBoolean( false );
+        if ( req.getId() == 0 ) {
+            throw new GenericRuntimeException( "client send message with invalid id" );
+        }
+        try {
+            try {
+                handleMessage( req, out, done );
+            } catch ( TransactionException | AuthenticationException e ) {
+                throw new GenericRuntimeException( e );
+            }
+        } catch ( Exception e ) {
+            if ( !done.get() ) {
+                StreamObserver<ErrorResponse> s = new StreamObserver<>( req, out, "error_response", new AtomicBoolean() );
+                ErrorResponse resp = ErrorResponse.newBuilder().setMessage( e.getMessage() ).build();
+                s.onNext( resp );
+            }
+            throw e;
+        }
+    }
+
+
+    public void connect( ConnectionRequest request, StreamObserver<ConnectionResponse> responseObserver ) throws TransactionException, AuthenticationException {
+        Builder responseBuilder = ConnectionResponse.newBuilder()
                 .setMajorApiVersion( majorApiVersion )
                 .setMinorApiVersion( minorApiVersion );
-        if ( clientManager.getHeartbeatInterval() > 0 ) {
-            responseBuilder.setHeartbeatInterval( clientManager.getHeartbeatInterval() );
-        }
         boolean isCompatible = checkApiVersion( request );
         responseBuilder.setIsCompatible( isCompatible );
         ConnectionResponse ConnectionResponse = responseBuilder.build();
@@ -122,24 +202,23 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
         if ( !isCompatible ) {
             responseObserver.onNext( ConnectionResponse );
             responseObserver.onCompleted();
-            return;
+            throw new GenericRuntimeException( "Incompatible" );
         }
-        clientManager.registerConnection( request );
+
+        uuid = clientManager.registerConnection( request );
         responseObserver.onNext( ConnectionResponse );
         responseObserver.onCompleted();
     }
 
 
-    @Override
-    public void disconnect( DisconnectRequest request, StreamObserver<DisconnectionResponse> responseObserver ) {
+    public void disconnect( DisconnectRequest request, StreamObserver<DisconnectResponse> responseObserver ) {
         PIClient client = getClient();
         clientManager.unregisterConnection( client );
-        responseObserver.onNext( DisconnectionResponse.newBuilder().build() );
+        responseObserver.onNext( DisconnectResponse.newBuilder().build() );
         responseObserver.onCompleted();
     }
 
 
-    @Override
     public void checkConnection( ConnectionCheckRequest request, StreamObserver<ConnectionCheckResponse> responseObserver ) {
         getClient().setIsActive();
         responseObserver.onNext( ConnectionCheckResponse.newBuilder().build() );
@@ -147,7 +226,6 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     }
 
 
-    @Override
     public void getDbmsVersion( DbmsVersionRequest request, StreamObserver<DbmsVersionResponse> responseObserver ) {
         /* called as client auth check */
         getClient();
@@ -156,7 +234,6 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     }
 
 
-    @Override
     public void getSupportedLanguages( LanguageRequest request, StreamObserver<LanguageResponse> responseObserver ) {
         /* called as client auth check */
         getClient();
@@ -175,7 +252,6 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     }
 
 
-    @Override
     public void getDatabases( DatabasesRequest request, StreamObserver<DatabasesResponse> responseObserver ) {
         /* called as client auth check */
         getClient();
@@ -184,7 +260,6 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     }
 
 
-    @Override
     public void getTableTypes( TableTypesRequest request, StreamObserver<TableTypesResponse> responseObserver ) {
         /* called as client auth check */
         getClient();
@@ -193,7 +268,6 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     }
 
 
-    @Override
     public void getTypes( TypesRequest request, StreamObserver<TypesResponse> responseStreamObserver ) {
         /* called as client auth check */
         getClient();
@@ -202,7 +276,6 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     }
 
 
-    @Override
     public void searchNamespaces( NamespacesRequest request, StreamObserver<NamespacesResponse> responseObserver ) {
         /* called as client auth check */
         getClient();
@@ -213,7 +286,6 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     }
 
 
-    @Override
     public void getNamespace( NamespaceRequest request, StreamObserver<Namespace> responseObserver ) {
         /* called as client auth check */
         getClient();
@@ -222,7 +294,6 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     }
 
 
-    @Override
     public void searchEntities( EntitiesRequest request, StreamObserver<EntitiesResponse> responseObserver ) {
         /* called as client auth check */
         getClient();
@@ -232,7 +303,6 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     }
 
 
-    @Override
     public void getSqlStringFunctions( SqlStringFunctionsRequest request, StreamObserver<MetaStringResponse> responseObserver ) {
         /* called as client auth check */
         getClient();
@@ -241,7 +311,6 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     }
 
 
-    @Override
     public void getSqlSystemFunctions( SqlSystemFunctionsRequest request, StreamObserver<MetaStringResponse> responseObserver ) {
         /* called as client auth check */
         getClient();
@@ -250,7 +319,6 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     }
 
 
-    @Override
     public void getSqlTimeDateFunctions( SqlTimeDateFunctionsRequest request, StreamObserver<MetaStringResponse> responseObserver ) {
         /* called as client auth check */
         getClient();
@@ -259,7 +327,6 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     }
 
 
-    @Override
     public void getSqlNumericFunctions( SqlNumericFunctionsRequest request, StreamObserver<MetaStringResponse> responseObserver ) {
         /* called as client auth check */
         getClient();
@@ -268,7 +335,6 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     }
 
 
-    @Override
     public void getSqlKeywords( SqlKeywordsRequest request, StreamObserver<MetaStringResponse> responseObserver ) {
         /* called as client auth check */
         getClient();
@@ -278,7 +344,6 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     }
 
 
-    @Override
     public void searchProcedures( ProceduresRequest request, StreamObserver<ProceduresResponse> responeObserver ) {
         /* called as client auth check */
         getClient();
@@ -288,7 +353,6 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     }
 
 
-    @Override
     public void searchFunctions( FunctionsRequest request, StreamObserver<FunctionsResponse> responseObserver ) {
         /* called as client auth check */
         getClient();
@@ -299,9 +363,7 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     }
 
 
-    @SneakyThrows
-    @Override
-    public void executeUnparameterizedStatement( ExecuteUnparameterizedStatementRequest request, StreamObserver<StatementResponse> responseObserver ) {
+    public void executeUnparameterizedStatement( ExecuteUnparameterizedStatementRequest request, StreamObserver<StatementResponse> responseObserver ) throws Exception {
         PIClient client = getClient();
         PIUnparameterizedStatement statement = client.getStatementManager().createUnparameterizedStatement( request );
         responseObserver.onNext( ProtoUtils.createResult( statement ) );
@@ -315,9 +377,7 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     }
 
 
-    @SneakyThrows
-    @Override
-    public void executeUnparameterizedStatementBatch( ExecuteUnparameterizedStatementBatchRequest request, StreamObserver<StatementBatchResponse> responseObserver ) {
+    public void executeUnparameterizedStatementBatch( ExecuteUnparameterizedStatementBatchRequest request, StreamObserver<StatementBatchResponse> responseObserver ) throws Exception {
         PIClient client = getClient();
         PIUnparameterizedStatementBatch batch = client.getStatementManager().createUnparameterizedStatementBatch( request.getStatementsList() );
         responseObserver.onNext( ProtoUtils.createStatementBatchStatus( batch.getBatchId() ) );
@@ -327,8 +387,6 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     }
 
 
-    @SneakyThrows
-    @Override
     public void prepareIndexedStatement( PrepareStatementRequest request, StreamObserver<PreparedStatementSignature> responseObserver ) {
         PIClient client = getClient();
         PIPreparedIndexedStatement statement = client.getStatementManager().createIndexedPreparedInterfaceStatement( request );
@@ -337,9 +395,7 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     }
 
 
-    @SneakyThrows
-    @Override
-    public void executeIndexedStatement( ExecuteIndexedStatementRequest request, StreamObserver<StatementResult> responseObserver ) {
+    public void executeIndexedStatement( ExecuteIndexedStatementRequest request, StreamObserver<StatementResult> responseObserver ) throws Exception {
         PIClient client = getClient();
         PIPreparedIndexedStatement statement = client.getStatementManager().getIndexedPreparedStatement( request.getStatementId() );
         int fetchSize = request.hasFetchSize()
@@ -350,9 +406,7 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     }
 
 
-    @SneakyThrows
-    @Override
-    public void executeIndexedStatementBatch( ExecuteIndexedStatementBatchRequest request, StreamObserver<StatementBatchResponse> resultObserver ) {
+    public void executeIndexedStatementBatch( ExecuteIndexedStatementBatchRequest request, StreamObserver<StatementBatchResponse> resultObserver ) throws Exception {
         PIClient client = getClient();
         PIPreparedIndexedStatement statement = client.getStatementManager().getIndexedPreparedStatement( request.getStatementId() );
         List<List<PolyValue>> valuesList = ProtoValueDeserializer.deserializeParameterLists( request.getParametersList() );
@@ -362,8 +416,6 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     }
 
 
-    @SneakyThrows
-    @Override
     public void prepareNamedStatement( PrepareStatementRequest request, StreamObserver<PreparedStatementSignature> responseObserver ) {
         PIClient client = getClient();
         PIPreparedNamedStatement statement = client.getStatementManager().createNamedPreparedInterfaceStatement( request );
@@ -372,9 +424,7 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     }
 
 
-    @SneakyThrows
-    @Override
-    public void executeNamedStatement( ExecuteNamedStatementRequest request, StreamObserver<StatementResult> responseObserver ) {
+    public void executeNamedStatement( ExecuteNamedStatementRequest request, StreamObserver<StatementResult> responseObserver ) throws Exception {
         PIClient client = getClient();
         PIPreparedNamedStatement statement = client.getStatementManager().getNamedPreparedStatement( request.getStatementId() );
         int fetchSize = request.hasFetchSize()
@@ -385,8 +435,6 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     }
 
 
-    @SneakyThrows
-    @Override
     public void fetchResult( FetchRequest request, StreamObserver<Frame> responseObserver ) {
         PIClient client = getClient();
         PIStatement statement = client.getStatementManager().getStatement( request.getStatementId() );
@@ -399,7 +447,6 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     }
 
 
-    @Override
     public void commitTransaction( CommitRequest request, StreamObserver<CommitResponse> responseStreamObserver ) {
         PIClient client = getClient();
         client.commitCurrentTransaction();
@@ -408,7 +455,6 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     }
 
 
-    @Override
     public void rollbackTransaction( RollbackRequest request, StreamObserver<RollbackResponse> responseStreamObserver ) {
         PIClient client = getClient();
         client.rollbackCurrentTransaction();
@@ -417,7 +463,6 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     }
 
 
-    @Override
     public void closeStatement( CloseStatementRequest request, StreamObserver<CloseStatementResponse> responseObserver ) {
         PIClient client = getClient();
         client.getStatementManager().closeStatementOrBatch( request.getStatementId() );
@@ -426,7 +471,6 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     }
 
 
-    @Override
     public void updateConnectionProperties( ConnectionPropertiesUpdateRequest request, StreamObserver<ConnectionPropertiesUpdateResponse> responseObserver ) {
         PIClient client = getClient();
         ConnectionProperties properties = request.getConnectionProperties();
@@ -446,10 +490,9 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     }
 
 
-    @Override
     public void getClientInfoProperties( ClientInfoPropertiesRequest request, StreamObserver<ClientInfoProperties> responseObserver ) {
         PIClient client = getClient();
-        org.polypheny.db.protointerface.proto.ClientInfoProperties.Builder responseBuilder = ClientInfoProperties.newBuilder();
+        ClientInfoProperties.Builder responseBuilder = ClientInfoProperties.newBuilder();
         PIClientInfoProperties PIClientInfoProperties = client.getPIClientInfoProperties();
         PIClientInfoProperties.stringPropertyNames().forEach( s -> responseBuilder.putProperties( s, PIClientInfoProperties.getProperty( s ) ) );
         responseObserver.onNext( responseBuilder.build() );
@@ -457,7 +500,6 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     }
 
 
-    @Override
     public void setClientInfoProperties( ClientInfoProperties properties, StreamObserver<ClientInfoPropertiesResponse> reponseObserver ) {
         PIClient client = getClient();
         client.getPIClientInfoProperties().putAll( properties.getPropertiesMap() );
@@ -467,11 +509,14 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
 
 
     private PIClient getClient() throws PIServiceException {
-        return clientManager.getClient( ClientMetaInterceptor.CLIENT.get() );
+        if ( uuid == null ) {
+            throw new PIServiceException( "Must authenticate first" );
+        }
+        return clientManager.getClient( uuid );
     }
 
 
-    private boolean checkApiVersion( ConnectionRequest connectionRequest ) {
+    private static boolean checkApiVersion( ConnectionRequest connectionRequest ) {
         return connectionRequest.getMajorApiVersion() == majorApiVersion;
     }
 

@@ -106,7 +106,7 @@ public class PIPlugin extends PolyPlugin {
         public void shutdown() {
             try {
                 protoInterfaceServer.shutdown();
-            } catch ( InterruptedException e ) {
+            } catch ( IOException | InterruptedException e ) {
                 throw new RuntimeException( e );
             }
         }
@@ -138,10 +138,9 @@ public class PIPlugin extends PolyPlugin {
         @Override
         public void run() {
             clientManager = new ClientManager( this );
-            protoInterfaceServer = new PIServer( this );
             // protoInterfaceServer = new PIServer( port, protoInterfaceService, clientManager );
             try {
-                protoInterfaceServer.start();
+                protoInterfaceServer = new PIServer( clientManager );
             } catch ( IOException e ) {
                 log.error( "Proto interface server could not be started: {}", e.getMessage() );
             }
