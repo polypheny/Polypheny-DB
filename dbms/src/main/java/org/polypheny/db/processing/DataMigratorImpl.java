@@ -340,6 +340,7 @@ public class DataMigratorImpl implements DataMigrator {
 
             int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
             int i = 0;
+
             do {
                 ResultIterator iter = implementation.execute( sourceStatement, batchSize );
                 List<List<PolyValue>> rows = iter.getNextBatch();
@@ -384,6 +385,7 @@ public class DataMigratorImpl implements DataMigrator {
                         .prepareQuery( targetAlg, sourceAlg.validatedRowType, true, false, false )
                         .enumerable( targetStatement.getDataContext() )
                         .iterator();
+
                 //noinspection WhileLoopReplaceableByForEach
                 while ( iterator.hasNext() ) {
                     iterator.next();

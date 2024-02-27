@@ -19,11 +19,13 @@ package org.polypheny.db.transaction;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier;
 import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier.NamespaceLevel;
 import org.polypheny.db.transaction.Lock.LockMode;
@@ -31,6 +33,7 @@ import org.polypheny.db.util.DeadlockException;
 
 
 // Based on code taken from https://github.com/dstibrany/LockManager
+@Slf4j
 public class LockManager {
 
     public static final LockManager INSTANCE = new LockManager();
@@ -61,7 +64,7 @@ public class LockManager {
      * Used in traditional transactional workload to lck all entities that will eagerly receive any update
      */
     private void handlePrimaryLocks( @NonNull Collection<Entry<EntityIdentifier, LockMode>> idAccessMap, @NonNull TransactionImpl transaction ) throws DeadlockException {
-        Iterator<Entry<EntityIdentifier, LockMode>> iter = idAccessMap.iterator();
+        Iterator<Entry<EntityIdentifier, LockMode>> iter = idAccessMap.stream().sorted( ( a, b ) -> Math.toIntExact( a.getKey().entityId - b.getKey().entityId ) ).iterator();
         Entry<EntityIdentifier, LockMode> pair;
         while ( iter.hasNext() ) {
             pair = iter.next();
@@ -142,6 +145,11 @@ public class LockManager {
 
     Lock.LockMode getLockMode( @NonNull EntityAccessMap.EntityIdentifier entityIdentifier ) {
         return lockTable.get( entityIdentifier ).getMode();
+    }
+
+
+    public Map<EntityIdentifier, Lock> getLocks() {
+        return Map.copyOf( lockTable );
     }
 
 }

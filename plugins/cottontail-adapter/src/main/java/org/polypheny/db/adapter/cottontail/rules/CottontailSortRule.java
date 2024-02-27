@@ -19,10 +19,13 @@ package org.polypheny.db.adapter.cottontail.rules;
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailSort;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.volcano.AlgSubset;
+import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
 
@@ -46,12 +49,24 @@ public class CottontailSortRule extends CottontailConverterRule {
     @Override
     public AlgNode convert( AlgNode alg ) {
         Sort sort = (Sort) alg;
+        if ( containsDynamicProject( alg ) ) {
+            return null;
+        }
+
         final AlgTraitSet traitSet = sort.getTraitSet().replace( out );
         final AlgNode input;
         final AlgTraitSet inputTraitSet = sort.getInput().getTraitSet().replace( out );
         input = convert( sort.getInput(), inputTraitSet );
 
         return new CottontailSort( sort.getCluster(), traitSet, input, sort.getCollation(), sort.offset, sort.fetch );
+    }
+
+
+    private boolean containsDynamicProject( AlgNode alg ) {
+        // Check if the input of the sort is a project that contains a dynamic parameter (i.e., a parameter that is not known to cottontail and cannot be pushed down)
+        return alg.getInput( 0 ) instanceof AlgSubset subset
+                && subset.getOriginal() instanceof Project project
+                && project.getProjects().stream().anyMatch( p -> p instanceof RexDynamicParam );
     }
 
 }
