@@ -9,7 +9,6 @@ package polypheny.protointerface;
 message ConnectionRequest {
   int32 major_api_version = 1;
   int32 minor_api_version = 2;
-  string client_uuid = 3;
   optional string username = 5;
   optional string password = 6;
   optional ConnectionProperties connection_properties = 4;

@@ -133,7 +133,7 @@ public class PIService {
             while ( true ) {
                 readAndHandleOneMessage( in, out );
             }
-        } catch ( IOException e ) {
+        } catch ( Throwable e ) {
             if ( uuid != null ) {
                 clientManager.unregisterConnection( clientManager.getClient( uuid ) );
             }
@@ -210,6 +210,9 @@ public class PIService {
 
 
     public void connect( ConnectionRequest request, StreamObserver<ConnectionResponse> responseObserver ) throws TransactionException, AuthenticationException {
+        if ( uuid != null ) {
+            throw new PIServiceException( "Can only connect once per session" );
+        }
         Builder responseBuilder = ConnectionResponse.newBuilder()
                 .setMajorApiVersion( majorApiVersion )
                 .setMinorApiVersion( minorApiVersion );
