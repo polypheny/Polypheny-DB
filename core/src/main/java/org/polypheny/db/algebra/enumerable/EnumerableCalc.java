@@ -100,11 +100,6 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
         return new EnumerableCalc( getCluster(), traitSet, child, program );
     }
 
-    @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        return super.computeSelfCost( planner, mq ).multiplyBy( EnumerableConvention.COST_MULTIPLIER );
-    }
-
 
     @Override
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {

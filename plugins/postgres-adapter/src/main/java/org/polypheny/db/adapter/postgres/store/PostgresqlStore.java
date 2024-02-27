@@ -111,8 +111,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
             DockerInstance instance = DockerManager.getInstance().getInstanceById( instanceId )
                     .orElseThrow( () -> new GenericRuntimeException( "No docker instance with id " + instanceId ) );
             try {
-                // kartoza/postgis:16-3.4
-                // postgis/postgis:16-3.4-alpine
+                // TODO: change to polypheny/postgres after merge of PR in Polypheny-Docker repository
                 container = instance.newBuilder( "postgis/postgis:16-3.4-alpine", getUniqueName() )
                         .withEnvironmentVariable( "POSTGRES_PASSWORD", settings.get( "password" ) )
                         .withEnvironmentVariable( "POSTGRES_USER", username )

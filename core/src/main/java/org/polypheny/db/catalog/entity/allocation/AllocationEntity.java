@@ -88,14 +88,4 @@ public abstract class AllocationEntity extends Entity {
 
     public abstract Entity withName( String name );
 
-
-    @Override
-    public double getRowCount() {
-        Long count = StatisticsManager.getInstance().rowCountPerTable( logicalId );
-        if ( count == null ) {
-            return 0;
-        }
-        return count;
-    }
-
 }

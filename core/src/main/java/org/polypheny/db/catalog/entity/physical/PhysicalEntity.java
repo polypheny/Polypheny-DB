@@ -75,14 +75,4 @@ public abstract class PhysicalEntity extends Entity {
 
     public abstract PhysicalEntity normalize();
 
-
-    @Override
-    public double getRowCount() {
-        Long count = StatisticsManager.getInstance().rowCountPerTable( logicalId );
-        if ( count == null ) {
-            return 0;
-        }
-        return count;
-    }
-
 }
