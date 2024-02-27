@@ -45,6 +45,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -2011,6 +2012,16 @@ public class Util {
         }
 
         return false;
+    }
+
+
+    public static void closeNoThrow( Closeable c ) {
+        if ( c != null ) {
+            try {
+                c.close();
+            } catch ( IOException ignore ) {
+            }
+        }
     }
 
 
