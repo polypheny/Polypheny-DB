@@ -162,24 +162,24 @@ public class PIService {
     }
 
 
-    private void handleMessage( Request req, OutputStream os, AtomicBoolean done ) throws TransactionException, AuthenticationException, EOFException {
+    private void handleMessage( Request req, OutputStream out, AtomicBoolean done ) throws TransactionException, AuthenticationException, EOFException {
         switch ( req.getTypeCase() ) {
             case DBMS_VERSION_REQUEST, LANGUAGE_REQUEST, DATABASES_REQUEST, TABLE_TYPES_REQUEST, TYPES_REQUEST, USER_DEFINED_TYPES_REQUEST, CLIENT_INFO_PROPERTY_META_REQUEST, PROCEDURES_REQUEST, FUNCTIONS_REQUEST, NAMESPACES_REQUEST, NAMESPACE_REQUEST, ENTITIES_REQUEST, SQL_STRING_FUNCTIONS_REQUEST, SQL_SYSTEM_FUNCTIONS_REQUEST, SQL_TIME_DATE_FUNCTIONS_REQUEST, SQL_NUMERIC_FUNCTIONS_REQUEST, SQL_KEYWORDS_REQUEST -> throw new NotImplementedException( "Unsupported call " + req.getTypeCase() );
-            case CONNECTION_REQUEST -> connect( req.getConnectionRequest(), new StreamObserver<>( req, os, "connection_response", done ) );
+            case CONNECTION_REQUEST -> connect( req.getConnectionRequest(), new StreamObserver<>( req, out, "connection_response", done ) );
             case CONNECTION_CHECK_REQUEST -> throw new GenericRuntimeException( "ee" );
-            case DISCONNECT_REQUEST -> disconnect( req.getDisconnectRequest(), new StreamObserver<>( req, os, "disconnect_response", done ) );
+            case DISCONNECT_REQUEST -> disconnect( req.getDisconnectRequest(), new StreamObserver<>( req, out, "disconnect_response", done ) );
             case CLIENT_INFO_PROPERTIES_REQUEST, CLIENT_INFO_PROPERTIES -> throw new NotImplementedException( "Unsupported call " + req.getTypeCase() );
-            case EXECUTE_UNPARAMETERIZED_STATEMENT_REQUEST -> executeUnparameterizedStatement( req.getExecuteUnparameterizedStatementRequest(), new StreamObserver<>( req, os, "statement_response", done ) );
+            case EXECUTE_UNPARAMETERIZED_STATEMENT_REQUEST -> executeUnparameterizedStatement( req.getExecuteUnparameterizedStatementRequest(), new StreamObserver<>( req, out, "statement_response", done ) );
             case EXECUTE_UNPARAMETERIZED_STATEMENT_BATCH_REQUEST -> throw new GenericRuntimeException( "eee" );
-            case PREPARE_INDEXED_STATEMENT_REQUEST -> prepareIndexedStatement( req.getPrepareIndexedStatementRequest(), new StreamObserver<>( req, os, "prepared_statement_signature", done ) );
-            case EXECUTE_INDEXED_STATEMENT_REQUEST -> executeIndexedStatement( req.getExecuteIndexedStatementRequest(), new StreamObserver<>( req, os, "statement_result", done ) );
+            case PREPARE_INDEXED_STATEMENT_REQUEST -> prepareIndexedStatement( req.getPrepareIndexedStatementRequest(), new StreamObserver<>( req, out, "prepared_statement_signature", done ) );
+            case EXECUTE_INDEXED_STATEMENT_REQUEST -> executeIndexedStatement( req.getExecuteIndexedStatementRequest(), new StreamObserver<>( req, out, "statement_result", done ) );
             case EXECUTE_INDEXED_STATEMENT_BATCH_REQUEST -> throw new GenericRuntimeException( "eee" );
-            case PREPARE_NAMED_STATEMENT_REQUEST -> prepareNamedStatement( req.getPrepareNamedStatementRequest(), new StreamObserver<>( req, os, "prepared_statement_signature", done ) );
-            case EXECUTE_NAMED_STATEMENT_REQUEST -> executeNamedStatement( req.getExecuteNamedStatementRequest(), new StreamObserver<>( req, os, "statement_result", done ) );
-            case FETCH_REQUEST -> fetchResult( req.getFetchRequest(), new StreamObserver<>( req, os, "frame", done ) );
-            case CLOSE_STATEMENT_REQUEST -> closeStatement( req.getCloseStatementRequest(), new StreamObserver<>( req, os, "close_statement_response", done ) );
-            case COMMIT_REQUEST -> commitTransaction( req.getCommitRequest(), new StreamObserver<>( req, os, "commit_response", done ) );
-            case ROLLBACK_REQUEST -> rollbackTransaction( req.getRollbackRequest(), new StreamObserver<>( req, os, "rollback_response", done ) );
+            case PREPARE_NAMED_STATEMENT_REQUEST -> prepareNamedStatement( req.getPrepareNamedStatementRequest(), new StreamObserver<>( req, out, "prepared_statement_signature", done ) );
+            case EXECUTE_NAMED_STATEMENT_REQUEST -> executeNamedStatement( req.getExecuteNamedStatementRequest(), new StreamObserver<>( req, out, "statement_result", done ) );
+            case FETCH_REQUEST -> fetchResult( req.getFetchRequest(), new StreamObserver<>( req, out, "frame", done ) );
+            case CLOSE_STATEMENT_REQUEST -> closeStatement( req.getCloseStatementRequest(), new StreamObserver<>( req, out, "close_statement_response", done ) );
+            case COMMIT_REQUEST -> commitTransaction( req.getCommitRequest(), new StreamObserver<>( req, out, "commit_response", done ) );
+            case ROLLBACK_REQUEST -> rollbackTransaction( req.getRollbackRequest(), new StreamObserver<>( req, out, "rollback_response", done ) );
             case CONNECTION_PROPERTIES_UPDATE_REQUEST, TYPE_NOT_SET -> throw new NotImplementedException( "Unsupported call " + req.getTypeCase() );
         }
     }
