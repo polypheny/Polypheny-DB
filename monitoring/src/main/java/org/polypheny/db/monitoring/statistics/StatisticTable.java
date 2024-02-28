@@ -75,7 +75,6 @@ public class StatisticTable {
             LogicalTable catalogTable = catalog.getSnapshot().getLogicalEntity( tableId ).map( e -> e.unwrap( LogicalTable.class ) ).orElseThrow().orElseThrow();
             this.table = catalogTable.name;
             this.dataModel = catalogTable.dataModel;
-            //this.dataPlacements = ImmutableList.copyOf( catalog.getSnapshot().alloc().getDataPlacements( catalogTable.id ).stream().map( c -> c.adapterId ).collect( Collectors.toList() ) );
             this.entityType = catalogTable.entityType;
         }
         calls = new TableCalls( tableId, 0, 0, 0, 0 );

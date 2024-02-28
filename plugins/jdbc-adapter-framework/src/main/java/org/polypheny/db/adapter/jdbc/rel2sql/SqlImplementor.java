@@ -535,7 +535,7 @@ public abstract class SqlImplementor {
                             return SqlBinaryStringLiteral.createBinaryString( literal.value.asBinary(), POS );
                         case ARRAY:
                             if ( dialect.supportsNestedArrays() ) {
-                                List<PolyValue> array = literal.getValue().asList();//toSql( program, e ) ).collect( Collectors.toList() );
+                                List<PolyValue> array = literal.getValue().asList();
                                 return SqlLiteral.createArray( array, literal.getType(), POS );
                             } else {
                                 // atm arrays in adapter which do not support arrays are compared in their serialized form, this should be changed todo dl

@@ -18,7 +18,6 @@ package org.polypheny.db.webui.models;
 
 
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.Value;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.AbstractAdapterSetting;
@@ -58,7 +57,7 @@ public class AdapterTemplateModel {
         return new AdapterTemplateModel(
                 template.adapterName,
                 template.adapterType,
-                template.settings.stream().map( AdapterSettingsModel::from ).collect( Collectors.toList() ),
+                template.settings.stream().map( AdapterSettingsModel::from ).toList(),
                 template.description,
                 template.modes );
     }

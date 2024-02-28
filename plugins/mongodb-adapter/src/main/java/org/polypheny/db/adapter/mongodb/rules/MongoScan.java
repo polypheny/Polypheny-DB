@@ -18,7 +18,6 @@ package org.polypheny.db.adapter.mongodb.rules;
 
 
 import java.util.List;
-import java.util.stream.Collectors;
 import org.bson.BsonDocument;
 import org.bson.BsonElement;
 import org.bson.BsonString;
@@ -117,7 +116,7 @@ public class MongoScan extends Scan<MongoEntity> implements MongoAlg {
             return;
         }
         if ( traitSet.getTrait( ModelTraitDef.INSTANCE ).getDataModel() == DataModel.RELATIONAL ) {
-            implementor.list.add( Pair.of( null, new BsonDocument( "$project", new BsonDocument( rowType.getFields().stream().map( p -> new BsonElement( MongoRules.maybeQuote( p.getName() ), new BsonString( "$" + p.getPhysicalName() ) ) ).collect( Collectors.toList() ) ) ).toJson() ) );
+            implementor.list.add( Pair.of( null, new BsonDocument( "$project", new BsonDocument( rowType.getFields().stream().map( p -> new BsonElement( MongoRules.maybeQuote( p.getName() ), new BsonString( "$" + p.getPhysicalName() ) ) ).toList() ) ).toJson() ) );
         }
     }
 

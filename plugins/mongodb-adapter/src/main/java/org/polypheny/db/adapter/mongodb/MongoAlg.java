@@ -40,7 +40,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
 import org.bson.BsonArray;
@@ -170,12 +169,12 @@ public interface MongoAlg extends AlgNode {
 
 
         public List<String> getPreProjects() {
-            return preProjections.stream().map( Implementor::toJson ).collect( Collectors.toList() );
+            return preProjections.stream().map( Implementor::toJson ).toList();
         }
 
 
         public List<String> getOperations() {
-            return operations.stream().map( Implementor::toJson ).collect( Collectors.toList() );
+            return operations.stream().map( Implementor::toJson ).toList();
         }
 
 

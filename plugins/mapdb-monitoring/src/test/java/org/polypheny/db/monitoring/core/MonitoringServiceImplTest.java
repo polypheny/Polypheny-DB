@@ -16,10 +16,10 @@
 
 package org.polypheny.db.monitoring.core;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.sql.Timestamp;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
@@ -51,7 +51,7 @@ class MonitoringServiceImplTest {
         MonitoringService sut = new MonitoringServiceImpl( monitoringQueue, repository );
 
         // assert
-        Assertions.assertNotNull( sut );
+        assertNotNull( sut );
     }
 
 

@@ -17,7 +17,6 @@
 package org.polypheny.db.cypher.clause;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import org.polypheny.db.cypher.hint.CypherHint;
@@ -63,7 +62,7 @@ public class CypherMatch extends CypherClause {
 
     @Override
     public List<PolyString> getUnderlyingLabels() {
-        return patterns.stream().flatMap( p -> p.getUnderlyingLabels().stream() ).collect( Collectors.toList() );
+        return patterns.stream().flatMap( p -> p.getUnderlyingLabels().stream() ).toList();
     }
 
 }

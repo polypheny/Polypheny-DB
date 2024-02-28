@@ -391,7 +391,7 @@ public interface Modifiable extends Scannable {
     static Pair<List<String>, List<RexNode>> replaceUpdates( Pair<List<String>, List<RexNode>> updates, AlgBuilder builder ) {
         builder.documentProject( Pair.zip( updates.left, updates.right ).stream().collect( Collectors.toMap( e -> null, e -> e.right ) ), List.of() );
 
-        return Pair.of( updates.left, updates.right.stream().map( u -> new RexDynamicParam( DocumentType.ofRelational().getFields().get( 1 ).getType(), 1 ) ).collect( Collectors.toList() ) );
+        return Pair.of( updates.left, updates.right.stream().map( u -> (RexNode) new RexDynamicParam( DocumentType.ofRelational().getFields().get( 1 ).getType(), 1 ) ).toList() );
     }
 
 
@@ -492,7 +492,7 @@ public interface Modifiable extends Scannable {
 
 
     default String addIndex( Context context, LogicalIndex index, List<AllocationTable> allocations ) {
-        return allocations.stream().map( a -> addIndex( context, index, a ) ).collect( Collectors.toList() ).get( 0 );
+        return allocations.stream().map( a -> addIndex( context, index, a ) ).toList().get( 0 );
     }
 
 

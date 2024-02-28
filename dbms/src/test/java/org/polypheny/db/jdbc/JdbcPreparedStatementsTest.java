@@ -16,6 +16,8 @@
 
 package org.polypheny.db.jdbc;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -31,7 +33,6 @@ import org.apache.calcite.avatica.ColumnMetaData.Rep;
 import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.avatica.util.ArrayFactoryImpl;
 import org.apache.calcite.avatica.util.Unsafe;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -156,7 +157,7 @@ public class JdbcPreparedStatementsTest {
                         exceptionThrown = true;
                     }
 
-                    Assertions.assertTrue( exceptionThrown, "Excepted null value for a non-nullable column" );
+                    assertTrue( exceptionThrown, "Excepted null value for a non-nullable column" );
 
                     connection.commit();
                 } finally {

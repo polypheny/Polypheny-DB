@@ -17,7 +17,6 @@
 package org.polypheny.db.webui.models;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
@@ -39,7 +38,7 @@ public class IndexAdapterModel extends IdEntity {
 
 
     public static IndexAdapterModel from( DataStore<?> store ) {
-        return new IndexAdapterModel( store.adapterId, store.getUniqueName(), store.getAvailableIndexMethods().stream().map( IndexAdapterModel.IndexMethodModel::from ).collect( Collectors.toList() ) );
+        return new IndexAdapterModel( store.adapterId, store.getUniqueName(), store.getAvailableIndexMethods().stream().map( IndexAdapterModel.IndexMethodModel::from ).toList() );
     }
 
 

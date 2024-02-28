@@ -20,7 +20,6 @@ package org.polypheny.db.adapter.index;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -162,7 +161,7 @@ public class CowHashIndexTest {
 
 
     public static List<PolyValue> asPolyValues( Integer... elements ) {
-        return List.copyOf( Arrays.asList( elements ) ).stream().map( PolyInteger::of ).collect( Collectors.toList() );
+        return List.copyOf( Arrays.asList( elements ) ).stream().map( value -> (PolyValue) PolyInteger.of( value ) ).toList();
     }
 
 }

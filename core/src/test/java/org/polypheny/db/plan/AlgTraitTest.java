@@ -34,10 +34,11 @@
 package org.polypheny.db.plan;
 
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.function.Supplier;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
@@ -56,7 +57,7 @@ public class AlgTraitTest {
         AlgTrait<?> trait1 = AlgCompositeTrait.of( COLLATION, collation.get() );
         AlgTrait<?> trait2 = AlgCompositeTrait.of( COLLATION, collation.get() );
 
-        Assertions.assertEquals(
+        assertEquals(
                 trait1 + " @" + Integer.toHexString( System.identityHashCode( trait1 ) ),
                 trait2 + " @" + Integer.toHexString( System.identityHashCode( trait2 ) ),
                 "AlgCompositeTrait.of should return the same instance for " + message );

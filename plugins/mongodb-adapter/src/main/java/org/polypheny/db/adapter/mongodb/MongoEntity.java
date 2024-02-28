@@ -475,7 +475,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
                         return inserts.size();
                     } else {
                         // direct
-                        List<Document> docs = operations.stream().map( BsonDocument::parse ).map( BsonUtil::asDocument ).collect( Collectors.toList() );
+                        List<Document> docs = operations.stream().map( BsonDocument::parse ).map( BsonUtil::asDocument ).toList();
                         entity.getCollection().insertMany( session, docs );
                         return docs.size();
                     }

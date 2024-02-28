@@ -19,7 +19,6 @@ package org.polypheny.db.webui.models;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.Value;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
@@ -105,7 +104,7 @@ public class PlacementModel {
                 final long numPartitions,
                 final PartitionType partitionType ) {
             super( uniqueName, adapterName );
-            this.columnPlacements = columnPlacements.stream().map( ColumnPlacement::new ).collect( Collectors.toList() );
+            this.columnPlacements = columnPlacements.stream().map( ColumnPlacement::new ).toList();
             this.partitionKeys = partitionKeys;
             this.numPartitions = numPartitions;
             this.partitionType = partitionType;
@@ -124,7 +123,7 @@ public class PlacementModel {
 
         public GraphStore( String uniqueName, String adapterName, List<AllocationEntity> allocs, boolean isNative ) {
             super( uniqueName, adapterName );
-            this.placements = allocs.stream().map( p -> new GraphPlacement( p.id, p.adapterId ) ).collect( Collectors.toList() );
+            this.placements = allocs.stream().map( p -> new GraphPlacement( p.id, p.adapterId ) ).toList();
             this.isNative = isNative;
         }
 
@@ -141,7 +140,7 @@ public class PlacementModel {
 
         public DocumentStore( String uniqueName, String adapterName, List<AllocationEntity> allocations, boolean isNative ) {
             super( uniqueName, adapterName );
-            this.placements = allocations.stream().map( p -> new CollectionPlacement( p.id, p.adapterId ) ).collect( Collectors.toList() );
+            this.placements = allocations.stream().map( p -> new CollectionPlacement( p.id, p.adapterId ) ).toList();
             this.isNative = isNative;
         }
 

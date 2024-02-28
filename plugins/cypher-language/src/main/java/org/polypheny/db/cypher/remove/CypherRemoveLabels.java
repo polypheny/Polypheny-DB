@@ -17,7 +17,6 @@
 package org.polypheny.db.cypher.remove;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -31,6 +30,7 @@ import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -71,7 +71,7 @@ public class CypherRemoveLabels extends CypherRemoveItem {
                         ref,
                         context.rexBuilder.makeArray(
                                 context.typeFactory.createArrayType( context.typeFactory.createPolyType( PolyType.VARCHAR, 255 ), -1 ),
-                                labels.stream().map( l -> PolyString.of( l.getImage() ) ).collect( Collectors.toList() ) ) ) );
+                                labels.stream().map( l -> (PolyValue) PolyString.of( l.getImage() ) ).toList() ) ) );
 
         context.add( Pair.of( PolyString.of( variable.getName() ), op ) );
     }

@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
@@ -326,7 +325,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
                 .stream()
                 .map( n -> ((RexLiteral) n).getValue() )
                 .map( n -> name + "." + n )
-                .collect( Collectors.toList() );
+                .toList();
     }
 
 
@@ -335,7 +334,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
                 .stream()
                 .filter( PolyValue::isDocument )
                 .map( d -> BsonDocument.parse( d.toTypedJson() ) )
-                .collect( Collectors.toList() );
+                .toList();
     }
 
 

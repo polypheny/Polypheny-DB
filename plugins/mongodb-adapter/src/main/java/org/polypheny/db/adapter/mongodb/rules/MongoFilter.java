@@ -228,7 +228,7 @@ public class MongoFilter extends Filter implements MongoAlg {
                 } else if ( entry.getKey().equals( "$or" ) || entry.getKey().equals( "$and" ) ) {
                     doc.put( entry.getKey(), new BsonArray( entry.getValue() ) );
                 } else {
-                    ands.addAll( entry.getValue().stream().map( e -> new BsonDocument( entry.getKey(), e ) ).collect( Collectors.toList() ) );
+                    ands.addAll( entry.getValue().stream().map( e -> new BsonDocument( entry.getKey(), e ) ).toList() );
                 }
             }
             if ( !ands.isEmpty() ) {

@@ -17,9 +17,6 @@
 package org.polypheny.db.restapi;
 
 
-import static io.javalin.apibuilder.ApiBuilder.before;
-import static io.javalin.apibuilder.ApiBuilder.path;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -180,8 +177,8 @@ public class RestInterfacePlugin extends PolyPlugin {
 
         private void restRoutes( Javalin restServer, Rest rest ) {
             restServer.routes( () -> {
-                path( "/restapi/v1", () -> {
-                    before( "/*", ctx -> {
+                ApiBuilder.path( "/restapi/v1", () -> {
+                    ApiBuilder.before( "/*", ctx -> {
                         log.debug( "Checking authentication of request with id: {}.", (Object) ctx.sessionAttribute( "id" ) );
                         try {
                             LogicalUser logicalUser = this.requestParser.parseBasicAuthentication( ctx );

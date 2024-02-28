@@ -58,7 +58,7 @@ public class CatalogCrud {
         List<NamespaceModel> namespaces = Catalog.getInstance()
                 .getSnapshot()
                 .getNamespaces( request.pattern != null ? Pattern.of( request.pattern ) : null )
-                .stream().map( NamespaceModel::from ).collect( Collectors.toList() );
+                .stream().map( NamespaceModel::from ).toList();
         context.json( namespaces );
     }
 
@@ -82,7 +82,7 @@ public class CatalogCrud {
 
         List<LogicalNamespace> namespaces = Catalog.snapshot().getNamespaces( null );
         // remove unwanted namespaces
-        namespaces = namespaces.stream().filter( s -> request.dataModels.contains( s.dataModel ) ).collect( Collectors.toList() );
+        namespaces = namespaces.stream().filter( s -> request.dataModels.contains( s.dataModel ) ).toList();
         for ( LogicalNamespace namespace : namespaces ) {
             SidebarElement schemaTree = new SidebarElement( namespace.name, namespace.name, namespace.dataModel, "", getIconName( namespace.dataModel ) );
 

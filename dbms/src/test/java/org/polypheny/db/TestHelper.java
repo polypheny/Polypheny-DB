@@ -551,7 +551,7 @@ public class TestHelper {
                 }
                 parsedResults.add( doc );
             }
-            List<BsonValue> parsedExpected = expected.stream().map( e -> e != null ? BsonDocument.parse( e ) : null ).collect( Collectors.toList() );
+            List<BsonValue> parsedExpected = expected.stream().map( e -> e != null ? (BsonValue) BsonDocument.parse( e ) : null ).toList();
 
             if ( unordered ) {
                 assertTrue( areDocumentEqual( parsedExpected, parsedResults ),

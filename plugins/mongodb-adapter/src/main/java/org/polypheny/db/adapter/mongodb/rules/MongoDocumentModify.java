@@ -131,15 +131,15 @@ public class MongoDocumentModify extends DocumentModify<MongoEntity> implements 
         if ( documents.isPrepared() ) {
             implementor.operations = documents.dynamicDocuments
                     .stream()
-                    .map( BsonDynamic::new )
-                    .collect( Collectors.toList() );
+                    .map( rexNode -> (BsonDocument) new BsonDynamic( rexNode ) )
+                    .toList();
             return;
         }
         implementor.operations = documents.documents
                 .stream()
                 .filter( PolyValue::isDocument )
                 .map( d -> BsonDocument.parse( d.toJson() ) )
-                .collect( Collectors.toList() );
+                .toList();
     }
 
 }

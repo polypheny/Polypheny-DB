@@ -27,7 +27,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import org.apache.calcite.avatica.AvaticaSqlException;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -104,7 +103,7 @@ public class HorizontalPartitioningTest {
                     } catch ( AvaticaSqlException e ) {
                         failed = true;
                     }
-                    Assertions.assertTrue( failed );
+                    assertTrue( failed );
 
                     // check assert False. Wrong partition column
                     failed = false;
@@ -119,7 +118,7 @@ public class HorizontalPartitioningTest {
                     } catch ( AvaticaSqlException e ) {
                         failed = true;
                     }
-                    Assertions.assertTrue( failed );
+                    assertTrue( failed );
                 } finally {
                     // Drop tables and stores
                     statement.executeUpdate( "DROP TABLE IF EXISTS horizontalparttest" );
@@ -161,7 +160,7 @@ public class HorizontalPartitioningTest {
                     } catch ( Exception e ) {
                         failed = true;
                     }
-                    Assertions.assertTrue( failed );
+                    assertTrue( failed );
 
                     //Create another table with initial partitioning
                     statement.executeUpdate( "CREATE TABLE horizontalparttestextension( "
@@ -208,7 +207,7 @@ public class HorizontalPartitioningTest {
                     } catch ( AvaticaSqlException e ) {
                         failed = true;
                     }
-                    Assertions.assertTrue( failed );
+                    assertTrue( failed );
                 } finally {
                     // Drop tables and stores
                     statement.executeUpdate( "DROP TABLE IF EXISTS horizontalparttestextension" );
@@ -274,7 +273,7 @@ public class HorizontalPartitioningTest {
                 } catch ( Exception e ) {
                     failed = true;
                 }
-                Assertions.assertTrue( failed );
+                assertTrue( failed );
 
                 // assert false partitioning only with partition name is not allowed
                 failed = false;
@@ -350,7 +349,7 @@ public class HorizontalPartitioningTest {
                     statement.executeUpdate( "ALTER TABLE hashpartition MODIFY PLACEMENT"
                             + " DROP COLUMN tinteger ON STORE hsqldb" );
 
-                    Assertions.assertTrue( Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).stream().allMatch( placement -> 2 == Catalog.snapshot().alloc().getColumns( placement.id ).size() ) );
+                    assertTrue( Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).stream().allMatch( placement -> 2 == Catalog.snapshot().alloc().getColumns( placement.id ).size() ) );
 
                     statement.executeUpdate( "ALTER TABLE hashpartition "
                             + "PARTITION BY HASH (tvarchar) "
@@ -413,7 +412,7 @@ public class HorizontalPartitioningTest {
                     } catch ( AvaticaSqlException e ) {
                         failed = true;
                     }
-                    Assertions.assertTrue( failed );
+                    assertTrue( failed );
 
                     // ADD adapter
                     TestHelper.addHsqldb( "storehash", statement );
@@ -440,7 +439,7 @@ public class HorizontalPartitioningTest {
                     } catch ( AvaticaSqlException e ) {
                         failed = true;
                     }
-                    Assertions.assertTrue( failed );
+                    assertTrue( failed );
                 } finally {
                     statement.executeUpdate( "DROP TABLE IF EXISTS hashpartition" );
                     statement.executeUpdate( "DROP TABLE IF EXISTS hashpartitioning" );
@@ -493,7 +492,7 @@ public class HorizontalPartitioningTest {
                     } catch ( Exception e ) {
                         failed = true;
                     }
-                    Assertions.assertTrue( failed );
+                    assertTrue( failed );
 
                     // TODO: Check partition distribution violation
 
@@ -552,15 +551,6 @@ public class HorizontalPartitioningTest {
                             + "( PARTITION parta VALUES(5,4), "
                             + "PARTITION partb VALUES(10,6))" );
 
-                    LogicalTable table = Catalog.snapshot().rel().getTables( null, new Pattern( "rangepartitioning3" ) ).get( 0 );
-
-                    List<AllocationEntity> entites = Catalog.snapshot().alloc().getFromLogical( table.id );
-
-                    /*Assertions.assertEquals( new ArrayList<>( Arrays.asList( "4", "5" ) )
-                            , catalogPartitions.get( 0 ).partitionQualifiers );
-
-                    Assertions.assertEquals( new ArrayList<>( Arrays.asList( "6", "10" ) )
-                            , catalogPartitions.get( 1 ).partitionQualifiers );*/
 
                     // RANGE partitioning can't be created without specifying ranges
                     boolean failed = false;
@@ -595,7 +585,6 @@ public class HorizontalPartitioningTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
 
-            long partitionsToCreate = 4;
 
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( "CREATE TABLE physicalPartitionFilter( "
@@ -758,7 +747,7 @@ public class HorizontalPartitioningTest {
                     List<AllocationPartition> hotPartitions = Catalog.snapshot().alloc().getPartitionsFromGroup( ((TemperaturePartitionProperty) partitionProperty).getHotPartitionGroupId() );
                     List<AllocationPartition> coldPartitions = Catalog.snapshot().alloc().getPartitionsFromGroup( ((TemperaturePartitionProperty) partitionProperty).getColdPartitionGroupId() );
 
-                    Assertions.assertTrue( (numberOfPartitionsInHot == hotPartitions.size()) || (numberOfPartitionsInHot == allowedTablesInHot) );
+                    assertTrue( (numberOfPartitionsInHot == hotPartitions.size()) || (numberOfPartitionsInHot == allowedTablesInHot) );
 
                     // ADD adapter
                     TestHelper.addHsqldb( "hot", statement );
@@ -794,7 +783,7 @@ public class HorizontalPartitioningTest {
                     long targetId = partitionManager.getTargetPartitionId( table, partitionProperty, partitionValue );
 
                     List<AllocationPartition> hotPartitionsAfterChange = Catalog.snapshot().alloc().getPartitionsFromGroup( ((TemperaturePartitionProperty) updatedProperty).getHotPartitionGroupId() );
-                    Assertions.assertTrue( hotPartitionsAfterChange.stream().map( p -> p.id ).toList().contains( targetId ) );
+                    assertTrue( hotPartitionsAfterChange.stream().map( p -> p.id ).toList().contains( targetId ) );
 
                     //Todo @Hennlo check number of access
                 } finally {

@@ -67,7 +67,7 @@ public class LpgOnDocumentTest extends CrossModelTestTemplate {
 
 
     public static Row dataAsRow() {
-        return Row.of( TestNode.from( List.of( COLLECTION_NAME ), TEST_MAP.entrySet().stream().filter( e -> !e.getKey().equals( "_id" ) ).map( e -> Pair.of( e.getKey(), e.getValue() ) ).collect( Collectors.toList() ).toArray( new Pair[0] ) ) );
+        return Row.of( TestNode.from( List.of( COLLECTION_NAME ), TEST_MAP.entrySet().stream().filter( e -> !e.getKey().equals( "_id" ) ).map( e -> Pair.of( e.getKey(), e.getValue() ) ).toList().toArray( new Pair[0] ) ) );
     }
 
 

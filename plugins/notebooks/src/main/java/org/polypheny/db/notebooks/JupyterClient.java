@@ -16,8 +16,6 @@
 
 package org.polypheny.db.notebooks;
 
-import static java.time.temporal.ChronoUnit.SECONDS;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -32,6 +30,7 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.net.http.WebSocket;
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -281,7 +280,7 @@ public class JupyterClient {
     private HttpResponse<String> sendGET( String resource, String queryParams ) throws JupyterServerException {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri( getUriFromPath( resource, queryParams ) )
-                .timeout( Duration.of( 10, SECONDS ) )
+                .timeout( Duration.of( 10, ChronoUnit.SECONDS ) )
                 .GET()
                 .header( "Authorization", "token " + token )
                 .build();
@@ -306,7 +305,7 @@ public class JupyterClient {
     private HttpResponse<String> sendPOST( String resource, String body ) throws JupyterServerException {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri( getUriFromPath( resource ) )
-                .timeout( Duration.of( 10, SECONDS ) )
+                .timeout( Duration.of( 10, ChronoUnit.SECONDS ) )
                 .POST( HttpRequest.BodyPublishers.ofString( body ) )
                 .header( "Authorization", "token " + token )
                 .build();
@@ -331,7 +330,7 @@ public class JupyterClient {
     private HttpResponse<String> sendPUT( String resource, String body ) throws JupyterServerException {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri( getUriFromPath( resource ) )
-                .timeout( Duration.of( 10, SECONDS ) )
+                .timeout( Duration.of( 10, ChronoUnit.SECONDS ) )
                 .PUT( HttpRequest.BodyPublishers.ofString( body ) )
                 .header( "Authorization", "token " + token )
                 .build();
@@ -356,7 +355,7 @@ public class JupyterClient {
     private HttpResponse<String> sendPATCH( String resource, String body ) throws JupyterServerException {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri( getUriFromPath( resource ) )
-                .timeout( Duration.of( 10, SECONDS ) )
+                .timeout( Duration.of( 10, ChronoUnit.SECONDS ) )
                 .method( "PATCH", HttpRequest.BodyPublishers.ofString( body ) )
                 .header( "Authorization", "token " + token )
                 .build();
@@ -380,7 +379,7 @@ public class JupyterClient {
     private HttpResponse<String> sendDELETE( String resource ) throws JupyterServerException {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri( getUriFromPath( resource ) )
-                .timeout( Duration.of( 10, SECONDS ) )
+                .timeout( Duration.of( 10, ChronoUnit.SECONDS ) )
                 .DELETE()
                 .header( "Authorization", "token " + token )
                 .build();

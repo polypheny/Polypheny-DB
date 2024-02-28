@@ -16,8 +16,6 @@
 
 package org.polypheny.db.adapter.neo4j;
 
-import static java.lang.String.format;
-
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.net.URI;
@@ -106,27 +104,27 @@ public class Neo4jPlugin extends PolyPlugin {
 
 
     public static String getPhysicalEntityName( long namespaceId, long allocId ) {
-        return format( "n_%d_entity_%d_", namespaceId, allocId );
+        return String.format( "n_%d_entity_%d_", namespaceId, allocId );
     }
 
 
     public static String getPhysicalNamespaceName( long id ) {
-        return format( "namespace_%d", id );
+        return String.format( "namespace_%d", id );
     }
 
 
     public static String getPhysicalFieldName( long id ) {
-        return format( "field_%d", id );
+        return String.format( "field_%d", id );
     }
 
 
     private static String getPhysicalGraphName( long id ) {
-        return format( "graph_%d", id );
+        return String.format( "graph_%d", id );
     }
 
 
     private static String getMappingLabel( long id ) {
-        return format( "___n_%d___", id );
+        return String.format( "___n_%d___", id );
     }
 
 
@@ -181,7 +179,7 @@ public class Neo4jPlugin extends PolyPlugin {
                             .orElseThrow( () -> new GenericRuntimeException( "No docker instance with id " + instanceId ) );
                     try {
                         this.container = instance.newBuilder( "polypheny/neo:latest", getUniqueName() )
-                                .withEnvironmentVariable( "NEO4J_AUTH", format( "%s/%s", user, pass ) )
+                                .withEnvironmentVariable( "NEO4J_AUTH", String.format( "%s/%s", user, pass ) )
                                 .createAndStart();
                     } catch ( IOException e ) {
                         throw new GenericRuntimeException( e );
@@ -214,7 +212,7 @@ public class Neo4jPlugin extends PolyPlugin {
 
             if ( this.db == null ) {
                 try {
-                    this.db = GraphDatabase.driver( new URI( format( "bolt://%s:%s", host, port ) ), auth );
+                    this.db = GraphDatabase.driver( new URI( String.format( "bolt://%s:%s", host, port ) ), auth );
                 } catch ( URISyntaxException e ) {
                     throw new GenericRuntimeException( "Error while restoring the Neo4j database." );
                 }
@@ -243,7 +241,7 @@ public class Neo4jPlugin extends PolyPlugin {
             this.port = hp.port();
 
             try {
-                this.db = GraphDatabase.driver( new URI( format( "bolt://%s:%s", host, port ) ), auth );
+                this.db = GraphDatabase.driver( new URI( String.format( "bolt://%s:%s", host, port ) ), auth );
             } catch ( URISyntaxException e ) {
                 throw new GenericRuntimeException( "Error while initiating the neo4j adapter." );
             }
@@ -318,7 +316,7 @@ public class Neo4jPlugin extends PolyPlugin {
 
             executeDdlTrx(
                     context.getStatement().getTransaction().getXid(),
-                    format( "MATCH (n:%s) DELETE n", physical.name ) );
+                    String.format( "MATCH (n:%s) DELETE n", physical.name ) );
         }
 
 
@@ -331,7 +329,7 @@ public class Neo4jPlugin extends PolyPlugin {
             PhysicalColumn column = adapterCatalog.createColumn( physicalName, allocId, physical.getFields().size() - 1, logicalColumn );
 
             if ( logicalColumn.defaultValue != null ) {
-                executeDdlTrx( context.getStatement().getTransaction().getXid(), format(
+                executeDdlTrx( context.getStatement().getTransaction().getXid(), String.format(
                         "MATCH (n:%s) SET n += {%s:%s}",
                         getPhysicalEntityName( logicalColumn.namespaceId, allocId ),
                         getPhysicalFieldName( logicalColumn.id ),
@@ -350,7 +348,7 @@ public class Neo4jPlugin extends PolyPlugin {
         private Object getDefaultAsNeo( LogicalDefaultValue defaultValue, PolyType type ) {
             if ( defaultValue != null ) {
                 Object value = NeoUtil.fixParameterValue( defaultValue.value, new NestedSingleType( type ), false );
-                return format( "%s", value );
+                return String.format( "%s", value );
             }
             return null;
         }
@@ -368,7 +366,7 @@ public class Neo4jPlugin extends PolyPlugin {
 
             executeDdlTrx(
                     context.getStatement().getTransaction().getXid(),
-                    format( "MATCH (n:%s) REMOVE n.%s", physical.name, column.name ) );
+                    String.format( "MATCH (n:%s) REMOVE n.%s", physical.name, column.name ) );
 
             adapterCatalog.replacePhysical(
                     physical.toBuilder().fields( physical.getFields().stream().filter( f -> f.id != columnId ).toList() ).build() );
@@ -402,10 +400,10 @@ public class Neo4jPlugin extends PolyPlugin {
 
         private void addCompositeIndex( PolyXid xid, LogicalIndex index, List<Long> columnIds, NeoEntity physical, String physicalIndexName ) {
             String fields = columnIds.stream()
-                    .map( id -> format( "n.%s", getPhysicalFieldName( id ) ) )
+                    .map( id -> String.format( "n.%s", getPhysicalFieldName( id ) ) )
                     .collect( Collectors.joining( ", " ) );
 
-            executeDdlTrx( xid, format(
+            executeDdlTrx( xid, String.format(
                     "CREATE INDEX %s IF NOT EXISTS FOR (n:%s) on (%s)",
                     physicalIndexName + "_" + physical.id + "_" + index.id,
                     getPhysicalEntityName( index.key.namespaceId, physical.id ),
@@ -419,7 +417,7 @@ public class Neo4jPlugin extends PolyPlugin {
 
             executeDdlTrx(
                     context.getStatement().getTransaction().getXid(),
-                    format( "DROP INDEX %s IF EXISTS", index.physicalName + "_" + allocId + "_" + index.id ) );
+                    String.format( "DROP INDEX %s IF EXISTS", index.physicalName + "_" + allocId + "_" + index.id ) );
 
         }
 
@@ -471,7 +469,7 @@ public class Neo4jPlugin extends PolyPlugin {
             NeoEntity physical = adapterCatalog.fromAllocation( allocId, NeoEntity.class );
             executeDdlTrx(
                     context.getStatement().getTransaction().getXid(),
-                    format( "MATCH (n:%s) DETACH DELETE n", physical.name ) );
+                    String.format( "MATCH (n:%s) DETACH DELETE n", physical.name ) );
 
         }
 
@@ -501,7 +499,7 @@ public class Neo4jPlugin extends PolyPlugin {
             PhysicalGraph physical = adapterCatalog.fromAllocation( allocation.id, PhysicalGraph.class );
             executeDdlTrx(
                     context.getStatement().getTransaction().getXid(),
-                    format( "MATCH (n:%s) DETACH DELETE n", getMappingLabel( physical.id ) ) );
+                    String.format( "MATCH (n:%s) DETACH DELETE n", getMappingLabel( physical.id ) ) );
         }
 
 

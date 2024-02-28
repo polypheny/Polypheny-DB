@@ -580,7 +580,7 @@ public class DataMigratorImpl implements DataMigrator {
 
             do {
                 ResultIterator iter = result.execute( source.sourceStatement, batchSize );
-                List<List<PolyValue>> rows = iter.getNextBatch();//MetaImpl.collect( result.getCursorFactory(), LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() ).stream().map( r -> r.stream().map( e -> (PolyValue) e ).collect( Collectors.toList() ) ).collect( Collectors.toList() );
+                List<List<PolyValue>> rows = iter.getNextBatch();
                 iter.close();
                 if ( rows.isEmpty() ) {
                     continue;

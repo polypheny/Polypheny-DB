@@ -17,6 +17,9 @@
 package org.polypheny.db.jdbc;
 
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -27,7 +30,6 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaSqlException;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -98,7 +100,7 @@ public class JdbcDdlTest {
     @Test
     public void testTypes() throws SQLException {
         // Check if there are new types missing in this test
-        Assertions.assertEquals( PolyType.availableTypes().size(), 17, "Unexpected number of available types" );
+        assertEquals( PolyType.availableTypes().size(), 17, "Unexpected number of available types" );
 
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -162,7 +164,7 @@ public class JdbcDdlTest {
     @Test
     public void viewTestTypes() throws SQLException {
         // Check if there are new types missing in this test
-        Assertions.assertEquals( 17, PolyType.availableTypes().size(), "Unexpected number of available types" );
+        assertEquals( 17, PolyType.availableTypes().size(), "Unexpected number of available types" );
 
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -226,7 +228,7 @@ public class JdbcDdlTest {
     @Test
     public void materializedTestTime() throws SQLException {
         // Check if there are new types missing in this test
-        Assertions.assertEquals( PolyType.availableTypes().size(), 17, "Unexpected number of available types" );
+        assertEquals( PolyType.availableTypes().size(), 17, "Unexpected number of available types" );
 
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -259,7 +261,7 @@ public class JdbcDdlTest {
     @Test
     public void materializedTestTimeStamp() throws SQLException {
         // Check if there are new types missing in this test
-        Assertions.assertEquals( PolyType.availableTypes().size(), 17, "Unexpected number of available types" );
+        assertEquals( PolyType.availableTypes().size(), 17, "Unexpected number of available types" );
 
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -292,7 +294,7 @@ public class JdbcDdlTest {
     @Test
     public void materializedTestTypes() throws SQLException {
         // Check if there are new types missing in this test
-        Assertions.assertEquals( PolyType.availableTypes().size(), 17, "Unexpected number of available types" );
+        assertEquals( PolyType.availableTypes().size(), 17, "Unexpected number of available types" );
 
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -353,7 +355,7 @@ public class JdbcDdlTest {
     @Test
     public void nullTest() throws SQLException {
         // Check if there are new types missing in this test
-        Assertions.assertEquals( PolyType.availableTypes().size(), 17, "Unexpected number of available types" );
+        assertEquals( PolyType.availableTypes().size(), 17, "Unexpected number of available types" );
 
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -408,7 +410,7 @@ public class JdbcDdlTest {
                     } catch ( AvaticaSqlException e ) {
                         failed = true;
                     }
-                    Assertions.assertTrue( failed );
+                    assertTrue( failed );
                 } finally {
                     // Drop ddltest table
                     statement.executeUpdate( "DROP TABLE ddltest" );

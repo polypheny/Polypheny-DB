@@ -1978,7 +1978,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             IndexAdapterModel poly = new IndexAdapterModel(
                     -1L,
                     "Polypheny-DB",
-                    IndexManager.getAvailableIndexMethods().stream().map( IndexMethodModel::from ).collect( Collectors.toList() ) );
+                    IndexManager.getAvailableIndexMethods().stream().map( IndexMethodModel::from ).toList() );
             filtered.add( poly );
         }
         ctx.json( filtered );

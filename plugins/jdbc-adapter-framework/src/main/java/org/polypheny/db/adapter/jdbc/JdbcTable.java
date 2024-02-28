@@ -37,7 +37,6 @@ package org.polypheny.db.adapter.jdbc;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.ColumnMetaData.Rep;
 import org.apache.calcite.linq4j.Enumerable;
@@ -121,7 +120,7 @@ public class JdbcTable extends PhysicalTable implements TranslatableEntity, Scan
             final Class<?> clazz = (Class<?>) typeFactory.getJavaClass( type );
             final Rep rep = Util.first( Rep.of( clazz ), Rep.OBJECT );
             return Pair.of( rep, type.getPolyType().getJdbcOrdinal() );
-        } ).collect( Collectors.toList() );
+        } ).toList();
     }
 
 

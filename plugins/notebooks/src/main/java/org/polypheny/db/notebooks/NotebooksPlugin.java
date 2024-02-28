@@ -25,7 +25,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.Config;
@@ -123,7 +122,7 @@ public class NotebooksPlugin extends PolyPlugin {
 
 
     private void getDockerInstances( Context ctx ) {
-        List<Map<String, Object>> result = DockerManager.getInstance().getDockerInstances().values().stream().filter( DockerInstance::isConnected ).map( DockerInstance::getMap ).collect( Collectors.toList() );
+        List<Map<String, Object>> result = DockerManager.getInstance().getDockerInstances().values().stream().filter( DockerInstance::isConnected ).map( DockerInstance::getMap ).toList();
         ctx.status( 200 ).json( result );
     }
 

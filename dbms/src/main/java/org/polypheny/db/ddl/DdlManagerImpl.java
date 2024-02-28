@@ -1374,7 +1374,7 @@ public class DdlManagerImpl extends DdlManager {
             // Add indexes on this new Partition Placement if there is already an index
             for ( LogicalIndex currentIndex : catalog.getSnapshot().rel().getIndexes( table.id, false ) ) {
                 if ( currentIndex.location == storeId ) {
-                    store.addIndex( statement.getPrepareContext(), currentIndex, catalog.getSnapshot().alloc().getAllocsOfPlacement( placement.id ).stream().map( a -> a.unwrap( AllocationTable.class ).orElseThrow() ).collect( Collectors.toList() ) );
+                    store.addIndex( statement.getPrepareContext(), currentIndex, catalog.getSnapshot().alloc().getAllocsOfPlacement( placement.id ).stream().map( a -> a.unwrap( AllocationTable.class ).orElseThrow() ).toList() );
                 }
             }
         }
@@ -1383,7 +1383,7 @@ public class DdlManagerImpl extends DdlManager {
             //  Remove indexes
             for ( LogicalIndex currentIndex : catalog.getSnapshot().rel().getIndexes( table.id, false ) ) {
                 if ( currentIndex.location == storeId ) {
-                    store.dropIndex( null, currentIndex, removedPartitions.stream().map( p -> p.partitionId ).collect( Collectors.toList() ) );
+                    store.dropIndex( null, currentIndex, removedPartitions.stream().map( p -> p.partitionId ).toList() );
                 }
             }
             for ( AllocationEntity removedPartition : removedPartitions ) {
@@ -1997,7 +1997,7 @@ public class DdlManagerImpl extends DdlManager {
 
         // create foreign keys later on
         for ( ConstraintInformation constraint : constraints.stream().filter( c -> c.getType() != ConstraintType.FOREIGN ).toList() ) {
-            List<Long> columnIds = constraint.columnNames.stream().map( key -> ids.get( key ).id ).collect( Collectors.toList() );
+            List<Long> columnIds = constraint.columnNames.stream().map( key -> ids.get( key ).id ).toList();
             createConstraint( constraint, namespaceId, columnIds, logical.id );
 
             if ( constraint.type == ConstraintType.PRIMARY ) {
@@ -2014,7 +2014,7 @@ public class DdlManagerImpl extends DdlManager {
         // addATable
         AllocationPartition partition = createSinglePartition( namespaceId, logical ).left;
 
-        List<LogicalColumn> columns = ids.values().stream().sorted( Comparator.comparingInt( c -> c.position ) ).collect( Collectors.toList() );
+        List<LogicalColumn> columns = ids.values().stream().sorted( Comparator.comparingInt( c -> c.position ) ).toList();
 
         for ( DataStore<?> store : stores ) {
             AllocationPlacement placement = catalog.getAllocRel( namespaceId ).addPlacement( logical.id, namespaceId, store.adapterId );
@@ -2025,7 +2025,7 @@ public class DdlManagerImpl extends DdlManager {
         catalog.updateSnapshot();
 
         constraints.stream().filter( c -> c.getType() == ConstraintType.FOREIGN ).forEach( c -> {
-            List<Long> columnIds = c.columnNames.stream().map( key -> ids.get( key ).id ).collect( Collectors.toList() );
+            List<Long> columnIds = c.columnNames.stream().map( key -> ids.get( key ).id ).toList();
             createConstraint( c, namespaceId, columnIds, logical.id );
         } );
 
@@ -2084,7 +2084,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @NotNull
     private static List<LogicalColumn> sortByPosition( List<LogicalColumn> columns ) {
-        return columns.stream().sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() );
+        return columns.stream().sorted( Comparator.comparingInt( a -> a.position ) ).toList();
     }
 
 
@@ -2281,9 +2281,9 @@ public class DdlManagerImpl extends DdlManager {
             }
             stores.add( store );
 
-            List<AllocationColumn> columns = catalog.getSnapshot().alloc().getColumns( placement.id );//allocation.unwrap( AllocationTable.class ).getColumns().stream().map( c -> snapshot.rel().getColumn( c.columnId ).orElseThrow() ).collect( Collectors.toList() );
+            List<AllocationColumn> columns = catalog.getSnapshot().alloc().getColumns( placement.id );
             List<AllocationTable> partitionAllocations = new ArrayList<>();
-            List<LogicalColumn> logicalColumns = columns.stream().map( c -> catalog.getSnapshot().rel().getColumn( c.columnId ).orElseThrow() ).collect( Collectors.toList() );
+            List<LogicalColumn> logicalColumns = columns.stream().map( c -> catalog.getSnapshot().rel().getColumn( c.columnId ).orElseThrow() ).toList();
             for ( AllocationPartition partition : result.left ) {
 
                 partitionAllocations.add( addAllocationTable( partitionInfo.table.namespaceId, statement, unPartitionedTable, logicalColumns, pkColumnIds, placement.id, partition.id, columns, store ) );
@@ -2437,7 +2437,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         //get All PartitionGroups and then get all partitionIds  for each PG and add them to completeList of partitionIds
-        List<AllocationPartition> partitions = partitionGroups.values().stream().flatMap( Collection::stream ).collect( Collectors.toList() );
+        List<AllocationPartition> partitions = partitionGroups.values().stream().flatMap( Collection::stream ).toList();
 
         PartitionProperty partitionProperty;
         if ( actualPartitionType == PartitionType.TEMPERATURE ) {

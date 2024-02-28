@@ -17,11 +17,11 @@
 package org.polypheny.db.cql.utils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
@@ -55,7 +55,7 @@ public class FilterTest extends AlgBuildTestHelper {
     @Test
     public void testColumnFilterThrowsNotImplementedRuntimeException() throws UnknownIndexException {
 
-        RuntimeException thrown = Assertions.assertThrows( RuntimeException.class, () -> {
+        RuntimeException thrown = assertThrows( RuntimeException.class, () -> {
             ColumnFilter columnFilter = new ColumnFilter(
                     ColumnIndex.createIndex( "test", "dept", "deptno" ),
                     new Relation( Comparator.EQUALS ),

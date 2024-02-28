@@ -19,7 +19,6 @@ package org.polypheny.db.monitoring.events.analyzer;
 
 import java.util.Collections;
 import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.monitoring.events.DmlEvent;
 import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
@@ -47,7 +46,7 @@ public class DmlEventAnalyzer {
                 .build();
 
         if ( dmlEvent.getAccessedPartitions() != null ) {
-            metric.setAccessedPartitions( dmlEvent.getAccessedPartitions().values().stream().flatMap( Set::stream ).collect( Collectors.toList() ) );
+            metric.setAccessedPartitions( dmlEvent.getAccessedPartitions().values().stream().flatMap( Set::stream ).toList() );
         } else {
             metric.setAccessedPartitions( Collections.emptyList() );
         }

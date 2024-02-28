@@ -16,9 +16,12 @@
 
 package org.polypheny.db.monitoring.core;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+
 import java.util.HashMap;
 import java.util.List;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -47,7 +50,7 @@ class MonitoringQueueImplTest {
         MonitoringQueue sut = new MonitoringQueueImpl( false, persistentRepo, statisticRepo );
 
         // assert
-        Assertions.assertNotNull( sut );
+        assertNotNull( sut );
     }
 
 
@@ -64,7 +67,7 @@ class MonitoringQueueImplTest {
 
         // assert
         long elementsInQueue = sut.getNumberOfElementsInQueue();
-        Assertions.assertEquals( 1L, elementsInQueue );
+        assertEquals( 1L, elementsInQueue );
     }
 
 
@@ -82,7 +85,7 @@ class MonitoringQueueImplTest {
 
         // assert
         long elementsInQueue = sut.getNumberOfElementsInQueue();
-        Assertions.assertEquals( 1L, elementsInQueue );
+        assertEquals( 1L, elementsInQueue );
     }
 
 
@@ -102,14 +105,14 @@ class MonitoringQueueImplTest {
 
         // assert
         long elementsInQueue = sut.getNumberOfElementsInQueue();
-        Assertions.assertEquals( numberOfEvents, elementsInQueue );
+        assertEquals( numberOfEvents, elementsInQueue );
 
         List<HashMap<String, String>> infoStrings = sut.getInformationOnElementsInQueue();
-        Assertions.assertEquals( (int) numberOfEvents, infoStrings.size() );
+        assertEquals( (int) numberOfEvents, infoStrings.size() );
 
         HashMap<String, String> infoString = infoStrings.get( 0 );
-        Assertions.assertSame( 3, infoString.size() );
-        Assertions.assertEquals( QueryEvent.class.toString(), infoString.get( "type" ) );
+        assertSame( 3, infoString.size() );
+        assertEquals( QueryEvent.class.toString(), infoString.get( "type" ) );
     }
 
 }

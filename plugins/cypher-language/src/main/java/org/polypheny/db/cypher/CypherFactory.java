@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.cypher.CypherResource.ResourceType;
 import org.polypheny.db.cypher.admin.CypherAdminAction;
@@ -783,7 +782,7 @@ public interface CypherFactory {
     }
 
     static List<CypherPrivilegeQualifier> userQualifier( List<CypherSimpleEither<String, CypherParameter>> qualifiers ) {
-        return qualifiers.stream().map( q -> new CypherPrivilegeQualifier( ParserPos.ZERO, ImmutableList.of( q.getLeft() ), CypherPrivilegeQualifier.QualifierType.USER ) ).collect( Collectors.toList() );
+        return qualifiers.stream().map( q -> new CypherPrivilegeQualifier( ParserPos.ZERO, ImmutableList.of( q.getLeft() ), CypherPrivilegeQualifier.QualifierType.USER ) ).toList();
     }
 
     static CypherHint createJoinHint( ParserPos pos, List<CypherVariable> joinVariables ) {

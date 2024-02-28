@@ -237,10 +237,8 @@ public class VerticalPartitioningTest {
                     for ( AllocationPlacement dp : dataPlacements ) {
                         if ( dp.adapterId == adapterId ) {
                             assertEquals( 2, Catalog.snapshot().alloc().getColumns( dp.id ).size() );
-                            //Assertions.assertEquals( 2, Catalog.snapshot().alloc().getColumnPlacementsOnAdapterPerTable( adapterId, table.id ).size() );
                         } else if ( dp.adapterId == initialAdapterId ) {
                             assertEquals( 3, Catalog.snapshot().alloc().getColumns( dp.id ).size() );
-                            //Assertions.assertEquals( 3, Catalog.snapshot().alloc().getColumnPlacementsOnAdapterPerTable( initialAdapterId, table.id ).size() );
                         }
                     }
 

@@ -47,7 +47,7 @@ public class CypherNodePattern extends CypherPattern {
         super( pos );
         this.variable = variable;
         this.labels = PolyList.copyOf( labels.stream().map( StringPos::getImage ).map( PolyString::of ).collect( Collectors.toList() ) );
-        this.positions = labels.stream().map( StringPos::getPos ).collect( Collectors.toList() );
+        this.positions = labels.stream().map( StringPos::getPos ).toList();
         this.properties = properties;
         this.predicate = predicate;
     }

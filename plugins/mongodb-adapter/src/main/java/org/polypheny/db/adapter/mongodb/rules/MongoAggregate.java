@@ -20,7 +20,6 @@ package org.polypheny.db.adapter.mongodb.rules;
 import com.google.common.collect.Streams;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.polypheny.db.adapter.mongodb.MongoAlg;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.InvalidAlgException;
@@ -106,7 +105,7 @@ public class MongoAggregate extends Aggregate implements MongoAlg {
         implementor.add( null, "{$group: " + Util.toString( list, "{", ", ", "}" ) + "}" );
         final List<String> fixups;
         if ( groupSet.cardinality() == 1 ) {
-            fixups = Streams.mapWithIndex( outNames.stream(), ( n, j ) -> MongoRules.maybeQuote( n ) + ": " + MongoRules.maybeQuote( "$" + (j == 0 ? "_id" : n) ) ).collect( Collectors.toList() );
+            fixups = Streams.mapWithIndex( outNames.stream(), ( n, j ) -> MongoRules.maybeQuote( n ) + ": " + MongoRules.maybeQuote( "$" + (j == 0 ? "_id" : n) ) ).toList();
         } else {
             fixups = new ArrayList<>();
             fixups.add( "_id: 0" );

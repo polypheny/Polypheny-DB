@@ -44,6 +44,7 @@ import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.ImmutableBitSet;
 
 public class DocumentAggregateToAggregateRule extends AlgOptRule {
@@ -79,7 +80,7 @@ public class DocumentAggregateToAggregateRule extends AlgOptRule {
                     OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_QUERY_VALUE ),
                     parent,
                     builder.getRexBuilder().makeArray( builder.getTypeFactory().createArrayType( builder.getTypeFactory().createPolyType( PolyType.CHAR, 255 ), -1 ),
-                            PolyList.copyOf( Arrays.stream( groupKey.split( "\\." ) ).map( PolyString::of ).collect( Collectors.toList() ) ) ) );
+                            PolyList.copyOf( Arrays.stream( groupKey.split( "\\." ) ).map( o -> (PolyValue) PolyString.of( o ) ).toList() ) ) );
             nodes.add( node );
             names.add( DocumentType.DOCUMENT_ID );
         }
@@ -92,7 +93,7 @@ public class DocumentAggregateToAggregateRule extends AlgOptRule {
                         OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_QUERY_VALUE ),
                         parent,
                         builder.getRexBuilder().makeArray( builder.getTypeFactory().createArrayType( builder.getTypeFactory().createPolyType( PolyType.CHAR, 255 ), -1 ),
-                                PolyList.copyOf( agg.getInput().map( r -> r.unwrap( RexNameRef.class ).map( n -> n.names.stream().map( PolyString::of ) ).orElseThrow() ).orElseThrow().collect( Collectors.toList() ) ) ) );
+                                PolyList.copyOf( agg.getInput().map( r -> r.unwrap( RexNameRef.class ).map( n -> n.names.stream().map( o -> (PolyValue) PolyString.of( o ) ) ).orElseThrow() ).orElseThrow().toList() ) ) );
             }
 
             if ( agg.requiresCast( alg.getCluster() ).isPresent() ) {
@@ -113,7 +114,7 @@ public class DocumentAggregateToAggregateRule extends AlgOptRule {
 
         builder.push( enumerableProject );
 
-        builder.push( LogicalAggregate.create( builder.build(), groupSet, null, alg.aggCalls.stream().map( a -> a.toAggCall( project.getTupleType(), alg.getCluster() ) ).collect( Collectors.toList() ) ) );
+        builder.push( LogicalAggregate.create( builder.build(), groupSet, null, alg.aggCalls.stream().map( a -> a.toAggCall( project.getTupleType(), alg.getCluster() ) ).toList() ) );
 
         AlgNode aggregate = builder.build();
 

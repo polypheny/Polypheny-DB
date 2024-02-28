@@ -190,7 +190,7 @@ public class MongoDynamic {
                                 .stream()
                                 .flatMap( d -> d.getValue().stream() )
                                 .filter( w -> w.key.equals( doc.getFirstKey() ) )
-                                .collect( Collectors.toList() ) ) );
+                                .toList() ) );
     }
 
 
@@ -309,7 +309,7 @@ public class MongoDynamic {
             Function<Document, ? extends WriteModel<Document>> constructor ) {
         return parameterValues.stream()
                 .map( value -> constructor.apply( BsonUtil.asDocument( insert( value ) ) ) )
-                .collect( Collectors.toList() );
+                .toList();
     }
 
 

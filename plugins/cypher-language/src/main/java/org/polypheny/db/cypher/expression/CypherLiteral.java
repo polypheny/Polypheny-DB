@@ -113,7 +113,7 @@ public class CypherLiteral extends CypherExpression {
             case NULL:
                 return null;
             case LIST:
-                List<PolyValue> list = listValue.stream().map( CypherExpression::getComparable ).collect( Collectors.toList() );
+                List<PolyValue> list = listValue.stream().map( CypherExpression::getComparable ).toList();
                 return new PolyList<>( list );
             case MAP:
                 Map<PolyString, PolyValue> map = mapValue.entrySet().stream().collect( Collectors.toMap( e -> PolyString.of( e.getKey() ), e -> e.getValue().getComparable() ) );
@@ -145,14 +145,14 @@ public class CypherLiteral extends CypherExpression {
                 node = context.rexBuilder.makeLiteral( null, context.typeFactory.createPolyType( PolyType.VARCHAR, 255 ), false );
                 break;
             case LIST:
-                List<RexNode> list = listValue.stream().map( e -> e.getRex( context, type ).right ).collect( Collectors.toList() );
+                List<RexNode> list = listValue.stream().map( e -> e.getRex( context, type ).right ).toList();
                 AlgDataType dataType = context.typeFactory.createPolyType( PolyType.ANY );
 
                 if ( !list.isEmpty() && list.stream().allMatch( e -> PolyTypeUtil.equalSansNullability( context.typeFactory, e.getType(), list.get( 0 ).getType() ) ) ) {
                     dataType = list.get( 0 ).getType();
                 }
                 dataType = context.typeFactory.createArrayType( dataType, -1 );
-                node = context.rexBuilder.makeLiteral( PolyList.copyOf( list.stream().map( e -> ((RexLiteral) e).value ).collect( Collectors.toList() ) ), dataType, false );
+                node = context.rexBuilder.makeLiteral( PolyList.copyOf( list.stream().map( e -> ((RexLiteral) e).value ).toList() ), dataType, false );
                 break;
             case MAP:
             case STAR:

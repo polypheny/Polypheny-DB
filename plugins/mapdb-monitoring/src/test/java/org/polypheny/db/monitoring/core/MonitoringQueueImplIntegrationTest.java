@@ -17,12 +17,14 @@
 package org.polypheny.db.monitoring.core;
 
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -59,7 +61,7 @@ class MonitoringQueueImplIntegrationTest {
         // Initialize the monitoringService
         MonitoringService sut = new MonitoringServiceImpl( queueWriteService, persistentRepo );
 
-        Assertions.assertNotNull( sut );
+        assertNotNull( sut );
 
         // -- Act --
         List<QueryEvent> events = createQueryEvent( 15 );
@@ -73,7 +75,7 @@ class MonitoringQueueImplIntegrationTest {
 
         // -- Assert --
         List<QueryDataPointImpl> result = sut.getAllDataPoints( QueryDataPointImpl.class );
-        Assertions.assertEquals( 15, result.size() );
+        assertEquals( 15, result.size() );
     }
 
 

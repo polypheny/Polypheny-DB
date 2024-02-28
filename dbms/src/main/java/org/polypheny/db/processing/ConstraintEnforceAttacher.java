@@ -225,9 +225,9 @@ public class ConstraintEnforceAttacher {
                 // TODO: Here we get issues with batch queries
                 //
                 builder.push( input );
-                builder.project( constraint.key.getColumnNames().stream().map( builder::field ).collect( Collectors.toList() ) );
+                builder.project( constraint.key.getColumnNames().stream().map( builder::field ).toList() );
                 builder.push( scan );
-                builder.project( constraint.key.getColumnNames().stream().map( builder::field ).collect( Collectors.toList() ) );
+                builder.project( constraint.key.getColumnNames().stream().map( builder::field ).toList() );
                 for ( final String column : constraint.key.getColumnNames() ) {
                     RexNode joinComparison = rexBuilder.makeCall(
                             OperatorRegistry.get( OperatorName.EQUALS ),
@@ -301,7 +301,7 @@ public class ConstraintEnforceAttacher {
                 } else {
                     builder.clear();
                     builder.push( input );
-                    builder.aggregate( builder.groupKey( constraint.key.getColumnNames().stream().map( builder::field ).collect( Collectors.toList() ) ), builder.aggregateCall( OperatorRegistry.getAgg( OperatorName.COUNT ) ).as( "count" ) );
+                    builder.aggregate( builder.groupKey( constraint.key.getColumnNames().stream().map( builder::field ).toList() ), builder.aggregateCall( OperatorRegistry.getAgg( OperatorName.COUNT ) ).as( "count" ) );
                     builder.filter( builder.call( OperatorRegistry.get( OperatorName.GREATER_THAN ), builder.field( "count" ), builder.literal( 1 ) ) );
                     final AlgNode innerCheck = builder.build();
                     final LogicalConditionalExecute ilce = LogicalConditionalExecute.create( innerCheck, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,

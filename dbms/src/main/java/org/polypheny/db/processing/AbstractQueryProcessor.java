@@ -691,21 +691,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                                     }
                                 }
                             }
-                            // Prepare subquery
-//                            if ( ltm.isUpdate() || ltm.isMerge() ) {
-//                                List<RexNode> expr = new ArrayList<>(  );
-//                                //FIXME(s3lph) some index out of bounds stuff
-//                                for ( final String name : originalProject.getRowType().getFieldNames() ) {
-//                                    if ( ltm.getUpdateColumnList().contains( name )) {
-//                                        expr.add( ltm.getSourceExpressionList().get( ltm.getUpdateColumnList().indexOf( name ) ) );
-//                                    } else {
-//                                        expr.add( rexBuilder.makeInputRef( originalProject, originalProject.getRowType().getField( name, true, false ).getIndex() ) );
-//                                    }
-//                                }
-//                                List<RelDataType> types = ltm.getSourceExpressionList().stream().map( RexNode::getType ).collect( Collectors.toList() );
-//                                RelDataType type = transaction.getTypeFactory().createStructType( types, originalProject.getRowType().getFieldNames() );
-//                                originalProject = LogicalProject.create( originalProject, expr, type );
-//                            }
+
                             AlgRoot scanRoot = AlgRoot.of( originalProject, Kind.SELECT );
                             final PolyImplementation scanSig = prepareQuery( scanRoot, parameterRowType, false, false, true );
                             final ResultIterator iter = scanSig.execute( statement, -1 );
@@ -729,22 +715,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                             final ImmutableList<ImmutableList<RexLiteral>> values = ImmutableList.copyOf( records );
                             final AlgNode newValues = LogicalValues.create( originalProject.getCluster(), originalProject.getTupleType(), values );
                             final AlgNode newProject = LogicalProject.identity( newValues );
-//                            List<RexNode> sourceExpr = ltm.getSourceExpressionList();
-//                            if ( ltm.isUpdate() || ltm.isMerge() ) {
-//                                //FIXME(s3lph): Wrong index
-//                                sourceExpr = IntStream.range( 0, sourceExpr.size() )
-//                                        .mapToObj( i -> rexBuilder.makeFieldAccess( rexBuilder.makeInputRef( newProject, i ), 0 ) )
-//                                        .collect( Collectors.toList() );
-//                            }
-//                            final {@link AlgNode} replacement = LogicalModify.create(
-//                                    ltm.getTable(),
-//                                    transaction.getCatalogReader(),
-//                                    newProject,
-//                                    ltm.getOperation(),
-//                                    ltm.getUpdateColumnList(),
-//                                    sourceExpr,
-//                                    ltm.isFlattened()
-//                            );
+
                             final AlgNode replacement = ltm.copy( ltm.getTraitSet(), Collections.singletonList( newProject ) );
                             // Schedule the index deletions
                             if ( !ltm.isInsert() ) {

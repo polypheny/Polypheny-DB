@@ -213,7 +213,7 @@ public class CypherReturnClause extends CypherClause {
 
 
     public List<String> getSortFields() {
-        return order.stream().map( o -> o.getExpression().getName() ).collect( Collectors.toList() );
+        return order.stream().map( o -> o.getExpression().getName() ).toList();
     }
 
 }

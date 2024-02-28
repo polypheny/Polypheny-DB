@@ -16,11 +16,12 @@
 
 package org.polypheny.db.misc;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -117,19 +118,19 @@ public class DataMigratorTest {
                             ImmutableList.of(
                                     new Object[]{ 1, 5, "foo" } ) );
 
-                    Assertions.assertEquals( 2, Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).size() );
+                    assertEquals( 2, Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).size() );
 
                     // Remove tvarchar column placement on initial storeId tprimary/tinteger
                     statement.executeUpdate( "ALTER TABLE \"datamigratortest\" MODIFY PLACEMENT (tinteger) ON STORE \"hsqldb\"" );
 
-                    Assertions.assertEquals( 2, Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).size() );
+                    assertEquals( 2, Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).size() );
 
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM datamigratortest" ),
                             ImmutableList.of(
                                     new Object[]{ 1, 5, "foo" } ) );
 
-                    Assertions.assertEquals( 2, Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).size() );
+                    assertEquals( 2, Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).size() );
 
                     // Add tinteger column placement on storeId 1
                     statement.executeUpdate( "ALTER TABLE \"datamigratortest\" MODIFY PLACEMENT (tinteger,tvarchar) ON STORE \"store1\"" );

@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
@@ -122,7 +121,7 @@ public class RangePartitionManager extends AbstractPartitionManager {
                 lowerBound = temp;
 
                 // Rearrange List values lower < upper
-                partitionGroupQualifiers.set( i, Stream.of( partitionGroupQualifiers.get( i ).get( 1 ), partitionGroupQualifiers.get( i ).get( 0 ) ).collect( Collectors.toList() ) );
+                partitionGroupQualifiers.set( i, Stream.of( partitionGroupQualifiers.get( i ).get( 1 ), partitionGroupQualifiers.get( i ).get( 0 ) ).toList() );
 
             } else if ( upperBound == lowerBound ) {
                 throw new GenericRuntimeException( "No Range specified. Lower and upper bound are equal:" + lowerBound + " = " + upperBound );

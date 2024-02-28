@@ -17,7 +17,6 @@
 package org.polypheny.db.processing.util;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Value;
@@ -34,7 +33,7 @@ public class ProposedImplementations {
 
 
     public List<ProposedRoutingPlan> getRoutingPlans() {
-        return plans.stream().map( Plan::proposedRoutingPlan ).collect( Collectors.toList() );
+        return plans.stream().map( Plan::proposedRoutingPlan ).toList();
     }
 
 }

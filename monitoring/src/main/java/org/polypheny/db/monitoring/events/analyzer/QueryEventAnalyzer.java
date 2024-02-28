@@ -19,7 +19,6 @@ package org.polypheny.db.monitoring.events.analyzer;
 
 import java.util.Collections;
 import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
@@ -46,7 +45,7 @@ public class QueryEventAnalyzer {
                 .physicalQueryClass( queryEvent.getPhysicalQueryClass() )
                 .availableColumnsWithTable( queryEvent.getLogicalQueryInformation().getAvailableColumnsWithTable() )
                 .indexSize( queryEvent.getIndexSize() )
-                .accessedPartitions( queryEvent.getAccessedPartitions() != null ? queryEvent.getAccessedPartitions().values().stream().flatMap( Set::stream ).collect( Collectors.toList() ) : Collections.emptyList() )
+                .accessedPartitions( queryEvent.getAccessedPartitions() != null ? queryEvent.getAccessedPartitions().values().stream().flatMap( Set::stream ).toList() : Collections.emptyList() )
                 .build();
     }
 

@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -114,7 +113,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         LogicalTable table = oTable.get();
 
         List<LogicalColumn> columns = catalog.getSnapshot().rel().getColumns( table.id );
-        List<Long> columnIds = columns.stream().map( c -> c.id ).collect( Collectors.toList() );
+        List<Long> columnIds = columns.stream().map( c -> c.id ).toList();
 
         // Make sure that this table can be modified
         if ( !table.modifiable ) {
@@ -215,7 +214,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
                     whereClauseValues = whereClauseVisitor.getValues().stream()
                             .map( PolyValue::toJson )
-                            .collect( Collectors.toList() );
+                            .toList();
                     if ( log.isDebugEnabled() ) {
                         log.debug( "Found Where Clause Values: {}", whereClauseValues );
                     }
@@ -351,7 +350,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 String columnFieldName = (modify.getInput()).getTupleType().getFields().get( j ).getName();
 
                 // Retrieve columnId of fieldName and map it to its fieldList location of INSERT Stmt
-                int columnIndex = columns.stream().map( c -> c.name ).collect( Collectors.toList() ).indexOf( columnFieldName );
+                int columnIndex = columns.stream().map( c -> c.name ).toList().indexOf( columnFieldName );
 
                 // Determine location of partitionColumn in fieldList
                 if ( columnIds.get( columnIndex ) == property.partitionColumnId ) {
