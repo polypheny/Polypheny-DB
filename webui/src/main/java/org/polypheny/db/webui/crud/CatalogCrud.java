@@ -192,15 +192,11 @@ public class CatalogCrud {
 
 
     private String getIconName( DataModel dataModel ) {
-        switch ( dataModel ) {
-            case RELATIONAL:
-                return "cui-layers";
-            case DOCUMENT:
-                return "cui-folder";
-            case GRAPH:
-                return "cui-graph";
-        }
-        throw new UnsupportedOperationException( "Namespace type is not supported." );
+        return switch ( dataModel ) {
+            case RELATIONAL -> "cui-layers";
+            case DOCUMENT -> "cui-folder";
+            case GRAPH -> "cui-graph";
+        };
     }
 
 

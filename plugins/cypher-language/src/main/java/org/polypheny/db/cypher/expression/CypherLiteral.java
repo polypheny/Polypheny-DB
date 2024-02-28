@@ -105,31 +105,23 @@ public class CypherLiteral extends CypherExpression {
     @Override
     public PolyValue getComparable() {
 
-        switch ( literalType ) {
-            case TRUE:
-                return PolyBoolean.of( true );
-            case FALSE:
-                return PolyBoolean.of( false );
-            case NULL:
-                return null;
-            case LIST:
+        return switch ( literalType ) {
+            case TRUE -> PolyBoolean.of( true );
+            case FALSE -> PolyBoolean.of( false );
+            case NULL -> null;
+            case LIST -> {
                 List<PolyValue> list = listValue.stream().map( CypherExpression::getComparable ).toList();
-                return new PolyList<>( list );
-            case MAP:
+                yield new PolyList<>( list );
+            }
+            case MAP -> {
                 Map<PolyString, PolyValue> map = mapValue.entrySet().stream().collect( Collectors.toMap( e -> PolyString.of( e.getKey() ), e -> e.getValue().getComparable() ) );
-                return new PolyDictionary( map );
-            case STRING:
-            case HEX:
-            case OCTAL:
-                return PolyString.of( (String) value );
-            case DOUBLE:
-                return PolyDouble.of( (Double) value );
-            case DECIMAL:
-                return PolyInteger.of( (Integer) value );
-            case STAR:
-                throw new UnsupportedOperationException();
-        }
-        throw new UnsupportedOperationException();
+                yield new PolyDictionary( map );
+            }
+            case STRING, HEX, OCTAL -> PolyString.of( (String) value );
+            case DOUBLE -> PolyDouble.of( (Double) value );
+            case DECIMAL -> PolyInteger.of( (Integer) value );
+            case STAR -> throw new UnsupportedOperationException();
+        };
     }
 
 

@@ -69,30 +69,19 @@ public enum ExcelFieldType {
 
 
     public static ExcelFieldType getExcelFieldType( PolyType type ) {
-        switch ( type ) {
-            case BOOLEAN:
-                return ExcelFieldType.BOOLEAN;
-            case VARBINARY:
-                return ExcelFieldType.BYTE;
-            case INTEGER:
-                return ExcelFieldType.INT;
-            case BIGINT:
-                return ExcelFieldType.LONG;
-            case REAL:
-                return ExcelFieldType.FLOAT;
-            case DOUBLE:
-                return ExcelFieldType.DOUBLE;
-            case VARCHAR:
-                return ExcelFieldType.STRING;
-            case DATE:
-                return ExcelFieldType.DATE;
-            case TIME:
-                return ExcelFieldType.TIME;
-            case TIMESTAMP:
-                return ExcelFieldType.TIMESTAMP;
-            default:
-                throw new GenericRuntimeException( "Unsupported datatype: " + type.name() );
-        }
+        return switch ( type ) {
+            case BOOLEAN -> ExcelFieldType.BOOLEAN;
+            case VARBINARY -> ExcelFieldType.BYTE;
+            case INTEGER -> ExcelFieldType.INT;
+            case BIGINT -> ExcelFieldType.LONG;
+            case REAL -> ExcelFieldType.FLOAT;
+            case DOUBLE -> ExcelFieldType.DOUBLE;
+            case VARCHAR -> ExcelFieldType.STRING;
+            case DATE -> ExcelFieldType.DATE;
+            case TIME -> ExcelFieldType.TIME;
+            case TIMESTAMP -> ExcelFieldType.TIMESTAMP;
+            default -> throw new GenericRuntimeException( "Unsupported datatype: " + type.name() );
+        };
     }
 
 

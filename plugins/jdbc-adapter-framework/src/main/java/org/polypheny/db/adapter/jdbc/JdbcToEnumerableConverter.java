@@ -453,19 +453,6 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
     private Method getMethod( PolyType polyType, boolean nullable, boolean offset ) {
         return switch ( polyType ) {
             case ARRAY -> BuiltInMethod.JDBC_DEEP_ARRAY_TO_LIST.method;
-            /*case DATE -> (nullable
-                    ? BuiltInMethod.DATE_TO_LONG_OPTIONAL
-                    : BuiltInMethod.DATE_TO_LONG).method;
-            case TIME -> (nullable
-                    ? BuiltInMethod.TIME_TO_LONG_OPTIONAL
-                    : BuiltInMethod.TIME_TO_LONG).method;
-            case TIMESTAMP -> (nullable
-                    ? (offset
-                    ? BuiltInMethod.TIMESTAMP_TO_LONG_OPTIONAL_OFFSET
-                    : BuiltInMethod.DATE_TO_LONG_OPTIONAL)
-                    : (offset
-                            ? BuiltInMethod.TIMESTAMP_TO_LONG_OFFSET
-                            : BuiltInMethod.DATE_TO_LONG)).method;*/
             default -> throw new AssertionError( polyType + ":" + nullable );
         };
     }

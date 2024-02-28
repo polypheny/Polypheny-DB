@@ -132,7 +132,7 @@ public class GoogleSheetEnumerator<E> implements Enumerator<E> {
             }
             switch ( fieldType ) {
                 case BOOLEAN:
-                    if ( string.length() == 0 ) {
+                    if ( string.isEmpty() ) {
                         return null;
                     }
                     return Boolean.parseBoolean( string );

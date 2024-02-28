@@ -385,20 +385,14 @@ public class RequestParser {
             return null;
         }
 
-        switch ( function ) {
-            case "COUNT":
-                return OperatorRegistry.getAgg( OperatorName.COUNT );
-            case "MAX":
-                return OperatorRegistry.getAgg( OperatorName.MAX );
-            case "MIN":
-                return OperatorRegistry.getAgg( OperatorName.MIN );
-            case "AVG":
-                return OperatorRegistry.getAgg( OperatorName.AVG );
-            case "SUM":
-                return OperatorRegistry.getAgg( OperatorName.SUM );
-            default:
-                return null;
-        }
+        return switch ( function ) {
+            case "COUNT" -> OperatorRegistry.getAgg( OperatorName.COUNT );
+            case "MAX" -> OperatorRegistry.getAgg( OperatorName.MAX );
+            case "MIN" -> OperatorRegistry.getAgg( OperatorName.MIN );
+            case "AVG" -> OperatorRegistry.getAgg( OperatorName.AVG );
+            case "SUM" -> OperatorRegistry.getAgg( OperatorName.SUM );
+            default -> null;
+        };
     }
 
 

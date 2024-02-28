@@ -365,18 +365,11 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         long namespaceId = request.namespaceId != null ? request.namespaceId : Catalog.defaultNamespaceId;
         LogicalNamespace namespace = Catalog.snapshot().getNamespace( namespaceId ).orElseThrow();
 
-        List<? extends LogicalEntity> entities = List.of();
-        switch ( namespace.dataModel ) {
-            case RELATIONAL:
-                entities = Catalog.snapshot().rel().getTables( namespace.id, null );
-                break;
-            case DOCUMENT:
-                entities = Catalog.snapshot().doc().getCollections( namespace.id, null );
-                break;
-            case GRAPH:
-                entities = Catalog.snapshot().graph().getGraphs( null );
-                break;
-        }
+        List<? extends LogicalEntity> entities = switch ( namespace.dataModel ) {
+            case RELATIONAL -> Catalog.snapshot().rel().getTables( namespace.id, null );
+            case DOCUMENT -> Catalog.snapshot().doc().getCollections( namespace.id, null );
+            case GRAPH -> Catalog.snapshot().graph().getGraphs( null );
+        };
 
         List<DbTable> result = new ArrayList<>();
         for ( LogicalEntity e : entities ) {

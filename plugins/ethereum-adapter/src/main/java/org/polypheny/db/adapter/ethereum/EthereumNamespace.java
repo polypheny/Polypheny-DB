@@ -69,18 +69,17 @@ public class EthereumNamespace extends AbstractNamespace implements Schema {
     private AlgDataType sqlType( AlgDataTypeFactory typeFactory, PolyType dataTypeName, Integer length, Integer scale, String typeString ) {
         // Fall back to ANY if type is unknown
         final PolyType polyType = Util.first( dataTypeName, PolyType.ANY );
-        switch ( polyType ) {
-            case ARRAY:
-                AlgDataType component = null;
-                if ( typeString != null && typeString.endsWith( " ARRAY" ) ) {
-                    // E.g. hsqldb gives "INTEGER ARRAY", so we deduce the component type "INTEGER".
-                    final String remaining = typeString.substring( 0, typeString.length() - " ARRAY".length() );
-                    component = parseTypeString( typeFactory, remaining );
-                }
-                if ( component == null ) {
-                    component = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
-                }
-                return typeFactory.createArrayType( component, -1 );
+        if ( polyType == PolyType.ARRAY ) {
+            AlgDataType component = null;
+            if ( typeString != null && typeString.endsWith( " ARRAY" ) ) {
+                // E.g. hsqldb gives "INTEGER ARRAY", so we deduce the component type "INTEGER".
+                final String remaining = typeString.substring( 0, typeString.length() - " ARRAY".length() );
+                component = parseTypeString( typeFactory, remaining );
+            }
+            if ( component == null ) {
+                component = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
+            }
+            return typeFactory.createArrayType( component, -1 );
         }
         if ( scale != null && length != null && length >= 0 && scale >= 0 && polyType.allowsPrecScale( true, true ) ) {
             return typeFactory.createPolyType( polyType, length, scale );
