@@ -942,7 +942,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                             .toList();
                     proposedPlans.addAll( plans );
                 } catch ( Throwable e ) {
-                    log.warn( String.format( "Router: %s was not able to route the query.", router.getClass().getSimpleName() ) ); // this should not be necessary but some of the routers fail loudly, which makes this necessary todo dl
+                    log.warn( String.format( "Router: %s was not able to route the query.", router.getClass().getSimpleName() ) );
                 }
             }
 
@@ -1263,7 +1263,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 Entity entity = alg.getEntity();
 
                 if ( entity == null ) {
-                    // todo dl: remove after RowType refactor
                     return accessedPartitions;
                 }
 

@@ -144,8 +144,8 @@ public class NameMatchers {
         }
 
 
-        public List<String> toStar( List<String> names ) { // same as in SqlLiteral todo dl deduplicate
-            return names.stream().map( s -> s.equals( "" )
+        public List<String> toStar( List<String> names ) {
+            return names.stream().map( s -> s.isEmpty()
                     ? "*"
                     : s.equals( "*" )
                             ? "\"*\""

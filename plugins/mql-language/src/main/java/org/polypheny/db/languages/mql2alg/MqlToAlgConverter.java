@@ -468,7 +468,6 @@ public class MqlToAlgConverter {
                 directUpdates.put( nodeEntry.getKey(), nodeEntry.getValue() );
                 if ( updateOp == UpdateOperation.RENAME ) {
                     throw new GenericRuntimeException( "You cannot rename a fixed field in an update, as this is a ddl" );
-                    // TODO DL maybe find way to trigger ddl later
                 }
             } else {
                 String childName = null;

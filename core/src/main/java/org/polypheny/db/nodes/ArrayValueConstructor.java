@@ -17,6 +17,6 @@
 package org.polypheny.db.nodes;
 
 public interface ArrayValueConstructor {
-    // todo dl maybe solve via kind...
+
 
 }

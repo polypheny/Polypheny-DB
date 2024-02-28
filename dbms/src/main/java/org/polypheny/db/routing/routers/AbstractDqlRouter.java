@@ -211,7 +211,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
             // Check if table is even horizontal partitioned
 
-            if ( catalog.getSnapshot().alloc().getPartitionsFromLogical( oLogicalTable.get().id ).size() > 1 ) { // todo dl replace vert atm
+            if ( catalog.getSnapshot().alloc().getPartitionsFromLogical( oLogicalTable.get().id ).size() > 1 ) {
                 return handleHorizontalPartitioning( node, oLogicalTable.get(), builders, context );
             } else if ( catalog.getSnapshot().alloc().getPlacementsFromLogical( oLogicalTable.get().id ).size() > 1 ) { // At the moment multiple strategies
                 return handleVerticalPartitioningOrReplication( node, oLogicalTable.get(), builders, context );
@@ -228,7 +228,6 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
 
     private List<RoutedAlgBuilder> handleRelationalOnGraphScan( AlgNode node, LogicalEntity logicalTable, List<RoutedAlgBuilder> builders, RoutingContext context ) {
-        // todo dl: remove after RowType refactor
         AlgBuilder algBuilder = AlgBuilder.create( context.getStatement() );
         RexBuilder rexBuilder = algBuilder.getRexBuilder();
 

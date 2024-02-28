@@ -635,4 +635,34 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     }
 
 
+    @Override
+    public int hashCode() {
+        int result = namespaces != null ? namespaces.hashCode() : 0;
+        result = 31 * result + (namespaceNames != null ? namespaceNames.hashCode() : 0);
+        result = 31 * result + (namespaceCaseSensitive != null ? namespaceCaseSensitive.hashCode() : 0);
+        result = 31 * result + (tables != null ? tables.hashCode() : 0);
+        result = 31 * result + (views != null ? views.hashCode() : 0);
+        result = 31 * result + (tableNames != null ? tableNames.hashCode() : 0);
+        result = 31 * result + (tablesNamespace != null ? tablesNamespace.hashCode() : 0);
+        result = 31 * result + (tableColumns != null ? tableColumns.hashCode() : 0);
+        result = 31 * result + (columns != null ? columns.hashCode() : 0);
+        result = 31 * result + (columnNames != null ? columnNames.hashCode() : 0);
+        result = 31 * result + (keys != null ? keys.hashCode() : 0);
+        result = 31 * result + (tableKeys != null ? tableKeys.hashCode() : 0);
+        result = 31 * result + (columnsKeys != null ? columnsKeys.hashCode() : 0);
+        result = 31 * result + (index != null ? index.hashCode() : 0);
+        result = 31 * result + (constraints != null ? constraints.hashCode() : 0);
+        result = 31 * result + (foreignKeys != null ? foreignKeys.hashCode() : 0);
+        result = 31 * result + (primaryKeys != null ? primaryKeys.hashCode() : 0);
+        result = 31 * result + (keyToIndexes != null ? keyToIndexes.hashCode() : 0);
+        result = 31 * result + (tableColumnIdColumn != null ? tableColumnIdColumn.hashCode() : 0);
+        result = 31 * result + (tableColumnNameColumn != null ? tableColumnNameColumn.hashCode() : 0);
+        result = 31 * result + (tableIdColumnNameColumn != null ? tableIdColumnNameColumn.hashCode() : 0);
+        result = 31 * result + (tableConstraints != null ? tableConstraints.hashCode() : 0);
+        result = 31 * result + (tableForeignKeys != null ? tableForeignKeys.hashCode() : 0);
+        result = 31 * result + (nodes != null ? nodes.hashCode() : 0);
+        result = 31 * result + (connectedViews != null ? connectedViews.hashCode() : 0);
+        return result;
+    }
+
 }

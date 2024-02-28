@@ -759,7 +759,7 @@ public class CypherToAlgConverter {
 
                 List<Pair<PolyString, RexNode>> nodesAndEdges = Stream.concat( newNodes.stream(), newEdges.stream() ).collect( Collectors.toList() );
 
-                AtomicLong id = new AtomicLong(); // todo dl maybe move into values
+                AtomicLong id = new AtomicLong();
                 List<PolyString> adjustedNames = Pair.left( nodesAndEdges ).stream()
                         .map( n -> Objects.requireNonNullElseGet( n.value, () -> "EXPR$" + id.getAndIncrement() ) )
                         .map( Object::toString )

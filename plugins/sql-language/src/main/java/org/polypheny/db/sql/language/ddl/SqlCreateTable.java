@@ -245,7 +245,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
                                 partitionGroupNamesList.stream().map( n -> (Identifier) n ).collect( Collectors.toList() ),
                                 numPartitionGroups,
                                 numPartitions,
-                                partitionQualifierList.stream().map( l -> l.stream().map( e -> (Node) e ).collect( Collectors.toList() ) ).collect( Collectors.toList() ), // TODO DL, there needs to be a better way...
+                                partitionQualifierList.stream().map( l -> l.stream().map( e -> (Node) e ).toList() ).toList(),
                                 rawPartitionInfo ),
                         stores,
                         statement );

@@ -914,7 +914,7 @@ public class DbmsMeta implements ProtobufMeta {
                     } else {
                         values.get( i ).add( toPolyValue( TypedValue.fromProto( v ) ) );
                     }
-                    types.add( (int) i, toPolyAlgType( TypedValue.fromProto( v ), TYPE_FACTORY ) ); // todo dl optimize
+                    types.add( (int) i, toPolyAlgType( TypedValue.fromProto( v ), TYPE_FACTORY ) );
                 }
             }
 

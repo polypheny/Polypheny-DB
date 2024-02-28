@@ -108,21 +108,12 @@ public class SqlArrayValueConstructor extends SqlMultisetValueConstructor implem
         List<Object> list = new ArrayList<>( operands.size() );
         for ( SqlNode node : operands ) {
             if ( node instanceof SqlLiteral ) {
-                Object value;
-                switch ( ((SqlLiteral) node).getTypeName() ) {
-                    case CHAR:
-                    case VARCHAR:
-                        value = ((SqlLiteral) node).toValue();
-                        break;
-                    case BOOLEAN:
-                        value = ((SqlLiteral) node).booleanValue();
-                        break;
-                    case DECIMAL:
-                        value = ((SqlLiteral) node).bigDecimalValue();
-                        break;
-                    default:
-                        value = ((SqlLiteral) node).getValue();
-                }
+                Object value = switch ( ((SqlLiteral) node).getTypeName() ) {
+                    case CHAR, VARCHAR -> ((SqlLiteral) node).toValue();
+                    case BOOLEAN -> ((SqlLiteral) node).booleanValue();
+                    case DECIMAL -> ((SqlLiteral) node).bigDecimalValue();
+                    default -> ((SqlLiteral) node).getValue();
+                };
                 list.add( value );
             } else if ( node instanceof SqlCall ) {
                 list.add( createListForArrays( ((SqlCall) node).getSqlOperandList() ) );

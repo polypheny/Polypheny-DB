@@ -19,7 +19,6 @@ package org.polypheny.db.sql.language.validate;
 import com.google.common.collect.ImmutableList;
 import java.util.Objects;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.sql.language.SqlNode;
 
 
@@ -47,12 +46,7 @@ class SchemaNamespace extends AbstractNamespace {
 
     @Override
     protected AlgDataType validateImpl( AlgDataType targetRowType ) {
-        final AlgDataTypeFactory.Builder builder = validator.getTypeFactory().builder();
-        /*for ( LogicalTable table : validator.snapshot.getLogicalTables( List.of( names.get( 0 ), names.get( 1 ) ) ) ) {
-            //final List<String> names1 = moniker.getFullyQualifiedNames();
-            builder.add( Util.last( names1 ), null, table.getRowType() );
-        }*/// todo dl
-        return targetRowType; //builder.build();
+        return targetRowType;
     }
 
 

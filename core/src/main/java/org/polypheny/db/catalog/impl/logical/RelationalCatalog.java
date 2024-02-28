@@ -64,7 +64,6 @@ import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 
-// todo dl add object not null, synchronize
 @Value
 @SuperBuilder(toBuilder = true)
 public class RelationalCatalog implements PolySerializable, LogicalRelationalCatalog {

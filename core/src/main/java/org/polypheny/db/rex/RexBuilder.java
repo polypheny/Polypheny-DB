@@ -803,53 +803,6 @@ public class RexBuilder {
     public RexLiteral makeLiteral( PolyValue o, AlgDataType type, PolyType typeName ) {
         // All literals except NULL have NOT NULL types.
         type = typeFactory.createTypeWithNullability( type, o == null );
-
-        /*int p;
-        switch ( typeName ) {
-            case CHAR:
-                // Character literals must have a charset and collation. Populate from the type if necessary.
-                assert o instanceof NlsString;
-                NlsString nlsString = (NlsString) o;
-                if ( (nlsString.getCollation() == null) || (nlsString.getCharset() == null) ) {
-                    assert type.getPolyType() == PolyType.CHAR;
-                    assert type.getCharset().name() != null;
-                    assert type.getCollation() != null;
-                    //o = new NlsString( nlsString.getValue(), type.getCharset().name(), type.getCollation() );
-                    o = new PolyString( nlsString.getValue() );
-                }
-                break;
-            case TIME:
-                assert o instanceof TimeString;
-                p = type.getPrecision();
-                if ( p == AlgDataType.PRECISION_NOT_SPECIFIED ) {
-                    p = 0;
-                }
-                o = ((TimeString) o).round( p );
-                break;
-            case TIME_WITH_LOCAL_TIME_ZONE:
-                assert o instanceof TimeString;
-                p = type.getPrecision();
-                if ( p == AlgDataType.PRECISION_NOT_SPECIFIED ) {
-                    p = 0;
-                }
-                o = ((TimeString) o).round( p );
-                break;
-            case TIMESTAMP:
-                assert o instanceof TimestampString;
-                p = type.getPrecision();
-                if ( p == AlgDataType.PRECISION_NOT_SPECIFIED ) {
-                    p = 0;
-                }
-                o = ((TimestampString) o).round( p );
-                break;
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                assert o instanceof TimestampString;
-                p = type.getPrecision();
-                if ( p == AlgDataType.PRECISION_NOT_SPECIFIED ) {
-                    p = 0;
-                }
-                o = ((TimestampString) o).round( p );
-        }*/
         return new RexLiteral( o, type, typeName );
     }
 
@@ -1261,20 +1214,12 @@ public class RexBuilder {
                 AlgDataType algType = typeFactory.createPolyType( type.getPolyType(), type.getPrecision() );
                 type = typeFactory.createTypeWithCharsetAndCollation( algType, poly.asString().charset, type.getCollation() );
                 literal = makeLiteral( poly.asString(), type, type.getPolyType() );
-                if ( allowCast ) {
-                    return makeCast( type, literal );
-                } else {
-                    return literal;
-                }
+                return allowCast ? makeCast( type, literal ) : literal;
             case BINARY:
                 return makeLiteral( padRight( poly.asBinary(), type.getPrecision() ), type, type.getPolyType() );
             case VARBINARY:
                 literal = makeLiteral( poly, type, type.getPolyType() );
-                if ( allowCast ) {
-                    return makeCast( type, literal );
-                } else {
-                    return literal;
-                }
+                return allowCast ? makeCast( type, literal ) : literal;
             case FILE:
                 return makeLiteral( poly, type, type.getPolyType() );
             case TINYINT:

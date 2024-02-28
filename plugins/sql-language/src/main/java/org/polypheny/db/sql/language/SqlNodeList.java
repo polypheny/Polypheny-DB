@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -72,7 +71,7 @@ public class SqlNodeList extends SqlNode implements NodeList {
         super( pos );
         list = new ArrayList<>( collection );
         // todo dl this is dangerous
-        sqlList = collection.stream().map( e -> (SqlNode) e ).collect( Collectors.toList() );
+        sqlList = collection.stream().map( e -> (SqlNode) e ).toList();
     }
 
 

@@ -69,9 +69,7 @@ public class DocumentAggregateToAggregateRule extends AlgOptRule {
         List<RexNode> nodes = new ArrayList<>();
         List<String> names = new ArrayList<>();
         RexIndexRef parent = builder.getRexBuilder().makeInputRef( alg.getInput(), 0 );
-        // todo dl fix
-        /*nodes.add( parent );
-        names.add( alg.getInput().getRowType().getFieldNames().get( 0 ) );*/
+
         ImmutableBitSet groupSet = ImmutableBitSet.of();
         if ( alg.getGroup().isPresent() ) {
             groupSet = ImmutableBitSet.of( List.of( 0 ) );

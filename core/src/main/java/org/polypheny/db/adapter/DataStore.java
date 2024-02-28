@@ -64,8 +64,7 @@ public abstract class DataStore<S extends AdapterCatalog> extends Adapter<S> imp
         public List<String> getColumnNames() {
             List<String> columnNames = new ArrayList<>( columnIds.size() );
             for ( long columnId : columnIds ) {
-                // columnNames.add( Catalog.getInstance().getLogicalRel( columnNames ).getColumn( columnId ).name );
-                // todo dl
+                columnNames.add( Catalog.getInstance().getSnapshot().rel().getColumn( columnId ).orElseThrow().name );
             }
             return columnNames;
         }

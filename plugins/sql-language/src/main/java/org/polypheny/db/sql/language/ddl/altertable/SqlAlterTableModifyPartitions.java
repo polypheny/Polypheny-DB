@@ -156,14 +156,6 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
             }
         }
 
-        // Check if in-memory dataPartitionPlacement Map should even be changed and therefore start costly partitioning
-        // Avoid unnecessary partitioning when the placement is already partitioned in the same way it has been specified
-        /*if ( tempPartitionList.equals( catalog.getSnapshot().alloc().getPartitionGroupsOnDataPlacement( storeId, tableId ) ) ) {
-            log.info( "The data placement for table: '{}' on storeId: '{}' already contains all specified partitions of statement: {}",
-                    table.name, storeName, partitionGroupList );
-            return;
-        }*/ // todo dl
-        // Update
         DdlManager.getInstance().modifyPartitionPlacement(
                 table,
                 partitionList,

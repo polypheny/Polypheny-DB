@@ -675,7 +675,6 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                         ? PolyOperandTypeChecker.Consistency.NONE
                         : op.getOperandTypeChecker().getConsistency();
         if ( op.getOperatorName() == OperatorName.CROSS_MODEL_ITEM ) {
-            // todo dl, check if this is okey
             RexNode target = cx.convertExpression( call.operand( 0 ) );
             return rexBuilder.makeCall(
                     rexBuilder.getTypeFactory().createPolyType( PolyType.VARCHAR, 255 ),

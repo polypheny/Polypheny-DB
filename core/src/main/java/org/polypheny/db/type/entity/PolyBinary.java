@@ -29,7 +29,7 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import java.io.IOException;
 import java.util.Arrays;
-import lombok.EqualsAndHashCode;
+import java.util.Objects;
 import lombok.Value;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -40,7 +40,6 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BitString;
 import org.polypheny.db.util.ConversionUtil;
 
-@EqualsAndHashCode(callSuper = true)
 @Value
 public class PolyBinary extends PolyValue {
 
@@ -149,6 +148,36 @@ public class PolyBinary extends PolyValue {
     @Override
     public @NotNull Long deriveByteSize() {
         return (long) (value == null ? 1 : value.getBytes().length);
+    }
+
+
+    @Override
+    public boolean equals( Object o ) {
+        if ( this == o ) {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() ) {
+            return false;
+        }
+        if ( !super.equals( o ) ) {
+            return false;
+        }
+
+        PolyBinary that = (PolyBinary) o;
+
+        if ( Objects.equals( value, that.value ) ) {
+            return true;
+        }
+
+        return Objects.equals( value.toBase64String().toUpperCase(), that.value.toBase64String().toUpperCase() );
+    }
+
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (value != null ? value.hashCode() : 0);
+        return result;
     }
 
 

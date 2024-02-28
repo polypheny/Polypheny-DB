@@ -150,6 +150,14 @@ public class PolyDate extends PolyTemporal {
 
 
     @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (millisSinceEpoch != null ? millisSinceEpoch.hashCode() : 0);
+        return result;
+    }
+
+
+    @Override
     public String toString() {
         return toJson();
     }

@@ -1248,7 +1248,6 @@ public class VolcanoPlanner extends AbstractAlgOptPlanner {
 
     @Override
     public void addRuleDuringRuntime( AlgOptRule rule ) {
-        // we register dynamically so we might to register twice todo dl maybe add convention cache for faster aboard
         if ( getRuleByDescription( rule.toString() ) != null || !addRule( rule ) ) {
             return;
         }

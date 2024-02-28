@@ -139,7 +139,7 @@ public class HttpInterfacePlugin extends PolyPlugin {
                 } ) );
             } ).start( port );*/
 
-            this.server = Javalin.create( config -> {
+            server = Javalin.create( config -> {
                 config.jsonMapper( new JavalinJackson( new ObjectMapper() {
                     {
                         setSerializationInclusion( JsonInclude.Include.NON_NULL );

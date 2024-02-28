@@ -274,79 +274,38 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
         if ( value == null || value.isNull() ) {
             return true;
         }
-        switch ( typeName ) {
-            case BOOLEAN:
+        return switch ( typeName ) {
+            case BOOLEAN ->
                 // Unlike SqlLiteral, we do not allow boolean null.
-                return value.isBoolean();
-            case NULL:
-                return false; // value should have been null
-            case INTEGER: // not allowed -- use Decimal
-            case TINYINT:
-            case SMALLINT:
-            case DECIMAL:
-            case DOUBLE:
-            case FLOAT:
-            case REAL:
-            case BIGINT:
-                return value.isNumber();
-            case DATE:
-                return value.isDate();
-            case TIME:
-            case TIME_WITH_LOCAL_TIME_ZONE:
-                return value.isTime();
-            case TIMESTAMP:
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                return value.isTimestamp();
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_MONTH:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
+                    value.isBoolean();
+            case NULL -> false; // value should have been null
+            // not allowed -- use Decimal
+            case INTEGER, TINYINT, SMALLINT, DECIMAL, DOUBLE, FLOAT, REAL, BIGINT -> value.isNumber();
+            case DATE -> value.isDate();
+            case TIME, TIME_WITH_LOCAL_TIME_ZONE -> value.isTime();
+            case TIMESTAMP, TIMESTAMP_WITH_LOCAL_TIME_ZONE -> value.isTimestamp();
+            case INTERVAL_YEAR, INTERVAL_YEAR_MONTH, INTERVAL_MONTH, INTERVAL_DAY, INTERVAL_DAY_HOUR, INTERVAL_DAY_MINUTE, INTERVAL_DAY_SECOND, INTERVAL_HOUR, INTERVAL_HOUR_MINUTE, INTERVAL_HOUR_SECOND, INTERVAL_MINUTE, INTERVAL_MINUTE_SECOND, INTERVAL_SECOND ->
                 // The value of a DAY-TIME interval (whatever the start and end units, even say HOUR TO MINUTE) is in milliseconds (perhaps fractional milliseconds). The value of a YEAR-MONTH interval is in months.
-                return value.isInterval();
-            case VARBINARY: // not allowed -- use Binary
-                if ( strict ) {
-                    throw Util.unexpected( typeName );
-                }
-                // fall through
-            case BINARY:
-                return value.isBinary();
-            case VARCHAR:
-            case CHAR:
+                    value.isInterval();
+            case VARBINARY -> // not allowed -- use Binary
+                    value.isBinary();
+            case BINARY -> value.isBinary();
+            case VARCHAR, CHAR ->
                 // A SqlLiteral's charset and collation are optional; not so a RexLiteral.
-                return value.isString();
-            case SYMBOL:
-                return value.isSymbol();
-            case ROW:
-            case MULTISET:
-            case ARRAY:
-                return value.isList();
-            case ANY:
+                    value.isString();
+            case SYMBOL -> value.isSymbol();
+            case ROW, MULTISET, ARRAY -> value.isList();
+            case ANY ->
                 // Literal of type ANY is not legal. "CAST(2 AS ANY)" remains an integer literal surrounded by a cast function.
-                return false;
-            case GRAPH:
-                return value.isGraph();
-            case NODE:
-                return value.isNode();
-            case EDGE:
-                return value.isEdge();
-            case PATH:
-                return value.isPath();
-            case MAP:
-                return value.isMap();
-            case DOCUMENT:
-                return true;
-            default:
-                throw Util.unexpected( typeName );
-        }
+                    false;
+            case GRAPH -> value.isGraph();
+            case NODE -> value.isNode();
+            case EDGE -> value.isEdge();
+            case PATH -> value.isPath();
+            case MAP -> value.isMap();
+            case DOCUMENT -> true;
+            default -> throw Util.unexpected( typeName );
+        };
     }
 
 
@@ -537,6 +496,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
                 pw.print( 'R' );
                 break;
             case BINARY:
+            case VARBINARY:
                 assert value.isBinary();
                 pw.print( "X'" );
                 pw.print( value.asBinary().value );

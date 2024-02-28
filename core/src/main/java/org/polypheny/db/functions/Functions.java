@@ -404,7 +404,7 @@ public class Functions {
 
 
     /**
-     * Correlates the elements of two sequences based on a predicate. // todo dl use EnumerablesDefault
+     * Correlates the elements of two sequences based on a predicate.
      */
     @SuppressWarnings("unused")
     public static <TSource, TInner, TResult> Enumerable<TResult> thetaJoin(

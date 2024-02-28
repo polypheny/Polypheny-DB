@@ -714,5 +714,35 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     }
 
 
+    @Override
+    public int hashCode() {
+        int result = tables.hashCode();
+        result = 31 * result + columns.hashCode();
+        result = 31 * result + collections.hashCode();
+        result = 31 * result + graphs.hashCode();
+        result = 31 * result + allocs.hashCode();
+        result = 31 * result + partitions.hashCode();
+        result = 31 * result + groups.hashCode();
+        result = 31 * result + placements.hashCode();
+        result = 31 * result + allocsOnAdapters.hashCode();
+        result = 31 * result + logicalColumnToAlloc.hashCode();
+        result = 31 * result + placementColumns.hashCode();
+        result = 31 * result + adapterLogicalTablePlacements.hashCode();
+        result = 31 * result + adapterPartitionTableAlloc.hashCode();
+        result = 31 * result + logicalAllocs.hashCode();
+        result = 31 * result + logicalTablePlacementColumns.hashCode();
+        result = 31 * result + properties.hashCode();
+        result = 31 * result + logicalToPartitions.hashCode();
+        result = 31 * result + logicalToGroups.hashCode();
+        result = 31 * result + logicalToPlacements.hashCode();
+        result = 31 * result + placementPartitionToAlloc.hashCode();
+        result = 31 * result + adapterLogicalToPlacement.hashCode();
+        result = 31 * result + placementToPartitions.hashCode();
+        result = 31 * result + allocsOfPartitions.hashCode();
+        result = 31 * result + placementsOfColumn.hashCode();
+        result = 31 * result + partitionsOfGroup.hashCode();
+        result = 31 * result + entityPartitionNameToPartition.hashCode();
+        return result;
+    }
 
 }

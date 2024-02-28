@@ -101,7 +101,6 @@ public class SelectTest {
 
 
     @Test
-    @Tag("cottontailExcluded")
     public void nestedSelect() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -204,7 +203,7 @@ public class SelectTest {
     }
 
 
-    @Test // todo dl move
+    @Test
     public void getRowsTest() {
         Transaction trx = TestHelper.getInstance().getTransaction();
         org.polypheny.db.transaction.Statement statement = trx.createStatement();

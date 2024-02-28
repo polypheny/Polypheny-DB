@@ -448,7 +448,7 @@ public class Neo4jPlugin extends PolyPlugin {
 
 
         @Override
-        public List<FunctionalIndexInfo> getFunctionalIndexes( LogicalTable catalogTable ) {
+        public List<FunctionalIndexInfo> getFunctionalIndexes( LogicalTable table ) {
             return ImmutableList.of();
         }
 

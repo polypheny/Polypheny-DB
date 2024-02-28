@@ -23,7 +23,6 @@ import java.io.Serial;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
@@ -35,7 +34,6 @@ import org.polypheny.db.type.entity.numerical.PolyInteger;
 
 
 @Value
-@EqualsAndHashCode(callSuper = true)
 public class LogicalPrimaryKey extends LogicalKey {
 
     @Serialize

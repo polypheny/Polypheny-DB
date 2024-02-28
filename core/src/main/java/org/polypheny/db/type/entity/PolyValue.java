@@ -234,7 +234,6 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
 
 
     private static AlgDataType getAndDecreaseArrayDimensionIfNecessary( ArrayType type ) {
-        // depending on where the algtype is coming from it can be "ARRAY ARRAY ARRAY INTEGER" or "INTEGER ARRAY(2, 3)" todo dl find cause
         AlgDataType component = type.getComponentType();
         while ( component.getPolyType() == PolyType.ARRAY ) {
             component = component.getComponentType();

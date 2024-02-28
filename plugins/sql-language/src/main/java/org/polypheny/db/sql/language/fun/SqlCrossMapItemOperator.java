@@ -70,8 +70,7 @@ public class SqlCrossMapItemOperator extends SqlSpecialOperator {
 
     @Override
     public void validateCall( SqlCall call, SqlValidator validator, SqlValidatorScope scope, SqlValidatorScope operandScope ) {
-        //super.validateCall( call, validator, scope, operandScope );
-        // todo dl, rewrite whole validator logic
+        // empty on purpose
     }
 
 }

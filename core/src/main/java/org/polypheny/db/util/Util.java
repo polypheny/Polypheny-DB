@@ -710,7 +710,7 @@ public class Util {
     public static RuntimeException needToImplement( Object o ) {
         String description = null;
         if ( o != null ) {
-            description = o.getClass().toString() + ": " + o.toString();
+            description = o.getClass() + ": " + o;
         }
         throw new UnsupportedOperationException( description );
     }

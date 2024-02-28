@@ -33,9 +33,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.function.Function;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.QueryProvider;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataContext.SlimDataContext;
@@ -79,6 +79,7 @@ import org.polypheny.db.util.Util;
 /**
  * Unit test for {@link org.polypheny.db.rex.RexExecutorImpl}.
  */
+@Slf4j
 public class RexExecutorTest extends SqlLanguageDependent {
 
     public RexExecutorTest() {
@@ -217,7 +218,6 @@ public class RexExecutorTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // todo dl: Refactor
     public void testBinarySubstring() throws Exception {
         check( ( rexBuilder, executor ) -> {
             final List<RexNode> reducedValues = new ArrayList<>();
@@ -226,12 +226,12 @@ public class RexExecutorTest extends SqlLanguageDependent {
             final RexNode plus = rexBuilder.makeCall( OperatorRegistry.get( OperatorName.PLUS ), rexBuilder.makeExactLiteral( BigDecimal.ONE ), rexBuilder.makeExactLiteral( BigDecimal.ONE ) );
             RexLiteral four = rexBuilder.makeExactLiteral( BigDecimal.valueOf( 4 ) );
             final RexNode substring = rexBuilder.makeCall( OperatorRegistry.get( OperatorName.SUBSTRING ), binaryHello, plus, four );
-            executor.reduce( rexBuilder, ImmutableList.of( substring, plus ), reducedValues );
+            executor.reduce( rexBuilder, List.of( substring, plus ), reducedValues );
             assertThat( reducedValues.size(), equalTo( 2 ) );
             assertThat( reducedValues.get( 0 ), instanceOf( RexLiteral.class ) );
-            assertThat( ((RexLiteral) reducedValues.get( 0 )).getValue().toString(), equalTo( (Object) "656c6c6f" ) ); // substring('Hello world!, 2, 4)
+            assertThat( ((RexLiteral) reducedValues.get( 0 )).getValue().asString(), equalTo( PolyString.of( "56c6c6f".toUpperCase() ) ) ); // substring('Hello world!, 2, 4)
             assertThat( reducedValues.get( 1 ), instanceOf( RexLiteral.class ) );
-            assertThat( ((RexLiteral) reducedValues.get( 1 )).getValue(), equalTo( (Object) 2L ) );
+            assertThat( ((RexLiteral) reducedValues.get( 1 )).getValue().asNumber(), equalTo( PolyLong.of( 2L ) ) );
         } );
     }
 
@@ -309,7 +309,7 @@ public class RexExecutorTest extends SqlLanguageDependent {
             try {
                 runnable.join();
             } catch ( InterruptedException e ) {
-                e.printStackTrace();
+                log.warn( e.getMessage() );
             }
         }
         final int size = list.size();
@@ -331,7 +331,7 @@ public class RexExecutorTest extends SqlLanguageDependent {
     /**
      * Callback for {@link #check}. Test code will typically use {@code builder} to create some expressions, call {@link org.polypheny.db.rex.RexExecutorImpl#reduce} to evaluate them into a list, then check that the results are as expected.
      */
-    interface Action {
+    public interface Action {
 
         void check( RexBuilder rexBuilder, RexExecutorImpl executor );
 

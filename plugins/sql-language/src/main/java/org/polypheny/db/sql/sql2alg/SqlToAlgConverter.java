@@ -371,7 +371,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         // Verify that conversion from SQL to relational algebra did not perturb any type information.
         // (We can't do this if the SQL statement is something like an INSERT which has no
         // validator type information associated with its result, hence the namespace check above.)
-        List<AlgDataTypeField> validatedFields = validator.getValidatedNodeType( query ).getFields(); // TODO DL read final
+        List<AlgDataTypeField> validatedFields = validator.getValidatedNodeType( query ).getFields();
         final AlgDataType validatedRowType =
                 validator.getTypeFactory().createStructType(
                         validatedFields.stream().map( AlgDataTypeField::getId ).toList(),
@@ -2069,7 +2069,6 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             assert table != null;
             final ValidatorTable validatorTable = table.unwrap( ValidatorTable.class ).orElseThrow();
             final List<AlgDataTypeField> extendedFields = SqlValidatorUtil.getExtendedColumns( validator.getTypeFactory(), table, extendedColumns );
-            // table.extend( extendedFields ); todo dl
         }
         final AlgNode tableRel;
         if ( config.isConvertTableAccess() ) {
@@ -2879,9 +2878,9 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         boolean isDocument = call.getSchemaType() == DataModel.DOCUMENT;
 
         List<RexNode> sourceExps = new ArrayList<>( Collections.nCopies( targetFields.size(), null ) );
-        List<String> fieldNames = new ArrayList<>( Collections.nCopies( targetFields.size(), null ) ); // TODO DL: reevaluate and make final again?
+        List<String> fieldNames = new ArrayList<>( Collections.nCopies( targetFields.size(), null ) );
         if ( isDocument ) {
-            int size = (int) (targetFields.size() + targetColumnNames.stream().filter( name -> !targetFields.stream().map( AlgDataTypeField::getName ).collect( Collectors.toList() ).contains( name ) ).count());
+            int size = (int) (targetFields.size() + targetColumnNames.stream().filter( name -> !targetFields.stream().map( AlgDataTypeField::getName ).toList().contains( name ) ).count());
             sourceExps = new ArrayList<>( Collections.nCopies( size, null ) );
             fieldNames = new ArrayList<>( Collections.nCopies( size, null ) );
         }

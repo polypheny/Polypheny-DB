@@ -18,7 +18,6 @@ package org.polypheny.db.webui.models;
 
 /**
  * Graphical icon classes for frontend.
- * todo dl: maybe ui should be put into plugin after all
  */
 public class AssetsModel {
 

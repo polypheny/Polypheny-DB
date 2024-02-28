@@ -39,24 +39,13 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.runtime.PolyphenyDbContextException;
-import org.polypheny.db.sql.language.SqlIdentifier;
-import org.polypheny.db.sql.language.SqlNode;
-import org.polypheny.db.sql.language.SqlTestFactory;
-import org.polypheny.db.sql.language.utils.SqlTester;
-import org.polypheny.db.sql.language.utils.SqlValidatorTester;
-import org.polypheny.db.sql.language.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.language.validate.SqlValidatorUtil;
 import org.polypheny.db.util.NameMatcher;
 import org.polypheny.db.util.NameMatchers;
@@ -146,26 +135,6 @@ public class SqlValidatorUtilTest {
         checkChangedFieldList( nameList, resultList, false );
     }
 
-
-    @Disabled // todo dl why is this happening
-    @SuppressWarnings("resource")
-    @Test
-    public void testCheckingDuplicatesWithCompoundIdentifiers() {
-        final List<SqlNode> newList = new ArrayList<>( 2 );
-        newList.add( new SqlIdentifier( Arrays.asList( "f0", "c0" ), ParserPos.ZERO ) );
-        newList.add( new SqlIdentifier( Arrays.asList( "f0", "c0" ), ParserPos.ZERO ) );
-        final SqlTester tester = new SqlValidatorTester( SqlTestFactory.INSTANCE );
-        final SqlValidatorImpl validator = (SqlValidatorImpl) tester.getValidator();
-        try {
-            SqlValidatorUtil.checkIdentifierListForDuplicates( newList, validator.getValidationErrorFunction() );
-            fail( "expected exception" );
-        } catch ( PolyphenyDbContextException e ) {
-            // ok
-        }
-        // should not throw
-        newList.set( 1, new SqlIdentifier( Arrays.asList( "f0", "c1" ), ParserPos.ZERO ) );
-        SqlValidatorUtil.checkIdentifierListForDuplicates( newList, null );
-    }
 
 
     @Test
