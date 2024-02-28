@@ -29,16 +29,16 @@ public class StreamObserver<T> {
 
     private final Request request;
 
-    private final OutputStream os;
+    private final OutputStream out;
 
     private final String type;
 
     private final AtomicBoolean done;
 
 
-    StreamObserver( Request request, OutputStream os, String type, AtomicBoolean done ) {
+    StreamObserver( Request request, OutputStream out, String type, AtomicBoolean done ) {
         this.request = request;
-        this.os = os;
+        this.out = out;
         this.type = type;
         this.done = done;
     }
@@ -58,8 +58,8 @@ public class StreamObserver<T> {
         bb.order( ByteOrder.LITTLE_ENDIAN );
         bb.putLong( b.length );
         try {
-            os.write( bb.array() );
-            os.write( b );
+            out.write( bb.array() );
+            out.write( b );
             done.set( last );
         } catch ( IOException e ) {
             throw new GenericRuntimeException( e );
