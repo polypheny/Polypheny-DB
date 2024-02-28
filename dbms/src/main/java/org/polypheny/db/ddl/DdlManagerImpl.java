@@ -2437,7 +2437,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         //get All PartitionGroups and then get all partitionIds  for each PG and add them to completeList of partitionIds
-        List<AllocationPartition> partitions = partitionGroups.values().stream().flatMap( Collection::stream ).toList();
+        List<AllocationPartition> partitions = partitionGroups.values().stream().flatMap( Collection::stream ).collect( Collectors.toList() );
 
         PartitionProperty partitionProperty;
         if ( actualPartitionType == PartitionType.TEMPERATURE ) {
@@ -2448,8 +2448,8 @@ public class DdlManagerImpl extends DdlManager {
                     .partitionType( actualPartitionType )
                     .isPartitioned( true )
                     .partitionColumnId( logicalColumn.id )
-                    .partitionGroupIds( ImmutableList.copyOf( partitionGroups.keySet().stream().map( g -> g.id ).collect( Collectors.toList() ) ) )
-                    .partitionIds( ImmutableList.copyOf( partitions.stream().map( p -> p.id ).collect( Collectors.toList() ) ) )
+                    .partitionGroupIds( ImmutableList.copyOf( partitionGroups.keySet().stream().map( g -> g.id ).toList() ) )
+                    .partitionIds( ImmutableList.copyOf( partitions.stream().map( p -> p.id ).toList() ) )
                     .reliesOnPeriodicChecks( false )
                     .build();
         }
@@ -2516,7 +2516,7 @@ public class DdlManagerImpl extends DdlManager {
                 .internalPartitionFunction( PartitionType.valueOf( ((RawTemperaturePartitionInformation) partitionInfo.rawPartitionInformation).getInternalPartitionFunction().toString().toUpperCase() ) )
                 .partitionColumnId( logicalColumn.id )
                 .partitionGroupIds( ImmutableList.copyOf( partitionGroups.keySet().stream().map( g -> g.id ).collect( Collectors.toList() ) ) )
-                .partitionIds( ImmutableList.copyOf( partitions.stream().map( p -> p.id ).collect( Collectors.toList() ) ) )
+                .partitionIds( ImmutableList.copyOf( partitions.stream().map( p -> p.id ).toList() ) )
                 .partitionCostIndication( PartitionCostIndication.valueOf( ((RawTemperaturePartitionInformation) partitionInfo.rawPartitionInformation).getAccessPattern().toString().toUpperCase() ) )
                 .frequencyInterval( frequencyInterval )
                 .hotAccessPercentageIn( hotPercentageIn )
