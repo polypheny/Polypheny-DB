@@ -16,7 +16,7 @@ buildscript {
 
 
 plugins {
-    id 'java'
+    id "java"
     id "org.jetbrains.gradle.plugin.idea-ext" version "1.1.7"
 }
 
