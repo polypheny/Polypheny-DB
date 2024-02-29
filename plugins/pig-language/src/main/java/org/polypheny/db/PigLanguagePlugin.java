@@ -30,7 +30,6 @@ import org.polypheny.db.webui.crud.LanguageCrud;
 @Slf4j
 public class PigLanguagePlugin extends PolyPlugin {
 
-
     public static final String NAME = "pig";
 
 
@@ -48,7 +47,6 @@ public class PigLanguagePlugin extends PolyPlugin {
         QueryLanguage language = new QueryLanguage( DataModel.RELATIONAL, NAME, List.of( NAME, "piglet" ), null, PigProcessor::new, null, LanguageManager::toQueryNodes );
         LanguageManager.getINSTANCE().addQueryLanguage( language );
         PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.addToResult( language, LanguageCrud::getRelResult ) );
-
     }
 
 
@@ -58,6 +56,5 @@ public class PigLanguagePlugin extends PolyPlugin {
         LanguageCrud.deleteToResult( language );
         LanguageManager.removeQueryLanguage( NAME );
     }
-
 
 }
