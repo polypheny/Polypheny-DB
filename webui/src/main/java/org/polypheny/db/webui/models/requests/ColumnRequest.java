@@ -17,6 +17,7 @@
 package org.polypheny.db.webui.models.requests;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 import org.polypheny.db.webui.models.catalog.UiColumnDefinition;
@@ -25,10 +26,14 @@ import org.polypheny.db.webui.models.catalog.UiColumnDefinition;
 @Jacksonized
 public class ColumnRequest extends UIRequest {
 
+    @JsonProperty
     public UiColumnDefinition oldColumn;
+    @JsonProperty
     public UiColumnDefinition newColumn;
     // for data sources
+    @JsonProperty
     public boolean renameOnly;
+    @JsonProperty
     public String tableType;
 
 }

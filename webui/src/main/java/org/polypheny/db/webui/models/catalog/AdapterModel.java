@@ -26,6 +26,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DataStore.IndexMethodModel;
@@ -67,7 +68,7 @@ public class AdapterModel extends IdEntity {
     public static AdapterModel from( LogicalAdapter adapter ) {
         Map<String, AdapterSettingValueModel> settings = adapter.settings.entrySet().stream().collect( Collectors.toMap( Entry::getKey, s -> AdapterSettingValueModel.from( s.getKey(), s.getValue() ) ) );
 
-        Optional<DataStore<?>> a = AdapterManager.getInstance().getStore( adapter.id );
+        Optional<Adapter<?>> a = AdapterManager.getInstance().getAdapter( adapter.id );
         return a.map( dataStore -> new AdapterModel(
                 adapter.id,
                 adapter.uniqueName,
@@ -75,9 +76,10 @@ public class AdapterModel extends IdEntity {
                 adapter.type,
                 settings,
                 adapter.mode,
-                adapter.type == AdapterType.STORE ? dataStore.getAvailableIndexMethods() : List.of() ) ).orElse( null );
+                adapter.type == AdapterType.STORE ? ((DataStore<?>) dataStore).getAvailableIndexMethods() : List.of() ) ).orElse( null );
 
     }
+
 
     public record AdapterSettingValueModel(String name, String value) {
 
