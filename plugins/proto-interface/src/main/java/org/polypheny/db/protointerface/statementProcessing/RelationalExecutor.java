@@ -159,9 +159,9 @@ public class RelationalExecutor extends Executor {
             );
         }
         startOrResumeStopwatch( executionStopWatch );
-        List<List<PolyValue>> rows = iterator.getNextBatch();
+        List<List<PolyValue>> rows = iterator.getNextBatch( fetchSize );
         executionStopWatch.suspend();
-        boolean isLast = fetchSize == 0 || Objects.requireNonNull( rows ).size() < fetchSize;
+        boolean isLast = !iterator.hasMoreRows();
         if ( isLast ) {
             executionStopWatch.stop();
             implementation.getExecutionTimeMonitor().setExecutionTime( executionStopWatch.getNanoTime() );
