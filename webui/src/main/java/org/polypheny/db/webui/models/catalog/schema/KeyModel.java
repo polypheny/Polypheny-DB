@@ -17,21 +17,30 @@
 package org.polypheny.db.webui.models.catalog.schema;
 
 import java.util.List;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
+import lombok.experimental.NonFinal;
 import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
 import org.polypheny.db.catalog.entity.logical.LogicalKey;
 import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.webui.models.ForeignKeyModel;
 import org.polypheny.db.webui.models.catalog.IdEntity;
 
+@EqualsAndHashCode(callSuper = true)
+@Value
+@NonFinal
 public class KeyModel extends IdEntity {
 
-    public final long entityId;
-    public final long namespaceId;
-    public final List<Long> columnIds;
-    public final boolean isPrimary;
+    public long entityId;
+    public long namespaceId;
+    public List<Long> columnIds;
+    public boolean isPrimary;
 
 
-    public KeyModel( @Nullable Long id, @Nullable String name, long entityId, long namespaceId, List<Long> columnIds, boolean isPrimary ) {
-        super( id, name );
+    public KeyModel( @Nullable Long id, long entityId, long namespaceId, List<Long> columnIds, boolean isPrimary ) {
+        super( id, null );
         this.entityId = entityId;
         this.namespaceId = namespaceId;
         this.columnIds = columnIds;
@@ -40,7 +49,12 @@ public class KeyModel extends IdEntity {
 
 
     public static KeyModel from( LogicalKey key ) {
-        return new KeyModel( key.id, null, key.entityId, key.namespaceId, key.columnIds, key instanceof LogicalPrimaryKey );
+        if ( key instanceof LogicalPrimaryKey ) {
+            return new KeyModel( key.id, key.entityId, key.namespaceId, key.columnIds, true );
+        } else if ( key instanceof LogicalForeignKey foreignKey ) {
+            return new ForeignKeyModel( key.id, key.entityId, key.namespaceId, key.columnIds, foreignKey.referencedKeyTableId, foreignKey.referencedKeyColumnIds );
+        }
+        throw new GenericRuntimeException( "Unknown key type" );
     }
 
 }
