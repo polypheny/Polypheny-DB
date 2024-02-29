@@ -24,7 +24,6 @@ import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
 import org.polypheny.db.catalog.entity.logical.LogicalKey;
 import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.webui.models.ForeignKeyModel;
 import org.polypheny.db.webui.models.catalog.IdEntity;
 
@@ -54,7 +53,7 @@ public class KeyModel extends IdEntity {
         } else if ( key instanceof LogicalForeignKey foreignKey ) {
             return new ForeignKeyModel( key.id, key.entityId, key.namespaceId, key.columnIds, foreignKey.referencedKeyTableId, foreignKey.referencedKeyColumnIds );
         }
-        throw new GenericRuntimeException( "Unknown key type" );
+        return new KeyModel( key.id, key.entityId, key.namespaceId, key.columnIds, false );
     }
 
 }
