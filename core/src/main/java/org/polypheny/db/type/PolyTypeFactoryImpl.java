@@ -62,6 +62,9 @@ public class PolyTypeFactoryImpl extends AlgDataTypeFactoryImpl {
         if ( typeName.allowsPrec() ) {
             return createPolyType( typeName, typeSystem.getDefaultPrecision( typeName ) );
         }
+        if ( typeName == PolyType.ARRAY ) {
+            return new ArrayType( new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.ANY ), true );
+        }
         assertBasic( typeName );
         AlgDataType newType = new BasicPolyType( typeSystem, typeName );
         return canonize( newType );
