@@ -237,7 +237,8 @@ public class PIService {
 
     private Response handleMessage( Request req, OutputStream out ) throws TransactionException, AuthenticationException, IOException {
         return switch ( req.getTypeCase() ) {
-            case DBMS_VERSION_REQUEST, LANGUAGE_REQUEST, DATABASES_REQUEST, TABLE_TYPES_REQUEST, TYPES_REQUEST, USER_DEFINED_TYPES_REQUEST, CLIENT_INFO_PROPERTY_META_REQUEST, PROCEDURES_REQUEST, FUNCTIONS_REQUEST, NAMESPACES_REQUEST, NAMESPACE_REQUEST, ENTITIES_REQUEST, SQL_STRING_FUNCTIONS_REQUEST, SQL_SYSTEM_FUNCTIONS_REQUEST, SQL_TIME_DATE_FUNCTIONS_REQUEST, SQL_NUMERIC_FUNCTIONS_REQUEST, SQL_KEYWORDS_REQUEST -> throw new NotImplementedException( "Unsupported call " + req.getTypeCase() );
+            case DBMS_VERSION_REQUEST -> getDbmsVersion( req.getDbmsVersionRequest(), new ResponseMaker<>( req, "dbms_version_response" ) );
+            case LANGUAGE_REQUEST, DATABASES_REQUEST, TABLE_TYPES_REQUEST, TYPES_REQUEST, USER_DEFINED_TYPES_REQUEST, CLIENT_INFO_PROPERTY_META_REQUEST, PROCEDURES_REQUEST, FUNCTIONS_REQUEST, NAMESPACES_REQUEST, NAMESPACE_REQUEST, ENTITIES_REQUEST, SQL_STRING_FUNCTIONS_REQUEST, SQL_SYSTEM_FUNCTIONS_REQUEST, SQL_TIME_DATE_FUNCTIONS_REQUEST, SQL_NUMERIC_FUNCTIONS_REQUEST, SQL_KEYWORDS_REQUEST -> throw new NotImplementedException( "Unsupported call " + req.getTypeCase() );
             case CONNECTION_REQUEST -> throw new GenericRuntimeException( "ConnectionRequest only allowed as first message" );//connect( req.getConnectionRequest(), new ResponseMaker<>( req, "connection_response" ) );
             case CONNECTION_CHECK_REQUEST -> throw new GenericRuntimeException( "ee" );
             case DISCONNECT_REQUEST -> disconnect( req.getDisconnectRequest(), new ResponseMaker<>( req, "disconnect_response" ) );
@@ -253,7 +254,8 @@ public class PIService {
             case CLOSE_STATEMENT_REQUEST -> closeStatement( req.getCloseStatementRequest(), new ResponseMaker<>( req, "close_statement_response" ) );
             case COMMIT_REQUEST -> commitTransaction( req.getCommitRequest(), new ResponseMaker<>( req, "commit_response" ) );
             case ROLLBACK_REQUEST -> rollbackTransaction( req.getRollbackRequest(), new ResponseMaker<>( req, "rollback_response" ) );
-            case CONNECTION_PROPERTIES_UPDATE_REQUEST, TYPE_NOT_SET -> throw new NotImplementedException( "Unsupported call " + req.getTypeCase() );
+            case CONNECTION_PROPERTIES_UPDATE_REQUEST -> updateConnectionProperties( req.getConnectionPropertiesUpdateRequest(), new ResponseMaker<>( req, "connection_properties_update_response" ) );
+            case TYPE_NOT_SET -> throw new NotImplementedException( "Unsupported call " + req.getTypeCase() );
         };
     }
 
@@ -294,11 +296,10 @@ public class PIService {
     }
 
 
-    public void getDbmsVersion( DbmsVersionRequest request, StreamObserver<DbmsVersionResponse> responseObserver ) {
+    public Response getDbmsVersion( DbmsVersionRequest request, ResponseMaker<DbmsVersionResponse> responseObserver ) {
         /* called as client auth check */
         getClient();
-        responseObserver.onNext( DbMetaRetriever.getDbmsVersion() );
-        responseObserver.onCompleted();
+        return responseObserver.makeResponse( DbMetaRetriever.getDbmsVersion() );
     }
 
 
@@ -539,7 +540,7 @@ public class PIService {
     }
 
 
-    public void updateConnectionProperties( ConnectionPropertiesUpdateRequest request, StreamObserver<ConnectionPropertiesUpdateResponse> responseObserver ) {
+    public Response updateConnectionProperties( ConnectionPropertiesUpdateRequest request, ResponseMaker<ConnectionPropertiesUpdateResponse> responseObserver ) {
         PIClient client = getClient();
         ConnectionProperties properties = request.getConnectionProperties();
         if ( properties.hasIsAutoCommit() ) {
@@ -553,8 +554,7 @@ public class PIService {
             }
             client.setNamespace( optionalNamespace.get() );
         }
-        responseObserver.onNext( ConnectionPropertiesUpdateResponse.newBuilder().build() );
-        responseObserver.onCompleted();
+        return responseObserver.makeResponse( ConnectionPropertiesUpdateResponse.newBuilder().build() );
     }
 
 

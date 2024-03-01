@@ -67,26 +67,27 @@ message Response {
   bool last = 2;
   oneof type {
     ErrorResponse error_response = 256;
-    LanguageResponse language_response = 3;
-    TableTypesResponse table_types_response = 4;
-    UserDefinedTypesResponse user_defined_types_response = 5;
-    ProceduresResponse procedures_response = 6;
-    NamespacesResponse namespaces_response = 7;
-    EntitiesResponse entities_response = 8;
-    MetaStringResponse meta_string_functions_response = 9;
-    MetaStringResponse meta_sql_functions_response = 10;
-    ConnectionResponse connection_response = 11;
-    DisconnectResponse disconnect_response = 12;
-    ClientInfoPropertiesResponse client_info_properties_response = 13;
-    StatementResponse statement_response = 14;
-    StatementBatchResponse statement_batch_response = 15;
-    StatementResult statement_result = 16;
-    PreparedStatementSignature prepared_statement_signature = 17;
-    Frame frame = 18;
-    CloseStatementResponse close_statement_response = 19;
-    CommitResponse commit_response = 20;
-    RollbackResponse rollback_response = 21;
-    ConnectionPropertiesUpdateResponse connection_properties_update_response = 22;
+    DbmsVersionResponse dbms_version_response = 3;
+    LanguageResponse language_response = 4;
+    TableTypesResponse table_types_response = 5;
+    UserDefinedTypesResponse user_defined_types_response = 6;
+    ProceduresResponse procedures_response = 7;
+    NamespacesResponse namespaces_response = 8;
+    EntitiesResponse entities_response = 9;
+    MetaStringResponse meta_string_functions_response = 10;
+    MetaStringResponse meta_sql_functions_response = 11;
+    ConnectionResponse connection_response = 12;
+    DisconnectResponse disconnect_response = 13;
+    ClientInfoPropertiesResponse client_info_properties_response = 14;
+    StatementResponse statement_response = 15;
+    StatementBatchResponse statement_batch_response = 16;
+    StatementResult statement_result = 17;
+    PreparedStatementSignature prepared_statement_signature = 18;
+    Frame frame = 19;
+    CloseStatementResponse close_statement_response = 20;
+    CommitResponse commit_response = 21;
+    RollbackResponse rollback_response = 22;
+    ConnectionPropertiesUpdateResponse connection_properties_update_response = 23;
   }
 }
 
