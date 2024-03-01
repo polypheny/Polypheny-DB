@@ -2074,8 +2074,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             if ( set == null ) {
                 continue;
             }
-            if ( set instanceof AbstractAdapterSettingDirectory ) {
-                AbstractAdapterSettingDirectory setting = ((AbstractAdapterSettingDirectory) set);
+            if ( set instanceof AbstractAdapterSettingDirectory setting ) {
                 if ( method == ConnectionMethod.LINK ) {
                     Exception e = handleLinkFiles( ctx, a, setting, allSettings );
                     if ( e != null ) {

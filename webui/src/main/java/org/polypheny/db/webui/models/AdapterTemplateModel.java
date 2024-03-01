@@ -17,8 +17,8 @@
 package org.polypheny.db.webui.models;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
-import lombok.Value;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.AbstractAdapterSetting.AdapterSettingType;
@@ -27,16 +27,9 @@ import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
+import org.polypheny.db.docker.DockerManager;
 
-@Value
-public class AdapterTemplateModel {
-
-
-    public String adapterName;
-    public AdapterType adapterType;
-    public List<AdapterSettingsModel> settings;
-    public String description;
-    public List<DeployMode> modes;
+public record AdapterTemplateModel(@JsonProperty String adapterName, @JsonProperty AdapterType adapterType, @JsonProperty List<AdapterSettingsModel> settings, @JsonProperty String description, @JsonProperty List<DeployMode> modes) {
 
 
     public AdapterTemplateModel(
@@ -54,39 +47,26 @@ public class AdapterTemplateModel {
 
 
     public static AdapterTemplateModel from( AdapterTemplate template ) {
+        List<AdapterSettingsModel> settings = template.settings.stream().map( AdapterSettingsModel::from ).toList();
+        if ( template.modes.contains( DeployMode.DOCKER ) ) {
+            List<String> ids = DockerManager.getInstance().getDockerInstances().keySet().stream().map( Object::toString ).toList();
+            settings = template
+                    .settings
+                    .stream()
+                    .map( AdapterSettingsModel::from )
+                    .map( m -> m.name.equals( "instanceId" ) ? new AdapterSettingsModel( m.type, m.name, ids.isEmpty() ? "0" : ids.get( 0 ), m.description, m.appliesTo, ids, m.required, m.canBeNull ) : m ).toList();
+        }
+
         return new AdapterTemplateModel(
                 template.adapterName,
                 template.adapterType,
-                template.settings.stream().map( AdapterSettingsModel::from ).toList(),
+                settings,
                 template.description,
                 template.modes );
     }
 
 
-    @Value
-    public static class AdapterSettingsModel {
-
-
-        public String name;
-        public String defaultValue;
-        public String description;
-        public List<DeploySetting> appliesTo;
-        public boolean required;
-        public boolean canBeNull;
-        public AdapterSettingType type;
-        public List<String> options;
-
-
-        public AdapterSettingsModel( AdapterSettingType type, String name, String defaultValue, String description, List<DeploySetting> appliesTo, List<String> options, boolean required, boolean canBeNull ) {
-            this.type = type;
-            this.name = name;
-            this.options = options;
-            this.defaultValue = defaultValue;
-            this.description = description;
-            this.appliesTo = appliesTo;
-            this.required = required;
-            this.canBeNull = canBeNull;
-        }
+    public record AdapterSettingsModel(@JsonProperty AdapterSettingType type, @JsonProperty String name, @JsonProperty String defaultValue, @JsonProperty String description, @JsonProperty List<DeploySetting> appliesTo, @JsonProperty List<String> options, @JsonProperty boolean required, @JsonProperty boolean canBeNull) {
 
 
         public static AdapterSettingsModel from( AbstractAdapterSetting setting ) {
