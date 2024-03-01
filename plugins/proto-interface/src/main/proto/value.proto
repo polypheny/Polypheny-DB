@@ -65,6 +65,7 @@ enum ProtoPolyType {
   ANY = 55;
   USER_DEFINED_TYPE = 56;
   ROW_ID = 57;
+  TEXT = 58;
 }
 
 message ProtoValue {
