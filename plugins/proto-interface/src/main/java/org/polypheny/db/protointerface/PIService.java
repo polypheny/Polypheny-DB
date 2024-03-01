@@ -158,7 +158,7 @@ public class PIService {
     }
 
 
-    private void handleMessages( InputStream in, OutputStream out ) throws TransactionException, AuthenticationException, IOException {
+    private void handleMessages( InputStream in, OutputStream out ) throws IOException {
         if ( !handleFirstMessage( in, out ) ) {
             return;
         }
