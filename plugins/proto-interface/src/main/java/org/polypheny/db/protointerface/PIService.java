@@ -26,7 +26,7 @@ import java.nio.ByteOrder;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.CompletableFuture;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.constant.FunctionCategory;
@@ -80,6 +80,8 @@ import org.polypheny.db.protointerface.proto.PreparedStatementSignature;
 import org.polypheny.db.protointerface.proto.ProceduresRequest;
 import org.polypheny.db.protointerface.proto.ProceduresResponse;
 import org.polypheny.db.protointerface.proto.Request;
+import org.polypheny.db.protointerface.proto.Request.TypeCase;
+import org.polypheny.db.protointerface.proto.Response;
 import org.polypheny.db.protointerface.proto.RollbackRequest;
 import org.polypheny.db.protointerface.proto.RollbackResponse;
 import org.polypheny.db.protointerface.proto.SqlKeywordsRequest;
@@ -126,27 +128,98 @@ public class PIService {
     }
 
 
-    private void acceptLoop() {
-        try {
-            InputStream in = con.getInputStream();
-            OutputStream out = con.getOutputStream();
-            while ( true ) {
-                readAndHandleOneMessage( in, out );
-            }
-        } catch ( Throwable e ) {
-            if ( uuid != null ) {
-                clientManager.unregisterConnection( clientManager.getClient( uuid ) );
-            }
+    private boolean handleFirstMessage( InputStream in, OutputStream out ) throws IOException {
+        boolean success = false;
+        Request firstReq = readOneMessage( in );
 
-            Util.closeNoThrow( con );
-            if ( !(e instanceof EOFException) ) {
-                throw new GenericRuntimeException( e );
+        if ( firstReq.getTypeCase() != TypeCase.CONNECTION_REQUEST ) {
+            Response r = Response.newBuilder()
+                    .setId( firstReq.getId() )
+                    .setLast( true )
+                    .setErrorResponse( ErrorResponse.newBuilder().setMessage( "First message must be a connection request" ) )
+                    .build();
+            sendOneMessage( r, out );
+            return false;
+        }
+
+        Response r;
+        try {
+            r = connect( firstReq.getConnectionRequest(), new ResponseMaker<>( firstReq, "connection_response" ) );
+            success = true;
+        } catch ( TransactionException | AuthenticationException e ) {
+            r = Response.newBuilder()
+                    .setId( firstReq.getId() )
+                    .setLast( true )
+                    .setErrorResponse( ErrorResponse.newBuilder().setMessage( e.getMessage() ) )
+                    .build();
+        }
+        sendOneMessage( r, out );
+        return success;
+    }
+
+
+    private void handleMessages( InputStream in, OutputStream out ) throws TransactionException, AuthenticationException, IOException {
+        if ( !handleFirstMessage( in, out ) ) {
+            return;
+        }
+        while ( true ) {
+            Request req = readOneMessage( in );
+            CompletableFuture<Response> resp = CompletableFuture.supplyAsync( () -> {
+                try {
+                    return handleMessage( req, out );
+                } catch ( TransactionException | AuthenticationException | IOException e ) {
+                    throw new PIServiceException( e );
+                }
+            } );
+            Response r;
+            try {
+                r = resp.get();
+            } catch ( Throwable t ) {
+                log.error( t.getMessage() );
+                r = Response.newBuilder()
+                        .setId( req.getId() )
+                        .setLast( true )
+                        .setErrorResponse( ErrorResponse.newBuilder().setMessage( t.getMessage() ) )
+                        .build();
+            }
+            sendOneMessage( r, out );
+            if ( r.getTypeCase() == Response.TypeCase.DISCONNECT_RESPONSE || r.getTypeCase() == Response.TypeCase.ERROR_RESPONSE ) {
+                return;
             }
         }
     }
 
 
-    private static Request readRequest( InputStream in ) throws IOException {
+    private void acceptLoop() {
+        try {
+            InputStream in = con.getInputStream();
+            OutputStream out = con.getOutputStream();
+            handleMessages( in, out );
+        } catch ( Throwable e ) {
+            if ( !(e instanceof EOFException) ) {
+                throw new GenericRuntimeException( e );
+            }
+        } finally {
+            if ( uuid != null ) {
+                clientManager.unregisterConnection( clientManager.getClient( uuid ) );
+            }
+
+            Util.closeNoThrow( con );
+        }
+    }
+
+
+    private static void sendOneMessage( Response r, OutputStream out ) throws IOException {
+        byte[] b = r.toByteArray();
+        ByteBuffer bb = ByteBuffer.allocate( 8 );
+        bb.order( ByteOrder.LITTLE_ENDIAN );
+        bb.putLong( b.length );
+        out.write( bb.array() );
+        out.write( b );
+    }
+
+
+    private static Request readOneMessage( InputStream in ) throws IOException {
         byte[] b = in.readNBytes( 8 );
         if ( b.length != 8 ) {
             if ( b.length == 0 ) { // EOF
@@ -162,57 +235,30 @@ public class PIService {
     }
 
 
-    private void handleMessage( Request req, OutputStream out, AtomicBoolean done ) throws TransactionException, AuthenticationException, EOFException {
-        switch ( req.getTypeCase() ) {
+    private Response handleMessage( Request req, OutputStream out ) throws TransactionException, AuthenticationException, IOException {
+        return switch ( req.getTypeCase() ) {
             case DBMS_VERSION_REQUEST, LANGUAGE_REQUEST, DATABASES_REQUEST, TABLE_TYPES_REQUEST, TYPES_REQUEST, USER_DEFINED_TYPES_REQUEST, CLIENT_INFO_PROPERTY_META_REQUEST, PROCEDURES_REQUEST, FUNCTIONS_REQUEST, NAMESPACES_REQUEST, NAMESPACE_REQUEST, ENTITIES_REQUEST, SQL_STRING_FUNCTIONS_REQUEST, SQL_SYSTEM_FUNCTIONS_REQUEST, SQL_TIME_DATE_FUNCTIONS_REQUEST, SQL_NUMERIC_FUNCTIONS_REQUEST, SQL_KEYWORDS_REQUEST -> throw new NotImplementedException( "Unsupported call " + req.getTypeCase() );
-            case CONNECTION_REQUEST -> connect( req.getConnectionRequest(), new StreamObserver<>( req, out, "connection_response", done ) );
+            case CONNECTION_REQUEST -> throw new GenericRuntimeException( "ConnectionRequest only allowed as first message" );//connect( req.getConnectionRequest(), new ResponseMaker<>( req, "connection_response" ) );
             case CONNECTION_CHECK_REQUEST -> throw new GenericRuntimeException( "ee" );
-            case DISCONNECT_REQUEST -> disconnect( req.getDisconnectRequest(), new StreamObserver<>( req, out, "disconnect_response", done ) );
+            case DISCONNECT_REQUEST -> disconnect( req.getDisconnectRequest(), new ResponseMaker<>( req, "disconnect_response" ) );
             case CLIENT_INFO_PROPERTIES_REQUEST, CLIENT_INFO_PROPERTIES -> throw new NotImplementedException( "Unsupported call " + req.getTypeCase() );
-            case EXECUTE_UNPARAMETERIZED_STATEMENT_REQUEST -> executeUnparameterizedStatement( req.getExecuteUnparameterizedStatementRequest(), new StreamObserver<>( req, out, "statement_response", done ) );
+            case EXECUTE_UNPARAMETERIZED_STATEMENT_REQUEST -> executeUnparameterizedStatement( req.getExecuteUnparameterizedStatementRequest(), out, new ResponseMaker<>( req, "statement_response" ) );
             case EXECUTE_UNPARAMETERIZED_STATEMENT_BATCH_REQUEST -> throw new GenericRuntimeException( "eee" );
-            case PREPARE_INDEXED_STATEMENT_REQUEST -> prepareIndexedStatement( req.getPrepareIndexedStatementRequest(), new StreamObserver<>( req, out, "prepared_statement_signature", done ) );
-            case EXECUTE_INDEXED_STATEMENT_REQUEST -> executeIndexedStatement( req.getExecuteIndexedStatementRequest(), new StreamObserver<>( req, out, "statement_result", done ) );
+            case PREPARE_INDEXED_STATEMENT_REQUEST -> prepareIndexedStatement( req.getPrepareIndexedStatementRequest(), new ResponseMaker<>( req, "prepared_statement_signature" ) );
+            case EXECUTE_INDEXED_STATEMENT_REQUEST -> executeIndexedStatement( req.getExecuteIndexedStatementRequest(), new ResponseMaker<>( req, "statement_result" ) );
             case EXECUTE_INDEXED_STATEMENT_BATCH_REQUEST -> throw new GenericRuntimeException( "eee" );
-            case PREPARE_NAMED_STATEMENT_REQUEST -> prepareNamedStatement( req.getPrepareNamedStatementRequest(), new StreamObserver<>( req, out, "prepared_statement_signature", done ) );
-            case EXECUTE_NAMED_STATEMENT_REQUEST -> executeNamedStatement( req.getExecuteNamedStatementRequest(), new StreamObserver<>( req, out, "statement_result", done ) );
-            case FETCH_REQUEST -> fetchResult( req.getFetchRequest(), new StreamObserver<>( req, out, "frame", done ) );
-            case CLOSE_STATEMENT_REQUEST -> closeStatement( req.getCloseStatementRequest(), new StreamObserver<>( req, out, "close_statement_response", done ) );
-            case COMMIT_REQUEST -> commitTransaction( req.getCommitRequest(), new StreamObserver<>( req, out, "commit_response", done ) );
-            case ROLLBACK_REQUEST -> rollbackTransaction( req.getRollbackRequest(), new StreamObserver<>( req, out, "rollback_response", done ) );
+            case PREPARE_NAMED_STATEMENT_REQUEST -> prepareNamedStatement( req.getPrepareNamedStatementRequest(), new ResponseMaker<>( req, "prepared_statement_signature" ) );
+            case EXECUTE_NAMED_STATEMENT_REQUEST -> executeNamedStatement( req.getExecuteNamedStatementRequest(), new ResponseMaker<>( req, "statement_result" ) );
+            case FETCH_REQUEST -> fetchResult( req.getFetchRequest(), new ResponseMaker<>( req, "frame" ) );
+            case CLOSE_STATEMENT_REQUEST -> closeStatement( req.getCloseStatementRequest(), new ResponseMaker<>( req, "close_statement_response" ) );
+            case COMMIT_REQUEST -> commitTransaction( req.getCommitRequest(), new ResponseMaker<>( req, "commit_response" ) );
+            case ROLLBACK_REQUEST -> rollbackTransaction( req.getRollbackRequest(), new ResponseMaker<>( req, "rollback_response" ) );
             case CONNECTION_PROPERTIES_UPDATE_REQUEST, TYPE_NOT_SET -> throw new NotImplementedException( "Unsupported call " + req.getTypeCase() );
-        }
+        };
     }
 
 
-    private void readAndHandleOneMessage( InputStream in, OutputStream out ) throws IOException {
-        Request req = readRequest( in );
-        AtomicBoolean done = new AtomicBoolean( false );
-        if ( req.getId() == 0 ) {
-            throw new GenericRuntimeException( "client send message with invalid id" );
-        }
-        try {
-            handleMessage( req, out, done );
-        } catch ( Exception | TransactionException e ) {
-            if ( !done.get() ) {
-                StreamObserver<ErrorResponse> s = new StreamObserver<>( req, out, "error_response", new AtomicBoolean() );
-                ErrorResponse resp = ErrorResponse.newBuilder().setMessage( e.getMessage() ).build();
-                s.onNext( resp );
-                s.onCompleted();
-            }
-            if ( e instanceof AuthenticationException ) {
-                // TODO: log?
-                throw new EOFException(); // TODO: Better way to communicate close connection w/o error
-            }
-            if ( e instanceof EOFException eof) {
-                throw eof;
-            }
-            throw new GenericRuntimeException( e );
-        }
-    }
-
-
-    public void connect( ConnectionRequest request, StreamObserver<ConnectionResponse> responseObserver ) throws TransactionException, AuthenticationException, EOFException {
+    public Response connect( ConnectionRequest request, ResponseMaker<ConnectionResponse> responseObserver ) throws TransactionException, AuthenticationException {
         if ( uuid != null ) {
             throw new PIServiceException( "Can only connect once per session" );
         }
@@ -224,24 +270,20 @@ public class PIService {
         ConnectionResponse ConnectionResponse = responseBuilder.build();
         // reject incompatible client
         if ( !isCompatible ) {
-            responseObserver.onNext( ConnectionResponse );
-            responseObserver.onCompleted();
             log.info( "Incompatible client and server version" );
-            throw new EOFException(); // TODO: Close this socket workaround
+            return responseObserver.makeResponse( ConnectionResponse );
         }
 
         uuid = clientManager.registerConnection( request );
-        responseObserver.onNext( ConnectionResponse );
-        responseObserver.onCompleted();
+        return responseObserver.makeResponse( ConnectionResponse );
     }
 
 
-    public void disconnect( DisconnectRequest request, StreamObserver<DisconnectResponse> responseObserver ) {
+    public Response disconnect( DisconnectRequest request, ResponseMaker<DisconnectResponse> responseObserver ) {
         PIClient client = getClient();
         clientManager.unregisterConnection( client );
         uuid = null;
-        responseObserver.onNext( DisconnectResponse.newBuilder().build() );
-        responseObserver.onCompleted();
+        return responseObserver.makeResponse( DisconnectResponse.newBuilder().build() );
     }
 
 
@@ -389,17 +431,17 @@ public class PIService {
     }
 
 
-    public void executeUnparameterizedStatement( ExecuteUnparameterizedStatementRequest request, StreamObserver<StatementResponse> responseObserver ) {
+    public Response executeUnparameterizedStatement( ExecuteUnparameterizedStatementRequest request, OutputStream out, ResponseMaker<StatementResponse> responseObserver ) throws IOException {
         PIClient client = getClient();
         PIUnparameterizedStatement statement = client.getStatementManager().createUnparameterizedStatement( request );
-        responseObserver.onNext( ProtoUtils.createResult( statement ), false );
+        Response mid = responseObserver.makeResponse( ProtoUtils.createResult( statement ), false );
+        sendOneMessage( mid, out );
         StatementResult result = statement.execute(
                 request.hasFetchSize()
                         ? request.getFetchSize()
                         : PropertyUtils.DEFAULT_FETCH_SIZE
         );
-        responseObserver.onNext( ProtoUtils.createResult( statement, result ) );
-        responseObserver.onCompleted();
+        return responseObserver.makeResponse( ProtoUtils.createResult( statement, result ) );
     }
 
 
@@ -413,26 +455,24 @@ public class PIService {
     }
 
 
-    public void prepareIndexedStatement( PrepareStatementRequest request, StreamObserver<PreparedStatementSignature> responseObserver ) {
+    public Response prepareIndexedStatement( PrepareStatementRequest request, ResponseMaker<PreparedStatementSignature> responseObserver ) {
         PIClient client = getClient();
         PIPreparedIndexedStatement statement = client.getStatementManager().createIndexedPreparedInterfaceStatement( request );
-        responseObserver.onNext( ProtoUtils.createPreparedStatementSignature( statement ) );
-        responseObserver.onCompleted();
+        return responseObserver.makeResponse( ProtoUtils.createPreparedStatementSignature( statement ) );
     }
 
 
-    public void executeIndexedStatement( ExecuteIndexedStatementRequest request, StreamObserver<StatementResult> responseObserver ) {
+    public Response executeIndexedStatement( ExecuteIndexedStatementRequest request, ResponseMaker<StatementResult> responseObserver ) {
         PIClient client = getClient();
         PIPreparedIndexedStatement statement = client.getStatementManager().getIndexedPreparedStatement( request.getStatementId() );
         int fetchSize = request.hasFetchSize()
                 ? request.getFetchSize()
                 : PropertyUtils.DEFAULT_FETCH_SIZE;
         try {
-            responseObserver.onNext( statement.execute( ProtoValueDeserializer.deserializeParameterList( request.getParameters().getParametersList() ), fetchSize ) );
+            return responseObserver.makeResponse( statement.execute( ProtoValueDeserializer.deserializeParameterList( request.getParameters().getParametersList() ), fetchSize ) );
         } catch ( Exception e ) {
             throw new GenericRuntimeException( e );
         }
-        responseObserver.onCompleted();
     }
 
 
@@ -446,62 +486,56 @@ public class PIService {
     }
 
 
-    public void prepareNamedStatement( PrepareStatementRequest request, StreamObserver<PreparedStatementSignature> responseObserver ) {
+    public Response prepareNamedStatement( PrepareStatementRequest request, ResponseMaker<PreparedStatementSignature> responseObserver ) {
         PIClient client = getClient();
         PIPreparedNamedStatement statement = client.getStatementManager().createNamedPreparedInterfaceStatement( request );
-        responseObserver.onNext( ProtoUtils.createPreparedStatementSignature( statement ) );
-        responseObserver.onCompleted();
+        return responseObserver.makeResponse( ProtoUtils.createPreparedStatementSignature( statement ) );
     }
 
 
-    public void executeNamedStatement( ExecuteNamedStatementRequest request, StreamObserver<StatementResult> responseObserver ) {
+    public Response executeNamedStatement( ExecuteNamedStatementRequest request, ResponseMaker<StatementResult> responseObserver ) {
         PIClient client = getClient();
         PIPreparedNamedStatement statement = client.getStatementManager().getNamedPreparedStatement( request.getStatementId() );
         int fetchSize = request.hasFetchSize()
                 ? request.getFetchSize()
                 : PropertyUtils.DEFAULT_FETCH_SIZE;
         try {
-            responseObserver.onNext( statement.execute( ProtoValueDeserializer.deserilaizeParameterMap( request.getParameters().getParametersMap() ), fetchSize ) );
+            return responseObserver.makeResponse( statement.execute( ProtoValueDeserializer.deserilaizeParameterMap( request.getParameters().getParametersMap() ), fetchSize ) );
         } catch ( Exception e ) {
             throw new GenericRuntimeException( e );
         }
-        responseObserver.onCompleted();
     }
 
 
-    public void fetchResult( FetchRequest request, StreamObserver<Frame> responseObserver ) {
+    public Response fetchResult( FetchRequest request, ResponseMaker<Frame> responseObserver ) {
         PIClient client = getClient();
         PIStatement statement = client.getStatementManager().getStatement( request.getStatementId() );
         int fetchSize = request.hasFetchSize()
                 ? request.getFetchSize()
                 : PropertyUtils.DEFAULT_FETCH_SIZE;
         Frame frame = StatementProcessor.fetch( statement, fetchSize );
-        responseObserver.onNext( frame );
-        responseObserver.onCompleted();
+        return responseObserver.makeResponse( frame );
     }
 
 
-    public void commitTransaction( CommitRequest request, StreamObserver<CommitResponse> responseStreamObserver ) {
+    public Response commitTransaction( CommitRequest request, ResponseMaker<CommitResponse> responseStreamObserver ) {
         PIClient client = getClient();
         client.commitCurrentTransaction();
-        responseStreamObserver.onNext( CommitResponse.newBuilder().build() );
-        responseStreamObserver.onCompleted();
+        return responseStreamObserver.makeResponse( CommitResponse.newBuilder().build() );
     }
 
 
-    public void rollbackTransaction( RollbackRequest request, StreamObserver<RollbackResponse> responseStreamObserver ) {
+    public Response rollbackTransaction( RollbackRequest request, ResponseMaker<RollbackResponse> responseStreamObserver ) {
         PIClient client = getClient();
         client.rollbackCurrentTransaction();
-        responseStreamObserver.onNext( RollbackResponse.newBuilder().build() );
-        responseStreamObserver.onCompleted();
+        return responseStreamObserver.makeResponse( RollbackResponse.newBuilder().build() );
     }
 
 
-    public void closeStatement( CloseStatementRequest request, StreamObserver<CloseStatementResponse> responseObserver ) {
+    public Response closeStatement( CloseStatementRequest request, ResponseMaker<CloseStatementResponse> responseObserver ) {
         PIClient client = getClient();
         client.getStatementManager().closeStatementOrBatch( request.getStatementId() );
-        responseObserver.onNext( CloseStatementResponse.newBuilder().build() );
-        responseObserver.onCompleted();
+        return responseObserver.makeResponse( CloseStatementResponse.newBuilder().build() );
     }
 
 
