@@ -32,6 +32,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.Pattern;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.models.AlgNodeModel;
 import org.polypheny.db.webui.models.AssetsModel;
@@ -201,7 +202,14 @@ public class CatalogCrud {
 
 
     public void getSnapshot( Context context ) {
-        context.json( SnapshotModel.from( Catalog.snapshot() ) );
+        Long id = context.bodyAsClass( Long.class );
+
+        Snapshot snapshot = Catalog.snapshot();
+        if ( snapshot.id() > id ) {
+            context.json( SnapshotModel.from( snapshot ) );
+            return;
+        }
+        context.result( "" );
     }
 
 

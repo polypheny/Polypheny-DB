@@ -346,7 +346,7 @@ public class HttpServer implements Runnable {
     private static void attachCatalogMetaRoutes( Javalin webuiServer, Crud crud ) {
         webuiServer.post( "/getSchemaTree", crud.catalogCrud::getSchemaTree );
 
-        webuiServer.get( "/getSnapshot", crud.catalogCrud::getSnapshot );
+        webuiServer.post( "/getSnapshot", crud.catalogCrud::getSnapshot );
 
         webuiServer.get( "/getTypeSchemas", crud.catalogCrud::getTypeNamespaces );
 
