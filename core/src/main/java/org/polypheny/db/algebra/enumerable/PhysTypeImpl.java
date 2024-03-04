@@ -1,9 +1,26 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -84,9 +101,6 @@ public class PhysTypeImpl implements PhysType {
 
 
     public static PhysType of( JavaTypeFactory typeFactory, AlgDataType rowType, JavaRowFormat format, boolean optimize ) {
-        if ( false && optimize ) { // we always want arrays
-            format = format.optimize( rowType );
-        }
         final Type javaRowClass = format.javaRowClass( typeFactory, rowType );
         return new PhysTypeImpl( typeFactory, rowType, javaRowClass, format );
     }
@@ -94,8 +108,7 @@ public class PhysTypeImpl implements PhysType {
 
     static PhysType of( final JavaTypeFactory typeFactory, Type javaRowClass ) {
         final Builder builder = typeFactory.builder();
-        if ( javaRowClass instanceof Types.RecordType ) {
-            final Types.RecordType recordType = (Types.RecordType) javaRowClass;
+        if ( javaRowClass instanceof Types.RecordType recordType ) {
             for ( Types.RecordField field : recordType.getRecordFields() ) {
                 builder.add( null, field.getName(), null, typeFactory.createType( field.getType() ) );
             }
@@ -144,13 +157,10 @@ public class PhysTypeImpl implements PhysType {
     @Override
     public Expression generateSelector( ParameterExpression parameter, List<Integer> fields, JavaRowFormat targetFormat ) {
         // Optimize target format
-        switch ( fields.size() ) {
-            default:
-                targetFormat = JavaRowFormat.LIST;
-                break;
-            case 1:
-                targetFormat = JavaRowFormat.SCALAR;
-                break;
+        if ( fields.size() == 1 ) {
+            targetFormat = JavaRowFormat.SCALAR;
+        } else {
+            targetFormat = JavaRowFormat.LIST;
         }
         final PhysType targetPhysType = project( fields, targetFormat );
         if ( Objects.requireNonNull( format ) == JavaRowFormat.SCALAR ) {
@@ -185,21 +195,13 @@ public class PhysTypeImpl implements PhysType {
     @Override
     public Pair<Type, List<Expression>> selector( ParameterExpression parameter, List<Integer> fields, JavaRowFormat targetFormat ) {
         // Optimize target format
-        switch ( fields.size() ) {
-            default:
-                targetFormat = JavaRowFormat.LIST;
-                break;
-            /*case 1:
-                targetFormat = JavaRowFormat.SCALAR;
-                break;*/
-        }
+        targetFormat = JavaRowFormat.LIST;
+
         final PhysType targetPhysType = project( fields, targetFormat );
-        switch ( format ) {
-            case SCALAR:
-                return Pair.of( parameter.getType(), ImmutableList.of( parameter ) );
-            default:
-                return Pair.of( targetPhysType.getJavaRowType(), fieldReferences( parameter, fields ) );
+        if ( Objects.requireNonNull( format ) == JavaRowFormat.SCALAR ) {
+            return Pair.of( parameter.getType(), ImmutableList.of( parameter ) );
         }
+        return Pair.of( targetPhysType.getJavaRowType(), fieldReferences( parameter, fields ) );
     }
 
 
@@ -349,10 +351,9 @@ public class PhysTypeImpl implements PhysType {
             final int index = fieldCollation.getFieldIndex();
             Expression arg0 = fieldReference( parameterV0, index );
             Expression arg1 = fieldReference( parameterV1, index );
-            switch ( Primitive.flavor( fieldClass( index ) ) ) {
-                case OBJECT:
-                    arg0 = Types.castIfNecessary( Comparable.class, arg0 );
-                    arg1 = Types.castIfNecessary( Comparable.class, arg1 );
+            if ( Objects.requireNonNull( Primitive.flavor( fieldClass( index ) ) ) == Flavor.OBJECT ) {
+                arg0 = Types.castIfNecessary( Comparable.class, arg0 );
+                arg1 = Types.castIfNecessary( Comparable.class, arg1 );
             }
             final boolean nullsFirst = fieldCollation.nullDirection == AlgFieldCollation.NullDirection.FIRST;
             final boolean descending = fieldCollation.getDirection() == AlgFieldCollation.Direction.DESCENDING;
@@ -528,7 +529,6 @@ public class PhysTypeImpl implements PhysType {
                 for ( int field : fields ) {
                     list.add( fieldReference( v1, field ) );
                 }
-                // todo dl change this later
                 return Expressions.lambda(
                         Function1.class,
                         Expressions.call(

@@ -293,7 +293,6 @@ public abstract class AbstractAlgNode implements AlgNode {
     public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
         // by default, assume cost is proportional to number of rows
         double rowCount = mq.getRowCount( this );
-        double bytesPerRow = 1;
         return planner.getCostFactory().makeCost( rowCount, rowCount, 0 );
     }
 
@@ -429,8 +428,7 @@ public abstract class AbstractAlgNode implements AlgNode {
                             }
                             pw.write( value.left );
                             pw.write( "=" );
-                            if ( value.right instanceof AlgNode ) {
-                                AlgNode input = (AlgNode) value.right;
+                            if ( value.right instanceof AlgNode input ) {
                                 pw.write( input.getAlgTypeName() );
                                 pw.write( "#" );
                                 pw.write( Integer.toString( input.getId() ) );

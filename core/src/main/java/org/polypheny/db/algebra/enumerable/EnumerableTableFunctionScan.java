@@ -1,9 +1,26 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -77,18 +94,15 @@ public class EnumerableTableFunctionScan extends TableFunctionScan implements En
 
 
     private boolean isQueryable() {
-        if ( !(getCall() instanceof RexCall) ) {
+        if ( !(getCall() instanceof RexCall call) ) {
             return false;
         }
-        final RexCall call = (RexCall) getCall();
-        if ( !(call.getOperator() instanceof UserDefined && call.getOperator() instanceof TableFunction) ) {
+        if ( !(call.getOperator() instanceof UserDefined udtf && call.getOperator() instanceof TableFunction) ) {
             return false;
         }
-        final UserDefined udtf = (UserDefined) call.getOperator();
-        if ( !(udtf.getFunction() instanceof TableFunctionImpl) ) {
+        if ( !(udtf.getFunction() instanceof TableFunctionImpl tableFunction) ) {
             return false;
         }
-        final TableFunctionImpl tableFunction = (TableFunctionImpl) udtf.getFunction();
         final Method method = tableFunction.method;
         return QueryableEntity.class.isAssignableFrom( method.getReturnType() );
     }

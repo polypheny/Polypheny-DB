@@ -1,9 +1,26 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -54,21 +71,18 @@ public enum JavaRowFormat {
 
         @Override
         public Expression record( Type javaRowClass, List<Expression> expressions ) {
-            switch ( expressions.size() ) {
-                case 0:
-                    assert javaRowClass == Unit.class;
-                    return Expressions.field( null, javaRowClass, "INSTANCE" );
-                default:
-                    return Expressions.new_( javaRowClass, expressions );
+            if ( expressions.isEmpty() ) {
+                assert javaRowClass == Unit.class;
+                return Expressions.field( null, javaRowClass, "INSTANCE" );
             }
+            return Expressions.new_( javaRowClass, expressions );
         }
 
 
         @Override
         public MemberExpression field( Expression expression, int field, Type fromType, Type fieldType ) {
             final Type type = expression.getType();
-            if ( type instanceof Types.RecordType ) {
-                Types.RecordType recordType = (Types.RecordType) type;
+            if ( type instanceof Types.RecordType recordType ) {
                 Types.RecordField recordField = recordType.getRecordFields().get( field );
                 return Expressions.field( expression, recordField.getDeclaringClass(), recordField.getName() );
             } else {
@@ -129,61 +143,19 @@ public enum JavaRowFormat {
 
         @Override
         public Expression record( Type javaRowClass, List<Expression> expressions ) {
-            switch ( expressions.size() ) {
-                case 0:
-                    return Expressions.field(
-                            null,
-                            PolyList.class,
-                            "EMPTY_LIST" );
-                /*case 2:
-                    return Expressions.convert_(
-                            Expressions.call(
-                                    ComparableList.class,
-                                    null,
-                                    BuiltInMethod.LIST2.method,
-                                    expressions ),
-                            List.class );
-                case 3:
-                    return Expressions.convert_(
-                            Expressions.call(
-                                    ComparableList.class,
-                                    null,
-                                    BuiltInMethod.LIST3.method,
-                                    expressions ),
-                            List.class );
-                case 4:
-                    return Expressions.convert_(
-                            Expressions.call(
-                                    ComparableList.class,
-                                    null,
-                                    BuiltInMethod.LIST4.method,
-                                    expressions ),
-                            List.class );
-                case 5:
-                    return Expressions.convert_(
-                            Expressions.call(
-                                    ComparableList.class,
-                                    null,
-                                    BuiltInMethod.LIST5.method,
-                                    expressions ),
-                            List.class );
-                case 6:
-                    return Expressions.convert_(
-                            Expressions.call(
-                                    ComparableList.class,
-                                    null,
-                                    BuiltInMethod.LIST6.method,
-                                    expressions ),
-                            List.class );*/
-                default:
-                    return Expressions.convert_(
-                            Expressions.call(
-                                    PolyList.class,
-                                    null,
-                                    BuiltInMethod.LIST_N.method,
-                                    Expressions.newArrayInit( PolyValue.class, expressions ) ),
-                            List.class );
+            if ( expressions.isEmpty() ) {
+                return Expressions.field(
+                        null,
+                        PolyList.class,
+                        "EMPTY_LIST" );
             }
+            return Expressions.convert_(
+                    Expressions.call(
+                            PolyList.class,
+                            null,
+                            BuiltInMethod.LIST_N.method,
+                            Expressions.newArrayInit( PolyValue.class, expressions ) ),
+                    List.class );
         }
 
 
@@ -267,17 +239,16 @@ public enum JavaRowFormat {
 
 
     public JavaRowFormat optimize( AlgDataType rowType ) {
-        switch ( rowType.getFieldCount() ) {
-            case 0:
-                return LIST;
-            case 1:
-                return SCALAR;
-            default:
+        return switch ( rowType.getFieldCount() ) {
+            case 0 -> LIST;
+            case 1 -> SCALAR;
+            default -> {
                 if ( this == SCALAR ) {
-                    return LIST;
+                    yield LIST;
                 }
-                return this;
-        }
+                yield this;
+            }
+        };
     }
 
 
@@ -303,7 +274,7 @@ public enum JavaRowFormat {
 
     /**
      * Returns a reference to a particular field.
-     *
+     * <p>
      * {@code fromType} may be null; if null, uses the natural type of the field.
      */
     public abstract Expression field( Expression expression, int field, Type fromType, Type fieldType );

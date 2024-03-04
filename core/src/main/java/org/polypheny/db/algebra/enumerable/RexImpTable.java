@@ -1,9 +1,26 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -108,10 +125,10 @@ import org.polypheny.db.util.Util;
 public class RexImpTable {
 
     public static final ConstantExpression NULL_EXPR = Expressions.constant( null );
-    public static final Expression FALSE_EXPR = PolyBoolean.FALSE.asExpression();// Expressions.constant( false );
-    public static final Expression TRUE_EXPR = PolyBoolean.TRUE.asExpression();//Expressions.constant( true );
-    public static final Expression BOXED_FALSE_EXPR = PolyBoolean.FALSE.asExpression();//Expressions.field( null, Boolean.class, "FALSE" );
-    public static final Expression BOXED_TRUE_EXPR = PolyBoolean.TRUE.asExpression();//Expressions.field( null, Boolean.class, "TRUE" );
+    public static final Expression FALSE_EXPR = PolyBoolean.FALSE.asExpression();
+    public static final Expression TRUE_EXPR = PolyBoolean.TRUE.asExpression();
+    public static final Expression BOXED_FALSE_EXPR = PolyBoolean.FALSE.asExpression();
+    public static final Expression BOXED_TRUE_EXPR = PolyBoolean.TRUE.asExpression();
 
     private final Map<Operator, CallImplementor> map = new HashMap<>();
     private final Map<AggFunction, Supplier<? extends AggImplementor>> aggMap = new HashMap<>();
@@ -141,12 +158,10 @@ public class RexImpTable {
         defineUnary( OperatorRegistry.get( OperatorName.NOT ), Not, NullPolicy.NOT );
 
         // comparisons
-        //defineBinary( OperatorRegistry.get( OperatorName.LESS_THAN ), LessThan, NullPolicy.STRICT, "lt" );
         defineMethod( OperatorRegistry.get( OperatorName.LESS_THAN ), "lt", NullPolicy.STRICT );
         defineBinary( OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL ), LessThanOrEqual, NullPolicy.STRICT, "le" );
         defineBinary( OperatorRegistry.get( OperatorName.GREATER_THAN ), GreaterThan, NullPolicy.STRICT, "gt" );
         defineBinary( OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL ), GreaterThanOrEqual, NullPolicy.STRICT, "ge" );
-        //defineBinary( OperatorRegistry.get( OperatorName.EQUALS ), Equal, NullPolicy.STRICT, "eq" );
         defineMethod( OperatorRegistry.get( OperatorName.EQUALS ), "eq", NullPolicy.STRICT );
         defineBinary( OperatorRegistry.get( OperatorName.NOT_EQUALS ), NotEqual, NullPolicy.STRICT, "ne" );
 
@@ -738,9 +753,8 @@ public class RexImpTable {
         switch ( nullAs ) {
             case IS_NOT_NULL:
                 // If "f" is strict, then "f(a0, a1) IS NOT NULL" is equivalent to "a0 IS NOT NULL AND a1 IS NOT NULL".
-                switch ( nullPolicy ) {
-                    case STRICT:
-                        return EnumUtils.foldAnd( translator.translateList( call.getOperands(), nullAs ) );
+                if ( Objects.requireNonNull( nullPolicy ) == NullPolicy.STRICT ) {
+                    return EnumUtils.foldAnd( translator.translateList( call.getOperands(), nullAs ) );
                 }
                 break;
             case IS_NULL:
@@ -801,14 +815,12 @@ public class RexImpTable {
                 // Need to transmit to the implementor the fact that call cannot return null. In particular, it should return a primitive (e.g. int) rather than a box type (Integer).
                 // The cases with setNullable above might not help since the same RexNode can be referred via multiple ways: RexNode itself, RexLocalRef, and may be others.
                 final Map<RexNode, Boolean> nullable = new HashMap<>();
-                switch ( nullPolicy ) {
-                    case STRICT:
-                        // The arguments should be not nullable if STRICT operator is computed in nulls NOT_POSSIBLE mode
-                        for ( RexNode arg : call.getOperands() ) {
-                            if ( translator.isNullable( arg ) && !nullable.containsKey( arg ) ) {
-                                nullable.put( arg, false );
-                            }
+                if ( Objects.requireNonNull( nullPolicy ) == NullPolicy.STRICT ) {// The arguments should be not nullable if STRICT operator is computed in nulls NOT_POSSIBLE mode
+                    for ( RexNode arg : call.getOperands() ) {
+                        if ( translator.isNullable( arg ) && !nullable.containsKey( arg ) ) {
+                            nullable.put( arg, false );
                         }
+                    }
                 }
                 nullable.put( call, false );
                 translator = translator.setNullable( nullable );
@@ -933,7 +945,7 @@ public class RexImpTable {
 
     /**
      * Multiplies an expression by a constant and divides by another constant, optimizing appropriately.
-     *
+     * <p>
      * For example, {@code multiplyDivide(e, 10, 1000)} returns {@code e / 100}.
      */
     public static Expression multiplyDivide( Expression e, BigDecimal multiplier, BigDecimal divider ) {
@@ -1234,19 +1246,15 @@ public class RexImpTable {
 
         @Override
         public Expression implementResult( AggContext info, AggResultContext result ) {
-            final List<Integer> keys;
-            switch ( info.aggregation().getKind() ) {
-                case GROUPING: // "GROUPING(e, ...)", also "GROUPING_ID(e, ...)"
-                    keys = result.call().getArgList();
-                    break;
-                case GROUP_ID: // "GROUP_ID()"
+            final List<Integer> keys = switch ( info.aggregation().getKind() ) {
+                case GROUPING -> // "GROUPING(e, ...)", also "GROUPING_ID(e, ...)"
+                        result.call().getArgList();
+                case GROUP_ID -> // "GROUP_ID()"
                     // We don't implement GROUP_ID properly. In most circumstances, it returns 0, so we always return 0. Logged
                     // [POLYPHENYDB-1824] GROUP_ID returns wrong result
-                    keys = ImmutableList.of();
-                    break;
-                default:
-                    throw new AssertionError();
-            }
+                        ImmutableList.of();
+                default -> throw new AssertionError();
+            };
             Expression e = null;
             if ( info.groupSets().size() > 1 ) {
                 final List<Integer> keyOrdinals = info.keyOrdinals();
@@ -1343,22 +1351,6 @@ public class RexImpTable {
         protected void implementNotNullAdd( WinAggContext info, WinAggAddContext add ) {
             Expression acc = add.accumulator().get( 0 );
             // This is an example of the generated code
-            if ( false ) {
-                new Object() {
-                    int curentPosition; // position in for-win-agg-loop
-                    int startIndex;     // index of start of window
-                    Comparable[] rows;  // accessed via WinAggAddContext.compareRows
-
-
-                    {
-                        if ( curentPosition > startIndex ) {
-                            if ( rows[curentPosition - 1].compareTo( rows[curentPosition] ) > 0 ) {
-                                // update rank
-                            }
-                        }
-                    }
-                };
-            }
             BlockBuilder builder = add.nestBlock();
             add.currentBlock().add(
                     EnumUtils.ifThen(
@@ -1685,16 +1677,13 @@ public class RexImpTable {
 
             Expression tiles = winResult.rowTranslator( winResult.index() ).translate( rexArgs.get( 0 ), int.class );
 
-            Expression ntile =
-                    Expressions.add(
-                            Expressions.constant( 1 ),
-                            Expressions.divide(
-                                    Expressions.multiply(
-                                            tiles,
-                                            Expressions.subtract( winResult.index(), winResult.startIndex() ) ),
-                                    winResult.getPartitionRowCount() ) );
-
-            return ntile;
+            return Expressions.add(
+                    Expressions.constant( 1 ),
+                    Expressions.divide(
+                            Expressions.multiply(
+                                    tiles,
+                                    Expressions.subtract( winResult.index(), winResult.startIndex() ) ),
+                            winResult.getPartitionRowCount() ) );
         }
 
     }
@@ -1961,7 +1950,7 @@ public class RexImpTable {
 
     /**
      * Implementor for SQL functions that generates calls to a given method name.
-     *
+     * <p>
      * Use this, as opposed to {@link MethodImplementor}, if the SQL function is overloaded; then you can use one implementor for several overloads.
      */
     private static class MethodNameImplementor implements NotNullImplementor {
@@ -2591,7 +2580,7 @@ public class RexImpTable {
 
     /**
      * Implementor for SQL system functions.
-     *
+     * <p>
      * Several of these are represented internally as constant values, set per execution.
      */
     private static class SystemFunctionImplementor implements CallImplementor {
@@ -2637,7 +2626,7 @@ public class RexImpTable {
 
     /**
      * Implements "IS XXX" operations such as "IS NULL" or "IS NOT TRUE".
-     *
+     * <p>
      * What these operators have in common:
      * 1. They return TRUE or FALSE, never NULL.
      * 2. Of the 3 input values (TRUE, FALSE, NULL) they return TRUE for 1 or 2,
@@ -2779,12 +2768,10 @@ public class RexImpTable {
          * Normalizes a TIME value into 00:00:00..23:59:39.
          */
         private Expression normalize( PolyType typeName, Expression e ) {
-            switch ( typeName ) {
-                case TIME:
-                    return Expressions.call( BuiltInMethod.FLOOR_MOD.method, e, Expressions.constant( DateTimeUtils.MILLIS_PER_DAY ) );
-                default:
-                    return e;
+            if ( Objects.requireNonNull( typeName ) == PolyType.TIME ) {
+                return Expressions.call( BuiltInMethod.FLOOR_MOD.method, e, Expressions.constant( DateTimeUtils.MILLIS_PER_DAY ) );
             }
+            return e;
         }
 
     }

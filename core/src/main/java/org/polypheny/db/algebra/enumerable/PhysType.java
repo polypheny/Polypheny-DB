@@ -1,9 +1,26 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -29,7 +46,7 @@ import org.polypheny.db.util.Pair;
 
 /**
  * Physical type of a row.
- *
+ * <p>
  * Consists of the SQL row type (returned by {@link #getRowType()}), the Java type of the row (returned by {@link #getJavaRowType()}), and methods to generate expressions to access fields, generate records,
  * and so forth. Together, the records encapsulate how the logical type maps onto the physical type.
  */
@@ -42,7 +59,7 @@ public interface PhysType {
 
     /**
      * Returns the Java class that is used to store the field with the given ordinal.
-     *
+     * <p>
      * For instance, when the java row type is {@code Object[]}, the java field type is {@code Object} even if the field is not nullable.
      */
     Type getJavaFieldType( int field );
@@ -74,9 +91,9 @@ public interface PhysType {
 
     /**
      * Generates a reference to a given field in an expression.
-     *
+     * <p>
      * For example given {@code expression=employee} and {@code field=2}, generates
-     *
+     * <p>
      * <code>{@code employee.deptno}</code>
      *
      * @param expression Expression
@@ -87,11 +104,11 @@ public interface PhysType {
 
     /**
      * Generates a reference to a given field in an expression.
-     *
+     * <p>
      * This method optimizes for the target storage type (i.e. avoids casts).
-     *
+     * <p>
      * For example given {@code expression=employee} and {@code field=2}, generates
-     *
+     * <p>
      * <code>{@code employee.deptno}</code>
      *
      * @param expression Expression
@@ -104,7 +121,7 @@ public interface PhysType {
     /**
      * Generates an accessor function for a given list of fields.  The resulting object is a {@link List} (implementing {@link Object#hashCode()} and {@link Object#equals(Object)} per that interface) and
      * also implements {@link Comparable}.
-     *
+     * <p>
      * For example:
      *
      * <blockquote><pre>
@@ -129,7 +146,7 @@ public interface PhysType {
 
     /**
      * Generates a lambda expression that is a selector for the given fields from an expression.
-     *
+     * <p>
      * {@code usedFields} must be a subset of {@code fields}. For each field, there is a corresponding indicator field. If a field is used, its value is assigned and its indicator is left {@code false}.
      * If a field is not used, its value is not assigned and its indicator is set to {@code true}; This will become a value of 1 when {@code GROUPING(field)} is called.
      */
@@ -147,7 +164,7 @@ public interface PhysType {
 
     /**
      * Projects a given collection of fields from this input record, optionally with indicator fields, into a particular preferred output format.
-     *
+     * <p>
      * The output format is optimized if there are 0 or 1 fields and indicators are disabled.
      */
     PhysType project( List<Integer> integers, boolean indicator, JavaRowFormat format );

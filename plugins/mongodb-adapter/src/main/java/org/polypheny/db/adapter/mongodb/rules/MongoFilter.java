@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,11 +98,8 @@ public class MongoFilter extends Filter implements MongoAlg {
         implementor.visitChild( 0, getInput() );
         // to not break the existing functionality for now we have to handle it this way
         Translator translator;
-        /*if ( implementor.getStaticRowType() != null && implementor.getStaticRowType() instanceof MongoRowType ) {
-            translator = new Translator( MongoRules.mongoFieldNames( getRowType() ), (MongoRowType) implementor.getStaticRowType(), implementor );
-        } else {*/
+
         translator = new Translator( MongoRules.mongoFieldNames( getTupleType() ), getTupleType(), implementor );
-        //}
         translator.translateMatch( condition, implementor );
     }
 
