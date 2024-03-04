@@ -42,12 +42,12 @@ import org.polypheny.db.util.Pair;
 
 public class CowMultiHashIndex extends Index {
 
-    private Map<List<PolyValue>, Set<List<PolyValue>>> index = new HashMap<>();
+    private final Map<List<PolyValue>, Set<List<PolyValue>>> index = new HashMap<>();
     private boolean initialized = false;
 
-    private Map<PolyXid, Map<List<PolyValue>, Set<List<PolyValue>>>> cowIndex = new HashMap<>();
-    private Map<PolyXid, List<DeferredIndexUpdate>> cowOpLog = new HashMap<>();
-    private Map<PolyXid, List<Triple<List<PolyValue>, List<PolyValue>, Boolean>>> barrierIndex = new HashMap<>();
+    private final Map<PolyXid, Map<List<PolyValue>, Set<List<PolyValue>>>> cowIndex = new HashMap<>();
+    private final Map<PolyXid, List<DeferredIndexUpdate>> cowOpLog = new HashMap<>();
+    private final Map<PolyXid, List<Triple<List<PolyValue>, List<PolyValue>, Boolean>>> barrierIndex = new HashMap<>();
 
 
     public CowMultiHashIndex( long id, String name, LogicalNamespace schema, LogicalTable table, List<String> columns, List<String> targetColumns ) {

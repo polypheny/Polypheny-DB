@@ -39,8 +39,7 @@ import org.polypheny.db.type.entity.PolyValue;
 @Value
 public class ResultIterator implements AutoCloseable {
 
-    Iterator<PolyValue[]>
-            iterator;
+    Iterator<PolyValue[]> iterator;
     int batch;
     ExecutionTimeMonitor executionTimeMonitor;
     boolean isIndex;

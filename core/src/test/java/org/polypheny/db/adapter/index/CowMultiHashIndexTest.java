@@ -19,7 +19,6 @@ package org.polypheny.db.adapter.index;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Map;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.transaction.PUID;
@@ -36,7 +35,7 @@ public class CowMultiHashIndexTest {
         CowMultiHashIndex idx = new CowMultiHashIndex( 42L, "idx_test", null, null, Collections.emptyList(), Collections.emptyList() );
         PolyXid xid1 = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.NODE ), PUID.randomPUID( Type.TRANSACTION ) );
         PolyXid xid2 = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.NODE ), PUID.randomPUID( Type.TRANSACTION ) );
-        Assertions.assertEquals( 0, ((Map) idx.getRaw()).size() );
+        Assertions.assertEquals( 0, idx.getRaw().size() );
         // Insert and delete some values as xid1
         idx.insert( xid1, CowHashIndexTest.asPolyValues( 1, 2, 3 ), CowHashIndexTest.asPolyValues( 1 ) );
         idx.insertAll( xid1, Arrays.asList(
