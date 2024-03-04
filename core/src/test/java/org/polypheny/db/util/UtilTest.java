@@ -120,7 +120,7 @@ public class UtilTest {
     @BeforeAll
     public static void setUp() {
         if ( PolyphenyHomeDirManager.getMode() == null ) {
-            PolyphenyHomeDirManager.setModeAndGetInstance( PolyMode.TEST );
+            PolyphenyHomeDirManager.setModeAndGetInstance( RunMode.TEST );
         }
     }
 

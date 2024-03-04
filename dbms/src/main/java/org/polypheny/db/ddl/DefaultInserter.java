@@ -23,7 +23,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
-import org.polypheny.db.util.PolyMode;
+import org.polypheny.db.util.RunMode;
 
 @Deterministic
 public class DefaultInserter {
@@ -35,7 +35,7 @@ public class DefaultInserter {
     /**
      * Fills the catalog database with default data, skips if data is already inserted
      */
-    public static void resetData( DdlManager ddlManager, PolyMode mode ) {
+    public static void resetData( DdlManager ddlManager, RunMode mode ) {
         final Catalog catalog = Catalog.getInstance();
         restoreUsers( catalog );
 
@@ -56,7 +56,7 @@ public class DefaultInserter {
     }
 
 
-    private static void restoreAdapters( DdlManager ddlManager, Catalog catalog, PolyMode mode ) {
+    private static void restoreAdapters( DdlManager ddlManager, Catalog catalog, RunMode mode ) {
         if ( !catalog.getAdapters().isEmpty() ) {
             catalog.commit();
             return;
@@ -68,7 +68,7 @@ public class DefaultInserter {
         Map<String, String> defaultStore = Catalog.snapshot().getAdapterTemplate( Catalog.defaultStore.getAdapterName(), AdapterType.STORE ).orElseThrow().getDefaultSettings();
         ddlManager.createAdapter( "hsqldb", Catalog.defaultStore.getAdapterName(), AdapterType.STORE, defaultStore, DeployMode.EMBEDDED );
 
-        if ( mode == PolyMode.TEST ) {
+        if ( mode == RunMode.TEST ) {
             return; // source adapters create schema structure, which we do not want for testing
         }
 

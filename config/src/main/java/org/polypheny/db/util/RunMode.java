@@ -16,7 +16,7 @@
 
 package org.polypheny.db.util;
 
-public enum PolyMode {
+public enum RunMode {
     PRODUCTION,
     DEVELOPMENT,
     TEST,

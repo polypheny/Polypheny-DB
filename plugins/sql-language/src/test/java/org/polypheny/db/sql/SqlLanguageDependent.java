@@ -31,7 +31,7 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.PolyMode;
+import org.polypheny.db.util.RunMode;
 
 public class SqlLanguageDependent {
 
@@ -45,7 +45,7 @@ public class SqlLanguageDependent {
 
 
     public static void setupSqlAndSchema() {
-        PolyphenyDb.mode = PolyMode.TEST;
+        PolyphenyDb.mode = RunMode.TEST;
         testHelper = TestHelper.getInstance();
         createTestSchema( testHelper );
         createHrSchema( testHelper );

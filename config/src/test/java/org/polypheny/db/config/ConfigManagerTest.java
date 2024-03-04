@@ -37,8 +37,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.exception.ConfigRuntimeException;
-import org.polypheny.db.util.PolyMode;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
+import org.polypheny.db.util.RunMode;
 
 
 public class ConfigManagerTest implements ConfigListener {
@@ -49,7 +49,7 @@ public class ConfigManagerTest implements ConfigListener {
 
     @BeforeAll
     public static void setupTestEnvironment() {
-        PolyphenyHomeDirManager.setModeAndGetInstance( PolyMode.TEST );
+        PolyphenyHomeDirManager.setModeAndGetInstance( RunMode.TEST );
         ConfigManager cm = ConfigManager.getInstance();
 
         // Check if the correct file will be accessed

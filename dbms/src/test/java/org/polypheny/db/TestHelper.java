@@ -78,7 +78,7 @@ import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.PolyMode;
+import org.polypheny.db.util.RunMode;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.models.results.DocResult;
 import org.polypheny.db.webui.models.results.GraphResult;
@@ -106,7 +106,7 @@ public class TestHelper {
         log.info( "Starting Polypheny-DB..." );
 
         Runnable runnable = () -> {
-            PolyphenyDb.mode = PolyMode.TEST;
+            PolyphenyDb.mode = RunMode.TEST;
             String defaultStoreName = System.getProperty( "store.default" );
             if ( defaultStoreName != null ) {
                 polyphenyDb.defaultStoreName = defaultStoreName;

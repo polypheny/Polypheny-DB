@@ -23,7 +23,7 @@ import com.github.rvesse.airline.types.DefaultTypeConverter;
 import com.github.rvesse.airline.types.TypeConverter;
 import java.util.Arrays;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.util.PolyMode;
+import org.polypheny.db.util.RunMode;
 
 @Slf4j
 public class PolyModesConverter extends DefaultTypeConverter {
@@ -44,22 +44,22 @@ public class PolyModesConverter extends DefaultTypeConverter {
     public Object convert( String name, Class<?> type, String value ) {
         String adjustedName = value.toUpperCase();
 
-        if ( Arrays.stream( PolyMode.values() ).anyMatch( v -> v.name().equals( adjustedName ) ) ) {
-            return PolyMode.valueOf( adjustedName.toUpperCase() );
+        if ( Arrays.stream( RunMode.values() ).anyMatch( v -> v.name().equals( adjustedName ) ) ) {
+            return RunMode.valueOf( adjustedName.toUpperCase() );
         }
 
         switch ( adjustedName.toLowerCase() ) {
             case "t":
-                return PolyMode.TEST;
+                return RunMode.TEST;
             case "b":
             case "bench":
-                return PolyMode.BENCHMARK;
+                return RunMode.BENCHMARK;
             case "d":
             case "dev":
-                return PolyMode.DEVELOPMENT;
+                return RunMode.DEVELOPMENT;
         }
         log.warn( "Could not find the mode: " + adjustedName );
-        return PolyMode.PRODUCTION;
+        return RunMode.PRODUCTION;
     }
 
 }

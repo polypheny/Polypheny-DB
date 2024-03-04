@@ -30,8 +30,8 @@ import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.PolyMode;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
+import org.polypheny.db.util.RunMode;
 
 
 public class CowHashIndexTest {
@@ -39,7 +39,7 @@ public class CowHashIndexTest {
     @BeforeAll
     public static void init() {
         if ( PolyphenyHomeDirManager.getMode() == null ) {
-            PolyphenyHomeDirManager.setModeAndGetInstance( PolyMode.TEST );
+            PolyphenyHomeDirManager.setModeAndGetInstance( RunMode.TEST );
         }
     }
 

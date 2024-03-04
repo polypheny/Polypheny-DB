@@ -49,7 +49,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
-import org.polypheny.db.util.PolyMode;
+import org.polypheny.db.util.RunMode;
 
 public abstract class Catalog implements ExtensionPoint {
 
@@ -70,7 +70,7 @@ public abstract class Catalog implements ExtensionPoint {
     private static Catalog INSTANCE = null;
     public static boolean resetCatalog;
     public static boolean memoryCatalog;
-    public static PolyMode mode;
+    public static RunMode mode;
 
     public static final Expression CATALOG_EXPRESSION = Expressions.call( Catalog.class, "getInstance" );
 
@@ -79,7 +79,7 @@ public abstract class Catalog implements ExtensionPoint {
 
 
     public static Catalog setAndGetInstance( Catalog catalog ) {
-        if ( INSTANCE != null && Catalog.mode != PolyMode.TEST ) {
+        if ( INSTANCE != null && Catalog.mode != RunMode.TEST ) {
             throw new GenericRuntimeException( "Setting the Catalog, when already set is not permitted." );
         }
         INSTANCE = catalog;

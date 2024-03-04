@@ -34,7 +34,7 @@ import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.docker.models.DockerHost;
-import org.polypheny.db.util.PolyMode;
+import org.polypheny.db.util.RunMode;
 
 public final class DockerManager {
 
@@ -59,7 +59,7 @@ public final class DockerManager {
 
     public Optional<DockerInstance> getInstanceById( int instanceId ) {
         // Tests expect a localhost docker instance with id 0
-        if ( Catalog.mode == PolyMode.TEST && instanceId == 0 ) {
+        if ( Catalog.mode == RunMode.TEST && instanceId == 0 ) {
             return dockerInstances.values().stream().filter( d -> d.getHost().hostname().equals( "localhost" ) ).findFirst();
         }
         return Optional.ofNullable( dockerInstances.get( instanceId ) );

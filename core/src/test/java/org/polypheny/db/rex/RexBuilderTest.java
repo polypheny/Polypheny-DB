@@ -56,8 +56,8 @@ import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.NlsString;
-import org.polypheny.db.util.PolyMode;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
+import org.polypheny.db.util.RunMode;
 import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.TimestampWithTimeZoneString;
@@ -72,7 +72,7 @@ public class RexBuilderTest {
     @BeforeAll
     public static void init() {
         try {
-            PolyphenyHomeDirManager.setModeAndGetInstance( PolyMode.TEST );
+            PolyphenyHomeDirManager.setModeAndGetInstance( RunMode.TEST );
         } catch ( Exception e ) {
             // can fail
         }

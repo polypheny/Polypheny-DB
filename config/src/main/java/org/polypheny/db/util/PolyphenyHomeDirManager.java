@@ -44,7 +44,7 @@ public class PolyphenyHomeDirManager {
     private final List<File> dirs = new ArrayList<>();
     private final List<File> deleteOnExit = new ArrayList<>();
     @Getter
-    private static PolyMode mode;
+    private static RunMode mode;
 
 
     public static PolyphenyHomeDirManager getInstance() {
@@ -83,7 +83,7 @@ public class PolyphenyHomeDirManager {
     }
 
 
-    public static PolyphenyHomeDirManager setModeAndGetInstance( PolyMode mode ) {
+    public static PolyphenyHomeDirManager setModeAndGetInstance( RunMode mode ) {
         if ( PolyphenyHomeDirManager.mode != null ) {
             throw new RuntimeException( "Could not set the mode." );
         }

@@ -41,7 +41,7 @@ import org.bouncycastle.tls.TlsNoCloseNotifyException;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.util.PolyMode;
+import org.polypheny.db.util.RunMode;
 
 /**
  * The container is the main interaction instance for calling classes when interacting with Docker.
@@ -129,7 +129,7 @@ public final class DockerContainer {
     public static String getPhysicalUniqueName( String uniqueName ) {
         // while not all Docker containers belong to an adapter we annotate it anyway
         String name = "polypheny_" + RuntimeConfig.INSTANCE_UUID.getString() + "_" + uniqueName;
-        if ( Catalog.mode != PolyMode.TEST ) {
+        if ( Catalog.mode != RunMode.TEST ) {
             return name;
         }
         return name + "_test";
