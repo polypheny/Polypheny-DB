@@ -58,7 +58,7 @@ import org.polypheny.db.util.Litmus;
 /**
  * Sub-class of {@link Filter} not targeted at any particular engine or calling convention.
  */
-public final class LogicalFilter extends Filter implements RelAlg {
+public final class LogicalRelFilter extends Filter implements RelAlg {
 
     private final ImmutableSet<CorrelationId> variablesSet;
 
@@ -73,7 +73,7 @@ public final class LogicalFilter extends Filter implements RelAlg {
      * @param condition Boolean expression which determines whether a row is allowed to pass
      * @param variablesSet Correlation variables set by this relational expression to be used by nested expressions
      */
-    public LogicalFilter( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode child, RexNode condition, ImmutableSet<CorrelationId> variablesSet ) {
+    public LogicalRelFilter( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode child, RexNode condition, ImmutableSet<CorrelationId> variablesSet ) {
         super( cluster, traitSet.replace( ModelTrait.RELATIONAL ), child, condition );
         this.variablesSet = Objects.requireNonNull( variablesSet );
         assert isValid( Litmus.THROW, null );
@@ -83,7 +83,7 @@ public final class LogicalFilter extends Filter implements RelAlg {
     /**
      * Creates a LogicalFilter.
      */
-    public static LogicalFilter create( final AlgNode input, RexNode condition ) {
+    public static LogicalRelFilter create( final AlgNode input, RexNode condition ) {
         return create( input, condition, ImmutableSet.of() );
     }
 
@@ -91,13 +91,13 @@ public final class LogicalFilter extends Filter implements RelAlg {
     /**
      * Creates a LogicalFilter.
      */
-    public static LogicalFilter create( final AlgNode input, RexNode condition, ImmutableSet<CorrelationId> variablesSet ) {
+    public static LogicalRelFilter create( final AlgNode input, RexNode condition, ImmutableSet<CorrelationId> variablesSet ) {
         final AlgOptCluster cluster = input.getCluster();
         final AlgMetadataQuery mq = cluster.getMetadataQuery();
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE )
                 .replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.filter( mq, input ) )
                 .replaceIf( AlgDistributionTraitDef.INSTANCE, () -> AlgMdDistribution.filter( mq, input ) );
-        return new LogicalFilter( cluster, traitSet, input, condition, variablesSet );
+        return new LogicalRelFilter( cluster, traitSet, input, condition, variablesSet );
     }
 
 
@@ -108,9 +108,9 @@ public final class LogicalFilter extends Filter implements RelAlg {
 
 
     @Override
-    public LogicalFilter copy( AlgTraitSet traitSet, AlgNode input, RexNode condition ) {
+    public LogicalRelFilter copy( AlgTraitSet traitSet, AlgNode input, RexNode condition ) {
         assert traitSet.containsIfApplicable( Convention.NONE );
-        return new LogicalFilter( getCluster(), traitSet, input, condition, variablesSet );
+        return new LogicalRelFilter( getCluster(), traitSet, input, condition, variablesSet );
     }
 
 

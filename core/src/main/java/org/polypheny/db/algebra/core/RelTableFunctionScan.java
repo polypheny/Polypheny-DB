@@ -45,7 +45,7 @@ import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
-import org.polypheny.db.algebra.logical.relational.LogicalTableFunctionScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelTableFunctionScan;
 import org.polypheny.db.algebra.metadata.AlgColumnMapping;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -62,9 +62,9 @@ import org.polypheny.db.rex.RexShuttle;
  * The function returns a result set.
  * It can appear as a leaf in a query tree, or can be applied to relational inputs.
  *
- * @see LogicalTableFunctionScan
+ * @see LogicalRelTableFunctionScan
  */
-public abstract class TableFunctionScan extends AbstractAlgNode {
+public abstract class RelTableFunctionScan extends AbstractAlgNode {
 
     private final RexNode rexCall;
 
@@ -85,7 +85,7 @@ public abstract class TableFunctionScan extends AbstractAlgNode {
      * @param rowType Row type produced by function
      * @param columnMappings Column mappings associated with this function
      */
-    protected TableFunctionScan( AlgOptCluster cluster, AlgTraitSet traits, List<AlgNode> inputs, RexNode rexCall, Type elementType, AlgDataType rowType, Set<AlgColumnMapping> columnMappings ) {
+    protected RelTableFunctionScan( AlgOptCluster cluster, AlgTraitSet traits, List<AlgNode> inputs, RexNode rexCall, Type elementType, AlgDataType rowType, Set<AlgColumnMapping> columnMappings ) {
         super( cluster, traits );
         this.rexCall = rexCall;
         this.elementType = elementType;
@@ -96,7 +96,7 @@ public abstract class TableFunctionScan extends AbstractAlgNode {
 
 
     @Override
-    public final TableFunctionScan copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+    public final RelTableFunctionScan copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         return copy( traitSet, inputs, rexCall, elementType, rowType, columnMappings );
     }
 
@@ -112,7 +112,7 @@ public abstract class TableFunctionScan extends AbstractAlgNode {
      * @param columnMappings Column mappings associated with this function
      * @return Copy of this relational expression, substituting traits and inputs
      */
-    public abstract TableFunctionScan copy( AlgTraitSet traitSet, List<AlgNode> inputs, RexNode rexCall, Type elementType, AlgDataType rowType, Set<AlgColumnMapping> columnMappings );
+    public abstract RelTableFunctionScan copy( AlgTraitSet traitSet, List<AlgNode> inputs, RexNode rexCall, Type elementType, AlgDataType rowType, Set<AlgColumnMapping> columnMappings );
 
 
     @Override
@@ -156,7 +156,7 @@ public abstract class TableFunctionScan extends AbstractAlgNode {
         }
         double nRows = 0.0;
         for ( AlgNode input : inputs ) {
-            Double d = mq.getRowCount( input );
+            Double d = mq.getTupleCount( input );
             if ( d != null ) {
                 nRows += d;
             }

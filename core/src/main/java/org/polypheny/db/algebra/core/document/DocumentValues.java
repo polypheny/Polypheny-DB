@@ -23,7 +23,7 @@ import lombok.Getter;
 import org.bson.types.ObjectId;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.entity.Entity;
@@ -127,11 +127,11 @@ public abstract class DocumentValues extends AbstractAlgNode implements Document
     }
 
 
-    public LogicalValues getRelationalEquivalent() {
+    public LogicalRelValues getRelationalEquivalent() {
         AlgTraitSet out = traitSet.replace( ModelTrait.RELATIONAL );
         AlgOptCluster cluster = AlgOptCluster.create( getCluster().getPlanner(), getCluster().getRexBuilder(), traitSet, getCluster().getSnapshot() );
 
-        return new LogicalValues( cluster, out, DocumentType.ofRelational(), relationalize( documents, cluster.getRexBuilder() ) );
+        return new LogicalRelValues( cluster, out, DocumentType.ofRelational(), relationalize( documents, cluster.getRexBuilder() ) );
     }
 
 

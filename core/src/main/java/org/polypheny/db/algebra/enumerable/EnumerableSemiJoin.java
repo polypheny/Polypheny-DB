@@ -102,7 +102,7 @@ public class EnumerableSemiJoin extends SemiJoin implements EnumerableAlg {
 
     @Override
     public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        double rowCount = mq.getRowCount( this );
+        double rowCount = mq.getTupleCount( this );
 
         // Right-hand input is the "build", and hopefully small, input.
         final double rightRowCount = right.estimateRowCount( mq );

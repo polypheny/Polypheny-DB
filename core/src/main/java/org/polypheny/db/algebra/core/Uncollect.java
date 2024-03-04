@@ -40,7 +40,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.fun.UnnestOperator;
-import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelCorrelate;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -57,7 +57,7 @@ import org.polypheny.db.util.CoreUtil;
  *
  * The input may have multiple columns, but each must be a multiset or array. If {@code withOrdinality}, the output contains an extra {@code ORDINALITY} column.
  *
- * Like its inverse operation {@link Collect}, Uncollect is generally invoked in a nested loop, driven by {@link LogicalCorrelate} or similar.
+ * Like its inverse operation {@link Collect}, Uncollect is generally invoked in a nested loop, driven by {@link LogicalRelCorrelate} or similar.
  */
 public class Uncollect extends SingleAlg {
 

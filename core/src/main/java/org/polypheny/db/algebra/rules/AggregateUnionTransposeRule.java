@@ -52,8 +52,8 @@ import org.polypheny.db.algebra.fun.CountAggFunction;
 import org.polypheny.db.algebra.fun.MinMaxAggFunction;
 import org.polypheny.db.algebra.fun.SumAggFunction;
 import org.polypheny.db.algebra.fun.SumEmptyIsZeroAggFunction;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
-import org.polypheny.db.algebra.logical.relational.LogicalUnion;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -71,7 +71,7 @@ import org.polypheny.db.tools.AlgBuilderFactory;
  */
 public class AggregateUnionTransposeRule extends AlgOptRule {
 
-    public static final AggregateUnionTransposeRule INSTANCE = new AggregateUnionTransposeRule( LogicalAggregate.class, LogicalUnion.class, AlgFactories.LOGICAL_BUILDER );
+    public static final AggregateUnionTransposeRule INSTANCE = new AggregateUnionTransposeRule( LogicalRelAggregate.class, LogicalRelUnion.class, AlgFactories.LOGICAL_BUILDER );
 
     private static final Map<Class<? extends AggFunction>, Boolean> SUPPORTED_AGGREGATES = new IdentityHashMap<>();
 

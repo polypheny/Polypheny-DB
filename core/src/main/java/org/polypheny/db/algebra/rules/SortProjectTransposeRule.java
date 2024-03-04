@@ -47,7 +47,7 @@ import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
@@ -68,7 +68,7 @@ import org.polypheny.db.util.mapping.Mappings.TargetMapping;
  */
 public class SortProjectTransposeRule extends AlgOptRule {
 
-    public static final SortProjectTransposeRule INSTANCE = new SortProjectTransposeRule( Sort.class, LogicalProject.class, AlgFactories.LOGICAL_BUILDER, null );
+    public static final SortProjectTransposeRule INSTANCE = new SortProjectTransposeRule( Sort.class, LogicalRelProject.class, AlgFactories.LOGICAL_BUILDER, null );
 
 
     /**

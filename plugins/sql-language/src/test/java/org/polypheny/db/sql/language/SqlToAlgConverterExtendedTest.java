@@ -21,8 +21,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
-import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.externalize.AlgJsonWriter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.runtime.Hook.Closeable;
@@ -61,7 +61,7 @@ public class SqlToAlgConverterExtendedTest extends SqlToAlgConverterTest {
         final Entity[] entities = { null };
         alg.accept( new AlgShuttleImpl() {
             @Override
-            public AlgNode visit( RelScan<?> scan ) {
+            public AlgNode visit( LogicalRelScan scan ) {
                 entities[0] = scan.getEntity();
                 return super.visit( scan );
             }

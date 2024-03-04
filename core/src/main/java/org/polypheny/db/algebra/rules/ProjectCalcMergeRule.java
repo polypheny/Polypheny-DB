@@ -36,7 +36,7 @@ package org.polypheny.db.algebra.rules;
 
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.logical.relational.LogicalCalc;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
@@ -50,9 +50,9 @@ import org.polypheny.db.util.Pair;
 
 
 /**
- * Planner rule which merges a {@link LogicalProject} and a {@link LogicalCalc}.
+ * Planner rule which merges a {@link LogicalRelProject} and a {@link LogicalCalc}.
  *
- * The resulting {@link LogicalCalc} has the same project list as the original {@link LogicalProject}, but expressed in terms
+ * The resulting {@link LogicalCalc} has the same project list as the original {@link LogicalRelProject}, but expressed in terms
  * of the original {@link LogicalCalc}'s inputs.
  *
  * @see FilterCalcMergeRule
@@ -70,7 +70,7 @@ public class ProjectCalcMergeRule extends AlgOptRule {
     public ProjectCalcMergeRule( AlgBuilderFactory algBuilderFactory ) {
         super(
                 operand(
-                        LogicalProject.class,
+                        LogicalRelProject.class,
                         operand( LogicalCalc.class, any() ) ),
                 algBuilderFactory,
                 null );
@@ -79,7 +79,7 @@ public class ProjectCalcMergeRule extends AlgOptRule {
 
     @Override
     public void onMatch( AlgOptRuleCall call ) {
-        final LogicalProject project = call.alg( 0 );
+        final LogicalRelProject project = call.alg( 0 );
         final LogicalCalc calc = call.alg( 1 );
 
         // Don't merge a project which contains windowed aggregates onto a calc. That would effectively be pushing a windowed aggregate down

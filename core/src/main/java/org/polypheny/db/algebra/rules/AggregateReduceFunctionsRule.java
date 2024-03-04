@@ -48,7 +48,7 @@ import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.fun.AggFunction;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -91,7 +91,7 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
     /**
      * The singleton.
      */
-    public static final AggregateReduceFunctionsRule INSTANCE = new AggregateReduceFunctionsRule( operand( LogicalAggregate.class, any() ), AlgFactories.LOGICAL_BUILDER );
+    public static final AggregateReduceFunctionsRule INSTANCE = new AggregateReduceFunctionsRule( operand( LogicalRelAggregate.class, any() ), AlgFactories.LOGICAL_BUILDER );
 
 
     /**

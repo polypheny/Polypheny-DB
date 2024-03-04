@@ -45,8 +45,8 @@ import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.NewExpression;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.rex.RexBuilder;
@@ -84,14 +84,14 @@ class LixToAlgTranslator {
             switch ( method ) {
                 case SELECT:
                     input = translate( call.targetExpression );
-                    return LogicalProject.create(
+                    return LogicalRelProject.create(
                             input,
                             toRex( input, (FunctionExpression<?>) call.expressions.get( 0 ) ),
                             (List<String>) null );
 
                 case WHERE:
                     input = translate( call.targetExpression );
-                    return LogicalFilter.create(
+                    return LogicalRelFilter.create(
                             input,
                             toRex( (FunctionExpression<?>) call.expressions.get( 0 ), input ) );
 

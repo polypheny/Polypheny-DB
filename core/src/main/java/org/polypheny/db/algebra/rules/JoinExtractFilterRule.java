@@ -36,26 +36,26 @@ package org.polypheny.db.algebra.rules;
 
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Join;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Rule to convert an {@link LogicalJoin inner join} to a {@link LogicalFilter filter} on top of a {@link LogicalJoin cartesian inner join}.
+ * Rule to convert an {@link LogicalRelJoin inner join} to a {@link LogicalRelFilter filter} on top of a {@link LogicalRelJoin cartesian inner join}.
  *
  * One benefit of this transformation is that after it, the join condition can be combined with conditions and expressions
  * above the join. It also makes the <code>FennelCartesianJoinRule</code> applicable.
  *
- * The constructor is parameterized to allow any sub-class of {@link Join}, not just {@link LogicalJoin}.
+ * The constructor is parameterized to allow any sub-class of {@link Join}, not just {@link LogicalRelJoin}.
  */
 public final class JoinExtractFilterRule extends AbstractJoinExtractFilterRule {
 
     /**
      * The singleton.
      */
-    public static final JoinExtractFilterRule INSTANCE = new JoinExtractFilterRule( LogicalJoin.class, AlgFactories.LOGICAL_BUILDER );
+    public static final JoinExtractFilterRule INSTANCE = new JoinExtractFilterRule( LogicalRelJoin.class, AlgFactories.LOGICAL_BUILDER );
 
 
     /**

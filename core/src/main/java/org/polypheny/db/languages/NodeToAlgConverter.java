@@ -26,7 +26,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgStructuredTypeFlattener;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexSubQuery;
@@ -91,7 +91,7 @@ public interface NodeToAlgConverter {
         boolean isTrimUnusedFields();
 
         /**
-         * Returns the {@code createValuesRel} option. Controls whether instances of {@link LogicalValues} are generated.
+         * Returns the {@code createValuesRel} option. Controls whether instances of {@link LogicalRelValues} are generated.
          * These may not be supported by all physical implementations.
          */
         boolean isCreateValuesAlg();
@@ -108,7 +108,7 @@ public interface NodeToAlgConverter {
 
         /**
          * Returns the {@code inSubQueryThreshold} option, default {@link #DEFAULT_IN_SUB_QUERY_THRESHOLD}. Controls the list size threshold under which {#@link #convertInToOr} is used. Lists of this size
-         * or greater will instead be converted to use a join against an inline table ({@link LogicalValues}) rather than a predicate. A threshold of 0 forces usage of an inline table in all
+         * or greater will instead be converted to use a join against an inline table ({@link LogicalRelValues}) rather than a predicate. A threshold of 0 forces usage of an inline table in all
          * cases; a threshold of {@link Integer#MAX_VALUE} forces usage of OR in all cases.
          */
         int getInSubQueryThreshold();

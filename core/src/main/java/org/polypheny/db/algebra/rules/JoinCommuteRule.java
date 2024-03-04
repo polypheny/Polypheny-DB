@@ -41,7 +41,7 @@ import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptRule;
@@ -87,7 +87,7 @@ public class JoinCommuteRule extends AlgOptRule {
 
 
     private JoinCommuteRule( boolean swapOuter ) {
-        this( LogicalJoin.class, AlgFactories.LOGICAL_BUILDER, swapOuter );
+        this( LogicalRelJoin.class, AlgFactories.LOGICAL_BUILDER, swapOuter );
     }
 
 

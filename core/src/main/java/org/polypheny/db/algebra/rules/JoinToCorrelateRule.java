@@ -38,8 +38,8 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.SemiJoinType;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.CorrelationId;
-import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelCorrelate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
@@ -55,7 +55,7 @@ import org.polypheny.db.util.Util;
 
 
 /**
- * Rule that converts a {@link LogicalJoin} into a {@link LogicalCorrelate}, which can then be implemented using nested loops.
+ * Rule that converts a {@link LogicalRelJoin} into a {@link LogicalRelCorrelate}, which can then be implemented using nested loops.
  *
  * For example,
  *
@@ -78,13 +78,13 @@ public class JoinToCorrelateRule extends AlgOptRule {
      * Creates a JoinToCorrelateRule.
      */
     public JoinToCorrelateRule( AlgBuilderFactory algBuilderFactory ) {
-        super( operand( LogicalJoin.class, any() ), algBuilderFactory, null );
+        super( operand( LogicalRelJoin.class, any() ), algBuilderFactory, null );
     }
 
 
     @Override
     public boolean matches( AlgOptRuleCall call ) {
-        LogicalJoin join = call.alg( 0 );
+        LogicalRelJoin join = call.alg( 0 );
         switch ( join.getJoinType() ) {
             case INNER:
             case LEFT:
@@ -101,7 +101,7 @@ public class JoinToCorrelateRule extends AlgOptRule {
     @Override
     public void onMatch( AlgOptRuleCall call ) {
         assert matches( call );
-        final LogicalJoin join = call.alg( 0 );
+        final LogicalRelJoin join = call.alg( 0 );
         AlgNode right = join.getRight();
         final AlgNode left = join.getLeft();
         final int leftFieldCount = left.getTupleType().getFieldCount();
@@ -127,7 +127,7 @@ public class JoinToCorrelateRule extends AlgOptRule {
 
         algBuilder.push( right ).filter( joinCondition );
 
-        AlgNode newRel = LogicalCorrelate.create( left, algBuilder.build(), correlationId, requiredColumns.build(), SemiJoinType.of( join.getJoinType() ) );
+        AlgNode newRel = LogicalRelCorrelate.create( left, algBuilder.build(), correlationId, requiredColumns.build(), SemiJoinType.of( join.getJoinType() ) );
         call.transformTo( newRel );
     }
 

@@ -96,10 +96,10 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
-import org.polypheny.db.algebra.logical.relational.LogicalSort;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -167,8 +167,8 @@ import org.polypheny.db.util.mapping.Mappings;
  * the particular relational expression. But it makes common tasks more straightforward and concise.
  * <p>
  * {@code AlgBuilder} uses factories to create relational expressions.
- * By default, it uses the default factories, which create logical relational expressions ({@link LogicalFilter},
- * {@link LogicalProject} and so forth). But you could override those factories so that, say, {@code filter} creates
+ * By default, it uses the default factories, which create logical relational expressions ({@link LogicalRelFilter},
+ * {@link LogicalRelProject} and so forth). But you could override those factories so that, say, {@code filter} creates
  * instead a {@code HiveFilter}.
  * <p>
  * It is not thread-safe.
@@ -1344,7 +1344,7 @@ public class AlgBuilder {
             throw new GenericRuntimeException( "Invalid table name: " + String.join( ".", names ) );
         }
 
-        final AlgNode scan = scanFactory.createScan( cluster, entity );
+        final AlgNode scan = scanFactory.createRelScan( cluster, entity );
         push( scan );
         rename( entity.getRowType().getFieldNames() );
         return this;
@@ -1352,7 +1352,7 @@ public class AlgBuilder {
 
 
     public AlgBuilder scan( @Nonnull Entity entity ) {
-        final AlgNode scan = scanFactory.createScan( cluster, entity );
+        final AlgNode scan = scanFactory.createRelScan( cluster, entity );
         push( scan );
         rename( entity.getRowType().getFieldNames() );
         return this;
@@ -1373,7 +1373,7 @@ public class AlgBuilder {
 
 
     public AlgBuilder scan( @Nonnull PhysicalEntity entity ) {
-        final AlgNode scan = scanFactory.createScan( cluster, entity );
+        final AlgNode scan = scanFactory.createRelScan( cluster, entity );
         push( scan );
         return this;
     }
@@ -2551,8 +2551,8 @@ public class AlgBuilder {
                 builder.makeInputRef( nodesScan.getTupleType().getFields().get( 0 ).getType(), 0 ),
                 builder.makeInputRef( propertiesScan.getTupleType().getFields().get( 0 ).getType(), nodesScan.getTupleType().getFields().size() ) );
 
-        LogicalJoin join = new LogicalJoin( nodesScan.getCluster(), out, nodesScan, propertiesScan, nodeCondition, Set.of(), JoinAlgType.LEFT, false, ImmutableList.of() );
-        return LogicalSort.create(
+        LogicalRelJoin join = new LogicalRelJoin( nodesScan.getCluster(), out, nodesScan, propertiesScan, nodeCondition, Set.of(), JoinAlgType.LEFT, false, ImmutableList.of() );
+        return LogicalRelSort.create(
                 join,
                 ImmutableList.of( RexIndexRef.of( 0, join.getTupleType().getFields() ) ),
                 AlgCollations.of( 0 ),

@@ -111,7 +111,7 @@ public class EnumerableMergeJoin extends EquiJoin implements EnumerableAlg {
         // We assume that the inputs are sorted. The price of sorting them has already been paid. The cost of the join is therefore proportional to the input and output size.
         final double rightRowCount = right.estimateRowCount( mq );
         final double leftRowCount = left.estimateRowCount( mq );
-        final double rowCount = mq.getRowCount( this );
+        final double rowCount = mq.getTupleCount( this );
         final double d = leftRowCount + rightRowCount + rowCount;
         return planner.getCostFactory().makeCost( d, 0, 0 );
     }

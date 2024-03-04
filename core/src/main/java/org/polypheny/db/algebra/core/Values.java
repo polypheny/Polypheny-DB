@@ -136,7 +136,7 @@ public abstract class Values extends AbstractAlgNode {
 
     @Override
     public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        double dRows = mq.getRowCount( this );
+        double dRows = mq.getTupleCount( this );
 
         // Assume CPU is negligible since values are precomputed.
         double dCpu = 1;

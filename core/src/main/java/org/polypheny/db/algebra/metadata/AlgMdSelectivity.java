@@ -81,7 +81,7 @@ public class AlgMdSelectivity implements MetadataHandler<BuiltInMetadata.Selecti
         int[] adjustments = new int[alg.getTupleType().getFieldCount()];
         RexBuilder rexBuilder = alg.getCluster().getRexBuilder();
         for ( AlgNode input : alg.getInputs() ) {
-            Double nRows = mq.getRowCount( input );
+            Double nRows = mq.getTupleCount( input );
             if ( nRows == null ) {
                 return null;
             }

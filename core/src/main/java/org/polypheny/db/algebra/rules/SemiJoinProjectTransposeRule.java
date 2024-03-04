@@ -41,7 +41,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.SemiJoin;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -79,7 +79,7 @@ public class SemiJoinProjectTransposeRule extends AlgOptRule {
      */
     private SemiJoinProjectTransposeRule( AlgBuilderFactory algBuilderFactory ) {
         super(
-                operand( SemiJoin.class, some( operand( LogicalProject.class, any() ) ) ),
+                operand( SemiJoin.class, some( operand( LogicalRelProject.class, any() ) ) ),
                 algBuilderFactory, null );
     }
 
@@ -87,7 +87,7 @@ public class SemiJoinProjectTransposeRule extends AlgOptRule {
     @Override
     public void onMatch( AlgOptRuleCall call ) {
         SemiJoin semiJoin = call.alg( 0 );
-        LogicalProject project = call.alg( 1 );
+        LogicalRelProject project = call.alg( 1 );
 
         // Convert the LHS semi-join keys to reference the child projection expression; all projection expressions must be RexInputRefs, otherwise, we wouldn't have created this semi-join.
         final List<Integer> newLeftKeys = new ArrayList<>();
@@ -120,7 +120,7 @@ public class SemiJoinProjectTransposeRule extends AlgOptRule {
      * @param semiJoin the semijoin
      * @return the modified semijoin condition
      */
-    private RexNode adjustCondition( LogicalProject project, SemiJoin semiJoin ) {
+    private RexNode adjustCondition( LogicalRelProject project, SemiJoin semiJoin ) {
         // create two RexPrograms -- the bottom one representing a concatenation of the project and the RHS of the semijoin and the top one representing the semijoin condition
 
         RexBuilder rexBuilder = project.getCluster().getRexBuilder();

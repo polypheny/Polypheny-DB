@@ -33,46 +33,58 @@
 
 package org.polypheny.db.algebra.logical.relational;
 
-
-import org.polypheny.db.algebra.AlgDistribution;
-import org.polypheny.db.algebra.AlgDistributionTraitDef;
+import com.google.common.collect.ImmutableList;
+import java.util.List;
+import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
-import org.polypheny.db.algebra.core.Exchange;
+import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
+import org.polypheny.db.rex.RexNode;
 
 
 /**
- * Sub-class of {@link Exchange} not targeted at any particular engine or calling convention.
+ * Sub-class of {@link org.polypheny.db.algebra.core.Sort} not targeted at any particular engine or calling convention.
  */
-public final class LogicalExchange extends Exchange implements RelAlg {
+public final class LogicalRelSort extends Sort implements RelAlg {
 
-    private LogicalExchange( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, AlgDistribution distribution ) {
-        super( cluster, traitSet, input, distribution );
+    private LogicalRelSort( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, AlgCollation collation, @Nullable List<RexNode> fieldExps, RexNode offset, RexNode fetch ) {
+        super( cluster, traitSet, input, collation, fieldExps, offset, fetch );
         assert traitSet.containsIfApplicable( Convention.NONE );
     }
 
 
     /**
-     * Creates a LogicalExchange.
+     * Creates a LogicalSort.
      *
      * @param input Input relational expression
-     * @param distribution Distribution specification
+     * @param collation array of sort specifications
+     * @param offset Expression for number of rows to discard before returning first row
+     * @param fetch Expression for number of rows to fetch
      */
-    public static LogicalExchange create( AlgNode input, AlgDistribution distribution ) {
+    public static LogicalRelSort create( AlgNode input, AlgCollation collation, RexNode offset, RexNode fetch ) {
         AlgOptCluster cluster = input.getCluster();
-        distribution = AlgDistributionTraitDef.INSTANCE.canonize( distribution );
-        AlgTraitSet traitSet = input.getTraitSet().replace( Convention.NONE ).replace( distribution );
-        return new LogicalExchange( cluster, traitSet, input, distribution );
+        collation = AlgCollationTraitDef.INSTANCE.canonize( collation );
+        AlgTraitSet traitSet = input.getTraitSet().replace( Convention.NONE ).replace( collation );
+        return new LogicalRelSort( cluster, traitSet, input, collation, null, offset, fetch );
+    }
+
+
+    public static AlgNode create( AlgNode input, List<RexNode> fieldExps, AlgCollation collation, RexNode offset, RexNode fetch ) {
+        collation = AlgCollationTraitDef.INSTANCE.canonize( collation );
+        AlgTraitSet traitSet = input.getTraitSet().replace( Convention.NONE ).replace( collation );
+        return new LogicalRelSort( input.getCluster(), traitSet, input, collation, fieldExps, offset, fetch );
     }
 
 
     @Override
-    public Exchange copy( AlgTraitSet traitSet, AlgNode newInput, AlgDistribution newDistribution ) {
-        return new LogicalExchange( getCluster(), traitSet, newInput, newDistribution );
+    public Sort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation, ImmutableList<RexNode> fieldExps, RexNode offset, RexNode fetch ) {
+        return new LogicalRelSort( getCluster(), traitSet, newInput, newCollation, fieldExps, offset, fetch );
     }
 
 

@@ -63,14 +63,14 @@ import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.relational.RelScan;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
-import org.polypheny.db.algebra.logical.relational.LogicalTableFunctionScan;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelTableFunctionScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -139,9 +139,9 @@ public class AlgFieldTrimmer implements AlgProducingVisitor3<TrimResult, Immutab
                 put( SemiJoin.class, ( a, i, s ) -> trimFields( (SemiJoin) a, i, s ) );
                 put( SetOp.class, ( a, i, s ) -> trimFields( (SetOp) a, i, s ) );
                 put( Sort.class, ( a, i, s ) -> trimFields( (Sort) a, i, s ) );
-                put( LogicalValues.class, ( a, i, s ) -> trimFields( (LogicalValues) a, i, s ) );
+                put( LogicalRelValues.class, ( a, i, s ) -> trimFields( (LogicalRelValues) a, i, s ) );
                 put( LogicalRelModify.class, ( a, i, s ) -> trimFields( (LogicalRelModify) a, i, s ) );
-                put( LogicalTableFunctionScan.class, ( a, i, s ) -> trimFields( (LogicalTableFunctionScan) a, i, s ) );
+                put( LogicalRelTableFunctionScan.class, ( a, i, s ) -> trimFields( (LogicalRelTableFunctionScan) a, i, s ) );
             }}
     );
 
@@ -319,7 +319,7 @@ public class AlgFieldTrimmer implements AlgProducingVisitor3<TrimResult, Immutab
 
 
     /**
-     * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link LogicalProject}.
+     * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link LogicalRelProject}.
      */
     public TrimResult trimFields( Project project, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
         final AlgDataType rowType = project.getTupleType();
@@ -397,7 +397,7 @@ public class AlgFieldTrimmer implements AlgProducingVisitor3<TrimResult, Immutab
 
 
     /**
-     * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link LogicalFilter}.
+     * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link LogicalRelFilter}.
      */
     public TrimResult trimFields( Filter filter, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
         final AlgDataType rowType = filter.getTupleType();
@@ -483,7 +483,7 @@ public class AlgFieldTrimmer implements AlgProducingVisitor3<TrimResult, Immutab
 
 
     /**
-     * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link LogicalJoin}.
+     * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link LogicalRelJoin}.
      */
     public TrimResult trimFields( Join join, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
         final int fieldCount = join.getSystemFieldList().size() + join.getLeft().getTupleType().getFieldCount() + join.getRight().getTupleType().getFieldCount();
@@ -668,7 +668,7 @@ public class AlgFieldTrimmer implements AlgProducingVisitor3<TrimResult, Immutab
 
 
     /**
-     * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link LogicalAggregate}.
+     * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link LogicalRelAggregate}.
      */
     public TrimResult trimFields( Aggregate aggregate, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
         // Fields:
@@ -813,9 +813,9 @@ public class AlgFieldTrimmer implements AlgProducingVisitor3<TrimResult, Immutab
 
 
     /**
-     * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link LogicalTableFunctionScan}.
+     * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link LogicalRelTableFunctionScan}.
      */
-    public TrimResult trimFields( LogicalTableFunctionScan tabFun, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
+    public TrimResult trimFields( LogicalRelTableFunctionScan tabFun, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
         final AlgDataType rowType = tabFun.getTupleType();
         final int fieldCount = rowType.getFieldCount();
         final List<AlgNode> newInputs = new ArrayList<>();
@@ -831,7 +831,7 @@ public class AlgFieldTrimmer implements AlgProducingVisitor3<TrimResult, Immutab
             newInputs.add( trimResult.left );
         }
 
-        LogicalTableFunctionScan newTabFun = tabFun;
+        LogicalRelTableFunctionScan newTabFun = tabFun;
         if ( !tabFun.getInputs().equals( newInputs ) ) {
             newTabFun = tabFun.copy(
                     tabFun.getTraitSet(),
@@ -850,9 +850,9 @@ public class AlgFieldTrimmer implements AlgProducingVisitor3<TrimResult, Immutab
 
 
     /**
-     * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link LogicalValues}.
+     * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link LogicalRelValues}.
      */
-    public TrimResult trimFields( LogicalValues values, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
+    public TrimResult trimFields( LogicalRelValues values, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
         final AlgDataType rowType = values.getTupleType();
         final int fieldCount = rowType.getFieldCount();
 
@@ -878,7 +878,7 @@ public class AlgFieldTrimmer implements AlgProducingVisitor3<TrimResult, Immutab
 
         final Mapping mapping = createMapping( fieldsUsed, fieldCount );
         final AlgDataType newRowType = AlgOptUtil.permute( values.getCluster().getTypeFactory(), rowType, mapping );
-        final LogicalValues newValues = LogicalValues.create( values.getCluster(), newRowType, newTuples.build() );
+        final LogicalRelValues newValues = LogicalRelValues.create( values.getCluster(), newRowType, newTuples.build() );
         return result( newValues, mapping );
     }
 

@@ -31,8 +31,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -357,8 +357,8 @@ public class RexTransformerTest {
                 ON CAST(a.empno AS int) <> b.deptno""";
 
         final AlgNode algNode = toAlg( sql );
-        final LogicalProject project = (LogicalProject) algNode;
-        final LogicalJoin join = (LogicalJoin) project.getInput( 0 );
+        final LogicalRelProject project = (LogicalRelProject) algNode;
+        final LogicalRelJoin join = (LogicalRelJoin) project.getInput( 0 );
         final List<RexNode> leftJoinKeys = new ArrayList<>();
         final List<RexNode> rightJoinKeys = new ArrayList<>();
         final ArrayList<AlgDataTypeField> sysFieldList = new ArrayList<>();

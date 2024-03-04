@@ -34,8 +34,6 @@
 package org.polypheny.db.algebra;
 
 
-import org.polypheny.db.algebra.core.TableFunctionScan;
-import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
@@ -56,19 +54,21 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgSort;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgTransformer;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnwind;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
-import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
-import org.polypheny.db.algebra.logical.relational.LogicalExchange;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
-import org.polypheny.db.algebra.logical.relational.LogicalMatch;
-import org.polypheny.db.algebra.logical.relational.LogicalMinus;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelCorrelate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelExchange;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelIntersect;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelMatch;
+import org.polypheny.db.algebra.logical.relational.LogicalRelMinus;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
-import org.polypheny.db.algebra.logical.relational.LogicalSort;
-import org.polypheny.db.algebra.logical.relational.LogicalUnion;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
+import org.polypheny.db.algebra.logical.relational.LogicalRelTableFunctionScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 
 
 /**
@@ -76,33 +76,33 @@ import org.polypheny.db.algebra.logical.relational.LogicalValues;
  */
 public interface AlgShuttle {
 
-    AlgNode visit( RelScan<?> scan );
+    AlgNode visit( LogicalRelScan scan );
 
-    AlgNode visit( TableFunctionScan scan );
+    AlgNode visit( LogicalRelTableFunctionScan scan );
 
-    AlgNode visit( LogicalValues values );
+    AlgNode visit( LogicalRelValues values );
 
-    AlgNode visit( LogicalFilter filter );
+    AlgNode visit( LogicalRelFilter filter );
 
-    AlgNode visit( LogicalProject project );
+    AlgNode visit( LogicalRelProject project );
 
-    AlgNode visit( LogicalJoin join );
+    AlgNode visit( LogicalRelJoin join );
 
-    AlgNode visit( LogicalCorrelate correlate );
+    AlgNode visit( LogicalRelCorrelate correlate );
 
-    AlgNode visit( LogicalUnion union );
+    AlgNode visit( LogicalRelUnion union );
 
-    AlgNode visit( LogicalIntersect intersect );
+    AlgNode visit( LogicalRelIntersect intersect );
 
-    AlgNode visit( LogicalMinus minus );
+    AlgNode visit( LogicalRelMinus minus );
 
-    AlgNode visit( LogicalAggregate aggregate );
+    AlgNode visit( LogicalRelAggregate aggregate );
 
-    AlgNode visit( LogicalMatch match );
+    AlgNode visit( LogicalRelMatch match );
 
-    AlgNode visit( LogicalSort sort );
+    AlgNode visit( LogicalRelSort sort );
 
-    AlgNode visit( LogicalExchange exchange );
+    AlgNode visit( LogicalRelExchange exchange );
 
     AlgNode visit( LogicalRelModify modify );
 

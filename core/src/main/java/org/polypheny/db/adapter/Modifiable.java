@@ -38,8 +38,8 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgTransformer;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
 import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -179,8 +179,8 @@ public interface Modifiable extends Scannable {
         AlgDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
 
         List<AlgNode> inputs = new ArrayList<>();
-        LogicalProject preparedNodes = LogicalProject.create(
-                LogicalValues.createOneRow( cluster ),
+        LogicalRelProject preparedNodes = LogicalRelProject.create(
+                LogicalRelValues.createOneRow( cluster ),
                 List.of(
                         rexBuilder.makeDynamicParam( nonNullGraphId.apply( typeFactory ), 0 ), // id
                         rexBuilder.makeDynamicParam( nonNullText.apply( typeFactory ), 1 ) ), // label
@@ -188,8 +188,8 @@ public interface Modifiable extends Scannable {
 
         inputs.add( getModify( nodesTable, preparedNodes, Modify.Operation.INSERT, null, null ) );
 
-        LogicalProject preparedNProperties = LogicalProject.create(
-                LogicalValues.createOneRow( cluster ),
+        LogicalRelProject preparedNProperties = LogicalRelProject.create(
+                LogicalRelValues.createOneRow( cluster ),
                 List.of(
                         rexBuilder.makeDynamicParam( nonNullGraphId.apply( typeFactory ), 0 ), // id
                         rexBuilder.makeDynamicParam( nonNullText.apply( typeFactory ), 1 ), // key
@@ -234,8 +234,8 @@ public interface Modifiable extends Scannable {
         AlgDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
 
         List<AlgNode> inputs = new ArrayList<>();
-        LogicalProject preparedEdges = LogicalProject.create(
-                LogicalValues.createOneRow( cluster ),
+        LogicalRelProject preparedEdges = LogicalRelProject.create(
+                LogicalRelValues.createOneRow( cluster ),
                 List.of(
                         rexBuilder.makeDynamicParam( nonNullGraphId.apply( typeFactory ), 0 ), // id
                         rexBuilder.makeDynamicParam( nullableText.apply( typeFactory ), 1 ), // label
@@ -245,8 +245,8 @@ public interface Modifiable extends Scannable {
 
         inputs.add( getModify( edgesTable, preparedEdges, Modify.Operation.INSERT, null, null ) );
 
-        LogicalProject preparedEProperties = LogicalProject.create(
-                LogicalValues.createOneRow( cluster ),
+        LogicalRelProject preparedEProperties = LogicalRelProject.create(
+                LogicalRelValues.createOneRow( cluster ),
                 List.of(
                         rexBuilder.makeDynamicParam( nonNullGraphId.apply( typeFactory ), 0 ), // id
                         rexBuilder.makeDynamicParam( nonNullText.apply( typeFactory ), 1 ), // key
@@ -350,7 +350,7 @@ public interface Modifiable extends Scannable {
             builder.transform( ModelTrait.RELATIONAL, DocumentType.ofRelational(), false, null );
             AlgNode provider = builder.build();
             // right side prepared
-            builder.push( LogicalValues.createOneRow( modify.getCluster() ) );
+            builder.push( LogicalRelValues.createOneRow( modify.getCluster() ) );
 
             builder.project( DocumentType.ofRelational().getFields().stream().map( f -> new RexDynamicParam( f.getType(), f.getIndex() ) ).toList(), DocumentType.ofRelational().getFieldNames() );
 

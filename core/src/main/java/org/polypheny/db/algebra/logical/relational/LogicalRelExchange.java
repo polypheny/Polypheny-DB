@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,11 +34,11 @@
 package org.polypheny.db.algebra.logical.relational;
 
 
-import java.util.List;
-import org.polypheny.db.algebra.AlgInput;
+import org.polypheny.db.algebra.AlgDistribution;
+import org.polypheny.db.algebra.AlgDistributionTraitDef;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
-import org.polypheny.db.algebra.core.Union;
+import org.polypheny.db.algebra.core.Exchange;
 import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -46,42 +46,33 @@ import org.polypheny.db.plan.Convention;
 
 
 /**
- * Sub-class of {@link org.polypheny.db.algebra.core.Union} not targeted at any particular engine or calling convention.
+ * Sub-class of {@link Exchange} not targeted at any particular engine or calling convention.
  */
-public final class LogicalUnion extends Union implements RelAlg {
+public final class LogicalRelExchange extends Exchange implements RelAlg {
+
+    private LogicalRelExchange( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, AlgDistribution distribution ) {
+        super( cluster, traitSet, input, distribution );
+        assert traitSet.containsIfApplicable( Convention.NONE );
+    }
+
 
     /**
-     * Creates a LogicalUnion.
+     * Creates a LogicalExchange.
      *
-     * Use {@link #create} unless you know what you're doing.
+     * @param input Input relational expression
+     * @param distribution Distribution specification
      */
-    public LogicalUnion( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
-        super( cluster, traitSet, inputs, all );
-    }
-
-
-    /**
-     * Creates a LogicalUnion by parsing serialized output.
-     */
-    public LogicalUnion( AlgInput input ) {
-        super( input );
-    }
-
-
-    /**
-     * Creates a LogicalUnion.
-     */
-    public static LogicalUnion create( List<AlgNode> inputs, boolean all ) {
-        final AlgOptCluster cluster = inputs.get( 0 ).getCluster();
-        final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
-        return new LogicalUnion( cluster, traitSet, inputs, all );
+    public static LogicalRelExchange create( AlgNode input, AlgDistribution distribution ) {
+        AlgOptCluster cluster = input.getCluster();
+        distribution = AlgDistributionTraitDef.INSTANCE.canonize( distribution );
+        AlgTraitSet traitSet = input.getTraitSet().replace( Convention.NONE ).replace( distribution );
+        return new LogicalRelExchange( cluster, traitSet, input, distribution );
     }
 
 
     @Override
-    public LogicalUnion copy( AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
-        assert traitSet.containsIfApplicable( Convention.NONE );
-        return new LogicalUnion( getCluster(), traitSet, inputs, all );
+    public Exchange copy( AlgTraitSet traitSet, AlgNode newInput, AlgDistribution newDistribution ) {
+        return new LogicalRelExchange( getCluster(), traitSet, newInput, newDistribution );
     }
 
 

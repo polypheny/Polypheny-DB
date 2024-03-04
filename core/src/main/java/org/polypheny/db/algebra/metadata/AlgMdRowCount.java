@@ -62,7 +62,7 @@ import org.polypheny.db.util.Util;
 
 
 /**
- * RelMdRowCount supplies a default implementation of {@link AlgMetadataQuery#getRowCount} for the standard logical algebra.
+ * RelMdRowCount supplies a default implementation of {@link AlgMetadataQuery#getTupleCount} for the standard logical algebra.
  */
 @Slf4j
 public class AlgMdRowCount implements MetadataHandler<BuiltInMetadata.RowCount> {
@@ -79,7 +79,7 @@ public class AlgMdRowCount implements MetadataHandler<BuiltInMetadata.RowCount> 
     /**
      * Catch-all implementation for {@link BuiltInMetadata.RowCount#getRowCount()}, invoked using reflection.
      *
-     * @see AlgMetadataQuery#getRowCount(AlgNode)
+     * @see AlgMetadataQuery#getTupleCount(AlgNode)
      */
     public Double getRowCount( AlgNode alg, AlgMetadataQuery mq ) {
         return alg.estimateRowCount( mq );
@@ -88,12 +88,12 @@ public class AlgMdRowCount implements MetadataHandler<BuiltInMetadata.RowCount> 
 
     public Double getRowCount( AlgSubset subset, AlgMetadataQuery mq ) {
         if ( !Bug.CALCITE_1048_FIXED ) {
-            return mq.getRowCount( Util.first( subset.getBest(), subset.getOriginal() ) );
+            return mq.getTupleCount( Util.first( subset.getBest(), subset.getOriginal() ) );
         }
         Double v = null;
         for ( AlgNode r : subset.getAlgs() ) {
             try {
-                v = NumberUtil.min( v, mq.getRowCount( r ) );
+                v = NumberUtil.min( v, mq.getTupleCount( r ) );
             } catch ( CyclicMetadataException e ) {
                 // ignore this alg; there will be other, non-cyclic ones
             } catch ( Throwable e ) {
@@ -107,7 +107,7 @@ public class AlgMdRowCount implements MetadataHandler<BuiltInMetadata.RowCount> 
     public Double getRowCount( Union alg, AlgMetadataQuery mq ) {
         double rowCount = 0.0;
         for ( AlgNode input : alg.getInputs() ) {
-            Double partialRowCount = mq.getRowCount( input );
+            Double partialRowCount = mq.getTupleCount( input );
             if ( partialRowCount == null ) {
                 return null;
             }
@@ -120,7 +120,7 @@ public class AlgMdRowCount implements MetadataHandler<BuiltInMetadata.RowCount> 
     public Double getRowCount( Intersect alg, AlgMetadataQuery mq ) {
         Double rowCount = null;
         for ( AlgNode input : alg.getInputs() ) {
-            Double partialRowCount = mq.getRowCount( input );
+            Double partialRowCount = mq.getTupleCount( input );
             if ( rowCount == null || partialRowCount != null && partialRowCount < rowCount ) {
                 rowCount = partialRowCount;
             }
@@ -132,7 +132,7 @@ public class AlgMdRowCount implements MetadataHandler<BuiltInMetadata.RowCount> 
     public Double getRowCount( Minus alg, AlgMetadataQuery mq ) {
         Double rowCount = null;
         for ( AlgNode input : alg.getInputs() ) {
-            Double partialRowCount = mq.getRowCount( input );
+            Double partialRowCount = mq.getTupleCount( input );
             if ( rowCount == null || partialRowCount != null && partialRowCount < rowCount ) {
                 rowCount = partialRowCount;
             }
@@ -152,12 +152,12 @@ public class AlgMdRowCount implements MetadataHandler<BuiltInMetadata.RowCount> 
 
 
     public Double getRowCount( Project alg, AlgMetadataQuery mq ) {
-        return mq.getRowCount( alg.getInput() );
+        return mq.getTupleCount( alg.getInput() );
     }
 
 
     public Double getRowCount( Sort alg, AlgMetadataQuery mq ) {
-        Double rowCount = mq.getRowCount( alg.getInput() );
+        Double rowCount = mq.getTupleCount( alg.getInput() );
         if ( rowCount == null ) {
             return null;
         }
@@ -181,7 +181,7 @@ public class AlgMdRowCount implements MetadataHandler<BuiltInMetadata.RowCount> 
 
 
     public Double getRowCount( EnumerableLimit alg, AlgMetadataQuery mq ) {
-        Double rowCount = mq.getRowCount( alg.getInput() );
+        Double rowCount = mq.getTupleCount( alg.getInput() );
         if ( rowCount == null ) {
             return null;
         }
@@ -206,7 +206,7 @@ public class AlgMdRowCount implements MetadataHandler<BuiltInMetadata.RowCount> 
 
     // Covers Converter, Interpreter
     public Double getRowCount( SingleAlg alg, AlgMetadataQuery mq ) {
-        return mq.getRowCount( alg.getInput() );
+        return mq.getTupleCount( alg.getInput() );
     }
 
 
@@ -221,7 +221,7 @@ public class AlgMdRowCount implements MetadataHandler<BuiltInMetadata.RowCount> 
 
         return NumberUtil.multiply(
                 mq.getSelectivity( alg.getLeft(), semiJoinSelectivity ),
-                mq.getRowCount( alg.getLeft() ) );
+                mq.getTupleCount( alg.getLeft() ) );
     }
 
 
@@ -231,7 +231,7 @@ public class AlgMdRowCount implements MetadataHandler<BuiltInMetadata.RowCount> 
         // rowCount is the cardinality of the group by columns
         Double distinctRowCount = mq.getDistinctRowCount( alg.getInput(), groupKey, null );
         if ( distinctRowCount == null ) {
-            distinctRowCount = mq.getRowCount( alg.getInput() ) / 10;
+            distinctRowCount = mq.getTupleCount( alg.getInput() ) / 10;
         }
 
         // Grouping sets multiply

@@ -28,8 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
-import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
@@ -83,6 +81,31 @@ public class AdapterManager {
         return Catalog.snapshot().getAdapterTemplate( name, adapterType ).orElseThrow();
     }
 
+
+    public List<AdapterInformation> getAdapterTemplates( AdapterType adapterType ) {
+        List<AdapterTemplate> adapterTemplates = Catalog.snapshot().getAdapterTemplates( adapterType );
+
+        List<AdapterInformation> result = new ArrayList<>();
+
+        for ( AdapterTemplate adapterTemplate : adapterTemplates ) {
+            // Exclude abstract classes
+            if ( !Modifier.isAbstract( adapterTemplate.getClazz().getModifiers() ) ) {
+
+                AdapterProperties properties = adapterTemplate.getClazz().getAnnotation( AdapterProperties.class );
+                if ( properties == null ) {
+                    throw new GenericRuntimeException( adapterTemplate.getClazz().getSimpleName() + " does not annotate the adapter correctly" );
+                }
+                // Merge annotated AdapterSettings into settings
+                List<AbstractAdapterSetting> settings = AbstractAdapterSetting.fromAnnotations( adapterTemplate.getClazz().getAnnotations(), adapterTemplate.getClazz().getAnnotation( AdapterProperties.class ) );
+
+                result.add( new AdapterInformation( properties.name(), properties.description(), adapterType, settings, List.of( properties.usedModes() ) ) );
+            }
+        }
+
+        return result;
+    }
+
+
     @NotNull
     public Optional<Adapter<?>> getAdapter( String uniqueName ) {
         return Optional.ofNullable( adapterByName.get( uniqueName.toLowerCase() ) );
@@ -105,6 +128,7 @@ public class AdapterManager {
         return getAdapter( uniqueName ).filter( a -> a instanceof DataStore<?> ).map( a -> (DataStore<?>) a );
 
     }
+
 
     @NotNull
     public Optional<DataStore<?>> getStore( long id ) {
@@ -146,28 +170,7 @@ public class AdapterManager {
     }
 
 
-    public List<AdapterInformation> getAvailableAdapters( AdapterType adapterType ) {
-        List<AdapterTemplate> adapterTemplates = Catalog.snapshot().getAdapterTemplates( adapterType );
 
-        List<AdapterInformation> result = new ArrayList<>();
-
-        for ( AdapterTemplate adapterTemplate : adapterTemplates ) {
-            // Exclude abstract classes
-            if ( !Modifier.isAbstract( adapterTemplate.getClazz().getModifiers() ) ) {
-
-                AdapterProperties properties = adapterTemplate.getClazz().getAnnotation( AdapterProperties.class );
-                if ( properties == null ) {
-                    throw new GenericRuntimeException( adapterTemplate.getClazz().getSimpleName() + " does not annotate the adapter correctly" );
-                }
-                // Merge annotated AdapterSettings into settings
-                List<AbstractAdapterSetting> settings = AbstractAdapterSetting.fromAnnotations( adapterTemplate.getClazz().getAnnotations(), adapterTemplate.getClazz().getAnnotation( AdapterProperties.class ) );
-
-                result.add( new AdapterInformation( properties.name(), properties.description(), adapterType, settings, List.of( properties.usedModes() ) ) );
-            }
-        }
-
-        return result;
-    }
 
 
     public Adapter<?> addAdapter( String adapterName, String uniqueName, AdapterType adapterType, DeployMode mode, Map<String, String> settings ) {
@@ -238,24 +241,7 @@ public class AdapterManager {
     }
 
 
-    public List<AdapterInformation> getAvailableAdapters() {
-        List<AdapterInformation> adapters = new ArrayList<>( getAvailableAdapters( AdapterType.STORE ) );
-        adapters.addAll( getAvailableAdapters( AdapterType.SOURCE ) );
-        return adapters;
-    }
-
-
-    @AllArgsConstructor
-    @Value
-    public static class AdapterInformation {
-
-        public String name;
-        public String description;
-        public AdapterType type;
-        public List<AbstractAdapterSetting> settings;
-
-        public List<DeployMode> modes;
-
+    public record AdapterInformation(String name, String description, AdapterType type, List<AbstractAdapterSetting> settings, List<DeployMode> modes) {
 
         public static JsonSerializer<AdapterInformation> getSerializer() {
             return ( src, typeOfSrc, context ) -> {

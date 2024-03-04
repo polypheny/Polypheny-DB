@@ -38,8 +38,8 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
@@ -53,7 +53,7 @@ import org.polypheny.db.tools.AlgBuilderFactory;
  */
 public class ProjectFilterTransposeRule extends AlgOptRule {
 
-    public static final ProjectFilterTransposeRule INSTANCE = new ProjectFilterTransposeRule( LogicalProject.class, LogicalFilter.class, AlgFactories.LOGICAL_BUILDER, expr -> false );
+    public static final ProjectFilterTransposeRule INSTANCE = new ProjectFilterTransposeRule( LogicalRelProject.class, LogicalRelFilter.class, AlgFactories.LOGICAL_BUILDER, expr -> false );
 
     /**
      * Expressions that should be preserved in the projection

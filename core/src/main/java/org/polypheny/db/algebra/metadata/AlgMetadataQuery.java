@@ -224,7 +224,7 @@ public class AlgMetadataQuery {
      * @param alg the relational expression
      * @return estimated row count, or null if no reliable estimate can be determined
      */
-    public Double getRowCount( AlgNode alg ) {
+    public Double getTupleCount( AlgNode alg ) {
         for ( ; ; ) {
             try {
                 Double result = rowCountHandler.getRowCount( alg, this );

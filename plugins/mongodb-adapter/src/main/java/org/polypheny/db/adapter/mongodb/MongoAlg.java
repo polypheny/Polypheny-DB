@@ -50,8 +50,8 @@ import org.polypheny.db.adapter.mongodb.MongoPlugin.MongoStore;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
-import org.polypheny.db.algebra.core.relational.RelScan;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -184,7 +184,7 @@ public interface MongoAlg extends AlgNode {
 
 
         @Override
-        public AlgNode visit( LogicalProject project ) {
+        public AlgNode visit( LogicalRelProject project ) {
             super.visit( project );
 
             return project;
@@ -192,7 +192,7 @@ public interface MongoAlg extends AlgNode {
 
 
         @Override
-        public AlgNode visit( RelScan<?> scan ) {
+        public AlgNode visit( LogicalRelScan scan ) {
             super.visit( scan );
 
             return scan;

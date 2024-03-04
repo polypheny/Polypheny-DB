@@ -42,13 +42,13 @@ import org.polypheny.db.algebra.core.document.DocumentModify;
 import org.polypheny.db.algebra.core.document.DocumentSort;
 import org.polypheny.db.algebra.core.document.DocumentValues;
 import org.polypheny.db.algebra.core.relational.RelModify;
-import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.logistic.DataModel;
@@ -301,7 +301,7 @@ public class MongoRules {
 
 
     /**
-     * Rule to convert a {@link LogicalFilter} to a {@link MongoFilter}.
+     * Rule to convert a {@link LogicalRelFilter} to a {@link MongoFilter}.
      */
     private static class MongoFilterRule extends MongoConverterRule {
 
@@ -310,7 +310,7 @@ public class MongoRules {
 
         private MongoFilterRule() {
             super(
-                    LogicalFilter.class,
+                    LogicalRelFilter.class,
                     MongoFilterRule::supports,
                     Convention.NONE,
                     MongoAlg.CONVENTION,
@@ -318,14 +318,14 @@ public class MongoRules {
         }
 
 
-        private static boolean supports( LogicalFilter filter ) {
+        private static boolean supports( LogicalRelFilter filter ) {
             return (MongoConvention.mapsDocuments || !DocumentRules.containsDocument( filter )) && !containsIncompatible( filter );
         }
 
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final LogicalFilter filter = (LogicalFilter) alg;
+            final LogicalRelFilter filter = (LogicalRelFilter) alg;
             final AlgTraitSet traitSet = filter.getTraitSet().replace( out );
             return new MongoFilter(
                     alg.getCluster(),
@@ -367,7 +367,7 @@ public class MongoRules {
 
 
     /**
-     * Rule to convert a {@link LogicalProject} to a {@link MongoProject}.
+     * Rule to convert a {@link LogicalRelProject} to a {@link MongoProject}.
      */
     private static class MongoProjectRule extends MongoConverterRule {
 
@@ -376,7 +376,7 @@ public class MongoRules {
 
         private MongoProjectRule() {
             super(
-                    LogicalProject.class,
+                    LogicalRelProject.class,
                     project -> (MongoConvention.mapsDocuments || !DocumentRules.containsDocument( project ))
                             && !containsIncompatible( project )
                             && !UnsupportedRexCallVisitor.containsModelItem( project.getProjects() ),
@@ -388,7 +388,7 @@ public class MongoRules {
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final LogicalProject project = (LogicalProject) alg;
+            final LogicalRelProject project = (LogicalRelProject) alg;
             final AlgTraitSet traitSet = project.getTraitSet().replace( out );
             return new MongoProject(
                     project.getCluster(),
@@ -581,7 +581,7 @@ public class MongoRules {
 
 
             @Override
-            public AlgNode visit( RelScan<?> scan ) {
+            public AlgNode visit( LogicalRelScan scan ) {
                 supported = false;
                 return super.visit( scan );
             }
@@ -661,7 +661,7 @@ public class MongoRules {
 
 
     /**
-     * Rule to convert an {@link LogicalAggregate}
+     * Rule to convert an {@link LogicalRelAggregate}
      * to an {@link MongoAggregate}.
      */
     private static class MongoAggregateRule extends MongoConverterRule {
@@ -670,12 +670,12 @@ public class MongoRules {
 
 
         private MongoAggregateRule() {
-            super( LogicalAggregate.class, MongoAggregateRule::supported, Convention.NONE, MongoAlg.CONVENTION,
+            super( LogicalRelAggregate.class, MongoAggregateRule::supported, Convention.NONE, MongoAlg.CONVENTION,
                     MongoAggregateRule.class.getSimpleName() );
         }
 
 
-        private static boolean supported( LogicalAggregate aggregate ) {
+        private static boolean supported( LogicalRelAggregate aggregate ) {
             return aggregate.getAggCallList().stream().noneMatch( AggregateCall::isDistinct )
                     && aggregate.getModel() != DataModel.DOCUMENT
                     && aggregate.getAggCallList().stream().noneMatch( a -> a.getAggregation().getKind() == Kind.SINGLE_VALUE )
@@ -685,7 +685,7 @@ public class MongoRules {
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final LogicalAggregate agg = (LogicalAggregate) alg;
+            final LogicalRelAggregate agg = (LogicalRelAggregate) alg;
             final AlgTraitSet traitSet = agg.getTraitSet().replace( out );
             try {
                 return new MongoAggregate(

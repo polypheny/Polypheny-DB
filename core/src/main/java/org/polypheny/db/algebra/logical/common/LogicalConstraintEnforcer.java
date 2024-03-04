@@ -33,7 +33,7 @@ import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.common.ConstraintEnforcer;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.exceptions.ConstraintViolationException;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -190,7 +190,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
 
                 final AlgNode join = builder.join( JoinAlgType.LEFT, joinCondition ).build();
                 //builder.project( builder.fields() );
-                builder.push( LogicalFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NULL ), rexBuilder.makeInputRef( join, join.getTupleType().getFieldCount() - 1 ) ) ) );
+                builder.push( LogicalRelFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NULL ), rexBuilder.makeInputRef( join, join.getTupleType().getFieldCount() - 1 ) ) ) );
                 builder.project( builder.field( foreignKey.getColumnNames().get( 0 ) ) );
                 builder.rename( Collections.singletonList( "count$" + pos ) );
                 builder.projectPlus( builder.literal( pos ) );
@@ -316,7 +316,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
 
                 final AlgNode join = builder.join( JoinAlgType.LEFT, joinCondition ).build();
                 //builder.project( builder.fields() );
-                builder.push( LogicalFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NULL ), rexBuilder.makeInputRef( join, join.getTupleType().getFieldCount() - 1 ) ) ) );
+                builder.push( LogicalRelFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NULL ), rexBuilder.makeInputRef( join, join.getTupleType().getFieldCount() - 1 ) ) ) );
                 builder.project( builder.field( foreignKey.getColumnNames().get( 0 ) ) );
                 builder.rename( Collections.singletonList( "count$" + pos ) );
                 builder.projectPlus( builder.literal( pos ) );

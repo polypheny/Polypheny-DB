@@ -56,7 +56,7 @@ import org.polypheny.db.type.PolyType;
 /**
  * Sub-class of {@link org.polypheny.db.algebra.core.Values} not targeted at any particular engine or calling convention.
  */
-public class LogicalValues extends Values implements RelAlg {
+public class LogicalRelValues extends Values implements RelAlg {
 
     /**
      * Creates a LogicalValues.
@@ -67,7 +67,7 @@ public class LogicalValues extends Values implements RelAlg {
      * @param rowType Row type for tuples produced by this rel
      * @param tuples 2-dimensional array of tuple values to be produced; outer list contains tuples; each inner list is one tuple; all tuples must be of same length, conforming to rowType
      */
-    public LogicalValues( AlgOptCluster cluster, AlgTraitSet traitSet, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples ) {
+    public LogicalRelValues( AlgOptCluster cluster, AlgTraitSet traitSet, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples ) {
         super( cluster, rowType, tuples, traitSet.replace( ModelTrait.RELATIONAL ) );
     }
 
@@ -75,11 +75,11 @@ public class LogicalValues extends Values implements RelAlg {
     /**
      * Creates a LogicalValues.
      */
-    public static LogicalValues create( AlgOptCluster cluster, final AlgDataType rowType, final ImmutableList<ImmutableList<RexLiteral>> tuples ) {
+    public static LogicalRelValues create( AlgOptCluster cluster, final AlgDataType rowType, final ImmutableList<ImmutableList<RexLiteral>> tuples ) {
         final AlgMetadataQuery mq = cluster.getMetadataQuery();
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE )
                 .replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.values( mq, rowType, tuples ) );
-        return new LogicalValues( cluster, traitSet, rowType, tuples );
+        return new LogicalRelValues( cluster, traitSet, rowType, tuples );
     }
 
 
@@ -87,14 +87,14 @@ public class LogicalValues extends Values implements RelAlg {
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         assert traitSet.containsIfApplicable( Convention.NONE );
         assert inputs.isEmpty();
-        return new LogicalValues( getCluster(), traitSet, rowType, tuples );
+        return new LogicalRelValues( getCluster(), traitSet, rowType, tuples );
     }
 
 
     /**
      * Creates a LogicalValues that outputs no rows of a given row type.
      */
-    public static LogicalValues createEmpty( AlgOptCluster cluster, AlgDataType rowType ) {
+    public static LogicalRelValues createEmpty( AlgOptCluster cluster, AlgDataType rowType ) {
         return create( cluster, rowType, ImmutableList.of() );
     }
 
@@ -102,7 +102,7 @@ public class LogicalValues extends Values implements RelAlg {
     /**
      * Creates a LogicalValues that outputs one row and one column.
      */
-    public static LogicalValues createOneRow( AlgOptCluster cluster ) {
+    public static LogicalRelValues createOneRow( AlgOptCluster cluster ) {
         final AlgDataType rowType =
                 cluster.getTypeFactory()
                         .builder()

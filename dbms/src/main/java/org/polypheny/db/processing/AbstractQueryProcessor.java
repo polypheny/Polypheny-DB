@@ -70,10 +70,10 @@ import org.polypheny.db.algebra.enumerable.EnumerableInterpretable;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
@@ -594,7 +594,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                         }
 
                         if ( ltm.isInsert() && ltm.getInput() instanceof Values ) {
-                            final LogicalValues lvalues = (LogicalValues) ltm.getInput( 0 ).accept( new DeepCopyShuttle() );
+                            final LogicalRelValues lvalues = (LogicalRelValues) ltm.getInput( 0 ).accept( new DeepCopyShuttle() );
                             for ( final Index index : indices ) {
                                 final Set<Pair<List<PolyValue>, List<PolyValue>>> tuplesToInsert = new HashSet<>( lvalues.tuples.size() );
                                 for ( final ImmutableList<RexLiteral> row : lvalues.getTuples() ) {
@@ -616,8 +616,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                                 }
                                 index.insertAll( statement.getTransaction().getXid(), tuplesToInsert );
                             }
-                        } else if ( ltm.isInsert() && ltm.getInput() instanceof LogicalProject && ((LogicalProject) ltm.getInput()).getInput().getTupleType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
-                            final LogicalProject lproject = (LogicalProject) ltm.getInput().accept( new DeepCopyShuttle() );
+                        } else if ( ltm.isInsert() && ltm.getInput() instanceof LogicalRelProject && ((LogicalRelProject) ltm.getInput()).getInput().getTupleType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
+                            final LogicalRelProject lproject = (LogicalRelProject) ltm.getInput().accept( new DeepCopyShuttle() );
                             for ( final Index index : indices ) {
                                 final Set<Pair<List<PolyValue>, List<PolyValue>>> tuplesToInsert = new HashSet<>( lproject.getProjects().size() );
                                 final List<PolyValue> rowValues = new ArrayList<>();
@@ -659,10 +659,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                             final Map<String, Integer> nameMap = new HashMap<>();
                             final Map<String, Integer> newValueMap = new HashMap<>();
                             AlgNode original = ltm.getInput().accept( new DeepCopyShuttle() );
-                            if ( !(original instanceof LogicalProject) ) {
-                                original = LogicalProject.identity( original );
+                            if ( !(original instanceof LogicalRelProject) ) {
+                                original = LogicalRelProject.identity( original );
                             }
-                            LogicalProject originalProject = (LogicalProject) original;
+                            LogicalRelProject originalProject = (LogicalRelProject) original;
 
                             for ( int i = 0; i < originalProject.getNamedProjects().size(); ++i ) {
                                 final Pair<RexNode, String> np = originalProject.getNamedProjects().get( i );
@@ -713,8 +713,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                                 records.add( ImmutableList.copyOf( record ) );
                             }
                             final ImmutableList<ImmutableList<RexLiteral>> values = ImmutableList.copyOf( records );
-                            final AlgNode newValues = LogicalValues.create( originalProject.getCluster(), originalProject.getTupleType(), values );
-                            final AlgNode newProject = LogicalProject.identity( newValues );
+                            final AlgNode newValues = LogicalRelValues.create( originalProject.getCluster(), originalProject.getTupleType(), values );
+                            final AlgNode newProject = LogicalRelProject.identity( newValues );
 
                             final AlgNode replacement = ltm.copy( ltm.getTraitSet(), Collections.singletonList( newProject ) );
                             // Schedule the index deletions
@@ -823,7 +823,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         final AlgShuttle shuttle2 = new AlgShuttleImpl() {
 
             @Override
-            public AlgNode visit( LogicalProject project ) {
+            public AlgNode visit( LogicalRelProject project ) {
                 if ( project.getInput() instanceof LogicalRelScan scan ) {
                     // Figure out the original column names required for index lookup
                     final List<String> columns = new ArrayList<>( project.getChildExps().size() );
@@ -851,7 +851,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     // TODO: Avoid copying stuff around
                     final AlgDataType compositeType = builder.getTypeFactory().createStructType( null, ctypes, columns );
                     final Values replacement = idx.getAsValues( statement.getTransaction().getXid(), builder, compositeType );
-                    final LogicalProject rProject = new LogicalProject(
+                    final LogicalRelProject rProject = new LogicalRelProject(
                             replacement.getCluster(),
                             replacement.getTraitSet(),
                             replacement,
@@ -868,7 +868,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
             @Override
             public AlgNode visit( AlgNode node ) {
-                if ( node instanceof LogicalProject lp ) {
+                if ( node instanceof LogicalRelProject lp ) {
                     lp.getMapping();
                 }
                 return super.visit( node );

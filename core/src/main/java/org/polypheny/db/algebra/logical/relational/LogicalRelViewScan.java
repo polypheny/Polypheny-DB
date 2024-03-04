@@ -96,7 +96,7 @@ public class LogicalRelViewScan extends RelScan<Entity> {
 
         algNode.replaceCluster( cluster );
 
-        return LogicalProject.create( algNode, exprs, this.getTupleType().getFieldNames() );
+        return LogicalRelProject.create( algNode, exprs, this.getTupleType().getFieldNames() );
     }
 
 }

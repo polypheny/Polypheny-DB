@@ -64,13 +64,13 @@ import org.polypheny.db.algebra.core.Window;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.enumerable.AggImplementor;
 import org.polypheny.db.algebra.enumerable.RexImpTable;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
-import org.polypheny.db.algebra.logical.relational.LogicalUnion;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.logical.relational.LogicalWindow;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
@@ -309,13 +309,13 @@ public class Bindables {
          * @param algBuilderFactory Builder for relational expressions
          */
         public BindableFilterRule( AlgBuilderFactory algBuilderFactory ) {
-            super( LogicalFilter.class, AlgOptUtil::containsMultisetOrWindowedAgg, Convention.NONE, BindableConvention.INSTANCE, algBuilderFactory, "BindableFilterRule" );
+            super( LogicalRelFilter.class, AlgOptUtil::containsMultisetOrWindowedAgg, Convention.NONE, BindableConvention.INSTANCE, algBuilderFactory, "BindableFilterRule" );
         }
 
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final LogicalFilter filter = (LogicalFilter) alg;
+            final LogicalRelFilter filter = (LogicalRelFilter) alg;
             return BindableFilter.create( convert( filter.getInput(), filter.getInput().getTraitSet().replace( BindableConvention.INSTANCE ) ), filter.getCondition() );
         }
 
@@ -371,7 +371,7 @@ public class Bindables {
 
 
     /**
-     * Rule to convert a {@link LogicalProject} to a {@link BindableProject}.
+     * Rule to convert a {@link LogicalRelProject} to a {@link BindableProject}.
      */
     public static class BindableProjectRule extends ConverterRule {
 
@@ -381,13 +381,13 @@ public class Bindables {
          * @param algBuilderFactory Builder for relational expressions
          */
         public BindableProjectRule( AlgBuilderFactory algBuilderFactory ) {
-            super( LogicalProject.class, (Predicate<LogicalProject>) AlgOptUtil::containsMultisetOrWindowedAgg, Convention.NONE, BindableConvention.INSTANCE, algBuilderFactory, "BindableProjectRule" );
+            super( LogicalRelProject.class, (Predicate<LogicalRelProject>) AlgOptUtil::containsMultisetOrWindowedAgg, Convention.NONE, BindableConvention.INSTANCE, algBuilderFactory, "BindableProjectRule" );
         }
 
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final LogicalProject project = (LogicalProject) alg;
+            final LogicalRelProject project = (LogicalRelProject) alg;
             return new BindableProject(
                     alg.getCluster(),
                     alg.getTraitSet().replace( BindableConvention.INSTANCE ),
@@ -500,7 +500,7 @@ public class Bindables {
 
 
     /**
-     * Rule to convert a {@link LogicalJoin} to a {@link BindableJoin}.
+     * Rule to convert a {@link LogicalRelJoin} to a {@link BindableJoin}.
      */
     public static class BindableJoinRule extends ConverterRule {
 
@@ -510,13 +510,13 @@ public class Bindables {
          * @param algBuilderFactory Builder for relational expressions
          */
         public BindableJoinRule( AlgBuilderFactory algBuilderFactory ) {
-            super( LogicalJoin.class, (Predicate<AlgNode>) r -> true, Convention.NONE, BindableConvention.INSTANCE, algBuilderFactory, "BindableJoinRule" );
+            super( LogicalRelJoin.class, (Predicate<AlgNode>) r -> true, Convention.NONE, BindableConvention.INSTANCE, algBuilderFactory, "BindableJoinRule" );
         }
 
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final LogicalJoin join = (LogicalJoin) alg;
+            final LogicalRelJoin join = (LogicalRelJoin) alg;
             final BindableConvention out = BindableConvention.INSTANCE;
             final AlgTraitSet traitSet = join.getTraitSet().replace( out );
             return new BindableJoin(
@@ -572,7 +572,7 @@ public class Bindables {
 
 
     /**
-     * Rule to convert an {@link LogicalUnion} to a {@link BindableUnion}.
+     * Rule to convert an {@link LogicalRelUnion} to a {@link BindableUnion}.
      */
     public static class BindableUnionRule extends ConverterRule {
 
@@ -582,13 +582,13 @@ public class Bindables {
          * @param algBuilderFactory Builder for relational expressions
          */
         public BindableUnionRule( AlgBuilderFactory algBuilderFactory ) {
-            super( LogicalUnion.class, (Predicate<AlgNode>) r -> true, Convention.NONE, BindableConvention.INSTANCE, algBuilderFactory, "BindableUnionRule" );
+            super( LogicalRelUnion.class, (Predicate<AlgNode>) r -> true, Convention.NONE, BindableConvention.INSTANCE, algBuilderFactory, "BindableUnionRule" );
         }
 
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final LogicalUnion union = (LogicalUnion) alg;
+            final LogicalRelUnion union = (LogicalRelUnion) alg;
             final BindableConvention out = BindableConvention.INSTANCE;
             final AlgTraitSet traitSet = union.getTraitSet().replace( out );
             return new BindableUnion( alg.getCluster(), traitSet, convertList( union.getInputs(), out ), union.all );
@@ -681,13 +681,13 @@ public class Bindables {
          * @param algBuilderFactory Builder for relational expressions
          */
         public BindableValuesRule( AlgBuilderFactory algBuilderFactory ) {
-            super( LogicalValues.class, (Predicate<AlgNode>) r -> true, Convention.NONE, BindableConvention.INSTANCE, algBuilderFactory, "BindableValuesRule" );
+            super( LogicalRelValues.class, (Predicate<AlgNode>) r -> true, Convention.NONE, BindableConvention.INSTANCE, algBuilderFactory, "BindableValuesRule" );
         }
 
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            LogicalValues values = (LogicalValues) alg;
+            LogicalRelValues values = (LogicalRelValues) alg;
             return new BindableValues( values.getCluster(), values.getTupleType(), values.getTuples(), values.getTraitSet().replace( BindableConvention.INSTANCE ) );
         }
 
@@ -757,13 +757,13 @@ public class Bindables {
          * @param algBuilderFactory Builder for relational expressions
          */
         public BindableAggregateRule( AlgBuilderFactory algBuilderFactory ) {
-            super( LogicalAggregate.class, (Predicate<AlgNode>) r -> true, Convention.NONE, BindableConvention.INSTANCE, algBuilderFactory, "BindableAggregateRule" );
+            super( LogicalRelAggregate.class, (Predicate<AlgNode>) r -> true, Convention.NONE, BindableConvention.INSTANCE, algBuilderFactory, "BindableAggregateRule" );
         }
 
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final LogicalAggregate agg = (LogicalAggregate) alg;
+            final LogicalRelAggregate agg = (LogicalRelAggregate) alg;
             final AlgTraitSet traitSet = agg.getTraitSet().replace( BindableConvention.INSTANCE );
             try {
                 return new BindableAggregate( alg.getCluster(), traitSet, convert( agg.getInput(), traitSet ), agg.indicator, agg.getGroupSet(), agg.getGroupSets(), agg.getAggCallList() );

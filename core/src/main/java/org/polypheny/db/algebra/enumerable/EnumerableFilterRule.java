@@ -21,20 +21,20 @@ import java.util.function.Predicate;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.Convention;
 
 
 /**
- * Rule to convert a {@link LogicalFilter} to an {@link EnumerableFilter}.
+ * Rule to convert a {@link LogicalRelFilter} to an {@link EnumerableFilter}.
  */
 class EnumerableFilterRule extends ConverterRule {
 
     EnumerableFilterRule() {
-        super( LogicalFilter.class,
-                (Predicate<LogicalFilter>) AlgOptUtil::containsMultisetOrWindowedAgg,
+        super( LogicalRelFilter.class,
+                (Predicate<LogicalRelFilter>) AlgOptUtil::containsMultisetOrWindowedAgg,
                 Convention.NONE, EnumerableConvention.INSTANCE,
                 AlgFactories.LOGICAL_BUILDER, "EnumerableFilterRule" );
     }
@@ -42,7 +42,7 @@ class EnumerableFilterRule extends ConverterRule {
 
     @Override
     public AlgNode convert( AlgNode alg ) {
-        final LogicalFilter filter = (LogicalFilter) alg;
+        final LogicalRelFilter filter = (LogicalRelFilter) alg;
         return new EnumerableFilter(
                 alg.getCluster(),
                 alg.getTraitSet().replace( EnumerableConvention.INSTANCE ),

@@ -59,16 +59,16 @@ import org.polypheny.db.schema.trait.ModelTraitDef;
 /**
  * A relational expression which computes project expressions and also filters.
  *
- * This relational expression combines the functionality of {@link LogicalProject} and {@link LogicalFilter}.
- * It should be created in the later stages of optimization, by merging consecutive {@link LogicalProject} and {@link LogicalFilter} nodes together.
+ * This relational expression combines the functionality of {@link LogicalRelProject} and {@link LogicalRelFilter}.
+ * It should be created in the later stages of optimization, by merging consecutive {@link LogicalRelProject} and {@link LogicalRelFilter} nodes together.
  *
  * The following rules relate to <code>LogicalCalc</code>:
  *
  * <ul>
- * <li>{@link FilterToCalcRule} creates this from a {@link LogicalFilter}</li>
- * <li>{@link ProjectToCalcRule} creates this from a {@link LogicalFilter}</li>
- * <li>{@link FilterCalcMergeRule} merges this with a {@link LogicalFilter}</li>
- * <li>{@link org.polypheny.db.algebra.rules.ProjectCalcMergeRule} merges this with a {@link LogicalProject}</li>
+ * <li>{@link FilterToCalcRule} creates this from a {@link LogicalRelFilter}</li>
+ * <li>{@link ProjectToCalcRule} creates this from a {@link LogicalRelFilter}</li>
+ * <li>{@link FilterCalcMergeRule} merges this with a {@link LogicalRelFilter}</li>
+ * <li>{@link org.polypheny.db.algebra.rules.ProjectCalcMergeRule} merges this with a {@link LogicalRelProject}</li>
  * <li>{@link org.polypheny.db.algebra.rules.CalcMergeRule} merges two {@code LogicalCalc}s</li>
  * </ul>
  */

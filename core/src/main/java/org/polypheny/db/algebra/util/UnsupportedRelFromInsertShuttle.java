@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,33 +14,35 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.algebra;
+package org.polypheny.db.algebra.util;
 
 import java.util.Objects;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.relational.RelModify;
-import org.polypheny.db.algebra.core.relational.RelScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.plan.volcano.AlgSubset;
 
-public class UnsupportedFromInsertShuttle extends AlgShuttleImpl {
+public class UnsupportedRelFromInsertShuttle extends AlgShuttleImpl {
 
     private final Long tableId;
     private boolean containsOtherTableId = false;
 
 
-    private UnsupportedFromInsertShuttle( Long tableId ) {
+    private UnsupportedRelFromInsertShuttle( Long tableId ) {
         this.tableId = tableId;
     }
 
 
     public static boolean contains( RelModify<?> modify ) {
-        UnsupportedFromInsertShuttle shuttle = new UnsupportedFromInsertShuttle( modify.entity.id );
+        UnsupportedRelFromInsertShuttle shuttle = new UnsupportedRelFromInsertShuttle( modify.entity.id );
         modify.accept( shuttle );
         return shuttle.containsOtherTableId;
     }
 
 
     @Override
-    public AlgNode visit( RelScan<?> scan ) {
+    public AlgNode visit( LogicalRelScan scan ) {
         if ( !Objects.equals( scan.getEntity().id, tableId ) ) {
             containsOtherTableId = true;
         }
@@ -50,9 +52,8 @@ public class UnsupportedFromInsertShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( AlgNode other ) {
-        if ( other instanceof AlgSubset ) {
-            AlgSubset subset = (AlgSubset) other;
-            // we do this for now as ... select from.. is not correctly implemented in this adapter, todo fix and remove
+        if ( other instanceof AlgSubset subset ) {
+            // we do this for now as ... select from.. is not correctly implemented in this adapter
             // should be picked up by enumerable streamer logic
             if ( subset.getAlgList().size() < 3 ) {
                 for ( AlgNode node : subset.getAlgList() ) {

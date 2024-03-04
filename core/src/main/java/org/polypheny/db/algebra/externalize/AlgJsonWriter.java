@@ -88,7 +88,7 @@ public class AlgJsonWriter implements AlgWriter {
             put( map, value.left, replaceWithFieldNames( alg, value.right ) );
         }
 
-        put( map, "rowcount", mq.getRowCount( alg ) );
+        put( map, "rowcount", mq.getTupleCount( alg ) );
         put( map, "rows cost", mq.getCumulativeCost( alg ).getRows() );
         put( map, "cpu cost", mq.getCumulativeCost( alg ).getCpu() );
         put( map, "io cost", mq.getCumulativeCost( alg ).getIo() );

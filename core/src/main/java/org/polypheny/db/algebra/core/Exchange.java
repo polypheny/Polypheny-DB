@@ -97,7 +97,7 @@ public abstract class Exchange extends SingleAlg {
     @Override
     public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
         // Higher cost if rows are wider discourages pushing a project through an exchange.
-        double rowCount = mq.getRowCount( this );
+        double rowCount = mq.getTupleCount( this );
         double bytesPerRow = getTupleType().getFieldCount() * 4;
         return planner.getCostFactory().makeCost( Util.nLogN( rowCount ) * bytesPerRow, rowCount, 0 );
     }

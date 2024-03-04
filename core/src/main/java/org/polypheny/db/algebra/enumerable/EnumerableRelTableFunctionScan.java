@@ -42,7 +42,7 @@ import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.TableFunctionScan;
+import org.polypheny.db.algebra.core.RelTableFunctionScan;
 import org.polypheny.db.algebra.fun.TableFunction;
 import org.polypheny.db.algebra.fun.UserDefined;
 import org.polypheny.db.algebra.metadata.AlgColumnMapping;
@@ -56,18 +56,18 @@ import org.polypheny.db.schema.types.QueryableEntity;
 
 
 /**
- * Implementation of {@link org.polypheny.db.algebra.core.TableFunctionScan} in {@link EnumerableConvention enumerable calling convention}.
+ * Implementation of {@link RelTableFunctionScan} in {@link EnumerableConvention enumerable calling convention}.
  */
-public class EnumerableTableFunctionScan extends TableFunctionScan implements EnumerableAlg {
+public class EnumerableRelTableFunctionScan extends RelTableFunctionScan implements EnumerableAlg {
 
-    public EnumerableTableFunctionScan( AlgOptCluster cluster, AlgTraitSet traits, List<AlgNode> inputs, Type elementType, AlgDataType rowType, RexNode call, Set<AlgColumnMapping> columnMappings ) {
+    public EnumerableRelTableFunctionScan( AlgOptCluster cluster, AlgTraitSet traits, List<AlgNode> inputs, Type elementType, AlgDataType rowType, RexNode call, Set<AlgColumnMapping> columnMappings ) {
         super( cluster, traits, inputs, call, elementType, rowType, columnMappings );
     }
 
 
     @Override
-    public EnumerableTableFunctionScan copy( AlgTraitSet traitSet, List<AlgNode> inputs, RexNode rexCall, Type elementType, AlgDataType rowType, Set<AlgColumnMapping> columnMappings ) {
-        return new EnumerableTableFunctionScan( getCluster(), traitSet, inputs, elementType, rowType, rexCall, columnMappings );
+    public EnumerableRelTableFunctionScan copy( AlgTraitSet traitSet, List<AlgNode> inputs, RexNode rexCall, Type elementType, AlgDataType rowType, Set<AlgColumnMapping> columnMappings ) {
+        return new EnumerableRelTableFunctionScan( getCluster(), traitSet, inputs, elementType, rowType, rexCall, columnMappings );
     }
 
 

@@ -18,7 +18,7 @@ package org.polypheny.db.adapter.googlesheet;
 
 import java.util.List;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.rex.RexIndexRef;
@@ -37,7 +37,7 @@ public class GoogleSheetProjectTableScanRule extends AlgOptRule {
 
     public GoogleSheetProjectTableScanRule( AlgBuilderFactory algBuilderFactory ) {
         super(
-                operand( LogicalProject.class, operand( GoogleSheetTableScanProject.class, none() ) ),
+                operand( LogicalRelProject.class, operand( GoogleSheetTableScanProject.class, none() ) ),
                 algBuilderFactory,
                 "GoogleSheetProjectTableScanRule"
         );
@@ -46,7 +46,7 @@ public class GoogleSheetProjectTableScanRule extends AlgOptRule {
 
     @Override
     public void onMatch( AlgOptRuleCall call ) {
-        final LogicalProject project = call.alg( 0 );
+        final LogicalRelProject project = call.alg( 0 );
         final GoogleSheetTableScanProject scan = call.alg( 1 );
         int[] fields = getProjectFields( project.getProjects() );
         if ( fields == null ) {

@@ -27,8 +27,8 @@ import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.enumerable.EnumerableProject;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.DocumentType;
@@ -108,13 +108,13 @@ public class DocumentAggregateToAggregateRule extends AlgOptRule {
             names.add( agg.name );
         }
 
-        LogicalProject project = (LogicalProject) LogicalProject.create( alg.getInput(), nodes, names ).copy( alg.getInput().getTraitSet().replace( ModelTrait.DOCUMENT ), alg.getInputs() );
+        LogicalRelProject project = (LogicalRelProject) LogicalRelProject.create( alg.getInput(), nodes, names ).copy( alg.getInput().getTraitSet().replace( ModelTrait.DOCUMENT ), alg.getInputs() );
 
         EnumerableProject enumerableProject = new EnumerableProject( project.getCluster(), alg.getInput().getTraitSet().replace( ModelTrait.DOCUMENT ).replace( EnumerableConvention.INSTANCE ), convert( project.getInput(), EnumerableConvention.INSTANCE ), project.getProjects(), project.getTupleType() );
 
         builder.push( enumerableProject );
 
-        builder.push( LogicalAggregate.create( builder.build(), groupSet, null, alg.aggCalls.stream().map( a -> a.toAggCall( project.getTupleType(), alg.getCluster() ) ).toList() ) );
+        builder.push( LogicalRelAggregate.create( builder.build(), groupSet, null, alg.aggCalls.stream().map( a -> a.toAggCall( project.getTupleType(), alg.getCluster() ) ).toList() ) );
 
         AlgNode aggregate = builder.build();
 

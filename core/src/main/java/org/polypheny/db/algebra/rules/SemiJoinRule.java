@@ -43,7 +43,7 @@ import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinInfo;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
@@ -56,7 +56,7 @@ import org.polypheny.db.util.ImmutableBitSet;
 
 
 /**
- * Planner rule that creates a {@code SemiJoinRule} from a {@link org.polypheny.db.algebra.core.Join} on top of a {@link LogicalAggregate}.
+ * Planner rule that creates a {@code SemiJoinRule} from a {@link org.polypheny.db.algebra.core.Join} on top of a {@link LogicalRelAggregate}.
  */
 public abstract class SemiJoinRule extends AlgOptRule {
 

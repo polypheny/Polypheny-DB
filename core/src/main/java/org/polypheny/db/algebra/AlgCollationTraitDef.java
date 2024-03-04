@@ -35,7 +35,7 @@ package org.polypheny.db.algebra;
 
 
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.logical.relational.LogicalSort;
+import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -92,7 +92,7 @@ public class AlgCollationTraitDef extends AlgTraitDef<AlgCollation> {
         }
 
         // Create a logical sort, then ask the planner to convert its remaining traits (e.g. convert it to an EnumerableSortRel if alg is enumerable convention)
-        final Sort sort = LogicalSort.create( alg, toCollation, null, null );
+        final Sort sort = LogicalRelSort.create( alg, toCollation, null, null );
         AlgNode newRel = planner.register( sort, alg );
         final AlgTraitSet newTraitSet = alg.getTraitSet().replace( toCollation );
         if ( !newRel.getTraitSet().equals( newTraitSet ) ) {

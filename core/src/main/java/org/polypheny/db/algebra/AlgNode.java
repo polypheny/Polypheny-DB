@@ -150,7 +150,7 @@ public interface AlgNode extends AlgOptNode, Cloneable {
     /**
      * Returns an estimate of the number of rows this relational expression will return.
      * <p>
-     * Don't call this method directly. Instead, use {@link AlgMetadataQuery#getRowCount}, which gives plugins a chance to override the rel's default ideas about row count.
+     * Don't call this method directly. Instead, use {@link AlgMetadataQuery#getTupleCount}, which gives plugins a chance to override the rel's default ideas about row count.
      *
      * @param mq Metadata query
      * @return Estimate of the number of rows this relational expression will return

@@ -42,8 +42,8 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -75,19 +75,19 @@ public class AggregateProjectPullUpConstantsRule extends AlgOptRule {
     /**
      * The singleton.
      */
-    public static final AggregateProjectPullUpConstantsRule INSTANCE = new AggregateProjectPullUpConstantsRule( LogicalAggregate.class, LogicalProject.class, AlgFactories.LOGICAL_BUILDER, "AggregateProjectPullUpConstantsRule" );
+    public static final AggregateProjectPullUpConstantsRule INSTANCE = new AggregateProjectPullUpConstantsRule( LogicalRelAggregate.class, LogicalRelProject.class, AlgFactories.LOGICAL_BUILDER, "AggregateProjectPullUpConstantsRule" );
 
     /**
      * More general instance that matches any relational expression.
      */
-    public static final AggregateProjectPullUpConstantsRule INSTANCE2 = new AggregateProjectPullUpConstantsRule( LogicalAggregate.class, AlgNode.class, AlgFactories.LOGICAL_BUILDER, "AggregatePullUpConstantsRule" );
+    public static final AggregateProjectPullUpConstantsRule INSTANCE2 = new AggregateProjectPullUpConstantsRule( LogicalRelAggregate.class, AlgNode.class, AlgFactories.LOGICAL_BUILDER, "AggregatePullUpConstantsRule" );
 
 
     /**
      * Creates an AggregateProjectPullUpConstantsRule.
      *
      * @param aggregateClass Aggregate class
-     * @param inputClass Input class, such as {@link LogicalProject}
+     * @param inputClass Input class, such as {@link LogicalRelProject}
      * @param algBuilderFactory Builder for relational expressions
      * @param description Description, or null to guess description
      */

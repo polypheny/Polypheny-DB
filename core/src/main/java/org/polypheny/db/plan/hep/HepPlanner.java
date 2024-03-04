@@ -653,8 +653,8 @@ public class HepPlanner extends AbstractAlgOptPlanner {
             for ( AlgNode alg : call.getResults() ) {
                 AlgOptCost thisCost = getCost( alg, mq );
                 if ( LOGGER.isTraceEnabled() ) {
-                    // Keep in the isTraceEnabled for the getRowCount method call
-                    LOGGER.trace( "considering {} with cumulative cost={} and rowcount={}", alg, thisCost, mq.getRowCount( alg ) );
+                    // Keep in the isTraceEnabled for the getTupleCount method call
+                    LOGGER.trace( "considering {} with cumulative cost={} and rowcount={}", alg, thisCost, mq.getTupleCount( alg ) );
                 }
                 if ( (bestAlg == null) || thisCost.isLt( bestCost ) ) {
                     bestAlg = alg;
@@ -926,7 +926,7 @@ public class HepPlanner extends AbstractAlgOptPlanner {
             AlgNode alg = vertex.getCurrentAlg();
             sb.append( alg )
                     .append( ", rowcount=" )
-                    .append( mq.getRowCount( alg ) )
+                    .append( mq.getTupleCount( alg ) )
                     .append( ", cumulative cost=" )
                     .append( getCost( alg, mq ) )
                     .append( '\n' );

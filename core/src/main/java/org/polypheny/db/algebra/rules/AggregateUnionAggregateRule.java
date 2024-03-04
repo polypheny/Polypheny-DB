@@ -38,8 +38,8 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Union;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
-import org.polypheny.db.algebra.logical.relational.LogicalUnion;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.tools.AlgBuilder;
@@ -59,9 +59,9 @@ public class AggregateUnionAggregateRule extends AlgOptRule {
      */
     public static final AggregateUnionAggregateRule AGG_ON_FIRST_INPUT =
             new AggregateUnionAggregateRule(
-                    LogicalAggregate.class,
-                    LogicalUnion.class,
-                    LogicalAggregate.class,
+                    LogicalRelAggregate.class,
+                    LogicalRelUnion.class,
+                    LogicalRelAggregate.class,
                     AlgNode.class,
                     AlgFactories.LOGICAL_BUILDER,
                     "AggregateUnionAggregateRule:first-input-agg" );
@@ -71,10 +71,10 @@ public class AggregateUnionAggregateRule extends AlgOptRule {
      */
     public static final AggregateUnionAggregateRule AGG_ON_SECOND_INPUT =
             new AggregateUnionAggregateRule(
-                    LogicalAggregate.class,
-                    LogicalUnion.class,
+                    LogicalRelAggregate.class,
+                    LogicalRelUnion.class,
                     AlgNode.class,
-                    LogicalAggregate.class,
+                    LogicalRelAggregate.class,
                     AlgFactories.LOGICAL_BUILDER,
                     "AggregateUnionAggregateRule:second-input-agg" );
 
@@ -86,8 +86,8 @@ public class AggregateUnionAggregateRule extends AlgOptRule {
      */
     public static final AggregateUnionAggregateRule INSTANCE =
             new AggregateUnionAggregateRule(
-                    LogicalAggregate.class,
-                    LogicalUnion.class,
+                    LogicalRelAggregate.class,
+                    LogicalRelUnion.class,
                     AlgNode.class,
                     AlgNode.class,
                     AlgFactories.LOGICAL_BUILDER,

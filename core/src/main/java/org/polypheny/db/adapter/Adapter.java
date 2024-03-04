@@ -18,6 +18,7 @@ package org.polypheny.db.adapter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -204,7 +205,7 @@ public abstract class Adapter<ACatalog extends AdapterCatalog> implements Scanna
             // we only need to check settings which apply to the used mode
             if ( !s.appliesTo
                     .stream()
-                    .map( setting -> setting.getModes( Arrays.asList( properties.usedModes() ) ) )
+                    .flatMap( setting -> setting.getModes( List.of( properties.usedModes() ) ).stream() )
                     .toList().contains( deployMode ) ) {
                 continue;
             }
@@ -264,7 +265,7 @@ public abstract class Adapter<ACatalog extends AdapterCatalog> implements Scanna
 
         group.setRefreshFunction( () -> {
             physicalColumnNames.reset();
-            List<PhysicalEntity> physicalsOnAdapter = new ArrayList<>();//snapshot.physical().getPhysicalsOnAdapter( adapterId );
+            Collection<PhysicalEntity> physicalsOnAdapter = getAdapterCatalog().physicals.values();
 
             for ( PhysicalEntity entity : physicalsOnAdapter ) {
                 if ( entity.dataModel != DataModel.RELATIONAL ) {

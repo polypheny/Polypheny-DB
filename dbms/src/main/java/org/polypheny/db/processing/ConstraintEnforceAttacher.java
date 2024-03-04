@@ -45,10 +45,10 @@ import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer.EnforcementInformation;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer.ModifyExtractor;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
@@ -241,19 +241,19 @@ public class ConstraintEnforceAttacher {
                 //  Make sure this is ok!
                 //
                 final AlgNode join = builder.join( JoinAlgType.INNER, joinCondition ).build();
-                final AlgNode check = LogicalFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NOT_NULL ), rexBuilder.makeInputRef( join, join.getTupleType().getFieldCount() - 1 ) ) );
+                final AlgNode check = LogicalRelFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NOT_NULL ), rexBuilder.makeInputRef( join, join.getTupleType().getFieldCount() - 1 ) ) );
                 final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO,
                         ConstraintViolationException.class,
                         String.format( "Insert violates unique constraint `%s`.`%s`", table.name, constraint.name ) );
                 lce.setCheckDescription( String.format( "Enforcement of unique constraint `%s`.`%s`", table.name, constraint.name ) );
                 lceRoot = lce;
                 // Enforce uniqueness within the values to insert
-                if ( input instanceof LogicalValues && ((LogicalValues) input).getTuples().size() <= 1 ) {
+                if ( input instanceof LogicalRelValues && ((LogicalRelValues) input).getTuples().size() <= 1 ) {
                     // no need to check, only one tuple in set
-                } else if ( input instanceof LogicalProject && input.getInput( 0 ) instanceof LogicalValues && (input.getInput( 0 )).getTupleType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
+                } else if ( input instanceof LogicalRelProject && input.getInput( 0 ) instanceof LogicalRelValues && (input.getInput( 0 )).getTupleType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
                     //noinspection StatementWithEmptyBody
                     if ( !statement.getDataContext().getParameterValues().isEmpty() ) {
-                        LogicalProject project = (LogicalProject) input;
+                        LogicalRelProject project = (LogicalRelProject) input;
                         List<Map<Long, PolyValue>> parameterValues = statement.getDataContext().getParameterValues();
                         final Set<List<PolyValue>> uniqueSet = new HashSet<>( parameterValues.get( 0 ).size() );
                         final Map<String, Integer> columnMap = new HashMap<>( constraint.key.columnIds.size() );
@@ -340,7 +340,7 @@ public class ConstraintEnforceAttacher {
                 }
 
                 final AlgNode join = builder.join( JoinAlgType.LEFT, joinCondition ).build();
-                final AlgNode check = LogicalFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NULL ), rexBuilder.makeInputRef( join, join.getTupleType().getFieldCount() - 1 ) ) );
+                final AlgNode check = LogicalRelFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NULL ), rexBuilder.makeInputRef( join, join.getTupleType().getFieldCount() - 1 ) ) );
                 final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
                         String.format( "Insert violates foreign key constraint `%s`.`%s`", table.name, foreignKey.name ) );
                 lce.setCheckDescription( String.format( "Enforcement of foreign key `%s`.`%s`", table.name, foreignKey.name ) );
@@ -430,7 +430,7 @@ public class ConstraintEnforceAttacher {
                         );
                 condition = RexUtil.flatten( rexBuilder, condition );
                 AlgNode check = builder.build();
-                check = new LogicalFilter( check.getCluster(), check.getTraitSet(), check, condition, ImmutableSet.of() );
+                check = new LogicalRelFilter( check.getCluster(), check.getTraitSet(), check, condition, ImmutableSet.of() );
                 final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
                         String.format( "Update violates unique constraint `%s`.`%s`", table.name, constraint.name ) );
                 lce.setCheckDescription( String.format( "Enforcement of unique constraint `%s`.`%s`", table.name, constraint.name ) );
@@ -513,7 +513,7 @@ public class ConstraintEnforceAttacher {
                     );
                 }
                 final AlgNode join = builder.join( JoinAlgType.LEFT, condition ).build();
-                final AlgNode check = LogicalFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NULL ), rexBuilder.makeInputRef( join, projects.size() * 2 - 1 ) ) );
+                final AlgNode check = LogicalRelFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NULL ), rexBuilder.makeInputRef( join, projects.size() * 2 - 1 ) ) );
                 final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
                         String.format( "Update violates foreign key constraint `%s` (`%s` %s -> `%s` %s, %s)",
                                 foreignKey.name, table.name, foreignKey.getColumnNames(), foreignTable.name, foreignKey.getReferencedKeyColumnNames(), constraintRule ) );
@@ -538,7 +538,7 @@ public class ConstraintEnforceAttacher {
                 }
                 AlgNode pInput;
                 if ( root.getInput() instanceof Project ) {
-                    pInput = ((LogicalProject) root.getInput()).getInput().accept( new DeepCopyShuttle() );
+                    pInput = ((LogicalRelProject) root.getInput()).getInput().accept( new DeepCopyShuttle() );
                 } else {
                     pInput = root.getInput().accept( new DeepCopyShuttle() );
                 }

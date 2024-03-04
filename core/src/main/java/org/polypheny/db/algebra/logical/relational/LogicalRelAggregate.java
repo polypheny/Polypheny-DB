@@ -59,7 +59,7 @@ import org.polypheny.db.util.ImmutableBitSet;
  * <li>{@link AggregateReduceFunctionsRule}</li>
  * </ul>
  */
-public final class LogicalAggregate extends Aggregate implements RelAlg {
+public final class LogicalRelAggregate extends Aggregate implements RelAlg {
 
     /**
      * Creates a LogicalAggregate.
@@ -72,7 +72,7 @@ public final class LogicalAggregate extends Aggregate implements RelAlg {
      * @param groupSets Grouping sets, or null to use just {@code groupSet}
      * @param aggCalls Array of aggregates to compute, not null
      */
-    public LogicalAggregate( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
+    public LogicalRelAggregate( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
         super( cluster, traitSet, child, indicator, groupSet, groupSets, aggCalls );
     }
 
@@ -80,28 +80,28 @@ public final class LogicalAggregate extends Aggregate implements RelAlg {
     /**
      * Creates a LogicalAggregate.
      */
-    public static LogicalAggregate create( final AlgNode input, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
+    public static LogicalRelAggregate create( final AlgNode input, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
         return create_( input, false, groupSet, groupSets, aggCalls );
     }
 
 
     @Deprecated // to be removed before 2.0
-    public static LogicalAggregate create( final AlgNode input, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
+    public static LogicalRelAggregate create( final AlgNode input, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
         return create_( input, indicator, groupSet, groupSets, aggCalls );
     }
 
 
-    private static LogicalAggregate create_( final AlgNode input, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
+    private static LogicalRelAggregate create_( final AlgNode input, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
         final AlgOptCluster cluster = input.getCluster();
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
-        return new LogicalAggregate( cluster, traitSet, input, indicator, groupSet, groupSets, aggCalls );
+        return new LogicalRelAggregate( cluster, traitSet, input, indicator, groupSet, groupSets, aggCalls );
     }
 
 
     @Override
-    public LogicalAggregate copy( AlgTraitSet traitSet, AlgNode input, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
+    public LogicalRelAggregate copy( AlgTraitSet traitSet, AlgNode input, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
         assert traitSet.containsIfApplicable( Convention.NONE );
-        return new LogicalAggregate( getCluster(), traitSet, input, indicator, groupSet, groupSets, aggCalls );
+        return new LogicalRelAggregate( getCluster(), traitSet, input, indicator, groupSet, groupSets, aggCalls );
     }
 
 

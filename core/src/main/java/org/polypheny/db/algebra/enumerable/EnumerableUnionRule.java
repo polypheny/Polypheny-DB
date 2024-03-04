@@ -19,24 +19,24 @@ package org.polypheny.db.algebra.enumerable;
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
-import org.polypheny.db.algebra.logical.relational.LogicalUnion;
+import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 
 
 /**
- * Rule to convert an {@link LogicalUnion} to an {@link EnumerableUnion}.
+ * Rule to convert an {@link LogicalRelUnion} to an {@link EnumerableUnion}.
  */
 class EnumerableUnionRule extends ConverterRule {
 
     EnumerableUnionRule() {
-        super( LogicalUnion.class, Convention.NONE, EnumerableConvention.INSTANCE, "EnumerableUnionRule" );
+        super( LogicalRelUnion.class, Convention.NONE, EnumerableConvention.INSTANCE, "EnumerableUnionRule" );
     }
 
 
     @Override
     public AlgNode convert( AlgNode alg ) {
-        final LogicalUnion union = (LogicalUnion) alg;
+        final LogicalRelUnion union = (LogicalRelUnion) alg;
         final EnumerableConvention out = EnumerableConvention.INSTANCE;
         final AlgTraitSet traitSet = union.getTraitSet().replace( out );
         return new EnumerableUnion( alg.getCluster(), traitSet, convertList( union.getInputs(), out ), union.all );

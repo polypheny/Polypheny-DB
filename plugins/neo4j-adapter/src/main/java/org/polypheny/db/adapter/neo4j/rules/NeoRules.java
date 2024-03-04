@@ -27,13 +27,13 @@ import org.polypheny.db.adapter.neo4j.rules.relational.NeoProject;
 import org.polypheny.db.adapter.neo4j.rules.relational.NeoValues;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.UnsupportedFromInsertShuttle;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.relational.RelModify;
+import org.polypheny.db.algebra.util.UnsupportedRelFromInsertShuttle;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.schema.types.ModifiableTable;
@@ -69,7 +69,7 @@ public interface NeoRules {
 
 
         private static boolean supports( RelModify modify ) {
-            return !modify.isInsert() || !UnsupportedFromInsertShuttle.contains( modify );
+            return !modify.isInsert() || !UnsupportedRelFromInsertShuttle.contains( modify );
         }
 
 

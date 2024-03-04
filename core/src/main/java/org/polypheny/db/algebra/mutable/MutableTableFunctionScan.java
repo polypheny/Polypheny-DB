@@ -38,6 +38,7 @@ import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import org.polypheny.db.algebra.core.RelTableFunctionScan;
 import org.polypheny.db.algebra.metadata.AlgColumnMapping;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -45,7 +46,7 @@ import org.polypheny.db.rex.RexNode;
 
 
 /**
- * Mutable equivalent of {@link org.polypheny.db.algebra.core.TableFunctionScan}.
+ * Mutable equivalent of {@link RelTableFunctionScan}.
  */
 public class MutableTableFunctionScan extends MutableMultiAlg {
 

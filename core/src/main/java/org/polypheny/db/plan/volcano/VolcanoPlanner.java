@@ -1110,7 +1110,7 @@ public class VolcanoPlanner extends AbstractAlgOptPlanner {
                         pw.print( ", importance=" + importance );
                     }
                     AlgMetadataQuery mq = alg.getCluster().getMetadataQuery();
-                    pw.print( ", rowcount=" + mq.getRowCount( alg ) );
+                    pw.print( ", rowcount=" + mq.getTupleCount( alg ) );
                     pw.println( ", cumulative cost=" + getCost( alg, mq ) );
                 }
             }

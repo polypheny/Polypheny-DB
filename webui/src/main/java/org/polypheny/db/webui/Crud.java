@@ -2031,7 +2031,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      * Get available adapters
      */
     private void getAvailableAdapters( Context ctx, AdapterType adapterType ) {
-        List<AdapterInformation> adapters = AdapterManager.getInstance().getAvailableAdapters( adapterType );
+        List<AdapterInformation> adapters = AdapterManager.getInstance().getAdapterTemplates( adapterType );
         ctx.json( adapters.toArray( new AdapterInformation[0] ) );
     }
 

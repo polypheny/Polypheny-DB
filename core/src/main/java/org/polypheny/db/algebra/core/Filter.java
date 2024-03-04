@@ -39,7 +39,7 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.config.RuntimeConfig;
@@ -60,7 +60,7 @@ import org.polypheny.db.util.Litmus;
  *
  * If the condition allows nulls, then a null value is treated the same as false.
  *
- * @see LogicalFilter
+ * @see LogicalRelFilter
  */
 public abstract class Filter extends SingleAlg {
 
@@ -131,8 +131,8 @@ public abstract class Filter extends SingleAlg {
 
     @Override
     public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        double dRows = mq.getRowCount( this );
-        double dCpu = mq.getRowCount( getInput() );
+        double dRows = mq.getTupleCount( this );
+        double dCpu = mq.getTupleCount( getInput() );
         double dIo = 0;
         return planner.getCostFactory().makeCost( dRows, dCpu, dIo );
     }

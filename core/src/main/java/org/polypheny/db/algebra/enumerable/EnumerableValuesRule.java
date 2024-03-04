@@ -20,13 +20,13 @@ package org.polypheny.db.algebra.enumerable;
 import java.util.function.Predicate;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Planner rule that converts a {@link LogicalValues} relational expression {@link EnumerableConvention enumerable calling convention}.
+ * Planner rule that converts a {@link LogicalRelValues} relational expression {@link EnumerableConvention enumerable calling convention}.
  */
 public class EnumerableValuesRule extends ConverterRule {
 
@@ -36,13 +36,13 @@ public class EnumerableValuesRule extends ConverterRule {
      * @param algBuilderFactory Builder for relational expressions
      */
     public EnumerableValuesRule( AlgBuilderFactory algBuilderFactory ) {
-        super( LogicalValues.class, (Predicate<AlgNode>) r -> true, Convention.NONE, EnumerableConvention.INSTANCE, algBuilderFactory, "EnumerableValuesRule" );
+        super( LogicalRelValues.class, (Predicate<AlgNode>) r -> true, Convention.NONE, EnumerableConvention.INSTANCE, algBuilderFactory, "EnumerableValuesRule" );
     }
 
 
     @Override
     public AlgNode convert( AlgNode alg ) {
-        LogicalValues values = (LogicalValues) alg;
+        LogicalRelValues values = (LogicalRelValues) alg;
         return EnumerableValues.create( values.getCluster(), values.getTupleType(), values.getTuples() );
     }
 

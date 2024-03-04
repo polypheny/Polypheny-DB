@@ -24,24 +24,24 @@ import org.polypheny.db.algebra.InvalidAlgException;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.JoinInfo;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.Convention;
 
 
 /**
- * Planner rule that converts a {@link LogicalJoin} relational expression {@link EnumerableConvention enumerable calling convention}.
+ * Planner rule that converts a {@link LogicalRelJoin} relational expression {@link EnumerableConvention enumerable calling convention}.
  */
 class EnumerableJoinRule extends ConverterRule {
 
     EnumerableJoinRule() {
-        super( LogicalJoin.class, Convention.NONE, EnumerableConvention.INSTANCE, "EnumerableJoinRule" );
+        super( LogicalRelJoin.class, Convention.NONE, EnumerableConvention.INSTANCE, "EnumerableJoinRule" );
     }
 
 
     @Override
     public AlgNode convert( AlgNode alg ) {
-        LogicalJoin join = (LogicalJoin) alg;
+        LogicalRelJoin join = (LogicalRelJoin) alg;
         List<AlgNode> newInputs = new ArrayList<>();
         for ( AlgNode input : join.getInputs() ) {
             if ( !(input.getConvention() instanceof EnumerableConvention) ) {

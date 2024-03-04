@@ -98,21 +98,21 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgTransformer;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnion;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnwind;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalCalc;
-import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
-import org.polypheny.db.algebra.logical.relational.LogicalExchange;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
-import org.polypheny.db.algebra.logical.relational.LogicalMinus;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelCorrelate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelExchange;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelIntersect;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelMinus;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
-import org.polypheny.db.algebra.logical.relational.LogicalSort;
-import org.polypheny.db.algebra.logical.relational.LogicalTableFunctionScan;
-import org.polypheny.db.algebra.logical.relational.LogicalUnion;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
+import org.polypheny.db.algebra.logical.relational.LogicalRelTableFunctionScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.logical.relational.LogicalWindow;
 import org.polypheny.db.algebra.stream.LogicalChi;
 import org.polypheny.db.algebra.stream.LogicalDelta;
@@ -159,21 +159,21 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
                         ConverterImpl.class,
                         AbstractConverter.class,
 
-                        LogicalAggregate.class,
+                        LogicalRelAggregate.class,
                         LogicalCalc.class,
-                        LogicalCorrelate.class,
-                        LogicalExchange.class,
-                        LogicalFilter.class,
-                        LogicalIntersect.class,
-                        LogicalJoin.class,
-                        LogicalMinus.class,
-                        LogicalProject.class,
-                        LogicalSort.class,
-                        LogicalTableFunctionScan.class,
+                        LogicalRelCorrelate.class,
+                        LogicalRelExchange.class,
+                        LogicalRelFilter.class,
+                        LogicalRelIntersect.class,
+                        LogicalRelJoin.class,
+                        LogicalRelMinus.class,
+                        LogicalRelProject.class,
+                        LogicalRelSort.class,
+                        LogicalRelTableFunctionScan.class,
                         LogicalRelModify.class,
                         LogicalRelScan.class,
-                        LogicalUnion.class,
-                        LogicalValues.class,
+                        LogicalRelUnion.class,
+                        LogicalRelValues.class,
                         LogicalWindow.class,
                         LogicalChi.class,
                         LogicalDelta.class,

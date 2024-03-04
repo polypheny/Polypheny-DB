@@ -21,8 +21,8 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.polypheny.db.algebra.enumerable.document.DocumentFilterToCalcRule.NameRefReplacer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentSort;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
-import org.polypheny.db.algebra.logical.relational.LogicalSort;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
@@ -52,13 +52,13 @@ public class DocumentSortToSortRule extends AlgOptRule {
             builder.transform( ModelTrait.RELATIONAL, DocumentType.ofRelational(), false, null );
             NameRefReplacer visitor = new NameRefReplacer( sort.getCluster(), false );
             List<RexNode> inputs = Stream.concat( Stream.of( RexIndexRef.of( 0, DocumentType.ofId().asRelational().getFields() ), RexIndexRef.of( 1, DocumentType.ofId().asRelational().getFields() ) ), sort.fieldExps.stream().map( f -> f.accept( visitor ) ) ).toList();
-            builder.push( LogicalProject.create( builder.build(), inputs, IntStream.range( 0, inputs.size() ).mapToObj( i -> "in" + i ).toList() ) );
+            builder.push( LogicalRelProject.create( builder.build(), inputs, IntStream.range( 0, inputs.size() ).mapToObj( i -> "in" + i ).toList() ) );
         }
-        builder.push( LogicalSort.create( builder.build(), sort.fieldExps, sort.collation, sort.offset, sort.fetch ) );
+        builder.push( LogicalRelSort.create( builder.build(), sort.fieldExps, sort.collation, sort.offset, sort.fetch ) );
 
         if ( !sort.fieldExps.isEmpty() ) {
             // we have to restore the initial structure
-            builder.push( LogicalProject.create( builder.build(),
+            builder.push( LogicalRelProject.create( builder.build(),
                     List.of( RexIndexRef.of( 0, DocumentType.ofRelational().getFields() ), RexIndexRef.of( 1, DocumentType.ofRelational().getFields() ) ),
                     List.of( DocumentType.DOCUMENT_ID, DocumentType.DOCUMENT_DATA ) ) );
             builder.transform( ModelTrait.DOCUMENT, DocumentType.ofId(), false, null );

@@ -39,8 +39,8 @@ import java.util.List;
 import java.util.Set;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalTableFunctionScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelTableFunctionScan;
 import org.polypheny.db.algebra.metadata.AlgColumnMapping;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -53,7 +53,7 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Planner rule that pushes a {@link LogicalFilter} past a {@link LogicalTableFunctionScan}.
+ * Planner rule that pushes a {@link LogicalRelFilter} past a {@link LogicalRelTableFunctionScan}.
  */
 public class FilterTableFunctionTransposeRule extends AlgOptRule {
 
@@ -65,7 +65,7 @@ public class FilterTableFunctionTransposeRule extends AlgOptRule {
      */
     public FilterTableFunctionTransposeRule( AlgBuilderFactory algBuilderFactory ) {
         super(
-                operand( LogicalFilter.class, operand( LogicalTableFunctionScan.class, any() ) ),
+                operand( LogicalRelFilter.class, operand( LogicalRelTableFunctionScan.class, any() ) ),
                 algBuilderFactory, null );
     }
 
@@ -73,8 +73,8 @@ public class FilterTableFunctionTransposeRule extends AlgOptRule {
     // implement RelOptRule
     @Override
     public void onMatch( AlgOptRuleCall call ) {
-        LogicalFilter filter = call.alg( 0 );
-        LogicalTableFunctionScan funcRel = call.alg( 1 );
+        LogicalRelFilter filter = call.alg( 0 );
+        LogicalRelTableFunctionScan funcRel = call.alg( 1 );
         Set<AlgColumnMapping> columnMappings = funcRel.getColumnMappings();
         if ( columnMappings == null || columnMappings.isEmpty() ) {
             // No column mapping information, so no push-down possible.
@@ -109,12 +109,12 @@ public class FilterTableFunctionTransposeRule extends AlgOptRule {
         int[] adjustments = new int[origFields.size()];
         for ( AlgNode funcInput : funcInputs ) {
             RexNode newCondition = condition.accept( new RexInputConverter( rexBuilder, origFields, funcInput.getTupleType().getFields(), adjustments ) );
-            newFuncInputs.add( LogicalFilter.create( funcInput, newCondition ) );
+            newFuncInputs.add( LogicalRelFilter.create( funcInput, newCondition ) );
         }
 
         // create a new UDX whose children are the filters created above
-        LogicalTableFunctionScan newFuncRel =
-                LogicalTableFunctionScan.create(
+        LogicalRelTableFunctionScan newFuncRel =
+                LogicalRelTableFunctionScan.create(
                         cluster,
                         newFuncInputs,
                         funcRel.getCall(),

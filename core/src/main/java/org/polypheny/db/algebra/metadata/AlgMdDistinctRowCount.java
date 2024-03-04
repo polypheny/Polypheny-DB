@@ -86,7 +86,7 @@ public class AlgMdDistinctRowCount implements MetadataHandler<BuiltInMetadata.Di
         // REVIEW zfong: Broadbase code does not take into consideration selectivity of predicates passed in.  Also, they assume the rows are unique even if the table is not
         boolean uniq = AlgMdUtil.areColumnsDefinitelyUnique( mq, alg, groupKey );
         if ( uniq ) {
-            return NumberUtil.multiply( mq.getRowCount( alg ), mq.getSelectivity( alg, predicate ) );
+            return NumberUtil.multiply( mq.getTupleCount( alg ), mq.getSelectivity( alg, predicate ) );
         }
         return null;
     }
@@ -260,7 +260,7 @@ public class AlgMdDistinctRowCount implements MetadataHandler<BuiltInMetadata.Di
             distinctRowCount *= subRowCount;
         }
 
-        return AlgMdUtil.numDistinctVals( distinctRowCount, mq.getRowCount( alg ) );
+        return AlgMdUtil.numDistinctVals( distinctRowCount, mq.getTupleCount( alg ) );
     }
 
 

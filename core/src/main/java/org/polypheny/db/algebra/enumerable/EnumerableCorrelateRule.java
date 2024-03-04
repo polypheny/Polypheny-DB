@@ -20,7 +20,7 @@ package org.polypheny.db.algebra.enumerable;
 import java.util.function.Predicate;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
-import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelCorrelate;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
@@ -36,13 +36,13 @@ public class EnumerableCorrelateRule extends ConverterRule {
      * @param algBuilderFactory Builder for relational expressions
      */
     public EnumerableCorrelateRule( AlgBuilderFactory algBuilderFactory ) {
-        super( LogicalCorrelate.class, (Predicate<AlgNode>) r -> true, Convention.NONE, EnumerableConvention.INSTANCE, algBuilderFactory, "EnumerableCorrelateRule" );
+        super( LogicalRelCorrelate.class, (Predicate<AlgNode>) r -> true, Convention.NONE, EnumerableConvention.INSTANCE, algBuilderFactory, "EnumerableCorrelateRule" );
     }
 
 
     @Override
     public AlgNode convert( AlgNode alg ) {
-        final LogicalCorrelate c = (LogicalCorrelate) alg;
+        final LogicalRelCorrelate c = (LogicalRelCorrelate) alg;
         return EnumerableCorrelate.create(
                 convert( c.getLeft(), c.getLeft().getTraitSet().replace( EnumerableConvention.INSTANCE ) ),
                 convert( c.getRight(), c.getRight().getTraitSet().replace( EnumerableConvention.INSTANCE ) ),

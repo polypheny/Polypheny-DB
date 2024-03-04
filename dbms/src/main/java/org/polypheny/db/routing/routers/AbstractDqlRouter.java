@@ -38,7 +38,7 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -219,8 +219,8 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
             return handleNonePartitioning( node, oLogicalTable.get(), builders, context );
 
-        } else if ( node instanceof LogicalValues ) {
-            return Lists.newArrayList( super.handleValues( (LogicalValues) node, builders ) );
+        } else if ( node instanceof LogicalRelValues ) {
+            return Lists.newArrayList( super.handleValues( (LogicalRelValues) node, builders ) );
         } else {
             return Lists.newArrayList( super.handleGeneric( node, builders ) );
         }

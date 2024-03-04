@@ -39,7 +39,7 @@ import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.enumerable.EnumerableRules;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.rules.ProjectRemoveRule;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptListener;
@@ -471,12 +471,12 @@ public class VolcanoPlannerTest {
 
 
     /**
-     * Planner rule that converts a {@link LogicalProject} to PHYS convention.
+     * Planner rule that converts a {@link LogicalRelProject} to PHYS convention.
      */
     private static class PhysProjectRule extends AlgOptRule {
 
         PhysProjectRule() {
-            super( operand( LogicalProject.class, any() ) );
+            super( operand( LogicalRelProject.class, any() ) );
         }
 
 
@@ -488,7 +488,7 @@ public class VolcanoPlannerTest {
 
         @Override
         public void onMatch( AlgOptRuleCall call ) {
-            final LogicalProject project = call.alg( 0 );
+            final LogicalRelProject project = call.alg( 0 );
             AlgNode childRel = project.getInput();
             call.transformTo( new PhysLeafAlg( childRel.getCluster(), "b" ) );
         }

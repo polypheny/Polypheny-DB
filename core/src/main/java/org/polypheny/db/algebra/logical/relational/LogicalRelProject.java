@@ -57,7 +57,7 @@ import org.polypheny.db.util.ValidatorUtil;
 /**
  * Subclass of {@link Project} not targeted at any particular engine or calling convention.
  */
-public final class LogicalProject extends Project implements RelAlg {
+public final class LogicalRelProject extends Project implements RelAlg {
 
     /**
      * Creates a LogicalProject.
@@ -70,7 +70,7 @@ public final class LogicalProject extends Project implements RelAlg {
      * @param projects List of expressions for the input columns
      * @param rowType Output row type
      */
-    public LogicalProject( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
+    public LogicalRelProject( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
         super( cluster, traitSet.replace( ModelTrait.RELATIONAL ), input, projects, rowType );
         assert traitSet.containsIfApplicable( Convention.NONE );
     }
@@ -79,7 +79,7 @@ public final class LogicalProject extends Project implements RelAlg {
     /**
      * Creates a LogicalProject.
      */
-    public static LogicalProject create( final AlgNode input, final List<? extends RexNode> projects, List<String> fieldNames ) {
+    public static LogicalRelProject create( final AlgNode input, final List<? extends RexNode> projects, List<String> fieldNames ) {
         final AlgOptCluster cluster = input.getCluster();
         final AlgDataType rowType = RexUtil.createStructType( cluster.getTypeFactory(), projects, fieldNames, ValidatorUtil.F_SUGGESTER );
         return create( input, projects, rowType );
@@ -89,18 +89,18 @@ public final class LogicalProject extends Project implements RelAlg {
     /**
      * Creates a LogicalProject, specifying row type rather than field names.
      */
-    public static LogicalProject create( final AlgNode input, final List<? extends RexNode> projects, AlgDataType rowType ) {
+    public static LogicalRelProject create( final AlgNode input, final List<? extends RexNode> projects, AlgDataType rowType ) {
         final AlgOptCluster cluster = input.getCluster();
         final AlgMetadataQuery mq = cluster.getMetadataQuery();
         final AlgTraitSet traitSet = cluster.traitSet()
                 .replace( Convention.NONE )
                 //.replace( ModelTrait.RELATIONAL )
                 .replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.project( mq, input, projects ) );
-        return new LogicalProject( cluster, traitSet, input, projects, rowType );
+        return new LogicalRelProject( cluster, traitSet, input, projects, rowType );
     }
 
 
-    public static LogicalProject identity( final AlgNode input ) {
+    public static LogicalRelProject identity( final AlgNode input ) {
         return create(
                 input,
                 IntStream.range( 0, input.getTupleType().getFieldCount() )
@@ -114,8 +114,8 @@ public final class LogicalProject extends Project implements RelAlg {
 
 
     @Override
-    public LogicalProject copy( AlgTraitSet traitSet, AlgNode input, List<RexNode> projects, AlgDataType rowType ) {
-        return new LogicalProject( getCluster(), traitSet, input, projects, rowType );
+    public LogicalRelProject copy( AlgTraitSet traitSet, AlgNode input, List<RexNode> projects, AlgDataType rowType ) {
+        return new LogicalRelProject( getCluster(), traitSet, input, projects, rowType );
     }
 
 

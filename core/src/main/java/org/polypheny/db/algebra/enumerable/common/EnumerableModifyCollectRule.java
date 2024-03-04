@@ -21,15 +21,14 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.enumerable.EnumerableUnion;
-import org.polypheny.db.algebra.enumerable.common.EnumerableModifyCollect;
 import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
-import org.polypheny.db.algebra.logical.relational.LogicalUnion;
+import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 
 
 /**
- * Rule to convert an {@link LogicalUnion} to an {@link EnumerableUnion}.
+ * Rule to convert an {@link LogicalRelUnion} to an {@link EnumerableUnion}.
  */
 public class EnumerableModifyCollectRule extends ConverterRule {
 

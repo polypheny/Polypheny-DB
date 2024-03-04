@@ -40,7 +40,7 @@ import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.JoinInfo;
 import org.polypheny.db.algebra.core.SemiJoin;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.tools.AlgBuilderFactory;
@@ -51,11 +51,11 @@ import org.polypheny.db.tools.AlgBuilderFactory;
  *
  * LogicalJoin(X, Y) &rarr; LogicalJoin(SemiJoin(X, Y), Y)
  *
- * The constructor is parameterized to allow any sub-class of {@link org.polypheny.db.algebra.core.Join}, not just {@link LogicalJoin}.
+ * The constructor is parameterized to allow any sub-class of {@link org.polypheny.db.algebra.core.Join}, not just {@link LogicalRelJoin}.
  */
 public class JoinAddRedundantSemiJoinRule extends AlgOptRule {
 
-    public static final JoinAddRedundantSemiJoinRule INSTANCE = new JoinAddRedundantSemiJoinRule( LogicalJoin.class, AlgFactories.LOGICAL_BUILDER );
+    public static final JoinAddRedundantSemiJoinRule INSTANCE = new JoinAddRedundantSemiJoinRule( LogicalRelJoin.class, AlgFactories.LOGICAL_BUILDER );
 
 
     /**

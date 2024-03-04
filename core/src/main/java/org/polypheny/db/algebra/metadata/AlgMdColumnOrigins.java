@@ -44,9 +44,9 @@ import org.polypheny.db.algebra.core.Exchange;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.RelTableFunctionScan;
 import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.core.TableFunctionScan;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
@@ -181,7 +181,7 @@ public class AlgMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Colum
     }
 
 
-    public Set<AlgColumnOrigin> getColumnOrigins( TableFunctionScan alg, AlgMetadataQuery mq, int iOutputColumn ) {
+    public Set<AlgColumnOrigin> getColumnOrigins( RelTableFunctionScan alg, AlgMetadataQuery mq, int iOutputColumn ) {
         final Set<AlgColumnOrigin> set = new HashSet<>();
         Set<AlgColumnMapping> mappings = alg.getColumnMappings();
         if ( mappings == null ) {

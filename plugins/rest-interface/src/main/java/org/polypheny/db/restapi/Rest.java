@@ -42,7 +42,7 @@ import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -277,7 +277,7 @@ public class Rest {
 
         List<String> valueColumnNames = this.valuesColumnNames( insertValueRequest.values );
         List<RexNode> rexValues = this.valuesNode( statement, algBuilder, rexBuilder, insertValueRequest, tableRows, inputStreams ).get( 0 );
-        algBuilder.push( LogicalValues.createOneRow( cluster ) );
+        algBuilder.push( LogicalRelValues.createOneRow( cluster ) );
         algBuilder.project( rexValues, valueColumnNames );
 
         // Table Modify

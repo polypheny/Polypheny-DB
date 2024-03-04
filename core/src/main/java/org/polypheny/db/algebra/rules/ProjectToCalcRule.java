@@ -37,8 +37,8 @@ package org.polypheny.db.algebra.rules;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.logical.relational.LogicalCalc;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.rex.RexProgram;
@@ -47,12 +47,12 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 
 /**
  * Rule to convert a
- * {@link LogicalProject} to a
+ * {@link LogicalRelProject} to a
  * {@link LogicalCalc}
  *
  * The rule does not fire if the child is a
- * {@link LogicalProject},
- * {@link LogicalFilter} or
+ * {@link LogicalRelProject},
+ * {@link LogicalRelFilter} or
  * {@link LogicalCalc}. If it did, then the same
  * {@link LogicalCalc} would be formed via
  * several transformation paths, which is a waste of effort.
@@ -70,20 +70,20 @@ public class ProjectToCalcRule extends AlgOptRule {
      * @param algBuilderFactory Builder for relational expressions
      */
     public ProjectToCalcRule( AlgBuilderFactory algBuilderFactory ) {
-        super( operand( LogicalProject.class, any() ), algBuilderFactory, null );
+        super( operand( LogicalRelProject.class, any() ), algBuilderFactory, null );
     }
 
 
     @Override
     public void onMatch( AlgOptRuleCall call ) {
-        final LogicalProject project = call.alg( 0 );
+        final LogicalRelProject project = call.alg( 0 );
         final AlgNode input = project.getInput();
         final LogicalCalc calc = from( project, input );
         call.transformTo( calc );
     }
 
 
-    public static LogicalCalc from( LogicalProject project, AlgNode input ) {
+    public static LogicalCalc from( LogicalRelProject project, AlgNode input ) {
         final RexProgram program =
                 RexProgram.create(
                         input.getTupleType(),

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,50 +31,64 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.algebra.core;
+package org.polypheny.db.algebra.logical.relational;
 
 
 import java.util.List;
-import java.util.stream.Collectors;
+import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.AlgShuttle;
+import org.polypheny.db.algebra.core.Minus;
+import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.Convention;
 
 
 /**
- * Relational expression that returns the intersection of the rows of its inputs.
- *
- * If "all" is true, performs then multiset intersection; otherwise, performs set set intersection (implying no duplicates in the results).
+ * Sub-class of {@link Minus} not targeted at any particular engine or calling convention.
  */
-public abstract class Intersect extends SetOp {
+public final class LogicalRelMinus extends Minus implements RelAlg {
 
     /**
-     * Creates an Intersect.
+     * Creates a LogicalMinus.
+     *
+     * Use {@link #create} unless you know what you're doing.
      */
-    public Intersect( AlgOptCluster cluster, AlgTraitSet traits, List<AlgNode> inputs, boolean all ) {
-        super( cluster, traits, inputs, Kind.INTERSECT, all );
+    public LogicalRelMinus( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
+        super( cluster, traitSet, inputs, all );
+    }
+
+
+    /**
+     * Creates a LogicalMinus by parsing serialized output.
+     */
+    public LogicalRelMinus( AlgInput input ) {
+        super( input );
+    }
+
+
+    /**
+     * Creates a LogicalMinus.
+     */
+    public static LogicalRelMinus create( List<AlgNode> inputs, boolean all ) {
+        final AlgOptCluster cluster = inputs.get( 0 ).getCluster();
+        final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
+        return new LogicalRelMinus( cluster, traitSet, inputs, all );
     }
 
 
     @Override
-    public double estimateRowCount( AlgMetadataQuery mq ) {
-        // REVIEW jvs:  I just pulled this out of a hat.
-        double dRows = Double.MAX_VALUE;
-        for ( AlgNode input : inputs ) {
-            dRows = Math.min( dRows, mq.getTupleCount( input ) );
-        }
-        dRows *= 0.25;
-        return dRows;
+    public LogicalRelMinus copy( AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
+        assert traitSet.containsIfApplicable( Convention.NONE );
+        return new LogicalRelMinus( getCluster(), traitSet, inputs, all );
     }
 
 
     @Override
-    public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" +
-                inputs.stream().map( AlgNode::algCompareString ).collect( Collectors.joining( "$" ) ) + "$" +
-                all + "&";
+    public AlgNode accept( AlgShuttle shuttle ) {
+        return shuttle.visit( this );
     }
 
 }
+

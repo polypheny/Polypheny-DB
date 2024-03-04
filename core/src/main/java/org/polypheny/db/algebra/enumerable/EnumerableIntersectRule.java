@@ -19,24 +19,24 @@ package org.polypheny.db.algebra.enumerable;
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
-import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
+import org.polypheny.db.algebra.logical.relational.LogicalRelIntersect;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 
 
 /**
- * Rule to convert a {@link LogicalIntersect} to an {@link EnumerableIntersect}.
+ * Rule to convert a {@link LogicalRelIntersect} to an {@link EnumerableIntersect}.
  */
 class EnumerableIntersectRule extends ConverterRule {
 
     EnumerableIntersectRule() {
-        super( LogicalIntersect.class, Convention.NONE, EnumerableConvention.INSTANCE, "EnumerableIntersectRule" );
+        super( LogicalRelIntersect.class, Convention.NONE, EnumerableConvention.INSTANCE, "EnumerableIntersectRule" );
     }
 
 
     @Override
     public AlgNode convert( AlgNode alg ) {
-        final LogicalIntersect intersect = (LogicalIntersect) alg;
+        final LogicalRelIntersect intersect = (LogicalRelIntersect) alg;
         if ( intersect.all ) {
             return null; // INTERSECT ALL not implemented
         }

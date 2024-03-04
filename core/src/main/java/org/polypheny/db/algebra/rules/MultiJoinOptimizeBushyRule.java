@@ -47,7 +47,7 @@ import java.util.Objects;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.JoinAlgType;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.config.RuntimeConfig;
@@ -69,7 +69,7 @@ import org.polypheny.db.util.mapping.Mappings;
 /**
  * Planner rule that finds an approximately optimal ordering for join operators using a heuristic algorithm.
  *
- * It is triggered by the pattern {@link LogicalProject} ({@link MultiJoin}).
+ * It is triggered by the pattern {@link LogicalRelProject} ({@link MultiJoin}).
  *
  * It is similar to {@link LoptOptimizeJoinRule}. {@code LoptOptimizeJoinRule} is only capable of producing left-deep joins; this rule is capable of producing bushy joins.
  *
@@ -110,7 +110,7 @@ public class MultiJoinOptimizeBushyRule extends AlgOptRule {
         int x = 0;
         for ( int i = 0; i < multiJoin.getNumJoinFactors(); i++ ) {
             final AlgNode alg = multiJoin.getJoinFactor( i );
-            double cost = mq.getRowCount( alg );
+            double cost = mq.getTupleCount( alg );
             vertexes.add( new LeafVertex( i, alg, cost, x ) );
             x += alg.getTupleType().getFieldCount();
         }

@@ -27,8 +27,8 @@ import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
-import org.polypheny.db.algebra.logical.relational.LogicalUnion;
+import org.polypheny.db.algebra.logical.relational.LogicalRelIntersect;
+import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.algebra.rules.CalcMergeRule;
 import org.polypheny.db.algebra.rules.CoerceInputsRule;
 import org.polypheny.db.algebra.rules.FilterToCalcRule;
@@ -93,8 +93,8 @@ public class HepPlannerTest extends AlgOptTestBase {
 
         HepPlanner planner = new HepPlanner( programBuilder.build() );
 
-        planner.addRule( new CoerceInputsRule( LogicalUnion.class, false, AlgFactories.LOGICAL_BUILDER ) );
-        planner.addRule( new CoerceInputsRule( LogicalIntersect.class, false, AlgFactories.LOGICAL_BUILDER ) );
+        planner.addRule( new CoerceInputsRule( LogicalRelUnion.class, false, AlgFactories.LOGICAL_BUILDER ) );
+        planner.addRule( new CoerceInputsRule( LogicalRelIntersect.class, false, AlgFactories.LOGICAL_BUILDER ) );
 
         checkPlanning( planner, "(select name from dept union select ename from emp) intersect (select fname from customer.contact)" );
     }

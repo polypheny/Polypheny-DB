@@ -62,7 +62,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.JoinAlgType;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -1070,9 +1070,9 @@ public abstract class SqlImplementor {
                     break;
                 }
             }
-            if ( alg instanceof LogicalAggregate
+            if ( alg instanceof LogicalRelAggregate
                     && !dialect.supportsNestedAggregations()
-                    && hasNestedAggregations( (LogicalAggregate) alg ) ) {
+                    && hasNestedAggregations( (LogicalRelAggregate) alg ) ) {
                 needNew = true;
             }
 
@@ -1117,7 +1117,7 @@ public abstract class SqlImplementor {
         }
 
 
-        private boolean hasNestedAggregations( LogicalAggregate alg ) {
+        private boolean hasNestedAggregations( LogicalRelAggregate alg ) {
             if ( node instanceof SqlSelect ) {
                 final SqlNodeList selectList = ((SqlSelect) node).getSqlSelectList();
                 if ( selectList != null ) {

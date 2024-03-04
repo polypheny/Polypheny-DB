@@ -35,7 +35,7 @@ package org.polypheny.db.algebra;
 
 
 import org.polypheny.db.algebra.core.Exchange;
-import org.polypheny.db.algebra.logical.relational.LogicalExchange;
+import org.polypheny.db.algebra.logical.relational.LogicalRelExchange;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -80,7 +80,7 @@ public class AlgDistributionTraitDef extends AlgTraitDef<AlgDistribution> {
         }
 
         // Create a logical sort, then ask the planner to convert its remaining traits (e.g. convert it to an EnumerableSortRel if alg is enumerable convention)
-        final Exchange exchange = LogicalExchange.create( alg, toDistribution );
+        final Exchange exchange = LogicalRelExchange.create( alg, toDistribution );
         AlgNode newRel = planner.register( exchange, alg );
         final AlgTraitSet newTraitSet = alg.getTraitSet().replace( toDistribution );
         if ( !newRel.getTraitSet().equals( newTraitSet ) ) {

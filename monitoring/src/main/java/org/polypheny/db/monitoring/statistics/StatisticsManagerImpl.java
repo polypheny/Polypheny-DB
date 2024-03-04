@@ -42,10 +42,10 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.fun.AggFunction;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
-import org.polypheny.db.algebra.logical.relational.LogicalSort;
+import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
@@ -477,7 +477,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
     private AlgNode getAggregateColumn( QueryResult queryResult, NodeType nodeType, RelScan<?> tableScan, RexBuilder rexBuilder, AlgOptCluster cluster ) {
         for ( int i = 0; i < tableScan.getTupleType().getFieldNames().size(); i++ ) {
             if ( tableScan.getTupleType().getFieldNames().get( i ).equals( queryResult.getColumn().name ) ) {
-                LogicalProject logicalProject = LogicalProject.create(
+                LogicalRelProject logicalRelProject = LogicalRelProject.create(
                         tableScan,
                         Collections.singletonList( rexBuilder.makeInputRef( tableScan, i ) ),
                         Collections.singletonList( tableScan.getTupleType().getFieldNames().get( i ) ) );
@@ -491,7 +491,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
                     throw new GenericRuntimeException( "Unknown aggregate is used in Statistic Manager." );
                 }
 
-                AlgDataType relDataType = logicalProject.getTupleType().getFields().get( 0 ).getType();
+                AlgDataType relDataType = logicalRelProject.getTupleType().getFields().get( 0 ).getType();
                 AlgDataType dataType;
                 if ( relDataType.getPolyType() == PolyType.DECIMAL ) {
                     dataType = cluster.getTypeFactory().createTypeWithNullability(
@@ -513,8 +513,8 @@ public class StatisticsManagerImpl extends StatisticsManager {
                         dataType,
                         "min-max" );
 
-                return LogicalAggregate.create(
-                        logicalProject,
+                return LogicalRelAggregate.create(
+                        logicalRelProject,
                         ImmutableBitSet.of(),
                         List.of( ImmutableBitSet.of() ),
                         List.of( aggregateCall ) );
@@ -527,21 +527,21 @@ public class StatisticsManagerImpl extends StatisticsManager {
     private AlgNode getUniqueValues( QueryResult queryResult, RelScan<?> tableScan, RexBuilder rexBuilder ) {
         for ( int i = 0; i < tableScan.getTupleType().getFieldNames().size(); i++ ) {
             if ( tableScan.getTupleType().getFieldNames().get( i ).equals( queryResult.getColumn().name ) ) {
-                LogicalProject logicalProject = LogicalProject.create(
+                LogicalRelProject logicalRelProject = LogicalRelProject.create(
                         tableScan,
                         List.of( rexBuilder.makeInputRef( tableScan, i ) ),
                         List.of( tableScan.getTupleType().getFieldNames().get( i ) ) );
 
-                LogicalAggregate logicalAggregate = LogicalAggregate.create(
-                        logicalProject,
+                LogicalRelAggregate logicalRelAggregate = LogicalRelAggregate.create(
+                        logicalRelProject,
                         ImmutableBitSet.of( 0 ),
                         List.of( ImmutableBitSet.of( 0 ) ),
                         List.of() );
 
                 Pair<BigDecimal, PolyType> valuePair = new Pair<>( new BigDecimal( 6 ), PolyType.DECIMAL );
 
-                return LogicalSort.create(
-                        logicalAggregate,
+                return LogicalRelSort.create(
+                        logicalRelAggregate,
                         AlgCollations.of(),
                         null,
                         new RexLiteral( PolyBigDecimal.of( valuePair.left ), rexBuilder.makeInputRef( tableScan, i ).getType(), valuePair.right ) );
@@ -557,15 +557,15 @@ public class StatisticsManagerImpl extends StatisticsManager {
     private AlgNode getColumnCount( QueryResult queryResult, RelScan<?> tableScan, RexBuilder rexBuilder, AlgOptCluster cluster ) {
         for ( int i = 0; i < tableScan.getTupleType().getFieldNames().size(); i++ ) {
             if ( queryResult.getColumn() != null && tableScan.getTupleType().getFieldNames().get( i ).equals( queryResult.getColumn().name ) ) {
-                LogicalProject logicalProject = LogicalProject.create(
+                LogicalRelProject logicalRelProject = LogicalRelProject.create(
                         tableScan,
                         List.of( rexBuilder.makeInputRef( tableScan, i ) ),
                         List.of( tableScan.getTupleType().getFieldNames().get( i ) ) );
 
                 AggregateCall aggregateCall = getRowCountAggregateCall( cluster );
 
-                return LogicalAggregate.create(
-                        logicalProject,
+                return LogicalRelAggregate.create(
+                        logicalRelProject,
                         ImmutableBitSet.of(),
                         List.of( ImmutableBitSet.of() ),
                         List.of( aggregateCall ) );
@@ -580,7 +580,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
      */
     private AlgNode getTableCount( RelScan<?> tableScan, AlgOptCluster cluster ) {
         AggregateCall aggregateCall = getRowCountAggregateCall( cluster );
-        return LogicalAggregate.create(
+        return LogicalRelAggregate.create(
                 tableScan,
                 ImmutableBitSet.of(),
                 List.of( ImmutableBitSet.of() ),

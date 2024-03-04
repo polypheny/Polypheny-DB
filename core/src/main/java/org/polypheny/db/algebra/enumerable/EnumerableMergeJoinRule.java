@@ -45,27 +45,27 @@ import org.polypheny.db.algebra.InvalidAlgException;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.JoinInfo;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 
 
 /**
- * Planner rule that converts a {@link LogicalJoin} relational expression {@link EnumerableConvention enumerable calling convention}.
+ * Planner rule that converts a {@link LogicalRelJoin} relational expression {@link EnumerableConvention enumerable calling convention}.
  *
  * @see EnumerableJoinRule
  */
 class EnumerableMergeJoinRule extends ConverterRule {
 
     EnumerableMergeJoinRule() {
-        super( LogicalJoin.class, Convention.NONE, EnumerableConvention.INSTANCE, EnumerableMergeJoinRule.class.getSimpleName() );
+        super( LogicalRelJoin.class, Convention.NONE, EnumerableConvention.INSTANCE, EnumerableMergeJoinRule.class.getSimpleName() );
     }
 
 
     @Override
     public AlgNode convert( AlgNode alg ) {
-        LogicalJoin join = (LogicalJoin) alg;
+        LogicalRelJoin join = (LogicalRelJoin) alg;
         final JoinInfo info = JoinInfo.of( join.getLeft(), join.getRight(), join.getCondition() );
         if ( join.getJoinType() != JoinAlgType.INNER ) {
             // EnumerableMergeJoin only supports inner join. (It supports non-equi join, using a post-filter; see below.)

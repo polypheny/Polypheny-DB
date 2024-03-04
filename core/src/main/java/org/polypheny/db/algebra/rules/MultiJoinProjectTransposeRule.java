@@ -36,8 +36,8 @@ package org.polypheny.db.algebra.rules;
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
 import org.polypheny.db.plan.AlgOptUtil;
@@ -46,14 +46,14 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 
 /**
  * MultiJoinProjectTransposeRule implements the rule for pulling
- * {@link LogicalProject}s that are on top of a
+ * {@link LogicalRelProject}s that are on top of a
  * {@link MultiJoin} and beneath a
- * {@link LogicalJoin} so the
- * {@link LogicalProject} appears above the
- * {@link LogicalJoin}.
+ * {@link LogicalRelJoin} so the
+ * {@link LogicalRelProject} appears above the
+ * {@link LogicalRelJoin}.
  *
  * In the process of doing so, also save away information about the respective fields that are referenced in the expressions
- * in the {@link LogicalProject} we're pulling up, as well as the join condition, in the resultant {@link MultiJoin}s
+ * in the {@link LogicalRelProject} we're pulling up, as well as the join condition, in the resultant {@link MultiJoin}s
  *
  * For example, if we have the following sub-query:
  *
@@ -65,33 +65,33 @@ import org.polypheny.db.tools.AlgBuilderFactory;
  *
  * Note that by only pulling up projects that are on top of {@link MultiJoin}s, we preserve projections on top of row scans.
  *
- * See the superclass for details on restrictions regarding which {@link LogicalProject}s cannot be pulled.
+ * See the superclass for details on restrictions regarding which {@link LogicalRelProject}s cannot be pulled.
  */
 public class MultiJoinProjectTransposeRule extends JoinProjectTransposeRule {
 
     public static final MultiJoinProjectTransposeRule MULTI_BOTH_PROJECT =
             new MultiJoinProjectTransposeRule(
                     operand(
-                            LogicalJoin.class,
-                            operand( LogicalProject.class, operand( MultiJoin.class, any() ) ),
-                            operand( LogicalProject.class, operand( MultiJoin.class, any() ) ) ),
+                            LogicalRelJoin.class,
+                            operand( LogicalRelProject.class, operand( MultiJoin.class, any() ) ),
+                            operand( LogicalRelProject.class, operand( MultiJoin.class, any() ) ) ),
                     AlgFactories.LOGICAL_BUILDER,
                     "MultiJoinProjectTransposeRule: with two LogicalProject children" );
 
     public static final MultiJoinProjectTransposeRule MULTI_LEFT_PROJECT =
             new MultiJoinProjectTransposeRule(
                     operand(
-                            LogicalJoin.class,
-                            some( operand( LogicalProject.class, operand( MultiJoin.class, any() ) ) ) ),
+                            LogicalRelJoin.class,
+                            some( operand( LogicalRelProject.class, operand( MultiJoin.class, any() ) ) ) ),
                     AlgFactories.LOGICAL_BUILDER,
                     "MultiJoinProjectTransposeRule: with LogicalProject on left" );
 
     public static final MultiJoinProjectTransposeRule MULTI_RIGHT_PROJECT =
             new MultiJoinProjectTransposeRule(
                     operand(
-                            LogicalJoin.class,
+                            LogicalRelJoin.class,
                             operand( AlgNode.class, any() ),
-                            operand( LogicalProject.class, operand( MultiJoin.class, any() ) ) ),
+                            operand( LogicalRelProject.class, operand( MultiJoin.class, any() ) ) ),
                     AlgFactories.LOGICAL_BUILDER,
                     "MultiJoinProjectTransposeRule: with LogicalProject on right" );
 
@@ -120,7 +120,7 @@ public class MultiJoinProjectTransposeRule extends JoinProjectTransposeRule {
 
     // override JoinProjectTransposeRule
     @Override
-    protected LogicalProject getRightChild( AlgOptRuleCall call ) {
+    protected LogicalRelProject getRightChild( AlgOptRuleCall call ) {
         if ( call.algs.length == 4 ) {
             return call.alg( 2 );
         } else {
@@ -130,7 +130,7 @@ public class MultiJoinProjectTransposeRule extends JoinProjectTransposeRule {
 
 
     // override JoinProjectTransposeRule
-    protected AlgNode getProjectChild( AlgOptRuleCall call, LogicalProject project, boolean leftChild ) {
+    protected AlgNode getProjectChild( AlgOptRuleCall call, LogicalRelProject project, boolean leftChild ) {
         // Locate the appropriate MultiJoin based on which rule was fired and which projection we're dealing with
         MultiJoin multiJoin;
         if ( leftChild ) {

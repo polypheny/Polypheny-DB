@@ -58,7 +58,7 @@ public class CottontailSort extends Sort implements CottontailAlg {
 
     @Override
     public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        final double rowCount = mq.getRowCount( this ) + 0.01;
+        final double rowCount = mq.getTupleCount( this ) + 0.01;
         return planner.getCostFactory().makeCost( rowCount, 0, 0 );
     }
 

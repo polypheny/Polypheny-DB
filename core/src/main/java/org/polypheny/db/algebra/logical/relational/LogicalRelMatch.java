@@ -52,7 +52,7 @@ import org.polypheny.db.rex.RexNode;
 /**
  * Sub-class of {@link Match} not targeted at any particular engine or calling convention.
  */
-public class LogicalMatch extends Match implements RelAlg {
+public class LogicalRelMatch extends Match implements RelAlg {
 
     /**
      * Creates a LogicalMatch.
@@ -73,7 +73,7 @@ public class LogicalMatch extends Match implements RelAlg {
      * @param orderKeys Order by columns
      * @param interval Interval definition, null if WITHIN clause is not defined
      */
-    private LogicalMatch(
+    private LogicalRelMatch(
             AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, AlgDataType rowType, RexNode pattern, boolean strictStart, boolean strictEnd, Map<String, RexNode> patternDefinitions,
             Map<String, RexNode> measures, RexNode after, Map<String, ? extends SortedSet<String>> subsets, boolean allRows, List<RexNode> partitionKeys, AlgCollation orderKeys, RexNode interval ) {
         super( cluster, traitSet, input, rowType, pattern, strictStart, strictEnd, patternDefinitions, measures, after, subsets, allRows, partitionKeys, orderKeys, interval );
@@ -83,12 +83,12 @@ public class LogicalMatch extends Match implements RelAlg {
     /**
      * Creates a LogicalMatch.
      */
-    public static LogicalMatch create(
+    public static LogicalRelMatch create(
             AlgNode input, AlgDataType rowType, RexNode pattern, boolean strictStart, boolean strictEnd, Map<String, RexNode> patternDefinitions, Map<String, RexNode> measures,
             RexNode after, Map<String, ? extends SortedSet<String>> subsets, boolean allRows, List<RexNode> partitionKeys, AlgCollation orderKeys, RexNode interval ) {
         final AlgOptCluster cluster = input.getCluster();
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
-        return new LogicalMatch( cluster, traitSet, input, rowType, pattern, strictStart, strictEnd, patternDefinitions, measures, after, subsets, allRows, partitionKeys, orderKeys, interval );
+        return new LogicalRelMatch( cluster, traitSet, input, rowType, pattern, strictStart, strictEnd, patternDefinitions, measures, after, subsets, allRows, partitionKeys, orderKeys, interval );
     }
 
 
@@ -97,7 +97,7 @@ public class LogicalMatch extends Match implements RelAlg {
             AlgNode input, AlgDataType rowType, RexNode pattern, boolean strictStart, boolean strictEnd, Map<String, RexNode> patternDefinitions, Map<String, RexNode> measures, RexNode after,
             Map<String, ? extends SortedSet<String>> subsets, boolean allRows, List<RexNode> partitionKeys, AlgCollation orderKeys, RexNode interval ) {
         final AlgTraitSet traitSet = getCluster().traitSetOf( Convention.NONE );
-        return new LogicalMatch( getCluster(), traitSet, input, rowType, pattern, strictStart, strictEnd, patternDefinitions, measures, after, subsets, allRows, partitionKeys, orderKeys, interval );
+        return new LogicalRelMatch( getCluster(), traitSet, input, rowType, pattern, strictStart, strictEnd, patternDefinitions, measures, after, subsets, allRows, partitionKeys, orderKeys, interval );
     }
 
 

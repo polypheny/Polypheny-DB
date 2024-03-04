@@ -41,7 +41,7 @@ import org.apache.calcite.linq4j.QueryProvider;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.nodes.Function.FunctionType;
@@ -146,7 +146,7 @@ public class VisitorDataContext implements DataContext {
     }
 
 
-    public static DataContext of( AlgNode targetRel, LogicalFilter queryRel ) {
+    public static DataContext of( AlgNode targetRel, LogicalRelFilter queryRel ) {
         return of( targetRel.getTupleType(), queryRel.getCondition() );
     }
 

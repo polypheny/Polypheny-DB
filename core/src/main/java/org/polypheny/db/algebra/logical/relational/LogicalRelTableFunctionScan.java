@@ -38,7 +38,7 @@ import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Set;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.TableFunctionScan;
+import org.polypheny.db.algebra.core.RelTableFunctionScan;
 import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.algebra.metadata.AlgColumnMapping;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
@@ -52,9 +52,9 @@ import org.polypheny.db.rex.RexNode;
 
 
 /**
- * Sub-class of {@link org.polypheny.db.algebra.core.TableFunctionScan} not targeted at any particular engine or calling convention.
+ * Sub-class of {@link RelTableFunctionScan} not targeted at any particular engine or calling convention.
  */
-public class LogicalTableFunctionScan extends TableFunctionScan implements RelAlg {
+public class LogicalRelTableFunctionScan extends RelTableFunctionScan implements RelAlg {
 
     /**
      * Creates a <code>LogicalTableFunctionScan</code>.
@@ -66,7 +66,7 @@ public class LogicalTableFunctionScan extends TableFunctionScan implements RelAl
      * @param rowType row type produced by function
      * @param columnMappings column mappings associated with this function
      */
-    public LogicalTableFunctionScan( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, RexNode rexCall, Type elementType, AlgDataType rowType, Set<AlgColumnMapping> columnMappings ) {
+    public LogicalRelTableFunctionScan( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, RexNode rexCall, Type elementType, AlgDataType rowType, Set<AlgColumnMapping> columnMappings ) {
         super( cluster, traitSet, inputs, rexCall, elementType, rowType, columnMappings );
     }
 
@@ -74,16 +74,16 @@ public class LogicalTableFunctionScan extends TableFunctionScan implements RelAl
     /**
      * Creates a LogicalTableFunctionScan.
      */
-    public static LogicalTableFunctionScan create( AlgOptCluster cluster, List<AlgNode> inputs, RexNode rexCall, Type elementType, AlgDataType rowType, Set<AlgColumnMapping> columnMappings ) {
+    public static LogicalRelTableFunctionScan create( AlgOptCluster cluster, List<AlgNode> inputs, RexNode rexCall, Type elementType, AlgDataType rowType, Set<AlgColumnMapping> columnMappings ) {
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
-        return new LogicalTableFunctionScan( cluster, traitSet, inputs, rexCall, elementType, rowType, columnMappings );
+        return new LogicalRelTableFunctionScan( cluster, traitSet, inputs, rexCall, elementType, rowType, columnMappings );
     }
 
 
     @Override
-    public LogicalTableFunctionScan copy( AlgTraitSet traitSet, List<AlgNode> inputs, RexNode rexCall, Type elementType, AlgDataType rowType, Set<AlgColumnMapping> columnMappings ) {
+    public LogicalRelTableFunctionScan copy( AlgTraitSet traitSet, List<AlgNode> inputs, RexNode rexCall, Type elementType, AlgDataType rowType, Set<AlgColumnMapping> columnMappings ) {
         assert traitSet.containsIfApplicable( Convention.NONE );
-        return new LogicalTableFunctionScan( getCluster(), traitSet, inputs, rexCall, elementType, rowType, columnMappings );
+        return new LogicalRelTableFunctionScan( getCluster(), traitSet, inputs, rexCall, elementType, rowType, columnMappings );
     }
 
 

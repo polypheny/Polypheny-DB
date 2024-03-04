@@ -103,7 +103,7 @@ public class EnumerableJoin extends EquiJoin implements EnumerableAlg {
 
     @Override
     public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        double rowCount = mq.getRowCount( this );
+        double rowCount = mq.getTupleCount( this );
 
         // Joins can be flipped, and for many algorithms, both versions are viable and have the same cost.
         // To make the results stable between versions of the planner, make one of the versions slightly more expensive.

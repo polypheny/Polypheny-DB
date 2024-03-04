@@ -48,7 +48,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.fun.AggFunction;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.rules.AggregateExpandDistinctAggregatesRule;
 import org.polypheny.db.algebra.rules.AggregateProjectPullUpConstantsRule;
@@ -278,7 +278,7 @@ public abstract class Aggregate extends SingleAlg {
     @Override
     public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
         // REVIEW jvs:  This is bogus, but no more bogus than what's currently in Join.
-        double rowCount = mq.getRowCount( this );
+        double rowCount = mq.getTupleCount( this );
         // Aggregates with more aggregate functions cost a bit more
         float multiplier = 1f + (float) aggCalls.size() * 0.125f;
         for ( AggregateCall aggCall : aggCalls ) {
@@ -457,7 +457,7 @@ public abstract class Aggregate extends SingleAlg {
 
     /**
      * Implementation of the {@link OperatorBinding} interface for an {@link AggregateCall aggregate call} applied to a set of operands in the context of
-     * a {@link LogicalAggregate}.
+     * a {@link LogicalRelAggregate}.
      */
     public static class AggCallBinding extends OperatorBinding {
 

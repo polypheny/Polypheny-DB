@@ -91,7 +91,7 @@ public class HepAlgVertex extends AbstractAlgNode {
 
     @Override
     public double estimateRowCount( AlgMetadataQuery mq ) {
-        return mq.getRowCount( currentAlg );
+        return mq.getTupleCount( currentAlg );
     }
 
 

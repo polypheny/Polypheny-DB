@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,9 +35,10 @@ package org.polypheny.db.algebra.logical.relational;
 
 
 import java.util.List;
+import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
-import org.polypheny.db.algebra.core.Intersect;
+import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -45,33 +46,42 @@ import org.polypheny.db.plan.Convention;
 
 
 /**
- * Sub-class of {@link org.polypheny.db.algebra.core.Intersect} not targeted at any particular engine or calling convention.
+ * Sub-class of {@link org.polypheny.db.algebra.core.Union} not targeted at any particular engine or calling convention.
  */
-public final class LogicalIntersect extends Intersect implements RelAlg {
+public final class LogicalRelUnion extends Union implements RelAlg {
 
     /**
-     * Creates a LogicalIntersect.
+     * Creates a LogicalUnion.
      *
      * Use {@link #create} unless you know what you're doing.
      */
-    public LogicalIntersect( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
+    public LogicalRelUnion( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
         super( cluster, traitSet, inputs, all );
     }
 
 
     /**
-     * Creates a LogicalIntersect.
+     * Creates a LogicalUnion by parsing serialized output.
      */
-    public static LogicalIntersect create( List<AlgNode> inputs, boolean all ) {
+    public LogicalRelUnion( AlgInput input ) {
+        super( input );
+    }
+
+
+    /**
+     * Creates a LogicalUnion.
+     */
+    public static LogicalRelUnion create( List<AlgNode> inputs, boolean all ) {
         final AlgOptCluster cluster = inputs.get( 0 ).getCluster();
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
-        return new LogicalIntersect( cluster, traitSet, inputs, all );
+        return new LogicalRelUnion( cluster, traitSet, inputs, all );
     }
 
 
     @Override
-    public LogicalIntersect copy( AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
-        return new LogicalIntersect( getCluster(), traitSet, inputs, all );
+    public LogicalRelUnion copy( AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
+        assert traitSet.containsIfApplicable( Convention.NONE );
+        return new LogicalRelUnion( getCluster(), traitSet, inputs, all );
     }
 
 
@@ -81,3 +91,4 @@ public final class LogicalIntersect extends Intersect implements RelAlg {
     }
 
 }
+

@@ -27,7 +27,7 @@ import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.lpg.LpgScan;
 import org.polypheny.db.algebra.core.relational.RelScan;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -59,7 +59,7 @@ public class Transformer extends AbstractAlgNode {
                 && outModelTrait == ModelTrait.RELATIONAL && inputs.size() == 1
                 && inputs.get( 0 ).getTupleType().getFieldCount() == 2 ) {
             // todo dl: remove after RowType refactor
-            LogicalProject lp = LogicalProject.create(
+            LogicalRelProject lp = LogicalRelProject.create(
                     inputs.get( 0 ),
                     List.of( cluster.getRexBuilder().makeInputRef( inputs.get( 0 ).getTupleType().getFields().get( 0 ).getType(), 1 ) ),
                     List.of( "d" ) );

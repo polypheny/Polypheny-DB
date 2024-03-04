@@ -207,7 +207,7 @@ public abstract class Window extends SingleAlg {
         //
         // TODO #1. Add memory cost.
         // TODO #2. MIN and MAX have higher CPU cost than SUM and COUNT.
-        final double rowsIn = mq.getRowCount( getInput() );
+        final double rowsIn = mq.getTupleCount( getInput() );
         int count = groups.size();
         for ( Group group : groups ) {
             count += group.aggCalls.size();

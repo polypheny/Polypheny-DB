@@ -20,14 +20,14 @@ package org.polypheny.db.algebra.enumerable;
 import java.util.function.Predicate;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
-import org.polypheny.db.algebra.logical.relational.LogicalTableFunctionScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelTableFunctionScan;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Planner rule that converts a {@link LogicalTableFunctionScan} relational expression {@link EnumerableConvention enumerable calling convention}.
+ * Planner rule that converts a {@link LogicalRelTableFunctionScan} relational expression {@link EnumerableConvention enumerable calling convention}.
  */
 public class EnumerableTableFunctionScanRule extends ConverterRule {
 
@@ -38,7 +38,7 @@ public class EnumerableTableFunctionScanRule extends ConverterRule {
      */
     public EnumerableTableFunctionScanRule( AlgBuilderFactory algBuilderFactory ) {
         super(
-                LogicalTableFunctionScan.class,
+                LogicalRelTableFunctionScan.class,
                 (Predicate<AlgNode>) r -> true,
                 Convention.NONE,
                 EnumerableConvention.INSTANCE,
@@ -50,8 +50,8 @@ public class EnumerableTableFunctionScanRule extends ConverterRule {
     @Override
     public AlgNode convert( AlgNode alg ) {
         final AlgTraitSet traitSet = alg.getTraitSet().replace( EnumerableConvention.INSTANCE );
-        LogicalTableFunctionScan tbl = (LogicalTableFunctionScan) alg;
-        return new EnumerableTableFunctionScan(
+        LogicalRelTableFunctionScan tbl = (LogicalRelTableFunctionScan) alg;
+        return new EnumerableRelTableFunctionScan(
                 alg.getCluster(),
                 traitSet,
                 tbl.getInputs(),

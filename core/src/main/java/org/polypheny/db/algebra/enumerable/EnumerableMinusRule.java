@@ -19,25 +19,25 @@ package org.polypheny.db.algebra.enumerable;
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
-import org.polypheny.db.algebra.logical.relational.LogicalMinus;
+import org.polypheny.db.algebra.logical.relational.LogicalRelMinus;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 
 
 /**
- * Rule to convert an {@link LogicalMinus} to an {@link EnumerableMinus}.
+ * Rule to convert an {@link LogicalRelMinus} to an {@link EnumerableMinus}.
  */
 class EnumerableMinusRule extends ConverterRule {
 
     EnumerableMinusRule() {
-        super( LogicalMinus.class, Convention.NONE, EnumerableConvention.INSTANCE, "EnumerableMinusRule" );
+        super( LogicalRelMinus.class, Convention.NONE, EnumerableConvention.INSTANCE, "EnumerableMinusRule" );
     }
 
 
     @Override
     public AlgNode convert( AlgNode alg ) {
-        final LogicalMinus minus = (LogicalMinus) alg;
+        final LogicalRelMinus minus = (LogicalRelMinus) alg;
         if ( minus.all ) {
             return null; // EXCEPT ALL not implemented
         }

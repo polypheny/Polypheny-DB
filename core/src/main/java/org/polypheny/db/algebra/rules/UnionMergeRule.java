@@ -40,9 +40,9 @@ import org.polypheny.db.algebra.core.Intersect;
 import org.polypheny.db.algebra.core.Minus;
 import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.core.Union;
-import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
-import org.polypheny.db.algebra.logical.relational.LogicalMinus;
-import org.polypheny.db.algebra.logical.relational.LogicalUnion;
+import org.polypheny.db.algebra.logical.relational.LogicalRelIntersect;
+import org.polypheny.db.algebra.logical.relational.LogicalRelMinus;
+import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.tools.AlgBuilder;
@@ -57,9 +57,9 @@ import org.polypheny.db.util.Util;
  */
 public class UnionMergeRule extends AlgOptRule {
 
-    public static final UnionMergeRule INSTANCE = new UnionMergeRule( LogicalUnion.class, "UnionMergeRule", AlgFactories.LOGICAL_BUILDER );
-    public static final UnionMergeRule INTERSECT_INSTANCE = new UnionMergeRule( LogicalIntersect.class, "IntersectMergeRule", AlgFactories.LOGICAL_BUILDER );
-    public static final UnionMergeRule MINUS_INSTANCE = new UnionMergeRule( LogicalMinus.class, "MinusMergeRule", AlgFactories.LOGICAL_BUILDER );
+    public static final UnionMergeRule INSTANCE = new UnionMergeRule( LogicalRelUnion.class, "UnionMergeRule", AlgFactories.LOGICAL_BUILDER );
+    public static final UnionMergeRule INTERSECT_INSTANCE = new UnionMergeRule( LogicalRelIntersect.class, "IntersectMergeRule", AlgFactories.LOGICAL_BUILDER );
+    public static final UnionMergeRule MINUS_INSTANCE = new UnionMergeRule( LogicalRelMinus.class, "MinusMergeRule", AlgFactories.LOGICAL_BUILDER );
 
 
     /**

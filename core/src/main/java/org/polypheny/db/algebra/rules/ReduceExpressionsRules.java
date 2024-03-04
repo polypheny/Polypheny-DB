@@ -19,8 +19,8 @@ package org.polypheny.db.algebra.rules;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.logical.relational.LogicalCalc;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.rules.ReduceExpressionsRule.CalcReduceExpressionsRule;
 import org.polypheny.db.algebra.rules.ReduceExpressionsRule.FilterReduceExpressionsRule;
 import org.polypheny.db.algebra.rules.ReduceExpressionsRule.JoinReduceExpressionsRule;
@@ -29,14 +29,14 @@ import org.polypheny.db.algebra.rules.ReduceExpressionsRule.ProjectReduceExpress
 public interface ReduceExpressionsRules {
 
     /**
-     * Singleton rule that reduces constants inside a {@link LogicalFilter}.
+     * Singleton rule that reduces constants inside a {@link LogicalRelFilter}.
      */
-    ReduceExpressionsRule FILTER_INSTANCE = new FilterReduceExpressionsRule( LogicalFilter.class, true, AlgFactories.LOGICAL_BUILDER );
+    ReduceExpressionsRule FILTER_INSTANCE = new FilterReduceExpressionsRule( LogicalRelFilter.class, true, AlgFactories.LOGICAL_BUILDER );
 
     /**
-     * Singleton rule that reduces constants inside a {@link LogicalProject}.
+     * Singleton rule that reduces constants inside a {@link LogicalRelProject}.
      */
-    ReduceExpressionsRule PROJECT_INSTANCE = new ProjectReduceExpressionsRule( LogicalProject.class, true, AlgFactories.LOGICAL_BUILDER );
+    ReduceExpressionsRule PROJECT_INSTANCE = new ProjectReduceExpressionsRule( LogicalRelProject.class, true, AlgFactories.LOGICAL_BUILDER );
 
     /**
      * Singleton rule that reduces constants inside a {@link Join}.

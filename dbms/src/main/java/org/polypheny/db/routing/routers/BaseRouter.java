@@ -43,7 +43,7 @@ import org.polypheny.db.algebra.logical.common.LogicalTransformer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
@@ -162,12 +162,12 @@ public abstract class BaseRouter implements Router {
     }
 
 
-    public RoutedAlgBuilder handleValues( LogicalValues node, RoutedAlgBuilder builder ) {
+    public RoutedAlgBuilder handleValues( LogicalRelValues node, RoutedAlgBuilder builder ) {
         return builder.values( node.tuples, node.getTupleType() );
     }
 
 
-    protected List<RoutedAlgBuilder> handleValues( LogicalValues node, List<RoutedAlgBuilder> builders ) {
+    protected List<RoutedAlgBuilder> handleValues( LogicalRelValues node, List<RoutedAlgBuilder> builders ) {
         return builders.stream().map( builder -> builder.values( node.tuples, node.getTupleType() ) ).toList();
     }
 

@@ -36,7 +36,7 @@ package org.polypheny.db.algebra.rules;
 
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Union;
-import org.polypheny.db.algebra.logical.relational.LogicalUnion;
+import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.tools.AlgBuilderFactory;
@@ -47,7 +47,7 @@ import org.polypheny.db.tools.AlgBuilderFactory;
  */
 public class UnionEliminatorRule extends AlgOptRule {
 
-    public static final UnionEliminatorRule INSTANCE = new UnionEliminatorRule( LogicalUnion.class, AlgFactories.LOGICAL_BUILDER );
+    public static final UnionEliminatorRule INSTANCE = new UnionEliminatorRule( LogicalRelUnion.class, AlgFactories.LOGICAL_BUILDER );
 
 
     /**

@@ -40,9 +40,9 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Values;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptPredicateList;
 import org.polypheny.db.plan.AlgOptRule;
@@ -61,7 +61,7 @@ import org.slf4j.Logger;
 
 
 /**
- * Planner rule that folds projections and filters into an underlying {@link LogicalValues}.
+ * Planner rule that folds projections and filters into an underlying {@link LogicalRelValues}.
  *
  * Returns a simplified {@code Values}, perhaps containing zero tuples if all rows are filtered away.
  *
@@ -84,13 +84,13 @@ public abstract class ValuesReduceRule extends AlgOptRule {
      */
     public static final ValuesReduceRule FILTER_INSTANCE =
             new ValuesReduceRule(
-                    operand( LogicalFilter.class, operandJ( LogicalValues.class, null, Values::isNotEmpty, none() ) ),
+                    operand( LogicalRelFilter.class, operandJ( LogicalRelValues.class, null, Values::isNotEmpty, none() ) ),
                     AlgFactories.LOGICAL_BUILDER,
                     "ValuesReduceRule(Filter)" ) {
                 @Override
                 public void onMatch( AlgOptRuleCall call ) {
-                    LogicalFilter filter = call.alg( 0 );
-                    LogicalValues values = call.alg( 1 );
+                    LogicalRelFilter filter = call.alg( 0 );
+                    LogicalRelValues values = call.alg( 1 );
                     apply( call, null, filter, values );
                 }
             };
@@ -100,13 +100,13 @@ public abstract class ValuesReduceRule extends AlgOptRule {
      */
     public static final ValuesReduceRule PROJECT_INSTANCE =
             new ValuesReduceRule(
-                    operand( LogicalProject.class, operandJ( LogicalValues.class, null, Values::isNotEmpty, none() ) ),
+                    operand( LogicalRelProject.class, operandJ( LogicalRelValues.class, null, Values::isNotEmpty, none() ) ),
                     AlgFactories.LOGICAL_BUILDER,
                     "ValuesReduceRule(Project)" ) {
                 @Override
                 public void onMatch( AlgOptRuleCall call ) {
-                    LogicalProject project = call.alg( 0 );
-                    LogicalValues values = call.alg( 1 );
+                    LogicalRelProject project = call.alg( 0 );
+                    LogicalRelValues values = call.alg( 1 );
                     apply( call, project, null, values );
                 }
             };
@@ -117,17 +117,17 @@ public abstract class ValuesReduceRule extends AlgOptRule {
     public static final ValuesReduceRule PROJECT_FILTER_INSTANCE =
             new ValuesReduceRule(
                     operand(
-                            LogicalProject.class,
+                            LogicalRelProject.class,
                             operand(
-                                    LogicalFilter.class,
-                                    operandJ( LogicalValues.class, null, Values::isNotEmpty, none() ) ) ),
+                                    LogicalRelFilter.class,
+                                    operandJ( LogicalRelValues.class, null, Values::isNotEmpty, none() ) ) ),
                     AlgFactories.LOGICAL_BUILDER,
                     "ValuesReduceRule(Project-Filter)" ) {
                 @Override
                 public void onMatch( AlgOptRuleCall call ) {
-                    LogicalProject project = call.alg( 0 );
-                    LogicalFilter filter = call.alg( 1 );
-                    LogicalValues values = call.alg( 2 );
+                    LogicalRelProject project = call.alg( 0 );
+                    LogicalRelFilter filter = call.alg( 1 );
+                    LogicalRelValues values = call.alg( 2 );
                     apply( call, project, filter, values );
                 }
             };
@@ -154,7 +154,7 @@ public abstract class ValuesReduceRule extends AlgOptRule {
      * @param filter Filter, may be null
      * @param values Values alg to be reduced
      */
-    protected void apply( AlgOptRuleCall call, LogicalProject project, LogicalFilter filter, LogicalValues values ) {
+    protected void apply( AlgOptRuleCall call, LogicalRelProject project, LogicalRelFilter filter, LogicalRelValues values ) {
         assert values != null;
         assert filter != null || project != null;
         final RexNode conditionExpr = (filter == null) ? null : filter.getCondition();
@@ -232,7 +232,7 @@ public abstract class ValuesReduceRule extends AlgOptRule {
             } else {
                 rowType = values.getTupleType();
             }
-            final AlgNode newRel = LogicalValues.create( values.getCluster(), rowType, tuplesBuilder.build() );
+            final AlgNode newRel = LogicalRelValues.create( values.getCluster(), rowType, tuplesBuilder.build() );
             call.transformTo( newRel );
         } else {
             // Filter had no effect, so we can say that Filter(Values) == Values.

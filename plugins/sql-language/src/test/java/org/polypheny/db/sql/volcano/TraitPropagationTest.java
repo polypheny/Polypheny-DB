@@ -59,8 +59,8 @@ import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.enumerable.EnumerableScan;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.rules.SortRemoveRule;
@@ -137,14 +137,14 @@ public class TraitPropagationTest {
 
 
             private PhysAggRule() {
-                super( anyChild( LogicalAggregate.class ), "PhysAgg" );
+                super( anyChild( LogicalRelAggregate.class ), "PhysAgg" );
             }
 
 
             @Override
             public void onMatch( AlgOptRuleCall call ) {
                 AlgTraitSet empty = call.getPlanner().emptyTraitSet();
-                LogicalAggregate alg = call.alg( 0 );
+                LogicalRelAggregate alg = call.alg( 0 );
                 assert alg.getGroupSet().cardinality() == 1;
                 int aggIndex = alg.getGroupSet().iterator().next();
                 AlgTrait<?> collation = AlgCollations.of( new AlgFieldCollation( aggIndex, AlgFieldCollation.Direction.ASCENDING, AlgFieldCollation.NullDirection.FIRST ) );
@@ -167,14 +167,14 @@ public class TraitPropagationTest {
 
 
             private PhysProjRule( boolean subsetHack ) {
-                super( AlgOptRule.operand( LogicalProject.class, anyChild( AlgNode.class ) ), "PhysProj" );
+                super( AlgOptRule.operand( LogicalRelProject.class, anyChild( AlgNode.class ) ), "PhysProj" );
                 this.subsetHack = subsetHack;
             }
 
 
             @Override
             public void onMatch( AlgOptRuleCall call ) {
-                LogicalProject alg = call.alg( 0 );
+                LogicalRelProject alg = call.alg( 0 );
                 AlgNode rawInput = call.alg( 1 );
                 AlgNode input = convert( rawInput, PHYSICAL );
 

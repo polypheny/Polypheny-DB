@@ -29,7 +29,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.lpg.LpgValues;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
@@ -122,16 +122,16 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
 
         AlgOptCluster cluster = AlgOptCluster.create( getCluster().getPlanner(), getCluster().getRexBuilder(), out, snapshot );
 
-        LogicalValues nodeValues = new LogicalValues( cluster, out, entities.get( 0 ).getRowType(), getNodeValues( nodes ) );
-        LogicalValues nodePropertyValues = new LogicalValues( cluster, out, entities.get( 1 ).getRowType(), getNodePropertyValues( nodes ) );
+        LogicalRelValues nodeValues = new LogicalRelValues( cluster, out, entities.get( 0 ).getRowType(), getNodeValues( nodes ) );
+        LogicalRelValues nodePropertyValues = new LogicalRelValues( cluster, out, entities.get( 1 ).getRowType(), getNodePropertyValues( nodes ) );
 
         if ( edges.isEmpty() ) {
             return Arrays.asList( nodeValues, nodePropertyValues.tuples.isEmpty() ? null : nodePropertyValues );
         }
 
         assert entities.size() == 4 && entities.get( 2 ) != null && entities.get( 3 ) != null;
-        LogicalValues edgeValues = new LogicalValues( cluster, out, entities.get( 2 ).getRowType(), getEdgeValues( edges ) );
-        LogicalValues edgePropertyValues = new LogicalValues( cluster, out, entities.get( 3 ).getRowType(), getEdgePropertyValues( edges ) );
+        LogicalRelValues edgeValues = new LogicalRelValues( cluster, out, entities.get( 2 ).getRowType(), getEdgeValues( edges ) );
+        LogicalRelValues edgePropertyValues = new LogicalRelValues( cluster, out, entities.get( 3 ).getRowType(), getEdgePropertyValues( edges ) );
 
         return Arrays.asList(
                 nodeValues,

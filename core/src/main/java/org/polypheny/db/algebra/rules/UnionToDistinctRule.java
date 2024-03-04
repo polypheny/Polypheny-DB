@@ -36,7 +36,7 @@ package org.polypheny.db.algebra.rules;
 
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Union;
-import org.polypheny.db.algebra.logical.relational.LogicalUnion;
+import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.tools.AlgBuilder;
@@ -49,7 +49,7 @@ import org.polypheny.db.tools.AlgBuilderFactory;
  */
 public class UnionToDistinctRule extends AlgOptRule {
 
-    public static final UnionToDistinctRule INSTANCE = new UnionToDistinctRule( LogicalUnion.class, AlgFactories.LOGICAL_BUILDER );
+    public static final UnionToDistinctRule INSTANCE = new UnionToDistinctRule( LogicalRelUnion.class, AlgFactories.LOGICAL_BUILDER );
 
 
     /**

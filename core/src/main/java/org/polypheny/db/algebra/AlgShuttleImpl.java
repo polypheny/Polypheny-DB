@@ -39,8 +39,6 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import org.apache.calcite.linq4j.Ord;
-import org.polypheny.db.algebra.core.TableFunctionScan;
-import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
@@ -61,19 +59,21 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgSort;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgTransformer;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnwind;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
-import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
-import org.polypheny.db.algebra.logical.relational.LogicalExchange;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
-import org.polypheny.db.algebra.logical.relational.LogicalMatch;
-import org.polypheny.db.algebra.logical.relational.LogicalMinus;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelCorrelate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelExchange;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelIntersect;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelMatch;
+import org.polypheny.db.algebra.logical.relational.LogicalRelMinus;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
-import org.polypheny.db.algebra.logical.relational.LogicalSort;
-import org.polypheny.db.algebra.logical.relational.LogicalUnion;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
+import org.polypheny.db.algebra.logical.relational.LogicalRelTableFunctionScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.plan.AlgTraitSet;
 
 
@@ -115,85 +115,85 @@ public class AlgShuttleImpl implements AlgShuttle {
 
 
     @Override
-    public AlgNode visit( LogicalAggregate aggregate ) {
+    public AlgNode visit( LogicalRelAggregate aggregate ) {
         return visitChild( aggregate, 0, aggregate.getInput() );
     }
 
 
     @Override
-    public AlgNode visit( LogicalMatch match ) {
+    public AlgNode visit( LogicalRelMatch match ) {
         return visitChild( match, 0, match.getInput() );
     }
 
 
     @Override
-    public AlgNode visit( RelScan<?> scan ) {
+    public AlgNode visit( LogicalRelScan scan ) {
         return scan;
     }
 
 
     @Override
-    public AlgNode visit( TableFunctionScan scan ) {
+    public AlgNode visit( LogicalRelTableFunctionScan scan ) {
         return visitChildren( scan );
     }
 
 
     @Override
-    public AlgNode visit( LogicalValues values ) {
+    public AlgNode visit( LogicalRelValues values ) {
         return values;
     }
 
 
     @Override
-    public AlgNode visit( LogicalFilter filter ) {
+    public AlgNode visit( LogicalRelFilter filter ) {
         return visitChild( filter, 0, filter.getInput() );
     }
 
 
     @Override
-    public AlgNode visit( LogicalProject project ) {
+    public AlgNode visit( LogicalRelProject project ) {
         return visitChild( project, 0, project.getInput() );
     }
 
 
     @Override
-    public AlgNode visit( LogicalJoin join ) {
+    public AlgNode visit( LogicalRelJoin join ) {
         return visitChildren( join );
     }
 
 
     @Override
-    public AlgNode visit( LogicalCorrelate correlate ) {
+    public AlgNode visit( LogicalRelCorrelate correlate ) {
         return visitChildren( correlate );
     }
 
 
     @Override
-    public AlgNode visit( LogicalUnion union ) {
+    public AlgNode visit( LogicalRelUnion union ) {
         return visitChildren( union );
     }
 
 
     @Override
-    public AlgNode visit( LogicalIntersect intersect ) {
+    public AlgNode visit( LogicalRelIntersect intersect ) {
         return visitChildren( intersect );
     }
 
 
     @Override
-    public AlgNode visit( LogicalMinus minus ) {
+    public AlgNode visit( LogicalRelMinus minus ) {
         return visitChildren( minus );
     }
 
 
     @Override
-    public AlgNode visit( LogicalSort sort ) {
+    public AlgNode visit( LogicalRelSort sort ) {
         return visitChildren( sort );
     }
 
 
     @Override
-    public AlgNode visit( LogicalExchange exchange ) {
+    public AlgNode visit( LogicalRelExchange exchange ) {
         return visitChildren( exchange );
     }
 

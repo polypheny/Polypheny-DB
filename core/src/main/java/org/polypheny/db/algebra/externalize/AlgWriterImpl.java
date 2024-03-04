@@ -118,7 +118,7 @@ public class AlgWriterImpl implements AlgWriter {
         switch ( detailLevel ) {
             case ALL_ATTRIBUTES:
                 s.append( ": rowcount = " )
-                        .append( mq.getRowCount( alg ) )
+                        .append( mq.getTupleCount( alg ) )
                         .append( ", cumulative cost = " )
                         .append( mq.getCumulativeCost( alg ) );
         }

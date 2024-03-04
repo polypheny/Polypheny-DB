@@ -59,7 +59,7 @@ import org.polypheny.db.util.Litmus;
  *
  * @see CorrelationId
  */
-public final class LogicalCorrelate extends Correlate implements RelAlg {
+public final class LogicalRelCorrelate extends Correlate implements RelAlg {
 
     /**
      * Creates a LogicalCorrelate.
@@ -71,7 +71,7 @@ public final class LogicalCorrelate extends Correlate implements RelAlg {
      * @param requiredColumns Required columns
      * @param joinType join type
      */
-    public LogicalCorrelate(
+    public LogicalRelCorrelate(
             AlgOptCluster cluster,
             AlgTraitSet traitSet,
             AlgNode left,
@@ -87,7 +87,7 @@ public final class LogicalCorrelate extends Correlate implements RelAlg {
     /**
      * Creates a LogicalCorrelate by parsing serialized output.
      */
-    public LogicalCorrelate( AlgInput input ) {
+    public LogicalRelCorrelate( AlgInput input ) {
         this(
                 input.getCluster(),
                 input.getTraitSet(),
@@ -102,7 +102,7 @@ public final class LogicalCorrelate extends Correlate implements RelAlg {
     /**
      * Creates a LogicalCorrelate.
      */
-    public static LogicalCorrelate create(
+    public static LogicalRelCorrelate create(
             AlgNode left,
             AlgNode right,
             CorrelationId correlationId,
@@ -110,12 +110,12 @@ public final class LogicalCorrelate extends Correlate implements RelAlg {
             SemiJoinType joinType ) {
         final AlgOptCluster cluster = left.getCluster();
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
-        return new LogicalCorrelate( cluster, traitSet, left, right, correlationId, requiredColumns, joinType );
+        return new LogicalRelCorrelate( cluster, traitSet, left, right, correlationId, requiredColumns, joinType );
     }
 
 
     @Override
-    public LogicalCorrelate copy(
+    public LogicalRelCorrelate copy(
             AlgTraitSet traitSet,
             AlgNode left,
             AlgNode right,
@@ -123,7 +123,7 @@ public final class LogicalCorrelate extends Correlate implements RelAlg {
             ImmutableBitSet requiredColumns,
             SemiJoinType joinType ) {
         assert traitSet.containsIfApplicable( Convention.NONE );
-        return new LogicalCorrelate( getCluster(), traitSet, left, right, correlationId, requiredColumns, joinType );
+        return new LogicalRelCorrelate( getCluster(), traitSet, left, right, correlationId, requiredColumns, joinType );
     }
 
 

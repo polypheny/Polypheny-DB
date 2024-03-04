@@ -160,7 +160,7 @@ public abstract class Correlate extends BiAlg {
 
     @Override
     public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        double rowCount = mq.getRowCount( this );
+        double rowCount = mq.getTupleCount( this );
 
         final double rightRowCount = right.estimateRowCount( mq );
         final double leftRowCount = left.estimateRowCount( mq );
@@ -168,7 +168,7 @@ public abstract class Correlate extends BiAlg {
             return planner.getCostFactory().makeInfiniteCost();
         }
 
-        Double restartCount = mq.getRowCount( getLeft() );
+        Double restartCount = mq.getTupleCount( getLeft() );
         // RelMetadataQuery.getCumulativeCost(getRight()); does not work for
         // RelSubset, so we ask planner to cost-estimate right relation
         AlgOptCost rightCost = planner.getCost( getRight(), mq );

@@ -67,7 +67,7 @@ import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.relational.RelModify;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -302,7 +302,7 @@ public class JdbcRules {
         @Override
         public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
             // We always "build" the
-            double rowCount = mq.getRowCount( this );
+            double rowCount = mq.getTupleCount( this );
 
             return planner.getCostFactory().makeCost( rowCount, 0, 0 );
         }
@@ -388,8 +388,8 @@ public class JdbcRules {
 
         @Override
         public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-            double dRows = mq.getRowCount( this );
-            double dCpu = mq.getRowCount( getInput() ) * program.getExprCount();
+            double dRows = mq.getTupleCount( this );
+            double dCpu = mq.getTupleCount( getInput() ) * program.getExprCount();
             double dIo = 0;
             return planner.getCostFactory().makeCost( dRows, dCpu, dIo );
         }
@@ -1143,7 +1143,7 @@ public class JdbcRules {
          * Creates a JdbcValuesRule.
          */
         private JdbcValuesRule( JdbcConvention out, AlgBuilderFactory algBuilderFactory ) {
-            super( LogicalValues.class, (Predicate<AlgNode>) r -> true, Convention.NONE, out, algBuilderFactory, "JdbcValuesRule." + out );
+            super( LogicalRelValues.class, (Predicate<AlgNode>) r -> true, Convention.NONE, out, algBuilderFactory, "JdbcValuesRule." + out );
         }
 
 

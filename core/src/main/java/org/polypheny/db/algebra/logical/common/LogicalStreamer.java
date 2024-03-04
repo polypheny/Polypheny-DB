@@ -33,9 +33,9 @@ import org.polypheny.db.algebra.core.common.Streamer;
 import org.polypheny.db.algebra.core.document.DocumentValues;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.core.relational.RelScan;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.Entity;
@@ -117,7 +117,7 @@ public class LogicalStreamer extends Streamer {
             source.addAll( modify.getSourceExpressions().stream().map( s -> replaceCorrelates( s, modify.getEntity() ) ).toList() );
 
             // we project the needed sources out and modify them to fit the prepared
-            query = LogicalProject.create( modify.getInput(), source, update );
+            query = LogicalRelProject.create( modify.getInput(), source, update );
         }
 
         /////// prepared
@@ -152,9 +152,9 @@ public class LogicalStreamer extends Streamer {
 
 
     @NotNull
-    public static LogicalProject getCollector( RexBuilder rexBuilder, AlgNode input ) {
-        return LogicalProject.create(
-                LogicalValues.createOneRow( input.getCluster() ),
+    public static LogicalRelProject getCollector( RexBuilder rexBuilder, AlgNode input ) {
+        return LogicalRelProject.create(
+                LogicalRelValues.createOneRow( input.getCluster() ),
                 input.getTupleType()
                         .getFields()
                         .stream()

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,10 +35,9 @@ package org.polypheny.db.algebra.logical.relational;
 
 
 import java.util.List;
-import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
-import org.polypheny.db.algebra.core.Minus;
+import org.polypheny.db.algebra.core.Intersect;
 import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -46,42 +45,33 @@ import org.polypheny.db.plan.Convention;
 
 
 /**
- * Sub-class of {@link Minus} not targeted at any particular engine or calling convention.
+ * Sub-class of {@link org.polypheny.db.algebra.core.Intersect} not targeted at any particular engine or calling convention.
  */
-public final class LogicalMinus extends Minus implements RelAlg {
+public final class LogicalRelIntersect extends Intersect implements RelAlg {
 
     /**
-     * Creates a LogicalMinus.
+     * Creates a LogicalIntersect.
      *
      * Use {@link #create} unless you know what you're doing.
      */
-    public LogicalMinus( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
+    public LogicalRelIntersect( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
         super( cluster, traitSet, inputs, all );
     }
 
 
     /**
-     * Creates a LogicalMinus by parsing serialized output.
+     * Creates a LogicalIntersect.
      */
-    public LogicalMinus( AlgInput input ) {
-        super( input );
-    }
-
-
-    /**
-     * Creates a LogicalMinus.
-     */
-    public static LogicalMinus create( List<AlgNode> inputs, boolean all ) {
+    public static LogicalRelIntersect create( List<AlgNode> inputs, boolean all ) {
         final AlgOptCluster cluster = inputs.get( 0 ).getCluster();
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
-        return new LogicalMinus( cluster, traitSet, inputs, all );
+        return new LogicalRelIntersect( cluster, traitSet, inputs, all );
     }
 
 
     @Override
-    public LogicalMinus copy( AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
-        assert traitSet.containsIfApplicable( Convention.NONE );
-        return new LogicalMinus( getCluster(), traitSet, inputs, all );
+    public LogicalRelIntersect copy( AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
+        return new LogicalRelIntersect( getCluster(), traitSet, inputs, all );
     }
 
 
@@ -91,4 +81,3 @@ public final class LogicalMinus extends Minus implements RelAlg {
     }
 
 }
-

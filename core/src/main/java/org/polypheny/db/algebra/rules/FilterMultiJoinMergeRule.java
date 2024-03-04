@@ -37,7 +37,7 @@ package org.polypheny.db.algebra.rules;
 import java.util.Arrays;
 import java.util.List;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.rex.RexBuilder;
@@ -47,7 +47,7 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Planner rule that merges a {@link LogicalFilter} into a {@link MultiJoin}, creating a richer {@code MultiJoin}.
+ * Planner rule that merges a {@link LogicalRelFilter} into a {@link MultiJoin}, creating a richer {@code MultiJoin}.
  *
  * @see ProjectMultiJoinMergeRule
  */
@@ -61,14 +61,14 @@ public class FilterMultiJoinMergeRule extends AlgOptRule {
      */
     public FilterMultiJoinMergeRule( AlgBuilderFactory algBuilderFactory ) {
         super(
-                operand( LogicalFilter.class, operand( MultiJoin.class, any() ) ),
+                operand( LogicalRelFilter.class, operand( MultiJoin.class, any() ) ),
                 algBuilderFactory, null );
     }
 
 
     @Override
     public void onMatch( AlgOptRuleCall call ) {
-        LogicalFilter filter = call.alg( 0 );
+        LogicalRelFilter filter = call.alg( 0 );
         MultiJoin multiJoin = call.alg( 1 );
 
         // Create a new post-join filter condition

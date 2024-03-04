@@ -188,9 +188,9 @@ public class AlgSubset extends AbstractAlgNode {
     @Override
     public double estimateRowCount( AlgMetadataQuery mq ) {
         if ( best != null ) {
-            return mq.getRowCount( best );
+            return mq.getTupleCount( best );
         } else {
-            return mq.getRowCount( set.alg );
+            return mq.getTupleCount( set.alg );
         }
     }
 

@@ -102,21 +102,21 @@ import org.polypheny.db.algebra.core.Uncollect;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.fun.AggFunction;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
-import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
-import org.polypheny.db.algebra.logical.relational.LogicalMatch;
-import org.polypheny.db.algebra.logical.relational.LogicalMinus;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelCorrelate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelIntersect;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelMatch;
+import org.polypheny.db.algebra.logical.relational.LogicalRelMinus;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
+import org.polypheny.db.algebra.logical.relational.LogicalRelTableFunctionScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
-import org.polypheny.db.algebra.logical.relational.LogicalSort;
-import org.polypheny.db.algebra.logical.relational.LogicalTableFunctionScan;
-import org.polypheny.db.algebra.logical.relational.LogicalUnion;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.metadata.AlgColumnMapping;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.metadata.JaninoRelMetadataProvider;
@@ -605,7 +605,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
     /**
      * Having translated 'SELECT ... FROM ... [GROUP BY ...] [HAVING ...]', adds a relational expression to make the results unique.
      * <p>
-     * If the SELECT clause contains duplicate expressions, adds {@link LogicalProject}s so that we are grouping on the minimal set of keys. The performance gain isn't huge, but
+     * If the SELECT clause contains duplicate expressions, adds {@link LogicalRelProject}s so that we are grouping on the minimal set of keys. The performance gain isn't huge, but
      * it is difficult to detect these duplicate expressions later.
      *
      * @param bb Blackboard
@@ -615,7 +615,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         // Look for duplicate expressions in the project.// Say we have 'select x, y, x, z'.
         // Then dups will be {[2, 0]} and oldToNew will be {[0, 0], [1, 1], [2, 0], [3, 2]}
         AlgNode alg = bb.root;
-        if ( checkForDupExprs && (alg instanceof LogicalProject project) ) {
+        if ( checkForDupExprs && (alg instanceof LogicalRelProject project) ) {
             final List<RexNode> projectExprs = project.getProjects();
             final List<Integer> origins = new ArrayList<>();
             int dupCount = 0;
@@ -642,7 +642,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                     newProjects.add( RexIndexRef.of2( i, fields ) );
                 }
             }
-            alg = LogicalProject.create( alg, Pair.left( newProjects ), Pair.right( newProjects ) );
+            alg = LogicalRelProject.create( alg, Pair.left( newProjects ), Pair.right( newProjects ) );
             bb.root = alg;
             distinctify( bb, false );
             alg = bb.root;
@@ -659,7 +659,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                                 field.getName() ) );
             }
 
-            alg = LogicalProject.create( alg, Pair.left( undoProjects ), Pair.right( undoProjects ) );
+            alg = LogicalRelProject.create( alg, Pair.left( undoProjects ), Pair.right( undoProjects ) );
             bb.setRoot( alg, false );
 
             return;
@@ -700,7 +700,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
         // Create a sorter using the previously constructed collations.
         bb.setRoot(
-                LogicalSort.create(
+                LogicalRelSort.create(
                         bb.root,
                         collation,
                         offset == null ? null : convertExpression( offset ),
@@ -718,7 +718,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                 exprs.add( rexBuilder.makeInputRef( bb.root, i ) );
             }
             bb.setRoot(
-                    LogicalProject.create( bb.root, exprs, rowType.getFieldNames().subList( 0, fieldCount ) ),
+                    LogicalRelProject.create( bb.root, exprs, rowType.getFieldNames().subList( 0, fieldCount ) ),
                     false );
         }
     }
@@ -886,7 +886,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         if ( p != null ) {
             assert p.r instanceof Filter;
             Filter f = (Filter) p.r;
-            r = LogicalFilter.create( f.getInput(), f.getCondition(), ImmutableSet.of( p.id ) );
+            r = LogicalRelFilter.create( f.getInput(), f.getCondition(), ImmutableSet.of( p.id ) );
         } else {
             r = filter;
         }
@@ -999,8 +999,8 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                     final AlgNode seek = converted.r.getInput( 0 ); // fragile
                     final int keyCount = leftKeys.size();
                     final List<Integer> args = IntStream.range( 0, keyCount ).boxed().toList();
-                    LogicalAggregate aggregate =
-                            LogicalAggregate.create( seek, ImmutableBitSet.of(), null,
+                    LogicalRelAggregate aggregate =
+                            LogicalRelAggregate.create( seek, ImmutableBitSet.of(), null,
                                     ImmutableList.of(
                                             AggregateCall.create(
                                                     OperatorRegistry.getAgg( OperatorName.COUNT ),
@@ -1020,8 +1020,8 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                                                     AlgCollations.EMPTY,
                                                     longType,
                                                     null ) ) );
-                    LogicalJoin join =
-                            LogicalJoin.create(
+                    LogicalRelJoin join =
+                            LogicalRelJoin.create(
                                     bb.root,
                                     aggregate,
                                     rexBuilder.makeLiteral( true ),
@@ -1440,7 +1440,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             }
             unionInputs.add( convertRowConstructor( bb, call ) );
         }
-        LogicalValues values = LogicalValues.create( cluster, rowType, tuples.build() );
+        LogicalRelValues values = LogicalRelValues.create( cluster, rowType, tuples.build() );
         AlgNode resultRel;
         if ( unionInputs.isEmpty() ) {
             resultRel = values;
@@ -1448,7 +1448,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             if ( !values.getTuples().isEmpty() ) {
                 unionInputs.add( values );
             }
-            resultRel = LogicalUnion.create( unionInputs, true );
+            resultRel = LogicalRelUnion.create( unionInputs, true );
         }
         leaves.add( resultRel );
         return resultRel;
@@ -1726,7 +1726,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
      */
     protected void convertFrom( Blackboard bb, SqlNode from ) {
         if ( from == null ) {
-            bb.setRoot( LogicalValues.createOneRow( cluster ), false );
+            bb.setRoot( LogicalRelValues.createOneRow( cluster ), false );
             return;
         }
 
@@ -1862,7 +1862,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                     exprs.add( bb.convertExpression( node.e ) );
                     fieldNames.add( validator.deriveAlias( node.e, node.i ) );
                 }
-                AlgNode child = (null != bb.root) ? bb.root : LogicalValues.createOneRow( cluster );
+                AlgNode child = (null != bb.root) ? bb.root : LogicalRelValues.createOneRow( cluster );
                 algBuilder.push( child ).projectNamed( exprs, fieldNames, false );
 
                 Uncollect uncollect =
@@ -2122,8 +2122,8 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         RexNode rexCall = bb.convertExpression( call );
         final List<AlgNode> inputs = bb.retrieveCursors();
         Set<AlgColumnMapping> columnMappings = getColumnMappings( (SqlOperator) operator );
-        LogicalTableFunctionScan callRel =
-                LogicalTableFunctionScan.create(
+        LogicalRelTableFunctionScan callRel =
+                LogicalRelTableFunctionScan.create(
                         cluster,
                         inputs,
                         rexCall,
@@ -2140,7 +2140,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
     protected void afterTableFunction(
             SqlToAlgConverter.Blackboard bb,
             SqlCall call,
-            LogicalTableFunctionScan callRel ) {
+            LogicalRelTableFunctionScan callRel ) {
     }
 
 
@@ -2162,7 +2162,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
         final CorrelationUse p = getCorrelationUse( bb, rightRel );
         if ( p != null ) {
-            LogicalCorrelate corr = LogicalCorrelate.create( leftRel, p.r, p.id, p.requiredColumns, SemiJoinType.of( joinType ) );
+            LogicalRelCorrelate corr = LogicalRelCorrelate.create( leftRel, p.r, p.id, p.requiredColumns, SemiJoinType.of( joinType ) );
             if ( !joinCond.isAlwaysTrue() ) {
                 final AlgFactories.FilterFactory factory = AlgFactories.DEFAULT_FILTER_FACTORY;
                 return factory.createFilter( corr, joinCond );
@@ -2575,7 +2575,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
      * @return LogicalAggregate
      */
     protected AlgNode createAggregate( Blackboard bb, ImmutableBitSet groupSet, ImmutableList<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
-        return LogicalAggregate.create( bb.root, groupSet, groupSets, aggCalls );
+        return LogicalRelAggregate.create( bb.root, groupSet, groupSets, aggCalls );
     }
 
 
@@ -2761,9 +2761,9 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         final AlgNode left = convertQueryRecursive( call.operand( 0 ), false, null ).project();
         final AlgNode right = convertQueryRecursive( call.operand( 1 ), false, null ).project();
         return switch ( call.getKind() ) {
-            case UNION -> LogicalUnion.create( ImmutableList.of( left, right ), all( call ) );
-            case INTERSECT -> LogicalIntersect.create( ImmutableList.of( left, right ), all( call ) );
-            case EXCEPT -> LogicalMinus.create( ImmutableList.of( left, right ), all( call ) );
+            case UNION -> LogicalRelUnion.create( ImmutableList.of( left, right ), all( call ) );
+            case INTERSECT -> LogicalRelIntersect.create( ImmutableList.of( left, right ), all( call ) );
+            case EXCEPT -> LogicalRelMinus.create( ImmutableList.of( left, right ), all( call ) );
             default -> throw Util.unexpected( call.getKind() );
         };
     }
@@ -3128,14 +3128,14 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             // if there are 2 level of projections in the insert source, combine them into a single project; level1 refers to the topmost project;
             // the level1 projection contains references to the level2 expressions, except in the case where no target expression was provided, in which case, the expression is the default value for
             // the column; or if the expressions directly map to the source table
-            level1InsertExprs = ((LogicalProject) insertRel.getInput( 0 )).getProjects();
-            if ( insertRel.getInput( 0 ).getInput( 0 ) instanceof LogicalProject ) {
-                level2InsertExprs = ((LogicalProject) insertRel.getInput( 0 ).getInput( 0 )).getProjects();
+            level1InsertExprs = ((LogicalRelProject) insertRel.getInput( 0 )).getProjects();
+            if ( insertRel.getInput( 0 ).getInput( 0 ) instanceof LogicalRelProject ) {
+                level2InsertExprs = ((LogicalRelProject) insertRel.getInput( 0 ).getInput( 0 )).getProjects();
             }
             nLevel1Exprs = level1InsertExprs.size();
         }
 
-        LogicalJoin join = (LogicalJoin) mergeSourceRel.getInput( 0 );
+        LogicalRelJoin join = (LogicalRelJoin) mergeSourceRel.getInput( 0 );
         int nSourceFields = join.getLeft().getTupleType().getFieldCount();
         final List<RexNode> projects = new ArrayList<>();
         for ( int level1Idx = 0; level1Idx < nLevel1Exprs; level1Idx++ ) {
@@ -3147,7 +3147,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             }
         }
         if ( updateCall != null ) {
-            final LogicalProject project = (LogicalProject) mergeSourceRel;
+            final LogicalRelProject project = (LogicalRelProject) mergeSourceRel;
             projects.addAll( Util.skip( project.getProjects(), nSourceFields ) );
         }
 
@@ -3332,7 +3332,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                     fieldNameList.add( CoreUtil.deriveAliasFromOrdinal( j ) );
                 }
 
-                algBuilder.push( LogicalValues.createOneRow( cluster ) ).projectNamed( selectList, fieldNameList, true );
+                algBuilder.push( LogicalRelValues.createOneRow( cluster ) ).projectNamed( selectList, fieldNameList, true );
 
                 joinList.set( i, algBuilder.build() );
             }
@@ -3487,7 +3487,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             }
             AlgNode in =
                     (null == tmpBb.root)
-                            ? LogicalValues.createOneRow( cluster )
+                            ? LogicalRelValues.createOneRow( cluster )
                             : tmpBb.root;
             unionRels.add(
                     algBuilder.push( in )
@@ -3500,7 +3500,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         } else if ( unionRels.size() == 1 ) {
             bb.setRoot( unionRels.get( 0 ), true );
         } else {
-            bb.setRoot( LogicalUnion.create( unionRels, true ), true );
+            bb.setRoot( LogicalRelUnion.create( unionRels, true ), true );
         }
 
         // REVIEW jvs 22-Jan-2004:  should I add mapScopeToLux.put(validator.getScope(values),bb.root); ?
@@ -3692,7 +3692,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
          * @param leaf Whether the relational expression is a leaf, that is, derived from an atomic relational expression such as a table name in the from clause, or the projection on top of a select-sub-query. In particular, relational expressions derived from JOIN operators are not leaves, but set expressions are.
          */
         public void setRoot( AlgNode root, boolean leaf ) {
-            setRoot( Collections.singletonList( root ), root, root instanceof LogicalJoin );
+            setRoot( Collections.singletonList( root ), root, root instanceof LogicalRelJoin );
             if ( leaf ) {
                 leaves.add( root );
             }
@@ -3834,11 +3834,11 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
         public void flatten( List<AlgNode> algs, int systemFieldCount, int[] start, List<Pair<AlgNode, Integer>> algOffsetList ) {
             for ( AlgNode alg : algs ) {
-                if ( leaves.contains( alg ) || alg instanceof LogicalMatch ) {
+                if ( leaves.contains( alg ) || alg instanceof LogicalRelMatch ) {
                     algOffsetList.add( Pair.of( alg, start[0] ) );
                     start[0] += alg.getTupleType().getFieldCount();
                 } else {
-                    if ( alg instanceof LogicalJoin || alg instanceof LogicalAggregate ) {
+                    if ( alg instanceof LogicalRelJoin || alg instanceof LogicalRelAggregate ) {
                         start[0] += systemFieldCount;
                     }
                     flatten( alg.getInputs(), systemFieldCount, start, algOffsetList );

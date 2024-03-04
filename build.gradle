@@ -139,7 +139,6 @@ allprojects {
             exclude group: "org.slf4j"
         }
         testImplementation(group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: junit_jupiter_version)
-        testRuntimeOnly(group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: junit_jupiter_version)
     }
 
     test {

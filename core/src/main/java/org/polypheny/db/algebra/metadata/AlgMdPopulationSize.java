@@ -147,7 +147,7 @@ public class AlgMdPopulationSize implements MetadataHandler<BuiltInMetadata.Popu
         }
 
         // REVIEW zfong: Broadbase did not have the call to numDistinctVals.  This is needed; otherwise, population can be larger than the number of rows in the AlgNode.
-        return AlgMdUtil.numDistinctVals( population, mq.getRowCount( alg ) );
+        return AlgMdUtil.numDistinctVals( population, mq.getTupleCount( alg ) );
     }
 
 
@@ -162,7 +162,7 @@ public class AlgMdPopulationSize implements MetadataHandler<BuiltInMetadata.Popu
         // REVIEW zfong: Broadbase code returns the product of each unique key, which would result in the population being larger than the total rows in the relnode
         boolean uniq = AlgMdUtil.areColumnsDefinitelyUnique( mq, alg, groupKey );
         if ( uniq ) {
-            return mq.getRowCount( alg );
+            return mq.getTupleCount( alg );
         }
 
         return null;

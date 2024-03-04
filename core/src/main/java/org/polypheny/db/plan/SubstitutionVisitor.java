@@ -59,12 +59,12 @@ import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.fun.AggFunction;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
-import org.polypheny.db.algebra.logical.relational.LogicalUnion;
+import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.algebra.mutable.Holder;
 import org.polypheny.db.algebra.mutable.MutableAggregate;
 import org.polypheny.db.algebra.mutable.MutableAlg;
@@ -122,11 +122,11 @@ import org.slf4j.Logger;
  *
  * The inputs must only include the core relational operators:
  * {@link LogicalRelScan},
- * {@link LogicalFilter},
- * {@link LogicalProject},
- * {@link LogicalJoin},
- * {@link LogicalUnion},
- * {@link LogicalAggregate}.
+ * {@link LogicalRelFilter},
+ * {@link LogicalRelProject},
+ * {@link LogicalRelJoin},
+ * {@link LogicalRelUnion},
+ * {@link LogicalRelAggregate}.
  */
 public class SubstitutionVisitor {
 
@@ -1017,7 +1017,7 @@ public class SubstitutionVisitor {
 
 
     /**
-     * Implementation of {@link UnifyRule} that matches {@link LogicalProject}.
+     * Implementation of {@link UnifyRule} that matches {@link LogicalRelProject}.
      */
     private static class ProjectToProjectUnifyRule extends AbstractUnifyRule {
 
@@ -1212,7 +1212,7 @@ public class SubstitutionVisitor {
 
 
     /**
-     * Implementation of {@link UnifyRule} that matches a {@link LogicalAggregate} to a {@link LogicalAggregate},
+     * Implementation of {@link UnifyRule} that matches a {@link LogicalRelAggregate} to a {@link LogicalRelAggregate},
      * provided that they have the same child.
      */
     private static class AggregateToAggregateUnifyRule extends AbstractUnifyRule {
@@ -1620,7 +1620,7 @@ public class SubstitutionVisitor {
 
 
     /**
-     * Rule that converts a {@link LogicalFilter} on top of a {@link LogicalProject}
+     * Rule that converts a {@link LogicalRelFilter} on top of a {@link LogicalRelProject}
      * into a trivial filter (on a boolean column).
      */
     public static class FilterOnProjectRule extends AlgOptRule {
@@ -1636,18 +1636,18 @@ public class SubstitutionVisitor {
         public FilterOnProjectRule( AlgBuilderFactory algBuilderFactory ) {
             super(
                     operandJ(
-                            LogicalFilter.class,
+                            LogicalRelFilter.class,
                             null,
                             filter -> filter.getCondition() instanceof RexIndexRef,
-                            some( operand( LogicalProject.class, any() ) ) ),
+                            some( operand( LogicalRelProject.class, any() ) ) ),
                     algBuilderFactory, null );
         }
 
 
         @Override
         public void onMatch( AlgOptRuleCall call ) {
-            final LogicalFilter filter = call.alg( 0 );
-            final LogicalProject project = call.alg( 1 );
+            final LogicalRelFilter filter = call.alg( 0 );
+            final LogicalRelProject project = call.alg( 1 );
 
             final List<RexNode> newProjects = new ArrayList<>( project.getProjects() );
             newProjects.add( filter.getCondition() );
@@ -1667,7 +1667,7 @@ public class SubstitutionVisitor {
 
             final RexIndexRef newCondition = cluster.getRexBuilder().makeInputRef( newProject, newProjects.size() - 1 );
 
-            call.transformTo( LogicalFilter.create( newProject, newCondition ) );
+            call.transformTo( LogicalRelFilter.create( newProject, newCondition ) );
         }
 
     }

@@ -40,7 +40,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
@@ -84,7 +84,7 @@ public class JoinPushThroughJoinRule extends AlgOptRule {
      */
     public static final AlgOptRule RIGHT = new JoinPushThroughJoinRule(
             "JoinPushThroughJoinRule:right",
-            true, LogicalJoin.class,
+            true, LogicalRelJoin.class,
             AlgFactories.LOGICAL_BUILDER );
 
     /**
@@ -92,7 +92,7 @@ public class JoinPushThroughJoinRule extends AlgOptRule {
      */
     public static final AlgOptRule LEFT = new JoinPushThroughJoinRule(
             "JoinPushThroughJoinRule:left",
-            false, LogicalJoin.class,
+            false, LogicalRelJoin.class,
             AlgFactories.LOGICAL_BUILDER );
 
     private final boolean right;

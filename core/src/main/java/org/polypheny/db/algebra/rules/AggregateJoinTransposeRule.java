@@ -54,8 +54,8 @@ import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.fun.SplittableAggFunction;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptRule;
@@ -80,12 +80,12 @@ import org.polypheny.db.util.mapping.Mappings;
  */
 public class AggregateJoinTransposeRule extends AlgOptRule {
 
-    public static final AggregateJoinTransposeRule INSTANCE = new AggregateJoinTransposeRule( LogicalAggregate.class, LogicalJoin.class, AlgFactories.LOGICAL_BUILDER, false );
+    public static final AggregateJoinTransposeRule INSTANCE = new AggregateJoinTransposeRule( LogicalRelAggregate.class, LogicalRelJoin.class, AlgFactories.LOGICAL_BUILDER, false );
 
     /**
      * Extended instance of the rule that can push down aggregate functions.
      */
-    public static final AggregateJoinTransposeRule EXTENDED = new AggregateJoinTransposeRule( LogicalAggregate.class, LogicalJoin.class, AlgFactories.LOGICAL_BUILDER, true );
+    public static final AggregateJoinTransposeRule EXTENDED = new AggregateJoinTransposeRule( LogicalRelAggregate.class, LogicalRelJoin.class, AlgFactories.LOGICAL_BUILDER, true );
 
     private final boolean allowFunctions;
 

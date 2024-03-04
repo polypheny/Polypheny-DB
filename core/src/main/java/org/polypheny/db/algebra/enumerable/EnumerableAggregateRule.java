@@ -20,24 +20,24 @@ package org.polypheny.db.algebra.enumerable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.InvalidAlgException;
 import org.polypheny.db.algebra.convert.ConverterRule;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 
 
 /**
- * Rule to convert a {@link LogicalAggregate} to an {@link EnumerableAggregate}.
+ * Rule to convert a {@link LogicalRelAggregate} to an {@link EnumerableAggregate}.
  */
 class EnumerableAggregateRule extends ConverterRule {
 
     EnumerableAggregateRule() {
-        super( LogicalAggregate.class, Convention.NONE, EnumerableConvention.INSTANCE, "EnumerableAggregateRule" );
+        super( LogicalRelAggregate.class, Convention.NONE, EnumerableConvention.INSTANCE, "EnumerableAggregateRule" );
     }
 
 
     @Override
     public AlgNode convert( AlgNode alg ) {
-        final LogicalAggregate agg = (LogicalAggregate) alg;
+        final LogicalRelAggregate agg = (LogicalRelAggregate) alg;
         final AlgTraitSet traitSet = agg.getTraitSet().replace( EnumerableConvention.INSTANCE );
         try {
             return new EnumerableAggregate( alg.getCluster(), traitSet, convert( agg.getInput(), EnumerableConvention.INSTANCE ), agg.indicator, agg.getGroupSet(), agg.getGroupSets(), agg.getAggCallList() );

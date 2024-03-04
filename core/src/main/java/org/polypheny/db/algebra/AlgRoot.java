@@ -41,7 +41,7 @@ import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
@@ -187,7 +187,7 @@ public class AlgRoot {
 
 
     /**
-     * Returns the root relational expression, creating a {@link LogicalProject} if necessary to remove fields that are not needed.
+     * Returns the root relational expression, creating a {@link LogicalRelProject} if necessary to remove fields that are not needed.
      */
     public AlgNode project() {
         return project( false );
@@ -195,7 +195,7 @@ public class AlgRoot {
 
 
     /**
-     * Returns the root relational expression as a {@link LogicalProject}.
+     * Returns the root relational expression as a {@link LogicalRelProject}.
      *
      * @param force Create a Project even if all fields are used
      */
@@ -203,7 +203,7 @@ public class AlgRoot {
         if ( isRefTrivial()
                 && (Kind.DML.contains( kind )
                 || !force
-                || alg instanceof LogicalProject) ) {
+                || alg instanceof LogicalRelProject) ) {
             return alg;
         }
         final List<RexNode> projects = new ArrayList<>();
@@ -211,7 +211,7 @@ public class AlgRoot {
         for ( Pair<Integer, String> field : fields ) {
             projects.add( rexBuilder.makeInputRef( alg, field.left ) );
         }
-        return LogicalProject.create( alg, projects, Pair.right( fields ) );
+        return LogicalRelProject.create( alg, projects, Pair.right( fields ) );
     }
 
 

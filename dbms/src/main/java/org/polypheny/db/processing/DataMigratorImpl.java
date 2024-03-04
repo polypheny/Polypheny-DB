@@ -46,7 +46,7 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -417,7 +417,7 @@ public class DataMigratorImpl implements DataMigrator {
         if ( to.isEmpty() ) {
             builder.scan( allocation );
         } else {
-            builder.push( LogicalValues.createOneRow( cluster ) );
+            builder.push( LogicalRelValues.createOneRow( cluster ) );
             builder.project( values, columnNames );
         }
 
@@ -448,7 +448,7 @@ public class DataMigratorImpl implements DataMigrator {
             values.add( new RexDynamicParam( logicalColumn.getAlgDataType( typeFactory ), (int) logicalColumn.id ) );
         }
         AlgBuilder builder = AlgBuilder.create( statement, cluster );
-        builder.push( LogicalValues.createOneRow( cluster ) );
+        builder.push( LogicalRelValues.createOneRow( cluster ) );
         builder.project( values, columnNames );
 
         AlgNode node = LogicalRelModify.create( allocation, builder.build(), Operation.INSERT, null, null, false );

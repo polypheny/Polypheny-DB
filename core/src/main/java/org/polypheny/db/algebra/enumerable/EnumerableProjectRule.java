@@ -20,21 +20,21 @@ package org.polypheny.db.algebra.enumerable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.Convention;
 
 
 /**
- * Rule to convert a {@link LogicalProject} to an
+ * Rule to convert a {@link LogicalRelProject} to an
  * {@link EnumerableProject}.
  */
 class EnumerableProjectRule extends ConverterRule {
 
     EnumerableProjectRule() {
         super(
-                LogicalProject.class,
+                LogicalRelProject.class,
                 AlgOptUtil::containsMultisetOrWindowedAgg,
                 Convention.NONE,
                 EnumerableConvention.INSTANCE,
@@ -45,7 +45,7 @@ class EnumerableProjectRule extends ConverterRule {
 
     @Override
     public AlgNode convert( AlgNode alg ) {
-        final LogicalProject project = (LogicalProject) alg;
+        final LogicalRelProject project = (LogicalRelProject) alg;
         return EnumerableProject.create(
                 AlgOptRule.convert( project.getInput(), project.getInput().getTraitSet().replace( EnumerableConvention.INSTANCE ) ),
                 project.getProjects(),

@@ -50,7 +50,7 @@ import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.JoinInfo;
 import org.polypheny.db.algebra.core.SemiJoin;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.metadata.AlgColumnOrigin;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
@@ -80,7 +80,7 @@ import org.polypheny.db.util.mapping.IntPair;
 /**
  * Planner rule that implements the heuristic planner for determining optimal join orderings.
  *
- * It is triggered by the pattern {@link LogicalProject} ({@link MultiJoin}).
+ * It is triggered by the pattern {@link LogicalRelProject} ({@link MultiJoin}).
  */
 public class LoptOptimizeJoinRule extends AlgOptRule {
 
@@ -1398,8 +1398,8 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
             return !multiJoin.isLeftFactorInRemovableSelfJoin( ((LoptJoinTree.Leaf) left.getFactorTree()).getId() );
         }
 
-        final Double leftRowCount = mq.getRowCount( left.getJoinTree() );
-        final Double rightRowCount = mq.getRowCount( right.getJoinTree() );
+        final Double leftRowCount = mq.getTupleCount( left.getJoinTree() );
+        final Double rightRowCount = mq.getTupleCount( right.getJoinTree() );
 
         // The left side is smaller than the right if it has fewer rows, or if it has the same number of rows as the right (excluding roundoff), but fewer columns.
         if ( (leftRowCount != null)
