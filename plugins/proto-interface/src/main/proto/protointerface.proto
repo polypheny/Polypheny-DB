@@ -42,7 +42,7 @@ message Request {
     ConnectionCheckRequest connection_check_request = 20;
     DisconnectRequest disconnect_request = 21;
     ClientInfoPropertiesRequest client_info_properties_request = 22;
-    ClientInfoProperties client_info_properties = 23;
+    ClientInfoProperties set_client_info_properties_request = 23;
     ExecuteUnparameterizedStatementRequest execute_unparameterized_statement_request = 24;
     ExecuteUnparameterizedStatementBatchRequest execute_unparameterized_statement_batch_request = 25;
     PrepareStatementRequest prepare_indexed_statement_request = 26;
@@ -86,7 +86,8 @@ message Response {
     ConnectionResponse connection_response = 12;
     ConnectionCheckResponse connection_check_response = 25;
     DisconnectResponse disconnect_response = 13;
-    ClientInfoPropertiesResponse client_info_properties_response = 14;
+    ClientInfoProperties client_info_properties_response = 33;
+    ClientInfoPropertiesResponse set_client_info_properties_response = 14;
     StatementResponse statement_response = 15;
     StatementBatchResponse statement_batch_response = 16;
     StatementResult statement_result = 17;
