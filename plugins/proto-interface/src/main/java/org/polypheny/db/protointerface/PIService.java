@@ -238,13 +238,17 @@ public class PIService {
     private Response handleMessage( Request req, OutputStream out ) throws TransactionException, AuthenticationException, IOException {
         return switch ( req.getTypeCase() ) {
             case DBMS_VERSION_REQUEST -> getDbmsVersion( req.getDbmsVersionRequest(), new ResponseMaker<>( req, "dbms_version_response" ) );
-            case LANGUAGE_REQUEST, DATABASES_REQUEST, TABLE_TYPES_REQUEST, TYPES_REQUEST, USER_DEFINED_TYPES_REQUEST, CLIENT_INFO_PROPERTY_META_REQUEST, PROCEDURES_REQUEST, FUNCTIONS_REQUEST, NAMESPACES_REQUEST, NAMESPACE_REQUEST, ENTITIES_REQUEST, SQL_STRING_FUNCTIONS_REQUEST, SQL_SYSTEM_FUNCTIONS_REQUEST, SQL_TIME_DATE_FUNCTIONS_REQUEST, SQL_NUMERIC_FUNCTIONS_REQUEST, SQL_KEYWORDS_REQUEST -> throw new NotImplementedException( "Unsupported call " + req.getTypeCase() );
-            case CONNECTION_REQUEST -> throw new GenericRuntimeException( "ConnectionRequest only allowed as first message" );//connect( req.getConnectionRequest(), new ResponseMaker<>( req, "connection_response" ) );
-            case CONNECTION_CHECK_REQUEST -> throw new GenericRuntimeException( "ee" );
+            case LANGUAGE_REQUEST -> throw new NotImplementedException( "Currently not used" );
+            case DATABASES_REQUEST -> getDatabases( req.getDatabasesRequest(), new ResponseMaker<>( req, "databases_response" ) );
+            case TABLE_TYPES_REQUEST -> getTableTypes( req.getTableTypesRequest(), new ResponseMaker<>( req, "table_types_response" ) );
+            case TYPES_REQUEST -> getTypes( req.getTypesRequest(), new ResponseMaker<>( req, "types_response" ) );
+            case USER_DEFINED_TYPES_REQUEST, CLIENT_INFO_PROPERTY_META_REQUEST, PROCEDURES_REQUEST, FUNCTIONS_REQUEST, NAMESPACES_REQUEST, NAMESPACE_REQUEST, ENTITIES_REQUEST, SQL_STRING_FUNCTIONS_REQUEST, SQL_SYSTEM_FUNCTIONS_REQUEST, SQL_TIME_DATE_FUNCTIONS_REQUEST, SQL_NUMERIC_FUNCTIONS_REQUEST, SQL_KEYWORDS_REQUEST -> throw new NotImplementedException( "Unsupported call " + req.getTypeCase() );
+            case CONNECTION_REQUEST -> throw new GenericRuntimeException( "ConnectionRequest only allowed as first message" );
+            case CONNECTION_CHECK_REQUEST -> checkConnection( req.getConnectionCheckRequest(), new ResponseMaker<>( req, "connection_check_response" ) );
             case DISCONNECT_REQUEST -> disconnect( req.getDisconnectRequest(), new ResponseMaker<>( req, "disconnect_response" ) );
             case CLIENT_INFO_PROPERTIES_REQUEST, CLIENT_INFO_PROPERTIES -> throw new NotImplementedException( "Unsupported call " + req.getTypeCase() );
             case EXECUTE_UNPARAMETERIZED_STATEMENT_REQUEST -> executeUnparameterizedStatement( req.getExecuteUnparameterizedStatementRequest(), out, new ResponseMaker<>( req, "statement_response" ) );
-            case EXECUTE_UNPARAMETERIZED_STATEMENT_BATCH_REQUEST -> throw new GenericRuntimeException( "eee" );
+            case EXECUTE_UNPARAMETERIZED_STATEMENT_BATCH_REQUEST -> executeUnparameterizedStatementBatch( req.getExecuteUnparameterizedStatementBatchRequest(), out, new ResponseMaker<>( req, "statement_batch_response" ) );
             case PREPARE_INDEXED_STATEMENT_REQUEST -> prepareIndexedStatement( req.getPrepareIndexedStatementRequest(), new ResponseMaker<>( req, "prepared_statement_signature" ) );
             case EXECUTE_INDEXED_STATEMENT_REQUEST -> executeIndexedStatement( req.getExecuteIndexedStatementRequest(), new ResponseMaker<>( req, "statement_result" ) );
             case EXECUTE_INDEXED_STATEMENT_BATCH_REQUEST -> throw new GenericRuntimeException( "eee" );
@@ -289,10 +293,9 @@ public class PIService {
     }
 
 
-    public void checkConnection( ConnectionCheckRequest request, StreamObserver<ConnectionCheckResponse> responseObserver ) {
+    public Response checkConnection( ConnectionCheckRequest request, ResponseMaker<ConnectionCheckResponse> responseObserver ) {
         getClient().setIsActive();
-        responseObserver.onNext( ConnectionCheckResponse.newBuilder().build() );
-        responseObserver.onCompleted();
+        return responseObserver.makeResponse( ConnectionCheckResponse.newBuilder().build() );
     }
 
 
@@ -321,27 +324,24 @@ public class PIService {
     }
 
 
-    public void getDatabases( DatabasesRequest request, StreamObserver<DatabasesResponse> responseObserver ) {
+    public Response getDatabases( DatabasesRequest request, ResponseMaker<DatabasesResponse> responseObserver ) {
         /* called as client auth check */
         getClient();
-        responseObserver.onNext( DbMetaRetriever.getDatabases() );
-        responseObserver.onCompleted();
+        return responseObserver.makeResponse( DbMetaRetriever.getDatabases() );
     }
 
 
-    public void getTableTypes( TableTypesRequest request, StreamObserver<TableTypesResponse> responseObserver ) {
+    public Response getTableTypes( TableTypesRequest request, ResponseMaker<TableTypesResponse> responseObserver ) {
         /* called as client auth check */
         getClient();
-        responseObserver.onNext( DbMetaRetriever.getTableTypes() );
-        responseObserver.onCompleted();
+        return responseObserver.makeResponse( DbMetaRetriever.getTableTypes() );
     }
 
 
-    public void getTypes( TypesRequest request, StreamObserver<TypesResponse> responseStreamObserver ) {
+    public Response getTypes( TypesRequest request, ResponseMaker<TypesResponse> responseStreamObserver ) {
         /* called as client auth check */
         getClient();
-        responseStreamObserver.onNext( DbMetaRetriever.getTypes() );
-        responseStreamObserver.onCompleted();
+        return responseStreamObserver.makeResponse( DbMetaRetriever.getTypes() );
     }
 
 
@@ -446,13 +446,13 @@ public class PIService {
     }
 
 
-    public void executeUnparameterizedStatementBatch( ExecuteUnparameterizedStatementBatchRequest request, StreamObserver<StatementBatchResponse> responseObserver ) throws Exception {
+    public Response executeUnparameterizedStatementBatch( ExecuteUnparameterizedStatementBatchRequest request, OutputStream out, ResponseMaker<StatementBatchResponse> responseObserver ) throws IOException {
         PIClient client = getClient();
         PIUnparameterizedStatementBatch batch = client.getStatementManager().createUnparameterizedStatementBatch( request.getStatementsList() );
-        responseObserver.onNext( ProtoUtils.createStatementBatchStatus( batch.getBatchId() ) );
+        Response mid = responseObserver.makeResponse( ProtoUtils.createStatementBatchStatus( batch.getBatchId() ), false );
+        sendOneMessage( mid, out );
         List<Long> updateCounts = batch.executeBatch();
-        responseObserver.onNext( ProtoUtils.createStatementBatchStatus( batch.getBatchId(), updateCounts ) );
-        responseObserver.onCompleted();
+        return responseObserver.makeResponse( ProtoUtils.createStatementBatchStatus( batch.getBatchId(), updateCounts ) );
     }
 
 
