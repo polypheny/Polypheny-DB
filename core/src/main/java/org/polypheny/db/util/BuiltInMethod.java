@@ -397,7 +397,7 @@ public enum BuiltInMethod {
     COLLATIONS( Collation.class, "collations" ),
     DISTRIBUTION( Distribution.class, "distribution" ),
     NODE_TYPES( NodeTypes.class, "getNodeTypes" ),
-    ROW_COUNT( RowCount.class, "getTupleCount" ),
+    ROW_COUNT( RowCount.class, "getRowCount" ),
     MAX_ROW_COUNT( MaxRowCount.class, "getMaxRowCount" ),
     MIN_ROW_COUNT( MinRowCount.class, "getMinRowCount" ),
     DISTINCT_ROW_COUNT( DistinctRowCount.class, "getDistinctRowCount", ImmutableBitSet.class, RexNode.class ),

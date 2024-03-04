@@ -154,7 +154,7 @@ public interface DataContext {
         /**
          * Advisor that suggests completion hints for language statements.
          */
-        LANG_ADVISOR( "advisor", Advisor.class ),
+        ADVISOR( "advisor", Advisor.class ),
 
         /**
          * Writer to the standard error (stderr).
