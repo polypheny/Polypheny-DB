@@ -38,7 +38,7 @@ public class PIUnparameterizedStatementBatch {
     }
 
 
-    public List<Long> executeBatch() throws Exception {
+    public List<Long> executeBatch() {
         int fetchSize = PropertyUtils.DEFAULT_FETCH_SIZE;
         List<Long> updateCounts = new LinkedList<>();
         for ( PIUnparameterizedStatement statement : statements ) {

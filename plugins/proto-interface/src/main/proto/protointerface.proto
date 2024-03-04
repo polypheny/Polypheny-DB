@@ -69,7 +69,9 @@ message Response {
     ErrorResponse error_response = 256;
     DbmsVersionResponse dbms_version_response = 3;
     LanguageResponse language_response = 4;
+    DatabasesResponse databases_response = 24;
     TableTypesResponse table_types_response = 5;
+    TypesResponse types_response = 26;
     UserDefinedTypesResponse user_defined_types_response = 6;
     ProceduresResponse procedures_response = 7;
     NamespacesResponse namespaces_response = 8;
@@ -77,6 +79,7 @@ message Response {
     MetaStringResponse meta_string_functions_response = 10;
     MetaStringResponse meta_sql_functions_response = 11;
     ConnectionResponse connection_response = 12;
+    ConnectionCheckResponse connection_check_response = 25;
     DisconnectResponse disconnect_response = 13;
     ClientInfoPropertiesResponse client_info_properties_response = 14;
     StatementResponse statement_response = 15;
