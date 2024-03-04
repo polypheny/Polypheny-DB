@@ -257,12 +257,13 @@ public class PIService {
             case CONNECTION_REQUEST -> throw new GenericRuntimeException( "ConnectionRequest only allowed as first message" );
             case CONNECTION_CHECK_REQUEST -> checkConnection( req.getConnectionCheckRequest(), new ResponseMaker<>( req, "connection_check_response" ) );
             case DISCONNECT_REQUEST -> disconnect( req.getDisconnectRequest(), new ResponseMaker<>( req, "disconnect_response" ) );
-            case CLIENT_INFO_PROPERTIES_REQUEST, CLIENT_INFO_PROPERTIES -> throw new NotImplementedException( "Unsupported call " + req.getTypeCase() );
+            case CLIENT_INFO_PROPERTIES_REQUEST -> getClientInfoProperties( req.getClientInfoPropertiesRequest(), new ResponseMaker<>( req, "client_info_properties_response" ) );
+            case SET_CLIENT_INFO_PROPERTIES_REQUEST -> setClientInfoProperties( req.getSetClientInfoPropertiesRequest(), new ResponseMaker<>( req, "set_client_info_properties_response" ) );
             case EXECUTE_UNPARAMETERIZED_STATEMENT_REQUEST -> executeUnparameterizedStatement( req.getExecuteUnparameterizedStatementRequest(), out, new ResponseMaker<>( req, "statement_response" ) );
             case EXECUTE_UNPARAMETERIZED_STATEMENT_BATCH_REQUEST -> executeUnparameterizedStatementBatch( req.getExecuteUnparameterizedStatementBatchRequest(), out, new ResponseMaker<>( req, "statement_batch_response" ) );
             case PREPARE_INDEXED_STATEMENT_REQUEST -> prepareIndexedStatement( req.getPrepareIndexedStatementRequest(), new ResponseMaker<>( req, "prepared_statement_signature" ) );
             case EXECUTE_INDEXED_STATEMENT_REQUEST -> executeIndexedStatement( req.getExecuteIndexedStatementRequest(), new ResponseMaker<>( req, "statement_result" ) );
-            case EXECUTE_INDEXED_STATEMENT_BATCH_REQUEST -> throw new GenericRuntimeException( "eee" );
+            case EXECUTE_INDEXED_STATEMENT_BATCH_REQUEST -> throw new NotImplementedException( "Not yet implemented" );
             case PREPARE_NAMED_STATEMENT_REQUEST -> prepareNamedStatement( req.getPrepareNamedStatementRequest(), new ResponseMaker<>( req, "prepared_statement_signature" ) );
             case EXECUTE_NAMED_STATEMENT_REQUEST -> executeNamedStatement( req.getExecuteNamedStatementRequest(), new ResponseMaker<>( req, "statement_result" ) );
             case FETCH_REQUEST -> fetchResult( req.getFetchRequest(), new ResponseMaker<>( req, "frame" ) );
@@ -556,21 +557,19 @@ public class PIService {
     }
 
 
-    public void getClientInfoProperties( ClientInfoPropertiesRequest request, StreamObserver<ClientInfoProperties> responseObserver ) {
+    public Response getClientInfoProperties( ClientInfoPropertiesRequest request, ResponseMaker<ClientInfoProperties> responseObserver ) {
         PIClient client = getClient();
         ClientInfoProperties.Builder responseBuilder = ClientInfoProperties.newBuilder();
         PIClientInfoProperties PIClientInfoProperties = client.getPIClientInfoProperties();
         PIClientInfoProperties.stringPropertyNames().forEach( s -> responseBuilder.putProperties( s, PIClientInfoProperties.getProperty( s ) ) );
-        responseObserver.onNext( responseBuilder.build() );
-        responseObserver.onCompleted();
+        return responseObserver.makeResponse( responseBuilder.build() );
     }
 
 
-    public void setClientInfoProperties( ClientInfoProperties properties, StreamObserver<ClientInfoPropertiesResponse> reponseObserver ) {
+    public Response setClientInfoProperties( ClientInfoProperties properties, ResponseMaker<ClientInfoPropertiesResponse> reponseObserver ) {
         PIClient client = getClient();
         client.getPIClientInfoProperties().putAll( properties.getPropertiesMap() );
-        reponseObserver.onNext( ClientInfoPropertiesResponse.newBuilder().build() );
-        reponseObserver.onCompleted();
+        return reponseObserver.makeResponse( ClientInfoPropertiesResponse.newBuilder().build() );
     }
 
 
