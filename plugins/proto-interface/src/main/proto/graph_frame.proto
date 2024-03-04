@@ -1,3 +1,7 @@
+/*
+Messages related to graph frames as used to represent results form the labeled property graph model.
+*/
+
 syntax = "proto3";
 
 option java_multiple_files = true;
@@ -6,5 +10,11 @@ option java_outer_classname = "GraphResultProto";
 
 package polypheny.protointerface;
 
+/*
+The GraphFrame message is a placeholder intended to represent graph frames as part of the labeled property graph model.
+As of now, the graph model is not fully implemented, making this message void of fields.
+It acts as a provision for future developments where fields related to the graph model will be added.
+Currently, this message does not contain any fields. It is reserved for future use when the graph model is more completely realized.
+*/
 message GraphFrame {
 }

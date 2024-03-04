@@ -1,3 +1,7 @@
+/*
+Messages related to establishing and maintaining a connection.
+*/
+
 syntax = "proto3";
 
 option java_multiple_files = true;
@@ -6,18 +10,48 @@ option java_outer_classname = "ConnectionResponses";
 
 package polypheny.protointerface;
 
+/*
+The ConnectionResponse message is sent by the server in response to a ConnectionRequest from the client.
+It provides feedback regarding the compatibility of the client’s API version with the server, as well as other important information about the connection.
+*/
 message ConnectionResponse {
+  /*
+  Indicates whether the client’s API version is compatible with the server.
+  If true, the connection can proceed; if false, the client should consider updating or downgrading its API version.
+  */
   bool is_compatible = 1;
+  // The major version number of the server’s API. Helps the client ascertain the API level of the server.
   int32 major_api_version = 2;
+  // The minor version number of the server’s API. Provides finer granularity about the server’s capabilities.
   int32 minor_api_version = 3;
+  /*
+  Specifies the interval in milliseconds at which the client should send heartbeat signals to maintain the connection.
+  If not provided, the connection does not require a heartbeat to remain valid.
+  */
   optional int64 heartbeat_interval = 4;
 }
 
+/*
+The DisconnectionResponse message is sent by the server in response to a DisconnectRequest from the client.
+It provides an acknowledgment that the disconnection process has been acknowledged and processed by the server.
+This message does not contain any fields. It simply serves as an acknowledgment of the disconnection process.
+*/
 message DisconnectResponse {
 }
 
+/*
+The ConnectionCheckResponse message is sent by the server in response to a ConnectionCheckRequest from the client.
+It acts as an affirmation that the server is responsive, and the connection is still valid.
+This message does not contain any fields.
+Its receipt by the client is an indicator of the server’s responsiveness and the validity of the connection.
+*/
 message ConnectionCheckResponse {
 }
 
+/*
+The ConnectionPropertiesUpdateResponse message is sent by the server in response to a ConnectionPropertiesUpdateRequest from the client.
+It acknowledges the success of the requested connection properties update.
+This message does not contain any fields. It serves as an acknowledgment of the update process for the connection properties.
+*/
 message ConnectionPropertiesUpdateResponse {
 }

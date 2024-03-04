@@ -1,3 +1,7 @@
+/*
+Messages related to establishing and maintaining a connection.
+*/
+
 syntax = "proto3";
 
 option java_multiple_files = true;
@@ -6,25 +10,57 @@ option java_outer_classname = "ConnectionRequests";
 
 package polypheny.protointerface;
 
+/*
+The ConnectionRequest message is designed to initiate a connection request from the client to the server.
+It contains information regarding the API version, client identity, and optional credentials, as well as properties associated with the connection.
+*/
 message ConnectionRequest {
+  // Specifies the major version of the API that the client is using.
   int32 major_api_version = 1;
+  // Represents the minor version of the API in use.
   int32 minor_api_version = 2;
+  // (Optional) The username for authentication when establishing the connection.
   optional string username = 5;
+  // (Optional) The password associated with the specified username for authentication purposes.
   optional string password = 6;
+  // (Optional) Contains specific properties related to the connection, such as timeout settings or database preferences.
   optional ConnectionProperties connection_properties = 4;
 }
 
+/*
+The ConnectionProperties message defines specific properties related to the client-server connection.
+It allows clients to specify certain behaviors and settings for the connection, such as transaction auto-commit status and target namespace preference.
+*/
 message ConnectionPropertiesUpdateRequest {
+  /*
+  Specifies the new settings for the connection.
+  Contains properties such as transaction auto-commit status and target namespace preference.
+  */
   ConnectionProperties connection_properties = 4;
 }
 
+/*
+The ConnectionProperties message defines specific properties related to the client-server connection.
+It allows clients to specify certain behaviors and settings for the connection, such as transaction auto-commit status and target namespace preference.
+*/
 message ConnectionProperties {
+  // (Optional) Indicates whether transactions are automatically committed upon execution or require manual commitment.
   optional bool is_auto_commit = 1;
+  // (Optional) Specifies the preferred namespace within the database or system that the client wants to interact with.
   optional string namespace_name = 2;
 }
 
+/*
+The ConnectionCheckRequest message in combination with the corresponding remot procedure call is utilized to verify the current state of an established connection.
+It acts as a simple “ping” request, enabling clients to ascertain if the server is responsive and if the connection is still valid.
+This message does not contain any fields. It simply acts as an indicator to prompt the server for a ConnectionCheckResponse.
+*/
 message DisconnectRequest {
 }
 
+/*
+The ConnectionCheckRequest message in combination with the corresponding remot procedure call is utilized to verify the current state of an established connection.
+It acts as a simple “ping” request, enabling clients to ascertain if the server is responsive and if the connection is still valid.
+*/
 message ConnectionCheckRequest {
 }
