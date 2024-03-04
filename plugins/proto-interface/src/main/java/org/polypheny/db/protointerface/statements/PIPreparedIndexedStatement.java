@@ -78,7 +78,7 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
 
 
     @SuppressWarnings("Duplicates")
-    public StatementResult execute( List<PolyValue> values, int fetchSize ) throws Exception {
+    public StatementResult execute( List<PolyValue> values, int fetchSize ) {
         synchronized ( client ) {
             Transaction transaction;
             if ( statement == null ) {
