@@ -215,7 +215,7 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
 
             dataContext.getStatement().getTransaction().registerInvolvedAdapter( entity.namespace.store );
 
-            if ( true ) {
+            if ( log.isDebugEnabled() ) {
                 log.warn( "Executing query: {}", query );
             }
 

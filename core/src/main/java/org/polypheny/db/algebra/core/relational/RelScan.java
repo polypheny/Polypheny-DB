@@ -26,7 +26,6 @@ import java.util.stream.IntStream;
 import lombok.NonNull;
 import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.common.Scan;
@@ -150,12 +149,6 @@ public abstract class RelScan<E extends Entity> extends Scan<E> implements RelAl
         }
 
         return algBuilder.push( this ).project( exprList, nameList ).build();
-    }
-
-
-    @Override
-    public AlgNode accept( AlgShuttle shuttle ) {
-        return shuttle.visit( this );
     }
 
 

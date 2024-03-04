@@ -28,9 +28,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import lombok.NonNull;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.commons.lang3.NotImplementedException;
-import org.jetbrains.annotations.NotNull;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.value.FloatValue;
@@ -221,7 +221,7 @@ public interface NeoUtil {
         return asPolyValue( e );
     }
 
-    static PolyValue asPolyValue( @NotNull Value value ) {
+    static PolyValue asPolyValue( @NonNull Value value ) {
         if ( value instanceof IntegerValue ) {
             return PolyString.of( String.valueOf( value.asLong() ) );
         } else if ( value instanceof StringValue ) {

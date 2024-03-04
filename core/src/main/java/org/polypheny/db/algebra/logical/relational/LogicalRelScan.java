@@ -39,6 +39,7 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -94,6 +95,12 @@ public final class LogicalRelScan extends RelScan<Entity> {
         assert traitSet.containsIfApplicable( Convention.NONE );
         assert inputs.isEmpty();
         return this;
+    }
+
+
+    @Override
+    public AlgNode accept( AlgShuttle shuttle ) {
+        return shuttle.visit( this );
     }
 
 

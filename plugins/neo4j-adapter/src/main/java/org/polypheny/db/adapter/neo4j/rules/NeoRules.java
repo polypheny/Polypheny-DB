@@ -68,7 +68,7 @@ public interface NeoRules {
         public static NeoModifyRule INSTANCE = new NeoModifyRule( RelModify.class, NeoModifyRule::supports, "NeoModifyRule" );
 
 
-        private static boolean supports( RelModify modify ) {
+        private static boolean supports( RelModify<?> modify ) {
             return !modify.isInsert() || !UnsupportedRelFromInsertShuttle.contains( modify );
         }
 
