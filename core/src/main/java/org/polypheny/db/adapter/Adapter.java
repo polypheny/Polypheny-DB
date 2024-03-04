@@ -273,10 +273,10 @@ public abstract class Adapter<ACatalog extends AdapterCatalog> implements Scanna
             Collection<PhysicalEntity> physicalsOnAdapter = getAdapterCatalog().physicals.values();
 
             for ( PhysicalEntity entity : physicalsOnAdapter ) {
-                if ( entity.dataModel != DataModel.RELATIONAL ) {
+                if ( entity.dataModel != DataModel.RELATIONAL || entity.unwrap( PhysicalTable.class ).isEmpty() ) {
                     continue;
                 }
-                PhysicalTable physicalTable = (PhysicalTable) entity;
+                PhysicalTable physicalTable = entity.unwrap( PhysicalTable.class ).get();
 
                 for ( PhysicalColumn column : physicalTable.columns ) {
                     physicalColumnNames.addRow(
