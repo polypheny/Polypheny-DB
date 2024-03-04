@@ -42,7 +42,7 @@ public abstract class Executor {
 
     abstract DataModel getDataModel();
 
-    abstract StatementResult executeAndGetResult( PIStatement piStatement ) throws Exception;
+    abstract StatementResult executeAndGetResult( PIStatement piStatement );
 
     abstract StatementResult executeAndGetResult( PIStatement piStatement, int fetchSize ) throws Exception;
 

@@ -263,7 +263,7 @@ public class PIService {
             case EXECUTE_UNPARAMETERIZED_STATEMENT_BATCH_REQUEST -> executeUnparameterizedStatementBatch( req.getExecuteUnparameterizedStatementBatchRequest(), out, new ResponseMaker<>( req, "statement_batch_response" ) );
             case PREPARE_INDEXED_STATEMENT_REQUEST -> prepareIndexedStatement( req.getPrepareIndexedStatementRequest(), new ResponseMaker<>( req, "prepared_statement_signature" ) );
             case EXECUTE_INDEXED_STATEMENT_REQUEST -> executeIndexedStatement( req.getExecuteIndexedStatementRequest(), new ResponseMaker<>( req, "statement_result" ) );
-            case EXECUTE_INDEXED_STATEMENT_BATCH_REQUEST -> throw new NotImplementedException( "Not yet implemented" );
+            case EXECUTE_INDEXED_STATEMENT_BATCH_REQUEST -> executeIndexedStatementBatch( req.getExecuteIndexedStatementBatchRequest(), new ResponseMaker<>( req, "statement_batch_response" ) );
             case PREPARE_NAMED_STATEMENT_REQUEST -> prepareNamedStatement( req.getPrepareNamedStatementRequest(), new ResponseMaker<>( req, "prepared_statement_signature" ) );
             case EXECUTE_NAMED_STATEMENT_REQUEST -> executeNamedStatement( req.getExecuteNamedStatementRequest(), new ResponseMaker<>( req, "statement_result" ) );
             case FETCH_REQUEST -> fetchResult( req.getFetchRequest(), new ResponseMaker<>( req, "frame" ) );
@@ -476,13 +476,12 @@ public class PIService {
     }
 
 
-    public void executeIndexedStatementBatch( ExecuteIndexedStatementBatchRequest request, StreamObserver<StatementBatchResponse> resultObserver ) throws Exception {
+    public Response executeIndexedStatementBatch( ExecuteIndexedStatementBatchRequest request, ResponseMaker<StatementBatchResponse> resultObserver ) {
         PIClient client = getClient();
         PIPreparedIndexedStatement statement = client.getStatementManager().getIndexedPreparedStatement( request.getStatementId() );
         List<List<PolyValue>> valuesList = ProtoValueDeserializer.deserializeParameterLists( request.getParametersList() );
         List<Long> updateCounts = statement.executeBatch( valuesList );
-        resultObserver.onNext( ProtoUtils.createStatementBatchStatus( statement.getId(), updateCounts ) );
-        resultObserver.onCompleted();
+        return resultObserver.makeResponse( ProtoUtils.createStatementBatchStatus( statement.getId(), updateCounts ) );
     }
 
 
