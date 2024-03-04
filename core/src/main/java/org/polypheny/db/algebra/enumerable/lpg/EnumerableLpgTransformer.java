@@ -70,7 +70,7 @@ public class EnumerableLpgTransformer extends LpgTransformer implements Enumerab
             inputs.add( implementor.visitChild( this, i, (EnumerableAlg) input, pref ) );
             i++;
         }
-        List<Expression> enumerables = inputs.stream().map( j -> attachLambdaEnumerable( j.block ) ).collect( Collectors.toList() );
+        List<Expression> enumerables = inputs.stream().map( j -> attachLambdaEnumerable( j.block() ) ).collect( Collectors.toList() );
 
         MethodCallExpression splitter = Expressions.call(
                 BuiltInMethod.SPLIT_GRAPH_MODIFY.method,
@@ -81,7 +81,7 @@ public class EnumerableLpgTransformer extends LpgTransformer implements Enumerab
 
         builder.add( Expressions.return_( null, builder.append( "splitter" + System.nanoTime(), splitter ) ) );
 
-        return implementor.result( inputs.get( 0 ).physType, builder.toBlock() );
+        return implementor.result( inputs.get( 0 ).physType(), builder.toBlock() );
     }
 
 

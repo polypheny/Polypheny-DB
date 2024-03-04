@@ -74,10 +74,10 @@ public class EnumerableBatchIterator extends BatchIterator implements Enumerable
                         EnumUtils.overridingMethodDecl(
                                 BuiltInMethod.BATCH_ITERATOR_GET_ENUM.method,
                                 EnumUtils.NO_PARAMS,
-                                Blocks.toFunctionBlock( result.block ) ) ) ) ) );
+                                Blocks.toFunctionBlock( result.block() ) ) ) ) ) );
 
         builder.add( Expressions.return_( null, builder.append( "test", Expressions.call( BuiltInMethod.BATCH.method, Expressions.constant( DataContext.ROOT ), _baz ) ) ) );
-        return implementor.result( result.physType, builder.toBlock() );
+        return implementor.result( result.physType(), builder.toBlock() );
     }
 
 }

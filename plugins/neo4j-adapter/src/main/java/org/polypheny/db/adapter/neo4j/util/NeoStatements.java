@@ -390,8 +390,8 @@ public interface NeoStatements {
         List<ElementStatement> elements = new ArrayList<>();
         for ( GraphObject object : path.getPath() ) {
             elements.add( i % 2 == 0
-                    ? node_( (PolyNode) object, mappingLabel, addId )
-                    : edge_( (PolyEdge) object, addId ) );
+                    ? node_( object.asNode(), mappingLabel, addId )
+                    : edge_( object.asEdge(), addId ) );
             i++;
         }
 

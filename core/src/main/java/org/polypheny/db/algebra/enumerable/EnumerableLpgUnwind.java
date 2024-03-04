@@ -71,15 +71,15 @@ public class EnumerableLpgUnwind extends LpgUnwind implements EnumerableAlg {
         BlockBuilder builder = new BlockBuilder();
         Result res = implementor.visitChild( this, 0, (EnumerableAlg) input, pref );
 
-        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.prefer( res.format ) );
+        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.prefer( res.format() ) );
 
         Type outputJavaType = physType.getJavaRowType();
         final Type enumeratorType = Types.of( Enumerator.class, outputJavaType );
-        Type inputJavaType = res.physType.getJavaRowType();
+        Type inputJavaType = res.physType().getJavaRowType();
 
         ParameterExpression inputEnumerator = Expressions.parameter( Types.of( Enumerator.class, inputJavaType ), "inputEnumerator" );
 
-        Expression inputEnumerable = builder.append( builder.newName( "inputEnumerable" + System.nanoTime() ), res.block, false );
+        Expression inputEnumerable = builder.append( builder.newName( "inputEnumerable" + System.nanoTime() ), res.block(), false );
 
         final ParameterExpression i_ = Expressions.parameter( int.class, "_i" );
         final ParameterExpression list_ = Expressions.parameter( Types.of( List.class, PolyValue.class ), "_callList" );

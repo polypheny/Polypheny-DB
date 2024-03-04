@@ -108,10 +108,10 @@ public class EnumerableSemiJoin extends SemiJoin implements EnumerableAlg {
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         BlockBuilder builder = new BlockBuilder();
         final Result leftResult = implementor.visitChild( this, 0, (EnumerableAlg) left, pref );
-        Expression leftExpression = builder.append( "left" + System.nanoTime(), leftResult.block );
+        Expression leftExpression = builder.append( "left" + System.nanoTime(), leftResult.block() );
         final Result rightResult = implementor.visitChild( this, 1, (EnumerableAlg) right, pref );
-        Expression rightExpression = builder.append( "right" + System.nanoTime(), rightResult.block );
-        final PhysType physType = leftResult.physType;
+        Expression rightExpression = builder.append( "right" + System.nanoTime(), rightResult.block() );
+        final PhysType physType = leftResult.physType();
         return implementor.result(
                 physType,
                 builder.append(
@@ -120,8 +120,8 @@ public class EnumerableSemiJoin extends SemiJoin implements EnumerableAlg {
                                         Expressions.list(
                                                 leftExpression,
                                                 rightExpression,
-                                                leftResult.physType.generateAccessor( leftKeys ),
-                                                rightResult.physType.generateAccessor( rightKeys ) ) ) )
+                                                leftResult.physType().generateAccessor( leftKeys ),
+                                                rightResult.physType().generateAccessor( rightKeys ) ) ) )
                         .toBlock() );
     }
 

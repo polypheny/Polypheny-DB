@@ -68,11 +68,10 @@ public class EnumerableConstraintEnforcer extends ConstraintEnforcer implements 
         Result control = implementor.visitChild( this, 1, (EnumerableAlg) getRight(), pref );
 
         // Move executor enumerable into a lambda so parameters get not prematurely
-        FunctionExpression<Function<?>> expCall = Expressions.lambda( modify.block );
+        FunctionExpression<Function<?>> expCall = Expressions.lambda( modify.block() );
 
         // we wrap the control query into a lambda, so we can call it later with adjusted parameters
-        //Expression cont = builder.append( builder.newName( "control" + System.nanoTime() ), control.block );
-        FunctionExpression<Function<?>> controlLambda = Expressions.lambda( control.block );
+        FunctionExpression<Function<?>> controlLambda = Expressions.lambda( control.block() );
 
         MethodCallExpression transformContext = Expressions.call(
                 BuiltInMethod.ENFORCE_CONSTRAINT.method,
@@ -84,7 +83,7 @@ public class EnumerableConstraintEnforcer extends ConstraintEnforcer implements 
 
         builder.add( Expressions.return_( null, transformContext ) );
 
-        return implementor.result( modify.physType, builder.toBlock() );
+        return implementor.result( modify.physType(), builder.toBlock() );
     }
 
 }

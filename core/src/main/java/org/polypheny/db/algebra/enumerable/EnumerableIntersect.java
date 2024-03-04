@@ -53,7 +53,7 @@ public class EnumerableIntersect extends Intersect implements EnumerableAlg {
         for ( Ord<AlgNode> ord : Ord.zip( inputs ) ) {
             EnumerableAlg input = (EnumerableAlg) ord.e;
             final Result result = implementor.visitChild( this, ord.i, input, pref );
-            Expression childExp = builder.append( "child" + ord.i, result.block );
+            Expression childExp = builder.append( "child" + ord.i, result.block() );
 
             if ( intersectExp == null ) {
                 intersectExp = childExp;
@@ -62,13 +62,14 @@ public class EnumerableIntersect extends Intersect implements EnumerableAlg {
                         Expressions.call(
                                 intersectExp,
                                 BuiltInMethod.INTERSECT.method,
-                                Expressions.list( childExp ).appendIfNotNull( result.physType.comparer() ) );
+                                Expressions.list( childExp ).appendIfNotNull( result.physType().comparer() ) );
             }
 
             // Once the first input has chosen its format, ask for the same for other inputs.
-            pref = pref.of( result.format );
+            pref = pref.of( result.format() );
         }
 
+        assert intersectExp != null;
         builder.add( intersectExp );
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.prefer( JavaRowFormat.CUSTOM ) );
         return implementor.result( physType, builder.toBlock() );

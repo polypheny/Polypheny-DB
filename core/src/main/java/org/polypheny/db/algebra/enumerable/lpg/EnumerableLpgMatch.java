@@ -56,8 +56,8 @@ public class EnumerableLpgMatch extends LpgMatch implements EnumerableAlg {
     /**
      * Creates a <code>SingleRel</code>.
      *
-     * @param cluster Cluster this relational expression belongs to
-     * @param traits
+     * @param cluster Cluster this expression belongs to
+     * @param traits The traits of the algebra
      * @param input Input relational expression
      */
     protected EnumerableLpgMatch( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<RexCall> matches, List<PolyString> names ) {
@@ -73,7 +73,7 @@ public class EnumerableLpgMatch extends LpgMatch implements EnumerableAlg {
 
         final JavaTypeFactory typeFactory = implementor.getTypeFactory();
 
-        Expression inputEnumerable = builder.append( builder.newName( "inputEnumerable" + System.nanoTime() ), res.block, false );
+        Expression inputEnumerable = builder.append( builder.newName( "inputEnumerable" + System.nanoTime() ), res.block(), false );
 
         Expression inputEnumerator = builder.append( builder.newName( "enumerator" + System.nanoTime() ), Expressions.call( inputEnumerable, BuiltInMethod.ENUMERABLE_ENUMERATOR.method ), false );
         builder.add( Expressions.statement( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_MOVE_NEXT.method ) ) );
@@ -93,21 +93,15 @@ public class EnumerableLpgMatch extends LpgMatch implements EnumerableAlg {
             assert match != null;
 
             boolean extract = false;
-            Method method;
-            switch ( match.op.getOperatorName() ) {
-                case CYPHER_NODE_EXTRACT:
+            Method method = switch ( match.op.getOperatorName() ) {
+                case CYPHER_NODE_EXTRACT -> {
                     extract = true;
-                    method = BuiltInMethod.CYPHER_NODE_EXTRACT.method;
-                    break;
-                case CYPHER_NODE_MATCH:
-                    method = BuiltInMethod.CYPHER_NODE_MATCH.method;
-                    break;
-                case CYPHER_PATH_MATCH:
-                    method = BuiltInMethod.CYPHER_PATH_MATCH.method;
-                    break;
-                default:
-                    throw new GenericRuntimeException( "could not translate graph match" );
-            }
+                    yield BuiltInMethod.CYPHER_NODE_EXTRACT.method;
+                }
+                case CYPHER_NODE_MATCH -> BuiltInMethod.CYPHER_NODE_MATCH.method;
+                case CYPHER_PATH_MATCH -> BuiltInMethod.CYPHER_PATH_MATCH.method;
+                default -> throw new GenericRuntimeException( "could not translate graph match" );
+            };
 
             Expression expression;
             if ( extract ) {
@@ -130,19 +124,19 @@ public class EnumerableLpgMatch extends LpgMatch implements EnumerableAlg {
 
         builder.add( Expressions.return_( null, return_ ) );
 
-        return implementor.result( PhysTypeImpl.of( typeFactory, getTupleType(), pref.prefer( res.format ) ), builder.toBlock() );
+        return implementor.result( PhysTypeImpl.of( typeFactory, getTupleType(), pref.prefer( res.format() ) ), builder.toBlock() );
     }
 
 
     private Expression getPolyElement( RexCall call ) {
         RexNode el = call.operands.get( 1 );
         if ( el.getType().getPolyType() == PolyType.NODE ) {
-            PolyNode node = (PolyNode) ((RexLiteral) el).getValue();
+            PolyNode node = ((RexLiteral) el).getValue().asNode();
 
             return node.asExpression();
 
         } else if ( el.getType().getPolyType() == PolyType.PATH ) {
-            PolyPath path = (PolyPath) ((RexLiteral) el).getValue();
+            PolyPath path = ((RexLiteral) el).getValue().asPath();
 
             return path.asExpression();
         }

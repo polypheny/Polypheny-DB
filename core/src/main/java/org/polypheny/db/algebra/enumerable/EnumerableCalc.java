@@ -119,7 +119,7 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
         // ...
         Type outputJavaType = physType.getJavaRowType();
         final Type enumeratorType = Types.of( Enumerator.class, outputJavaType );
-        Type inputJavaType = result.physType.getJavaRowType();
+        Type inputJavaType = result.physType().getJavaRowType();
         ParameterExpression inputEnumerator = Expressions.parameter( Types.of( Enumerator.class, inputJavaType ), "inputEnumerator" );
         Expression input = RexToLixTranslator.convert( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_CURRENT.method ), inputJavaType );
 
@@ -139,7 +139,7 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
                             program,
                             typeFactory,
                             builder2,
-                            new RexToLixTranslator.InputGetterImpl( Collections.singletonList( Pair.of( input, result.physType ) ) ),
+                            new RexToLixTranslator.InputGetterImpl( Collections.singletonList( Pair.of( input, result.physType() ) ) ),
                             implementor.allCorrelateVariables,
                             implementor.getConformance() );
             builder2.add(
@@ -153,7 +153,7 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
         }
 
         final BlockBuilder builder3 = new BlockBuilder();
-        final Conformance conformance = ConformanceEnum.DEFAULT;//(Conformance) implementor.map.getOrDefault( "_conformance", PolySymbol.of( ConformanceEnum.DEFAULT ) );
+        final Conformance conformance = ConformanceEnum.DEFAULT;
         List<Expression> expressions =
                 RexToLixTranslator.translateProjects(
                         program,
@@ -162,12 +162,12 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
                         builder3,
                         physType,
                         DataContext.ROOT,
-                        new RexToLixTranslator.InputGetterImpl( Collections.singletonList( Pair.of( input, result.physType ) ) ),
+                        new RexToLixTranslator.InputGetterImpl( Collections.singletonList( Pair.of( input, result.physType() ) ) ),
                         implementor.allCorrelateVariables );
         builder3.add( Expressions.return_( null, physType.record( expressions ) ) );
         BlockStatement currentBody = builder3.toBlock();
 
-        final Expression inputEnumerable = builder.append( builder.newName( "inputEnumerable" + System.nanoTime() ), result.block, false );
+        final Expression inputEnumerable = builder.append( builder.newName( "inputEnumerable" + System.nanoTime() ), result.block(), false );
         final Expression body;
 
         body = Expressions.new_(

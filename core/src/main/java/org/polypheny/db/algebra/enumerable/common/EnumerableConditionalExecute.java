@@ -42,38 +42,29 @@ public class EnumerableConditionalExecute extends ConditionalExecute implements 
         final BlockBuilder builder = new BlockBuilder();
         final Result conditionResult = implementor.visitChild( this, 0, (EnumerableAlg) getLeft(), pref );
         Expression call = Expressions.call(
-                builder.append( builder.newName( "condition" + System.nanoTime() ), conditionResult.block ),
+                builder.append( builder.newName( "condition" + System.nanoTime() ), conditionResult.block() ),
                 "count" );
 
-        Expression conditionExp = null;
-        switch ( this.condition ) {
-            case GREATER_ZERO:
-                conditionExp = Expressions.greaterThan(
-                        call,
-                        Expressions.constant( 0 ) );
-                break;
-            case EQUAL_TO_ZERO:
-                conditionExp = Expressions.equal(
-                        call,
-                        Expressions.constant( 0 ) );
-                break;
-            case TRUE:
-                conditionExp = Expressions.constant( true );
-                break;
-            case FALSE:
-                conditionExp = Expressions.constant( false );
-                break;
-        }
+        Expression conditionExp = switch ( this.condition ) {
+            case GREATER_ZERO -> Expressions.greaterThan(
+                    call,
+                    Expressions.constant( 0 ) );
+            case EQUAL_TO_ZERO -> Expressions.equal(
+                    call,
+                    Expressions.constant( 0 ) );
+            case TRUE -> Expressions.constant( true );
+            case FALSE -> Expressions.constant( false );
+        };
         final Result actionResult = implementor.visitChild( this, 1, (EnumerableAlg) getRight(), pref );
 
         builder.add(
                 EnumUtils.ifThenElse(
                         conditionExp,
-                        actionResult.block,
+                        actionResult.block(),
                         Expressions.throw_( Expressions.new_( exceptionClass, Expressions.constant( exceptionMessage ) ) )
                 )
         );
-        return implementor.result( actionResult.physType, builder.toBlock() );
+        return implementor.result( actionResult.physType(), builder.toBlock() );
     }
 
 

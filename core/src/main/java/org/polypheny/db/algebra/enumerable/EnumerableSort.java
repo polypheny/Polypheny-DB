@@ -72,10 +72,10 @@ public class EnumerableSort extends Sort implements EnumerableAlg {
         final BlockBuilder builder = new BlockBuilder();
         final EnumerableAlg child = (EnumerableAlg) getInput();
         final Result result = implementor.visitChild( this, 0, child, pref );
-        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), result.format );
-        Expression childExp = builder.append( "child", result.block );
+        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), result.format() );
+        Expression childExp = builder.append( "child", result.block() );
 
-        PhysType inputPhysType = result.physType;
+        PhysType inputPhysType = result.physType();
         final Pair<Expression, Expression> pair = inputPhysType.generateCollationKey( collation.getFieldCollations() );
 
         builder.add(

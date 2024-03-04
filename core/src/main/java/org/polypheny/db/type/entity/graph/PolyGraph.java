@@ -171,10 +171,10 @@ public class PolyGraph extends GraphObject {
             for ( Pair<PolyString, PolyString> namedId : namedPathId ) {
                 if ( i % 2 == 0 ) {
                     element = this.nodes.get( namedId.right ).copyNamed( namedId.left );
-                    nodes.add( (PolyNode) element );
+                    nodes.add( element.asNode() );
                 } else {
                     element = this.edges.get( namedId.right ).copyNamed( namedId.left );
-                    edges.add( (PolyEdge) element );
+                    edges.add( element.asEdge() );
                 }
                 path.add( element );
                 names.add( null );

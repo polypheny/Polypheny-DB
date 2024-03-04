@@ -58,9 +58,7 @@ public class EnumerableCollect extends Collect implements EnumerableAlg {
         final Result result = implementor.visitChild( this, 0, child, Prefer.ARRAY );
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), JavaRowFormat.LIST );
 
-        // final Enumerable<Employee> child = <<child adapter>>;
-        // final List<Employee> list = child.toList();
-        Expression child_ = builder.append( "child", result.block );
+        Expression child_ = builder.append( "child", result.block() );
         Expression list_ = builder.append( "list", Expressions.call( child_, BuiltInMethod.ENUMERABLE_TO_LIST.method ) );
 
         builder.add( Expressions.return_( null, Expressions.call( BuiltInMethod.SINGLETON_ENUMERABLE.method, list_ ) ) );

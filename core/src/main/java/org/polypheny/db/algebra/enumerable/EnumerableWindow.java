@@ -21,9 +21,8 @@ import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 import org.apache.calcite.linq4j.tree.BinaryExpression;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
@@ -121,67 +120,20 @@ public class EnumerableWindow extends Window implements EnumerableAlg {
     }
 
 
-    private void sampleOfTheGeneratedWindowedAggregate() {
-        // Here's overview of the generated code. For each list of rows that have the same partitioning key, evaluate all of the windowed aggregate functions.
-
-        // builder
-        Iterator<Integer[]> iterator = null;
-
-        // builder3
-        Integer[] rows = iterator.next();
-
-        int prevStart = -1;
-        int prevEnd = -1;
-
-        for ( int i = 0; i < rows.length; i++ ) {
-            // builder4
-            Integer row = rows[i];
-
-            int start = 0;
-            int end = 100;
-            if ( start != prevStart || end != prevEnd ) {
-                // builder5
-                int actualStart = 0;
-                if ( start != prevStart || end < prevEnd ) {
-                    // builder6
-                    // recompute
-                    actualStart = start;
-                    // implementReset
-                } else { // must be start == prevStart && end > prevEnd
-                    actualStart = prevEnd + 1;
-                }
-                prevStart = start;
-                prevEnd = end;
-
-                if ( start != -1 ) {
-                    for ( int j = actualStart; j <= end; j++ ) {
-                        // builder7
-                        // implementAdd
-                    }
-                }
-                // implementResult
-                // list.add(new Xxx(row.deptno, row.empid, sum, count));
-            }
-        }
-        // multiMap.clear(); // allows gc
-        // source = Linq4j.asEnumerable(list);
-    }
-
-
     @Override
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         final JavaTypeFactory typeFactory = implementor.getTypeFactory();
         final EnumerableAlg child = (EnumerableAlg) getInput();
         final BlockBuilder builder = new BlockBuilder();
         final Result result = implementor.visitChild( this, 0, child, pref );
-        Expression source_ = builder.append( "source", result.block );
+        Expression source_ = builder.append( "source", result.block() );
 
         final List<Expression> translatedConstants = new ArrayList<>( constants.size() );
         for ( RexLiteral constant : constants ) {
             translatedConstants.add( RexToLixTranslator.translateLiteral( constant, constant.getType(), typeFactory, RexImpTable.NullAs.NULL ) );
         }
 
-        PhysType inputPhysType = result.physType;
+        PhysType inputPhysType = result.physType();
 
         ParameterExpression prevStart = Expressions.parameter( int.class, builder.newName( "prevStart" ) );
         ParameterExpression prevEnd = Expressions.parameter( int.class, builder.newName( "prevEnd" ) );
@@ -222,7 +174,7 @@ public class EnumerableWindow extends Window implements EnumerableAlg {
                 typeBuilder.add( null, agg.call.name, null, agg.call.type );
             }
             AlgDataType outputRowType = typeBuilder.build();
-            final PhysType outputPhysType = PhysTypeImpl.of( typeFactory, outputRowType, pref.prefer( result.format ) );
+            final PhysType outputPhysType = PhysTypeImpl.of( typeFactory, outputRowType, pref.prefer( result.format() ) );
 
             final Expression list_ =
                     builder.append(
@@ -258,7 +210,7 @@ public class EnumerableWindow extends Window implements EnumerableAlg {
                     new WindowRelInputGetter(
                             row_,
                             inputPhysType,
-                            result.physType.getRowType().getFieldCount(),
+                            result.physType().getRowType().getFieldCount(),
                             translatedConstants );
 
             final RexToLixTranslator translator = RexToLixTranslator.forAggregation( typeFactory, builder4, inputGetter, implementor.getConformance() );
@@ -276,8 +228,8 @@ public class EnumerableWindow extends Window implements EnumerableAlg {
             final Expression partitionRowCount = builder3.append( "partRows", Expressions.field( rows_, "length" ) );
             final Expression maxX = builder3.append( "maxX", Expressions.subtract( partitionRowCount, Expressions.constant( 1 ) ) );
 
-            final Expression startUnchecked = builder4.append( "start", translateBound( translator, i_, row_, minX, maxX, rows_, group, true, inputPhysType, comparator_, keySelector, keyComparator ) );
-            final Expression endUnchecked = builder4.append( "end", translateBound( translator, i_, row_, minX, maxX, rows_, group, false, inputPhysType, comparator_, keySelector, keyComparator ) );
+            final Expression startUnchecked = builder4.append( "start", translateBound( translator, i_, row_, minX, maxX, rows_, group, true, inputPhysType, keySelector, keyComparator ) );
+            final Expression endUnchecked = builder4.append( "end", translateBound( translator, i_, row_, minX, maxX, rows_, group, false, inputPhysType, keySelector, keyComparator ) );
 
             final Expression startX;
             final Expression endX;
@@ -376,7 +328,7 @@ public class EnumerableWindow extends Window implements EnumerableAlg {
 
             final Function<AggImpState, List<RexNode>> rexArguments = agg -> {
                 List<Integer> argList = agg.call.getArgList();
-                List<AlgDataType> inputTypes = EnumUtils.fieldRowTypes( result.physType.getRowType(), constants, argList );
+                List<AlgDataType> inputTypes = EnumUtils.fieldRowTypes( result.physType().getRowType(), constants, argList );
                 List<RexNode> args = new ArrayList<>( inputTypes.size() );
                 for ( int i = 0; i < argList.size(); i++ ) {
                     Integer idx = argList.get( i );
@@ -391,7 +343,7 @@ public class EnumerableWindow extends Window implements EnumerableAlg {
             if ( !forBlock.statements.isEmpty() ) {
                 // For instance, row_number does not use for loop to compute the value
                 Statement forAggLoop = Expressions.for_(
-                        Arrays.asList( jDecl ),
+                        List.of( jDecl ),
                         Expressions.lessThanOrEqual( jDecl.parameter, endX ),
                         Expressions.preIncrementAssign( jDecl.parameter ),
                         forBlock );
@@ -462,7 +414,7 @@ public class EnumerableWindow extends Window implements EnumerableAlg {
             @Override
             public RexToLixTranslator rowTranslator( Expression rowIndex ) {
                 Expression row = getRow( rowIndex );
-                final RexToLixTranslator.InputGetter inputGetter = new WindowRelInputGetter( row, inputPhysType, result.physType.getRowType().getFieldCount(), translatedConstants );
+                final RexToLixTranslator.InputGetter inputGetter = new WindowRelInputGetter( row, inputPhysType, result.physType().getRowType().getFieldCount(), translatedConstants );
                 return RexToLixTranslator.forAggregation( typeFactory, block, inputGetter, conformance );
             }
 
@@ -611,8 +563,7 @@ public class EnumerableWindow extends Window implements EnumerableAlg {
 
         Pair<Type, List<Expression>> selector = inputPhysType.selector( v_, group.keys.asList(), JavaRowFormat.CUSTOM );
         final ParameterExpression key_;
-        if ( selector.left instanceof Types.RecordType ) {
-            Types.RecordType keyJavaType = (Types.RecordType) selector.left;
+        if ( selector.left instanceof Types.RecordType keyJavaType ) {
             List<Expression> initExpressions = selector.right;
             key_ = Expressions.parameter( keyJavaType, "key" );
             builder2.add( Expressions.declare( 0, key_, null ) );
@@ -693,7 +644,7 @@ public class EnumerableWindow extends Window implements EnumerableAlg {
 
                         @Override
                         public List<? extends AlgDataType> parameterAlgTypes() {
-                            return EnumUtils.fieldRowTypes( result.physType.getRowType(),
+                            return EnumUtils.fieldRowTypes( result.physType().getRowType(),
                                     constants, agg.call.getArgList() );
                         }
 
@@ -745,7 +696,7 @@ public class EnumerableWindow extends Window implements EnumerableAlg {
                     Expressions.declare( 0, aggRes,
                             Expressions.constant(
                                     Primitive.is( aggRes.getType() )
-                                            ? Primitive.of( aggRes.getType() ).defaultValue
+                                            ? Objects.requireNonNull( Primitive.of( aggRes.getType() ) ).defaultValue
                                             : null,
                                     aggRes.getType() ) ) );
             agg.result = aggRes;
@@ -785,8 +736,7 @@ public class EnumerableWindow extends Window implements EnumerableAlg {
         boolean nonEmpty = false;
         for ( final AggImpState agg : aggs ) {
             boolean needCache = true;
-            if ( agg.implementor instanceof WinAggImplementor ) {
-                WinAggImplementor imp = (WinAggImplementor) agg.implementor;
+            if ( agg.implementor instanceof WinAggImplementor imp ) {
                 needCache = imp.needCacheWhenFrameIntact();
             }
             if ( needCache ^ cachedBlock ) {
@@ -811,8 +761,17 @@ public class EnumerableWindow extends Window implements EnumerableAlg {
 
 
     private Expression translateBound(
-            RexToLixTranslator translator, ParameterExpression i_, Expression row_, Expression min_, Expression max_, Expression rows_, Group group, boolean lower,
-            PhysType physType, Expression rowComparator, Expression keySelector, Expression keyComparator ) {
+            RexToLixTranslator translator,
+            ParameterExpression i_,
+            Expression row_,
+            Expression min_,
+            Expression max_,
+            Expression rows_,
+            Group group,
+            boolean lower,
+            PhysType physType,
+            Expression keySelector,
+            Expression keyComparator ) {
         RexWindowBound bound = lower ? group.lowerBound : group.upperBound;
         if ( bound.isUnbounded() ) {
             return bound.isPreceding() ? min_ : max_;

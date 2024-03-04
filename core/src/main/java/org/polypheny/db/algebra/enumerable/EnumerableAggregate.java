@@ -96,7 +96,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
         final BlockBuilder builder = new BlockBuilder();
         final EnumerableAlg child = (EnumerableAlg) getInput();
         final Result result = implementor.visitChild( this, 0, child, pref );
-        Expression childExp = builder.append( "child", result.block );
+        Expression childExp = builder.append( "child", result.block() );
 
         final PhysType physType = PhysTypeImpl.of( typeFactory, getTupleType(), pref.preferCustom() );
 
@@ -159,7 +159,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
         // return child
         //     .distinct(equalityComparer);
 
-        final PhysType inputPhysType = result.physType;
+        final PhysType inputPhysType = result.physType();
 
         ParameterExpression parameter = Expressions.parameter( inputPhysType.getJavaRowType(), "a0" );
 

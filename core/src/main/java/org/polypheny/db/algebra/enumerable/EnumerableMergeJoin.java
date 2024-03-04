@@ -104,11 +104,11 @@ public class EnumerableMergeJoin extends EquiJoin implements EnumerableAlg {
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         BlockBuilder builder = new BlockBuilder();
         final Result leftResult = implementor.visitChild( this, 0, (EnumerableAlg) left, pref );
-        final Expression leftExpression = builder.append( "left" + System.nanoTime(), leftResult.block );
-        final ParameterExpression left_ = Expressions.parameter( leftResult.physType.getJavaRowType(), "left" );
+        final Expression leftExpression = builder.append( "left" + System.nanoTime(), leftResult.block() );
+        final ParameterExpression left_ = Expressions.parameter( leftResult.physType().getJavaRowType(), "left" );
         final Result rightResult = implementor.visitChild( this, 1, (EnumerableAlg) right, pref );
-        final Expression rightExpression = builder.append( "right" + System.nanoTime(), rightResult.block );
-        final ParameterExpression right_ = Expressions.parameter( rightResult.physType.getJavaRowType(), "right" );
+        final Expression rightExpression = builder.append( "right" + System.nanoTime(), rightResult.block() );
+        final ParameterExpression right_ = Expressions.parameter( rightResult.physType().getJavaRowType(), "right" );
         final JavaTypeFactory typeFactory = implementor.getTypeFactory();
         final PhysType physType = PhysTypeImpl.of( typeFactory, getTupleType(), pref.preferArray() );
         final List<Expression> leftExpressions = new ArrayList<>();
@@ -116,11 +116,11 @@ public class EnumerableMergeJoin extends EquiJoin implements EnumerableAlg {
         for ( Pair<Integer, Integer> pair : Pair.zip( leftKeys, rightKeys ) ) {
             final AlgDataType keyType = typeFactory.leastRestrictive( ImmutableList.of( left.getTupleType().getFields().get( pair.left ).getType(), right.getTupleType().getFields().get( pair.right ).getType() ) );
             final Type keyClass = typeFactory.getJavaClass( keyType );
-            leftExpressions.add( Types.castIfNecessary( keyClass, leftResult.physType.fieldReference( left_, pair.left ) ) );
-            rightExpressions.add( Types.castIfNecessary( keyClass, rightResult.physType.fieldReference( right_, pair.right ) ) );
+            leftExpressions.add( Types.castIfNecessary( keyClass, leftResult.physType().fieldReference( left_, pair.left ) ) );
+            rightExpressions.add( Types.castIfNecessary( keyClass, rightResult.physType().fieldReference( right_, pair.right ) ) );
         }
-        final PhysType leftKeyPhysType = leftResult.physType.project( leftKeys, JavaRowFormat.LIST );
-        final PhysType rightKeyPhysType = rightResult.physType.project( rightKeys, JavaRowFormat.LIST );
+        final PhysType leftKeyPhysType = leftResult.physType().project( leftKeys, JavaRowFormat.LIST );
+        final PhysType rightKeyPhysType = rightResult.physType().project( rightKeys, JavaRowFormat.LIST );
         return implementor.result(
                 physType,
                 builder.append(
@@ -131,7 +131,7 @@ public class EnumerableMergeJoin extends EquiJoin implements EnumerableAlg {
                                         rightExpression,
                                         Expressions.lambda( leftKeyPhysType.record( leftExpressions ), left_ ),
                                         Expressions.lambda( rightKeyPhysType.record( rightExpressions ), right_ ),
-                                        EnumUtils.joinSelector( joinType, physType, ImmutableList.of( leftResult.physType, rightResult.physType ) ),
+                                        EnumUtils.joinSelector( joinType, physType, ImmutableList.of( leftResult.physType(), rightResult.physType() ) ),
                                         Expressions.constant( joinType.generatesNullsOnLeft() ),
                                         Expressions.constant( joinType.generatesNullsOnRight() ) ) ) ).toBlock() );
     }

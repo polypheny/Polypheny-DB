@@ -73,15 +73,15 @@ public class EnumerableDocumentUnwind extends DocumentUnwind implements Enumerab
         BlockBuilder builder = new BlockBuilder();
         Result res = implementor.visitChild( this, 0, (EnumerableAlg) input, pref );
 
-        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.prefer( res.format ) );
+        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.prefer( res.format() ) );
 
         Type outputJavaType = physType.getJavaRowType();
         final Type enumeratorType = Types.of( Enumerator.class, outputJavaType );
-        Type inputJavaType = res.physType.getJavaRowType();
+        Type inputJavaType = res.physType().getJavaRowType();
 
         ParameterExpression inputEnumerator = Expressions.parameter( Types.of( Enumerator.class, PolyValue[].class ), "inputEnumerator" );
 
-        Expression inputEnumerable = builder.append( builder.newName( "inputEnumerable" + System.nanoTime() ), res.block, false );
+        Expression inputEnumerable = builder.append( builder.newName( "inputEnumerable" + System.nanoTime() ), res.block(), false );
 
         final ParameterExpression i_ = Expressions.parameter( int.class, "_i" );
         final ParameterExpression list_ = Expressions.parameter( Types.of( List.class, PolyValue.class ), "_callList" );
@@ -91,7 +91,6 @@ public class EnumerableDocumentUnwind extends DocumentUnwind implements Enumerab
         BlockStatement moveNextBody;
         BlockBuilder unwindBlock = new BlockBuilder();
 
-        // docQueryValue( (PolyValue) enumerable.next(), PolyList[]);
         Expression fullCurrent = Expressions.arrayIndex( Expressions.convert_( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_CURRENT.method ), PolyValue[].class ), Expressions.constant( 0 ) );
         value = Expressions.call(
                 BuiltInMethod.MQL_QUERY_VALUE.method,
@@ -138,7 +137,6 @@ public class EnumerableDocumentUnwind extends DocumentUnwind implements Enumerab
         ConditionalStatement ifNotSet = EnumUtils.ifThen(
                 unset_,
                 Expressions.block(
-                        //Expressions.statement( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_MOVE_NEXT.method ) ),
                         Expressions.statement( Expressions.assign( doc_, fullCurrent ) ),
                         Expressions.statement( Expressions.assign( list_, Expressions.convert_( value, Types.of( List.class, PolyValue.class ) ) ) ),
                         Expressions.statement( Expressions.assign( i_, Expressions.constant( 0 ) ) ),

@@ -82,7 +82,7 @@ public class EnumerableUncollect extends Uncollect implements EnumerableAlg {
 
         // final Enumerable<List<Employee>> child = <<child adapter>>;
         // return child.selectMany(FLAT_PRODUCT);
-        final Expression child_ = builder.append( "child", result.block );
+        final Expression child_ = builder.append( "child", result.block() );
 
         final List<Integer> fieldCounts = new ArrayList<>();
         final List<FlatProductInputType> inputTypes = new ArrayList<>();

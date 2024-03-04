@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,19 +17,15 @@
 package org.polypheny.db.algebra.enumerable;
 
 
+import java.util.Objects;
 import org.apache.calcite.linq4j.tree.BlockStatement;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.AlgFactories;
 
 
 /**
- * A relational expression of one of the {@link EnumerableConvention} calling conventions.
+ * An algebraic expression of one of the {@link EnumerableConvention} calling conventions.
  */
 public interface EnumerableAlg extends AlgNode {
-
-    AlgFactories.FilterFactory FILTER_FACTORY = EnumerableFilter::create;
-
-    AlgFactories.ProjectFactory PROJECT_FACTORY = EnumerableProject::create;
 
 
     /**
@@ -78,47 +74,29 @@ public interface EnumerableAlg extends AlgNode {
 
 
         public JavaRowFormat prefer( JavaRowFormat format ) {
-            switch ( this ) {
-                case CUSTOM:
-                    return JavaRowFormat.CUSTOM;
-                case ARRAY:
-                    return JavaRowFormat.ARRAY;
-                default:
-                    return format;
-            }
+            return switch ( this ) {
+                case CUSTOM -> JavaRowFormat.CUSTOM;
+                case ARRAY -> JavaRowFormat.ARRAY;
+                default -> format;
+            };
         }
 
 
         public Prefer of( JavaRowFormat format ) {
-            switch ( format ) {
-                case ARRAY:
-                    return ARRAY;
-                default:
-                    return CUSTOM;
+            if ( Objects.requireNonNull( format ) == JavaRowFormat.ARRAY ) {
+                return ARRAY;
             }
+            return CUSTOM;
         }
     }
 
 
     /**
      * Result of implementing an enumerable relational expression by generating Java code.
+     *
+     * @param physType Describes the Java type returned by this relational expression, and the mapping between it and the fields of the logical row type.
      */
-    class Result {
-
-        public final BlockStatement block;
-
-        /**
-         * Describes the Java type returned by this relational expression, and the mapping between it and the fields of the logical row type.
-         */
-        public final PhysType physType;
-        public final JavaRowFormat format;
-
-
-        public Result( BlockStatement block, PhysType physType, JavaRowFormat format ) {
-            this.block = block;
-            this.physType = physType;
-            this.format = format;
-        }
+    record Result(BlockStatement block, PhysType physType, JavaRowFormat format) {
 
     }
 

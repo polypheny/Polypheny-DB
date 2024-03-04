@@ -45,7 +45,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 
 
 /**
- * Abstract base class for relational expressions with a single input.
+ * Abstract base class for algebraic expressions with a single input.
  * <p>
  * It is not required that single-input relational expressions use this class as a base class. However, default
  * implementations of methods make life easier.
@@ -58,9 +58,9 @@ public abstract class SingleAlg extends AbstractAlgNode {
 
 
     /**
-     * Creates a <code>SingleRel</code>.
+     * Creates a <code>SingleAlg</code>.
      *
-     * @param cluster Cluster this relational expression belongs to
+     * @param cluster Cluster this algebraic expression belongs to
      * @param input Input relational expression
      */
     protected SingleAlg( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input ) {

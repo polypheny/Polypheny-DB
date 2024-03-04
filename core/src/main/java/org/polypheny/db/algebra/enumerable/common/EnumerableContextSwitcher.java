@@ -59,7 +59,7 @@ public class EnumerableContextSwitcher extends ContextSwitcher implements Enumer
                 List.of(),
                 List.of(
                         Expressions.fieldDecl( Modifier.FINAL, DataContext.ROOT, Expressions.call( DataContext.INITIAL_ROOT, BuiltInMethod.SWITCH_CONTEXT.method ) ),
-                        Expressions.fieldDecl( Modifier.FINAL, enumerable, Expressions.convert_( Expressions.call( Expressions.lambda( query.block ), BuiltInMethod.FUNCTION0_APPLY.method ), Enumerable.class ) ),
+                        Expressions.fieldDecl( Modifier.FINAL, enumerable, Expressions.convert_( Expressions.call( Expressions.lambda( query.block() ), BuiltInMethod.FUNCTION0_APPLY.method ), Enumerable.class ) ),
                         EnumUtils.overridingMethodDecl(
                                 BuiltInMethod.ENUMERABLE_ENUMERATOR.method,
                                 List.of(),
@@ -69,7 +69,7 @@ public class EnumerableContextSwitcher extends ContextSwitcher implements Enumer
                                                 BuiltInMethod.ENUMERABLE_ENUMERATOR.method, List.of() ) ) ) ) ) )
         ) );
 
-        return implementor.result( query.physType, builder.toBlock() );
+        return implementor.result( query.physType(), builder.toBlock() );
     }
 
 

@@ -131,12 +131,12 @@ public class EnumerableThetaJoin extends Join implements EnumerableAlg {
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         final BlockBuilder builder = new BlockBuilder();
         final Result leftResult = implementor.visitChild( this, 0, (EnumerableAlg) left, pref );
-        Expression leftExpression = builder.append( "left" + System.nanoTime(), leftResult.block );
+        Expression leftExpression = builder.append( "left" + System.nanoTime(), leftResult.block() );
         final Result rightResult = implementor.visitChild( this, 1, (EnumerableAlg) right, pref );
-        Expression rightExpression = builder.append( "right" + System.nanoTime(), rightResult.block );
+        Expression rightExpression = builder.append( "right" + System.nanoTime(), rightResult.block() );
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.preferArray() );
         final JoinInfo info = JoinInfo.of( left, right, condition );
-        final PhysType keyPhysType = leftResult.physType.project( info.leftKeys, JavaRowFormat.LIST );
+        final PhysType keyPhysType = leftResult.physType().project( info.leftKeys, JavaRowFormat.LIST );
 
         return implementor.result(
                 physType,
@@ -146,13 +146,13 @@ public class EnumerableThetaJoin extends Join implements EnumerableAlg {
                                 BuiltInMethod.JOIN.method,
                                 Expressions.list(
                                         rightExpression,
-                                        leftResult.physType.generateAccessor( info.leftKeys ),
-                                        rightResult.physType.generateAccessor( info.rightKeys ),
-                                        EnumUtils.joinSelector( joinType, physType, ImmutableList.of( leftResult.physType, rightResult.physType ) ),
+                                        leftResult.physType().generateAccessor( info.leftKeys ),
+                                        rightResult.physType().generateAccessor( info.rightKeys ),
+                                        EnumUtils.joinSelector( joinType, physType, ImmutableList.of( leftResult.physType(), rightResult.physType() ) ),
                                         Util.first( keyPhysType.comparer(), Expressions.constant( null ) ),
                                         Expressions.constant( joinType.generatesNullsOnLeft() ),
                                         Expressions.constant( joinType.generatesNullsOnRight() ),
-                                        EnumUtils.generatePredicate( implementor, getCluster().getRexBuilder(), left, right, leftResult.physType, rightResult.physType, condition ) ) )
+                                        EnumUtils.generatePredicate( implementor, getCluster().getRexBuilder(), left, right, leftResult.physType(), rightResult.physType(), condition ) ) )
                 ).toBlock() );
     }
 

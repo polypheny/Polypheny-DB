@@ -142,12 +142,12 @@ public class EnumerableJoin extends EquiJoin implements EnumerableAlg {
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         BlockBuilder builder = new BlockBuilder();
         final Result leftResult = implementor.visitChild( this, 0, (EnumerableAlg) left, pref );
-        Expression leftExpression = builder.append( "left" + System.nanoTime(), leftResult.block );
+        Expression leftExpression = builder.append( "left" + System.nanoTime(), leftResult.block() );
         final Result rightResult = implementor.visitChild( this, 1, (EnumerableAlg) right, pref );
         // we need this false flag to avoid that the enumerables are reused which would lead to the same enumerable being accessed from both sides
-        Expression rightExpression = builder.append( "right" + System.nanoTime(), rightResult.block, false );
+        Expression rightExpression = builder.append( "right" + System.nanoTime(), rightResult.block(), false );
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.preferArray() );
-        final PhysType keyPhysType = leftResult.physType.project( leftKeys, JavaRowFormat.LIST );
+        final PhysType keyPhysType = leftResult.physType().project( leftKeys, JavaRowFormat.LIST );
         return implementor.result(
                 physType,
                 builder.append(
@@ -156,9 +156,9 @@ public class EnumerableJoin extends EquiJoin implements EnumerableAlg {
                                         BuiltInMethod.JOIN.method,
                                         Expressions.list(
                                                         rightExpression,
-                                                        leftResult.physType.generateAccessor( leftKeys ),
-                                                        rightResult.physType.generateAccessor( rightKeys ),
-                                                        EnumUtils.joinSelector( joinType, physType, ImmutableList.of( leftResult.physType, rightResult.physType ) ) )
+                                                        leftResult.physType().generateAccessor( leftKeys ),
+                                                        rightResult.physType().generateAccessor( rightKeys ),
+                                                        EnumUtils.joinSelector( joinType, physType, ImmutableList.of( leftResult.physType(), rightResult.physType() ) ) )
                                                 .append( Util.first( keyPhysType.comparer(), Expressions.constant( null ) ) )
                                                 .append( Expressions.constant( joinType.generatesNullsOnLeft() ) )
                                                 .append( Expressions.constant( joinType.generatesNullsOnRight() ) )

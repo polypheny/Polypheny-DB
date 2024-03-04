@@ -49,7 +49,7 @@ public class EnumerableLimit extends SingleAlg implements EnumerableAlg {
 
     /**
      * Creates an EnumerableLimit.
-     *
+     * <p>
      * Use {@link #create} unless you know what you're doing.
      */
     public EnumerableLimit( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, RexNode offset, RexNode fetch ) {
@@ -103,9 +103,9 @@ public class EnumerableLimit extends SingleAlg implements EnumerableAlg {
         final BlockBuilder builder = new BlockBuilder();
         final EnumerableAlg child = (EnumerableAlg) getInput();
         final Result result = implementor.visitChild( this, 0, child, pref );
-        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), result.format );
+        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), result.format() );
 
-        Expression v = builder.append( "child", result.block );
+        Expression v = builder.append( "child", result.block() );
         if ( offset != null ) {
             v = builder.append(
                     "offset",
@@ -123,8 +123,7 @@ public class EnumerableLimit extends SingleAlg implements EnumerableAlg {
 
 
     private static Expression getExpression( RexNode offset ) {
-        if ( offset instanceof RexDynamicParam ) {
-            final RexDynamicParam param = (RexDynamicParam) offset;
+        if ( offset instanceof RexDynamicParam param ) {
             return Expressions.convert_(
                     Expressions.call( DataContext.ROOT, BuiltInMethod.DATA_CONTEXT_GET_PARAMETER_VALUE.method, Expressions.constant( param.getIndex() ) ),
                     Integer.class );

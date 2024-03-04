@@ -58,14 +58,14 @@ public class EnumerableModifyCollect extends ModifyCollect implements Enumerable
         for ( Ord<AlgNode> ord : Ord.zip( inputs ) ) {
             EnumerableAlg input = (EnumerableAlg) ord.e;
             final Result result = implementor.visitChild( this, ord.i, input, pref );
-            Expression childExp = builder.append( "child" + ord.i, result.block );
+            Expression childExp = builder.append( "child" + ord.i, result.block() );
 
             if ( unionExp == null ) {
                 unionExp = childExp;
             } else {
                 unionExp = all
                         ? Expressions.call( unionExp, BuiltInMethod.CONCAT.method, childExp )
-                        : Expressions.call( unionExp, BuiltInMethod.UNION.method, Expressions.list( childExp ).appendIfNotNull( result.physType.comparer() ) );
+                        : Expressions.call( unionExp, BuiltInMethod.UNION.method, Expressions.list( childExp ).appendIfNotNull( result.physType().comparer() ) );
             }
         }
         if ( all ) {

@@ -87,10 +87,10 @@ public class EnumerableCorrelate extends Correlate implements EnumerableAlg {
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         final BlockBuilder builder = new BlockBuilder();
         final Result leftResult = implementor.visitChild( this, 0, (EnumerableAlg) left, pref );
-        Expression leftExpression = builder.append( "left", leftResult.block );
+        Expression leftExpression = builder.append( "left", leftResult.block() );
 
         final BlockBuilder corrBlock = new BlockBuilder();
-        Type corrVarType = leftResult.physType.getJavaRowType();
+        Type corrVarType = leftResult.physType().getJavaRowType();
         ParameterExpression corrRef; // correlate to be used in inner loop
         ParameterExpression corrArg; // argument to correlate lambda (must be boxed)
         if ( !Primitive.is( corrVarType ) ) {
@@ -101,13 +101,13 @@ public class EnumerableCorrelate extends Correlate implements EnumerableAlg {
             corrRef = (ParameterExpression) corrBlock.append( getCorrelVariable(), Expressions.unbox( corrArg ) );
         }
 
-        implementor.registerCorrelVariable( getCorrelVariable(), corrRef, corrBlock, leftResult.physType );
+        implementor.registerCorrelVariable( getCorrelVariable(), corrRef, corrBlock, leftResult.physType() );
 
         final Result rightResult = implementor.visitChild( this, 1, (EnumerableAlg) right, pref );
 
         implementor.clearCorrelVariable( getCorrelVariable() );
 
-        corrBlock.add( rightResult.block );
+        corrBlock.add( rightResult.block() );
 
         final PhysType physType =
                 PhysTypeImpl.of(
@@ -119,7 +119,7 @@ public class EnumerableCorrelate extends Correlate implements EnumerableAlg {
                 EnumUtils.joinSelector(
                         joinType,
                         physType,
-                        ImmutableList.of( leftResult.physType, rightResult.physType ) );
+                        ImmutableList.of( leftResult.physType(), rightResult.physType() ) );
 
         builder.append(
                 Expressions.call(

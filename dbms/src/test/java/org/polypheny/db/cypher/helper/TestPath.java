@@ -43,7 +43,7 @@ public class TestPath implements TestObject {
     @Override
     public boolean matches( PolyValue other, boolean exclusive ) {
         assert other.isPath();
-        PolyPath path = (PolyPath) other;
+        PolyPath path = other.asPath();
         List<GraphPropertyHolder> elements = path.getPath();
 
         if ( elements.size() != objects.size() ) {
