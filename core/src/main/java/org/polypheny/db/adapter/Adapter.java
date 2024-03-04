@@ -209,6 +209,11 @@ public abstract class Adapter<ACatalog extends AdapterCatalog> implements Scanna
                     .toList().contains( deployMode ) ) {
                 continue;
             }
+            if ( !initialSetup && settings.containsKey( s.name ) && settings.get( s.name ).equals( s.getValue() ) ) {
+                // we can leave the setting as it is
+                return;
+            }
+
             if ( newSettings.containsKey( s.name ) ) {
                 if ( s.modifiable || initialSetup ) {
                     String newValue = newSettings.get( s.name );

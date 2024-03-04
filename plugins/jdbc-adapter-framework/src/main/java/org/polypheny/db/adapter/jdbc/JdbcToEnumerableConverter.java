@@ -46,6 +46,7 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Objects;
 import java.util.TimeZone;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
@@ -56,7 +57,6 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.linq4j.tree.UnaryExpression;
-import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.algebra.AbstractAlgNode;
@@ -359,7 +359,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
     }
 
 
-    @NotNull
+    @NonNull
     private static Expression getPreprocessArrayExpression( ParameterExpression resultSet_, int i, SqlDialect dialect, AlgDataType fieldType ) {
         if ( (dialect.supportsArrays() && (fieldType.unwrap( ArrayType.class ).orElseThrow().getDimension() == 1 || dialect.supportsNestedArrays())) ) {
             ParameterExpression argument = Expressions.parameter( Object.class );
