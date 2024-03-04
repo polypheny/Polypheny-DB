@@ -68,6 +68,9 @@ enum ProtoPolyType {
   TEXT = 58;
 }
 
+/*
+ProtoValue represents a single value supported by the DBMS. It acts as a container, bundling the representation of a value together with its type, making it a versatile structure for representing a wide range of data types.
+*/
 message ProtoValue {
   oneof value {
     ProtoBoolean boolean = 1;
@@ -96,95 +99,188 @@ message ProtoValue {
   }
 }
 
+/*
+Represents a boolean value.
+*/
 message ProtoBoolean {
+  // A boolean value.
   bool boolean = 1;
 }
 
+/*
+Represents a 32-bit integer value.
+*/
 message ProtoInteger {
+  // A 32-bit integer value.
   int32 integer = 1;
 }
 
+/*
+Represents a 64-bit long integer value.
+*/
 message ProtoLong {
+  // A 64-bit long integer value.
   int64 long = 1;
 }
 
+/*
+Represents binary data.
+*/
 message ProtoBinary {
+  // Binary data.
   bytes binary = 1;
 }
 
+/*
+Represents a date as a 64-bit integer.
+*/
 message ProtoDate {
+  // Milliseconds since epoch till start of the specified day.
   int64 date = 1;
 }
 
+/*
+Represents a double precision floating point number.
+*/
 message ProtoDouble {
+  // A double precision floating point number.
   double double = 1;
 }
 
+/*
+Represents a single precision floating point number.
+*/
 message ProtoFloat {
+  // A single precision floating point number.
   float float = 1;
 }
 
+/*
+Represents a null value. This message doesn’t contain any fields.
+*/
 message ProtoNull {
 }
 
+/*
+Represents a string value.
+*/
 message ProtoString {
+  // A string value.
   string string = 1;
 }
 
+/*
+Represents a time value.
+*/
 message ProtoTime {
+  // The value of the time
   int32 value = 1;
 }
 
+
+/*
+Represents a timestamp value.
+*/
 message ProtoTimestamp {
+  // The timestamp value in milliseconds since epoch.
   int64 timestamp = 1;
 }
 
+/*
+Represents a BigDecimal value with specified precision and scale.
+*/
 message ProtoBigDecimal {
+  // The scale of the BigDecimal.
   uint32 scale = 1;
+  // The precision of the BigDecimal.
   uint32 precision = 2;
+  // The unscaled value of the BigDecimal.
   bytes unscaled_value = 3;
 }
 
+/*
+Represents a structured data type comprising multiple ProtoValue fields.
+*/
 message ProtoStructured {
+  // The list of ProtoValue fields within the structured type.
   repeated ProtoValue fields = 1;
 }
 
+/*
+Represents an interval value using a BigDecimal.
+*/
 message ProtoInterval {
+  // The BigDecimal value of the interval.
   ProtoBigDecimal value = 1;
 }
 
+/*
+Defines a user-defined type with a specified template and value.
+*/
 message ProtoUserDefinedType {
+  // The template describing the data type.
   map<string, ProtoPolyType> template = 2;
+  // The values corresponding to the user-defined type.
   map<string, ProtoValue> value = 3;
 }
 
+/*
+Represents a file in byte format.
+*/
 message ProtoFile {
+  // The file in bytes.
   bytes bytes = 1;
 }
 
+/*
+Represents a list of ProtoValue items.
+*/
 message ProtoList {
+  // The list of ProtoValue items.
   repeated ProtoValue values = 1;
 }
 
+/*
+Represents a map of ProtoEntry items.
+*/
 message ProtoMap {
+  // The list of ProtoEntry items forming the map.
   repeated ProtoEntry entries = 1;
 }
 
+/*
+Defines a key-value pair using ProtoValue for both key and value.
+*/
 message ProtoEntry {
+  // The key of the entry.
   ProtoValue key = 1;
+  // The value of the entry.
   ProtoValue value = 2;
 }
 
+/*
+Represents a document consisting of multiple ProtoEntry items.
+*/
 message ProtoDocument {
+  // The list of ProtoEntry items forming the document.
   repeated ProtoEntry entries = 1;
 }
 
+
+/*
+Represents an edge in a graph, including its properties, source, target, and direction.
+*/
 message ProtoEdge {
+  // Holds graph properties for the edge.
   ProtoGraphPropertyHolder graph_property_holder = 1;
+  // Source node identifier.
   ProtoString source = 2;
+  // Target node identifier.
   ProtoString target = 3;
+  // Specifies the direction of the edge.
   EdgeDirection edge_direction = 4;
 
+  // Enum defining possible directions of an edge.
   enum EdgeDirection {
     UNSPECIFIED = 0;
     LEFT_TO_RIGHT = 1;
@@ -193,46 +289,90 @@ message ProtoEdge {
   }
 }
 
+/*
+Represents a node in a graph, including its properties.
+*/
 message ProtoNode {
+  // Holds graph properties for the node.
   ProtoGraphPropertyHolder graph_property_holder = 1;
 }
 
+/*
+Represents a graph entity with nodes and edges, identified by a unique ID and variable name.
+*/
 message ProtoGraph {
+  // Unique identifier for the graph.
   ProtoString id = 1;
+  // Variable name associated with the graph.
   ProtoString variable_name = 2;
+  // Collection of nodes in the graph.
   ProtoMap nodes = 3;
+  // Collection of edges in the graph.
   ProtoMap edges = 4;
 }
 
+/*
+Represents a path through nodes and edges in a graph, including properties, names, and segments of the path.
+*/
 message ProtoPath {
+  // Nodes present in the path.
   ProtoList nodes = 1;
+  // Edges present in the path.
   ProtoList edges = 2;
+  // Names associated with the path.
   ProtoList names = 3;
-  // used directly instead of list as ProtoGraphPropertyHolder should not be used as ProtoValue
+  // Holds graph properties for the paths.
   repeated ProtoGraphPropertyHolder paths = 5;
+  // Segments that make up the path.
   repeated ProtoSegment segments = 6;
 }
 
+
+/*
+Represents a segment within a path in a graph. A segment typically consists of a source node, an edge, and a target node, along with their identifiers, and it may indicate whether the segment is a reference and the direction of the edge.
+*/
 message ProtoSegment {
+  // Unique identifier for the segment.
   ProtoString id = 1;
+  // Variable name associated with the segment.
   ProtoString variable_name = 2;
+  // Source node identifier for the segment.
   ProtoString source_id = 3;
+  // Edge identifier for the segment.
   ProtoString edge_id = 4;
+  // Target node identifier for the segment.
   ProtoString target_id = 5;
+  // Source node of the segment.
   ProtoNode source = 6;
+  // Edge of the segment.
   ProtoEdge edge = 7;
+  // Target node of the segment.
   ProtoNode target = 8;
+  // Indicates if the segment is a reference.
   bool is_ref = 9;
+  // Specifies the direction of the edge in the segment.
   ProtoEdge.EdgeDirection edge_direction = 10;
 }
 
+/*
+Holds properties and labels for graph elements, serving as a container for the various attributes that can be associated with nodes, edges, or other graph-related entities.
+*/
 message ProtoGraphPropertyHolder {
+  // Unique identifier for the holder.
   ProtoString id = 1;
+  // Variable name associated with the holder.
   ProtoString variable_name = 2;
-  ProtoMap properties = 3; //Dictionary = ProtoMap<ProtoString, ProtoValue>
-  ProtoList labels = 4; //ProtoList<ProtoString>
+  // Dictionary of properties.
+  ProtoMap properties = 3;
+  // List of labels associated with the holder.
+  ProtoList labels = 4;
 }
 
+/*
+Represents the row identifier, typically used to uniquely identify a row in a dataset or a database.
+*/
 message ProtoRowId {
+  // The row identifier.
   string row_id = 1;
 }
+

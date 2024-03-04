@@ -1,3 +1,7 @@
+/*
+Messages related to statements in a query language and their results.
+*/
+
 syntax = "proto3";
 
 import "value.proto";
@@ -8,53 +12,133 @@ option java_outer_classname = "StatementRequests";
 
 package polypheny.protointerface;
 
+/*
+Represents a request to execute a statement without any parameters.
+This message includes details about the language in which the statement is written, the statement itself, and optional attributes such as fetch size and namespace name to control how the statement is executed.
+*/
 message ExecuteUnparameterizedStatementRequest {
+  // Specifies the query language of the statement being executed.
   string language_name = 1;
+  // The statement to be executed.
   string statement = 2;
+  /*
+  (Optional) Number of rows to include into the response message of this call.
+  More rows can be fetched afterwards. If not specified, a default value is used.
+  */
   optional int32 fetch_size = 3;
+  /*
+  (Optional) The namespace under which the statement should be executed.
+  If not specified, the namespace specified for the connection is used.
+  */
   optional string namespace_name = 4;
 }
 
+/*
+Encapsulates a batch of unparameterized statements to be executed.
+This is useful for executing multiple statements in a single call,
+improving efficiency and performance by reducing the number of round trips to the server.
+*/
 message ExecuteUnparameterizedStatementBatchRequest {
+  /*
+  List of statements to be executed. Each statement is an instance of ExecuteUnparameterizedStatementRequest,
+  allowing for individual control over the execution parameters of each statement in the batch.
+  */
   repeated ExecuteUnparameterizedStatementRequest statements = 1;
 }
 
+
+/*
+Represents a request to prepare a statement for execution.
+This message includes the language of the statement, the statement text itself, and optionally,
+the namespace where the statement should be prepared. Preparing a statement can improve performance for repeated execution.
+*/
 message PrepareStatementRequest {
+  // Specifies the query language of the statement to be prepared.
   string language_name = 1;
+  // The statement to be prepared.
   string statement = 2;
+  // (Optional) The namespace under which the statement should be prepared.
   optional string namespace_name = 3;
 }
 
+/*
+Represents a request to execute a previously prepared statement by its ID, using indexed parameters.
+his allows for efficient execution of prepared statements with the provided parameters.
+*/
 message ExecuteIndexedStatementRequest {
+  // The unique identifier of the prepared statement to be executed.
   int32 statement_id = 1;
+  // The indexed parameters to be used with the statement.
   IndexedParameters parameters = 2;
+  // (Optional) Number of rows to include into the response message of this call. More rows can be fetched afterwards.
   optional int32 fetch_size = 3;
 }
 
+/*
+Encapsulates a batch request to execute a prepared statement multiple times with different sets of indexed parameters.
+This is useful for executing the same statement with various parameter sets in a single operation, enhancing performance and efficiency.
+*/
 message ExecuteIndexedStatementBatchRequest {
+  // The unique identifier of the prepared statement to be executed.
   int32 statement_id = 1;
+  // List of sets of indexed parameters for multiple executions of the statement.
   repeated IndexedParameters parameters = 2;
 }
 
+
+/*
+Represents a request to execute a previously prepared statement by its ID, using named parameters.
+This approach allows for parameter values to be associated with specific parameter names in the statement,
+providing clarity and reducing errors in parameter placement.
+*/
 message ExecuteNamedStatementRequest {
+  // The unique identifier of the prepared statement to be executed.
   int32 statement_id = 1;
+  // The named parameters to be used with the statement.
   NamedParameters parameters = 2;
+  // (Optional) Number of rows to include into the response message of this call. More rows can be fetched afterwards.
   optional int32 fetch_size = 3;
 }
 
+/*
+Encapsulates indexed parameters for a prepared statement.
+This represents a list of parameter values to be used in the statement, where each parameter's position in the list
+corresponds to its position in the statement.
+*/
 message IndexedParameters {
+  // List of values to be used as parameters, indexed by their position in the list.
   repeated ProtoValue parameters = 1;
 }
 
+/*
+Encapsulates named parameters for a prepared statement. This allows for parameters to be specified by name,
+providing a flexible and clear way to supply parameters to a prepared statement.
+*/
 message NamedParameters {
+  // Map of parameter names to their corresponding values.
   map<string, ProtoValue> parameters = 1;
 }
 
+
+/*
+Represents a request to close a statement.
+This operation is used to release resources allocated to the statement on the server.
+Closing a statement when it is no longer needed is a good practice to manage resources efficiently.
+*/
 message CloseStatementRequest {
+  // The unique identifier of the statement to be closed.
   int32 statement_id = 1;
 }
 
+/*
+Represents a request to fetch a batch of results for a previously executed statement.
+This is typically used in conjunction with large result sets,
+where the results are fetched in multiple batches to manage memory and network resources effectively.
+*/
 message FetchRequest {
+  // The unique identifier of the statement whose results are to be fetched.
   int32 statement_id = 1;
+  // (Optional) Number of rows to retrieve in this batch. If no fetch size is specified, a default value is used.
   optional int32 fetch_size = 2;
 }
+

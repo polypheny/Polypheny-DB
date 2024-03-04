@@ -1,3 +1,7 @@
+/*
+Messages that are used for querying general metadata.
+*/
+
 syntax = "proto3";
 
 option java_multiple_files = true;
@@ -6,51 +10,127 @@ option java_outer_classname = "MetaRequests";
 
 package polypheny.protointerface;
 
+/*
+The DbmsVersionRequest message is utilized to request the version information of the database management system (DBMS) in use.
+It acts as a trigger for the server to respond with the specific version details of the DBMS.
+This message does not contain any fields. It simply acts as an indicator to prompt the server for DbmsVersionResponse.
+*/
 message DbmsVersionRequest {
 }
 
+/*
+The LanguageRequest message facilitates the retrieval of supported query languages that can be used for constructing statements.
+This message does not contain any fields. It acts as a request for the server to return the list of supported query languages in a LanguageResponse.
+*/
 message LanguageRequest {
 }
 
+/*
+The DatabasesRequest message is employed to solicit a list of databases that are currently managed by the DBMS.
+This is pivotal for clients aiming to interact with a specific database or to understand the landscape of databases under management.
+This message does not have any fields. It signals the server to provide a list of databases in a DatabasesResponse.
+*/
 message DatabasesRequest {
 }
 
+/*
+The TableTypesRequest message is designed to request information about the different types of tables that are supported or recognized by the DBMS.
+This message does not contain any fields. It’s a prompt for the server to respond with details about the supported table types in a TableTypesResponse.
+*/
 message TableTypesRequest {
 }
 
+/*
+The TypesRequest message is deployed to obtain a list of data types supported by the database management system.
+This helps clients understand the range of data types they can utilize when defining or querying tables.
+This message does not contain any fields. It simply prompts the server to return a list of supported data types in a TypesResponse.
+*/
 message TypesRequest {
 }
 
+/*
+The UserDefinedTypesRequest message facilitates the retrieval of user-defined data types present in the database.
+These custom data types can be crafted to meet specific needs not met by standard types.
+This message is devoid of fields. It acts as a signal for the server to provide details of user-defined data types in a UserDefinedTypesResponse.
+*/
 message UserDefinedTypesRequest {
 }
 
+/*
+The SqlStringFunctionsRequest message is used to solicit information about the string functions supported by the SQL implementation of the DBMS.
+This message is field less and prompts the server to return details of the available string functions in an SqlStringFunctionsResponse.
+*/
 message SqlStringFunctionsRequest {
 }
 
+/*
+The SqlSystemFunctionsRequest message aims to retrieve the list of system functions provided by the SQL implementation of the DBMS.
+Without any fields, this message indicates the server to respond with details about the system functions in an SqlSystemFunctionsResponse.
+*/
 message SqlSystemFunctionsRequest {
 }
 
+/*
+The SqlTimeDateFunctionsRequest message is dispatched to fetch a list of time and date functions supported by the SQL implementation of the DBMS.
+This message, being field less, acts as a request for the server to list time and date functions in a SqlTimeDateFunctionsResponse.
+*/
 message SqlTimeDateFunctionsRequest {
 }
 
+/*
+The SqlNumericFunctionsRequest message endeavors to obtain details about the numeric functions provided by the SQL implementation of the DBMS.
+This message, devoid of fields, prompts the server to respond with information about numeric functions in an SqlNumericFunctionsResponse.
+*/
 message SqlNumericFunctionsRequest {
 }
 
+
+/*
+The SqlKeywordsRequest message is designed to request a list of reserved keywords utilized by the SQL implementation of the DBMS.
+With no fields, this message acts as an indicator for the server to provide the list of SQL keywords in an SqlKeywordsResponse.
+*/
 message SqlKeywordsRequest {
 }
 
+/*
+The ProceduresRequest message is employed to retrieve a list of stored procedures in the database for a specified query language.
+The client can also narrow down the results by specifying a procedure name pattern.
+*/
 message ProceduresRequest {
+  // The query language for which the procedures are defined. This determines the set of procedures that will be retrieved.
   string language = 1;
+  /*
+  A pattern to filter the names of procedures. For example, providing “get%” might retrieve procedures named getUser, getDetails, etc.
+  If not specified, all procedures for the provided language will be returned. Like in sql, the symbol _ can be used to match a single character.
+  */
   optional string procedure_name_pattern = 3;
 }
 
+/*
+The ClientInfoPropertiesRequest message facilitates the acquisition of client information properties stored in the database.
+These properties can offer additional context about the connected client.
+This message doesn’t possess any fields.
+It acts as a directive for the server to provide the associated client information properties in a ClientInfoPropertiesResponse.
+*/
 message ClientInfoPropertiesRequest {
 }
 
+/*
+The ClientInfoPropertyMetaRequest message aids in extracting metadata about the client information properties present in the database.
+This fieldless message prompts the server to detail metadata concerning client information properties in a ClientInfoPropertyMetaResponse.
+*/
 message ClientInfoPropertyMetaRequest {
 }
 
+/*
+The FunctionsRequest message is wielded to obtain a list of functions from the database based on the specified query language and function category.
+*/
 message FunctionsRequest {
+  // Defines the query language for which the functions are sought. This field determines the range of functions that will be retrieved.
   string query_language = 1;
+  /*
+  Categorizes the function, allowing clients to filter results based on specific categories, such as “NUMERIC”, “STRING”, or “SYSTEM”.
+  This helps in refining the search for specific types of functions.
+  */
   string function_category = 2;
 }

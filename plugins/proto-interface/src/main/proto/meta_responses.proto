@@ -1,3 +1,7 @@
+/*
+Messages that are used for querying general metadata.
+*/
+
 syntax = "proto3";
 
 option java_multiple_files = true;
@@ -6,113 +10,224 @@ option java_outer_classname = "MetaResponses";
 
 package polypheny.protointerface;
 
+/*
+The DbmsVersionResponse message relays details about the version and name of the database management system (DBMS) in response to a DbmsVersionRequest.
+*/
 message DbmsVersionResponse {
+  // The name of the database management system.
   string dbms_name = 1;
+  // The full version name of the DBMS.
   string version_name = 2;
+  // The major version number of the DBMS.
   int32 major_version = 3;
+  // The minor version number of the DBMS.
   int32 minor_version = 4;
 }
 
+/*
+The LanguageResponse message offers a list of query languages supported by the system.
+*/
 message LanguageResponse {
+  // A list containing the names of all supported query languages.
   repeated string language_names = 1;
 }
 
+/*
+The DatabasesResponse message provides details about the databases present in the system.
+*/
 message DatabasesResponse {
+  // A list of Database objects detailing each database present in the system.
   repeated Database databases = 1;
 }
 
+/*
+The Database message encapsulates details about an individual database.
+*/
 message Database {
+  // The name of the database.
   string database_name = 1;
+  // The name of the owner of the database.
   string owner_name = 2;
+  // The default namespace associated with the database.
   string default_namespace_name = 3;
 }
 
+/*
+The TableTypesResponse message conveys information about the various table types present in the system.
+*/
 message TableTypesResponse {
+  // A list of TableType objects detailing each table type present in the system.
   repeated TableType table_types = 1;
 }
 
+/*
+The TableType message delineates the nature or category of a table.
+*/
 message TableType {
+  // A descriptor denoting the type or category of a table, such as “BASE TABLE”, “VIEW”, or any other classification present in the system.
   string table_type = 1;
 }
 
+/*
+The TypesResponse message provides a list of native data types supported by the system.
+*/
 message TypesResponse {
+  // A list of Type objects detailing each native data type supported by the system.
   repeated Type types = 1;
 }
 
+/*
+The Type message describes the characteristics and specifications of a particular native data type.
+*/
 message Type {
+  // The name of the data type.
   string type_name = 1;
+  // The number of total digits for numeric types or the maximum length for string and binary types.
   int32 precision = 2;
+  // The character(s) used to prefix a literal of this type (e.g., a single quote for strings).
   optional string literal_prefix = 3;
+  // The character(s) used to suffix a literal of this type.
   optional string literal_suffix = 4;
+  // Indicates whether the data type is case sensitive.
   bool is_case_sensitive = 5;
+  // Indicates how the data type can be used in WHERE clauses.
   int32 is_searchable = 6;
+  // Indicates whether columns of this data type auto-increment.
   bool is_auto_increment = 7;
+  // The minimum scale for this data type.
   int32 min_scale = 8;
+  // The maximum scale for this data type.
   int32 max_scale = 9;
+  // The base number used in representing numeric values.
   int32 radix = 10;
 }
 
+/*
+The UserDefinedTypesResponse message offers a list of user-defined data types present in the system.
+*/
 message UserDefinedTypesResponse {
+  // A list of UserDefinedType objects detailing each user-defined data type in the system.
   repeated UserDefinedType user_defined_types = 1;
 }
 
+/*
+The UserDefinedType message encapsulates details about a specific user-defined data type.
+*/
 message UserDefinedType {
+  // The name of the user-defined data type.
   string type_name = 1;
+  // A list of ValueMeta objects detailing the metadata associated with fields of this data type.
   repeated ValueMeta value_metas= 2;
 }
 
+/*
+The ValueMeta message offers insights into the metadata of a specific field related to a user-defined type.
+*/
 message ValueMeta {
+  // The name or descriptor of the value’s metadata.
   string value_name = 1;
 }
 
+/*
+The MetaStringResponse message encapsulates a string that represents some specific metadata information.
+*/
 message MetaStringResponse {
+  // A string representing the requested metadata information.
   string string = 1;
 }
 
+/*
+The ProceduresResponse message provides a list of stored procedures available within the system.
+*/
 message ProceduresResponse {
+  // A list of Procedure objects detailing each stored procedure present in the system.
   repeated Procedure procedures = 1;
 }
 
+/*
+The Procedure message encapsulates details about a specific stored procedure in the system.
+*/
 message Procedure {
+  // The simple name of the procedure.
   string trivial_name = 1;
+  // The input parameters required by the procedure.
   string input_parameters = 2;
+  // A brief description or purpose of the procedure.
   string description = 3;
+  // Enum indicating the return type of the procedure. It can be unspecified, unknown, no result, or result.
   ReturnType return_type = 4;
+  // A unique name or identifier for the procedure.
   string unique_name = 5;
 
+  /*
+  The return type enum is part of the message Procedure and indicates the possible types of return values for a stored procedure.
+  */
   enum ReturnType {
+    // Indicates that the return type is unspecified.
     UNSPECIFIED = 0;
+    // Indicates that the return type is unknown.
     UNKNOWN = 1;
+    // The procedure does not return a result.
     NO_RESULT = 2;
+    // The procedure returns a result.
     RESULT = 3;
   }
 }
 
+/*
+The ClientInfoProperties message encapsulates key-value pairs representing client-specific information.
+*/
 message ClientInfoProperties {
+  // A mapping of property names to their corresponding values, providing insights or settings related to the client.
   map<string, string> properties = 1;
 }
 
+/*
+The ClientInfoPropertyResponse message provides metadata about various client-specific properties.
+*/
 message ClientInfoPropertiesResponse {
 }
 
+/*
+The ClientInfoPropertyMetaResponse message provides metadata about various client-specific properties.
+*/
 message ClientInfoPropertyMetaResponse {
+  // A list of ClientInfoPropertyMeta objects detailing metadata for each client-specific property.
   repeated ClientInfoPropertyMeta client_info_property_metas = 1;
 }
 
+/*
+The ClientInfoPropertyMeta message encapsulates metadata about a specific client property.
+*/
 message ClientInfoPropertyMeta {
+  // The unique key identifier for the client property.
   string key = 1;
+  // The default value of the property.
   string default_value = 2;
+  // Maximum length of the property value. Useful for validation purposes.
   int32 maxlength = 3;
+  // A brief description explaining the purpose or usage of the property.
   string description = 4;
 }
 
+/*
+The FunctionsResponse message provides a list of functions available within the system.
+*/
 message FunctionsResponse {
+  // A list of Function objects detailing each function present in the system.
   repeated Function functions = 1;
 }
 
+/*
+The Function message encapsulates details about a specific function in the system.
+*/
 message Function {
+  // The name of the function.
   string name = 1;
+  // The expected syntax for using the function.
   string syntax = 2;
+  // The category to which the function belongs. Helps in categorizing functions for better management and understanding.
   string function_category = 3;
+  // Indicates whether the function is a table function. If true, it means the function returns a table; otherwise, it returns a scalar value.
   bool is_table_function = 4;
 }

@@ -1,3 +1,7 @@
+/*
+Messages concerning the handling of transactions.
+*/
+
 syntax = "proto3";
 
 option java_multiple_files = true;
@@ -6,8 +10,20 @@ option java_outer_classname = "TransactionResponses";
 
 package polypheny.protointerface;
 
+/*
+Represents the response after attempting to commit a transaction.
+This message serves as an acknowledgment that the commit request was received and processed,
+finalizing all changes made during the transaction.
+This message does not contain any fields. It simply serves as an acknowledgment of the commit.
+*/
 message CommitResponse {
 }
 
+/*
+Represents the response after attempting to rollback a transaction.
+This message serves as an acknowledgment that the rollback request was received and processed,
+undoing all changes made during the transaction.
+This message does not contain any fields. It simply serves as an acknowledgment of the rollback.
+*/
 message RollbackResponse {
 }
