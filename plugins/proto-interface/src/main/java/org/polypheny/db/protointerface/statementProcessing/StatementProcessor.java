@@ -59,7 +59,7 @@ public class StatementProcessor {
     }
 
 
-    public static StatementResult executeAndGetResult( PIStatement piStatement ) throws Exception {
+    public static StatementResult executeAndGetResult( PIStatement piStatement ) {
         Executor executor = RESULT_RETRIEVERS.get( piStatement.getLanguage().dataModel() );
         if ( executor == null ) {
             throw new PIServiceException( "No result retriever registered for namespace type "

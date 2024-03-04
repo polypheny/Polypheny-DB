@@ -54,7 +54,7 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
     }
 
 
-    public List<Long> executeBatch( List<List<PolyValue>> valuesBatch ) throws Exception {
+    public List<Long> executeBatch( List<List<PolyValue>> valuesBatch ) {
         List<Long> updateCounts = new LinkedList<>();
         synchronized ( client ) {
             if ( statement == null ) {
@@ -65,7 +65,7 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
             List<AlgDataType> types = valuesBatch.stream()
                     .map( v -> v.get( 0 ).getType() )
                     .map( v -> statement.getTransaction().getTypeFactory().createPolyType( v ) )
-                    .collect( Collectors.toList() );
+                    .toList();
             int i = 0;
             for ( List<PolyValue> column : valuesBatch ) {
                 statement.getDataContext().addParameterValues( i, types.get( i++ ), column );
