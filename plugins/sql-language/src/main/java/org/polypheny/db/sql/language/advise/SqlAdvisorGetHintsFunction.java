@@ -52,7 +52,7 @@ public class SqlAdvisorGetHintsFunction implements TableFunction, ImplementableF
                     Expressions.call(
                             DataContext.ROOT,
                             BuiltInMethod.DATA_CONTEXT_GET.method,
-                            Expressions.constant( DataContext.Variable.SQL_ADVISOR.camelName ) ),
+                            Expressions.constant( DataContext.Variable.LANG_ADVISOR.camelName ) ),
                     SqlAdvisor.class );
 
     private static final Method GET_COMPLETION_HINTS =

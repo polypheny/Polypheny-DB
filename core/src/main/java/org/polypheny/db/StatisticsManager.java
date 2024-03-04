@@ -46,24 +46,24 @@ public abstract class StatisticsManager implements PropertyChangeListener {
 
 
     // Use algNode to update
-    public abstract void tablesToUpdate( long tableId );
+    public abstract void entitiesToUpdate( long entityId );
 
     // Use cache if possible
-    public abstract void tablesToUpdate( long tableId, Map<Long, List<?>> changedValues, MonitoringType type, long schemaId );
+    public abstract void entitiesToUpdate( long entityId, Map<Long, List<?>> changedValues, MonitoringType type, long namespaceId );
 
-    protected abstract void reevaluateTable( long tableId );
+    protected abstract void reevaluateEntity( long entityId );
 
     public abstract void displayInformation();
 
     public abstract void asyncReevaluateAllStatistics();
 
-    public abstract void deleteTableToUpdate( long tableId );
+    public abstract void deleteEntityToUpdate( long entityId );
 
-    public abstract void updateRowCountPerTable( long tableId, long number, MonitoringType type );
+    public abstract void updateRowCountPerEntity( long entityId, long number, MonitoringType type );
 
-    public abstract void setIndexSize( long tableId, int indexSize );
+    public abstract void setIndexSize( long entityId, int indexSize );
 
-    public abstract void setTableCalls( long tableId, MonitoringType type );
+    public abstract void setEntityCalls( long entityId, MonitoringType type );
 
     public abstract String getRevalId();
 
@@ -73,9 +73,9 @@ public abstract class StatisticsManager implements PropertyChangeListener {
 
     public abstract Map<?, ?> getQualifiedStatisticMap();
 
-    public abstract Object getTableStatistic( long schemaId, long tableId );
+    public abstract Object getEntityStatistic( long namespaceId, long entityId );
 
-    public abstract Long rowCountPerTable( long tableId );
+    public abstract Long tupleCountPerEntity( long entityId );
 
     public abstract void updateCommitRollback( boolean committed );
 

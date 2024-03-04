@@ -98,7 +98,7 @@ public class StatisticQueryProcessor {
      *
      * @return all the tables ids
      */
-    public List<LogicalTable> getAllTable() {
+    public List<LogicalTable> getAllRelEntites() {
         Snapshot snapshot = Catalog.getInstance().getSnapshot();
         return snapshot.getNamespaces( null ).stream().filter( n -> n.dataModel == DataModel.RELATIONAL )
                 .flatMap( n -> snapshot.rel().getTables( Pattern.of( n.name ), null ).stream().filter( t -> t.entityType != EntityType.VIEW ) ).collect( Collectors.toList() );

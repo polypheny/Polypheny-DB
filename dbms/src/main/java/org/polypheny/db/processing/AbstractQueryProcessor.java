@@ -1017,9 +1017,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 for ( List<DataContext.ParameterValue> values : value.values() ) {
                     List<PolyValue> o = new ArrayList<>();
                     for ( ParameterValue v : values ) {
-                        o.add( v.getValue() );
+                        o.add( v.value() );
                     }
-                    statement.getDataContext().addParameterValues( values.get( 0 ).getIndex(), values.get( 0 ).getType(), o );
+                    statement.getDataContext().addParameterValues( values.get( 0 ).index(), values.get( 0 ).type(), o );
                 }
 
                 statement.getDataContext().addContext();
@@ -1030,9 +1030,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             for ( List<DataContext.ParameterValue> values : queryParameterizer.getValues().values() ) {
                 List<PolyValue> o = new ArrayList<>();
                 for ( ParameterValue v : values ) {
-                    o.add( v.getValue() );
+                    o.add( v.value() );
                 }
-                statement.getDataContext().addParameterValues( values.get( 0 ).getIndex(), values.get( 0 ).getType(), o );
+                statement.getDataContext().addParameterValues( values.get( 0 ).index(), values.get( 0 ).type(), o );
             }
         }
 

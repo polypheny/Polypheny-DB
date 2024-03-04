@@ -266,29 +266,7 @@ public class PolyImplementation {
     }
 
 
-    public int getRowsChanged( Statement statement ) throws Exception {
-        if ( Kind.DDL.contains( getKind() ) ) {
-            return 1;
-        } else if ( Kind.DML.contains( getKind() ) ) {
-            int rowsChanged;
-            try {
-                Iterator<?> iterator = enumerable( statement.getDataContext() ).iterator();
-                rowsChanged = getRowsChanged( statement, iterator, MonitoringType.from( getKind() ) );
-            } catch ( RuntimeException e ) {
-                if ( e.getCause() != null ) {
-                    throw new GenericRuntimeException( e.getCause().getMessage(), e );
-                } else {
-                    throw new GenericRuntimeException( e.getMessage(), e );
-                }
-            }
-            return rowsChanged;
-        } else {
-            throw new Exception( "Unknown result type: " + getKind() );
-        }
-    }
-
-
-    public static int getRowsChanged( Statement statement, Iterator<?> iterator, MonitoringType kind ) throws Exception {
+    public static int getRowsChanged( Statement statement, Iterator<?> iterator, MonitoringType kind ) {
         int rowsChanged = -1;
         Object object;
         while ( iterator.hasNext() ) {
@@ -300,7 +278,7 @@ public class PolyImplementation {
             } else if ( object != null ) {
                 num = ((PolyNumber) object).intValue();
             } else {
-                throw new Exception( "Result is null" );
+                throw new GenericRuntimeException( "Result is null" );
             }
             rowsChanged = num;
         }

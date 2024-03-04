@@ -53,13 +53,13 @@ public interface Scannable {
         return createSubstitutionEntity( scannable, context, logical, allocation, name, nameLength, amountPk ).unwrap( PhysicalTable.class ).orElseThrow();
     }
 
-    static PhysicalEntity createSubstitutionEntity( Scannable scannable, Context context, LogicalEntity logical, AllocationEntity allocation, String name, List<ColumnContext> nameLength, int amountPk ) {
+    static PhysicalEntity createSubstitutionEntity( Scannable scannable, Context context, LogicalEntity logical, AllocationEntity allocation, String name, List<ColumnContext> columnsInformations, int amountPk ) {
         IdBuilder builder = IdBuilder.getInstance();
         LogicalTable table = new LogicalTable( builder.getNewLogicalId(), name + logical.id, logical.namespaceId, logical.entityType, null, logical.modifiable );
         List<LogicalColumn> columns = new ArrayList<>();
 
         int i = 0;
-        for ( ColumnContext col : nameLength ) {
+        for ( ColumnContext col : columnsInformations ) {
             LogicalColumn column = new LogicalColumn( builder.getNewFieldId(), col.name, table.id, table.namespaceId, i, col.type, null, col.precision, null, null, null, col.nullable, Collation.getDefaultCollation(), null );
             columns.add( column );
             i++;
@@ -72,7 +72,7 @@ public interface Scannable {
             AllocationColumn alloc = new AllocationColumn( logical.namespaceId, allocSubTable.placementId, allocSubTable.logicalId, column.id, PlacementType.AUTOMATIC, column.position, allocation.adapterId );
             allocColumns.add( alloc );
         }
-        // we use first as pk
+        // we use the provided first x columns from amountPk as pks (still requires them to be ordered and first first)
         scannable.createTable( context, LogicalTableWrapper.of( table, columns, columns.subList( 0, amountPk ).stream().map( c -> c.id ).toList() ), AllocationTableWrapper.of( allocSubTable, allocColumns ) );
         return scannable.getCatalog().getPhysicalsFromAllocs( allocSubTable.id ).get( 0 );
     }

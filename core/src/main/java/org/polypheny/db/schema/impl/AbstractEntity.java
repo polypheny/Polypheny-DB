@@ -97,7 +97,7 @@ public abstract class AbstractEntity implements Entity, Wrapper {
         if ( id == null ) {
             return Statistics.UNKNOWN;
         }
-        Long rowCount = StatisticsManager.getInstance().rowCountPerTable( id );
+        Long rowCount = StatisticsManager.getInstance().tupleCountPerEntity( id );
 
         if ( rowCount == null ) {
             return Statistics.UNKNOWN;

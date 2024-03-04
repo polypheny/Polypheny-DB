@@ -115,7 +115,7 @@ public abstract class Entity implements PolyObject, Wrapper, Serializable, Catal
 
 
     public double getRowCount( long id ) {
-        Long count = StatisticsManager.getInstance().rowCountPerTable( id );
+        Long count = StatisticsManager.getInstance().tupleCountPerEntity( id );
         if ( count == null ) {
             return 0;
         }
