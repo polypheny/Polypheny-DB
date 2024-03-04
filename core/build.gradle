@@ -75,7 +75,7 @@ dependencies {
     implementation group: "com.github.docker-java", name: "docker-java", version: java_docker_version // Apache 2.0
     implementation group: "com.github.docker-java", name: "docker-java-transport-httpclient5", version: java_docker_version // TODO: should probably be independent version in future
 
-    implementation group: "io.activej", name: "activej-serializer", version: activej_serializer_version
+    api group: "io.activej", name: "activej-serializer", version: activej_serializer_version
 
     // --- Test Compile ---
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: junit_jupiter_version

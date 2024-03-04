@@ -3093,7 +3093,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     /**
      * Helper method to zip a directory
-     * from https://stackoverflow.com/questions/2403830
      */
     private static void zipDirectory( String basePath, File dir, ZipOutputStream zipOut ) throws IOException {
         byte[] buffer = new byte[4096];
