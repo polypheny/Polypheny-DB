@@ -90,10 +90,10 @@ import org.polypheny.db.util.Util;
 
 /**
  * Contains unit tests for all operators. Each of the methods is named after an operator.
- *
+ * <p>
  * The class is abstract. It contains a test for every operator, but does not provide a mechanism to execute the tests: parse, validate, and execute expressions on the operators. This is left to a {@link SqlTester} object
  * which the derived class must provide.
- *
+ * <p>
  * Different implementations of {@link SqlTester} are possible, such as:
  *
  * <ul>
@@ -105,14 +105,14 @@ import org.polypheny.db.util.Util;
  *
  * A typical method will be named after the operator it is testing (say <code>testSubstringFunc</code>). It first calls {@link SqlTester#setFor(Operator, VmName...)}
  * to declare which operator it is testing.
- *
+ * <p>
  * <code>
  * public void testSubstringFunc() {
  * tester.setFor(SqlStdOperatorTable.substringFunc);
  * tester.checkScalar("sin(0)", "0");
  * tester.checkScalar("sin(1.5707)", "1");
  * }</code>
- *
+ * <p>
  * The rest of the method contains calls to the various {@code checkXxx} methods in the {@link SqlTester} interface. For an operator to be adequately tested, there need to be tests for:
  *
  * <ul>
@@ -261,44 +261,15 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
     }
 
 
-    /*
-
-    protected SqlTester oracleTester() {
-        return tester.withOperatorTable(
-                ChainedSqlOperatorTable.of( OracleSqlOperatorTable.instance(), SqlStdOperatorTable.instance() ) ).withConnectionFactory(
-                PolyphenyDbAssert.EMPTY_CONNECTION_FACTORY
-                        .with( new PolyphenyDbAssert.AddSchemaSpecPostProcessor( PolyphenyDbAssert.SchemaSpec.HR ) )
-                        .with( PolyphenyDbConnectionProperty.FUN, "oracle" ) );
-    }
 
 
-    protected SqlTester oracleTester( SqlConformance conformance ) {
-        if ( conformance == null ) {
-            conformance = SqlConformanceEnum.DEFAULT;
-        }
-        return tester
-                .withConformance( conformance )
-                .withOperatorTable( ChainedSqlOperatorTable.of( OracleSqlOperatorTable.instance(), SqlStdOperatorTable.instance() ) )
-                .withConnectionFactory( PolyphenyDbAssert.EMPTY_CONNECTION_FACTORY
-                        .with( new PolyphenyDbAssert.AddSchemaSpecPostProcessor( PolyphenyDbAssert.SchemaSpec.HR ) )
-                        .with( "fun", "oracle" )
-                        .with( "conformance", conformance ) );
-    } */
+
+
 
     //--- Tests -----------------------------------------------------------
 
 
-    /**
-     * For development. Put any old code in here.
-     */
     @Test
-    @Disabled // refactor
-    public void testDummy() {
-    }
-
-
-    @Test
-    @Disabled // refactor
     public void testSqlOperatorOverloading() {
         final SqlStdOperatorTable operatorTable = SqlStdOperatorTable.instance();
         for ( Operator sqlOperator : operatorTable.getOperatorList() ) {
@@ -314,7 +285,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testBetween() {
         tester.setFor( OperatorRegistry.get( OperatorName.BETWEEN ), SqlTester.VmName.EXPAND );
         tester.checkBoolean( "2 between 1 and 3", Boolean.TRUE );
@@ -346,7 +316,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testNotBetween() {
         tester.setFor( OperatorRegistry.get( OperatorName.NOT_BETWEEN ), VM_EXPAND );
         tester.checkBoolean( "2 not between 1 and 3", Boolean.FALSE );
@@ -423,7 +392,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testCastToString() {
         tester.setFor( OperatorRegistry.get( OperatorName.CAST ) );
         checkCastToString( "cast(cast('abc' as char(4)) as varchar(6))", null, "abc " );
@@ -510,7 +478,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testCastExactNumericLimits() {
         tester.setFor( OperatorRegistry.get( OperatorName.CAST ) );
 
@@ -562,7 +529,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
     }
 
 
-    @Disabled
+    @Test
     public void testCastToExactNumeric() {
         tester.setFor( OperatorRegistry.get( OperatorName.CAST ) );
 
@@ -592,7 +559,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testCastStringToDecimal() {
         tester.setFor( OperatorRegistry.get( OperatorName.CAST ) );
         if ( !DECIMAL ) {
@@ -610,7 +576,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testCastIntervalToNumeric() {
         tester.setFor( OperatorRegistry.get( OperatorName.CAST ) );
 
@@ -655,7 +620,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testCastToInterval() {
         tester.setFor( OperatorRegistry.get( OperatorName.CAST ) );
         tester.checkScalar( "cast(5 as interval second)", "+5.000000", "INTERVAL SECOND NOT NULL" );
@@ -678,7 +642,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testCastIntervalToInterval() {
         tester.checkScalar( "cast(interval '2 5' day to hour as interval hour to minute)", "+53:00", "INTERVAL HOUR TO MINUTE NOT NULL" );
         tester.checkScalar( "cast(interval '2 5' day to hour as interval day to minute)", "+2 05:00", "INTERVAL DAY TO MINUTE NOT NULL" );
@@ -689,7 +652,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testCastWithRoundingToScalar() {
         tester.setFor( OperatorRegistry.get( OperatorName.CAST ) );
 
@@ -730,7 +692,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testCastDecimalToDoubleToInteger() {
         tester.setFor( OperatorRegistry.get( OperatorName.CAST ) );
 
@@ -747,7 +708,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testCastApproxNumericLimits() {
         tester.setFor( OperatorRegistry.get( OperatorName.CAST ) );
 
@@ -840,7 +800,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testCastToApproxNumeric() {
         tester.setFor( OperatorRegistry.get( OperatorName.CAST ) );
 
@@ -855,7 +814,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testCastNull() {
         tester.setFor( OperatorRegistry.get( OperatorName.CAST ) );
 
@@ -879,7 +837,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
     /**
      * Test case for "Handling errors during constant reduction".
      */
-    @Disabled
+    @Test
     public void testCastInvalid() {
         // Before POLYPHENYDB-1439 was fixed, constant reduction would kick in and generate Java constants that throw when the class is loaded, thus ExceptionInInitializerError.
         tester.checkScalarExact( "cast('15' as integer)", "INTEGER NOT NULL", "15" );
@@ -897,7 +855,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testCastDateTime() {
         // Test cast for date/time/timestamp
         tester.setFor( OperatorRegistry.get( OperatorName.CAST ) );
@@ -986,7 +943,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testCastStringToDateTime() {
         tester.checkScalar(
                 "cast('12:42:25' as TIME)",
@@ -1208,7 +1164,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testCastToBoolean() {
         tester.setFor( OperatorRegistry.get( OperatorName.CAST ) );
 
@@ -1227,7 +1182,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testCase() {
         tester.setFor( OperatorRegistry.get( OperatorName.CASE ) );
         tester.checkScalarExact(
@@ -1444,7 +1398,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testCaseNull() {
         tester.setFor( OperatorRegistry.get( OperatorName.CASE ) );
         tester.checkScalarExact( "case when 1 = 1 then 10 else null end", "10" );
@@ -1453,7 +1406,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testCaseType() {
         tester.setFor( OperatorRegistry.get( OperatorName.CASE ) );
         tester.checkType(
@@ -1480,11 +1432,10 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
     /**
      * Tests support for JDBC functions.
-     *
+     * <p>
      * See FRG-97 "Support for JDBC escape syntax is incomplete".
      */
     @Test
-    @Disabled // refactor
     public void testJdbcFn() {
         tester.setFor( new SqlJdbcFunctionCall( "dummy" ) );
 
@@ -1684,7 +1635,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
         tester.checkScalar( "{fn QUARTER(DATE '2014-12-10')}", "4", "BIGINT NOT NULL" );
         tester.checkScalar( "{fn SECOND(TIMESTAMP '2014-12-10 12:34:56')}", 56, "BIGINT NOT NULL" );
         tester.checkScalar( "{fn TIMESTAMPADD(HOUR, 5, TIMESTAMP '2014-03-29 12:34:56')}", "2014-03-29 17:34:56", "TIMESTAMP(0) NOT NULL" );
-        tester.checkScalar( "{fn TIMESTAMPDIFF(HOUR, TIMESTAMP '2014-03-29 12:34:56', TIMESTAMP '2014-03-29 12:34:56')}", "0", "INTEGER NOT NULL" );
+        tester.checkScalar( "{fn TIMESTAMPDIFF(HOUR, TIMESTAMP '2014-03-29 12:34:56', TIMESTAMP '2014-03-29 12:34:56')}", "0", "BIGINT NOT NULL" );
 
         if ( Bug.CALCITE_2539_FIXED ) {
             tester.checkFails( "{fn WEEK(DATE '2014-12-10')}", "cannot translate call EXTRACT.*", true );
@@ -1706,7 +1657,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testSelect() {
         tester.check( "select * from (values(1))", SqlTests.INTEGER_TYPE_CHECKER, "1", 0 );
 
@@ -1738,7 +1688,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testLiteralChain() {
         tester.setFor( OperatorRegistry.get( OperatorName.LITERAL_CHAIN ), VM_EXPAND );
         tester.checkString(
@@ -1763,7 +1712,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testComplexLiteral() {
         tester.check(
                 "select 2 * 2 * x from (select 2 as x)",
@@ -1786,14 +1734,12 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testRow() {
         tester.setFor( OperatorRegistry.get( OperatorName.ROW ), VM_FENNEL );
     }
 
 
     @Test
-    @Disabled // refactor
     public void testAndOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.AND ) );
         tester.checkBoolean( "true and false", Boolean.FALSE );
@@ -1806,7 +1752,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testAndOperator2() {
         tester.checkBoolean(
                 "case when false then unknown else true end and true",
@@ -1821,7 +1766,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testAndOperatorLazy() {
         tester.setFor( OperatorRegistry.get( OperatorName.AND ) );
 
@@ -1834,7 +1778,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testConcatOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.CONCAT ) );
         tester.checkString( " 'a'||'b' ", "ab", "CHAR(2) NOT NULL" );
@@ -1917,7 +1860,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testModOperatorDivByZero() {
         // "%" is allowed under MYSQL_5 SQL conformance level
         final SqlTester tester1 = tester.withConformance( ConformanceEnum.MYSQL_5 );
@@ -1928,7 +1870,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testDivideOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.DIVIDE ) );
         tester.checkScalarExact( "10 / 5", "2" );
@@ -1976,7 +1917,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testDivideOperatorIntervals() {
         tester.checkScalar(
                 "interval '-2:2' hour to minute / 3",
@@ -2002,7 +1942,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testEqualsOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.EQUALS ) );
         tester.checkBoolean( "1=1", Boolean.TRUE );
@@ -2032,7 +1971,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testEqualsOperatorInterval() {
         tester.checkBoolean( "interval '2' day = interval '1' day", Boolean.FALSE );
         tester.checkBoolean( "interval '2' day = interval '2' day", Boolean.TRUE );
@@ -2042,7 +1980,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testGreaterThanOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.GREATER_THAN ) );
         tester.checkBoolean( "1>2", Boolean.FALSE );
@@ -2087,7 +2024,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testIsDistinctFromOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.IS_DISTINCT_FROM ), VM_EXPAND );
         tester.checkBoolean( "1 is distinct from 1", Boolean.FALSE );
@@ -2136,7 +2072,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testGreaterThanOrEqualOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL ) );
         tester.checkBoolean( "1>=2", Boolean.FALSE );
@@ -2162,7 +2097,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testGreaterThanOrEqualOperatorIntervals() {
         tester.checkBoolean(
                 "interval '2' day >= interval '1' day",
@@ -2196,7 +2130,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testInOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.IN ), VM_EXPAND );
         tester.checkBoolean( "1 in (0, 1, 2)", true );
@@ -2222,7 +2155,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testNotInOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.NOT_IN ), VM_EXPAND );
         tester.checkBoolean( "1 not in (0, 1, 2)", false );
@@ -2251,7 +2183,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testOverlapsOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.OVERLAPS ), VM_EXPAND );
         tester.checkBoolean( "(date '1-2-3', date '1-2-3') overlaps (date '1-2-3', interval '1' year)", Boolean.TRUE );
@@ -2275,11 +2206,10 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
     /**
      * Test case for "Add PERIOD type constructor and period operators (CONTAINS, PRECEDES, etc.)".
-     *
+     * <p>
      * Tests OVERLAP and similar period operators CONTAINS, EQUALS, PRECEDES, SUCCEEDS, IMMEDIATELY PRECEDES, IMMEDIATELY SUCCEEDS for DATE, TIME and TIMESTAMP values.
      */
     @Test
-    @Disabled // refactor
     public void testPeriodOperators() {
         String[] times = {
                 "TIME '01:00:00'",
@@ -2431,7 +2361,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testLessThanOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.LESS_THAN ) );
         tester.checkBoolean( "1<2", Boolean.TRUE );
@@ -2458,7 +2387,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testLessThanOperatorInterval() {
         if ( !DECIMAL ) {
             return;
@@ -2477,7 +2405,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testLessThanOrEqualOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL ) );
         tester.checkBoolean( "1<=2", Boolean.TRUE );
@@ -2506,7 +2433,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testLessThanOrEqualOperatorInterval() {
         tester.checkBoolean( "interval '2' day <= interval '1' day", Boolean.FALSE );
         tester.checkBoolean( "interval '2' day <= interval '5' day", Boolean.TRUE );
@@ -2522,7 +2448,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testMinusOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.MINUS ) );
         tester.checkScalarExact( "-2-1", "-3" );
@@ -2585,7 +2510,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testMinusIntervalOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.MINUS ) );
         tester.checkScalar(
@@ -2672,7 +2596,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testMinusDateOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.MINUS_DATE ) );
         tester.checkScalar(
@@ -2726,7 +2649,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testMultiplyOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.MULTIPLY ) );
         tester.checkScalarExact( "2*3", "6" );
@@ -2787,7 +2709,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testMultiplyIntervals() {
         tester.checkScalar(
                 "interval '2:2' hour to minute * 3",
@@ -2813,7 +2734,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testDatePlusInterval() {
         tester.checkScalar(
                 "date '2014-02-11' + interval '2' day",
@@ -2831,7 +2751,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
      * Test case for "Allow NULL literal as argument".
      */
     @Test
-    @Disabled // refactor
     public void testNullOperand() {
         checkNullOperand( tester, "=" );
         checkNullOperand( tester, ">" );
@@ -2876,7 +2795,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testNotEqualsOperatorIntervals() {
         tester.checkBoolean( "interval '2' day <> interval '1' day", Boolean.TRUE );
         tester.checkBoolean( "interval '2' day <> interval '2' day", Boolean.FALSE );
@@ -2886,7 +2804,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testOrOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.OR ) );
         tester.checkBoolean( "true or false", Boolean.TRUE );
@@ -2897,7 +2814,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testOrOperatorLazy() {
         tester.setFor( OperatorRegistry.get( OperatorName.OR ) );
 
@@ -2926,7 +2842,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testPlusOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.PLUS ) );
         tester.checkScalarExact( "1+2", "3" );
@@ -2991,7 +2906,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testPlusOperatorAny() {
         tester.setFor( OperatorRegistry.get( OperatorName.PLUS ) );
         tester.checkScalar( "1+CAST(2 AS ANY)", "3", "ANY NOT NULL" );
@@ -2999,7 +2913,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testPlusIntervalOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.PLUS ) );
         tester.checkScalar(
@@ -3086,14 +2999,12 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testDescendingOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.DESC ), VM_EXPAND );
     }
 
 
     @Test
-    @Disabled // refactor
     public void testIsNotNullOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.IS_NOT_NULL ) );
         tester.checkBoolean( "true is not null", Boolean.TRUE );
@@ -3102,7 +3013,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testIsNullOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.IS_NULL ) );
         tester.checkBoolean( "true is null", Boolean.FALSE );
@@ -3111,7 +3021,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testIsNotTrueOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.IS_NOT_TRUE ) );
         tester.checkBoolean( "true is not true", Boolean.FALSE );
@@ -3125,7 +3034,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testIsTrueOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.IS_TRUE ) );
         tester.checkBoolean( "true is true", Boolean.TRUE );
@@ -3135,7 +3043,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testIsNotFalseOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.IS_NOT_FALSE ) );
         tester.checkBoolean( "false is not false", Boolean.FALSE );
@@ -3145,7 +3052,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testIsFalseOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.IS_FALSE ) );
         tester.checkBoolean( "false is false", Boolean.TRUE );
@@ -3155,7 +3061,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testIsNotUnknownOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.IS_NOT_UNKNOWN ), VM_EXPAND );
         tester.checkBoolean( "false is not unknown", Boolean.TRUE );
@@ -3170,7 +3075,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testIsUnknownOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.IS_UNKNOWN ), VM_EXPAND );
         tester.checkBoolean( "false is unknown", Boolean.FALSE );
@@ -3185,7 +3089,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testIsASetOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.IS_A_SET ), VM_EXPAND );
         tester.checkBoolean( "multiset[1] is a set", Boolean.TRUE );
@@ -3199,7 +3102,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testIsNotASetOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.IS_NOT_A_SET ), VM_EXPAND );
         tester.checkBoolean( "multiset[1] is not a set", Boolean.FALSE );
@@ -3213,7 +3115,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testIntersectOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.MULTISET_INTERSECT ), VM_EXPAND );
         tester.checkScalar(
@@ -3264,7 +3165,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testExceptOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.MULTISET_EXCEPT ), VM_EXPAND );
         tester.checkScalar(
@@ -3315,7 +3215,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testIsEmptyOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.IS_EMPTY ), VM_EXPAND );
         tester.checkBoolean( "multiset[1] is empty", Boolean.FALSE );
@@ -3323,7 +3222,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testIsNotEmptyOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.IS_NOT_EMPTY ), VM_EXPAND );
         tester.checkBoolean( "multiset[1] is not empty", Boolean.TRUE );
@@ -3331,14 +3229,12 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testExistsOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.EXISTS ), VM_EXPAND );
     }
 
 
     @Test
-    @Disabled // refactor
     public void testNotOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.NOT ) );
         tester.checkBoolean( "not true", Boolean.FALSE );
@@ -3349,7 +3245,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testPrefixMinusOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.UNARY_MINUS ) );
         tester.checkFails(
@@ -3368,7 +3263,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testPrefixMinusOperatorIntervals() {
         tester.checkScalar(
                 "-interval '-6:2:8' hour to second",
@@ -3388,7 +3282,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testPrefixPlusOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.UNARY_PLUS ), VM_EXPAND );
         tester.checkScalarExact( "+1", "1" );
@@ -3400,7 +3293,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testPrefixPlusOperatorIntervals() {
         tester.checkScalar(
                 "+interval '-6:2:8' hour to second",
@@ -3425,14 +3317,12 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testExplicitTableOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.EXPLICIT_TABLE ), VM_EXPAND );
     }
 
 
     @Test
-    @Disabled // refactor
     public void testValuesOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.VALUES ), VM_EXPAND );
         tester.check(
@@ -3444,7 +3334,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testNotLikeOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.NOT_LIKE ), VM_EXPAND );
         tester.checkBoolean( "'abc' not like '_b_'", Boolean.FALSE );
@@ -3456,7 +3345,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testLikeEscape() {
         tester.setFor( OperatorRegistry.get( OperatorName.LIKE ) );
         tester.checkBoolean( "'a_c' like 'a#_c' escape '#'", Boolean.TRUE );
@@ -3478,7 +3366,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testLikeOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.LIKE ) );
         tester.checkBoolean( "''  like ''", Boolean.TRUE );
@@ -3508,7 +3395,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
      * Test case for "LIKE must match '.' (period) literally".
      */
     @Test
-    @Disabled // refactor
     public void testLikeDot() {
         tester.checkBoolean( "'abc' like 'a.c'", Boolean.FALSE );
         tester.checkBoolean( "'abcde' like '%c.e'", Boolean.FALSE );
@@ -3517,7 +3403,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testNotSimilarToOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.NOT_SIMILAR_TO ), VM_EXPAND );
         tester.checkBoolean( "'ab' not similar to 'a_'", false );
@@ -3530,7 +3415,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testSimilarToOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.SIMILAR_TO ) );
 
@@ -3766,28 +3650,25 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testEscapeOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.ESCAPE ), VM_EXPAND );
     }
 
 
     @Test
-    @Disabled // refactor
     public void testConvertFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.CONVERT ), VM_FENNEL, VM_JAVA );
     }
 
 
     @Test
-    @Disabled // refactor
     public void testTranslateFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.TRANSLATE ), VM_FENNEL, VM_JAVA );
     }
 
 
     /*
-    @Test @Disabled // refactor
+    @Test 
     @Disabled
     public void testTranslate3Func() {
         final SqlTester tester1 = oracleTester();
@@ -3820,7 +3701,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testOverlayFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.OVERLAY ) );
         tester.checkString(
@@ -3874,7 +3754,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testPositionFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.POSITION ) );
         tester.checkScalarExact( "position('b' in 'abc')", "2" );
@@ -3910,7 +3789,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testReplaceFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.REPLACE ) );
         tester.checkString( "REPLACE('ciao', 'ciao', '')", "", "VARCHAR(4) NOT NULL" );
@@ -3922,7 +3800,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testCharLengthFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.CHAR_LENGTH ) );
         tester.checkScalarExact( "char_length('abc')", "3" );
@@ -3931,7 +3808,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testCharacterLengthFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.CHARACTER_LENGTH ) );
         tester.checkScalarExact( "CHARACTER_LENGTH('abc')", "3" );
@@ -3940,7 +3816,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testUpperFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.UPPER ) );
         tester.checkString( "upper('a')", "A", "CHAR(1) NOT NULL" );
@@ -3952,7 +3827,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testJsonExists() {
         tester.checkBoolean( "json_exists('{\"foo\":\"bar\"}', 'strict $.foo' false on error)", Boolean.TRUE );
         tester.checkBoolean( "json_exists('{\"foo\":\"bar\"}', 'strict $.foo' true on error)", Boolean.TRUE );
@@ -3976,7 +3850,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testJsonValue() {
         // type casting test
         tester.checkString(
@@ -4105,7 +3978,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testJsonQuery() {
         // lax test
         tester.checkString(
@@ -4258,7 +4130,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testJsonObject() {
         tester.checkString(
                 "json_object()",
@@ -4300,7 +4171,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testJsonObjectAgg() {
         checkAggType( tester, "json_objectagg('foo': 'bar')", "VARCHAR(2000) NOT NULL" );
         tester.checkFails( "^json_objectagg(100: 'bar')^", "(?s).*Cannot apply.*", false );
@@ -4328,7 +4198,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testJsonArray() {
         tester.checkString( "json_array()", "[]", "VARCHAR(2000) NOT NULL" );
         tester.checkString( "json_array('foo')", "[\"foo\"]", "VARCHAR(2000) NOT NULL" );
@@ -4343,7 +4212,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testJsonArrayAgg() {
         checkAggType( tester, "json_arrayagg('foo')", "VARCHAR(2000) NOT NULL" );
         final String[] values = {
@@ -4370,7 +4238,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testJsonPredicate() {
         tester.checkBoolean( "'{}' is json value", true );
         tester.checkBoolean( "'{]' is json value", false );
@@ -4392,7 +4259,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testLowerFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.LOWER ) );
 
@@ -4406,7 +4272,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testInitcapFunc() {
         // Note: the initcap function is an Oracle defined function and is not defined in the SQL:2003 standard
         // TODO: implement in fennel
@@ -4427,7 +4292,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testPowerFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.POWER ) );
         tester.checkScalarApprox(
@@ -4447,7 +4311,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testSqrtFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.SQRT ), SqlTester.VmName.EXPAND );
         tester.checkType( "sqrt(2)", "DOUBLE NOT NULL" );
@@ -4473,7 +4336,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testExpFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.EXP ), VM_FENNEL );
         tester.checkScalarApprox( "exp(2)", "DOUBLE NOT NULL", 7.389056, 0.000001 );
@@ -4488,7 +4350,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testModFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.MOD ) );
         tester.checkScalarExact( "mod(4,2)", "0" );
@@ -4520,7 +4381,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testModFuncNull() {
         tester.checkNull( "mod(cast(null as integer),2)" );
         tester.checkNull( "mod(4,cast(null as tinyint))" );
@@ -4532,7 +4392,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testModFuncDivByZero() {
         // The extra CASE expression is to fool Janino.  It does constant reduction and will throw the divide by zero exception while compiling the expression.  The test frame work would then issue
         // unexpected exception occurred during "validation".  You cannot submit as non-runtime because the janino exception does not have error position information and the framework is unhappy with that.
@@ -4541,7 +4400,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testLnFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.LN ) );
         tester.checkScalarApprox(
@@ -4559,7 +4417,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testLogFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.LOG10 ) );
         tester.checkScalarApprox(
@@ -4591,20 +4448,9 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
     }
 
 
-    @Test
-    @Disabled // refactor
-    public void testRandFunc() {
-        tester.setFor( OperatorRegistry.get( OperatorName.RAND ) );
-        tester.checkFails( "^rand^", "Column 'RAND' not found in any table", false );
-        for ( int i = 0; i < 100; i++ ) {
-            // Result must always be between 0 and 1, inclusive.
-            tester.checkScalarApprox( "rand()", "DOUBLE NOT NULL", 0.5, 0.5 );
-        }
-    }
 
 
     @Test
-    @Disabled // refactor
     public void testRandSeedFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.RAND ) );
         tester.checkScalarApprox( "rand(1)", "DOUBLE NOT NULL", 0.6016, 0.0001 );
@@ -4613,7 +4459,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testRandIntegerFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.RAND_INTEGER ) );
         for ( int i = 0; i < 100; i++ ) {
@@ -4624,7 +4469,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testRandIntegerSeedFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.RAND_INTEGER ) );
         tester.checkScalar( "rand_integer(1, 11)", 4, "INTEGER NOT NULL" );
@@ -4633,7 +4477,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testAbsFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.ABS ) );
         tester.checkScalarExact( "abs(-1)", "1" );
@@ -4675,7 +4518,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testAbsFuncIntervals() {
         tester.checkScalar(
                 "abs(interval '-2' day)",
@@ -4690,7 +4532,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testAcosFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.ACOS ) );
         tester.checkType( "acos(0)", "DOUBLE NOT NULL" );
@@ -4716,7 +4557,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testAsinFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.ASIN ) );
         tester.checkType( "asin(0)", "DOUBLE NOT NULL" );
@@ -4742,7 +4582,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testAtanFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.ATAN ) );
         tester.checkType( "atan(2)", "DOUBLE NOT NULL" );
@@ -4768,7 +4607,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testAtan2Func() {
         tester.setFor( OperatorRegistry.get( OperatorName.ATAN2 ) );
         tester.checkType( "atan2(2, -2)", "DOUBLE NOT NULL" );
@@ -4798,7 +4636,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testCosFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.COS ) );
         tester.checkType( "cos(1)", "DOUBLE NOT NULL" );
@@ -4824,7 +4661,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testCotFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.COT ) );
         tester.checkType( "cot(1)", "DOUBLE NOT NULL" );
@@ -4850,7 +4686,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testDegreesFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.DEGREES ) );
         tester.checkType( "degrees(1)", "DOUBLE NOT NULL" );
@@ -4876,7 +4711,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testPiFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.PI ) );
         tester.checkScalarApprox( "PI", "DOUBLE NOT NULL", 3.1415d, 0.0001d );
@@ -4885,7 +4719,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testRadiansFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.RADIANS ) );
         tester.checkType( "radians(42)", "DOUBLE NOT NULL" );
@@ -4911,7 +4744,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testRoundFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.ROUND ) );
         tester.checkType( "round(42, -1)", "INTEGER NOT NULL" );
@@ -4955,7 +4787,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testSignFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.SIGN ) );
         tester.checkType( "sign(1)", "INTEGER NOT NULL" );
@@ -4983,7 +4814,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testSinFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.SIN ) );
         tester.checkType( "sin(1)", "DOUBLE NOT NULL" );
@@ -5034,7 +4864,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testTruncateFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.TRUNCATE ) );
         tester.checkType( "truncate(42, -1)", "INTEGER NOT NULL" );
@@ -5076,7 +4905,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testNullifFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.NULLIF ), VM_EXPAND );
         tester.checkNull( "nullif(1,1)" );
@@ -5103,7 +4931,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testNullIfOperatorIntervals() {
         tester.checkScalar( "nullif(interval '2' month, interval '3' year)", "+2", "INTERVAL MONTH" );
         tester.checkScalar( "nullif(interval '2 5' day to hour, interval '5' second)", "+2 05", "INTERVAL DAY TO HOUR" );
@@ -5112,7 +4939,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testCoalesceFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.COALESCE ), VM_EXPAND );
         tester.checkString( "coalesce('a','b')", "a", "CHAR(1) NOT NULL" );
@@ -5122,7 +4948,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testUserFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.USER ), VM_FENNEL );
         tester.checkString( "USER", "sa", "VARCHAR(2000) NOT NULL" );
@@ -5130,7 +4955,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testCurrentUserFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.CURRENT_USER ), VM_FENNEL );
         tester.checkString( "CURRENT_USER", "sa", "VARCHAR(2000) NOT NULL" );
@@ -5138,7 +4962,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testSessionUserFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.SESSION_USER ), VM_FENNEL );
         tester.checkString( "SESSION_USER", "sa", "VARCHAR(2000) NOT NULL" );
@@ -5146,7 +4969,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testSystemUserFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.SYSTEM_USER ), VM_FENNEL );
         String user = System.getProperty( "user.name" ); // e.g. "jhyde"
@@ -5155,7 +4977,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testCurrentPathFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.CURRENT_PATH ), VM_FENNEL );
         tester.checkString( "CURRENT_PATH", "", "VARCHAR(2000) NOT NULL" );
@@ -5163,7 +4984,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testCurrentRoleFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.CURRENT_ROLE ), VM_FENNEL );
         // By default, the CURRENT_ROLE function returns the empty string because a role has to be set explicitly.
@@ -5172,7 +4992,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testCurrentCatalogFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.CURRENT_CATALOG ), VM_FENNEL );
         // By default, the CURRENT_CATALOG function returns the empty string because a catalog has to be set explicitly.
@@ -5181,7 +5000,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testLocalTimeFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.LOCALTIME ) );
         tester.checkScalar( "LOCALTIME", TIME_PATTERN, "TIME(0) NOT NULL" );
@@ -5208,7 +5026,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testLocalTimestampFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.LOCALTIMESTAMP ) );
         tester.checkScalar(
@@ -5248,7 +5065,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testCurrentTimeFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.CURRENT_TIME ) );
         tester.checkScalar(
@@ -5277,7 +5093,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testCurrentTimestampFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.CURRENT_TIMESTAMP ) );
         tester.checkScalar(
@@ -5312,7 +5127,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
     /**
      * Returns a time string, in GMT, that will be valid for at least 2 minutes.
-     *
+     * <p>
      * For example, at "2005-01-01 12:34:56 PST", returns "2005-01-01 20:". At "2005-01-01 12:34:59 PST", waits a minute, then returns "2005-01-01 21:".
      *
      * @param tz Time zone
@@ -5415,7 +5230,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testSubstringFunction() {
         tester.setFor( OperatorRegistry.get( OperatorName.SUBSTRING ) );
         tester.checkString(
@@ -5564,7 +5378,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     /*
-    @Test @Disabled // refactor
+    @Test 
     @Disabled
     public void testRtrimFunc() {
         tester.setFor( OracleSqlOperatorTable.RTRIM );
@@ -5574,7 +5388,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
     }
 
 
-    @Test @Disabled // refactor
+    @Test 
     @Disabled
     public void testLtrimFunc() {
         tester.setFor( OracleSqlOperatorTable.LTRIM );
@@ -5584,7 +5398,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
     }
 
 
-    @Test @Disabled // refactor
+    @Test 
     @Disabled
     public void testGreatestFunc() {
         tester.setFor( OracleSqlOperatorTable.GREATEST );
@@ -5600,7 +5414,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
     }
 
 
-    @Test @Disabled // refactor
+    @Test 
     @Disabled
     public void testLeastFunc() {
         tester.setFor( OracleSqlOperatorTable.LEAST );
@@ -5616,7 +5430,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
     }
 
 
-    @Test @Disabled // refactor
+    @Test 
     @Disabled
     public void testNvlFunc() {
         tester.setFor( OracleSqlOperatorTable.NVL );
@@ -5640,7 +5454,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
     }
 
 
-    @Test @Disabled // refactor
+    @Test 
     @Disabled
     public void testDecodeFunc() {
         tester.setFor( OracleSqlOperatorTable.DECODE );
@@ -5661,7 +5475,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testWindow() {
         if ( !enable ) {
             return;
@@ -5675,7 +5488,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testElementFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.ELEMENT ), VM_FENNEL, VM_JAVA );
         tester.checkString( "element(multiset['abc'])", "abc", "CHAR(3) NOT NULL" );
@@ -5684,7 +5496,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testCardinalityFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.CARDINALITY ), VM_FENNEL, VM_JAVA );
         tester.checkScalarExact( "cardinality(multiset[cast(null as integer),2])", "2" );
@@ -5702,7 +5513,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testMemberOfOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.MEMBER_OF ), VM_FENNEL, VM_JAVA );
         tester.checkBoolean( "1 member of multiset[1]", Boolean.TRUE );
@@ -5714,7 +5524,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testMultisetUnionOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.MULTISET_UNION_DISTINCT ), VM_FENNEL, VM_JAVA );
         tester.checkBoolean( "multiset[1,2] submultiset of (multiset[2] multiset union multiset[1])", Boolean.TRUE );
@@ -5758,7 +5567,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testMultisetUnionAllOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.MULTISET_UNION ), VM_FENNEL, VM_JAVA );
         tester.checkScalar(
@@ -5793,7 +5601,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testSubMultisetOfOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.SUBMULTISET_OF ), VM_FENNEL, VM_JAVA );
         tester.checkBoolean( "multiset[2] submultiset of multiset[1]", Boolean.FALSE );
@@ -5808,7 +5615,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testNotSubMultisetOfOperator() {
         tester.setFor( OperatorRegistry.get( OperatorName.NOT_SUBMULTISET_OF ), VM_FENNEL, VM_JAVA );
         tester.checkBoolean( "multiset[2] not submultiset of multiset[1]", Boolean.TRUE );
@@ -5823,7 +5629,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testCollectFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.COLLECT ), VM_FENNEL, VM_JAVA );
         tester.checkFails( "collect(^*^)", "Unknown identifier '\\*'", false );
@@ -5847,14 +5652,12 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testFusionFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.FUSION ), VM_FENNEL, VM_JAVA );
     }
 
 
     @Test
-    @Disabled // refactor
     public void testYear() {
         tester.setFor( OperatorRegistry.get( OperatorName.YEAR ), VM_FENNEL, VM_JAVA );
 
@@ -5867,7 +5670,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testQuarter() {
         tester.setFor( OperatorRegistry.get( OperatorName.QUARTER ), VM_FENNEL, VM_JAVA );
 
@@ -5924,7 +5726,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testMonth() {
         tester.setFor( OperatorRegistry.get( OperatorName.MONTH ), VM_FENNEL, VM_JAVA );
 
@@ -5937,7 +5738,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testWeek() {
         tester.setFor( OperatorRegistry.get( OperatorName.WEEK ), VM_FENNEL, VM_JAVA );
         if ( Bug.CALCITE_2539_FIXED ) {
@@ -5955,7 +5755,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testDayOfYear() {
         tester.setFor( OperatorRegistry.get( OperatorName.DAYOFYEAR ), VM_FENNEL, VM_JAVA );
         if ( Bug.CALCITE_2539_FIXED ) {
@@ -5973,7 +5772,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testDayOfMonth() {
         tester.setFor( OperatorRegistry.get( OperatorName.DAYOFMONTH ), VM_FENNEL, VM_JAVA );
         tester.checkScalar(
@@ -5985,7 +5783,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testDayOfWeek() {
         tester.setFor( OperatorRegistry.get( OperatorName.DAYOFWEEK ), VM_FENNEL, VM_JAVA );
         if ( Bug.CALCITE_2539_FIXED ) {
@@ -6003,7 +5800,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testHour() {
         tester.setFor( OperatorRegistry.get( OperatorName.HOUR ), VM_FENNEL, VM_JAVA );
 
@@ -6016,7 +5812,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testMinute() {
         tester.setFor( OperatorRegistry.get( OperatorName.MINUTE ), VM_FENNEL, VM_JAVA );
 
@@ -6029,7 +5824,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testSecond() {
         tester.setFor( OperatorRegistry.get( OperatorName.SECOND ), VM_FENNEL, VM_JAVA );
 
@@ -6042,7 +5836,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testExtractIntervalYearMonth() {
         tester.setFor( OperatorRegistry.get( OperatorName.EXTRACT ), VM_FENNEL, VM_JAVA );
 
@@ -6137,7 +5930,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testExtractIntervalDayTime() {
         tester.setFor( OperatorRegistry.get( OperatorName.EXTRACT ), VM_FENNEL, VM_JAVA );
 
@@ -6228,7 +6020,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testExtractDate() {
         tester.setFor( OperatorRegistry.get( OperatorName.EXTRACT ), VM_FENNEL, VM_JAVA );
 
@@ -6374,7 +6165,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testExtractTimestamp() {
         tester.setFor( OperatorRegistry.get( OperatorName.EXTRACT ), VM_FENNEL, VM_JAVA );
 
@@ -6486,7 +6276,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testExtractFunc() {
         tester.setFor(
                 OperatorRegistry.get( OperatorName.EXTRACT ),
@@ -6531,7 +6320,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testExtractFuncFromDateTime() {
         tester.setFor( OperatorRegistry.get( OperatorName.EXTRACT ), VM_FENNEL, VM_JAVA );
 
@@ -6574,7 +6362,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testArrayValueConstructor() {
         tester.setFor( OperatorRegistry.get( OperatorName.ARRAY_VALUE_CONSTRUCTOR ) );
         tester.checkScalar(
@@ -6588,7 +6375,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testItemOp() {
         tester.setFor( OperatorRegistry.get( OperatorName.ITEM ) );
         tester.checkScalar( "ARRAY ['foo', 'bar'][1]", "foo", "CHAR(3)" );
@@ -6614,7 +6400,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testMapValueConstructor() {
         tester.setFor( OperatorRegistry.get( OperatorName.MAP_VALUE_CONSTRUCTOR ), VM_JAVA );
 
@@ -6645,7 +6430,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testCeilFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.CEIL ), VM_FENNEL );
         tester.checkScalarApprox( "ceil(10.1e0)", "DOUBLE NOT NULL", 11, 0 );
@@ -6659,7 +6443,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testCeilFuncInterval() {
         if ( !enable ) {
             return;
@@ -6686,7 +6469,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testFloorFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.FLOOR ), VM_FENNEL );
         tester.checkScalarApprox( "floor(2.5e0)", "DOUBLE NOT NULL", 2, 0 );
@@ -6700,7 +6482,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testFloorFuncDateTime() {
         tester.checkFails(
                 "^floor('12:34:56')^",
@@ -6747,7 +6528,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testCeilFuncDateTime() {
         tester.checkFails(
                 "^ceil('12:34:56')^",
@@ -6809,7 +6589,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testFloorFuncInterval() {
         if ( !enable ) {
             return;
@@ -6867,7 +6646,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testTimestampAdd() {
         tester.setFor( OperatorRegistry.get( OperatorName.TIMESTAMP_ADD ) );
         tester.checkScalar(
@@ -7027,7 +6805,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testTimestampAddFractionalSeconds() {
         tester.setFor( OperatorRegistry.get( OperatorName.TIMESTAMP_ADD ) );
         tester.checkType(
@@ -7045,17 +6822,16 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testTimestampDiff() {
         tester.setFor( OperatorRegistry.get( OperatorName.TIMESTAMP_DIFF ) );
         tester.checkScalar(
                 "timestampdiff(HOUR, timestamp '2016-02-24 12:42:25', timestamp '2016-02-24 15:42:25')",
                 "3",
-                "INTEGER NOT NULL" );
+                "BIGINT NOT NULL" );
         tester.checkScalar(
                 "timestampdiff(MICROSECOND, timestamp '2016-02-24 12:42:25', timestamp '2016-02-24 12:42:20')",
                 "-5000000",
-                "INTEGER NOT NULL" );
+                "BIGINT NOT NULL" );
         tester.checkScalar(
                 "timestampdiff(SQL_TSI_FRAC_SECOND, timestamp '2016-02-24 12:42:25', timestamp '2016-02-24 12:42:20')",
                 "-5000000000",
@@ -7067,101 +6843,87 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
         tester.checkScalar(
                 "timestampdiff(YEAR, timestamp '2014-02-24 12:42:25', timestamp '2016-02-24 12:42:25')",
                 "2",
-                "INTEGER NOT NULL" );
+                "BIGINT NOT NULL" );
         tester.checkScalar(
                 "timestampdiff(WEEK, timestamp '2014-02-24 12:42:25', timestamp '2016-02-24 12:42:25')",
                 "104",
-                "INTEGER NOT NULL" );
+                "BIGINT NOT NULL" );
         tester.checkScalar(
                 "timestampdiff(WEEK, timestamp '2014-02-19 12:42:25', timestamp '2016-02-24 12:42:25')",
                 "105",
-                "INTEGER NOT NULL" );
+                "BIGINT NOT NULL" );
         tester.checkScalar(
                 "timestampdiff(MONTH, timestamp '2014-02-24 12:42:25', timestamp '2016-02-24 12:42:25')",
                 "24",
-                "INTEGER NOT NULL" );
+                "BIGINT NOT NULL" );
         tester.checkScalar(
                 "timestampdiff(QUARTER, timestamp '2014-02-24 12:42:25', timestamp '2016-02-24 12:42:25')",
                 "8",
-                "INTEGER NOT NULL" );
-        tester.checkFails(
-                "timestampdiff(CENTURY, timestamp '2014-02-24 12:42:25', timestamp '2614-02-24 12:42:25')",
-                "(?s)Encountered \"CENTURY\" at .*",
-                false );
+                "BIGINT NOT NULL" );
         tester.checkScalar(
                 "timestampdiff(QUARTER, timestamp '2014-02-24 12:42:25', cast(null as timestamp))",
                 null,
-                "INTEGER" );
-        tester.checkScalar(
-                "timestampdiff(QUARTER, cast(null as timestamp), timestamp '2014-02-24 12:42:25')",
-                null,
-                "INTEGER" );
+                "BIGINT" );
 
         // timestampdiff with date
         tester.checkScalar(
                 "timestampdiff(MONTH, date '2016-03-15', date '2016-06-14')",
                 "2",
-                "INTEGER NOT NULL" );
+                "BIGINT NOT NULL" );
         tester.checkScalar(
                 "timestampdiff(DAY, date '2016-06-15', date '2016-06-14')",
                 "-1",
-                "INTEGER NOT NULL" );
+                "BIGINT NOT NULL" );
         tester.checkScalar(
                 "timestampdiff(HOUR, date '2016-06-15', date '2016-06-14')",
                 "-24",
-                "INTEGER NOT NULL" );
+                "BIGINT NOT NULL" );
         tester.checkScalar(
                 "timestampdiff(MINUTE, date '2016-06-15',  date '2016-06-15')",
                 "0",
-                "INTEGER NOT NULL" );
+                "BIGINT NOT NULL" );
         tester.checkScalar(
                 "timestampdiff(SECOND, cast(null as date), date '2016-06-15')",
                 null,
-                "INTEGER" );
+                "BIGINT" );
         tester.checkScalar(
                 "timestampdiff(DAY, date '2016-06-15', cast(null as date))",
                 null,
-                "INTEGER" );
+                "BIGINT" );
     }
 
 
     @Test
-    @Disabled // refactor
     public void testDenseRankFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.DENSE_RANK ), VM_FENNEL, VM_JAVA );
     }
 
 
     @Test
-    @Disabled // refactor
     public void testPercentRankFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.PERCENT_RANK ), VM_FENNEL, VM_JAVA );
     }
 
 
     @Test
-    @Disabled // refactor
     public void testRankFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.RANK ), VM_FENNEL, VM_JAVA );
     }
 
 
     @Test
-    @Disabled // refactor
     public void testCumeDistFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.CUME_DIST ), VM_FENNEL, VM_JAVA );
     }
 
 
     @Test
-    @Disabled // refactor
     public void testRowNumberFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.ROW_NUMBER ), VM_FENNEL, VM_JAVA );
     }
 
 
     @Test
-    @Disabled // refactor
     public void testCountFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.COUNT ), VM_EXPAND );
         tester.checkType( "count(*)", "BIGINT NOT NULL" );
@@ -7189,7 +6951,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testApproxCountDistinctFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.COUNT ), VM_EXPAND );
         tester.checkFails( "approx_count_distinct(^*^)", "Unknown identifier '\\*'", false );
@@ -7221,7 +6982,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testSumFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.SUM ), VM_EXPAND );
         tester.checkFails(
@@ -7262,7 +7022,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
     /**
      * Very similar to {@code tester.checkType}, but generates inside a SELECT with a non-empty GROUP BY. Aggregate functions may be nullable if executed in a SELECT with an empty GROUP BY.
-     *
+     * <p>
      * Viz: {@code SELECT sum(1) FROM emp} has type "INTEGER", {@code SELECT sum(1) FROM emp GROUP BY deptno} has type "INTEGER NOT NULL",
      */
     protected void checkAggType( SqlTester tester, String expr, String type ) {
@@ -7271,7 +7031,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testAvgFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.AVG ), VM_EXPAND );
         tester.checkFails(
@@ -7299,7 +7058,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testCovarPopFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.COVAR_POP ), VM_EXPAND );
         tester.checkFails( "covar_pop(^*^)", "Unknown identifier '\\*'", false );
@@ -7318,7 +7076,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testCovarSampFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.COVAR_SAMP ), VM_EXPAND );
         tester.checkFails(
@@ -7340,7 +7097,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testRegrSxxFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.REGR_SXX ), VM_EXPAND );
         tester.checkFails(
@@ -7362,7 +7118,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testRegrSyyFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.REGR_SYY ), VM_EXPAND );
         tester.checkFails(
@@ -7386,7 +7141,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testStddevPopFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.STDDEV_POP ), VM_EXPAND );
         tester.checkFails(
@@ -7415,7 +7169,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testStddevSampFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.STDDEV_SAMP ), VM_EXPAND );
         tester.checkFails(
@@ -7444,7 +7197,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testStddevFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.STDDEV ), VM_EXPAND );
         tester.checkFails(
@@ -7466,7 +7218,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testVarPopFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.VAR_POP ), VM_EXPAND );
         tester.checkFails(
@@ -7559,7 +7310,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testVarFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.VARIANCE ), VM_EXPAND );
         tester.checkFails(
@@ -7605,7 +7355,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testMinFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.MIN ), VM_EXPAND );
         tester.checkFails(
@@ -7651,7 +7400,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testMaxFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.MAX ), VM_EXPAND );
         tester.checkFails(
@@ -7694,7 +7442,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testLastValueFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.LAST_VALUE ), VM_EXPAND );
         final String[] values = { "0", "CAST(null AS INTEGER)", "3", "3" };
@@ -7722,7 +7469,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testFirstValueFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.FIRST_VALUE ), VM_EXPAND );
         final String[] values = { "0", "CAST(null AS INTEGER)", "3", "3" };
@@ -7750,7 +7496,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testAnyValueFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.ANY_VALUE ), VM_EXPAND );
         tester.checkFails(
@@ -7796,7 +7541,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testBitAndFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.BIT_AND ), VM_FENNEL, VM_JAVA );
         tester.checkFails( "bit_and(^*^)", "Unknown identifier '\\*'", false );
@@ -7822,7 +7566,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled // refactor
     public void testBitOrFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.BIT_OR ), VM_FENNEL, VM_JAVA );
         tester.checkFails( "bit_or(^*^)", "Unknown identifier '\\*'", false );
@@ -7856,7 +7599,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
      * </ul>
      */
     // TODO MV: enable
-//    @Test @Disabled // refactor
+//    @Test 
 //    public void testLiteralAtLimit() {
 //        tester.setFor( StdOperatorRegistry.get( OperatorName.CAST );
 //        if ( !enable ) {
@@ -7899,7 +7642,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
      */
 
     // TODO MV: enable
-//    @Test @Disabled // refactor
+//    @Test 
 //    public void testLiteralBeyondLimit() {
 //        tester.setFor( StdOperatorRegistry.get( OperatorName.CAST );
 //        final List<RelDataType> types = SqlLimitsTest.getTypes( tester.getValidator().getTypeFactory() );
@@ -7937,7 +7680,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 //        }
 //    }
     @Test
-    @Disabled // refactor
     public void testCastTruncates() {
         tester.setFor( OperatorRegistry.get( OperatorName.CAST ) );
         tester.checkScalar( "CAST('ABCD' AS CHAR(2))", "AB", "CHAR(2) NOT NULL" );
@@ -7962,7 +7704,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
      * Test that calls all operators with all possible argument types, and for each type, with a set of tricky values.
      */
     @Test
-    @Disabled // refactor
     public void testArgumentBounds() {
         if ( !PolyphenyDbAssert.ENABLE_SLOW ) {
             return;
@@ -8103,7 +7844,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
 
     /**
      * Result checker that considers a test to have succeeded if it returns a particular value or throws an exception that matches one of a list of patterns.
-     *
+     * <p>
      * Sounds peculiar, but is necessary when eager and lazy behaviors are both valid.
      */
     private record ValueOrExceptionResultChecker(Object expected, Pattern... patterns) implements SqlTester.ResultChecker {

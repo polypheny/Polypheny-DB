@@ -4520,7 +4520,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      * Throws a validator exception with access to the validator context.
      * The exception is determined when the function is applied.
      */
-    class ValidationErrorFunction implements Function2<SqlNode, Resources.ExInst<ValidatorException>, PolyphenyDbContextException> {
+    public class ValidationErrorFunction implements Function2<SqlNode, Resources.ExInst<ValidatorException>, PolyphenyDbContextException> {
 
         @Override
         public PolyphenyDbContextException apply( SqlNode v0, Resources.ExInst<ValidatorException> v1 ) {

@@ -26,7 +26,7 @@ import org.polypheny.db.type.entity.PolyString;
 /**
  * Abstract base for character and binary string literals.
  */
-abstract class SqlAbstractStringLiteral extends SqlLiteral {
+public abstract class SqlAbstractStringLiteral extends SqlLiteral {
 
     protected SqlAbstractStringLiteral( PolyString value, PolyType typeName, ParserPos pos ) {
         super( value, typeName, pos );

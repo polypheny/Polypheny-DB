@@ -60,7 +60,7 @@ public class SqlAbstractTimeFunction extends SqlFunction {
         if ( opBinding.getOperandCount() == 1 ) {
             AlgDataType type = opBinding.getOperandType( 0 );
             if ( PolyTypeUtil.isNumeric( type ) ) {
-                precision = opBinding.getOperandLiteralValue( 0, PolyType.INTEGER ).asInteger().value;
+                precision = opBinding.getOperandLiteralValue( 0, PolyType.INTEGER ).asNumber().intValue();
             }
         }
         assert precision >= 0;

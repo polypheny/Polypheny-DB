@@ -19,6 +19,7 @@ package org.polypheny.db.sql.language;
 
 import java.util.List;
 import java.util.Objects;
+import lombok.Getter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Call;
@@ -33,6 +34,7 @@ import org.polypheny.db.util.UnmodifiableArrayList;
 public class SqlBasicCall extends SqlCall {
 
     private SqlOperator operator;
+    @Getter
     public final SqlNode[] operands;
     private final SqlLiteral functionQuantifier;
     private final boolean expanded;
@@ -78,11 +80,6 @@ public class SqlBasicCall extends SqlCall {
     @Override
     public Operator getOperator() {
         return operator;
-    }
-
-
-    public SqlNode[] getOperands() {
-        return operands;
     }
 
 

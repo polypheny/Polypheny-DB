@@ -158,7 +158,7 @@ public class SqlValidatorTestCase {
     /**
      * Fluent testing API.
      */
-    static class Sql {
+    public static class Sql {
 
         private final SqlTester tester;
         private final String sql;

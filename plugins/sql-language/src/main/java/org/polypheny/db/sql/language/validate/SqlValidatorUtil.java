@@ -237,8 +237,8 @@ public class SqlValidatorUtil {
     /**
      * Factory method for {@link SqlValidator}.
      */
-    public static SqlValidatorWithHints newValidator( OperatorTable opTab, Snapshot catalogReader, AlgDataTypeFactory typeFactory, Conformance conformance ) {
-        return new SqlValidatorImpl( opTab, catalogReader, typeFactory, conformance );
+    public static SqlValidatorWithHints newValidator( OperatorTable opTab, AlgDataTypeFactory typeFactory, Conformance conformance ) {
+        return new SqlValidatorImpl( opTab, Catalog.snapshot(), typeFactory, conformance );
     }
 
 

@@ -18,12 +18,13 @@ package org.polypheny.db.nodes;
 
 import java.math.BigDecimal;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 
 public interface Literal extends Visitable, Node {
 
     PolyType getTypeName();
 
-    Object getValue();
+    PolyValue getValue();
 
     <E extends Enum<E>> E symbolValue( Class<E> class_ );
 

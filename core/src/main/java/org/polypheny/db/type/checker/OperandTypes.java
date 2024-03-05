@@ -75,7 +75,7 @@ public abstract class OperandTypes {
                     }
 
                     final Literal arg = (Literal) node;
-                    final BigDecimal value = (BigDecimal) arg.getValue();
+                    final BigDecimal value = arg.getValue().asNumber().BigDecimalValue();
                     if ( value.compareTo( BigDecimal.ZERO ) < 0 || hasFractionalPart( value ) ) {
                         if ( throwOnFailure ) {
                             throw callBinding.newError( RESOURCE.argumentMustBePositiveInteger( callBinding.getOperator().getName() ) );
