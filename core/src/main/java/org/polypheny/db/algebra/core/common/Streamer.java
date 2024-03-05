@@ -81,10 +81,10 @@ public abstract class Streamer extends BiAlg {
 
     @Override
     public String algCompareString() {
-        return "$streamer:[$" +
-                getProvider().algCompareString() +
-                ",$" + getCollector().algCompareString() +
-                "]";
+        return getClass().getSimpleName() + "from[$" +
+                getProvider().algCompareString() + "$" +
+                "],to[" + getCollector().algCompareString() +
+                "$]&";
     }
 
 

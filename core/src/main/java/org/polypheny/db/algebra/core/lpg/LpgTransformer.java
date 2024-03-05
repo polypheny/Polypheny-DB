@@ -48,7 +48,8 @@ public class LpgTransformer extends Transformer {
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + getInputs().stream().map( AlgNode::algCompareString ).collect( Collectors.joining( "$" ) );
+        return getClass().getSimpleName() + "$"
+                + getInputs().stream().map( AlgNode::algCompareString ).collect( Collectors.joining( "$" ) ) + "&";
     }
 
 

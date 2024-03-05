@@ -53,12 +53,12 @@ public abstract class LpgModify<E extends Entity> extends Modify<E> implements L
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() +
+        return getClass().getSimpleName() +
                 "$" + entity.id +
                 "$" + entity.getLayer() +
                 "$" + (ids != null ? ids.hashCode() : "[]") +
                 "$" + (operations != null ? operations.hashCode() : "[]") +
-                "{" + input.algCompareString() + "}";
+                "{" + input.algCompareString() + "}&";
     }
 
 

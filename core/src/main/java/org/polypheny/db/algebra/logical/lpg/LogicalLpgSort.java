@@ -45,7 +45,11 @@ public class LogicalLpgSort extends LpgSort {
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + collation.hashCode() + "$" + input.algCompareString();
+        return getClass().getSimpleName() + "$"
+                + collation.hashCode() + "$"
+                + input.algCompareString() + "$"
+                + (offset == null ? "" : offset.hashCode()) + "$"
+                + (fetch == null ? "" : fetch.hashCode()) + "&";
     }
 
 

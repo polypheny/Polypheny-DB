@@ -58,7 +58,7 @@ public class ConstraintEnforcer extends BiAlg {
 
     @Override
     public String algCompareString() {
-        return "Constraint:(" + this.left.algCompareString() + ")->[" + right.algCompareString() + "]";
+        return ConstraintEnforcer.class.getSimpleName() + "$if(" + this.left.algCompareString() + ")->[" + right.algCompareString() + "]&";
     }
 
 }

@@ -40,7 +40,9 @@ public abstract class LpgScan<E extends Entity> extends Scan<E> implements LpgAl
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + entity.id + "$" + entity.id;
+        return getClass().getSimpleName() + "$"
+                + entity.id + "$"
+                + entity.id + "&";
     }
 
 

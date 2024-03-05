@@ -147,7 +147,10 @@ public class EnumerableLpgMatch extends LpgMatch implements EnumerableAlg {
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + matches.hashCode() + "$" + names.hashCode();
+        return getClass().getSimpleName() + "$"
+                + matches.hashCode() + "$"
+                + names.hashCode() + "$"
+                + input.algCompareString() + "&";
     }
 
 

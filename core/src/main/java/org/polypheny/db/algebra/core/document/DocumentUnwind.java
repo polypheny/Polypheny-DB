@@ -41,8 +41,8 @@ public class DocumentUnwind extends SingleAlg implements DocumentAlg {
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName()
-                + "$" + path;
+        return getClass().getSimpleName() + "$"
+                + path + "&";
     }
 
 

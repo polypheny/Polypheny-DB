@@ -67,7 +67,8 @@ public class EnumerableBindable extends ConverterImpl implements BindableAlg {
 
     @Override
     public String algCompareString() {
-        return "EnumerableBindable$" + input.algCompareString() + "&";
+        return EnumerableBindable.class.getSimpleName() + "$"
+                + input.algCompareString() + "&";
     }
 
 
@@ -83,6 +84,7 @@ public class EnumerableBindable extends ConverterImpl implements BindableAlg {
         final Bindable<?> bindable = EnumerableInterpretable.toBindable( map, (EnumerableAlg) getInput(), Prefer.ARRAY, dataContext.getStatement() ).left;
         final ArrayBindable arrayBindable = EnumerableInterpretable.box( bindable );
         dataContext.addAll( map );
+        //noinspection unchecked
         return arrayBindable.bind( dataContext );
     }
 

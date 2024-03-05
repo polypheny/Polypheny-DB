@@ -74,10 +74,10 @@ public abstract class LpgUnwind extends SingleAlg implements LpgAlg {
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName()
-                + "$" + index
-                + (alias != null ? "$As$" + alias : "")
-                + "$" + input.algCompareString();
+        return getClass().getSimpleName() + "$"
+                + index + "$"
+                + (alias != null ? "$As$" + alias : "") + "$"
+                + input.algCompareString() + "&";
     }
 
 

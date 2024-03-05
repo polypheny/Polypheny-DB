@@ -52,7 +52,7 @@ public abstract class BatchIterator extends SingleAlg {
 
     @Override
     public String algCompareString() {
-        return "for[" + getInput().algCompareString() + "]";
+        return getClass().getSimpleName() + "$for[" + getInput().algCompareString() + "]&";
     }
 
 }

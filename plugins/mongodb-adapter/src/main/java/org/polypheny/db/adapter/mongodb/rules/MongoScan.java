@@ -92,9 +92,9 @@ public class MongoScan extends Scan<MongoEntity> implements MongoAlg {
 
     @Override
     public String algCompareString() {
-        return this.getClass().getSimpleName()
-                + "$" + entity.id
-                + "$" + entity.getLayer();
+        return this.getClass().getSimpleName() + "$"
+                + entity.id + "$"
+                + entity.getLayer() + "&";
     }
 
 

@@ -16,16 +16,17 @@
 
 package org.polypheny.db.adapter;
 
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.document.DocumentModify;
 import org.polypheny.db.catalog.catalogs.GraphAdapterCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.tools.AlgBuilder;
 
+@Slf4j
 public class GraphModifyDelegate extends GraphScanDelegate implements Modifiable {
 
 
@@ -40,19 +41,22 @@ public class GraphModifyDelegate extends GraphScanDelegate implements Modifiable
 
     @Override
     public void addColumn( Context context, long allocId, LogicalColumn column ) {
-        throw new GenericRuntimeException( "Should be overwritten." );
+        log.warn( "Should be overwritten by callee." );
+        modifiable.addColumn( context, allocId, column );
     }
 
 
     @Override
     public void dropColumn( Context context, long allocId, long columnId ) {
-        throw new GenericRuntimeException( "Should be overwritten." );
+        log.warn( "Should be overwritten by callee." );
+        modifiable.dropColumn( context, allocId, columnId );
     }
 
 
     @Override
     public String addIndex( Context context, LogicalIndex index, AllocationTable allocation ) {
-        throw new GenericRuntimeException( "Should be overwritten." );
+        log.warn( "Should be overwritten by callee." );
+        return modifiable.addIndex( context, index, allocation );
     }
 
 
@@ -64,7 +68,8 @@ public class GraphModifyDelegate extends GraphScanDelegate implements Modifiable
 
     @Override
     public void updateColumnType( Context context, long allocId, LogicalColumn column ) {
-        throw new GenericRuntimeException( "Should be overwritten." );
+        log.warn( "Should be overwritten by callee." );
+        modifiable.updateColumnType( context, allocId, column );
     }
 
 

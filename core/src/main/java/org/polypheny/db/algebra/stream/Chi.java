@@ -56,7 +56,8 @@ public class Chi extends SingleAlg {
 
     @Override
     public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" + input.algCompareString() + "&";
+        return this.getClass().getSimpleName() + "$"
+                + input.algCompareString() + "&";
     }
 
 }

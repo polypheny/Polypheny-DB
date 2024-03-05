@@ -64,17 +64,13 @@ import org.polypheny.db.util.Util;
 public abstract class Sort extends SingleAlg {
 
     /**
-     * -- GETTER --
-     *  Returns the array of
-     * s asked for by the sort specification, from most significant to least significant.
-     *  See also
-     * , which lists all known collations. For example,
-     *  <code>ORDER BY time_id</code> might also be sorted by
-     *  <code>the_year, the_month</code> because of a known monotonicity constraint among the columns.
-     *  would return
-     *  <code>[time_id]</code> and
-     *  would return
-     *  <code>[ [time_id], [the_year, the_month] ]</code>.
+     * Returns the array of {@link AlgFieldCollation}s asked for by the sort specification, from most significant to least significant.
+     * <p>
+     * See also {@link AlgMetadataQuery#collations(AlgNode)}, which lists all known collations. For example,
+     * <code>ORDER BY time_id</code> might also be sorted by
+     * <code>the_year, the_month</code> because of a known monotonicity constraint among the columns. {@code getCollation} would return
+     * <code>[time_id]</code> and {@code collations} would return
+     * <code>[ [time_id], [the_year, the_month] ]</code>.
      */
     @Getter
     public final AlgCollation collation;

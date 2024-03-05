@@ -49,7 +49,9 @@ public abstract class DocumentFilter extends SingleAlg implements DocumentAlg {
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + condition.hashCode() + "$" + input.algCompareString();
+        return getClass().getSimpleName() + "$"
+                + condition.hashCode() + "$"
+                + input.algCompareString() + "&";
     }
 
 

@@ -57,7 +57,10 @@ public abstract class LpgValues extends AbstractAlgNode implements LpgAlg {
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + nodes.hashCode() + "$" + edges.hashCode() + "$" + values.hashCode();
+        return getClass().getSimpleName() + "$"
+                + nodes.hashCode() + "$"
+                + edges.hashCode() + "$"
+                + values.hashCode() + "&";
     }
 
 }

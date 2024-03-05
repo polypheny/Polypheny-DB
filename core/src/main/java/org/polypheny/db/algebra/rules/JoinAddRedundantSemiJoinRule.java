@@ -68,40 +68,40 @@ public class JoinAddRedundantSemiJoinRule extends AlgOptRule {
 
     @Override
     public void onMatch( AlgOptRuleCall call ) {
-        Join origJoinRel = call.alg( 0 );
-        if ( origJoinRel.isSemiJoinDone() ) {
+        Join origJoinAlg = call.alg( 0 );
+        if ( origJoinAlg.isSemiJoinDone() ) {
             return;
         }
 
         // can't process outer joins using semijoins
-        if ( origJoinRel.getJoinType() != JoinAlgType.INNER ) {
+        if ( origJoinAlg.getJoinType() != JoinAlgType.INNER ) {
             return;
         }
 
         // determine if we have a valid join condition
-        final JoinInfo joinInfo = origJoinRel.analyzeCondition();
-        if ( joinInfo.leftKeys.size() == 0 ) {
+        final JoinInfo joinInfo = origJoinAlg.analyzeCondition();
+        if ( joinInfo.leftKeys.isEmpty() ) {
             return;
         }
 
         AlgNode semiJoin =
                 SemiJoin.create(
-                        origJoinRel.getLeft(),
-                        origJoinRel.getRight(),
-                        origJoinRel.getCondition(),
+                        origJoinAlg.getLeft(),
+                        origJoinAlg.getRight(),
+                        origJoinAlg.getCondition(),
                         joinInfo.leftKeys,
                         joinInfo.rightKeys );
 
-        AlgNode newJoinRel =
-                origJoinRel.copy(
-                        origJoinRel.getTraitSet(),
-                        origJoinRel.getCondition(),
+        AlgNode newJoinAlg =
+                origJoinAlg.copy(
+                        origJoinAlg.getTraitSet(),
+                        origJoinAlg.getCondition(),
                         semiJoin,
-                        origJoinRel.getRight(),
+                        origJoinAlg.getRight(),
                         JoinAlgType.INNER,
                         true );
 
-        call.transformTo( newJoinRel );
+        call.transformTo( newJoinAlg );
     }
 
 }

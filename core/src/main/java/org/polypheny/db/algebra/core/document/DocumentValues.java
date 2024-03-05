@@ -117,7 +117,8 @@ public abstract class DocumentValues extends AbstractAlgNode implements Document
 
     @Override
     public String algCompareString() {
-        return getClass().getCanonicalName() + "$" + documents.hashCode() + "$";
+        return getClass().getCanonicalName() + "$"
+                + documents.hashCode() + "&";
     }
 
 

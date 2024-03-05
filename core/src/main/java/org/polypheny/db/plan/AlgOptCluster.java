@@ -58,14 +58,18 @@ import org.polypheny.db.schema.trait.ModelTrait;
  */
 public class AlgOptCluster {
 
+    @Getter
     private final AlgDataTypeFactory typeFactory;
+    @Getter
     private final AlgOptPlanner planner;
     private final AtomicInteger nextCorrel;
     @Getter
     private final Map<CorrelationId, AlgNode> mapCorrelToAlg;
-    private RexNode originalExpression;
+    @Getter
     private final RexBuilder rexBuilder;
+    @Getter
     private AlgMetadataProvider metadataProvider;
+    @Getter
     private MetadataFactory metadataFactory;
     private final AlgTraitSet emptyTraitSet;
     private AlgMetadataQuery mq;
@@ -76,7 +80,7 @@ public class AlgOptCluster {
 
     /**
      * Creates a cluster.
-     *
+     * <p>
      * For use only from {@link #create} and {@link AlgOptQuery}.
      */
     private AlgOptCluster( AlgOptPlanner planner, AlgDataTypeFactory typeFactory, RexBuilder rexBuilder, AlgTraitSet traitSet, Snapshot snapshot ) {
@@ -85,7 +89,7 @@ public class AlgOptCluster {
         this.planner = Objects.requireNonNull( planner );
         this.typeFactory = Objects.requireNonNull( typeFactory );
         this.rexBuilder = rexBuilder;
-        this.originalExpression = rexBuilder.makeLiteral( "?" );
+        RexNode originalExpression = rexBuilder.makeLiteral( "?" );
 
         // set up a default alg metadata provider, giving the planner first crack at everything
         setMetadataProvider( DefaultAlgMetadataProvider.INSTANCE );
@@ -117,26 +121,6 @@ public class AlgOptCluster {
     }
 
 
-    public AlgOptPlanner getPlanner() {
-        return planner;
-    }
-
-
-    public AlgDataTypeFactory getTypeFactory() {
-        return typeFactory;
-    }
-
-
-    public RexBuilder getRexBuilder() {
-        return rexBuilder;
-    }
-
-
-    public AlgMetadataProvider getMetadataProvider() {
-        return metadataProvider;
-    }
-
-
     /**
      * Overrides the default metadata provider for this cluster.
      *
@@ -148,14 +132,9 @@ public class AlgOptCluster {
     }
 
 
-    public MetadataFactory getMetadataFactory() {
-        return metadataFactory;
-    }
-
-
     /**
      * Returns the current RelMetadataQuery.
-     *
+     * <p>
      * This method might be changed or moved in future. If you have a {@link AlgOptRuleCall} available, for example if you are in
      * a {@link AlgOptRule#onMatch(AlgOptRuleCall)} method, then use {@link AlgOptRuleCall#getMetadataQuery()} instead.
      */
@@ -191,7 +170,7 @@ public class AlgOptCluster {
     }
 
 
-    public AlgTraitSet traitSetOf( AlgTrait trait ) {
+    public AlgTraitSet traitSetOf( AlgTrait<?> trait ) {
         return emptyTraitSet.replace( trait );
     }
 

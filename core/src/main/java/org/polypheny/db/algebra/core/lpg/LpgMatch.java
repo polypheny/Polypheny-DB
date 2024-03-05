@@ -70,10 +70,10 @@ public abstract class LpgMatch extends SingleAlg implements LpgAlg {
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() +
-                "$" + matches.hashCode() +
-                "$" + names.hashCode() +
-                "$" + input.algCompareString();
+        return getClass().getSimpleName() + "$" +
+                matches.hashCode() + "$" +
+                names.hashCode() + "$" +
+                input.algCompareString() + "&";
     }
 
 

@@ -260,7 +260,7 @@ public class Bindables {
 
         @Override
         public String algCompareString() {
-            return "BindableScan$" +
+            return getClass().getSimpleName() + "$" +
                     "." + entity.id +
                     (filters != null ? filters.stream().map( RexNode::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
                     (projects != null ? projects.toString() : "") + "&";

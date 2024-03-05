@@ -96,8 +96,10 @@ public class Transformer extends AbstractAlgNode {
 
     @Override
     public String algCompareString() {
-        return getClass().getSimpleName() + "$" + inModelTrait + "$" + outModelTrait + "$"
-                + inputs.stream().map( AlgNode::algCompareString ).collect( Collectors.joining( "$" ) ) + "$";
+        return getClass().getSimpleName() + "$"
+                + inModelTrait + "$"
+                + outModelTrait + "$"
+                + inputs.stream().map( AlgNode::algCompareString ).collect( Collectors.joining( "$" ) ) + "&";
     }
 
 }

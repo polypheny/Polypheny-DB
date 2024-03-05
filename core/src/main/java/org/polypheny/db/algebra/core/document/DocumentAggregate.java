@@ -40,7 +40,7 @@ public class DocumentAggregate extends SingleAlg implements DocumentAlg {
     @NotNull
     public final List<LaxAggregateCall> aggCalls;
 
-    @Nullable // null means "group by all columns in input row"
+    @Nullable // null means "group by all fields in the input tuple"
     private final RexNameRef group;
 
 

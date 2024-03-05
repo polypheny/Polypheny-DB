@@ -51,7 +51,10 @@ public abstract class DocumentScan<E extends Entity> extends Scan<E> implements 
     @Override
     public String algCompareString() {
         // need the name for cross-model queries
-        return "$" + getClass().getSimpleName() + "$" + entity.id + "$" + entity.name + "$" + entity.getLayer();
+        return getClass().getSimpleName() + "$"
+                + entity.id + "$"
+                + entity.name + "$"
+                + entity.getLayer() + "&";
     }
 
 

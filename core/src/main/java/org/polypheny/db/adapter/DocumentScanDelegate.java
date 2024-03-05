@@ -66,7 +66,7 @@ public class DocumentScanDelegate implements Scannable {
 
     @Override
     public void restoreCollection( AllocationCollection alloc, List<PhysicalEntity> entities ) {
-
+        scannable.restoreCollection( alloc, entities );
     }
 
 

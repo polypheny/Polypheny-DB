@@ -87,7 +87,9 @@ public class EnumerableInterpreter extends SingleAlg implements EnumerableAlg {
 
     @Override
     public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" + input.algCompareString() + "$" + factor + "&";
+        return this.getClass().getSimpleName() + "$"
+                + input.algCompareString() + "$"
+                + factor + "&";
     }
 
 
