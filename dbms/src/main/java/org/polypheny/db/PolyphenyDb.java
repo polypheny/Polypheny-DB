@@ -376,8 +376,8 @@ public class PolyphenyDb {
         // Status service which pipes msgs to the start ui or the console
         StatusService.initialize( transactionManager, server.getServer() );
 
-        log.debug( "Setting Docker Timeouts" );
         Catalog.resetDocker = resetDocker; // TODO: Needed?
+	log.debug( "Setting Docker Timeouts" );
         RuntimeConfig.DOCKER_TIMEOUT.setInteger( mode == RunMode.DEVELOPMENT || mode == RunMode.TEST ? 5 : RuntimeConfig.DOCKER_TIMEOUT.getInteger() );
         initializeDockerManager();
 
@@ -494,7 +494,7 @@ public class PolyphenyDb {
                 AutoDocker.getInstance().doAutoConnect();
             } catch ( GenericRuntimeException e ) {
                 // AutoDocker does not work in Windows containers
-                if ( mode == PolyMode.TEST && !System.getenv( "RUNNER_OS" ).equals( "Windows" ) ) {
+                if ( mode == RunMode.TEST && !System.getenv( "RUNNER_OS" ).equals( "Windows" ) ) {
                     log.error( "Failed to connect to Docker instance: " + e.getMessage() );
                     throw e;
                 }
