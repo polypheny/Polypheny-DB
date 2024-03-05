@@ -43,7 +43,11 @@ message Namespace {
 }
 
 /*
-The Entity message encapsulates different types of entities. Only one of the entities can be set for a given message instance.
+The Entity message acts as a generic wrapper for different of entities metadata messages.
+Only one of the entities metadata fields can be set for a given message instance.
+Different entity metadata messages are used to represent the metadata of different entity types.
+The available entity metadata messages are, Table for relational entities, Graph for labeled property graph entities and
+Document for entities in the document model.
 */
 message Entity {
   oneof Entity {
