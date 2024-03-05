@@ -87,6 +87,7 @@ public class RequestParser {
 
     private final static Pattern SORTING_ENTRY_PATTERN = Pattern.compile(
             "^(?<column>[a-zA-Z]\\w*(?:\\.[a-zA-Z]\\w*\\.[a-zA-Z]\\w*)?)(?:@(?<dir>ASC|DESC))?$" );
+    private final Catalog catalog;
 
 
     public RequestParser( final TransactionManager transactionManager, final Authenticator authenticator, final String userName, final String databaseName ) {
@@ -96,6 +97,7 @@ public class RequestParser {
 
     @VisibleForTesting
     RequestParser( Catalog catalog, TransactionManager transactionManager, Authenticator authenticator, String userName, String databaseName ) {
+        this.catalog = catalog;
         this.transactionManager = transactionManager;
         this.authenticator = authenticator;
         this.userName = userName;
@@ -261,7 +263,7 @@ public class RequestParser {
             throw new ParserException( ParserErrorCode.TABLE_LIST_MALFORMED_TABLE, tableName );
         }
 
-        LogicalTable table = Catalog.snapshot().rel().getTable( tableElements[0], tableElements[1] ).orElseThrow();
+        LogicalTable table = catalog.getSnapshot().rel().getTable( tableElements[0], tableElements[1] ).orElseThrow();
         if ( log.isDebugEnabled() ) {
             log.debug( "Finished parsing table \"{}\".", tableName );
         }
@@ -352,7 +354,7 @@ public class RequestParser {
         Set<Long> notYetAdded = new HashSet<>( validColumns );
         notYetAdded.removeAll( projectedColumns );
         for ( long columnId : notYetAdded ) {
-            LogicalColumn column = Catalog.snapshot().getNamespaces( null ).stream().map( n -> Catalog.snapshot().rel().getColumn( columnId ).orElseThrow() ).findFirst().orElseThrow();
+            LogicalColumn column = catalog.getSnapshot().getNamespaces( null ).stream().map( n -> catalog.getSnapshot().rel().getColumn( columnId ).orElseThrow() ).findFirst().orElseThrow();
             int calculatedPosition = tableOffsets.get( column.tableId ) + column.position - 1;
             RequestColumn requestColumn = new RequestColumn( column, calculatedPosition, calculatedPosition, null, null, false );
             columns.add( requestColumn );

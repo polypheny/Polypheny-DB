@@ -53,7 +53,9 @@ import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -129,8 +131,7 @@ public class AlgJsonReader {
             @Override
             public Entity getEntity( String entity ) {
                 final List<String> list;
-                if ( jsonAlg.get( entity ) instanceof String ) {
-                    String str = (String) jsonAlg.get( entity );
+                if ( jsonAlg.get( entity ) instanceof String str ) {
                     // MV: This is not a nice solution...
                     if ( str.startsWith( "[" ) && str.endsWith( "]" ) ) {
                         str = str.substring( 1, str.length() - 1 );
@@ -142,7 +143,8 @@ public class AlgJsonReader {
                 } else {
                     list = getStringList( entity );
                 }
-                return null; // todo change
+                LogicalNamespace namespace = Catalog.snapshot().getNamespace( list.get( 0 ) ).orElseThrow();
+                return Catalog.snapshot().getLogicalEntity( namespace.id, list.get( 1 ) ).orElse( null );
             }
 
 

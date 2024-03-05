@@ -82,7 +82,6 @@ public class SqlTestFactory {
         this.validatorFactory = validatorFactory;
         this.operatorTable = Suppliers.memoize( () -> createOperatorTable( (OperatorTable) options.get( "operatorTable" ) ) );
         this.typeFactory = Suppliers.memoize( () -> createTypeFactory( (Conformance) options.get( "conformance" ) ) );
-        Boolean caseSensitive = (Boolean) options.get( "caseSensitive" );
         this.parserConfig = Suppliers.memoize( () -> createParserConfig( options ) );
     }
 

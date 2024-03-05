@@ -161,7 +161,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         this.adapterCatalogs = new ConcurrentHashMap<>();
         this.interfaceTemplates = new ConcurrentHashMap<>();
 
-        this.persister = new Persister();
+        this.persister = memoryCatalog ? new MemoryPersister() : new Persister();
 
     }
 

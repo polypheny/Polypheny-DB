@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.Spaces;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -125,22 +126,68 @@ public class SqlPrettyWriter implements SqlWriter {
     protected FrameImpl frame;
     private boolean needWhitespace;
     protected String nextWhitespace;
+    @Setter
     protected boolean alwaysUseParentheses;
+
+    @Setter
     private boolean keywordsLowerCase;
     private Bean bean;
+
+    @Setter
     private boolean quoteAllIdentifiers;
+
+    @Setter
     private int indentation;
+
+    @Setter
     private boolean clauseStartsLine;
+
+    @Setter
     private boolean selectListItemsOnSeparateLines;
+    /**
+     *  Sets whether to use a fix for SELECT list indentations.
+     *  <ul>
+     *  <li>If set to "false":
+     *  <blockquote><pre>
+     *  SELECT
+     *      A as A
+     *          B as B
+     *          C as C
+     *      D
+     *  </pre></blockquote></li>
+     *  <li>If set to "true":
+     *  <blockquote><pre>
+     *  SELECT
+     *      A as A
+     *      B as B
+     *      C as C
+     *      D
+     *  </pre></blockquote></li>
+     *  </ul>
+     */
+    @Setter
     private boolean selectListExtraIndentFlag;
     private int currentIndent;
+    @Setter
     private boolean windowDeclListNewline;
     private boolean updateSetListNewline;
+    @Setter
     private boolean windowNewline;
+
+    @Setter
     private SubQueryStyle subQueryStyle;
+    /**
+     *  Sets whether to print a newline before each AND or OR (whichever is higher level) in WHERE clauses. NOTE: <i>Ignored when alwaysUseParentheses is set to true.</i>
+     */
+    @Setter
     private boolean whereListItemsOnSeparateLines;
 
+    /**
+     *  Sets whether the WHEN, THEN and ELSE clauses of a CASE expression appear at the start of a new line. The default is false.
+     */
+    @Setter
     private boolean caseClausesOnNewLines;
+    @Setter
     private int lineLength;
     private int charCount;
 
@@ -164,32 +211,6 @@ public class SqlPrettyWriter implements SqlWriter {
 
     public SqlPrettyWriter( SqlDialect dialect ) {
         this( dialect, true );
-    }
-
-
-    /**
-     * Sets whether the WHEN, THEN and ELSE clauses of a CASE expression appear at the start of a new line. The default is false.
-     */
-    public void setCaseClausesOnNewLines( boolean caseClausesOnNewLines ) {
-        this.caseClausesOnNewLines = caseClausesOnNewLines;
-    }
-
-
-    /**
-     * Sets the sub-query style. Default is {@link SqlWriter.SubQueryStyle#HYDE}.
-     */
-    public void setSubQueryStyle( SubQueryStyle subQueryStyle ) {
-        this.subQueryStyle = subQueryStyle;
-    }
-
-
-    public void setWindowNewline( boolean windowNewline ) {
-        this.windowNewline = windowNewline;
-    }
-
-
-    public void setWindowDeclListNewline( boolean windowDeclListNewline ) {
-        this.windowDeclListNewline = windowDeclListNewline;
     }
 
 
@@ -232,24 +253,9 @@ public class SqlPrettyWriter implements SqlWriter {
     }
 
 
-    public boolean isWhereListItemsOnSeparateLines() {
-        return whereListItemsOnSeparateLines;
-    }
-
-
-    public boolean isSelectListExtraIndentFlag() {
-        return selectListExtraIndentFlag;
-    }
-
-
     @Override
     public boolean isKeywordsLowerCase() {
         return keywordsLowerCase;
-    }
-
-
-    public int getLineLength() {
-        return lineLength;
     }
 
 
@@ -295,16 +301,6 @@ public class SqlPrettyWriter implements SqlWriter {
 
 
     /**
-     * Sets the number of spaces indentation.
-     *
-     * @see #getIndentation()
-     */
-    public void setIndentation( int indentation ) {
-        this.indentation = indentation;
-    }
-
-
-    /**
      * Prints the property settings of this pretty-writer to a writer.
      *
      * @param pw Writer
@@ -344,73 +340,6 @@ public class SqlPrettyWriter implements SqlWriter {
     }
 
 
-    /**
-     * Sets whether a clause (FROM, WHERE, GROUP BY, HAVING, WINDOW, ORDER BY) starts a new line. Default is true. SELECT is always at the start of a line.
-     */
-    public void setClauseStartsLine( boolean clauseStartsLine ) {
-        this.clauseStartsLine = clauseStartsLine;
-    }
-
-
-    /**
-     * Sets whether each item in a SELECT list, GROUP BY list, or ORDER BY list is on its own line. Default false.
-     */
-    public void setSelectListItemsOnSeparateLines( boolean b ) {
-        this.selectListItemsOnSeparateLines = b;
-    }
-
-
-    /**
-     * Sets whether to use a fix for SELECT list indentations.
-     *
-     * <ul>
-     * <li>If set to "false":
-     * <blockquote><pre>
-     * SELECT
-     *     A as A
-     *         B as B
-     *         C as C
-     *     D
-     * </pre></blockquote></li>
-     *
-     * <li>If set to "true":
-     * <blockquote><pre>
-     * SELECT
-     *     A as A
-     *     B as B
-     *     C as C
-     *     D
-     * </pre></blockquote></li>
-     *
-     * </ul>
-     */
-    public void setSelectListExtraIndentFlag( boolean b ) {
-        this.selectListExtraIndentFlag = b;
-    }
-
-
-    /**
-     * Sets whether to print keywords (SELECT, AS, etc.) in lower-case. The default is false: keywords are printed in upper-case.
-     */
-    public void setKeywordsLowerCase( boolean b ) {
-        this.keywordsLowerCase = b;
-    }
-
-
-    /**
-     * Sets whether to print a newline before each AND or OR (whichever is higher level) in WHERE clauses. NOTE: <i>Ignored when alwaysUseParentheses is set to true.</i>
-     */
-
-    public void setWhereListItemsOnSeparateLines( boolean b ) {
-        this.whereListItemsOnSeparateLines = b;
-    }
-
-
-    public void setAlwaysUseParentheses( boolean b ) {
-        this.alwaysUseParentheses = b;
-    }
-
-
     @Override
     public void newlineAndIndent() {
         pw.println();
@@ -426,16 +355,6 @@ public class SqlPrettyWriter implements SqlWriter {
         }
         Spaces.append( pw, indent );
         charCount += indent;
-    }
-
-
-    /**
-     * Sets whether to quote all identifiers, even those which would be correct according to the rules of the {@link SqlDialect} if quotation marks were omitted.
-     *
-     * Default true.
-     */
-    public void setQuoteAllIdentifiers( boolean b ) {
-        this.quoteAllIdentifiers = b;
     }
 
 
@@ -993,11 +912,6 @@ public class SqlPrettyWriter implements SqlWriter {
     @Override
     public void setNeedWhitespace( boolean needWhitespace ) {
         this.needWhitespace = needWhitespace;
-    }
-
-
-    public void setLineLength( int lineLength ) {
-        this.lineLength = lineLength;
     }
 
 

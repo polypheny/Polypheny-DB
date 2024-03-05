@@ -20,7 +20,6 @@ package org.polypheny.db.test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.plan.AlgOptUtil;
@@ -33,7 +32,7 @@ import org.polypheny.db.util.Util;
 /**
  * Unit test for {@link PigAlgBuilder}.
  */
-@Disabled // refactor
+
 public class PigRelBuilderTest {
 
     /**
@@ -60,7 +59,7 @@ public class PigRelBuilderTest {
         //   FROM emp
         final PigAlgBuilder builder = PigAlgBuilder.create( config().build() );
         final AlgNode root = builder.scan( "EMP" ).build();
-        assertThat( str( root ), is( "LogicalScan(table=[[scott, EMP]])\n" ) );
+        assertThat( str( root ), is( "LogicalRelScan(table=[[scott, EMP]])\n" ) );
     }
 
 
