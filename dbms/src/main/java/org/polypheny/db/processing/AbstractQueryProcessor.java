@@ -415,7 +415,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                             parameterizedRoot.validatedRowType,
                             resultConvention,
                             executionTimeMonitor,
-                            Objects.requireNonNull( optimalNode.getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).getDataModel() );
+                            Objects.requireNonNull( optimalNode.getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).dataModel() );
                     plan.result( result );
                     plan.generatedCodes( preparedResult.getCode() );
                     plan.optimalNode( optimalNode );
@@ -500,7 +500,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     optimalRoot.validatedRowType,
                     resultConvention,
                     executionTimeMonitor,
-                    Objects.requireNonNull( plan.optimalNode().getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).getDataModel() );
+                    Objects.requireNonNull( plan.optimalNode().getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).dataModel() );
             plan.result( result );
             plan.generatedCodes( preparedResult.getCode() );
             plan.optimalNode( optimalRoot.alg );

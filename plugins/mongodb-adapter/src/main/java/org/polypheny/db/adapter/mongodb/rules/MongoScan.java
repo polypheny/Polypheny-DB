@@ -115,7 +115,7 @@ public class MongoScan extends Scan<MongoEntity> implements MongoAlg {
         if ( implementor.isDML() ) {
             return;
         }
-        if ( traitSet.getTrait( ModelTraitDef.INSTANCE ).getDataModel() == DataModel.RELATIONAL ) {
+        if ( traitSet.getTrait( ModelTraitDef.INSTANCE ).dataModel() == DataModel.RELATIONAL ) {
             implementor.list.add( Pair.of( null, new BsonDocument( "$project", new BsonDocument( rowType.getFields().stream().map( p -> new BsonElement( MongoRules.maybeQuote( p.getName() ), new BsonString( "$" + p.getPhysicalName() ) ) ).toList() ) ).toJson() ) );
         }
     }

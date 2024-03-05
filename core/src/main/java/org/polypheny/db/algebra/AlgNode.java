@@ -55,6 +55,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.schema.trait.ModelTraitDef;
 import org.polypheny.db.util.Glossary;
 import org.polypheny.db.util.Litmus;
@@ -363,7 +364,7 @@ public interface AlgNode extends AlgOptNode, Cloneable {
     }
 
     default DataModel getModel() {
-        return Objects.requireNonNull( getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).getDataModel();
+        return Objects.requireNonNullElse( getTraitSet().getTrait( ModelTraitDef.INSTANCE ), ModelTrait.RELATIONAL ).dataModel();
     }
 
     default boolean containsView() {

@@ -16,7 +16,6 @@
 
 package org.polypheny.db.schema.trait;
 
-import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgOptPlanner;
@@ -28,21 +27,13 @@ import org.polypheny.db.plan.Convention;
  * Model trait models the different possible "schema", also namespace models,
  * this is on purpose different to the {@link Convention} trait to preserve the model information on push-down of each {@link AlgNode}
  */
-@Getter
-public class ModelTrait implements AlgTrait<ModelTraitDef> {
+public record ModelTrait(DataModel dataModel) implements AlgTrait<ModelTraitDef> {
 
     public static final ModelTrait RELATIONAL = new ModelTrait( DataModel.RELATIONAL );
 
     public static final ModelTrait DOCUMENT = new ModelTrait( DataModel.DOCUMENT );
 
     public static final ModelTrait GRAPH = new ModelTrait( DataModel.GRAPH );
-
-    private final DataModel dataModel;
-
-
-    public ModelTrait( DataModel dataModel ) {
-        this.dataModel = dataModel;
-    }
 
 
     @Override

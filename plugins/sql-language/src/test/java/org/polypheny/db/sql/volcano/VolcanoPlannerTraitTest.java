@@ -34,9 +34,7 @@
 package org.polypheny.db.sql.volcano;
 
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
@@ -111,45 +109,6 @@ public class VolcanoPlannerTraitTest extends SqlLanguageDependent {
     }
 
 
-    //@Disabled
-    @Test
-    public void testDoubleConversion() {
-        VolcanoPlanner planner = new VolcanoPlanner();
-
-        planner.addAlgTraitDef( ConventionTraitDef.INSTANCE );
-        planner.addAlgTraitDef( ALT_TRAIT_DEF );
-
-        planner.addRule( new PhysToIteratorConverterRule() );
-        planner.addRule( new AltTraitConverterRule( ALT_TRAIT, ALT_TRAIT2, "AltToAlt2ConverterRule" ) );
-        planner.addRule( new PhysLeafRule() );
-        planner.addRule( new IterSingleRule() );
-
-        AlgOptCluster cluster = PlannerTests.newCluster( planner );
-
-        NoneLeafAlg noneLeafAlg = AlgOptUtil.addTrait( new NoneLeafAlg( cluster, "noneLeafAlg" ), ALT_TRAIT );
-
-        NoneSingleAlg noneAlg = AlgOptUtil.addTrait( new NoneSingleAlg( cluster, noneLeafAlg ), ALT_TRAIT2 );
-
-        AlgNode convertedAlg = planner.changeTraits( noneAlg, cluster.traitSetOf( EnumerableConvention.INSTANCE ).replace( ALT_TRAIT2 ) );
-
-        planner.setRoot( convertedAlg );
-        AlgNode result = planner.chooseDelegate().findBestExp();
-
-        assertInstanceOf( IterSingleAlg.class, result );
-        assertEquals( EnumerableConvention.INSTANCE, result.getTraitSet().getTrait( ConventionTraitDef.INSTANCE ) );
-        assertEquals( ALT_TRAIT2, result.getTraitSet().getTrait( ALT_TRAIT_DEF ) );
-
-        AlgNode child = result.getInputs().get( 0 );
-        assertTrue( (child instanceof AltTraitConverter) || (child instanceof PhysToIteratorConverter) );
-
-        child = child.getInputs().get( 0 );
-        assertTrue( (child instanceof AltTraitConverter) || (child instanceof PhysToIteratorConverter) );
-
-        child = child.getInputs().get( 0 );
-        assertInstanceOf( PhysLeafAlg.class, child );
-    }
-
-
     @Test
     public void testRuleMatchAfterConversion() {
         VolcanoPlanner planner = new VolcanoPlanner();
@@ -174,50 +133,6 @@ public class VolcanoPlannerTraitTest extends SqlLanguageDependent {
         AlgNode result = planner.chooseDelegate().findBestExp();
 
         assertInstanceOf( IterMergedAlg.class, result );
-    }
-
-
-    //@Disabled
-    @Test
-    public void testTraitPropagation() {
-        VolcanoPlanner planner = new VolcanoPlanner();
-
-        planner.addAlgTraitDef( ConventionTraitDef.INSTANCE );
-        planner.addAlgTraitDef( ALT_TRAIT_DEF );
-
-        planner.addRule( new PhysToIteratorConverterRule() );
-        planner.addRule( new AltTraitConverterRule( ALT_TRAIT, ALT_TRAIT2, "AltToAlt2ConverterRule" ) );
-        planner.addRule( new PhysLeafRule() );
-        planner.addRule( new IterSingleRule2() );
-
-        AlgOptCluster cluster = PlannerTests.newCluster( planner );
-
-        NoneLeafAlg noneLeafAlg = AlgOptUtil.addTrait( new NoneLeafAlg( cluster, "noneLeafAlg" ), ALT_TRAIT );
-
-        NoneSingleAlg noneAlg = AlgOptUtil.addTrait( new NoneSingleAlg( cluster, noneLeafAlg ), ALT_TRAIT2 );
-
-        AlgNode convertedAlg = planner.changeTraits( noneAlg, cluster.traitSetOf( EnumerableConvention.INSTANCE ).replace( ALT_TRAIT2 ) );
-
-        planner.setRoot( convertedAlg );
-        AlgNode result = planner.chooseDelegate().findBestExp();
-
-        assertInstanceOf( IterSingleAlg.class, result );
-        assertEquals( EnumerableConvention.INSTANCE, result.getTraitSet().getTrait( ConventionTraitDef.INSTANCE ) );
-        assertEquals( ALT_TRAIT2, result.getTraitSet().getTrait( ALT_TRAIT_DEF ) );
-
-        AlgNode child = result.getInputs().get( 0 );
-        assertInstanceOf( IterSingleAlg.class, child );
-        assertEquals( EnumerableConvention.INSTANCE, child.getTraitSet().getTrait( ConventionTraitDef.INSTANCE ) );
-        assertEquals( ALT_TRAIT2, child.getTraitSet().getTrait( ALT_TRAIT_DEF ) );
-
-        child = child.getInputs().get( 0 );
-        assertTrue( (child instanceof AltTraitConverter) || (child instanceof PhysToIteratorConverter) );
-
-        child = child.getInputs().get( 0 );
-        assertTrue( (child instanceof AltTraitConverter) || (child instanceof PhysToIteratorConverter) );
-
-        child = child.getInputs().get( 0 );
-        assertInstanceOf( PhysLeafAlg.class, child );
     }
 
 
@@ -437,7 +352,6 @@ public class VolcanoPlannerTraitTest extends SqlLanguageDependent {
             return planner.getCostFactory().makeTinyCost();
         }
 
-        // TODO: SWZ Implement clone?
     }
 
 
@@ -592,93 +506,6 @@ public class VolcanoPlannerTraitTest extends SqlLanguageDependent {
         }
 
     }
-
-
-    /**
-     * Another planner rule to convert a {@link NoneSingleAlg} to ENUMERABLE convention.
-     */
-    private static class IterSingleRule2 extends AlgOptRule {
-
-        IterSingleRule2() {
-            super( operand( NoneSingleAlg.class, any() ) );
-        }
-
-
-        @Override
-        public Convention getOutConvention() {
-            return EnumerableConvention.INSTANCE;
-        }
-
-
-        @Override
-        public AlgTrait<?> getOutTrait() {
-            return getOutConvention();
-        }
-
-
-        @Override
-        public void onMatch( AlgOptRuleCall call ) {
-            NoneSingleAlg alg = call.alg( 0 );
-
-            AlgNode converted = convert( alg.getInput( 0 ), alg.getTraitSet().replace( getOutTrait() ) );
-
-            IterSingleAlg child = new IterSingleAlg( alg.getCluster(), converted );
-
-            call.transformTo( new IterSingleAlg( alg.getCluster(), child ) );
-        }
-
-    }
-
-
-    /**
-     * Planner rule that converts between {@link AltTrait}s.
-     */
-    private static class AltTraitConverterRule extends ConverterRule {
-
-        private final AlgTrait<?> toTrait;
-
-
-        private AltTraitConverterRule( AltTrait fromTrait, AltTrait toTrait, String description ) {
-            super( AlgNode.class, fromTrait, toTrait, description );
-            this.toTrait = toTrait;
-        }
-
-
-        @Override
-        public AlgNode convert( AlgNode alg ) {
-            return new AltTraitConverter( alg.getCluster(), alg, toTrait );
-        }
-
-
-        @Override
-        public boolean isGuaranteed() {
-            return true;
-        }
-
-    }
-
-
-    /**
-     * Algebra expression that converts between {@link AltTrait} values.
-     */
-    private static class AltTraitConverter extends ConverterImpl {
-
-        private final AlgTrait<?> toTrait;
-
-
-        private AltTraitConverter( AlgOptCluster cluster, AlgNode child, AlgTrait<?> toTrait ) {
-            super( cluster, toTrait.getTraitDef(), child.getTraitSet().replace( toTrait ), child );
-            this.toTrait = toTrait;
-        }
-
-
-        @Override
-        public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-            return new AltTraitConverter( getCluster(), AbstractAlgNode.sole( inputs ), toTrait );
-        }
-
-    }
-
 
     /**
      * Planner rule that converts from PHYS to ENUMERABLE convention.

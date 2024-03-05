@@ -108,7 +108,7 @@ public abstract class Sort extends SingleAlg {
         this.offset = offset;
         this.fetch = fetch;
 
-        assert Objects.requireNonNull( getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).getDataModel() == DataModel.DOCUMENT || traits.containsIfApplicable( collation ) : "traits=" + traits + ", collation=" + collation;
+        assert Objects.requireNonNull( getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).dataModel() == DataModel.DOCUMENT || traits.containsIfApplicable( collation ) : "traits=" + traits + ", collation=" + collation;
         assert !(fetch == null && offset == null && collation.getFieldCollations().isEmpty()) : "trivial sort";
 
         if ( fieldExpr != null ) {

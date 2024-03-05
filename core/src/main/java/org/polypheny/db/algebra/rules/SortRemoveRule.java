@@ -78,7 +78,7 @@ public class SortRemoveRule extends AlgOptRule {
             // Don't remove sort if would also remove OFFSET or LIMIT.
             return;
         }
-        if ( Objects.requireNonNull( sort.getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).getDataModel() == DataModel.DOCUMENT ) {
+        if ( Objects.requireNonNull( sort.getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).dataModel() == DataModel.DOCUMENT ) {
             // Don't remove sort if the data model is document
             return;
         }

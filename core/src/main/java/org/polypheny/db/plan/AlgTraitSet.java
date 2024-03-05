@@ -41,6 +41,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.schema.trait.ModelTraitDef;
 import org.polypheny.db.util.Pair;
 
 
@@ -135,6 +137,9 @@ public final class AlgTraitSet extends AbstractList<AlgTrait<?>> {
         if ( index >= 0 ) {
             //noinspection unchecked
             return (T) getTrait( index );
+        }
+        if ( traitDef == ModelTraitDef.INSTANCE ) {
+            return (T) ModelTrait.RELATIONAL;
         }
 
         return null;

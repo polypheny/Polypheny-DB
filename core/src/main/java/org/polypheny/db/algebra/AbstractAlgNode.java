@@ -325,7 +325,7 @@ public abstract class AbstractAlgNode implements AlgNode {
     public AlgWriter explainTerms( AlgWriter pw ) {
         ModelTrait trait = getTraitSet().getTrait( ModelTraitDef.INSTANCE );
         if ( trait != null ) {
-            return pw.item( "model", trait.getDataModel().name() );
+            return pw.item( "model", trait.dataModel().name() );
         }
         return pw;
     }
