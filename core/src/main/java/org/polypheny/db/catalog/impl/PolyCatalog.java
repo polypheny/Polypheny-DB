@@ -64,6 +64,9 @@ import org.polypheny.db.catalog.impl.logical.DocumentCatalog;
 import org.polypheny.db.catalog.impl.logical.GraphCatalog;
 import org.polypheny.db.catalog.impl.logical.RelationalCatalog;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.catalog.persistance.FilePersister;
+import org.polypheny.db.catalog.persistance.InMemoryPersister;
+import org.polypheny.db.catalog.persistance.Persister;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.catalog.snapshot.impl.SnapshotBuilder;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
@@ -161,14 +164,13 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         this.adapterCatalogs = new ConcurrentHashMap<>();
         this.interfaceTemplates = new ConcurrentHashMap<>();
 
-        this.persister = memoryCatalog ? new MemoryPersister() : new Persister();
+        this.persister = memoryCatalog ? new InMemoryPersister() : new FilePersister();
 
     }
 
 
     @Override
     public void init() {
-        //new DefaultInserter();
         updateSnapshot();
 
         Catalog.afterInit.forEach( Runnable::run );

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.impl;
+package org.polypheny.db.catalog.persistance;
 
 import com.drew.lang.Charsets;
 import java.io.BufferedReader;
@@ -28,7 +28,7 @@ import java.util.concurrent.Executors;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 
-public class Persister {
+public class FilePersister implements Persister {
 
     ExecutorService service = Executors.newSingleThreadExecutor();
 
@@ -36,7 +36,7 @@ public class Persister {
     private final File backup;
 
 
-    public Persister() {
+    public FilePersister() {
         this.backup = initBackupFile();
     }
 
@@ -53,6 +53,7 @@ public class Persister {
     }
 
 
+    @Override
     public synchronized void write( String data ) {
         service.execute( () -> {
             try {
@@ -67,6 +68,7 @@ public class Persister {
     }
 
 
+    @Override
     public synchronized String read() {
         StringBuilder data = new StringBuilder();
         try {

@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.impl;
+package org.polypheny.db.catalog.persistance;
 
-public class MemoryPersister extends Persister {
+public class InMemoryPersister implements Persister {
 
     String backup = "";
 
