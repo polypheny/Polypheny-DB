@@ -45,6 +45,8 @@ import org.polypheny.db.util.Util;
 @Value
 public class PolyString extends PolyValue {
 
+    public static final Charset DEFAULT_CHARSET = Charsets.UTF_8;
+
     @Serialize
     @JsonProperty
     public String value;
@@ -53,7 +55,7 @@ public class PolyString extends PolyValue {
 
 
     public PolyString( @JsonProperty("value") @Deserialize("value") String value ) {
-        this( value, Charsets.UTF_8 );
+        this( value, DEFAULT_CHARSET );
     }
 
 
@@ -65,12 +67,12 @@ public class PolyString extends PolyValue {
 
 
     public static PolyString of( String value, @Nullable String charset ) {
-        return new PolyString( value, charset == null ? Charsets.UTF_8 : Charset.forName( charset ) );
+        return new PolyString( value, charset == null ? DEFAULT_CHARSET : Charset.forName( charset ) );
     }
 
 
     public static PolyString of( String value, @Nullable Charset charset ) {
-        return new PolyString( value, charset == null ? Charsets.UTF_8 : charset );
+        return new PolyString( value, charset == null ? DEFAULT_CHARSET : charset );
     }
 
 
@@ -104,13 +106,13 @@ public class PolyString extends PolyValue {
         if ( value == null ) {
             return null;
         }
-        if ( value instanceof PolyValue ) {
-            if ( ((PolyValue) value).isString() ) {
-                return ((PolyValue) value).asString();
-            } else if ( ((PolyValue) value).isDocument() ) {
-                return PolyString.of( ((PolyValue) value).asDocument().toJson() );
+        if ( value instanceof PolyValue poly ) {
+            if ( poly.isString() ) {
+                return poly.asString();
+            } else if ( poly.isDocument() ) {
+                return PolyString.of( poly.asDocument().toJson() );
             } else {
-                return PolyString.of( ((PolyValue) value).toJson() );
+                return PolyString.of( poly.toJson() );
             }
         }
         throw new NotImplementedException( "convert value to string" );
@@ -196,6 +198,28 @@ public class PolyString extends PolyValue {
             return value;
         }
         return new String( value.getBytes( this.charset ), charset );
+    }
+
+
+    public String toPrefixedString() {
+        StringBuilder ret = new StringBuilder();
+        if ( null != charset && charset != PolyString.DEFAULT_CHARSET ) {
+            ret.append( "_" );
+            ret.append( prettyCharset( charset ) );
+        }
+        ret.append( "'" );
+        ret.append( Util.replace( getValue(), "'", "''" ) );
+        ret.append( "'" );
+
+        return ret.toString();
+    }
+
+
+    private String prettyCharset( Charset charset ) {
+        if ( charset.equals( Charsets.UTF_8 ) ) {
+            return "UTF8";
+        }
+        return charset.displayName();
     }
 
 

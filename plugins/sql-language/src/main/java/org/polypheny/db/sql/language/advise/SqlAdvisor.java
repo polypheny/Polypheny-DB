@@ -22,12 +22,12 @@ import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import lombok.Getter;
 import org.apache.calcite.avatica.util.Casing;
 import org.polypheny.db.algebra.constant.MonikerType;
 import org.polypheny.db.languages.NodeParseException;
@@ -95,88 +95,6 @@ public class SqlAdvisor implements Advisor {
     private char quoteEnd() {
         char quote = quoteStart();
         return quote == '[' ? ']' : quote;
-    }
-
-
-    /**
-     * Gets completion hints for a partially completed or syntactically incorrect sql statement with cursor pointing to the position where completion hints are requested.
-     *
-     * Writes into <code>replaced[0]</code> the string that is being replaced. Includes the cursor and the preceding identifier. For example, if <code>sql</code> is "select abc^de from t",
-     * sets <code>replaced[0]</code> to "abc". If the cursor is in the middle of whitespace, the replaced string is empty. The replaced string is never null.
-     *
-     * @param sql A partial or syntactically incorrect sql statement for which to retrieve completion hints
-     * @param cursor to indicate the 0-based cursor position in the query at
-     * @param replaced String which is being replaced (output)
-     * @return completion hints
-     */
-    public List<Moniker> getCompletionHints( String sql, int cursor, String[] replaced ) {
-        // search backward starting from current position to find a "word"
-        int wordStart = cursor;
-        boolean quoted = false;
-        while ( wordStart > 0 && Character.isJavaIdentifierPart( sql.charAt( wordStart - 1 ) ) ) {
-            --wordStart;
-        }
-        if ( (wordStart > 0) && (sql.charAt( wordStart - 1 ) == quoteStart()) ) {
-            quoted = true;
-            --wordStart;
-        }
-
-        if ( wordStart < 0 ) {
-            return Collections.emptyList();
-        }
-
-        // Search forwards to the end of the word we should remove. Eat up trailing double-quote, if any
-        int wordEnd = cursor;
-        while ( wordEnd < sql.length() && Character.isJavaIdentifierPart( sql.charAt( wordEnd ) ) ) {
-            ++wordEnd;
-        }
-        if ( quoted && (wordEnd < sql.length()) && (sql.charAt( wordEnd ) == quoteEnd()) ) {
-            ++wordEnd;
-        }
-
-        // remove the partially composed identifier from the sql statement - otherwise we get a parser exception
-        String word = replaced[0] = sql.substring( wordStart, cursor );
-        if ( wordStart < wordEnd ) {
-            sql = sql.substring( 0, wordStart ) + sql.substring( wordEnd );
-        }
-
-        final List<Moniker> completionHints = getCompletionHints0( sql, wordStart );
-
-        if ( quoted ) {
-            word = word.substring( 1 );
-        }
-
-        if ( word.isEmpty() ) {
-            return completionHints;
-        }
-
-        // If cursor was part of the way through a word, only include hints which start with that word in the result.
-        final List<Moniker> result = new ArrayList<>();
-        Casing preferredCasing = getPreferredCasing( word );
-
-        boolean ignoreCase = preferredCasing != Casing.UNCHANGED;
-        for ( Moniker hint : completionHints ) {
-            List<String> names = hint.getFullyQualifiedNames();
-            // For now we treat only simple cases where the added name is the last
-            // See [POLYPHENYDB-2439] Smart complete for SqlAdvisor
-            String cname = Util.last( names );
-            if ( cname.regionMatches( ignoreCase, 0, word, 0, word.length() ) ) {
-                result.add( hint );
-            }
-        }
-
-        return result;
-    }
-
-
-    public List<Moniker> getCompletionHints0( String sql, int cursor ) {
-        String simpleSql = simplifySql( sql, cursor );
-        int idx = simpleSql.indexOf( HINT_TOKEN );
-        if ( idx < 0 ) {
-            return Collections.emptyList();
-        }
-        ParserPos pos = new ParserPos( 1, idx + 1 );
-        return getCompletionHints( simpleSql, pos );
     }
 
 
@@ -330,7 +248,7 @@ public class SqlAdvisor implements Advisor {
 
     /**
      * Tries to parse a SQL statement.
-     *
+     * <p>
      * If succeeds, returns the parse tree node; if fails, populates the list of hints and returns null.
      *
      * @param sql SQL statement
@@ -491,7 +409,7 @@ public class SqlAdvisor implements Advisor {
 
     /**
      * Returns the underlying Parser metadata.
-     *
+     * <p>
      * To use a different parser (recognizing a different dialect of SQL), derived class should override.
      *
      * @return metadata
@@ -540,13 +458,29 @@ public class SqlAdvisor implements Advisor {
     /**
      * An inner class that represents error message text and position info of a validator or parser exception
      */
-    public class ValidateErrorInfo {
+    public static class ValidateErrorInfo {
 
-        private int startLineNum;
-        private int startColumnNum;
-        private int endLineNum;
-        private int endColumnNum;
-        private String errorMsg;
+        /**
+         * 1-based starting line number
+         */
+        @Getter
+        private final int startLineNum;
+        /**
+         * 1-based starting column number
+         */
+        @Getter
+        private final int startColumnNum;
+        /**
+         * 1-based end line number
+         */
+        @Getter
+        private final int endLineNum;
+        /**
+         * 1-based end column number
+         */
+        @Getter
+        private final int endColumnNum;
+        private final String errorMsg;
 
 
         /**
@@ -593,38 +527,6 @@ public class SqlAdvisor implements Advisor {
             this.endLineNum = pos.getEndLineNum();
             this.endColumnNum = pos.getEndColumnNum();
             this.errorMsg = errorMsg;
-        }
-
-
-        /**
-         * @return 1-based starting line number
-         */
-        public int getStartLineNum() {
-            return startLineNum;
-        }
-
-
-        /**
-         * @return 1-based starting column number
-         */
-        public int getStartColumnNum() {
-            return startColumnNum;
-        }
-
-
-        /**
-         * @return 1-based end line number
-         */
-        public int getEndLineNum() {
-            return endLineNum;
-        }
-
-
-        /**
-         * @return 1-based end column number
-         */
-        public int getEndColumnNum() {
-            return endColumnNum;
         }
 
 
