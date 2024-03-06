@@ -54,7 +54,6 @@ dependencies {
  */
 task generateParser (type: CompileJavaccTask) {
     getConventionMapping().map("classpath", { configurations.javacc })
-    arguments = [static: "false", lookahead: "2"]
     inputDirectory = file("src/main/codegen")
     outputDirectory = file(project.buildDir.absolutePath + "/generated-sources/org/polypheny/db/languages/sql/parser/impl")
 }

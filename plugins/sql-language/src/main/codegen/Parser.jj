@@ -31,10 +31,23 @@
  * limitations under the License.
  */
 
+
 options {
-    STATIC = false;
-    IGNORE_CASE = true;
-    UNICODE_INPUT = true;
+  STATIC = false;
+  LOOKAHEAD = 2;
+  CHOICE_AMBIGUITY_CHECK = 2;
+  OTHER_AMBIGUITY_CHECK = 1;
+  FORCE_LA_CHECK = false;
+  DEBUG_PARSER = false;
+  DEBUG_LOOKAHEAD = false;
+  DEBUG_TOKEN_MANAGER = false;
+  ERROR_REPORTING = true;
+  UNICODE_INPUT = true;
+  IGNORE_CASE = true;
+  BUILD_PARSER = true;
+  BUILD_TOKEN_MANAGER = true;
+  SANITY_CHECK = true;
+  COMMON_TOKEN_ACTION = false;
 }
 
 

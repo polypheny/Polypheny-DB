@@ -5,10 +5,6 @@ buildscript {
     }
 }
 
-plugins {
-    id "org.javacc.javacc" version "$javacc_plugin_version"
-}
-
 group "org.polypheny"
 
 
