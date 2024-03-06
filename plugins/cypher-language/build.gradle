@@ -1,4 +1,8 @@
-import ca.coglinc.gradle.plugins.javacc.CompileJavaccTask
+import org.javacc.plugin.gradle.javacc.CompileJavaccTask
+
+plugins {
+    id "org.javacc.javacc" version "$javacc_plugin_version"
+}
 
 group "org.polypheny"
 
@@ -6,13 +10,6 @@ configurations {
     javacc
     tests {
         extendsFrom testRuntimeOnly
-    }
-}
-
-
-buildscript {
-    dependencies {
-        classpath group: "gradle.plugin.ca.coglinc2", name: "javacc-gradle-plugin", version: javacc_plugin_version
     }
 }
 

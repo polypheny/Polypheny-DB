@@ -1,7 +1,20 @@
+buildscript {
+    dependencies {
+        // Protobuf
+        classpath group: "com.google.protobuf", name: "protobuf-gradle-plugin", version: protobuf_plugin_version
+    }
+}
+
+plugins {
+    id "org.javacc.javacc" version "$javacc_plugin_version"
+}
+
 group "org.polypheny"
+
 
 apply plugin: "io.freefair.lombok"
 apply plugin: "com.google.protobuf"
+
 
 configurations {
     //javacc
@@ -13,17 +26,6 @@ configurations {
     }
     compileOnly {
         extendsFrom annotationProcessor
-    }
-}
-
-
-
-buildscript {
-    dependencies {
-        // JavaCC (https://github.com/johnmartel/javaccPlugin)
-        classpath group: "gradle.plugin.ca.coglinc2", name: "javacc-gradle-plugin", version: javacc_plugin_version
-        // Protobuf
-        classpath group: "com.google.protobuf", name: "protobuf-gradle-plugin", version: protobuf_plugin_version
     }
 }
 
