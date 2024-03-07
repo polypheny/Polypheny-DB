@@ -214,7 +214,7 @@ public final class HandshakeManager {
                             log.info( "Handshake with " + host.hostname() + " successful" );
                         }
                     };
-                    handshakeThread = new Thread( doHandshake );
+                    handshakeThread = new Thread( doHandshake, "HandshakeThread" );
                     handshakeThread.start();
                 }
             }

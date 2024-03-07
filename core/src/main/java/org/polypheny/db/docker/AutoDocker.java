@@ -264,7 +264,7 @@ public final class AutoDocker {
         // If it is not successful and not an error, a handshake needs to be done
         synchronized ( this ) {
             if ( thread == null || !thread.isAlive() ) {
-                thread = new Thread( this::doAutoHandshake );
+                thread = new Thread( this::doAutoHandshake, "AutoHandshakeThread" );
                 thread.start();
             }
         }
