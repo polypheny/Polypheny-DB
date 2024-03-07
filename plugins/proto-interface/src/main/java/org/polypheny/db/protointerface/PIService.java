@@ -18,11 +18,6 @@ package org.polypheny.db.protointerface;
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.Socket;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -116,15 +111,19 @@ public class PIService {
     private static final int majorApiVersion = 2;
     private static final int minorApiVersion = 0;
     private final ClientManager clientManager;
-    private final Socket con;
+    private final Transport con;
     private String uuid = null;
 
 
-    public PIService( Socket con, ClientManager clientManager ) {
+    private PIService( Transport con, ClientManager clientManager ) {
         this.con = con;
         this.clientManager = clientManager;
-        Thread t = new Thread( this::acceptLoop );
-        t.start();
+    }
+
+
+    public static void acceptConnection( Transport con, ClientManager clientManager ) {
+        PIService service = new PIService( con, clientManager );
+        service.acceptLoop();
     }
 
 
@@ -137,12 +136,12 @@ public class PIService {
     }
 
 
-    private boolean handleFirstMessage( InputStream in, OutputStream out ) throws IOException {
+    private boolean handleFirstMessage() throws IOException {
         boolean success = false;
-        Request firstReq = readOneMessage( in );
+        Request firstReq = readOneMessage();
 
         if ( firstReq.getTypeCase() != TypeCase.CONNECTION_REQUEST ) {
-            sendOneMessage( createErrorResponse( firstReq.getId(), "First message must be a connection request" ), out );
+            sendOneMessage( createErrorResponse( firstReq.getId(), "First message must be a connection request" ) );
             return false;
         }
 
@@ -153,20 +152,20 @@ public class PIService {
         } catch ( TransactionException | AuthenticationException e ) {
             r = createErrorResponse( firstReq.getId(), e.getMessage() );
         }
-        sendOneMessage( r, out );
+        sendOneMessage( r );
         return success;
     }
 
 
-    private void handleMessages( InputStream in, OutputStream out ) throws IOException {
-        if ( !handleFirstMessage( in, out ) ) {
+    private void handleMessages() throws IOException {
+        if ( !handleFirstMessage() ) {
             return;
         }
         while ( true ) {
-            Request req = readOneMessage( in );
+            Request req = readOneMessage();
             CompletableFuture<Response> resp = CompletableFuture.supplyAsync( () -> {
                 try {
-                    return handleMessage( req, out );
+                    return handleMessage( req );
                 } catch ( TransactionException | AuthenticationException | IOException e ) {
                     throw new PIServiceException( e );
                 }
@@ -178,7 +177,7 @@ public class PIService {
                 log.error( t.getMessage() );
                 r = createErrorResponse( req.getId(), t.getMessage() );
             }
-            sendOneMessage( r, out );
+            sendOneMessage( r );
             if ( r.getTypeCase() == Response.TypeCase.DISCONNECT_RESPONSE || r.getTypeCase() == Response.TypeCase.ERROR_RESPONSE ) {
                 return;
             }
@@ -188,9 +187,7 @@ public class PIService {
 
     private void acceptLoop() {
         try {
-            InputStream in = con.getInputStream();
-            OutputStream out = con.getOutputStream();
-            handleMessages( in, out );
+            handleMessages();
         } catch ( Throwable e ) {
             if ( !(e instanceof EOFException) ) {
                 throw new GenericRuntimeException( e );
@@ -205,33 +202,17 @@ public class PIService {
     }
 
 
-    private static void sendOneMessage( Response r, OutputStream out ) throws IOException {
-        byte[] b = r.toByteArray();
-        ByteBuffer bb = ByteBuffer.allocate( 8 );
-        bb.order( ByteOrder.LITTLE_ENDIAN );
-        bb.putLong( b.length );
-        out.write( bb.array() );
-        out.write( b );
+    private void sendOneMessage( Response r ) throws IOException {
+        con.sendMessage( r.toByteArray() );
     }
 
 
-    private static Request readOneMessage( InputStream in ) throws IOException {
-        byte[] b = in.readNBytes( 8 );
-        if ( b.length != 8 ) {
-            if ( b.length == 0 ) { // EOF
-                throw new EOFException();
-            }
-            throw new IOException( "short read" );
-        }
-        ByteBuffer bb = ByteBuffer.wrap( b );
-        bb.order( ByteOrder.LITTLE_ENDIAN ); // TODO Big endian like other network protocols?
-        long length = bb.getLong();
-        byte[] msg = in.readNBytes( (int) length );
-        return Request.parseFrom( msg );
+    private Request readOneMessage() throws IOException {
+        return Request.parseFrom( con.recveiveMessage() );
     }
 
 
-    private Response handleMessage( Request req, OutputStream out ) throws TransactionException, AuthenticationException, IOException {
+    private Response handleMessage( Request req ) throws TransactionException, AuthenticationException, IOException {
         return switch ( req.getTypeCase() ) {
             case DBMS_VERSION_REQUEST -> getDbmsVersion( req.getDbmsVersionRequest(), new ResponseMaker<>( req, "dbms_version_response" ) );
             case LANGUAGE_REQUEST -> throw new NotImplementedException( "Currently not used" );
@@ -255,8 +236,8 @@ public class PIService {
             case DISCONNECT_REQUEST -> disconnect( req.getDisconnectRequest(), new ResponseMaker<>( req, "disconnect_response" ) );
             case CLIENT_INFO_PROPERTIES_REQUEST -> getClientInfoProperties( req.getClientInfoPropertiesRequest(), new ResponseMaker<>( req, "client_info_properties_response" ) );
             case SET_CLIENT_INFO_PROPERTIES_REQUEST -> setClientInfoProperties( req.getSetClientInfoPropertiesRequest(), new ResponseMaker<>( req, "set_client_info_properties_response" ) );
-            case EXECUTE_UNPARAMETERIZED_STATEMENT_REQUEST -> executeUnparameterizedStatement( req.getExecuteUnparameterizedStatementRequest(), out, new ResponseMaker<>( req, "statement_response" ) );
-            case EXECUTE_UNPARAMETERIZED_STATEMENT_BATCH_REQUEST -> executeUnparameterizedStatementBatch( req.getExecuteUnparameterizedStatementBatchRequest(), out, new ResponseMaker<>( req, "statement_batch_response" ) );
+            case EXECUTE_UNPARAMETERIZED_STATEMENT_REQUEST -> executeUnparameterizedStatement( req.getExecuteUnparameterizedStatementRequest(), new ResponseMaker<>( req, "statement_response" ) );
+            case EXECUTE_UNPARAMETERIZED_STATEMENT_BATCH_REQUEST -> executeUnparameterizedStatementBatch( req.getExecuteUnparameterizedStatementBatchRequest(), new ResponseMaker<>( req, "statement_batch_response" ) );
             case PREPARE_INDEXED_STATEMENT_REQUEST -> prepareIndexedStatement( req.getPrepareIndexedStatementRequest(), new ResponseMaker<>( req, "prepared_statement_signature" ) );
             case EXECUTE_INDEXED_STATEMENT_REQUEST -> executeIndexedStatement( req.getExecuteIndexedStatementRequest(), new ResponseMaker<>( req, "statement_result" ) );
             case EXECUTE_INDEXED_STATEMENT_BATCH_REQUEST -> executeIndexedStatementBatch( req.getExecuteIndexedStatementBatchRequest(), new ResponseMaker<>( req, "statement_batch_response" ) );
@@ -431,11 +412,11 @@ public class PIService {
     }
 
 
-    public Response executeUnparameterizedStatement( ExecuteUnparameterizedStatementRequest request, OutputStream out, ResponseMaker<StatementResponse> responseObserver ) throws IOException {
+    public Response executeUnparameterizedStatement( ExecuteUnparameterizedStatementRequest request, ResponseMaker<StatementResponse> responseObserver ) throws IOException {
         PIClient client = getClient();
         PIUnparameterizedStatement statement = client.getStatementManager().createUnparameterizedStatement( request );
         Response mid = responseObserver.makeResponse( ProtoUtils.createResult( statement ), false );
-        sendOneMessage( mid, out );
+        sendOneMessage( mid );
         StatementResult result = statement.execute(
                 request.hasFetchSize()
                         ? request.getFetchSize()
@@ -445,11 +426,11 @@ public class PIService {
     }
 
 
-    public Response executeUnparameterizedStatementBatch( ExecuteUnparameterizedStatementBatchRequest request, OutputStream out, ResponseMaker<StatementBatchResponse> responseObserver ) throws IOException {
+    public Response executeUnparameterizedStatementBatch( ExecuteUnparameterizedStatementBatchRequest request, ResponseMaker<StatementBatchResponse> responseObserver ) throws IOException {
         PIClient client = getClient();
         PIUnparameterizedStatementBatch batch = client.getStatementManager().createUnparameterizedStatementBatch( request.getStatementsList() );
         Response mid = responseObserver.makeResponse( ProtoUtils.createStatementBatchStatus( batch.getBatchId() ), false );
-        sendOneMessage( mid, out );
+        sendOneMessage( mid );
         List<Long> updateCounts = batch.executeBatch();
         return responseObserver.makeResponse( ProtoUtils.createStatementBatchStatus( batch.getBatchId(), updateCounts ) );
     }
