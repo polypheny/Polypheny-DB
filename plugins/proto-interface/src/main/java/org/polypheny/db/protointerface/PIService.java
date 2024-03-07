@@ -128,17 +128,21 @@ public class PIService {
     }
 
 
+    private Response createErrorResponse( long id, String message ) {
+        return Response.newBuilder()
+                .setId( id )
+                .setLast( true )
+                .setErrorResponse( ErrorResponse.newBuilder().setMessage( message ) )
+                .build();
+    }
+
+
     private boolean handleFirstMessage( InputStream in, OutputStream out ) throws IOException {
         boolean success = false;
         Request firstReq = readOneMessage( in );
 
         if ( firstReq.getTypeCase() != TypeCase.CONNECTION_REQUEST ) {
-            Response r = Response.newBuilder()
-                    .setId( firstReq.getId() )
-                    .setLast( true )
-                    .setErrorResponse( ErrorResponse.newBuilder().setMessage( "First message must be a connection request" ) )
-                    .build();
-            sendOneMessage( r, out );
+            sendOneMessage( createErrorResponse( firstReq.getId(), "First message must be a connection request" ), out );
             return false;
         }
 
@@ -147,11 +151,7 @@ public class PIService {
             r = connect( firstReq.getConnectionRequest(), new ResponseMaker<>( firstReq, "connection_response" ) );
             success = true;
         } catch ( TransactionException | AuthenticationException e ) {
-            r = Response.newBuilder()
-                    .setId( firstReq.getId() )
-                    .setLast( true )
-                    .setErrorResponse( ErrorResponse.newBuilder().setMessage( e.getMessage() ) )
-                    .build();
+            r = createErrorResponse( firstReq.getId(), e.getMessage() );
         }
         sendOneMessage( r, out );
         return success;
@@ -176,11 +176,7 @@ public class PIService {
                 r = resp.get();
             } catch ( Throwable t ) {
                 log.error( t.getMessage() );
-                r = Response.newBuilder()
-                        .setId( req.getId() )
-                        .setLast( true )
-                        .setErrorResponse( ErrorResponse.newBuilder().setMessage( t.getMessage() ) )
-                        .build();
+                r = createErrorResponse( req.getId(), t.getMessage() );
             }
             sendOneMessage( r, out );
             if ( r.getTypeCase() == Response.TypeCase.DISCONNECT_RESPONSE || r.getTypeCase() == Response.TypeCase.ERROR_RESPONSE ) {
