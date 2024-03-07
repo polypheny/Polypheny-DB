@@ -1832,7 +1832,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
                                         && literal.value.asString().value.length()
                                         > toType.getPrecision())
                                         || (literal.getPolyType() == PolyType.BINARY
-                                        && literal.value.asBinary().value.length()
+                                        && literal.value.asBinary().length()
                                         > toType.getPrecision());
                         boolean couldSimplify = !cast.equals( simplified );
                         final String reason = (expectedSimplify

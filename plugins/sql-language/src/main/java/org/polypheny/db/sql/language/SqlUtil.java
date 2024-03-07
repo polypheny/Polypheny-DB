@@ -267,9 +267,8 @@ public abstract class SqlUtil {
             quantifier.unparse( writer, 0, 0 );
         }
         if ( call.operandCount() == 0 ) {
-            switch ( call.getOperator().getSyntax() ) {
-                case FUNCTION_STAR:
-                    writer.sep( "*" );
+            if ( Objects.requireNonNull( call.getOperator().getSyntax() ) == Syntax.FUNCTION_STAR ) {
+                writer.sep( "*" );
             }
         }
         for ( Node operand : call.getOperandList() ) {

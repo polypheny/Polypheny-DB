@@ -45,7 +45,7 @@ public class SqlBinaryStringLiteral extends SqlLiteral {
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         assert value.isBinary();
-        writer.literal( "X'" + value.asBinary().value.toString() + "'" );
+        writer.literal( "X'" + value.asBinary().toHexString() + "'" );
     }
 
 

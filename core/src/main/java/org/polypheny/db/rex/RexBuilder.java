@@ -338,8 +338,7 @@ public class RexBuilder {
         assert partitionKeys != null;
         assert orderKeys != null;
         final RexWindow window = makeWindow( partitionKeys, orderKeys, lowerBound, upperBound, physical );
-        final RexOver over = new RexOver( type, operator, exprs, window, distinct );
-        RexNode result = over;
+        RexNode result = new RexOver( type, operator, exprs, window, distinct );
 
         // This should be correct but need time to go over test results.
         // Also want to look at combing with section below.
@@ -564,7 +563,7 @@ public class RexBuilder {
             };
         }
         if ( value.isBinary() ) {
-            final int length = value.asBinary().value.length();
+            final int length = value.asBinary().value.length;
             return switch ( toType.getPolyType() ) {
                 case BINARY -> PolyTypeUtil.comparePrecision( toType.getPrecision(), length ) == 0;
                 case VARBINARY -> PolyTypeUtil.comparePrecision( toType.getPrecision(), length ) >= 0;
@@ -607,14 +606,6 @@ public class RexBuilder {
         final int scale = 0;
         BigDecimal divider = endUnit.multiplier.scaleByPowerOfTen( -scale );
         RexNode value = multiplyDivide( decodeIntervalOrDecimal( exp ), multiplier, divider );
-        if ( scale > 0 ) {
-            AlgDataType decimalType =
-                    getTypeFactory().createPolyType(
-                            PolyType.DECIMAL,
-                            scale + exp.getType().getPrecision(),
-                            scale );
-            value = encodeIntervalOrDecimal( value, decimalType, false );
-        }
         return ensureType( toType, value, false );
     }
 
@@ -867,6 +858,14 @@ public class RexBuilder {
         return makeLiteral(
                 PolyBinary.of( byteString ),
                 typeFactory.createPolyType( PolyType.BINARY, byteString.length() ),
+                PolyType.BINARY );
+    }
+
+
+    public RexLiteral makeBinaryLiteral( byte[] bytes ) {
+        return makeLiteral(
+                PolyBinary.of( bytes ),
+                typeFactory.createPolyType( PolyType.BINARY, bytes.length ),
                 PolyType.BINARY );
     }
 
@@ -1171,7 +1170,7 @@ public class RexBuilder {
     }
 
 
-    private static Comparable zeroValue( AlgDataType type ) {
+    private static Comparable<?> zeroValue( AlgDataType type ) {
         return switch ( type.getPolyType() ) {
             case CHAR -> new NlsString( Spaces.of( type.getPrecision() ), null, null );
             case JSON, VARCHAR -> new NlsString( "", null, null );

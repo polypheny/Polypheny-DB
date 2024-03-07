@@ -206,7 +206,7 @@ public class BsonUtil {
             case TIME -> handleTime( obj );
             case TIMESTAMP -> handleTimestamp( obj );
             case BOOLEAN -> new BsonBoolean( obj.asBoolean().value );
-            case BINARY -> new BsonString( obj.asBinary().value.toBase64String() );
+            case BINARY -> new BsonString( new ByteString( obj.asBinary().value ).toBase64String() );
             case AUDIO, IMAGE, VIDEO, FILE -> handleMultimedia( bucket, obj );
             case INTERVAL_MONTH -> handleMonthInterval( obj );
             case INTERVAL_DAY -> handleDayInterval( obj );
@@ -388,26 +388,6 @@ public class BsonUtil {
 
 
     /**
-     * Helper method which maps the RexLiteral to the provided type, which is MongoDB adapter conform.
-     *
-     * @param finalType the type which should be retrieved from the literal
-     * @param el the literal itself
-     * @return a MongoDB adapter compatible Comparable
-     */
-    public static Comparable<?> getMongoComparable( PolyType finalType, RexLiteral el ) {
-        if ( el.getValue() == null ) {
-            return null;
-        }
-
-        return switch ( finalType ) {
-            case DECIMAL -> el.getValue().toString();
-            case GEOMETRY, FILE, IMAGE, VIDEO, AUDIO -> el.value.asBinary().value.toBase64String();
-            default -> el.getValue();
-        };
-    }
-
-
-    /**
      * Recursively transforms a provided RexCall into a matching BsonArray.
      *
      * @param call the call which is transformed
@@ -497,7 +477,7 @@ public class BsonUtil {
 
     /**
      * Method to retrieve the type numbers according to the MongoDB specifications
-     * https://docs.mongodb.com/manual/reference/operator/query/type/
+     * <a href="https://docs.mongodb.com/manual/reference/operator/query/type/">...</a>
      *
      * @param type PolyType which is matched
      * @return the corresponding type number for MongoDB

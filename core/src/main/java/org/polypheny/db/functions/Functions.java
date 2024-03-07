@@ -572,7 +572,7 @@ public class Functions {
      * SQL SUBSTRING(binary FROM ... FOR ...) function.
      */
     public static PolyBinary substring( PolyBinary c, PolyNumber s, PolyNumber l ) {
-        int lc = c.value.length();
+        int lc = c.value.length;
         int start = s.intValue();
         if ( start < 0 ) {
             start += lc + 1;
@@ -586,7 +586,7 @@ public class Functions {
         }
         int s1 = Math.max( start, 1 );
         int e1 = Math.min( e, lc + 1 );
-        return PolyBinary.of( c.value.substring( s1 - 1, e1 - 1 ) );
+        return PolyBinary.of( new ByteString( c.value ).substring( s1 - 1, e1 - 1 ) );
     }
 
 
@@ -594,7 +594,7 @@ public class Functions {
      * SQL SUBSTRING(binary FROM ...) function.
      */
     public static PolyBinary substring( PolyBinary c, PolyNumber s ) {
-        return substring( c, s, PolyInteger.of( c.value.length() + 1 ) );
+        return substring( c, s, PolyInteger.of( c.value.length + 1 ) );
     }
 
 
@@ -673,7 +673,7 @@ public class Functions {
      * SQL {@code binary || binary} operator.
      */
     public static PolyBinary concat( PolyBinary s0, PolyBinary s1 ) {
-        return PolyBinary.of( s0.value.concat( s1.value ) );
+        return PolyBinary.of( new ByteString( s0.value ).concat( new ByteString( s1.value ) ) );
     }
 
 
@@ -1778,8 +1778,8 @@ public class Functions {
     public static PolyBinary truncate( PolyBinary s, int maxLength ) {
         if ( s == null || s.value == null ) {
             return null;
-        } else if ( s.value.length() > maxLength ) {
-            return PolyBinary.of( s.value.substring( 0, maxLength ) );
+        } else if ( s.length() > maxLength ) {
+            return PolyBinary.of( new ByteString( s.value ).substring( 0, maxLength ) );
         } else {
             return s;
         }
@@ -1850,7 +1850,7 @@ public class Functions {
      * SQL {@code POSITION(seek IN string)} function for byte strings.
      */
     public static PolyNumber position( PolyBinary seek, PolyBinary s ) {
-        return PolyInteger.of( s.value.indexOf( seek.value ) + 1 );
+        return PolyInteger.of( new ByteString( s.value ).indexOf( new ByteString( seek.value ) ) + 1 );
     }
 
 
@@ -1872,11 +1872,11 @@ public class Functions {
      */
     public static PolyNumber position( PolyBinary seek, PolyBinary s, PolyNumber from ) {
         final int from0 = from.intValue() - 1;
-        if ( from0 > s.value.length() || from0 < 0 ) {
+        if ( from0 > s.length() || from0 < 0 ) {
             return PolyInteger.of( 0 );
         }
 
-        final int p = s.value.indexOf( seek.value, from0 );
+        final int p = new ByteString( s.value ).indexOf( new ByteString( seek.value ), from0 );
         if ( p < 0 ) {
             return PolyInteger.of( 0 );
         }

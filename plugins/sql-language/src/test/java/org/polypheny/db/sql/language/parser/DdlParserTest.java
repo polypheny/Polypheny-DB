@@ -66,13 +66,13 @@ public class DdlParserTest extends SqlParserTest {
 
     @Test
     public void testCreateRelationalNamespace() {
-        sql( "create relational namespace x" ).ok( "CREATE RELATIONAL NAMESPACE `X`" );
+        sql( "create relational namespace x" ).ok( "CREATE NAMESPACE `X`" );
     }
 
 
     @Test
     public void testCreateOrReplaceSchema() { // Alias for create namespace
-        sql( "create or replace schema x" ).ok( "CREATE OR REPLACE SCHEMA `X`" );
+        sql( "create or replace schema x" ).ok( "CREATE OR REPLACE NAMESPACE `X`" );
     }
 
 
@@ -112,7 +112,7 @@ public class DdlParserTest extends SqlParserTest {
 
     @Test
     public void testCreateTableOnStore() {
-        sql( "create table x (i int not null, j varchar(5) null) on storeId hsqldb1" )
+        sql( "create table x (i int not null, j varchar(5) null) on store hsqldb1" )
                 .ok( "CREATE TABLE `X` (`I` INTEGER NOT NULL, `J` VARCHAR(5)) ON STORE `HSQLDB1`" );
     }
 

@@ -48,6 +48,9 @@ options {
   BUILD_TOKEN_MANAGER = true;
   SANITY_CHECK = true;
   COMMON_TOKEN_ACTION = false;
+  JDK_VERSION = "1.4";
+  TOKEN_MANAGER_USES_PARSER = true;
+  GENERATE_CHAINED_EXCEPTION = true;
 }
 
 

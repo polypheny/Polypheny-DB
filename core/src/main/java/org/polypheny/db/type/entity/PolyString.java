@@ -216,8 +216,10 @@ public class PolyString extends PolyValue {
 
 
     private String prettyCharset( Charset charset ) {
-        if ( charset.equals( Charsets.UTF_8 ) ) {
+        if ( Charsets.UTF_8.equals( charset ) ) {
             return "UTF8";
+        } else if ( Charsets.UTF_16.equals( charset ) ) {
+            return "UTF16";
         }
         return charset.displayName();
     }

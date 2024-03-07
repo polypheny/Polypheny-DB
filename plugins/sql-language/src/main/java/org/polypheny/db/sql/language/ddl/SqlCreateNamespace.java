@@ -77,6 +77,9 @@ public class SqlCreateNamespace extends SqlCreate implements ExecutableStatement
         if ( replace ) {
             writer.keyword( "OR REPLACE" );
         }
+        if ( type != null && type != DataModel.RELATIONAL ) {
+            writer.keyword( type.name() );
+        }
         writer.keyword( "NAMESPACE" );
         if ( ifNotExists ) {
             writer.keyword( "IF NOT EXISTS" );

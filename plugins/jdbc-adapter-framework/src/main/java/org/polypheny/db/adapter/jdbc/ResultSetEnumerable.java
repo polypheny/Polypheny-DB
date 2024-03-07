@@ -292,7 +292,7 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                 if ( !connectionHandler.getDialect().supportsComplexBinary() ) {
                     preparedStatement.setString( i, value.asBinary().toTypedJson() );
                 } else {
-                    preparedStatement.setBytes( i, value.asBinary().value.getBytes() );
+                    preparedStatement.setBytes( i, value.asBinary().value );
                 }
                 break;
             case ARRAY:

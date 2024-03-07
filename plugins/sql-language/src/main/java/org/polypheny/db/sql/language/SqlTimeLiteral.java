@@ -42,7 +42,7 @@ public class SqlTimeLiteral extends SqlAbstractDateTimeLiteral {
      * Converts this literal to a {@link TimeString}.
      */
     protected TimeString getTime() {
-        return TimeString.fromCalendarFields( value.asTime().toCalendar() );
+        return TimeString.fromMillisOfDay( value.asTime().getOfDay() );
     }
 
 

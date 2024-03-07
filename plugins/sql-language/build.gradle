@@ -21,7 +21,7 @@ dependencies {
     compileOnly project(":dbms")
     compileOnly project(":webui")
 
-    javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_version  // BSD 2-clause
+    javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_sql_version  // BSD 2-clause 4.1 breaks Expected
 
     implementation(group: "io.javalin", name: "javalin", version: javalin_version) {  // Apache 2.0
         exclude(group: "org.slf4j")

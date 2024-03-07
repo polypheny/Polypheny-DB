@@ -229,7 +229,7 @@ public class SqlLiteral extends SqlNode implements Literal {
                 break;
             case BINARY:
                 if ( clazz == byte[].class ) {
-                    return clazz.cast( value.asBinary().value.getBytes() );
+                    return clazz.cast( value.asBinary().value );
                 }
                 break;
             case DECIMAL:
@@ -622,13 +622,10 @@ public class SqlLiteral extends SqlNode implements Literal {
      */
     @Override
     public BigDecimal bigDecimalValue() {
-        switch ( typeName ) {
-            case DECIMAL:
-            case DOUBLE:
-                return value.asBigDecimal().value;
-            default:
-                throw Util.unexpected( typeName );
-        }
+        return switch ( typeName ) {
+            case DECIMAL, DOUBLE -> value.asBigDecimal().value;
+            default -> throw Util.unexpected( typeName );
+        };
     }
 
 
@@ -676,7 +673,6 @@ public class SqlLiteral extends SqlNode implements Literal {
 
 
     public AlgDataType createSqlType( AlgDataTypeFactory typeFactory ) {
-        BitString bitString;
         switch ( typeName ) {
             case NULL:
             case BOOLEAN:
@@ -815,7 +811,7 @@ public class SqlLiteral extends SqlNode implements Literal {
         } catch ( NumberFormatException e ) {
             throw CoreUtil.newContextException( pos, Static.RESOURCE.binaryLiteralInvalid() );
         }
-        return new SqlBinaryStringLiteral( PolyBinary.of( bits.getAsByteArray() ), pos );
+        return new SqlBinaryStringLiteral( PolyBinary.of( bits.getAsByteArray(), s.length() ), pos );
     }
 
 
@@ -903,8 +899,7 @@ public class SqlLiteral extends SqlNode implements Literal {
                 sb.append( c );
             }
         }
-        //ns = new NlsString( sb.toString(), ns.getCharsetName(), ns.getCollation() );
-        return new SqlCharStringLiteral( PolyString.of( sb.toString() ), getPos() );
+        return new SqlCharStringLiteral( PolyString.of( sb.toString(), ns.charset ), getPos() );
     }
 
 
