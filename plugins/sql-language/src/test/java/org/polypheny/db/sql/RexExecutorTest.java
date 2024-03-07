@@ -229,7 +229,7 @@ public class RexExecutorTest extends SqlLanguageDependent {
             executor.reduce( rexBuilder, List.of( substring, plus ), reducedValues );
             assertThat( reducedValues.size(), equalTo( 2 ) );
             assertThat( reducedValues.get( 0 ), instanceOf( RexLiteral.class ) );
-            assertThat( ((RexLiteral) reducedValues.get( 0 )).getValue().asString(), equalTo( PolyString.of( "56c6c6f".toUpperCase() ) ) ); // substring('Hello world!, 2, 4)
+            assertThat( ((RexLiteral) reducedValues.get( 0 )).getValue().asString(), equalTo( PolyString.of( "656c6c6f".toUpperCase() ) ) ); // substring('Hello world!, 2, 4)
             assertThat( reducedValues.get( 1 ), instanceOf( RexLiteral.class ) );
             assertThat( ((RexLiteral) reducedValues.get( 1 )).getValue().asNumber(), equalTo( PolyLong.of( 2L ) ) );
         } );

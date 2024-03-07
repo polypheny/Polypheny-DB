@@ -40,6 +40,7 @@ import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeClass;
 import java.lang.reflect.Type;
 import java.sql.Timestamp;
+import java.util.Calendar;
 import java.util.Optional;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
@@ -834,22 +835,34 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
                 if ( object instanceof Number number ) {
                     yield PolyDate.of( number );
                 }
+                if ( object instanceof Calendar calendar ) {
+                    yield PolyDate.of( calendar.getTimeInMillis() );
+                }
                 throw new NotImplementedException();
             }
             case TIME, TIME_WITH_LOCAL_TIME_ZONE -> {
                 if ( object instanceof Number number ) {
                     yield PolyTime.of( number );
+                } else if ( object instanceof Calendar calendar ) {
+                    yield PolyTime.of( calendar.getTimeInMillis() );
                 }
                 throw new NotImplementedException();
             }
             case TIMESTAMP, TIMESTAMP_WITH_LOCAL_TIME_ZONE -> {
                 if ( object instanceof Timestamp timestamp ) {
                     yield PolyTimestamp.of( timestamp );
+                } else if ( object instanceof Calendar calendar ) {
+                    yield PolyTimestamp.of( calendar.getTimeInMillis() );
                 }
                 throw new NotImplementedException();
             }
             case CHAR, VARCHAR -> PolyString.of( (String) object );
-            case BINARY, VARBINARY -> PolyBinary.of( (ByteString) object );
+            case BINARY, VARBINARY -> {
+                if ( object instanceof byte[] bytes ) {
+                    yield PolyBinary.of( bytes );
+                }
+                yield PolyBinary.of( (ByteString) object );
+            }
             default -> throw new NotImplementedException();
         };
     }
