@@ -67,7 +67,7 @@ public class PIServer {
     private Thread getShutdownHook() {
         return new Thread( () -> {
             // Use stderr here since the logger may have been reset by its JVM shutdown hook.
-            System.err.println( "shutting down gRPC server since JVM is shutting down" );
+            System.err.println( "shutting down proto interface since JVM is shutting down" );
             try {
                 PIServer.this.shutdown();
             } catch ( IOException | InterruptedException e ) {
