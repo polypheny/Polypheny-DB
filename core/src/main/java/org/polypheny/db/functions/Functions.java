@@ -2526,7 +2526,7 @@ public class Functions {
             String pathWff = matcher.group( 2 );
             DocumentContext ctx = switch ( mode ) {
                 case STRICT -> JsonPath.parse(
-                        input,
+                        input.toJson(),
                         Configuration
                                 .builder()
                                 .jsonProvider( JSON_PATH_JSON_PROVIDER )

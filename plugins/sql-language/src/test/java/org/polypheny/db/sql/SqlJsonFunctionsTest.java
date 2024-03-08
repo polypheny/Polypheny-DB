@@ -36,7 +36,6 @@ import org.bson.json.JsonParseException;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.json.JsonConstructorNullClause;
 import org.polypheny.db.algebra.json.JsonExistsErrorBehavior;
@@ -92,7 +91,6 @@ public class SqlJsonFunctionsTest extends SqlLanguageDependent {
 
 
     @Test
-    @Disabled //refactor
     public void testJsonApiCommonSyntax() {
         assertJsonApiCommonSyntax(
                 PolyDocument.of( Map.of( PolyString.of( "foo" ), PolyString.of( "bar" ) ) ),
