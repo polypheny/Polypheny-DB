@@ -60,7 +60,6 @@ public class PartitionProperty implements Serializable {
     public boolean reliesOnPeriodicChecks;
 
 
-
     public PartitionProperty(
             @Deserialize("entityId") long entityId,
             @Deserialize("partitionType") PartitionType partitionType,

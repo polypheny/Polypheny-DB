@@ -255,14 +255,12 @@ public abstract class SqlToAlgTestBase extends SqlLanguageDependent {
         @SneakyThrows
         @Override
         public AlgRoot convertSqlToAlg( String sql, @Nullable Snapshot snapshot ) {
-
             if ( snapshot != null ) {
                 // ok for testing
                 Field field = PolyCatalog.class.getDeclaredField( "snapshot" );
                 field.setAccessible( true );
                 field.set( Catalog.getInstance(), snapshot );
             }
-
 
             QueryLanguage language = QueryLanguage.from( "sql" );
 
@@ -276,9 +274,7 @@ public abstract class SqlToAlgTestBase extends SqlLanguageDependent {
 
             AlgRoot root = null;
             for ( Node node : nodes ) {
-
                 Pair<Node, AlgDataType> validated = processor.validate( transaction, node, true );
-
                 Statement statement = transaction.createStatement();
                 root = processor.translate( statement, ParsedQueryContext.builder()
                         .origin( "Sql Test" )
