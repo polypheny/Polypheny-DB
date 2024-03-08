@@ -141,7 +141,7 @@ public class ProtoValueDeserializer {
 
 
     private static PolyTime deserializeToPolyTime( ProtoValue protoValue ) {
-        return new PolyTime( protoValue.getTime().getValue());
+        return new PolyTime( protoValue.getTime().getTime());
     }
 
 

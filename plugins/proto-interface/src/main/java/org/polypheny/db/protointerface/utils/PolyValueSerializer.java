@@ -502,7 +502,7 @@ public class PolyValueSerializer {
 
     public static ProtoValue serializeAsProtoTime( PolyTime polyTime ) {
         ProtoTime protoTime = ProtoTime.newBuilder()
-                .setValue( polyTime.ofDay )
+                .setTime( polyTime.ofDay )
                 .build();
         return ProtoValue.newBuilder()
                 .setTime( protoTime )
