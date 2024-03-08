@@ -146,15 +146,6 @@ public class EnumerableLpgMatch extends LpgMatch implements EnumerableAlg {
 
 
     @Override
-    public String algCompareString() {
-        return getClass().getSimpleName() + "$"
-                + matches.hashCode() + "$"
-                + names.hashCode() + "$"
-                + input.algCompareString() + "&";
-    }
-
-
-    @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         return new EnumerableLpgMatch( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), matches, names );
     }

@@ -17,6 +17,7 @@
 package org.polypheny.db.algebra.core.lpg;
 
 import lombok.Getter;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -29,6 +30,7 @@ import org.polypheny.db.schema.trait.ModelTrait;
 public abstract class LpgFilter extends SingleAlg implements LpgAlg {
 
     @Getter
+    @NotNull
     private final RexNode condition;
 
 
@@ -36,7 +38,7 @@ public abstract class LpgFilter extends SingleAlg implements LpgAlg {
      * Creates a {@link LpgFilter}.
      * {@link ModelTrait#GRAPH} native node of a filter.
      */
-    protected LpgFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
+    protected LpgFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, @NotNull RexNode condition ) {
         super( cluster, traits, input );
         this.condition = condition;
     }

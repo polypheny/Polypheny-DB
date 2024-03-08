@@ -17,6 +17,7 @@
 package org.polypheny.db.algebra.core.document;
 
 import java.util.List;
+import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.common.Transformer;
@@ -41,7 +42,7 @@ public class DocumentTransformer extends Transformer {
     public String algCompareString() {
         return outModelTrait + "$"
                 + inModelTrait + "$"
-                + getInput( 0 ).algCompareString() + "&";
+                + getInputs().stream().map( AlgNode::algCompareString ).collect( Collectors.joining( "$" ) ) + "&";
     }
 
 

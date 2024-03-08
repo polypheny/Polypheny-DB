@@ -20,6 +20,7 @@ import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
@@ -34,6 +35,7 @@ import org.polypheny.db.schema.trait.ModelTrait;
 @NonFinal
 public abstract class DocumentFilter extends SingleAlg implements DocumentAlg {
 
+    @NotNull
     public RexNode condition;
 
 
@@ -41,7 +43,7 @@ public abstract class DocumentFilter extends SingleAlg implements DocumentAlg {
      * Creates a {@link DocumentFilter}.
      * {@link ModelTrait#DOCUMENT} native node of a filter.
      */
-    protected DocumentFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
+    protected DocumentFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, @NotNull RexNode condition ) {
         super( cluster, traits, input );
         this.condition = condition;
     }
