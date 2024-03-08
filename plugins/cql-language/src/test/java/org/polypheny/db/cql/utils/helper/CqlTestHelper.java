@@ -201,8 +201,16 @@ public class CqlTestHelper {
 
 
     private static void insertIntoTestTable(
-            long tbigint, boolean tboolean, Date tdate, double tdecimal,
-            double tdouble, int tinteger, double treal, int tsmallint, int ttinyint, String tvarchar ) {
+            long tbigint,
+            boolean tboolean,
+            Date tdate,
+            double tdecimal,
+            double tdouble,
+            int tinteger,
+            double treal,
+            int tsmallint,
+            int ttinyint,
+            String tvarchar ) {
 
         String query = String.format( Locale.ROOT, "INSERT INTO test.testtable (tbigint, tboolean, tdate,"
                         + " tdecimal, tdouble, tinteger, treal, tsmallint, ttinyint, tvarchar)"

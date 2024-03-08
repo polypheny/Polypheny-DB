@@ -78,7 +78,7 @@ public class MockRelSnapshot implements LogicalRelSnapshot {
 
     @Override
     public @NonNull Optional<LogicalTable> getTable( String namespaceName, String tableName ) {
-        Optional<MockTable> table = snapshot.tables.stream().filter( t -> t.name.equals( tableName ) ).findFirst();
+        Optional<MockTable> table = snapshot.tables.stream().filter( t -> t.name.equalsIgnoreCase( tableName ) ).findFirst();
         return table.map( MockTable::toLogical );
     }
 

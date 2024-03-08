@@ -508,7 +508,6 @@ public class CqlInterfaceTest extends CqlTestHelper {
             } else {
                 fail( "Expected result not found in actual results" );
             }
-
         }
 
     }

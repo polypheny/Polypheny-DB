@@ -67,11 +67,14 @@ public class HrSnapshot extends MockSnapshot {
 
         mock( new MockTable( "depts", List.of( "depno" ), List.of(
                 new MockColumnInfo( "deptno", false, PolyType.INTEGER ),
-                new MockColumnInfo( "name", false, PolyType.VARCHAR, 255 ) ) )
-        );
+                new MockColumnInfo( "name", false, PolyType.VARCHAR, 255 )
+        ) ) );
 
         mock( new MockTable( "emp", List.of(), List.of(
-                new MockColumnInfo( "empno", false, PolyType.INTEGER )
+                new MockColumnInfo( "empno", false, PolyType.INTEGER ),
+                new MockColumnInfo( "deptno", false, PolyType.INTEGER ),
+                new MockColumnInfo( "job", false, PolyType.VARCHAR, 255 ),
+                new MockColumnInfo( "mgr", true, PolyType.VARCHAR, 255 )
         ) ) );
 
         mock( new MockTable( "dept", List.of(), List.of(
