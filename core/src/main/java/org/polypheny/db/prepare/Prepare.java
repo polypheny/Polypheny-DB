@@ -56,6 +56,7 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexExecutorImpl;
@@ -120,7 +121,6 @@ public abstract class Prepare<T> {
         // Work around: Allow rules to be registered during planning process by briefly creating each kind of physical table
         // to let it register its rules.
         // The problem occurs when plans are created via AlgBuilder, not the usual process
-        // (SQL and SqlToRelConverter.Config.isConvertTableAccess = true).
         final AlgVisitor visitor = new AlgVisitor() {
             @Override
             public void visit( AlgNode node, int ordinal, AlgNode parent ) {
