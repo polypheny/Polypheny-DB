@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.protointerface;
+package org.polypheny.db.protointerface.transport;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -23,7 +23,7 @@ public interface Transport extends Closeable {
 
     void sendMessage( byte[] msg ) throws IOException;
 
-    byte[] recveiveMessage() throws IOException;
+    byte[] receiveMessage() throws IOException;
 
     void close();
 
