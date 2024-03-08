@@ -16,6 +16,7 @@
 
 package org.polypheny.db.protointerface;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -23,8 +24,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
-
-import java.io.IOException;
+import org.polypheny.db.protointerface.transport.PlainTransport;
+import org.polypheny.db.protointerface.transport.Transport;
 import org.polypheny.db.util.Util;
 
 @Slf4j

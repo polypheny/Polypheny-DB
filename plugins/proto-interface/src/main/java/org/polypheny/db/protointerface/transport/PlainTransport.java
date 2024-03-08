@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.protointerface;
+package org.polypheny.db.protointerface.transport;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -51,7 +51,7 @@ public class PlainTransport implements Transport {
 
 
     @Override
-    public byte[] recveiveMessage() throws IOException {
+    public byte[] receiveMessage() throws IOException {
         byte[] b = in.readNBytes( 8 );
         if ( b.length != 8 ) {
             if ( b.length == 0 ) { // EOF
@@ -62,6 +62,9 @@ public class PlainTransport implements Transport {
         ByteBuffer bb = ByteBuffer.wrap( b );
         bb.order( ByteOrder.LITTLE_ENDIAN ); // TODO Big endian like other network protocols?
         long length = bb.getLong();
+        if ( length == 0 ) {
+            throw new IOException( "Invalid message length" );
+        }
         return in.readNBytes( (int) length );
     }
 

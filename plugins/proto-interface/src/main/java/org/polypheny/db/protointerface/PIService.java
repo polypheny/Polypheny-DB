@@ -97,6 +97,7 @@ import org.polypheny.db.protointerface.statements.PIPreparedNamedStatement;
 import org.polypheny.db.protointerface.statements.PIStatement;
 import org.polypheny.db.protointerface.statements.PIUnparameterizedStatement;
 import org.polypheny.db.protointerface.statements.PIUnparameterizedStatementBatch;
+import org.polypheny.db.protointerface.transport.Transport;
 import org.polypheny.db.protointerface.utils.PropertyUtils;
 import org.polypheny.db.protointerface.utils.ProtoUtils;
 import org.polypheny.db.protointerface.utils.ProtoValueDeserializer;
@@ -208,7 +209,7 @@ public class PIService {
 
 
     private Request readOneMessage() throws IOException {
-        return Request.parseFrom( con.recveiveMessage() );
+        return Request.parseFrom( con.receiveMessage() );
     }
 
 
