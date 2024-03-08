@@ -43,7 +43,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalRelTableFunctionScan;
 import org.polypheny.db.algebra.metadata.AlgColumnMapping;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptUtil.RexInputConverter;
@@ -99,7 +99,7 @@ public class FilterTableFunctionTransposeRule extends AlgOptRule {
             }
         }
         final List<AlgNode> newFuncInputs = new ArrayList<>();
-        final AlgOptCluster cluster = funcRel.getCluster();
+        final AlgCluster cluster = funcRel.getCluster();
         final RexNode condition = filter.getCondition();
 
         // create filters on top of each func input, modifying the filter condition to reference the child instead

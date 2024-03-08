@@ -73,7 +73,7 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.properties.PartitionProperty;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexNode;
@@ -400,7 +400,7 @@ public class DataMigratorImpl implements DataMigrator {
 
     @Override
     public AlgRoot buildDeleteStatement( Statement statement, List<AllocationColumn> to, AllocationEntity allocation ) {
-        AlgOptCluster cluster = AlgOptCluster.create(
+        AlgCluster cluster = AlgCluster.create(
                 statement.getQueryProcessor().getPlanner(),
                 new RexBuilder( statement.getTransaction().getTypeFactory() ), null, statement.getTransaction().getSnapshot() );
         AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
@@ -431,7 +431,7 @@ public class DataMigratorImpl implements DataMigrator {
     @Override
     public AlgRoot buildInsertStatement( Statement statement, List<AllocationColumn> to, AllocationEntity allocation ) {
 
-        AlgOptCluster cluster = AlgOptCluster.create(
+        AlgCluster cluster = AlgCluster.create(
                 statement.getQueryProcessor().getPlanner(),
                 new RexBuilder( statement.getTransaction().getTypeFactory() ), null, statement.getDataContext().getSnapshot() );
         AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
@@ -458,7 +458,7 @@ public class DataMigratorImpl implements DataMigrator {
 
 
     private AlgRoot buildUpdateStatement( Statement statement, List<AllocationColumn> to, AllocationEntity allocation ) {
-        AlgOptCluster cluster = AlgOptCluster.create(
+        AlgCluster cluster = AlgCluster.create(
                 statement.getQueryProcessor().getPlanner(),
                 new RexBuilder( statement.getTransaction().getTypeFactory() ), null, statement.getDataContext().getSnapshot() );
 
@@ -514,7 +514,7 @@ public class DataMigratorImpl implements DataMigrator {
     public AlgRoot getSourceIterator( Statement statement, ColumnDistribution placementDistribution ) {
 
         // Build Query
-        AlgOptCluster cluster = AlgOptCluster.create(
+        AlgCluster cluster = AlgCluster.create(
                 statement.getQueryProcessor().getPlanner(),
                 new RexBuilder( statement.getTransaction().getTypeFactory() ), null, statement.getDataContext().getSnapshot() );
 

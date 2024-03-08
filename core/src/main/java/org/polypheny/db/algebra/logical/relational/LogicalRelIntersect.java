@@ -39,7 +39,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Intersect;
 import org.polypheny.db.algebra.core.relational.RelAlg;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 
@@ -54,7 +54,7 @@ public final class LogicalRelIntersect extends Intersect implements RelAlg {
      *
      * Use {@link #create} unless you know what you're doing.
      */
-    public LogicalRelIntersect( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
+    public LogicalRelIntersect( AlgCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
         super( cluster, traitSet, inputs, all );
     }
 
@@ -63,7 +63,7 @@ public final class LogicalRelIntersect extends Intersect implements RelAlg {
      * Creates a LogicalIntersect.
      */
     public static LogicalRelIntersect create( List<AlgNode> inputs, boolean all ) {
-        final AlgOptCluster cluster = inputs.get( 0 ).getCluster();
+        final AlgCluster cluster = inputs.get( 0 ).getCluster();
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
         return new LogicalRelIntersect( cluster, traitSet, inputs, all );
     }

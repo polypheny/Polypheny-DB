@@ -37,7 +37,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.schema.trait.ModelTrait;
@@ -69,7 +69,7 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
     /**
      * Subclass of {@link LpgValues} not targeted at any particular engine or calling convention.
      */
-    public LogicalLpgValues( AlgOptCluster cluster, AlgTraitSet traitSet, Collection<PolyNode> nodes, Collection<PolyEdge> edges, ImmutableList<ImmutableList<RexLiteral>> values, AlgDataType rowType ) {
+    public LogicalLpgValues( AlgCluster cluster, AlgTraitSet traitSet, Collection<PolyNode> nodes, Collection<PolyEdge> edges, ImmutableList<ImmutableList<RexLiteral>> values, AlgDataType rowType ) {
         super( cluster, traitSet, nodes, edges, values, rowType );
         this.values = values;
 
@@ -80,7 +80,7 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
 
 
     public static LogicalLpgValues create(
-            AlgOptCluster cluster,
+            AlgCluster cluster,
             AlgTraitSet traitSet,
             AlgDataType rowType,
             ImmutableList<ImmutableList<RexLiteral>> values ) {
@@ -89,7 +89,7 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
 
 
     public static LogicalLpgValues create(
-            AlgOptCluster cluster,
+            AlgCluster cluster,
             AlgTraitSet traitSet,
             List<Pair<PolyString, PolyNode>> nodes,
             AlgDataType nodeType,
@@ -120,7 +120,7 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
     public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<Entity> entities, Snapshot snapshot ) {
         AlgTraitSet out = traitSet.replace( ModelTrait.RELATIONAL );
 
-        AlgOptCluster cluster = AlgOptCluster.create( getCluster().getPlanner(), getCluster().getRexBuilder(), out, snapshot );
+        AlgCluster cluster = AlgCluster.create( getCluster().getPlanner(), getCluster().getRexBuilder(), out, snapshot );
 
         LogicalRelValues nodeValues = new LogicalRelValues( cluster, out, entities.get( 0 ).getTupleType(), getNodeValues( nodes ) );
         LogicalRelValues nodePropertyValues = new LogicalRelValues( cluster, out, entities.get( 1 ).getTupleType(), getNodePropertyValues( nodes ) );

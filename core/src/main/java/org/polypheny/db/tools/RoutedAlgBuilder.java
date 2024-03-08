@@ -22,7 +22,7 @@ import lombok.Setter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.processing.DeepCopyShuttle;
@@ -42,17 +42,17 @@ public class RoutedAlgBuilder extends AlgBuilder {
     protected FieldDistribution fieldDistribution; // PartitionId -> List<AllocationColumn>
 
 
-    public RoutedAlgBuilder( Context context, AlgOptCluster cluster, Snapshot snapshot ) {
+    public RoutedAlgBuilder( Context context, AlgCluster cluster, Snapshot snapshot ) {
         super( context, cluster, snapshot );
     }
 
 
-    public static RoutedAlgBuilder create( Statement statement, AlgOptCluster cluster ) {
+    public static RoutedAlgBuilder create( Statement statement, AlgCluster cluster ) {
         return new RoutedAlgBuilder( Contexts.EMPTY_CONTEXT, cluster, statement.getTransaction().getSnapshot() );
     }
 
 
-    public static RoutedAlgBuilder createCopy( Statement statement, AlgOptCluster cluster, RoutedAlgBuilder builder ) {
+    public static RoutedAlgBuilder createCopy( Statement statement, AlgCluster cluster, RoutedAlgBuilder builder ) {
         final RoutedAlgBuilder newBuilder = RoutedAlgBuilder.create( statement, cluster );
         newBuilder.fieldDistribution = builder.fieldDistribution;
 

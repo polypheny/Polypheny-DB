@@ -22,7 +22,7 @@ import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.lpg.LpgUnwind;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
 
@@ -33,7 +33,7 @@ public class LogicalLpgUnwind extends LpgUnwind {
     /**
      * Subclass of {@link LpgUnwind} not targeted at any particular engine or calling convention.
      */
-    public LogicalLpgUnwind( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, int index, @Nullable String alias ) {
+    public LogicalLpgUnwind( AlgCluster cluster, AlgTraitSet traits, AlgNode input, int index, @Nullable String alias ) {
         super( cluster, traits, input, index, alias );
     }
 

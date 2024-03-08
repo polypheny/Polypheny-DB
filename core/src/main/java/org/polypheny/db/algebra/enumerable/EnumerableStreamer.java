@@ -34,9 +34,9 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.Streamer;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
 
@@ -54,7 +54,7 @@ public class EnumerableStreamer extends Streamer implements EnumerableAlg {
      * @param provider provides the values which get streamed to the collector
      * @param collector uses the provided values and
      */
-    public EnumerableStreamer( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode provider, AlgNode collector ) {
+    public EnumerableStreamer( AlgCluster cluster, AlgTraitSet traitSet, AlgNode provider, AlgNode collector ) {
         super( cluster, traitSet, provider, collector );
     }
 
@@ -65,7 +65,7 @@ public class EnumerableStreamer extends Streamer implements EnumerableAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).plus( left.computeSelfCost( planner, mq ) ).plus( right.computeSelfCost( planner, mq ) ).multiplyBy( 100 );
     }
 

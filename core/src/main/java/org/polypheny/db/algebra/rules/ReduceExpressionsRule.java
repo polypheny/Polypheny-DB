@@ -57,7 +57,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.nodes.RowOperator;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptPredicateList;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
@@ -413,7 +413,7 @@ public abstract class ReduceExpressionsRule extends AlgOptRule {
      * @return whether reduction found something to change, and succeeded
      */
     protected static boolean reduceExpressions( AlgNode alg, List<RexNode> expList, AlgOptPredicateList predicates, boolean unknownAsFalse, boolean matchNullability ) {
-        final AlgOptCluster cluster = alg.getCluster();
+        final AlgCluster cluster = alg.getCluster();
         final RexBuilder rexBuilder = cluster.getRexBuilder();
         final RexExecutor executor = Util.first( cluster.getPlanner().getExecutor(), RexUtil.EXECUTOR );
         final RexSimplify simplify = new RexSimplify( rexBuilder, predicates, executor );

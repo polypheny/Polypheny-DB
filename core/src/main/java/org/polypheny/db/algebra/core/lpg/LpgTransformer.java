@@ -23,7 +23,7 @@ import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.core.common.Transformer;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.type.PolyType;
@@ -39,7 +39,7 @@ public class LpgTransformer extends Transformer {
      * Creates a {@link LpgTransformer}.
      * Transforms the underlying {@link ModelTrait#GRAPH} node to a {@link ModelTrait#RELATIONAL} node.
      */
-    public LpgTransformer( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, AlgDataType rowType, List<PolyType> operationOrder, Operation operation ) {
+    public LpgTransformer( AlgCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, AlgDataType rowType, List<PolyType> operationOrder, Operation operation ) {
         super( cluster, inputs, null, traitSet.replace( ModelTrait.GRAPH ), ModelTrait.RELATIONAL, ModelTrait.GRAPH, rowType, false );
         this.operationOrder = operationOrder;
         this.operation = operation;

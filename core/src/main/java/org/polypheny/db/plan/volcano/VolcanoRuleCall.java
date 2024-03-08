@@ -42,11 +42,13 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.AlgOptListener;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
+import org.polypheny.db.plan.AlgOptRuleOperandChildPolicy;
 import org.polypheny.db.plan.AlgTraitPropagationVisitor;
 import org.polypheny.db.plan.AlgTraitSet;
 
@@ -69,7 +71,7 @@ public class VolcanoRuleCall extends AlgOptRuleCall {
      *
      * @param planner Planner
      * @param operand First operand of the rule
-     * @param algs Array which will hold the matched relational expressions
+     * @param algs Array which will hold the matched algebra expressions
      * @param nodeInputs For each node which matched with {@code matchAnyChildren} = true, a list of the node's inputs
      */
     protected VolcanoRuleCall( VolcanoPlanner planner, AlgOptRuleOperand operand, AlgNode[] algs, Map<AlgNode, List<AlgNode>> nodeInputs ) {
@@ -246,8 +248,8 @@ public class VolcanoRuleCall extends AlgOptRuleCall {
             } else {
                 parentOperand = previousOperand;
                 final int parentOrdinal = operand.getParent().ordinalInRule;
-                final AlgNode parentRel = algs[parentOrdinal];
-                final List<AlgNode> inputs = parentRel.getInputs();
+                final AlgNode parentAlg = algs[parentOrdinal];
+                final List<AlgNode> inputs = parentAlg.getInputs();
                 if ( operand.ordinalInParent < inputs.size() ) {
                     final AlgSubset subset = (AlgSubset) inputs.get( operand.ordinalInParent );
                     if ( operand.getMatchedClass() == AlgSubset.class ) {
@@ -275,20 +277,19 @@ public class VolcanoRuleCall extends AlgOptRuleCall {
                 }
 
                 // Assign "childAlgs" if the operand is UNORDERED.
-                switch ( parentOperand.childPolicy ) {
-                    case UNORDERED:
-                        if ( ascending ) {
-                            final List<AlgNode> inputs = Lists.newArrayList( alg.getInputs() );
-                            inputs.set( previousOperand.ordinalInParent, previous );
-                            setChildAlgs( alg, inputs );
-                        } else {
-                            List<AlgNode> inputs = getChildAlgs( previous );
-                            if ( inputs == null ) {
-                                inputs = Lists.newArrayList( previous.getInputs() );
-                            }
-                            inputs.set( operand.ordinalInParent, alg );
-                            setChildAlgs( previous, inputs );
+                if ( Objects.requireNonNull( parentOperand.childPolicy ) == AlgOptRuleOperandChildPolicy.UNORDERED ) {
+                    if ( ascending ) {
+                        final List<AlgNode> inputs = Lists.newArrayList( alg.getInputs() );
+                        inputs.set( previousOperand.ordinalInParent, previous );
+                        setChildAlgs( alg, inputs );
+                    } else {
+                        List<AlgNode> inputs = getChildAlgs( previous );
+                        if ( inputs == null ) {
+                            inputs = Lists.newArrayList( previous.getInputs() );
                         }
+                        inputs.set( operand.ordinalInParent, alg );
+                        setChildAlgs( previous, inputs );
+                    }
                 }
 
                 algs[operandOrdinal] = alg;

@@ -35,7 +35,6 @@ import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.type.PolyTypeUtil;
 
 @Slf4j
@@ -79,7 +78,7 @@ public class ValidatorUtil {
 
     /**
      * Returns the type the row which results when two relations are joined.
-     *
+     * <p>
      * The resulting row type consists of the system fields (if any), followed by the fields of the left type, followed by the fields of the right type. The field name list, if present, overrides the original names of the fields.
      *
      * @param typeFactory Type factory
@@ -184,7 +183,7 @@ public class ValidatorUtil {
 
     /**
      * Makes sure that the names in a list are unique.
-     *
+     * <p>
      * Does not modify the input list. Returns the input list if the strings are unique, otherwise allocates a new list.
      *
      * @param nameList List of strings
@@ -198,7 +197,7 @@ public class ValidatorUtil {
 
     /**
      * Makes sure that the names in a list are unique.
-     *
+     * <p>
      * Does not modify the input list. Returns the input list if the strings are unique, otherwise allocates a new list.
      *
      * @param nameList List of strings
@@ -254,34 +253,6 @@ public class ValidatorUtil {
                 }
             }
         }
-    }
-
-
-    /**
-     * Finds and returns {@link PolyphenyDbSchema} nested to the given rootSchema with specified schemaPath.
-     *
-     * Uses the case-sensitivity policy of specified nameMatcher.
-     *
-     * If not found, returns null.
-     *
-     * @param schemaPath full schema path of required schema
-     * @param nameMatcher name matcher
-     * @return PolyphenyDbSchema that corresponds specified schemaPath
-     */
-    public static Snapshot getSchema( Snapshot snapshot, Iterable<String> schemaPath, NameMatcher nameMatcher ) {
-
-        return snapshot;
-    }
-
-
-    public static AlgDataType createTypeFromProjection( AlgDataType type, List<String> columnNameList, AlgDataTypeFactory typeFactory, boolean caseSensitive ) {
-        // If the names in columnNameList and type have case-sensitive differences, the resulting type will use those from type. These are presumably more canonical.
-        final List<AlgDataTypeField> fields = new ArrayList<>( columnNameList.size() );
-        for ( String name : columnNameList ) {
-            AlgDataTypeField field = type.getField( name, caseSensitive, false );
-            fields.add( type.getFields().get( field.getIndex() ) );
-        }
-        return typeFactory.createStructType( fields );
     }
 
 

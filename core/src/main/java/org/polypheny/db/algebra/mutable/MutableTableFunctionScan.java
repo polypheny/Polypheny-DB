@@ -41,7 +41,7 @@ import java.util.Set;
 import org.polypheny.db.algebra.core.RelTableFunctionScan;
 import org.polypheny.db.algebra.metadata.AlgColumnMapping;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.rex.RexNode;
 
 
@@ -55,7 +55,7 @@ public class MutableTableFunctionScan extends MutableMultiAlg {
     public final Set<AlgColumnMapping> columnMappings;
 
 
-    private MutableTableFunctionScan( AlgOptCluster cluster, AlgDataType rowType, List<MutableAlg> inputs, RexNode rexCall, Type elementType, Set<AlgColumnMapping> columnMappings ) {
+    private MutableTableFunctionScan( AlgCluster cluster, AlgDataType rowType, List<MutableAlg> inputs, RexNode rexCall, Type elementType, Set<AlgColumnMapping> columnMappings ) {
         super( cluster, rowType, MutableAlgType.TABLE_FUNCTION_SCAN, inputs );
         this.rexCall = rexCall;
         this.elementType = elementType;
@@ -73,7 +73,7 @@ public class MutableTableFunctionScan extends MutableMultiAlg {
      * @param elementType Element type of the collection that will implement this table
      * @param columnMappings Column mappings associated with this function
      */
-    public static MutableTableFunctionScan of( AlgOptCluster cluster, AlgDataType rowType, List<MutableAlg> inputs, RexNode rexCall, Type elementType, Set<AlgColumnMapping> columnMappings ) {
+    public static MutableTableFunctionScan of( AlgCluster cluster, AlgDataType rowType, List<MutableAlg> inputs, RexNode rexCall, Type elementType, Set<AlgColumnMapping> columnMappings ) {
         return new MutableTableFunctionScan( cluster, rowType, inputs, rexCall, elementType, columnMappings );
     }
 

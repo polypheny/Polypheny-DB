@@ -41,7 +41,7 @@ import java.util.Iterator;
 import javax.annotation.Nonnull;
 import lombok.Getter;
 import org.polypheny.db.plan.AlgMultipleTrait;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.runtime.Utilities;
 import org.polypheny.db.util.Util;
@@ -109,7 +109,7 @@ public class AlgCollationImpl implements AlgCollation {
 
 
     @Override
-    public void register( AlgOptPlanner planner ) {
+    public void register( AlgPlanner planner ) {
     }
 
 

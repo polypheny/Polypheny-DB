@@ -76,7 +76,7 @@ import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.properties.PartitionProperty;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.processing.WhereClauseVisitor;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
@@ -100,7 +100,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
     @Override
     public AlgNode routeDml( LogicalRelModify modify, Statement statement ) {
-        AlgOptCluster cluster = modify.getCluster();
+        AlgCluster cluster = modify.getCluster();
 
         if ( modify.entity == null ) {
             throw new GenericRuntimeException( "Unexpected operator!" );
@@ -337,7 +337,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     }
 
 
-    private Triple<Long, String, Boolean> handleDmlInsert( List<String> updateColumns, LogicalRelModify modify, List<Long> columnIds, List<LogicalColumn> columns, PartitionProperty property, LogicalTable table, Set<Long> accessedPartitionList, PartitionManager partitionManager, AllocationPlacement pkPlacement, Statement statement, List<AllocationColumn> placementsOnAdapter, AlgOptCluster cluster, List<AlgNode> modifies, List<? extends RexNode> sourceExpressions, List<Map<Long, PolyValue>> allValues ) {
+    private Triple<Long, String, Boolean> handleDmlInsert( List<String> updateColumns, LogicalRelModify modify, List<Long> columnIds, List<LogicalColumn> columns, PartitionProperty property, LogicalTable table, Set<Long> accessedPartitionList, PartitionManager partitionManager, AllocationPlacement pkPlacement, Statement statement, List<AllocationColumn> placementsOnAdapter, AlgCluster cluster, List<AlgNode> modifies, List<? extends RexNode> sourceExpressions, List<Map<Long, PolyValue>> allValues ) {
         String partitionValue = null;
         long identPart = -1;
         boolean worstCaseRouting;
@@ -784,7 +784,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             List<AllocationColumn> placements,
             AllocationEntity allocEntity,
             Statement statement,
-            AlgOptCluster cluster,
+            AlgCluster cluster,
             boolean remapParameterValues,
             List<Map<Long, PolyValue>> parameterValues ) {
         for ( int i = 0; i < node.getInputs().size(); i++ ) {

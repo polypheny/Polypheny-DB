@@ -54,13 +54,13 @@ import org.polypheny.db.algebra.convert.TraitMatchingRule;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.metadata.AlgMetadataProvider;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AbstractAlgOptPlanner;
+import org.polypheny.db.plan.AbstractAlgPlanner;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptCostFactory;
 import org.polypheny.db.plan.AlgOptCostImpl;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleOperand;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.CommonRelSubExprRule;
@@ -79,9 +79,9 @@ import org.polypheny.db.util.graph.TopologicalOrderIterator;
 
 
 /**
- * HepPlanner is a heuristic implementation of the {@link AlgOptPlanner} interface.
+ * HepPlanner is a heuristic implementation of the {@link AlgPlanner} interface.
  */
-public class HepPlanner extends AbstractAlgOptPlanner {
+public class HepPlanner extends AbstractAlgPlanner {
 
     private final HepProgram mainProgram;
 
@@ -148,7 +148,7 @@ public class HepPlanner extends AbstractAlgOptPlanner {
     }
 
 
-    // implement AlgOptPlanner
+    // implement AlgPlanner
     @Override
     public void setRoot( AlgNode alg ) {
         root = addAlgToGraph( alg );
@@ -156,7 +156,7 @@ public class HepPlanner extends AbstractAlgOptPlanner {
     }
 
 
-    // implement AlgOptPlanner
+    // implement AlgPlanner
     @Override
     public AlgNode getRoot() {
         return root;
@@ -169,7 +169,7 @@ public class HepPlanner extends AbstractAlgOptPlanner {
     }
 
 
-    // implement AlgOptPlanner
+    // implement AlgPlanner
     @Override
     public boolean addRule( AlgOptRule rule ) {
         boolean added = allRules.add( rule );
@@ -202,7 +202,7 @@ public class HepPlanner extends AbstractAlgOptPlanner {
     }
 
 
-    // implement AlgOptPlanner
+    // implement AlgPlanner
     @Override
     public AlgNode changeTraits( AlgNode alg, AlgTraitSet toTraits ) {
         // Ignore traits, except for the root, where we remember what the final conversion should be.
@@ -213,7 +213,7 @@ public class HepPlanner extends AbstractAlgOptPlanner {
     }
 
 
-    // implement AlgOptPlanner
+    // implement AlgPlanner
     @Override
     public AlgNode findBestExp() {
         assert root != null;
@@ -706,7 +706,7 @@ public class HepPlanner extends AbstractAlgOptPlanner {
     }
 
 
-    // implement AlgOptPlanner
+    // implement AlgPlanner
     @Override
     public AlgNode register( AlgNode alg, AlgNode equivAlg ) {
         // Ignore; this call is mostly to tell Volcano how to avoid infinite loops.
@@ -720,14 +720,14 @@ public class HepPlanner extends AbstractAlgOptPlanner {
     }
 
 
-    // implement AlgOptPlanner
+    // implement AlgPlanner
     @Override
     public AlgNode ensureRegistered( AlgNode alg, AlgNode equivAlg ) {
         return alg;
     }
 
 
-    // implement AlgOptPlanner
+    // implement AlgPlanner
     @Override
     public boolean isRegistered( AlgNode alg ) {
         return true;
@@ -936,14 +936,14 @@ public class HepPlanner extends AbstractAlgOptPlanner {
     }
 
 
-    // implement AlgOptPlanner
+    // implement AlgPlanner
     @Override
     public void registerMetadataProviders( List<AlgMetadataProvider> list ) {
         list.add( 0, new HepAlgMetadataProvider() );
     }
 
 
-    // implement AlgOptPlanner
+    // implement AlgPlanner
     @Override
     public long getAlgMetadataTimestamp( AlgNode alg ) {
         // TODO jvs 20-Apr-2006: This is overly conservative.  Better would be to keep a timestamp per HepAlgVertex, and update only affected vertices and all ancestors on each transformation.

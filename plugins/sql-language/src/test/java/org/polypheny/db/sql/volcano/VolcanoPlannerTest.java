@@ -35,7 +35,7 @@ import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.rules.ProjectRemoveRule;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -74,7 +74,7 @@ public class VolcanoPlannerTest extends SqlLanguageDependent {
 
         planner.addRule( new PhysLeafRule() );
 
-        AlgOptCluster cluster = PlannerTests.newCluster( planner );
+        AlgCluster cluster = PlannerTests.newCluster( planner );
         NoneLeafAlg leafRel = new NoneLeafAlg( cluster, "a" );
         AlgNode convertedRel = planner.changeTraits( leafRel, cluster.traitSetOf( PlannerTests.PHYS_CALLING_CONVENTION ) );
         planner.setRoot( convertedRel );
@@ -94,7 +94,7 @@ public class VolcanoPlannerTest extends SqlLanguageDependent {
         planner.addRule( new PhysLeafRule() );
         planner.addRule( new GoodSingleRule() );
 
-        AlgOptCluster cluster = PlannerTests.newCluster( planner );
+        AlgCluster cluster = PlannerTests.newCluster( planner );
         NoneLeafAlg leafRel = new NoneLeafAlg( cluster, "a" );
         NoneSingleAlg singleRel = new NoneSingleAlg( cluster, leafRel );
         AlgNode convertedRel = planner.changeTraits( singleRel, cluster.traitSetOf( PlannerTests.PHYS_CALLING_CONVENTION ) );
@@ -117,7 +117,7 @@ public class VolcanoPlannerTest extends SqlLanguageDependent {
         final List<String> buf = new ArrayList<>();
         planner.addRule( new SubsetRule( buf ) );
 
-        AlgOptCluster cluster = PlannerTests.newCluster( planner );
+        AlgCluster cluster = PlannerTests.newCluster( planner );
         NoneLeafAlg leafRel = new NoneLeafAlg( cluster, "a" );
         NoneSingleAlg singleRel = new NoneSingleAlg( cluster, leafRel );
         AlgNode convertedRel = planner.changeTraits( singleRel, cluster.traitSetOf( PlannerTests.PHYS_CALLING_CONVENTION ) );
@@ -163,7 +163,7 @@ public class VolcanoPlannerTest extends SqlLanguageDependent {
             }
         } );
 
-        AlgOptCluster cluster = PlannerTests.newCluster( planner );
+        AlgCluster cluster = PlannerTests.newCluster( planner );
         PhysLeafAlg leafRel = new PhysLeafAlg( cluster, "a" );
         final AlgBuilder algBuilder = AlgFactories.LOGICAL_BUILDER.create( leafRel.getCluster(), null );
         AlgNode projectRel =
@@ -211,7 +211,7 @@ public class VolcanoPlannerTest extends SqlLanguageDependent {
         planner.addRule( new GoodSingleRule() );
         planner.addRule( new GoodRemoveSingleRule() );
 
-        AlgOptCluster cluster = PlannerTests.newCluster( planner );
+        AlgCluster cluster = PlannerTests.newCluster( planner );
         NoneLeafAlg leafRel = new NoneLeafAlg( cluster, "a" );
         NoneSingleAlg singleRel = new NoneSingleAlg( cluster, leafRel );
         AlgNode convertedRel = planner.changeTraits( singleRel, cluster.traitSetOf( PlannerTests.PHYS_CALLING_CONVENTION ) );
@@ -227,7 +227,7 @@ public class VolcanoPlannerTest extends SqlLanguageDependent {
      */
     static class PhysToIteratorConverter extends ConverterImpl {
 
-        PhysToIteratorConverter( AlgOptCluster cluster, AlgNode child ) {
+        PhysToIteratorConverter( AlgCluster cluster, AlgNode child ) {
             super( cluster, ConventionTraitDef.INSTANCE, cluster.traitSetOf( EnumerableConvention.INSTANCE ), child );
         }
 

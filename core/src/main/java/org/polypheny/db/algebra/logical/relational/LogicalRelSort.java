@@ -42,7 +42,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.relational.RelAlg;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
@@ -53,7 +53,7 @@ import org.polypheny.db.rex.RexNode;
  */
 public final class LogicalRelSort extends Sort implements RelAlg {
 
-    private LogicalRelSort( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, AlgCollation collation, @Nullable List<RexNode> fieldExps, RexNode offset, RexNode fetch ) {
+    private LogicalRelSort( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, AlgCollation collation, @Nullable List<RexNode> fieldExps, RexNode offset, RexNode fetch ) {
         super( cluster, traitSet, input, collation, fieldExps, offset, fetch );
         assert traitSet.containsIfApplicable( Convention.NONE );
     }
@@ -68,7 +68,7 @@ public final class LogicalRelSort extends Sort implements RelAlg {
      * @param fetch Expression for number of rows to fetch
      */
     public static LogicalRelSort create( AlgNode input, AlgCollation collation, RexNode offset, RexNode fetch ) {
-        AlgOptCluster cluster = input.getCluster();
+        AlgCluster cluster = input.getCluster();
         collation = AlgCollationTraitDef.INSTANCE.canonize( collation );
         AlgTraitSet traitSet = input.getTraitSet().replace( Convention.NONE ).replace( collation );
         return new LogicalRelSort( cluster, traitSet, input, collation, null, offset, fetch );

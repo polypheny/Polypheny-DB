@@ -46,11 +46,11 @@ import org.polypheny.db.util.Util;
 public class AlgTraitPropagationVisitor extends AlgVisitor {
 
     private final AlgTraitSet baseTraits;
-    private final AlgOptPlanner planner;
+    private final AlgPlanner planner;
 
 
     public AlgTraitPropagationVisitor(
-            AlgOptPlanner planner,
+            AlgPlanner planner,
             AlgTraitSet baseTraits ) {
         this.planner = planner;
         this.baseTraits = baseTraits;

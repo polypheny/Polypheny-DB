@@ -18,7 +18,7 @@ package org.polypheny.db.schema.trait;
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.logistic.DataModel;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.Convention;
 
@@ -50,7 +50,7 @@ public record ModelTrait(DataModel dataModel) implements AlgTrait<ModelTraitDef>
 
 
     @Override
-    public void register( AlgOptPlanner planner ) {
+    public void register( AlgPlanner planner ) {
 
     }
 

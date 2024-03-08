@@ -20,7 +20,7 @@ import org.polypheny.db.adapter.neo4j.NeoGraph;
 import org.polypheny.db.adapter.neo4j.NeoGraphImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
 import org.polypheny.db.algebra.core.lpg.LpgScan;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.trait.ModelTrait;
 
@@ -33,7 +33,7 @@ public class NeoLpgScan extends LpgScan<NeoGraph> implements NeoGraphAlg {
      * @param cluster Cluster this expression belongs to
      * @param traitSet Traits active for this node, including {@link ModelTrait#GRAPH}
      */
-    public NeoLpgScan( AlgOptCluster cluster, AlgTraitSet traitSet, NeoGraph graph ) {
+    public NeoLpgScan( AlgCluster cluster, AlgTraitSet traitSet, NeoGraph graph ) {
         super( cluster, traitSet, graph );
     }
 

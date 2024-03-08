@@ -44,10 +44,10 @@ import org.polypheny.db.algebra.BiAlg;
 import org.polypheny.db.algebra.constant.SemiJoinType;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Litmus;
@@ -97,7 +97,7 @@ public abstract class Correlate extends BiAlg {
      * @param requiredColumns Set of columns that are used by correlation
      * @param joinType Join type
      */
-    protected Correlate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode left, AlgNode right, CorrelationId correlationId, ImmutableBitSet requiredColumns, SemiJoinType joinType ) {
+    protected Correlate( AlgCluster cluster, AlgTraitSet traits, AlgNode left, AlgNode right, CorrelationId correlationId, ImmutableBitSet requiredColumns, SemiJoinType joinType ) {
         super( cluster, traits, left, right );
         this.joinType = joinType;
         this.correlationId = correlationId;
@@ -159,7 +159,7 @@ public abstract class Correlate extends BiAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         double rowCount = mq.getTupleCount( this );
 
         final double rightRowCount = right.estimateTupleCount( mq );

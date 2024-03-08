@@ -44,7 +44,7 @@ import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinInfo;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptUtil;
@@ -105,7 +105,7 @@ public abstract class SemiJoinRule extends AlgOptRule {
 
 
     protected void perform( AlgOptRuleCall call, Project project, Join join, AlgNode left, Aggregate aggregate ) {
-        final AlgOptCluster cluster = join.getCluster();
+        final AlgCluster cluster = join.getCluster();
         final RexBuilder rexBuilder = cluster.getRexBuilder();
         if ( project != null ) {
             final ImmutableBitSet bits = AlgOptUtil.InputFinder.bits( project.getProjects(), null );

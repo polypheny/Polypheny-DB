@@ -77,7 +77,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.nodes.validate.Validator;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCorrelVariable;
@@ -383,7 +383,7 @@ public class AlgFieldTrimmer implements AlgProducingVisitor3<TrimResult, Immutab
      * @return Dummy project, or null if no dummy is required
      */
     protected TrimResult dummyProject( int fieldCount, AlgNode input ) {
-        final AlgOptCluster cluster = input.getCluster();
+        final AlgCluster cluster = input.getCluster();
         final Mapping mapping = Mappings.create( MappingType.INVERSE_SURJECTION, fieldCount, 1 );
         if ( input.getTupleType().getFieldCount() == 1 ) {
             // Input already has one field (and may in fact be a dummy project we created for the child). We can't do better.

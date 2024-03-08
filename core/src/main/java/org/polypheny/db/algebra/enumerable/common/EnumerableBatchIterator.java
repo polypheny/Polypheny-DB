@@ -30,7 +30,7 @@ import org.polypheny.db.algebra.core.common.BatchIterator;
 import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
 
@@ -44,7 +44,7 @@ public class EnumerableBatchIterator extends BatchIterator implements Enumerable
      * @param traits The trait set
      * @param input Input relational expression
      */
-    protected EnumerableBatchIterator( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input ) {
+    protected EnumerableBatchIterator( AlgCluster cluster, AlgTraitSet traits, AlgNode input ) {
         super( cluster, traits, input );
     }
 

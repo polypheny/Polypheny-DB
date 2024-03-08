@@ -19,12 +19,12 @@ package org.polypheny.db.algebra.logical.document;
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.document.DocumentUnwind;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
 public class LogicalDocumentUnwind extends DocumentUnwind {
 
-    public LogicalDocumentUnwind( AlgOptCluster cluster, AlgTraitSet traits, String path, AlgNode node ) {
+    public LogicalDocumentUnwind( AlgCluster cluster, AlgTraitSet traits, String path, AlgNode node ) {
         super( cluster, traits, node, path );
     }
 

@@ -46,7 +46,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.Util;
@@ -65,7 +65,7 @@ public abstract class SetOp extends AbstractAlgNode {
     /**
      * Creates a SetOp.
      */
-    protected SetOp( AlgOptCluster cluster, AlgTraitSet traits, List<AlgNode> inputs, Kind kind, boolean all ) {
+    protected SetOp( AlgCluster cluster, AlgTraitSet traits, List<AlgNode> inputs, Kind kind, boolean all ) {
         super( cluster, traits );
         Preconditions.checkArgument(
                 kind == Kind.UNION

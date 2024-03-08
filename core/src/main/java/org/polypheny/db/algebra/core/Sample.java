@@ -39,7 +39,7 @@ import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptSamplingParameters;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -55,7 +55,7 @@ public class Sample extends SingleAlg {
     private final AlgOptSamplingParameters params;
 
 
-    public Sample( AlgOptCluster cluster, AlgNode child, AlgOptSamplingParameters params ) {
+    public Sample( AlgCluster cluster, AlgNode child, AlgOptSamplingParameters params ) {
         super( cluster, cluster.traitSetOf( Convention.NONE ), child );
         this.params = params;
     }

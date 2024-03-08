@@ -44,7 +44,7 @@ import org.polypheny.db.algebra.AlgNode;
 public interface Convention extends AlgTrait<ConventionTraitDef>, Serializable {
 
     /**
-     * Convention that for a relational expression that does not support any convention. It is not implementable, and has to be transformed to something else in order to be implemented.
+     * Convention that for an algebra expression that does not support any convention. It is not implementable, and has to be transformed to something else in order to be implemented.
      *
      * Relational expressions generally start off in this form.
      *
@@ -103,7 +103,7 @@ public interface Convention extends AlgTrait<ConventionTraitDef>, Serializable {
 
 
         @Override
-        public void register( AlgOptPlanner planner ) {
+        public void register( AlgPlanner planner ) {
         }
 
 

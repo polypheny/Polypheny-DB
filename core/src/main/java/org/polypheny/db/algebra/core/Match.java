@@ -57,7 +57,7 @@ import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
@@ -118,7 +118,7 @@ public abstract class Match extends SingleAlg {
      * @param orderKeys Order by columns
      * @param interval Interval definition, null if WITHIN clause is not defined
      */
-    protected Match( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, AlgDataType rowType, RexNode pattern, boolean strictStart, boolean strictEnd, Map<String, RexNode> patternDefinitions, Map<String, RexNode> measures, RexNode after, Map<String, ? extends SortedSet<String>> subsets, boolean allRows, List<RexNode> partitionKeys, AlgCollation orderKeys, RexNode interval ) {
+    protected Match( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, AlgDataType rowType, RexNode pattern, boolean strictStart, boolean strictEnd, Map<String, RexNode> patternDefinitions, Map<String, RexNode> measures, RexNode after, Map<String, ? extends SortedSet<String>> subsets, boolean allRows, List<RexNode> partitionKeys, AlgCollation orderKeys, RexNode interval ) {
         super( cluster, traitSet, input );
         this.rowType = Objects.requireNonNull( rowType );
         this.pattern = Objects.requireNonNull( pattern );

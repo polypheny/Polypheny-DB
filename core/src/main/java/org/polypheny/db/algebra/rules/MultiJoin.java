@@ -50,7 +50,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
@@ -89,7 +89,7 @@ public final class MultiJoin extends AbstractAlgNode {
      * @param joinFieldRefCountsMap counters of the number of times each field is referenced in join conditions, indexed by the input #
      * @param postJoinFilter filter to be applied after the joins are
      */
-    public MultiJoin( AlgOptCluster cluster, List<AlgNode> inputs, RexNode joinFilter, AlgDataType rowType, boolean isFullOuterJoin, List<RexNode> outerJoinConditions, List<JoinAlgType> joinTypes, List<ImmutableBitSet> projFields, ImmutableMap<Integer, ImmutableList<Integer>> joinFieldRefCountsMap, RexNode postJoinFilter ) {
+    public MultiJoin( AlgCluster cluster, List<AlgNode> inputs, RexNode joinFilter, AlgDataType rowType, boolean isFullOuterJoin, List<RexNode> outerJoinConditions, List<JoinAlgType> joinTypes, List<ImmutableBitSet> projFields, ImmutableMap<Integer, ImmutableList<Integer>> joinFieldRefCountsMap, RexNode postJoinFilter ) {
         super( cluster, cluster.traitSetOf( Convention.NONE ) );
         this.inputs = Lists.newArrayList( inputs );
         this.joinFilter = joinFilter;

@@ -48,7 +48,7 @@ import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
@@ -93,7 +93,7 @@ public class SortProjectTransposeRule extends AlgOptRule {
     public void onMatch( AlgOptRuleCall call ) {
         final Sort sort = call.alg( 0 );
         final Project project = call.alg( 1 );
-        final AlgOptCluster cluster = project.getCluster();
+        final AlgCluster cluster = project.getCluster();
 
         if ( sort.getConvention() != project.getConvention() ) {
             return;

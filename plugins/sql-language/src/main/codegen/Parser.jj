@@ -50,7 +50,6 @@ options {
   COMMON_TOKEN_ACTION = false;
   JDK_VERSION = "1.17";
   TOKEN_MANAGER_USES_PARSER = true;
-  GENERATE_CHAINED_EXCEPTION = true;
 }
 
 

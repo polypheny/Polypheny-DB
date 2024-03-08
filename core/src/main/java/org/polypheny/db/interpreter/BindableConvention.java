@@ -35,7 +35,7 @@ package org.polypheny.db.interpreter;
 
 
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -80,7 +80,7 @@ public enum BindableConvention implements Convention {
 
 
     @Override
-    public void register( AlgOptPlanner planner ) {
+    public void register( AlgPlanner planner ) {
     }
 
 

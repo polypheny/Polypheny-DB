@@ -40,7 +40,7 @@ import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.NodeToAlgConverter.Config;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Node;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.Contexts;
@@ -192,7 +192,7 @@ public abstract class SqlToAlgTestBase extends SqlLanguageDependent {
         private final boolean enableTrim;
         private final boolean enableExpand;
         private final Conformance conformance;
-        private final Function<AlgOptCluster, AlgOptCluster> clusterFactory;
+        private final Function<AlgCluster, AlgCluster> clusterFactory;
         private AlgDataTypeFactory typeFactory;
         public final Config config;
         private final Context context;
@@ -213,8 +213,8 @@ public abstract class SqlToAlgTestBase extends SqlLanguageDependent {
                 boolean enableTrim,
                 boolean enableExpand,
                 boolean enableLateDecorrelate,
-                Function<AlgOptCluster,
-                        AlgOptCluster> clusterFactory ) {
+                Function<AlgCluster,
+                        AlgCluster> clusterFactory ) {
             this(
                     diffRepos,
                     enableDecorrelate,
@@ -234,7 +234,7 @@ public abstract class SqlToAlgTestBase extends SqlLanguageDependent {
                 boolean enableTrim,
                 boolean enableExpand,
                 boolean enableLateDecorrelate,
-                Function<AlgOptCluster, AlgOptCluster> clusterFactory,
+                Function<AlgCluster, AlgCluster> clusterFactory,
                 Config config,
                 Conformance conformance,
                 Context context ) {

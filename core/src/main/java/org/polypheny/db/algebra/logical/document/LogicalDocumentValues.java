@@ -22,7 +22,7 @@ import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.document.DocumentValues;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
 import org.polypheny.db.catalog.logistic.DataModel;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexDynamicParam;
@@ -59,28 +59,28 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
      * @param traitSet the used traitSet
      * @param document the documents in their native BSON format
      */
-    public LogicalDocumentValues( AlgOptCluster cluster, AlgTraitSet traitSet, List<PolyDocument> document ) {
+    public LogicalDocumentValues( AlgCluster cluster, AlgTraitSet traitSet, List<PolyDocument> document ) {
         super( cluster, traitSet, document );
     }
 
 
-    public LogicalDocumentValues( AlgOptCluster cluster, AlgTraitSet traitSet, List<PolyDocument> documents, List<RexDynamicParam> dynamicDocuments ) {
+    public LogicalDocumentValues( AlgCluster cluster, AlgTraitSet traitSet, List<PolyDocument> documents, List<RexDynamicParam> dynamicDocuments ) {
         super( cluster, traitSet, documents, dynamicDocuments );
     }
 
 
-    public static AlgNode create( AlgOptCluster cluster, List<PolyDocument> documents ) {
+    public static AlgNode create( AlgCluster cluster, List<PolyDocument> documents ) {
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
         return new LogicalDocumentValues( cluster, traitSet, documents );
     }
 
 
-    public static LogicalDocumentValues createOneTuple( AlgOptCluster cluster ) {
+    public static LogicalDocumentValues createOneTuple( AlgCluster cluster ) {
         return new LogicalDocumentValues( cluster, cluster.traitSet(), List.of( new PolyDocument() ) );
     }
 
 
-    public static AlgNode createDynamic( AlgOptCluster cluster, List<RexDynamicParam> ids ) {
+    public static AlgNode createDynamic( AlgCluster cluster, List<RexDynamicParam> ids ) {
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
         return new LogicalDocumentValues( cluster, traitSet, List.of( new PolyDocument() ), ids );
     }

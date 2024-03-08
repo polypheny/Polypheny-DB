@@ -127,7 +127,7 @@ class AlgCompositeTrait<T extends AlgMultipleTrait<?> & AlgTrait<?>> implements 
 
 
     @Override
-    public void register( AlgOptPlanner planner ) {
+    public void register( AlgPlanner planner ) {
     }
 
 

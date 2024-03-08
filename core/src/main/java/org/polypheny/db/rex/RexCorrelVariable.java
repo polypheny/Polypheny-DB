@@ -41,7 +41,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
- * Reference to the current row of a correlating relational expression.
+ * Reference to the current row of a correlating algebra expression.
  *
  * Correlating variables are introduced when performing nested loop joins.
  * Each row is received from one side of the join, a correlating variable is assigned a value, and the other side of the join is restarted.

@@ -37,7 +37,7 @@ package org.polypheny.db.algebra.mutable;
 import java.util.List;
 import org.polypheny.db.algebra.core.Minus;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 
 
 /**
@@ -45,7 +45,7 @@ import org.polypheny.db.plan.AlgOptCluster;
  */
 public class MutableMinus extends MutableSetOp {
 
-    private MutableMinus( AlgOptCluster cluster, AlgDataType rowType, List<MutableAlg> inputs, boolean all ) {
+    private MutableMinus( AlgCluster cluster, AlgDataType rowType, List<MutableAlg> inputs, boolean all ) {
         super( cluster, rowType, MutableAlgType.MINUS, inputs, all );
     }
 

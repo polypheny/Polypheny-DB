@@ -73,9 +73,9 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.functions.TemporalFunctions;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
@@ -146,7 +146,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             DataContext.class );
 
 
-    protected JdbcToEnumerableConverter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input ) {
+    protected JdbcToEnumerableConverter( AlgCluster cluster, AlgTraitSet traits, AlgNode input ) {
         super( cluster, ConventionTraitDef.INSTANCE, traits, input );
     }
 
@@ -158,7 +158,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( .1 );
     }
 

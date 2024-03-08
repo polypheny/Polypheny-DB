@@ -53,7 +53,7 @@ import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexIndexRef;
@@ -88,7 +88,7 @@ public final class LogicalWindow extends Window implements RelAlg {
      * @param rowType Output row type
      * @param groups Window groups
      */
-    public LogicalWindow( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, List<RexLiteral> constants, AlgDataType rowType, List<Group> groups ) {
+    public LogicalWindow( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, List<RexLiteral> constants, AlgDataType rowType, List<Group> groups ) {
         super( cluster, traitSet, input, constants, rowType, groups );
     }
 
@@ -116,7 +116,7 @@ public final class LogicalWindow extends Window implements RelAlg {
     /**
      * Creates a LogicalWindow by parsing a {@link RexProgram}.
      */
-    public static AlgNode create( AlgOptCluster cluster, AlgTraitSet traitSet, AlgBuilder algBuilder, AlgNode child, final RexProgram program ) {
+    public static AlgNode create( AlgCluster cluster, AlgTraitSet traitSet, AlgBuilder algBuilder, AlgNode child, final RexProgram program ) {
         final AlgDataType outRowType = program.getOutputRowType();
         // Build a list of distinct groups, partitions and aggregate functions.
         final Multimap<WindowKey, RexOver> windowMap = LinkedListMultimap.create();

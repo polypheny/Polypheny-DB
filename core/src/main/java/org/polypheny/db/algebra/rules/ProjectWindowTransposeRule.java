@@ -45,7 +45,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalWindow;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.rex.RexCall;
@@ -84,7 +84,7 @@ public class ProjectWindowTransposeRule extends AlgOptRule {
     public void onMatch( AlgOptRuleCall call ) {
         final LogicalRelProject project = call.alg( 0 );
         final LogicalWindow window = call.alg( 1 );
-        final AlgOptCluster cluster = window.getCluster();
+        final AlgCluster cluster = window.getCluster();
         final List<AlgDataTypeField> rowTypeWindowInput = window.getInput().getTupleType().getFields();
         final int windowInputColumn = rowTypeWindowInput.size();
 

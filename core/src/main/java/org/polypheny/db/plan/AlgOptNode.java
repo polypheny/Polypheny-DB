@@ -97,7 +97,7 @@ public interface AlgOptNode extends Wrapper {
      *
      * @return cluster
      */
-    AlgOptCluster getCluster();
+    AlgCluster getCluster();
 
 
 }

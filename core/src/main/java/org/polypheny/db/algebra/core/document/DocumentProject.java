@@ -30,7 +30,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexIndexRef;
@@ -53,7 +53,7 @@ public abstract class DocumentProject extends SingleAlg implements DocumentAlg {
      * Creates a {@link DocumentProject}.
      * {@link ModelTrait#DOCUMENT} native node of a project.
      */
-    protected DocumentProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, @NotNull Map<String, ? extends RexNode> includes, @NotNull List<String> excludes ) {
+    protected DocumentProject( AlgCluster cluster, AlgTraitSet traits, AlgNode input, @NotNull Map<String, ? extends RexNode> includes, @NotNull List<String> excludes ) {
         super( cluster, traits, input );
         this.includes = includes;
         this.excludes = excludes;

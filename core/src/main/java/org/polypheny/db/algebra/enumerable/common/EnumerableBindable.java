@@ -37,7 +37,7 @@ import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Node;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.interpreter.Sink;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.runtime.ArrayBindable;
@@ -54,7 +54,7 @@ import org.polypheny.db.type.entity.PolyValue;
  */
 public class EnumerableBindable extends ConverterImpl implements BindableAlg {
 
-    protected EnumerableBindable( AlgOptCluster cluster, AlgNode input ) {
+    protected EnumerableBindable( AlgCluster cluster, AlgNode input ) {
         super( cluster, ConventionTraitDef.INSTANCE, cluster.traitSetOf( BindableConvention.INSTANCE ), input );
     }
 

@@ -252,7 +252,7 @@ public class RexProgram {
     /**
      * Collects the expressions in this program into a list of terms and values.
      *
-     * @param prefix Prefix for term names, usually the empty string, but useful if a relational expression contains more than one program
+     * @param prefix Prefix for term names, usually the empty string, but useful if an algebra expression contains more than one program
      * @param pw Plan writer
      */
     public AlgWriter collectExplainTerms( String prefix, AlgWriter pw, ExplainLevel level ) {

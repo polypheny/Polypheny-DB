@@ -105,7 +105,6 @@ public class StatementImpl implements Statement {
                     transaction.getSnapshot(),
                     getDataContext(),
                     transaction.getDefaultNamespace().name,
-                    transaction.getUser().id,
                     this );
         }
         return prepareContext;

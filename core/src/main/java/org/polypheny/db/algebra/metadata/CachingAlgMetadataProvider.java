@@ -45,7 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 
 
 /**
@@ -57,10 +57,10 @@ public class CachingAlgMetadataProvider implements AlgMetadataProvider {
 
     private final AlgMetadataProvider underlyingProvider;
 
-    private final AlgOptPlanner planner;
+    private final AlgPlanner planner;
 
 
-    public CachingAlgMetadataProvider( AlgMetadataProvider underlyingProvider, AlgOptPlanner planner ) {
+    public CachingAlgMetadataProvider( AlgMetadataProvider underlyingProvider, AlgPlanner planner ) {
         this.underlyingProvider = underlyingProvider;
         this.planner = planner;
     }

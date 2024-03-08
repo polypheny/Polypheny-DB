@@ -35,7 +35,7 @@ package org.polypheny.db.algebra.stream;
 
 
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
 
@@ -44,7 +44,7 @@ import org.polypheny.db.plan.AlgTraitSet;
  */
 public final class LogicalChi extends Chi {
 
-    public LogicalChi( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input ) {
+    public LogicalChi( AlgCluster cluster, AlgTraitSet traits, AlgNode input ) {
         super( cluster, traits, input );
     }
 

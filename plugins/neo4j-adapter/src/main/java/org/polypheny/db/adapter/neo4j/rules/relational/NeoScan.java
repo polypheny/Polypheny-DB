@@ -33,14 +33,14 @@ import org.polypheny.db.adapter.neo4j.rules.NeoRelAlg;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.NeoStatement;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.relational.RelScan;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.type.entity.PolyString;
 
 public class NeoScan extends RelScan<NeoEntity> implements NeoRelAlg {
 
 
-    public NeoScan( AlgOptCluster cluster, AlgTraitSet traitSet, NeoEntity neoEntity ) {
+    public NeoScan( AlgCluster cluster, AlgTraitSet traitSet, NeoEntity neoEntity ) {
         super( cluster, traitSet, neoEntity );
     }
 

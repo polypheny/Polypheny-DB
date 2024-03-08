@@ -36,7 +36,7 @@ package org.polypheny.db.algebra;
 
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.plan.AlgTraitSet;
 
@@ -85,7 +85,7 @@ public class AlgCollationTraitDef extends AlgTraitDef<AlgCollation> {
 
 
     @Override
-    public AlgNode convert( AlgOptPlanner planner, AlgNode alg, AlgCollation toCollation, boolean allowInfiniteCostConverters ) {
+    public AlgNode convert( AlgPlanner planner, AlgNode alg, AlgCollation toCollation, boolean allowInfiniteCostConverters ) {
         if ( toCollation.getFieldCollations().isEmpty() ) {
             // An empty sort doesn't make sense.
             return null;
@@ -103,13 +103,13 @@ public class AlgCollationTraitDef extends AlgTraitDef<AlgCollation> {
 
 
     @Override
-    public boolean canConvert( AlgOptPlanner planner, AlgCollation fromTrait, AlgCollation toTrait ) {
+    public boolean canConvert( AlgPlanner planner, AlgCollation fromTrait, AlgCollation toTrait ) {
         return false;
     }
 
 
     @Override
-    public boolean canConvert( AlgOptPlanner planner, AlgCollation fromTrait, AlgCollation toTrait, AlgNode fromRel ) {
+    public boolean canConvert( AlgPlanner planner, AlgCollation fromTrait, AlgCollation toTrait, AlgNode fromRel ) {
         // Returns true only if we can convert.  In this case, we can only convert if the fromTrait (the input) has fields that the toTrait wants to sort.
         for ( AlgFieldCollation field : toTrait.getFieldCollations() ) {
             int index = field.getFieldIndex();

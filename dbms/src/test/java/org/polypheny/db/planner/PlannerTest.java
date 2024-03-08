@@ -29,11 +29,11 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.volcano.VolcanoPlanner;
@@ -69,7 +69,7 @@ public class PlannerTest {
         planner.addAlgTraitDef( PHYS_CALLING_CONVENTION.getTraitDef() );
 
         // build the nodes
-        AlgOptCluster cluster = DummyCluster.newCluster( planner );
+        AlgCluster cluster = DummyCluster.newCluster( planner );
         AlgNode node = new LeafDummyNode( cluster, cluster.traitSetOf( Convention.NONE ) );
         AlgNode root = new SingleDummyNode( cluster, cluster.traitSetOf( Convention.NONE ), node );
 
@@ -93,7 +93,7 @@ public class PlannerTest {
         planner.addAlgTraitDef( PHYS_CALLING_CONVENTION.getTraitDef() );
 
         // build the nodes
-        AlgOptCluster cluster = DummyCluster.newCluster( planner );
+        AlgCluster cluster = DummyCluster.newCluster( planner );
         AlgNode node = new LeafDummyNode( cluster, cluster.traitSetOf( Convention.NONE ) );
         AlgNode root = new SingleDummyNode( cluster, cluster.traitSetOf( Convention.NONE ), node );
 
@@ -153,7 +153,7 @@ public class PlannerTest {
 
     public static class SingleDummyNode extends SingleAlg {
 
-        protected SingleDummyNode( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input ) {
+        protected SingleDummyNode( AlgCluster cluster, AlgTraitSet traits, AlgNode input ) {
             super( cluster, traits, input );
         }
 
@@ -171,7 +171,7 @@ public class PlannerTest {
 
 
         @Override
-        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
             if ( traitSet.contains( PHYS_CALLING_CONVENTION ) ) {
                 return planner.getCostFactory().makeTinyCost();
             }
@@ -193,7 +193,7 @@ public class PlannerTest {
     public static class LeafDummyNode extends AbstractAlgNode {
 
 
-        public LeafDummyNode( AlgOptCluster cluster, AlgTraitSet traitSet ) {
+        public LeafDummyNode( AlgCluster cluster, AlgTraitSet traitSet ) {
             super( cluster, traitSet );
         }
 
@@ -221,7 +221,7 @@ public class PlannerTest {
 
 
         @Override
-        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
             if ( traitSet.contains( PHYS_CALLING_CONVENTION ) ) {
                 return planner.getCostFactory().makeTinyCost();
             }
@@ -233,9 +233,9 @@ public class PlannerTest {
 
     public static class DummyCluster {
 
-        static AlgOptCluster newCluster( VolcanoPlanner planner ) {
+        static AlgCluster newCluster( VolcanoPlanner planner ) {
             final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
-            return AlgOptCluster.create( planner, new RexBuilder( typeFactory ), planner.emptyTraitSet(), Catalog.snapshot() );
+            return AlgCluster.create( planner, new RexBuilder( typeFactory ), planner.emptyTraitSet(), Catalog.snapshot() );
         }
 
     }

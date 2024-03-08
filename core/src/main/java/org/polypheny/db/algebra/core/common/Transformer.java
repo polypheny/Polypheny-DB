@@ -29,7 +29,7 @@ import org.polypheny.db.algebra.core.lpg.LpgScan;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.schema.trait.ModelTraitDef;
@@ -53,7 +53,7 @@ public class Transformer extends AbstractAlgNode {
      * For example, it will transform the {@link LpgScan}, which can be handled directly by
      * a native adapter, to a combination of {@link RelScan} and {@link Union}.
      */
-    public Transformer( AlgOptCluster cluster, List<AlgNode> inputs, @Nullable List<String> names, AlgTraitSet traitSet, ModelTrait inModelTrait, ModelTrait outModelTrait, AlgDataType rowType, boolean isCrossModel ) {
+    public Transformer( AlgCluster cluster, List<AlgNode> inputs, @Nullable List<String> names, AlgTraitSet traitSet, ModelTrait inModelTrait, ModelTrait outModelTrait, AlgDataType rowType, boolean isCrossModel ) {
         super( cluster, traitSet.replace( outModelTrait ) );
         if ( isCrossModel && inModelTrait == ModelTrait.DOCUMENT
                 && outModelTrait == ModelTrait.RELATIONAL && inputs.size() == 1

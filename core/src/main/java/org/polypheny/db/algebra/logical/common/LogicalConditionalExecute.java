@@ -20,13 +20,13 @@ package org.polypheny.db.algebra.logical.common;
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.ConditionalExecute;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
 
 public class LogicalConditionalExecute extends ConditionalExecute {
 
-    public LogicalConditionalExecute( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode left, AlgNode right, Condition condition, Class<? extends Exception> exceptionClass, String exceptionMessage ) {
+    public LogicalConditionalExecute( AlgCluster cluster, AlgTraitSet traitSet, AlgNode left, AlgNode right, Condition condition, Class<? extends Exception> exceptionClass, String exceptionMessage ) {
         super( cluster, traitSet, left, right, condition, exceptionClass, exceptionMessage );
     }
 

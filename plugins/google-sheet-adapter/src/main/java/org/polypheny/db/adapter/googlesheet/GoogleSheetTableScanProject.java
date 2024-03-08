@@ -32,9 +32,9 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 
 
@@ -49,7 +49,7 @@ public class GoogleSheetTableScanProject extends RelScan<GoogleSheetTable> imple
     final int[] fields;
 
 
-    protected GoogleSheetTableScanProject( AlgOptCluster cluster, GoogleSheetTable table, GoogleSheetTable googleSheetTable, int[] fields ) {
+    protected GoogleSheetTableScanProject( AlgCluster cluster, GoogleSheetTable table, GoogleSheetTable googleSheetTable, int[] fields ) {
         super( cluster, cluster.traitSetOf( EnumerableConvention.INSTANCE ), table );
         this.googleSheetTable = googleSheetTable;
         this.fields = fields;
@@ -83,13 +83,13 @@ public class GoogleSheetTableScanProject extends RelScan<GoogleSheetTable> imple
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( ((double) fields.length + 2D) / ((double) entity.getTupleType().getFieldCount() + 2D) );
     }
 
 
     @Override
-    public void register( AlgOptPlanner planner ) {
+    public void register( AlgPlanner planner ) {
         planner.addRule( GoogleSheetProjectTableScanRule.INSTANCE );
     }
 

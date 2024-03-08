@@ -43,7 +43,7 @@ import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -72,7 +72,7 @@ public final class LogicalRelCorrelate extends Correlate implements RelAlg {
      * @param joinType join type
      */
     public LogicalRelCorrelate(
-            AlgOptCluster cluster,
+            AlgCluster cluster,
             AlgTraitSet traitSet,
             AlgNode left,
             AlgNode right,
@@ -108,7 +108,7 @@ public final class LogicalRelCorrelate extends Correlate implements RelAlg {
             CorrelationId correlationId,
             ImmutableBitSet requiredColumns,
             SemiJoinType joinType ) {
-        final AlgOptCluster cluster = left.getCluster();
+        final AlgCluster cluster = left.getCluster();
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
         return new LogicalRelCorrelate( cluster, traitSet, left, right, correlationId, requiredColumns, joinType );
     }

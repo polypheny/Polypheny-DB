@@ -21,7 +21,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.document.DocumentTransformer;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
 
@@ -30,7 +30,7 @@ public class LogicalDocumentTransformer extends DocumentTransformer {
     /**
      * Subclass of {@link DocumentTransformer} not targeted at any particular engine or calling convention.
      */
-    public LogicalDocumentTransformer( AlgOptCluster cluster, List<AlgNode> inputs, AlgTraitSet traitSet, AlgDataType rowType ) {
+    public LogicalDocumentTransformer( AlgCluster cluster, List<AlgNode> inputs, AlgTraitSet traitSet, AlgDataType rowType ) {
         super( cluster, inputs, traitSet, rowType );
     }
 

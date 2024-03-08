@@ -53,12 +53,12 @@ import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -121,7 +121,7 @@ public class VolcanoPlannerTraitTest extends SqlLanguageDependent {
         planner.addRule( new IterSingleRule() );
         planner.addRule( new IterSinglePhysMergeRule() );
 
-        AlgOptCluster cluster = PlannerTests.newCluster( planner );
+        AlgCluster cluster = PlannerTests.newCluster( planner );
 
         NoneLeafAlg noneLeafAlg = AlgOptUtil.addTrait( new NoneLeafAlg( cluster, "noneLeafAlg" ), ALT_TRAIT );
 
@@ -154,7 +154,7 @@ public class VolcanoPlannerTraitTest extends SqlLanguageDependent {
 
 
         @Override
-        public void register( AlgOptPlanner planner ) {
+        public void register( AlgPlanner planner ) {
         }
 
 
@@ -219,7 +219,7 @@ public class VolcanoPlannerTraitTest extends SqlLanguageDependent {
 
 
         @Override
-        public AlgNode convert( AlgOptPlanner planner, AlgNode alg, AltTrait toTrait, boolean allowInfiniteCostConverters ) {
+        public AlgNode convert( AlgPlanner planner, AlgNode alg, AltTrait toTrait, boolean allowInfiniteCostConverters ) {
             AlgTrait<?> fromTrait = alg.getTraitSet().getTrait( this );
 
             if ( conversions.containsKey( fromTrait ) ) {
@@ -244,7 +244,7 @@ public class VolcanoPlannerTraitTest extends SqlLanguageDependent {
 
 
         @Override
-        public boolean canConvert( AlgOptPlanner planner, AltTrait fromTrait, AltTrait toTrait ) {
+        public boolean canConvert( AlgPlanner planner, AltTrait fromTrait, AltTrait toTrait ) {
             if ( conversions.containsKey( fromTrait ) ) {
                 for ( Pair<AlgTrait<?>, ConverterRule> traitAndRule : conversions.get( fromTrait ) ) {
                     if ( traitAndRule.left == toTrait ) {
@@ -258,7 +258,7 @@ public class VolcanoPlannerTraitTest extends SqlLanguageDependent {
 
 
         @Override
-        public void registerConverterRule( AlgOptPlanner planner, ConverterRule converterRule ) {
+        public void registerConverterRule( AlgPlanner planner, ConverterRule converterRule ) {
             if ( !converterRule.isGuaranteed() ) {
                 return;
             }
@@ -281,7 +281,7 @@ public class VolcanoPlannerTraitTest extends SqlLanguageDependent {
         private final String label;
 
 
-        protected TestLeafAlg( AlgOptCluster cluster, AlgTraitSet traits, String label ) {
+        protected TestLeafAlg( AlgCluster cluster, AlgTraitSet traits, String label ) {
             super( cluster, traits );
             this.label = label;
         }
@@ -289,7 +289,7 @@ public class VolcanoPlannerTraitTest extends SqlLanguageDependent {
 
         // implement AlgNode
         @Override
-        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
             return planner.getCostFactory().makeInfiniteCost();
         }
 
@@ -323,7 +323,7 @@ public class VolcanoPlannerTraitTest extends SqlLanguageDependent {
      */
     private static class NoneLeafAlg extends TestLeafAlg {
 
-        protected NoneLeafAlg( AlgOptCluster cluster, String label ) {
+        protected NoneLeafAlg( AlgCluster cluster, String label ) {
             super( cluster, cluster.traitSetOf( Convention.NONE ), label );
         }
 
@@ -341,14 +341,14 @@ public class VolcanoPlannerTraitTest extends SqlLanguageDependent {
      */
     private static class PhysLeafAlg extends TestLeafAlg {
 
-        PhysLeafAlg( AlgOptCluster cluster, String label ) {
+        PhysLeafAlg( AlgCluster cluster, String label ) {
             super( cluster, cluster.traitSetOf( PHYS_CALLING_CONVENTION ), label );
         }
 
 
         // implement AlgNode
         @Override
-        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
             return planner.getCostFactory().makeTinyCost();
         }
 
@@ -360,14 +360,14 @@ public class VolcanoPlannerTraitTest extends SqlLanguageDependent {
      */
     private abstract static class TestSingleAlg extends SingleAlg {
 
-        protected TestSingleAlg( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child ) {
+        protected TestSingleAlg( AlgCluster cluster, AlgTraitSet traits, AlgNode child ) {
             super( cluster, traits, child );
         }
 
 
         // implement AlgNode
         @Override
-        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
             return planner.getCostFactory().makeInfiniteCost();
         }
 
@@ -392,12 +392,12 @@ public class VolcanoPlannerTraitTest extends SqlLanguageDependent {
      */
     private static class NoneSingleAlg extends TestSingleAlg {
 
-        protected NoneSingleAlg( AlgOptCluster cluster, AlgNode child ) {
+        protected NoneSingleAlg( AlgCluster cluster, AlgNode child ) {
             this( cluster, cluster.traitSetOf( Convention.NONE ), child );
         }
 
 
-        protected NoneSingleAlg( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode child ) {
+        protected NoneSingleAlg( AlgCluster cluster, AlgTraitSet traitSet, AlgNode child ) {
             super( cluster, traitSet, child );
         }
 
@@ -423,14 +423,14 @@ public class VolcanoPlannerTraitTest extends SqlLanguageDependent {
      */
     private static class IterSingleAlg extends TestSingleAlg implements FooAlg {
 
-        IterSingleAlg( AlgOptCluster cluster, AlgNode child ) {
+        IterSingleAlg( AlgCluster cluster, AlgNode child ) {
             super( cluster, cluster.traitSetOf( EnumerableConvention.INSTANCE ), child );
         }
 
 
         // implement AlgNode
         @Override
-        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
             return planner.getCostFactory().makeTinyCost();
         }
 
@@ -530,7 +530,7 @@ public class VolcanoPlannerTraitTest extends SqlLanguageDependent {
      */
     private static class PhysToIteratorConverter extends ConverterImpl {
 
-        PhysToIteratorConverter( AlgOptCluster cluster, AlgNode child ) {
+        PhysToIteratorConverter( AlgCluster cluster, AlgNode child ) {
             super( cluster, ConventionTraitDef.INSTANCE, child.getTraitSet().replace( EnumerableConvention.INSTANCE ), child );
         }
 
@@ -567,13 +567,13 @@ public class VolcanoPlannerTraitTest extends SqlLanguageDependent {
      */
     private static class IterMergedAlg extends TestLeafAlg implements FooAlg {
 
-        IterMergedAlg( AlgOptCluster cluster, String label ) {
+        IterMergedAlg( AlgCluster cluster, String label ) {
             super( cluster, cluster.traitSetOf( EnumerableConvention.INSTANCE ), label );
         }
 
 
         @Override
-        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
             return planner.getCostFactory().makeZeroCost();
         }
 

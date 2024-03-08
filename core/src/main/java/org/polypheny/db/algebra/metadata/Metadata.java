@@ -35,7 +35,7 @@ package org.polypheny.db.algebra.metadata;
 
 
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 
 
 /**
@@ -43,7 +43,7 @@ import org.polypheny.db.plan.AlgOptPlanner;
  *
  * For particular types of metadata, a sub-class defines one of more methods to query that metadata. Then a {@link AlgMetadataProvider} can offer those kinds of metadata for particular sub-classes of {@link AlgNode}.
  *
- * User code (typically in a planner rule or an implementation of {@link AlgNode#computeSelfCost(AlgOptPlanner, AlgMetadataQuery)}) acquires a {@code Metadata} instance by calling {@link AlgNode#metadata}.
+ * User code (typically in a planner rule or an implementation of {@link AlgNode#computeSelfCost(AlgPlanner, AlgMetadataQuery)}) acquires a {@code Metadata} instance by calling {@link AlgNode#metadata}.
  *
  * A {@code Metadata} instance already knows which particular {@code AlgNode} it is describing, so the methods do not pass in the {@code AlgNode}. In fact, quite a few metadata methods have no extra parameters. For instance, you can
  * get the row-count as follows:

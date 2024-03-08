@@ -39,7 +39,7 @@ import com.google.common.collect.Lists;
 import java.util.List;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 
 
 /**
@@ -50,7 +50,7 @@ abstract class MutableMultiAlg extends MutableAlg {
     protected final List<MutableAlg> inputs;
 
 
-    protected MutableMultiAlg( AlgOptCluster cluster, AlgDataType rowType, MutableAlgType type, List<MutableAlg> inputs ) {
+    protected MutableMultiAlg( AlgCluster cluster, AlgDataType rowType, MutableAlgType type, List<MutableAlg> inputs ) {
         super( cluster, rowType, type );
         this.inputs = ImmutableList.copyOf( inputs );
         for ( Ord<MutableAlg> input : Ord.zip( inputs ) ) {

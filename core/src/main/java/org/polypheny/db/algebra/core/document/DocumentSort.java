@@ -26,7 +26,7 @@ import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 
@@ -49,7 +49,7 @@ public abstract class DocumentSort extends SingleAlg {
      * @param offset Expression for number of rows to discard before returning first row
      * @param fetch Expression for number of rows to fetch
      */
-    public DocumentSort( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, AlgCollation collation, List<RexNode> targets, @Nullable RexNode offset, @Nullable RexNode fetch ) {
+    public DocumentSort( AlgCluster cluster, AlgTraitSet traits, AlgNode child, AlgCollation collation, List<RexNode> targets, @Nullable RexNode offset, @Nullable RexNode fetch ) {
         // we remove the collation from the trait set, as it is not a trait for documents
         super( cluster, traits.replace( AlgCollations.EMPTY ), child );
         this.collation = collation;

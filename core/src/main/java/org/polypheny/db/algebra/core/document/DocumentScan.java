@@ -21,7 +21,7 @@ import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.common.Scan;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.entity.Entity;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.trait.ModelTrait;
 
@@ -33,7 +33,7 @@ public abstract class DocumentScan<E extends Entity> extends Scan<E> implements 
      * Creates a {@link DocumentScan}.
      * {@link ModelTrait#DOCUMENT} node, which scans the content of a collection.
      */
-    public DocumentScan( AlgOptCluster cluster, AlgTraitSet traitSet, E collection ) {
+    public DocumentScan( AlgCluster cluster, AlgTraitSet traitSet, E collection ) {
         super( cluster, traitSet.replace( ModelTrait.DOCUMENT ), collection );
         this.rowType = DocumentType.ofId();
     }

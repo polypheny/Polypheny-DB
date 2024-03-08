@@ -102,11 +102,11 @@ import org.polypheny.db.nodes.BinaryOperator;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCostFactory;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.plan.ConventionTraitDef;
@@ -261,15 +261,15 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     /**
      * Factory method for cluster.
      */
-    protected AlgOptCluster createCluster( AlgOptPlanner planner, RexBuilder rexBuilder, AlgTraitSet traitSet, Snapshot snapshot ) {
-        return AlgOptCluster.create( planner, rexBuilder, traitSet, snapshot );
+    protected AlgCluster createCluster( AlgPlanner planner, RexBuilder rexBuilder, AlgTraitSet traitSet, Snapshot snapshot ) {
+        return AlgCluster.create( planner, rexBuilder, traitSet, snapshot );
     }
 
 
     /**
      * Creates a query planner and initializes it with a default set of rules.
      */
-    protected AlgOptPlanner createPlanner( final Context prepareContext, org.polypheny.db.plan.Context externalContext, AlgOptCostFactory costFactory ) {
+    protected AlgPlanner createPlanner( final Context prepareContext, org.polypheny.db.plan.Context externalContext, AlgOptCostFactory costFactory ) {
         if ( externalContext == null ) {
             externalContext = Contexts.of( prepareContext.config() );
         }

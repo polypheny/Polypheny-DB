@@ -38,7 +38,7 @@ import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.core.relational.RelScan;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
 
@@ -52,7 +52,7 @@ import org.polypheny.db.plan.AlgTraitSet;
  */
 public abstract class Delta extends SingleAlg {
 
-    protected Delta( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input ) {
+    protected Delta( AlgCluster cluster, AlgTraitSet traits, AlgNode input ) {
         super( cluster, traits, input );
     }
 

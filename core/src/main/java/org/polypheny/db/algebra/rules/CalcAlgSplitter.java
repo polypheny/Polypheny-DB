@@ -48,8 +48,8 @@ import org.polypheny.db.algebra.core.Calc;
 import org.polypheny.db.algebra.logical.relational.LogicalCalc;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
@@ -87,13 +87,13 @@ import org.slf4j.Logger;
  */
 public abstract class CalcAlgSplitter {
 
-    private static final Logger RULE_LOGGER = AlgOptPlanner.LOGGER;
+    private static final Logger RULE_LOGGER = AlgPlanner.LOGGER;
 
     protected final RexProgram program;
     private final AlgDataTypeFactory typeFactory;
 
     private final AlgType[] algTypes;
-    private final AlgOptCluster cluster;
+    private final AlgCluster cluster;
     private final AlgTraitSet traits;
     private final AlgNode child;
     protected final AlgBuilder algBuilder;
@@ -668,7 +668,7 @@ public abstract class CalcAlgSplitter {
         }
 
 
-        protected AlgNode makeRel( AlgOptCluster cluster, AlgTraitSet traitSet, AlgBuilder algBuilder, AlgNode input, RexProgram program ) {
+        protected AlgNode makeRel( AlgCluster cluster, AlgTraitSet traitSet, AlgBuilder algBuilder, AlgNode input, RexProgram program ) {
             return LogicalCalc.create( input, program );
         }
 

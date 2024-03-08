@@ -65,9 +65,9 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
@@ -89,7 +89,7 @@ public class EnumerableWindow extends Window implements EnumerableAlg {
     /**
      * Creates an EnumerableWindowRel.
      */
-    EnumerableWindow( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, List<RexLiteral> constants, AlgDataType rowType, List<Group> groups ) {
+    EnumerableWindow( AlgCluster cluster, AlgTraitSet traits, AlgNode child, List<RexLiteral> constants, AlgDataType rowType, List<Group> groups ) {
         super( cluster, traits, child, constants, rowType, groups );
     }
 
@@ -101,7 +101,7 @@ public class EnumerableWindow extends Window implements EnumerableAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( EnumerableConvention.COST_MULTIPLIER );
     }
 

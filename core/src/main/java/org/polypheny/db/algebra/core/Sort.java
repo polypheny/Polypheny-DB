@@ -48,9 +48,9 @@ import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.catalog.logistic.DataModel;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
@@ -87,7 +87,7 @@ public abstract class Sort extends SingleAlg {
      * @param child input relational expression
      * @param collation array of sort specifications
      */
-    public Sort( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, AlgCollation collation ) {
+    public Sort( AlgCluster cluster, AlgTraitSet traits, AlgNode child, AlgCollation collation ) {
         this( cluster, traits, child, collation, null, null, null );
     }
 
@@ -102,7 +102,7 @@ public abstract class Sort extends SingleAlg {
      * @param offset Expression for number of rows to discard before returning first row
      * @param fetch Expression for number of rows to fetch
      */
-    public Sort( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, AlgCollation collation, @Nullable List<RexNode> fieldExpr, RexNode offset, RexNode fetch ) {
+    public Sort( AlgCluster cluster, AlgTraitSet traits, AlgNode child, AlgCollation collation, @Nullable List<RexNode> fieldExpr, RexNode offset, RexNode fetch ) {
         super( cluster, traits, child );
         this.collation = collation;
         this.offset = offset;
@@ -135,7 +135,7 @@ public abstract class Sort extends SingleAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         // Higher cost if rows are wider discourages pushing a project through a sort.
         final double rowCount = mq.getTupleCount( this );
         final double bytesPerRow = getTupleType().getFieldCount() * 4;

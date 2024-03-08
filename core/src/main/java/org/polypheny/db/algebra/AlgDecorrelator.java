@@ -93,7 +93,7 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Function;
 import org.polypheny.db.nodes.Function.FunctionType;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCostImpl;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
@@ -199,7 +199,7 @@ public class AlgDecorrelator implements AlgProducingVisitor<Frame> {
             return rootAlg;
         }
 
-        final AlgOptCluster cluster = rootAlg.getCluster();
+        final AlgCluster cluster = rootAlg.getCluster();
         final AlgDecorrelator decorrelator = new AlgDecorrelator( corelMap, cluster.getPlanner().getContext(), algBuilder );
 
         AlgNode newRootRel = decorrelator.removeCorrelationViaRule( rootAlg );
@@ -730,7 +730,7 @@ public class AlgDecorrelator implements AlgProducingVisitor<Frame> {
                 AlgNode distinct = algBuilder.push( project )
                         .distinct()
                         .build();
-                AlgOptCluster cluster = distinct.getCluster();
+                AlgCluster cluster = distinct.getCluster();
 
                 joinedInputs.add( newInput );
                 mapNewInputToNewOffset.put( newInput, offset );
@@ -1684,7 +1684,7 @@ public class AlgDecorrelator implements AlgProducingVisitor<Frame> {
             final LogicalRelAggregate aggregate = call.alg( 2 );
             final LogicalRelProject project = call.alg( 3 );
             AlgNode right = call.alg( 4 );
-            final AlgOptCluster cluster = correlate.getCluster();
+            final AlgCluster cluster = correlate.getCluster();
 
             setCurrent( call.getPlanner().getRoot(), correlate );
 
@@ -1863,7 +1863,7 @@ public class AlgDecorrelator implements AlgProducingVisitor<Frame> {
             AlgNode right = call.alg( 5 );
             final AlgBuilder builder = call.builder();
             final RexBuilder rexBuilder = builder.getRexBuilder();
-            final AlgOptCluster cluster = correlate.getCluster();
+            final AlgCluster cluster = correlate.getCluster();
 
             setCurrent( call.getPlanner().getRoot(), correlate );
 

@@ -23,7 +23,7 @@ import org.polypheny.db.algebra.core.JoinAlgType;
 
 
 /**
- * Model for a {@link AlgNode} coming from the RelAlg-Builder in the UI
+ * Model for a {@link AlgNode} coming from the Alg-Builder in the UI
  */
 public class UIAlgNode {
 

@@ -24,9 +24,9 @@ import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
@@ -49,7 +49,7 @@ public class EnumerableProject extends Project implements EnumerableAlg {
      * @param projects List of expressions for the input columns
      * @param rowType Output row type
      */
-    public EnumerableProject( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
+    public EnumerableProject( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
         super( cluster, traitSet, input, projects, rowType );
         assert getConvention() instanceof EnumerableConvention;
     }
@@ -59,7 +59,7 @@ public class EnumerableProject extends Project implements EnumerableAlg {
      * Creates an EnumerableProject, specifying row type rather than field names.
      */
     public static EnumerableProject create( final AlgNode input, final List<? extends RexNode> projects, AlgDataType rowType ) {
-        final AlgOptCluster cluster = input.getCluster();
+        final AlgCluster cluster = input.getCluster();
         final AlgMetadataQuery mq = cluster.getMetadataQuery();
         final AlgTraitSet traitSet = input.getTraitSet().replace( EnumerableConvention.INSTANCE )
                 .replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.project( mq, input, projects ) );
@@ -68,7 +68,7 @@ public class EnumerableProject extends Project implements EnumerableAlg {
 
 
     static AlgNode create( AlgNode child, List<? extends RexNode> projects, List<String> fieldNames ) {
-        final AlgOptCluster cluster = child.getCluster();
+        final AlgCluster cluster = child.getCluster();
         final AlgDataType rowType = RexUtil.createStructType( cluster.getTypeFactory(), projects, fieldNames, ValidatorUtil.F_SUGGESTER );
         return create( child, projects, rowType );
     }
@@ -81,7 +81,7 @@ public class EnumerableProject extends Project implements EnumerableAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return planner.getCostFactory().makeInfiniteCost();
     }
 

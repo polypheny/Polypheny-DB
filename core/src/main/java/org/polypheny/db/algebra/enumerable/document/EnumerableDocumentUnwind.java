@@ -44,7 +44,7 @@ import org.polypheny.db.algebra.enumerable.PhysType;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
 import org.polypheny.db.functions.MqlFunctions;
 import org.polypheny.db.functions.RefactorFunctions;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
@@ -57,7 +57,7 @@ public class EnumerableDocumentUnwind extends DocumentUnwind implements Enumerab
     private MethodCallExpression value;
 
 
-    public EnumerableDocumentUnwind( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, String path ) {
+    public EnumerableDocumentUnwind( AlgCluster cluster, AlgTraitSet traits, AlgNode input, String path ) {
         super( cluster, traits, input, path );
     }
 

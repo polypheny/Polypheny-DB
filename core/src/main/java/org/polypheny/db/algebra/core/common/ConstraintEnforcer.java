@@ -22,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.BiAlg;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
 @Slf4j
@@ -44,7 +44,7 @@ public class ConstraintEnforcer extends BiAlg {
      * right is the control query, which tests if still all conditions are correct
      */
     public ConstraintEnforcer(
-            AlgOptCluster cluster,
+            AlgCluster cluster,
             AlgTraitSet traitSet,
             AlgNode modify,
             AlgNode control,

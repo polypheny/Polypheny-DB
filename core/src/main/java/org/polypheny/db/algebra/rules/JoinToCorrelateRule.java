@@ -40,7 +40,7 @@ import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.logical.relational.LogicalRelCorrelate;
 import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.rex.RexBuilder;
@@ -105,7 +105,7 @@ public class JoinToCorrelateRule extends AlgOptRule {
         AlgNode right = join.getRight();
         final AlgNode left = join.getLeft();
         final int leftFieldCount = left.getTupleType().getFieldCount();
-        final AlgOptCluster cluster = join.getCluster();
+        final AlgCluster cluster = join.getCluster();
         final RexBuilder rexBuilder = cluster.getRexBuilder();
         final AlgBuilder algBuilder = call.builder();
         final CorrelationId correlationId = cluster.createCorrel();

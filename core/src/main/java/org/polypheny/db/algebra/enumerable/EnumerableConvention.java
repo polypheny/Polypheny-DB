@@ -17,7 +17,6 @@
 package org.polypheny.db.algebra.enumerable;
 
 
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -60,7 +59,7 @@ public enum EnumerableConvention implements Convention {
 
 
     @Override
-    public void register( AlgOptPlanner planner ) {
+    public void register( AlgPlanner planner ) {
     }
 
 

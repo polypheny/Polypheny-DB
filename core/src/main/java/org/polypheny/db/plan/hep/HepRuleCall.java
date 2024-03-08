@@ -38,10 +38,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgPlanner;
 
 
 /**
@@ -52,7 +52,7 @@ public class HepRuleCall extends AlgOptRuleCall {
     private List<AlgNode> results;
 
 
-    HepRuleCall( AlgOptPlanner planner, AlgOptRuleOperand operand, AlgNode[] algs, Map<AlgNode, List<AlgNode>> nodeChildren, List<AlgNode> parents ) {
+    HepRuleCall( AlgPlanner planner, AlgOptRuleOperand operand, AlgNode[] algs, Map<AlgNode, List<AlgNode>> nodeChildren, List<AlgNode> parents ) {
         super( planner, operand, algs, nodeChildren, parents );
         results = new ArrayList<>();
     }

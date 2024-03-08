@@ -20,7 +20,7 @@ import lombok.Value;
 import lombok.experimental.NonFinal;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.routing.ColumnDistribution.RoutedDistribution;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
@@ -28,7 +28,7 @@ import org.polypheny.db.transaction.Statement;
 @Value
 public class RoutingContext {
 
-    AlgOptCluster cluster;
+    AlgCluster cluster;
     Statement statement;
     LogicalQueryInformation queryInformation;
 
@@ -41,7 +41,7 @@ public class RoutingContext {
     public RoutedDistribution routedDistribution; // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
 
 
-    public RoutingContext( AlgOptCluster cluster, Statement statement, LogicalQueryInformation queryInformation ) {
+    public RoutingContext( AlgCluster cluster, Statement statement, LogicalQueryInformation queryInformation ) {
         this.cluster = cluster;
         this.statement = statement;
         this.queryInformation = queryInformation;

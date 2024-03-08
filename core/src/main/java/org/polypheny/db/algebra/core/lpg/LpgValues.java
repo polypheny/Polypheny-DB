@@ -21,7 +21,7 @@ import java.util.Collection;
 import lombok.Getter;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.type.entity.graph.PolyEdge;
@@ -40,7 +40,7 @@ public abstract class LpgValues extends AbstractAlgNode implements LpgAlg {
      * Creates an {@link LpgValues}.
      * Which are either one or multiple nodes or edges, or literal values.
      */
-    public LpgValues( AlgOptCluster cluster, AlgTraitSet traitSet, Collection<PolyNode> nodes, Collection<PolyEdge> edges, ImmutableList<ImmutableList<RexLiteral>> values, AlgDataType rowType ) {
+    public LpgValues( AlgCluster cluster, AlgTraitSet traitSet, Collection<PolyNode> nodes, Collection<PolyEdge> edges, ImmutableList<ImmutableList<RexLiteral>> values, AlgDataType rowType ) {
         super( cluster, traitSet );
         this.nodes = ImmutableList.copyOf( nodes );
         this.edges = ImmutableList.copyOf( edges );

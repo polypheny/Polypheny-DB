@@ -44,7 +44,7 @@ import org.polypheny.db.interpreter.InterpretableConvention;
 import org.polypheny.db.interpreter.Node;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.interpreter.Sink;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.plugins.PolyPluginManager;
@@ -68,7 +68,7 @@ import org.polypheny.db.util.Util;
 @Slf4j
 public class EnumerableInterpretable extends ConverterImpl implements InterpretableAlg {
 
-    protected EnumerableInterpretable( AlgOptCluster cluster, AlgNode input ) {
+    protected EnumerableInterpretable( AlgCluster cluster, AlgNode input ) {
         super( cluster, ConventionTraitDef.INSTANCE, cluster.traitSetOf( InterpretableConvention.INSTANCE ), input );
     }
 

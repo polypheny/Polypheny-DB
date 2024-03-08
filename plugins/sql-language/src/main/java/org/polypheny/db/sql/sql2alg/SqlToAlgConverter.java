@@ -148,7 +148,7 @@ import org.polypheny.db.nodes.NodeList;
 import org.polypheny.db.nodes.NodeVisitor;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.nodes.validate.ValidatorTable;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptSamplingParameters;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -264,7 +264,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
     protected final RexBuilder rexBuilder;
     protected final Snapshot snapshot;
     @Getter
-    protected final AlgOptCluster cluster;
+    protected final AlgCluster cluster;
     @Setter
     private SubQueryConverter subQueryConverter;
     protected final List<AlgNode> leaves = new ArrayList<>();
@@ -296,7 +296,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
 
     /* Creates a converter. */
-    public SqlToAlgConverter( SqlValidator validator, Snapshot snapshot, AlgOptCluster cluster, SqlRexConvertletTable convertletTable, Config config ) {
+    public SqlToAlgConverter( SqlValidator validator, Snapshot snapshot, AlgCluster cluster, SqlRexConvertletTable convertletTable, Config config ) {
         this.opTab =
                 (validator == null)
                         ? SqlStdOperatorTable.instance()

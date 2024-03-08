@@ -84,9 +84,9 @@ import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.interpreter.NoneToBindableConverterRule;
 import org.polypheny.db.plan.AlgOptCostImpl;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.hep.HepMatchOrder;
 import org.polypheny.db.plan.hep.HepPlanner;
@@ -364,7 +364,7 @@ public class Programs {
                     assert rootAlg2 != null;
 
                     planner.setRoot( rootAlg2 );
-                    final AlgOptPlanner planner2 = planner.chooseDelegate();
+                    final AlgPlanner planner2 = planner.chooseDelegate();
                     final AlgNode rootAlg3 = planner2.findBestExp();
                     assert rootAlg3 != null : "could not implement exp";
                     return rootAlg3;
@@ -395,7 +395,7 @@ public class Programs {
 
 
         @Override
-        public AlgNode run( AlgOptPlanner planner, AlgNode alg, AlgTraitSet requiredOutputTraits ) {
+        public AlgNode run( AlgPlanner planner, AlgNode alg, AlgTraitSet requiredOutputTraits ) {
             planner.clear();
             for ( AlgOptRule rule : ruleSet ) {
                 planner.addRule( rule );
@@ -425,7 +425,7 @@ public class Programs {
 
 
         @Override
-        public AlgNode run( AlgOptPlanner planner, AlgNode alg, AlgTraitSet requiredOutputTraits ) {
+        public AlgNode run( AlgPlanner planner, AlgNode alg, AlgTraitSet requiredOutputTraits ) {
             for ( Program program : programs ) {
                 alg = program.run( planner, alg, requiredOutputTraits );
             }
@@ -444,7 +444,7 @@ public class Programs {
     private static class DecorrelateProgram implements Program {
 
         @Override
-        public AlgNode run( AlgOptPlanner planner, AlgNode alg, AlgTraitSet requiredOutputTraits ) {
+        public AlgNode run( AlgPlanner planner, AlgNode alg, AlgTraitSet requiredOutputTraits ) {
             Optional<PolyphenyDbConnectionConfig> oConfig = planner.getContext().unwrap( PolyphenyDbConnectionConfig.class );
             if ( oConfig.isPresent() && oConfig.get().forceDecorrelate() ) {
                 final AlgBuilder algBuilder = AlgFactories.LOGICAL_BUILDER.create( alg.getCluster(), null );
@@ -462,7 +462,7 @@ public class Programs {
     private static class TrimFieldsProgram implements Program {
 
         @Override
-        public AlgNode run( AlgOptPlanner planner, AlgNode alg, AlgTraitSet requiredOutputTraits ) {
+        public AlgNode run( AlgPlanner planner, AlgNode alg, AlgTraitSet requiredOutputTraits ) {
             final AlgBuilder algBuilder = AlgFactories.LOGICAL_BUILDER.create( alg.getCluster(), null );
             return new AlgFieldTrimmer( null, algBuilder ).trim( alg );
         }

@@ -29,7 +29,7 @@ import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
@@ -54,12 +54,12 @@ public abstract class DocumentValues extends AbstractAlgNode implements Document
      * Creates a {@link DocumentValues}.
      * {@link ModelTrait#DOCUMENT} node, which contains values.
      */
-    public DocumentValues( AlgOptCluster cluster, AlgTraitSet traitSet, List<PolyDocument> documents ) {
+    public DocumentValues( AlgCluster cluster, AlgTraitSet traitSet, List<PolyDocument> documents ) {
         this( cluster, traitSet, documents, new ArrayList<>() );
     }
 
 
-    public DocumentValues( AlgOptCluster cluster, AlgTraitSet traitSet, List<PolyDocument> documents, List<RexDynamicParam> dynamicDocuments ) {
+    public DocumentValues( AlgCluster cluster, AlgTraitSet traitSet, List<PolyDocument> documents, List<RexDynamicParam> dynamicDocuments ) {
         super( cluster, traitSet );
         this.rowType = DocumentType.ofId();
         this.documents = validate( documents );
@@ -130,7 +130,7 @@ public abstract class DocumentValues extends AbstractAlgNode implements Document
 
     public LogicalRelValues getRelationalEquivalent() {
         AlgTraitSet out = traitSet.replace( ModelTrait.RELATIONAL );
-        AlgOptCluster cluster = AlgOptCluster.create( getCluster().getPlanner(), getCluster().getRexBuilder(), traitSet, getCluster().getSnapshot() );
+        AlgCluster cluster = AlgCluster.create( getCluster().getPlanner(), getCluster().getRexBuilder(), traitSet, getCluster().getSnapshot() );
 
         return new LogicalRelValues( cluster, out, DocumentType.ofRelational(), relationalize( documents, cluster.getRexBuilder() ) );
     }

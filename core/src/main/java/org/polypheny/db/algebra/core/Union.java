@@ -41,7 +41,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
 
@@ -52,7 +52,7 @@ import org.polypheny.db.plan.AlgTraitSet;
  */
 public abstract class Union extends SetOp {
 
-    protected Union( AlgOptCluster cluster, AlgTraitSet traits, List<AlgNode> inputs, boolean all ) {
+    protected Union( AlgCluster cluster, AlgTraitSet traits, List<AlgNode> inputs, boolean all ) {
         super( cluster, traits, inputs, Kind.UNION, all );
     }
 

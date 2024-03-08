@@ -28,7 +28,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
@@ -73,11 +73,11 @@ public class DocumentFilterToCalcRule extends ConverterRule {
      */
     public static class NameRefReplacer extends RexShuttle {
 
-        private final AlgOptCluster cluster;
+        private final AlgCluster cluster;
         boolean inplace;
 
 
-        public NameRefReplacer( AlgOptCluster cluster, boolean inplace ) {
+        public NameRefReplacer( AlgCluster cluster, boolean inplace ) {
             this.cluster = cluster;
             this.inplace = inplace;
         }

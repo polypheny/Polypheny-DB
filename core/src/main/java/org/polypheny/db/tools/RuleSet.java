@@ -38,7 +38,7 @@ import org.polypheny.db.plan.AlgOptRule;
 
 
 /**
- * A set rules associated with a particular type of invocation of the {@link Planner}.
+ * A set rules associated with a particular type of invocation of the planner.
  */
 public interface RuleSet extends Iterable<AlgOptRule> {
 

@@ -53,14 +53,14 @@ import org.polypheny.db.schema.trait.ModelTrait;
 
 
 /**
- * An environment for related relational expressions during the optimization of a query.
+ * An environment for related algebra expressions during the optimization of a query.
  */
-public class AlgOptCluster {
+public class AlgCluster {
 
     @Getter
     private final AlgDataTypeFactory typeFactory;
     @Getter
-    private final AlgOptPlanner planner;
+    private final AlgPlanner planner;
     private final AtomicInteger nextCorrel;
     @Getter
     private final Map<CorrelationId, AlgNode> mapCorrelToAlg;
@@ -82,7 +82,7 @@ public class AlgOptCluster {
      * <p>
      * For use only from {@link #create} and {@link AlgOptQuery}.
      */
-    private AlgOptCluster( AlgOptPlanner planner, AlgDataTypeFactory typeFactory, RexBuilder rexBuilder, AlgTraitSet traitSet, Snapshot snapshot ) {
+    private AlgCluster( AlgPlanner planner, AlgDataTypeFactory typeFactory, RexBuilder rexBuilder, AlgTraitSet traitSet, Snapshot snapshot ) {
         this.nextCorrel = new AtomicInteger( 0 );
         this.mapCorrelToAlg = new HashMap<>();
         this.planner = Objects.requireNonNull( planner );
@@ -100,22 +100,22 @@ public class AlgOptCluster {
     /**
      * Creates a cluster.
      */
-    public static AlgOptCluster create( AlgOptPlanner planner, RexBuilder rexBuilder, AlgTraitSet traitSet, Snapshot snapshot ) {
-        return new AlgOptCluster( planner, AlgDataTypeFactory.DEFAULT, rexBuilder, traitSet, snapshot );
+    public static AlgCluster create( AlgPlanner planner, RexBuilder rexBuilder, AlgTraitSet traitSet, Snapshot snapshot ) {
+        return new AlgCluster( planner, AlgDataTypeFactory.DEFAULT, rexBuilder, traitSet, snapshot );
     }
 
 
-    public static AlgOptCluster createDocument( AlgOptPlanner planner, RexBuilder rexBuilder, Snapshot snapshot ) {
+    public static AlgCluster createDocument( AlgPlanner planner, RexBuilder rexBuilder, Snapshot snapshot ) {
         AlgTraitSet traitSet = planner.emptyTraitSet().replace( ModelTrait.DOCUMENT );
 
-        return AlgOptCluster.create( planner, rexBuilder, traitSet, snapshot );
+        return AlgCluster.create( planner, rexBuilder, traitSet, snapshot );
     }
 
 
-    public static AlgOptCluster createGraph( AlgOptPlanner planner, RexBuilder rexBuilder, Snapshot snapshot ) {
+    public static AlgCluster createGraph( AlgPlanner planner, RexBuilder rexBuilder, Snapshot snapshot ) {
         AlgTraitSet traitSet = planner.emptyTraitSet().replace( ModelTrait.GRAPH );
 
-        return AlgOptCluster.create( planner, rexBuilder, traitSet, snapshot );
+        return AlgCluster.create( planner, rexBuilder, traitSet, snapshot );
     }
 
 
@@ -131,7 +131,7 @@ public class AlgOptCluster {
 
 
     /**
-     * Returns the current RelMetadataQuery.
+     * Returns the current AlgMetadataQuery.
      * <p>
      * This method might be changed or moved in future. If you have a {@link AlgOptRuleCall} available, for example if you are in
      * a {@link AlgOptRule#onMatch(AlgOptRuleCall)} method, then use {@link AlgOptRuleCall#getMetadataQuery()} instead.

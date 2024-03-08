@@ -35,9 +35,9 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.logistic.DataModel;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
@@ -51,7 +51,7 @@ import org.polypheny.db.util.ImmutableBitSet;
  */
 public abstract class RelScan<E extends Entity> extends Scan<E> implements RelAlg {
 
-    protected RelScan( AlgOptCluster cluster, AlgTraitSet traitSet, @NonNull E entity ) {
+    protected RelScan( AlgCluster cluster, AlgTraitSet traitSet, @NonNull E entity ) {
         super( cluster, traitSet.replace( ModelTrait.RELATIONAL ), entity );
     }
 
@@ -71,7 +71,7 @@ public abstract class RelScan<E extends Entity> extends Scan<E> implements RelAl
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         double dRows = entity.getTupleCount();
         double dCpu = dRows + 1; // ensure non-zero cost
         double dIo = 0;

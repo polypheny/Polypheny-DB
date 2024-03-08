@@ -74,11 +74,11 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.nodes.Function;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -106,7 +106,7 @@ import org.slf4j.Logger;
 
 
 /**
- * Rules and relational operators for {@link JdbcConvention} calling convention.
+ * Rules and algebra operators for {@link JdbcConvention} calling convention.
  */
 public class JdbcRules {
 
@@ -277,7 +277,7 @@ public class JdbcRules {
          * Creates a JdbcJoin.
          */
         public JdbcJoin(
-                AlgOptCluster cluster,
+                AlgCluster cluster,
                 AlgTraitSet traitSet,
                 AlgNode left,
                 AlgNode right,
@@ -300,7 +300,7 @@ public class JdbcRules {
 
 
         @Override
-        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
             // We always "build" the
             double rowCount = mq.getTupleCount( this );
 
@@ -366,7 +366,7 @@ public class JdbcRules {
         private final RexProgram program;
 
 
-        public JdbcCalc( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, RexProgram program ) {
+        public JdbcCalc( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, RexProgram program ) {
             super( cluster, traitSet, input );
             assert getConvention() instanceof JdbcConvention;
             this.program = program;
@@ -387,7 +387,7 @@ public class JdbcRules {
 
 
         @Override
-        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
             double dRows = mq.getTupleCount( this );
             double dCpu = mq.getTupleCount( getInput() ) * program.getExprCount();
             double dIo = 0;
@@ -515,7 +515,7 @@ public class JdbcRules {
      */
     public static class JdbcProject extends Project implements JdbcAlg {
 
-        public JdbcProject( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
+        public JdbcProject( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
             super( cluster, traitSet, input, projects, rowType );
             assert getConvention() instanceof JdbcConvention;
         }
@@ -528,7 +528,7 @@ public class JdbcRules {
 
 
         @Override
-        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
             return super.computeSelfCost( planner, mq ).multiplyBy( JdbcConvention.COST_MULTIPLIER );
         }
 
@@ -683,7 +683,7 @@ public class JdbcRules {
      */
     public static class JdbcFilter extends Filter implements JdbcAlg {
 
-        public JdbcFilter( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, RexNode condition ) {
+        public JdbcFilter( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, RexNode condition ) {
             super( cluster, traitSet, input, condition );
             assert getConvention() instanceof JdbcConvention;
         }
@@ -758,7 +758,7 @@ public class JdbcRules {
     public static class JdbcAggregate extends Aggregate implements JdbcAlg {
 
         public JdbcAggregate(
-                AlgOptCluster cluster,
+                AlgCluster cluster,
                 AlgTraitSet traitSet,
                 AlgNode input,
                 boolean indicator,
@@ -852,7 +852,7 @@ public class JdbcRules {
      */
     public static class JdbcSort extends Sort implements JdbcAlg {
 
-        public JdbcSort( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, AlgCollation collation, RexNode offset, RexNode fetch ) {
+        public JdbcSort( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, AlgCollation collation, RexNode offset, RexNode fetch ) {
             super( cluster, traitSet, input, collation, null, offset, fetch );
             assert getConvention() instanceof JdbcConvention;
             assert getConvention() == input.getConvention();
@@ -902,7 +902,7 @@ public class JdbcRules {
      */
     public static class JdbcUnion extends Union implements JdbcAlg {
 
-        public JdbcUnion( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
+        public JdbcUnion( AlgCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
             super( cluster, traitSet, inputs, all );
         }
 
@@ -914,7 +914,7 @@ public class JdbcRules {
 
 
         @Override
-        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
             return super.computeSelfCost( planner, mq ).multiplyBy( .1 );
         }
 
@@ -959,7 +959,7 @@ public class JdbcRules {
      */
     public static class JdbcIntersect extends Intersect implements JdbcAlg {
 
-        public JdbcIntersect( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
+        public JdbcIntersect( AlgCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
             super( cluster, traitSet, inputs, all );
             assert !all;
         }
@@ -1010,7 +1010,7 @@ public class JdbcRules {
      */
     public static class JdbcMinus extends Minus implements JdbcAlg {
 
-        public JdbcMinus( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
+        public JdbcMinus( AlgCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
             super( cluster, traitSet, inputs, all );
             assert !all;
         }
@@ -1083,7 +1083,7 @@ public class JdbcRules {
 
 
         public JdbcTableModify(
-                AlgOptCluster cluster,
+                AlgCluster cluster,
                 AlgTraitSet traitSet,
                 JdbcTable table,
                 AlgNode input,
@@ -1106,7 +1106,7 @@ public class JdbcRules {
 
 
         @Override
-        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
             double cost = super.computeSelfCost( planner, mq ).getCosts();
             return super.computeSelfCost( planner, mq ).multiplyBy( .1 );
         }
@@ -1161,7 +1161,7 @@ public class JdbcRules {
      */
     public static class JdbcValues extends Values implements JdbcAlg {
 
-        JdbcValues( AlgOptCluster cluster, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, AlgTraitSet traitSet ) {
+        JdbcValues( AlgCluster cluster, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, AlgTraitSet traitSet ) {
             super( cluster, rowType, tuples, traitSet );
         }
 

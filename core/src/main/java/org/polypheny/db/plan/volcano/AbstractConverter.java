@@ -40,11 +40,11 @@ import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.convert.ConverterImpl;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -61,7 +61,7 @@ import org.polypheny.db.tools.AlgBuilderFactory;
  */
 public class AbstractConverter extends ConverterImpl {
 
-    public AbstractConverter( AlgOptCluster cluster, AlgSubset alg, AlgTraitDef<?> traitDef, AlgTraitSet traits ) {
+    public AbstractConverter( AlgCluster cluster, AlgSubset alg, AlgTraitDef<?> traitDef, AlgTraitSet traits ) {
         super( cluster, traitDef, traits, alg );
         assert traits.allSimple();
     }
@@ -74,7 +74,7 @@ public class AbstractConverter extends ConverterImpl {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return planner.getCostFactory().makeInfiniteCost();
     }
 

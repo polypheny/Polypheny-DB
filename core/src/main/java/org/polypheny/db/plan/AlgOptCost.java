@@ -39,7 +39,7 @@ import org.polypheny.db.algebra.AlgNode;
 /**
  * RelOptCost defines an interface for optimizer cost in terms of number of rows processed, CPU cost, and I/O cost.
  * Optimizer implementations may use all of this information, or selectively ignore portions of it. The specific units for
- * all of these quantities are rather vague; most relational expressions provide a default cost calculation, but optimizers
+ * all of these quantities are rather vague; most algebra expressions provide a default cost calculation, but optimizers
  * can override this by plugging in their own cost models with well-defined meanings for each unit. Optimizers which supply
  * their own cost models may also extend this interface with additional cost metrics such as memory usage.
  */

@@ -70,8 +70,8 @@ import org.polypheny.db.util.Pair;
 
 
 /**
- * Shuttle class, which saves the state of the relational Neo4j algebra nodes it passes through when needed.
- * This state is then later used to build the relational code ({@link org.apache.calcite.linq4j.tree.Expression}), which represents the passed algebra tree.
+ * Shuttle class, which saves the state of the algebra Neo4j algebra nodes it passes through when needed.
+ * This state is then later used to build the algebra code ({@link org.apache.calcite.linq4j.tree.Expression}), which represents the passed algebra tree.
  */
 public class NeoRelationalImplementor extends AlgShuttleImpl {
 

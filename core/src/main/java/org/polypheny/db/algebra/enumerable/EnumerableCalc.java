@@ -41,10 +41,10 @@ import org.polypheny.db.algebra.core.Calc;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMdDistribution;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptPredicateList;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexProgram;
@@ -66,7 +66,7 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
      *
      * Use {@link #create} unless you know what you're doing.
      */
-    public EnumerableCalc( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, RexProgram program ) {
+    public EnumerableCalc( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, RexProgram program ) {
         super( cluster, traitSet, input, program );
         assert getConvention() instanceof EnumerableConvention;
         assert !program.containsAggs();
@@ -74,7 +74,7 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 10 );
     }
 
@@ -83,7 +83,7 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
      * Creates an EnumerableCalc.
      */
     public static EnumerableCalc create( final AlgNode input, final RexProgram program ) {
-        final AlgOptCluster cluster = input.getCluster();
+        final AlgCluster cluster = input.getCluster();
         final AlgMetadataQuery mq = cluster.getMetadataQuery();
         final AlgTraitSet traitSet = cluster.traitSet()
                 .replace( EnumerableConvention.INSTANCE )

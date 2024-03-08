@@ -130,7 +130,7 @@ public class AlgOptRuleOperand {
 
 
     /**
-     * @return relational expression class matched by this operand
+     * @return algebra expression class matched by this operand
      */
     public Class<? extends AlgNode> getMatchedClass() {
         return clazz;
@@ -148,7 +148,7 @@ public class AlgOptRuleOperand {
 
 
     /**
-     * Returns whether a relational expression matches this operand. It must be of the right class and trait.
+     * Returns whether an algebra expression matches this operand. It must be of the right class and trait.
      */
     public boolean matches( AlgNode alg ) {
         if ( !clazz.isInstance( alg ) ) {

@@ -20,7 +20,7 @@ import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.common.Scan;
 import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.catalog.entity.Entity;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.trait.ModelTrait;
 
@@ -32,7 +32,7 @@ public abstract class LpgScan<E extends Entity> extends Scan<E> implements LpgAl
      * Creates a {@link LpgScan}.
      * {@link ModelTrait#GRAPH} native node, which is able to scan a LPG graph.
      */
-    public LpgScan( AlgOptCluster cluster, AlgTraitSet traitSet, E graph ) {
+    public LpgScan( AlgCluster cluster, AlgTraitSet traitSet, E graph ) {
         super( cluster, traitSet.replace( ModelTrait.GRAPH ), graph );
         this.rowType = GraphType.of();//new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "g", 0, cluster.getTypeFactory().createPolyType( PolyType.GRAPH ) ) ) );
     }

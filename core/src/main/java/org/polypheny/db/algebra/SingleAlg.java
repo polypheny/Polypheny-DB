@@ -40,7 +40,7 @@ import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
 
@@ -63,7 +63,7 @@ public abstract class SingleAlg extends AbstractAlgNode {
      * @param cluster Cluster this algebraic expression belongs to
      * @param input Input relational expression
      */
-    protected SingleAlg( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input ) {
+    protected SingleAlg( AlgCluster cluster, AlgTraitSet traits, AlgNode input ) {
         super( cluster, traits );
         this.input = input;
     }

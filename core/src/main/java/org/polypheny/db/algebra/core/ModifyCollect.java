@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
 
@@ -31,7 +31,7 @@ import org.polypheny.db.plan.AlgTraitSet;
  */
 public abstract class ModifyCollect extends SetOp {
 
-    protected ModifyCollect( AlgOptCluster cluster, AlgTraitSet traits, List<AlgNode> inputs, boolean all ) {
+    protected ModifyCollect( AlgCluster cluster, AlgTraitSet traits, List<AlgNode> inputs, boolean all ) {
         super( cluster, traits, inputs, Kind.UNION, all );
     }
 

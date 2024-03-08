@@ -40,7 +40,7 @@ import org.polypheny.db.algebra.AlgNode;
 
 
 /**
- * A <code>AlgOptQuery</code> represents a set of {@link AlgNode relational expressions} which derive from the same <code>select</code> statement.
+ * A <code>AlgOptQuery</code> represents a set of {@link AlgNode algebra expressions} which derive from the same <code>select</code> statement.
  */
 public class AlgOptQuery {
 

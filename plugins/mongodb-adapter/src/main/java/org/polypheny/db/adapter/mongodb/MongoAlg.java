@@ -67,7 +67,7 @@ public interface MongoAlg extends AlgNode {
     void implement( Implementor implementor );
 
     /**
-     * Calling convention for relational operations that occur in MongoDB.
+     * Calling convention for algebra operations that occur in MongoDB.
      */
     Convention CONVENTION = MongoConvention.INSTANCE;//new Convention.Impl( "MONGO", MongoAlg.class );
 

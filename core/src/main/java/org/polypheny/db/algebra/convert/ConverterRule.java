@@ -60,8 +60,8 @@ public abstract class ConverterRule extends AlgOptRule {
     /**
      * Creates a <code>ConverterRule</code>.
      *
-     * @param clazz Type of relational expression to consider converting
-     * @param in Trait of relational expression to consider converting
+     * @param clazz Type of algebra expression to consider converting
+     * @param in Trait of algebra expression to consider converting
      * @param out Trait which is converted to
      * @param description Description of rule
      */
@@ -73,11 +73,11 @@ public abstract class ConverterRule extends AlgOptRule {
     /**
      * Creates a <code>ConverterRule</code> with a predicate.
      *
-     * @param clazz Type of relational expression to consider converting
-     * @param predicate Predicate on the relational expression
-     * @param in Trait of relational expression to consider converting
+     * @param clazz Type of algebra expression to consider converting
+     * @param predicate Predicate on the algebra expression
+     * @param in Trait of algebra expression to consider converting
      * @param out Trait which is converted to
-     * @param algBuilderFactory Builder for relational expressions
+     * @param algBuilderFactory Builder for algebra expressions
      * @param description Description of rule
      */
     public <R extends AlgNode> ConverterRule( Class<R> clazz, Predicate<? super R> predicate, AlgTrait<?> in, AlgTrait<?> out, AlgBuilderFactory algBuilderFactory, String description ) {
@@ -107,19 +107,19 @@ public abstract class ConverterRule extends AlgOptRule {
 
 
     /**
-     * Converts a relational expression to the target trait(s) of this rule.
-     *
+     * Converts a algebra expression to the target trait(s) of this rule.
+     * <p>
      * Returns null if conversion is not possible.
      */
     public abstract AlgNode convert( AlgNode alg );
 
 
     /**
-     * Returns true if this rule can convert <em>any</em> relational expression of the input convention.
-     *
+     * Returns true if this rule can convert <em>any</em> algebra expression of the input convention.
+     * <p>
      * The union-to-java converter, for example, is not guaranteed, because it only works on unions.
      *
-     * @return {@code true} if this rule can convert <em>any</em> relational expression
+     * @return {@code true} if this rule can convert <em>any</em> algebra expression
      */
     public boolean isGuaranteed() {
         return false;

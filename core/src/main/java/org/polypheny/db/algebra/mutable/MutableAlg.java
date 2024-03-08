@@ -41,7 +41,7 @@ import java.util.Objects;
 import org.apache.calcite.avatica.util.Spaces;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 
 
 /**
@@ -77,7 +77,7 @@ public abstract class MutableAlg {
     @SuppressWarnings("unchecked")
     protected static final Equivalence<List<?>> PAIRWISE_STRING_EQUIVALENCE = (Equivalence) STRING_EQUIVALENCE.pairwise();
 
-    public final AlgOptCluster cluster;
+    public final AlgCluster cluster;
     public final AlgDataType rowType;
     protected final MutableAlgType type;
 
@@ -85,7 +85,7 @@ public abstract class MutableAlg {
     protected int ordinalInParent;
 
 
-    protected MutableAlg( AlgOptCluster cluster, AlgDataType rowType, MutableAlgType type ) {
+    protected MutableAlg( AlgCluster cluster, AlgDataType rowType, MutableAlgType type ) {
         this.cluster = Objects.requireNonNull( cluster );
         this.rowType = Objects.requireNonNull( rowType );
         this.type = Objects.requireNonNull( type );

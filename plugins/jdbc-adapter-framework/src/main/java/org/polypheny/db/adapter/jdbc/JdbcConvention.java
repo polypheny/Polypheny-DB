@@ -37,14 +37,14 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.algebra.rules.FilterSetOpTransposeRule;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.sql.language.SqlDialect;
 
 
 /**
- * Calling convention for relational operations that occur in a JDBC database.
+ * Calling convention for algebra operations that occur in a JDBC database.
  *
  * The convention is a slight misnomer. The operations occur in whatever data-flow architecture the database
  * uses internally. Nevertheless, the result pops out in JDBC.
@@ -85,7 +85,7 @@ public class JdbcConvention extends Convention.Impl {
 
 
     @Override
-    public void register( AlgOptPlanner planner ) {
+    public void register( AlgPlanner planner ) {
         for ( AlgOptRule rule : JdbcRules.rules( this ) ) {
             planner.addRuleDuringRuntime( rule );
         }

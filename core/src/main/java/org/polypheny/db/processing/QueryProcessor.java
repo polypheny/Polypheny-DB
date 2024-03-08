@@ -20,7 +20,7 @@ package org.polypheny.db.processing;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -54,7 +54,7 @@ public interface QueryProcessor {
     /**
      * @return Gets the planner.
      */
-    AlgOptPlanner getPlanner();
+    AlgPlanner getPlanner();
 
     /**
      * Resets caches Implementation, QueryPlan, RoutingPlan and Router caches.

@@ -23,7 +23,7 @@ import lombok.experimental.SuperBuilder;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.catalog.entity.Entity;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
 @SuperBuilder(toBuilder = true)
@@ -43,7 +43,7 @@ public abstract class Modify<E extends Entity> extends SingleAlg {
      * @param cluster Cluster this relational expression belongs to
      * @param input Input relational expression
      */
-    protected Modify( AlgOptCluster cluster, AlgTraitSet traits, E target, AlgNode input ) {
+    protected Modify( AlgCluster cluster, AlgTraitSet traits, E target, AlgNode input ) {
         super( cluster, traits, input );
         this.entity = target;
     }

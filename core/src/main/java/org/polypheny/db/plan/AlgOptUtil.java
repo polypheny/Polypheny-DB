@@ -396,7 +396,7 @@ public abstract class AlgOptUtil {
 
 
     @Deprecated // to be removed before 2.0
-    public static AlgNode createExistsPlan( AlgOptCluster cluster, AlgNode seekRel, List<RexNode> conditions, RexLiteral extraExpr, String extraName ) {
+    public static AlgNode createExistsPlan( AlgCluster cluster, AlgNode seekRel, List<RexNode> conditions, RexLiteral extraExpr, String extraName ) {
         assert extraExpr == null || extraName != null;
         AlgNode ret = seekRel;
 
@@ -472,7 +472,7 @@ public abstract class AlgOptUtil {
                 }
         }
         AlgNode ret = seekAlg;
-        final AlgOptCluster cluster = seekAlg.getCluster();
+        final AlgCluster cluster = seekAlg.getCluster();
         final RexBuilder rexBuilder = cluster.getRexBuilder();
         final int keyCount = ret.getTupleType().getFieldCount();
         final boolean outerJoin = notIn || logic == AlgOptUtil.Logic.TRUE_FALSE_UNKNOWN;
@@ -569,7 +569,7 @@ public abstract class AlgOptUtil {
      * Creates a filter using the default factory, or returns the original relational expression if the condition is trivial.
      */
     public static AlgNode createFilter( AlgNode child, Iterable<? extends RexNode> conditions, AlgFactories.FilterFactory filterFactory ) {
-        final AlgOptCluster cluster = child.getCluster();
+        final AlgCluster cluster = child.getCluster();
         final RexNode condition = RexUtil.composeConjunction( cluster.getRexBuilder(), conditions, true );
         if ( condition == null ) {
             return child;
@@ -673,7 +673,7 @@ public abstract class AlgOptUtil {
      * @param alg underlying rel
      * @return alg implementing SingleValueAgg
      */
-    public static AlgNode createSingleValueAggAlg( AlgOptCluster cluster, AlgNode alg ) {
+    public static AlgNode createSingleValueAggAlg( AlgCluster cluster, AlgNode alg ) {
         final int aggCallCnt = alg.getTupleType().getFieldCount();
         final List<AggregateCall> aggCalls = new ArrayList<>();
 
@@ -784,7 +784,7 @@ public abstract class AlgOptUtil {
 
     private static void splitJoinCondition( List<AlgDataTypeField> sysFieldList, List<AlgNode> inputs, RexNode condition, List<List<RexNode>> joinKeys, List<Integer> filterNulls, List<Operator> rangeOp, List<RexNode> nonEquiList ) {
         final int sysFieldCount = sysFieldList.size();
-        final AlgOptCluster cluster = inputs.get( 0 ).getCluster();
+        final AlgCluster cluster = inputs.get( 0 ).getCluster();
         final RexBuilder rexBuilder = cluster.getRexBuilder();
         final AlgDataTypeFactory typeFactory = cluster.getTypeFactory();
 
@@ -1215,7 +1215,7 @@ public abstract class AlgOptUtil {
     public static void projectJoinInputs( AlgNode[] inputAlgs, List<RexNode> leftJoinKeys, List<RexNode> rightJoinKeys, int systemColCount, List<Integer> leftKeys, List<Integer> rightKeys, List<Integer> outputProj ) {
         AlgNode leftRel = inputAlgs[0];
         AlgNode rightRel = inputAlgs[1];
-        final AlgOptCluster cluster = leftRel.getCluster();
+        final AlgCluster cluster = leftRel.getCluster();
         final RexBuilder rexBuilder = cluster.getRexBuilder();
         final AlgDataTypeSystem typeSystem = cluster.getTypeFactory().getTypeSystem();
 
@@ -1328,7 +1328,7 @@ public abstract class AlgOptUtil {
     }
 
 
-    public static void registerAbstractAlgs( AlgOptPlanner planner ) {
+    public static void registerAbstractAlgs( AlgPlanner planner ) {
         planner.addRule( AggregateProjectPullUpConstantsRule.INSTANCE2 );
         planner.addRule( UnionPullUpConstantsRule.INSTANCE );
         planner.addRule( PruneEmptyRules.UNION_INSTANCE );
@@ -2360,7 +2360,7 @@ public abstract class AlgOptUtil {
         final List<RexNode> exprList = new ArrayList<>();
         final List<RexLocalRef> projectRefList = new ArrayList<>();
         final List<AlgDataTypeField> fields = alg.getTupleType().getFields();
-        final AlgOptCluster cluster = alg.getCluster();
+        final AlgCluster cluster = alg.getCluster();
         for ( int i = 0; i < permutation.getTargetCount(); i++ ) {
             int target = permutation.getTarget( i );
             final AlgDataTypeField targetField = fields.get( target );

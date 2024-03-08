@@ -28,7 +28,7 @@ import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.enumerable.JavaTupleFormat;
 import org.polypheny.db.algebra.enumerable.PhysType;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
 
@@ -38,7 +38,7 @@ import org.polypheny.db.util.BuiltInMethod;
  */
 public class EnumerableCollect extends Collect implements EnumerableAlg {
 
-    public EnumerableCollect( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode child, String fieldName ) {
+    public EnumerableCollect( AlgCluster cluster, AlgTraitSet traitSet, AlgNode child, String fieldName ) {
         super( cluster, traitSet, child, fieldName );
         assert getConvention() instanceof EnumerableConvention;
         assert getConvention() == child.getConvention();

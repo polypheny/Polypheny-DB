@@ -47,7 +47,7 @@ import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMdDistribution;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
@@ -73,7 +73,7 @@ public final class LogicalRelFilter extends Filter implements RelAlg {
      * @param condition Boolean expression which determines whether a row is allowed to pass
      * @param variablesSet Correlation variables set by this relational expression to be used by nested expressions
      */
-    public LogicalRelFilter( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode child, RexNode condition, ImmutableSet<CorrelationId> variablesSet ) {
+    public LogicalRelFilter( AlgCluster cluster, AlgTraitSet traitSet, AlgNode child, RexNode condition, ImmutableSet<CorrelationId> variablesSet ) {
         super( cluster, traitSet.replace( ModelTrait.RELATIONAL ), child, condition );
         this.variablesSet = Objects.requireNonNull( variablesSet );
         assert isValid( Litmus.THROW, null );
@@ -92,7 +92,7 @@ public final class LogicalRelFilter extends Filter implements RelAlg {
      * Creates a LogicalFilter.
      */
     public static LogicalRelFilter create( final AlgNode input, RexNode condition, ImmutableSet<CorrelationId> variablesSet ) {
-        final AlgOptCluster cluster = input.getCluster();
+        final AlgCluster cluster = input.getCluster();
         final AlgMetadataQuery mq = cluster.getMetadataQuery();
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE )
                 .replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.filter( mq, input ) )

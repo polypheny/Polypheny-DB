@@ -26,9 +26,9 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.interpreter.Interpreter;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
 
@@ -54,7 +54,7 @@ public class EnumerableInterpreter extends SingleAlg implements EnumerableAlg {
      * @param input Input relation
      * @param factor Cost multiply factor
      */
-    public EnumerableInterpreter( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, double factor ) {
+    public EnumerableInterpreter( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, double factor ) {
         super( cluster, traitSet, input );
         assert getConvention() instanceof EnumerableConvention;
         this.factor = factor;
@@ -74,7 +74,7 @@ public class EnumerableInterpreter extends SingleAlg implements EnumerableAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( factor );
     }
 

@@ -105,7 +105,7 @@ import org.polypheny.db.util.Pair;
 
 
 /**
- * Utility to convert relational expressions to SQL abstract syntax tree.
+ * Utility to convert algebra expressions to SQL abstract syntax tree.
  */
 public abstract class AlgToSqlConverter extends SqlImplementor implements AlgProducingVisitor<Result> {
 

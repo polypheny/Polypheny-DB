@@ -56,7 +56,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.schema.Namespace;
@@ -74,13 +74,13 @@ public class AlgJsonReader {
     private static final TypeReference<LinkedHashMap<String, Object>> TYPE_REF = new TypeReference<>() {
     };
 
-    private final AlgOptCluster cluster;
+    private final AlgCluster cluster;
     private final AlgJson algJson = new AlgJson( null );
     private final Map<String, AlgNode> algMap = new LinkedHashMap<>();
     private AlgNode lastAlg;
 
 
-    public AlgJsonReader( AlgOptCluster cluster, Namespace namespace ) {
+    public AlgJsonReader( AlgCluster cluster, Namespace namespace ) {
         this.cluster = cluster;
         Util.discard( namespace );
     }
@@ -114,7 +114,7 @@ public class AlgJsonReader {
         Constructor<?> constructor = algJson.getConstructor( type );
         AlgInput input = new AlgInput() {
             @Override
-            public AlgOptCluster getCluster() {
+            public AlgCluster getCluster() {
                 return cluster;
             }
 

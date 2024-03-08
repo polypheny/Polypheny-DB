@@ -55,7 +55,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
 import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.schema.types.StreamableEntity;
@@ -264,7 +264,7 @@ public class StreamRules {
         public void onMatch( AlgOptRuleCall call ) {
             final Delta delta = call.alg( 0 );
             final RelScan<?> scan = call.alg( 1 );
-            final AlgOptCluster cluster = delta.getCluster();
+            final AlgCluster cluster = delta.getCluster();
             Optional<StreamableEntity> oStreamableTable = scan.entity.unwrap( StreamableEntity.class );
             if ( oStreamableTable.isPresent() ) {
                 final LogicalRelScan newScan = LogicalRelScan.create( cluster, null );

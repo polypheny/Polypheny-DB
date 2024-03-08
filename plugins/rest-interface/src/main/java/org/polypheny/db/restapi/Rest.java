@@ -51,8 +51,8 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.restapi.RequestParser.Filters;
 import org.polypheny.db.restapi.exception.RestException;
 import org.polypheny.db.restapi.models.requests.ResourceDeleteRequest;
@@ -168,8 +168,8 @@ public class Rest {
 
         // Table Modify
 
-        AlgOptPlanner planner = statement.getQueryProcessor().getPlanner();
-        AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder, null, Catalog.getInstance().getSnapshot() );
+        AlgPlanner planner = statement.getQueryProcessor().getPlanner();
+        AlgCluster cluster = AlgCluster.create( planner, rexBuilder, null, Catalog.getInstance().getSnapshot() );
 
         // Values
         AlgDataType tableRowType = table.getTupleType();
@@ -225,8 +225,8 @@ public class Rest {
 
         // Table Modify
 
-        AlgOptPlanner planner = statement.getQueryProcessor().getPlanner();
-        AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder, null, Catalog.getInstance().getSnapshot() );
+        AlgPlanner planner = statement.getQueryProcessor().getPlanner();
+        AlgCluster cluster = AlgCluster.create( planner, rexBuilder, null, Catalog.getInstance().getSnapshot() );
 
         AlgNode algNode = algBuilder.build();
         RelModify<?> modify = new LogicalRelModify(
@@ -272,8 +272,8 @@ public class Rest {
         AlgDataType tableRowType = table.getTupleType();
         List<AlgDataTypeField> tableRows = tableRowType.getFields();
 
-        AlgOptPlanner planner = statement.getQueryProcessor().getPlanner();
-        AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder, null, Catalog.getInstance().getSnapshot() );
+        AlgPlanner planner = statement.getQueryProcessor().getPlanner();
+        AlgCluster cluster = AlgCluster.create( planner, rexBuilder, null, Catalog.getInstance().getSnapshot() );
 
         List<String> valueColumnNames = this.valuesColumnNames( insertValueRequest.values );
         List<RexNode> rexValues = this.valuesNode( statement, algBuilder, rexBuilder, insertValueRequest, tableRows, inputStreams ).get( 0 );

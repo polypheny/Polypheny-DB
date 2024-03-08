@@ -67,7 +67,7 @@ import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptPredicateList;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.Strong;
@@ -280,7 +280,7 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
      * Infers predicates for a {@link org.polypheny.db.algebra.core.Join} (including {@link org.polypheny.db.algebra.core.SemiJoin}).
      */
     public AlgOptPredicateList getPredicates( Join join, AlgMetadataQuery mq ) {
-        AlgOptCluster cluster = join.getCluster();
+        AlgCluster cluster = join.getCluster();
         RexBuilder rexBuilder = cluster.getRexBuilder();
         final RexExecutor executor = Util.first( cluster.getPlanner().getExecutor(), RexUtil.EXECUTOR );
         final AlgNode left = join.getInput( 0 );
@@ -383,7 +383,7 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
         }
 
         final List<RexNode> predicates = new ArrayList<>( finalPredicates );
-        final AlgOptCluster cluster = union.getCluster();
+        final AlgCluster cluster = union.getCluster();
         final RexExecutor executor = Util.first( cluster.getPlanner().getExecutor(), RexUtil.EXECUTOR );
         RexNode disjunctivePredicate = new RexSimplify( rexBuilder, AlgOptPredicateList.EMPTY, executor ).simplifyOrs( finalResidualPredicates );
         if ( !disjunctivePredicate.isAlwaysTrue() ) {

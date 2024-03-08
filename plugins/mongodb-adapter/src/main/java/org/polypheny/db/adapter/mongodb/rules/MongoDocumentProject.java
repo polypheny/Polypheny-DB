@@ -26,7 +26,7 @@ import org.polypheny.db.adapter.mongodb.util.RexToMongoTranslator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.document.DocumentProject;
 import org.polypheny.db.catalog.logistic.DataModel;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
@@ -44,7 +44,7 @@ public class MongoDocumentProject extends DocumentProject implements MongoAlg {
      * @param includes
      * @param excludes
      */
-    protected MongoDocumentProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, @NotNull Map<String, ? extends RexNode> includes, @NotNull List<String> excludes ) {
+    protected MongoDocumentProject( AlgCluster cluster, AlgTraitSet traits, AlgNode input, @NotNull Map<String, ? extends RexNode> includes, @NotNull List<String> excludes ) {
         super( cluster, traits, input, includes, excludes );
     }
 

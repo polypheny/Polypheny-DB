@@ -20,7 +20,7 @@ import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.catalog.entity.Entity;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
 @Getter
@@ -36,7 +36,7 @@ public abstract class Scan<E extends Entity> extends AbstractAlgNode {
      * @param cluster the cluster this node uses to optimize itself
      * @param traitSet traits that describes the traits of the node
      */
-    public Scan( AlgOptCluster cluster, AlgTraitSet traitSet, E entity ) {
+    public Scan( AlgCluster cluster, AlgTraitSet traitSet, E entity ) {
         super( cluster, traitSet );
         this.entity = entity;
     }

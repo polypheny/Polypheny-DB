@@ -84,7 +84,7 @@ import org.polypheny.db.languages.mql.MqlInsert;
 import org.polypheny.db.languages.mql.MqlQueryStatement;
 import org.polypheny.db.languages.mql.MqlUpdate;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
@@ -116,7 +116,7 @@ import org.polypheny.db.util.TimestampString;
 public class MqlToAlgConverter {
 
     private final Snapshot snapshot;
-    private final AlgOptCluster cluster;
+    private final AlgCluster cluster;
     private RexBuilder builder;
     public static final String MONGO = "mongo";
     private final static Map<String, Operator> mappings = new HashMap<>() {{
@@ -214,7 +214,7 @@ public class MqlToAlgConverter {
     private Entity entity;
 
 
-    public MqlToAlgConverter( Snapshot snapshot, AlgOptCluster cluster ) {
+    public MqlToAlgConverter( Snapshot snapshot, AlgCluster cluster ) {
         this.snapshot = snapshot;
         this.cluster = Objects.requireNonNull( cluster );
         this.any = this.cluster.getTypeFactory().createPolyType( PolyType.ANY );

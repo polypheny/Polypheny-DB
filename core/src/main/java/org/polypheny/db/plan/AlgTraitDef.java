@@ -50,7 +50,7 @@ import org.polypheny.db.plan.volcano.AlgSubset;
  *
  * <li>Either
  * <ul>
- * <li> {@link #canConvert(AlgOptPlanner, AlgTrait, AlgTrait)} and {@link #convert(AlgOptPlanner, AlgNode, AlgTrait, boolean)} do not require planner-instance-specific information, <b>or</b></li>
+ * <li> {@link #canConvert(AlgPlanner, AlgTrait, AlgTrait)} and {@link #convert(AlgPlanner, AlgNode, AlgTrait, boolean)} do not require planner-instance-specific information, <b>or</b></li>
  * <li>the RelTraitDef manages separate sets of conversion data internally. See {@link ConventionTraitDef} for an example of this.</li>
  * </ul>
  * </li>
@@ -118,7 +118,7 @@ public abstract class AlgTraitDef<T extends AlgTrait<?>> {
      * @param allowInfiniteCostConverters flag indicating whether infinite cost converters are allowed
      * @return a converted {@link AlgNode} or null if conversion is not possible
      */
-    public abstract AlgNode convert( AlgOptPlanner planner, AlgNode alg, T toTrait, boolean allowInfiniteCostConverters );
+    public abstract AlgNode convert( AlgPlanner planner, AlgNode alg, T toTrait, boolean allowInfiniteCostConverters );
 
     /**
      * Tests whether the given AlgTrait can be converted to another AlgTrait.
@@ -128,7 +128,7 @@ public abstract class AlgTraitDef<T extends AlgTrait<?>> {
      * @param toTrait the AlgTrait to convert to
      * @return true if fromTrait can be converted to toTrait
      */
-    public abstract boolean canConvert( AlgOptPlanner planner, T fromTrait, T toTrait );
+    public abstract boolean canConvert( AlgPlanner planner, T fromTrait, T toTrait );
 
 
     /**
@@ -140,28 +140,28 @@ public abstract class AlgTraitDef<T extends AlgTrait<?>> {
      * @param fromRel the {@link AlgNode} to convert from (with fromTrait)
      * @return true if fromTrait can be converted to toTrait
      */
-    public boolean canConvert( AlgOptPlanner planner, T fromTrait, T toTrait, AlgNode fromRel ) {
+    public boolean canConvert( AlgPlanner planner, T fromTrait, T toTrait, AlgNode fromRel ) {
         return canConvert( planner, fromTrait, toTrait );
     }
 
 
     /**
-     * Provides notification of the registration of a particular {@link ConverterRule} with a {@link AlgOptPlanner}. The default implementation does nothing.
+     * Provides notification of the registration of a particular {@link ConverterRule} with a {@link AlgPlanner}. The default implementation does nothing.
      *
      * @param planner the planner registering the rule
      * @param converterRule the registered converter rule
      */
-    public void registerConverterRule( AlgOptPlanner planner, ConverterRule converterRule ) {
+    public void registerConverterRule( AlgPlanner planner, ConverterRule converterRule ) {
     }
 
 
     /**
-     * Provides notification that a particular {@link ConverterRule} has been de-registered from a {@link AlgOptPlanner}. The default implementation does nothing.
+     * Provides notification that a particular {@link ConverterRule} has been de-registered from a {@link AlgPlanner}. The default implementation does nothing.
      *
      * @param planner the planner registering the rule
      * @param converterRule the registered converter rule
      */
-    public void deregisterConverterRule( AlgOptPlanner planner, ConverterRule converterRule ) {
+    public void deregisterConverterRule( AlgPlanner planner, ConverterRule converterRule ) {
     }
 
 
@@ -171,7 +171,7 @@ public abstract class AlgTraitDef<T extends AlgTrait<?>> {
     public abstract T getDefault();
 
 
-    public boolean canConvertUnchecked( AlgOptPlanner planner, AlgTrait<?> curAlgTrait, AlgTrait<?> curOtherTrait, AlgSubset subset ) {
+    public boolean canConvertUnchecked( AlgPlanner planner, AlgTrait<?> curAlgTrait, AlgTrait<?> curOtherTrait, AlgSubset subset ) {
         return canConvert( planner, (T) curAlgTrait, (T) curOtherTrait, subset );
     }
 

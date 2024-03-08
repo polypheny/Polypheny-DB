@@ -707,7 +707,7 @@ public class RexBuilder {
     /**
      * Creates a reference to all the fields in the row. That is, the whole row as a single record object.
      *
-     * @param input Input relational expression
+     * @param input Input algebra expression
      */
     public RexNode makeRangeReference( AlgNode input ) {
         return new RexRangeRef( input.getTupleType(), 0 );
@@ -745,7 +745,7 @@ public class RexBuilder {
 
 
     /**
-     * Creates a reference to a given field of the input relational expression.
+     * Creates a reference to a given field of the input algebra expression.
      *
      * @param input Input relational expression
      * @param i Ordinal of field

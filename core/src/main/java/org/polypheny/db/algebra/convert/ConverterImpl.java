@@ -37,9 +37,9 @@ package org.polypheny.db.algebra.convert;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.plan.AlgTraitSet;
 
@@ -61,7 +61,7 @@ public abstract class ConverterImpl extends SingleAlg implements Converter {
      * @param traits the output traits of this converter
      * @param child child alg (provides input traits)
      */
-    protected ConverterImpl( AlgOptCluster cluster, AlgTraitDef<?> traitDef, AlgTraitSet traits, AlgNode child ) {
+    protected ConverterImpl( AlgCluster cluster, AlgTraitDef<?> traitDef, AlgTraitSet traits, AlgNode child ) {
         super( cluster, traits, child );
         this.inTraits = child.getTraitSet();
         this.traitDef = traitDef;
@@ -69,7 +69,7 @@ public abstract class ConverterImpl extends SingleAlg implements Converter {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         double dRows = mq.getTupleCount( getInput() );
         double dCpu = dRows;
         double dIo = 0;

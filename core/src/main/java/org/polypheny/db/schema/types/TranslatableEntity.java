@@ -17,7 +17,7 @@
 package org.polypheny.db.schema.types;
 
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
 public interface TranslatableEntity extends Typed {
@@ -25,7 +25,7 @@ public interface TranslatableEntity extends Typed {
     /**
      * Converts this entity into a {@link AlgNode}.
      */
-    AlgNode toAlg( AlgOptCluster cluster, AlgTraitSet traitSet );
+    AlgNode toAlg( AlgCluster cluster, AlgTraitSet traitSet );
 
 
 }

@@ -67,7 +67,7 @@ public abstract class AlgOptRule {
     private final AlgOptRuleOperand operand;
 
     /**
-     * Factory for a builder for relational expressions.
+     * Factory for a builder for algebra expressions.
      * <p>
      * The actual builder is available via {@link AlgOptRuleCall#builder()}.
      */
@@ -105,7 +105,7 @@ public abstract class AlgOptRule {
      *
      * @param operand root operand, must not be null
      * @param description Description, or null to guess description
-     * @param algBuilderFactory Builder for relational expressions
+     * @param algBuilderFactory Builder for algebra expressions
      */
     public AlgOptRule( AlgOptRuleOperand operand, AlgBuilderFactory algBuilderFactory, String description ) {
         this.operand = Objects.requireNonNull( operand );
@@ -123,12 +123,12 @@ public abstract class AlgOptRule {
 
 
     /**
-     * Creates an operand that matches a relational expression that has no children.
+     * Creates an operand that matches an algebra expression that has no children.
      *
-     * @param clazz Class of relational expression to match (must not be null)
+     * @param clazz Class of algebra expression to match (must not be null)
      * @param operandList Child operands
-     * @param <R> Class of relational expression to match
-     * @return Operand that matches a relational expression that has no children
+     * @param <R> Class of algebra expression to match
+     * @return Operand that matches an algebra expression that has no children
      */
     public static <R extends AlgNode> AlgOptRuleOperand operand( Class<R> clazz, AlgOptRuleOperandChildren operandList ) {
         return new AlgOptRuleOperand( clazz, null, r -> true, operandList.policy, operandList.operands );
@@ -136,13 +136,13 @@ public abstract class AlgOptRule {
 
 
     /**
-     * Creates an operand that matches a relational expression that has no children.
+     * Creates an operand that matches an algebra expression that has no children.
      *
-     * @param clazz Class of relational expression to match (must not be null)
+     * @param clazz Class of algebraic expression to match (must not be null)
      * @param trait Trait to match, or null to match any trait
      * @param operandList Child operands
-     * @param <R> Class of relational expression to match
-     * @return Operand that matches a relational expression that has no children
+     * @param <R> Class of algebra expression to match
+     * @return Operand that matches an algebra expression that has no children
      */
     public static <R extends AlgNode> AlgOptRuleOperand operand( Class<R> clazz, AlgTrait<?> trait, AlgOptRuleOperandChildren operandList ) {
         return new AlgOptRuleOperand( clazz, trait, r -> true, operandList.policy, operandList.operands );
@@ -150,14 +150,14 @@ public abstract class AlgOptRule {
 
 
     /**
-     * Creates an operand that matches a relational expression that has a particular trait and predicate.
+     * Creates an operand that matches an algebra expression that has a particular trait and predicate.
      *
-     * @param clazz Class of relational expression to match (must not be null)
+     * @param clazz Class of algebra expression to match (must not be null)
      * @param trait Trait to match, or null to match any trait
      * @param predicate Additional match predicate
      * @param operandList Child operands
-     * @param <R> Class of relational expression to match
-     * @return Operand that matches a relational expression that has a particular trait and predicate
+     * @param <R> Class of algebra expression to match
+     * @return Operand that matches a algebra expression that has a particular trait and predicate
      */
     public static <R extends AlgNode> AlgOptRuleOperand operand( Class<R> clazz, AlgTrait<?> trait, Predicate<? super R> predicate, AlgOptRuleOperandChildren operandList ) {
         return new AlgOptRuleOperand( clazz, trait, predicate, operandList.policy, operandList.operands );
@@ -167,14 +167,14 @@ public abstract class AlgOptRule {
 
 
     /**
-     * Creates an operand that matches a relational expression that has no children.
+     * Creates an operand that matches an algebra expression that has no children.
      *
-     * @param clazz Class of relational expression to match (must not be null)
+     * @param clazz Class of algebra expression to match (must not be null)
      * @param trait Trait to match, or null to match any trait
      * @param predicate Additional match predicate
      * @param first First operand
      * @param rest Rest operands
-     * @param <R> Class of relational expression to match
+     * @param <R> Class of algebra expression to match
      * @return Operand
      */
     public static <R extends AlgNode> AlgOptRuleOperand operand( Class<R> clazz, AlgTrait<?> trait, Predicate<? super R> predicate, AlgOptRuleOperand first, AlgOptRuleOperand... rest ) {
@@ -183,19 +183,19 @@ public abstract class AlgOptRule {
 
 
     /**
-     * Creates an operand that matches a relational expression with a given list of children.
+     * Creates an operand that matches an algebra expression with a given list of children.
      * <p>
      * Shorthand for <code>operand(clazz, some(...))</code>.
      * <p>
-     * If you wish to match a relational expression that has no children (that is, a leaf node), write <code>operand(clazz, none())</code>.
+     * If you wish to match an algebra expression that has no children (that is, a leaf node), write <code>operand(clazz, none())</code>.
      * <p>
-     * If you wish to match a relational expression that has any number of children, write <code>operand(clazz, any())</code>.
+     * If you wish to match an algebra expression that has any number of children, write <code>operand(clazz, any())</code>.
      *
-     * @param clazz Class of relational expression to match (must not be null)
+     * @param clazz Class of algebra expression to match (must not be null)
      * @param first First operand
      * @param rest Rest operands
-     * @param <R> Class of relational expression to match
-     * @return Operand that matches a relational expression with a given list of children
+     * @param <R> Class of algebra expression to match
+     * @return Operand that matches an algebra expression with a given list of children
      */
     public static <R extends AlgNode> AlgOptRuleOperand operand( Class<R> clazz, AlgOptRuleOperand first, AlgOptRuleOperand... rest ) {
         return operand( clazz, some( first, rest ) );
@@ -205,9 +205,9 @@ public abstract class AlgOptRule {
     /**
      * Creates an operand for a converter rule.
      *
-     * @param clazz Class of relational expression to match (must not be null)
+     * @param clazz Class of algebra expression to match (must not be null)
      * @param trait Trait to match, or null to match any trait
-     * @param predicate Predicate to apply to relational expression
+     * @param predicate Predicate to apply to algebra expression
      */
     protected static <R extends AlgNode> ConverterAlgOptRuleOperand convertOperand( Class<R> clazz, Predicate<? super R> predicate, AlgTrait<?> trait ) {
         return new ConverterAlgOptRuleOperand( clazz, trait, predicate );
@@ -215,11 +215,11 @@ public abstract class AlgOptRule {
 
 
     /**
-     * Creates a list of child operands that matches child relational expressions in the order they appear.
+     * Creates a list of child operands that matches child algebra expressions in the order they appear.
      *
      * @param first First child operand
      * @param rest Remaining child operands (maybe empty)
-     * @return List of child operands that matches child relational expressions in the order
+     * @return List of child operands that matches child algebra expressions in the order
      */
     public static AlgOptRuleOperandChildren some( AlgOptRuleOperand first, AlgOptRuleOperand... rest ) {
         return new AlgOptRuleOperandChildren( AlgOptRuleOperandChildPolicy.SOME, Lists.asList( first, rest ) );
@@ -227,13 +227,13 @@ public abstract class AlgOptRule {
 
 
     /**
-     * Creates a list of child operands that matches child relational expressions in any order.
+     * Creates a list of child operands that matches child algebra expressions in any order.
      * <p>
-     * This is useful when matching a relational expression which can have a variable number of children. For example, the rule to eliminate empty children of a Union would have operands.
+     * This is useful when matching an algebra expression which can have a variable number of children. For example, the rule to eliminate empty children of a Union would have operands.
      *
      * <blockquote>Operand(Union, true, Operand(Empty))</blockquote>
      *
-     * and given the relational expressions
+     * and given the algebra expressions
      *
      * <blockquote>Union(LogicalFilter, Empty, LogicalProject)</blockquote>
      *
@@ -245,7 +245,7 @@ public abstract class AlgOptRule {
      *
      * @param first First child operand
      * @param rest Remaining child operands (maybe empty)
-     * @return List of child operands that matches child relational expressions in any order
+     * @return List of child operands that matches child algebra expressions in any order
      */
     public static AlgOptRuleOperandChildren unordered( AlgOptRuleOperand first, AlgOptRuleOperand... rest ) {
         return new AlgOptRuleOperandChildren( AlgOptRuleOperandChildPolicy.UNORDERED, Lists.asList( first, rest ) );
@@ -263,9 +263,9 @@ public abstract class AlgOptRule {
 
 
     /**
-     * Creates a list of child operands that signifies that the operand matches any number of child relational expressions.
+     * Creates a list of child operands that signifies that the operand matches any number of child algebra expressions.
      *
-     * @return List of child operands that signifies that the operand matches any number of child relational expressions
+     * @return List of child operands that signifies that the operand matches any number of child algebra expressions
      */
     public static AlgOptRuleOperandChildren any() {
         return AlgOptRuleOperandChildren.ANY_CHILDREN;
@@ -381,10 +381,10 @@ public abstract class AlgOptRule {
     /**
      * Returns whether this rule could possibly match the given operands.
      * <p>
-     * This method is an opportunity to apply side-conditions to a rule. The {@link AlgOptPlanner} calls this method after matching all operands of the rule,
+     * This method is an opportunity to apply side-conditions to a rule. The {@link AlgPlanner} calls this method after matching all operands of the rule,
      * and before calling {@link #onMatch(AlgOptRuleCall)}.
      * <p>
-     * In implementations of {@link AlgOptPlanner} which may queue up a matched {@link AlgOptRuleCall} for a long time before calling {@link #onMatch(AlgOptRuleCall)},
+     * In implementations of {@link AlgPlanner} which may queue up a matched {@link AlgOptRuleCall} for a long time before calling {@link #onMatch(AlgOptRuleCall)},
      * this method is beneficial because it allows the planner to discard rules earlier in the process.
      * <p>
      * The default implementation of this method returns <code>true</code>. It is acceptable for any implementation of this method to give a false positives, that is,
@@ -459,10 +459,10 @@ public abstract class AlgOptRule {
      *
      * @param alg Algebraic expression to convert
      * @param toTraits desired traits
-     * @return a relational expression with the desired traits; never null
+     * @return an algebra expression with the desired traits; never null
      */
     public static AlgNode convert( AlgNode alg, AlgTraitSet toTraits ) {
-        AlgOptPlanner planner = alg.getCluster().getPlanner();
+        AlgPlanner planner = alg.getCluster().getPlanner();
 
         if ( alg.getTraitSet().size() < toTraits.size() ) {
             new AlgTraitPropagationVisitor( planner, toTraits ).go( alg );
@@ -485,14 +485,14 @@ public abstract class AlgOptRule {
 
 
     /**
-     * Converts one trait of a relational expression, if it does not already have that trait.
+     * Converts one trait of an algebra expression, if it does not already have that trait.
      *
      * @param alg Relational expression to convert
      * @param toTrait Desired trait
-     * @return a relational expression with the desired trait; never null
+     * @return an algebra expression with the desired trait; never null
      */
     public static AlgNode convert( AlgNode alg, AlgTrait<?> toTrait ) {
-        AlgOptPlanner planner = alg.getCluster().getPlanner();
+        AlgPlanner planner = alg.getCluster().getPlanner();
         AlgTraitSet outTraits = alg.getTraitSet();
         if ( toTrait != null ) {
             outTraits = outTraits.replace( toTrait );
@@ -507,11 +507,11 @@ public abstract class AlgOptRule {
 
 
     /**
-     * Converts a list of relational expressions.
+     * Converts a list of algebra expressions.
      *
      * @param algs Algebraic expressions
-     * @param trait Trait to add to each relational expression
-     * @return List of converted relational expressions, never null
+     * @param trait Trait to add to each algebra expression
+     * @return List of converted algebra expressions, never null
      */
     protected static List<AlgNode> convertList( List<AlgNode> algs, final AlgTrait<?> trait ) {
         return algs.stream().map( alg -> convert( alg, alg.getTraitSet().replace( trait ) ) ).toList();

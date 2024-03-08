@@ -55,7 +55,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.processing.DataMigrator;
@@ -419,7 +419,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
 
     private void prepareSourceAlg( Statement sourceStatement, AlgCollation algCollation, AlgNode sourceRel ) {
-        AlgOptCluster cluster = AlgOptCluster.create(
+        AlgCluster cluster = AlgCluster.create(
                 sourceStatement.getQueryProcessor().getPlanner(),
                 new RexBuilder( sourceStatement.getTransaction().getTypeFactory() ), null, sourceStatement.getDataContext().getSnapshot() );
 
@@ -427,14 +427,14 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
     }
 
 
-    public void prepareNode( AlgNode viewLogicalRoot, AlgOptCluster algOptCluster, AlgCollation algCollation ) {
+    public void prepareNode( AlgNode viewLogicalRoot, AlgCluster algCluster, AlgCollation algCollation ) {
         if ( viewLogicalRoot instanceof AbstractAlgNode abstractAlgNode ) {
-            abstractAlgNode.setCluster( algOptCluster );
+            abstractAlgNode.setCluster( algCluster );
 
             List<AlgCollation> algCollations = new ArrayList<>();
             algCollations.add( algCollation );
             AlgTraitSet traitSetTest =
-                    algOptCluster.traitSetOf( Convention.NONE )
+                    algCluster.traitSetOf( Convention.NONE )
                             .replaceIfs(
                                     AlgCollationTraitDef.INSTANCE,
                                     () -> {
@@ -447,13 +447,13 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
             abstractAlgNode.setTraitSet( traitSetTest );
         }
         if ( viewLogicalRoot instanceof BiAlg biAlg ) {
-            prepareNode( biAlg.getLeft(), algOptCluster, algCollation );
-            prepareNode( biAlg.getRight(), algOptCluster, algCollation );
+            prepareNode( biAlg.getLeft(), algCluster, algCollation );
+            prepareNode( biAlg.getRight(), algCluster, algCollation );
         } else if ( viewLogicalRoot instanceof SingleAlg singleAlg ) {
-            prepareNode( singleAlg.getInput(), algOptCluster, algCollation );
+            prepareNode( singleAlg.getInput(), algCluster, algCollation );
         }
         if ( viewLogicalRoot instanceof LogicalRelViewScan scan ) {
-            prepareNode( scan.getAlgNode(), algOptCluster, algCollation );
+            prepareNode( scan.getAlgNode(), algCluster, algCollation );
         }
     }
 

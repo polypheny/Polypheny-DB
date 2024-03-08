@@ -31,9 +31,9 @@ import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.JoinInfo;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
@@ -48,7 +48,7 @@ public class EnumerableThetaJoin extends Join implements EnumerableAlg {
     /**
      * Creates an EnumerableThetaJoin.
      */
-    protected EnumerableThetaJoin( AlgOptCluster cluster, AlgTraitSet traits, AlgNode left, AlgNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinAlgType joinType ) throws InvalidAlgException {
+    protected EnumerableThetaJoin( AlgCluster cluster, AlgTraitSet traits, AlgNode left, AlgNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinAlgType joinType ) throws InvalidAlgException {
         super( cluster, traits, left, right, condition, variablesSet, joinType );
     }
 
@@ -68,7 +68,7 @@ public class EnumerableThetaJoin extends Join implements EnumerableAlg {
      * Creates an EnumerableThetaJoin.
      */
     public static EnumerableThetaJoin create( AlgNode left, AlgNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinAlgType joinType ) throws InvalidAlgException {
-        final AlgOptCluster cluster = left.getCluster();
+        final AlgCluster cluster = left.getCluster();
         final AlgMetadataQuery mq = cluster.getMetadataQuery();
         final AlgTraitSet traitSet =
                 cluster.traitSetOf( EnumerableConvention.INSTANCE )
@@ -78,7 +78,7 @@ public class EnumerableThetaJoin extends Join implements EnumerableAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         double rowCount = mq.getTupleCount( this );
 
         // Joins can be flipped, and for many algorithms, both versions are viable and have the same cost. To make the results stable between versions of the planner,

@@ -59,9 +59,9 @@ import org.polypheny.db.algebra.core.JoinInfo;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
@@ -74,7 +74,7 @@ import org.polypheny.db.util.Pair;
  */
 public class EnumerableMergeJoin extends EquiJoin implements EnumerableAlg {
 
-    EnumerableMergeJoin( AlgOptCluster cluster, AlgTraitSet traits, AlgNode left, AlgNode right, RexNode condition, ImmutableList<Integer> leftKeys, ImmutableList<Integer> rightKeys, Set<CorrelationId> variablesSet, JoinAlgType joinType ) throws InvalidAlgException {
+    EnumerableMergeJoin( AlgCluster cluster, AlgTraitSet traits, AlgNode left, AlgNode right, RexNode condition, ImmutableList<Integer> leftKeys, ImmutableList<Integer> rightKeys, Set<CorrelationId> variablesSet, JoinAlgType joinType ) throws InvalidAlgException {
         super( cluster, traits, left, right, condition, leftKeys, rightKeys, variablesSet, joinType );
         final List<AlgCollation> collations = traits.getTraits( AlgCollationTraitDef.INSTANCE );
         assert collations == null || AlgCollations.contains( collations, leftKeys );
@@ -82,7 +82,7 @@ public class EnumerableMergeJoin extends EquiJoin implements EnumerableAlg {
 
 
     public static EnumerableMergeJoin create( AlgNode left, AlgNode right, RexLiteral condition, ImmutableList<Integer> leftKeys, ImmutableList<Integer> rightKeys, JoinAlgType joinType ) throws InvalidAlgException {
-        final AlgOptCluster cluster = right.getCluster();
+        final AlgCluster cluster = right.getCluster();
         AlgTraitSet traitSet = cluster.traitSet();
         if ( traitSet.isEnabled( AlgCollationTraitDef.INSTANCE ) ) {
             final AlgMetadataQuery mq = cluster.getMetadataQuery();
@@ -107,7 +107,7 @@ public class EnumerableMergeJoin extends EquiJoin implements EnumerableAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         // We assume that the inputs are sorted. The price of sorting them has already been paid. The cost of the join is therefore proportional to the input and output size.
         final double rightRowCount = right.estimateTupleCount( mq );
         final double leftRowCount = left.estimateTupleCount( mq );

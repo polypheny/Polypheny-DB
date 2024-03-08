@@ -47,7 +47,7 @@ import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMdDistribution;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
@@ -69,7 +69,7 @@ public class EnumerableLimit extends SingleAlg implements EnumerableAlg {
      * <p>
      * Use {@link #create} unless you know what you're doing.
      */
-    public EnumerableLimit( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, RexNode offset, RexNode fetch ) {
+    public EnumerableLimit( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, RexNode offset, RexNode fetch ) {
         super( cluster, traitSet, input );
         this.offset = offset;
         this.fetch = fetch;
@@ -82,7 +82,7 @@ public class EnumerableLimit extends SingleAlg implements EnumerableAlg {
      * Creates an EnumerableLimit.
      */
     public static EnumerableLimit create( final AlgNode input, RexNode offset, RexNode fetch ) {
-        final AlgOptCluster cluster = input.getCluster();
+        final AlgCluster cluster = input.getCluster();
         final AlgMetadataQuery mq = cluster.getMetadataQuery();
         final AlgTraitSet traitSet =
                 cluster.traitSetOf( EnumerableConvention.INSTANCE )

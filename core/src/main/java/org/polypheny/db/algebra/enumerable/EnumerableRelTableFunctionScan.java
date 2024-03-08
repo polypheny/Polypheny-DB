@@ -47,7 +47,7 @@ import org.polypheny.db.algebra.fun.TableFunction;
 import org.polypheny.db.algebra.fun.UserDefined;
 import org.polypheny.db.algebra.metadata.AlgColumnMapping;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
@@ -60,7 +60,7 @@ import org.polypheny.db.schema.types.QueryableEntity;
  */
 public class EnumerableRelTableFunctionScan extends RelTableFunctionScan implements EnumerableAlg {
 
-    public EnumerableRelTableFunctionScan( AlgOptCluster cluster, AlgTraitSet traits, List<AlgNode> inputs, Type elementType, AlgDataType rowType, RexNode call, Set<AlgColumnMapping> columnMappings ) {
+    public EnumerableRelTableFunctionScan( AlgCluster cluster, AlgTraitSet traits, List<AlgNode> inputs, Type elementType, AlgDataType rowType, RexNode call, Set<AlgColumnMapping> columnMappings ) {
         super( cluster, traits, inputs, call, elementType, rowType, columnMappings );
     }
 

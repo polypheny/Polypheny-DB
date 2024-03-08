@@ -36,7 +36,7 @@ package org.polypheny.db.algebra.stream;
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
 
@@ -49,7 +49,7 @@ import org.polypheny.db.plan.AlgTraitSet;
  */
 public class Chi extends SingleAlg {
 
-    protected Chi( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input ) {
+    protected Chi( AlgCluster cluster, AlgTraitSet traits, AlgNode input ) {
         super( cluster, traits, input );
     }
 

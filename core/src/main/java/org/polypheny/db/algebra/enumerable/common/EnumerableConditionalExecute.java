@@ -26,13 +26,13 @@ import org.polypheny.db.algebra.core.common.ConditionalExecute;
 import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
 
 public class EnumerableConditionalExecute extends ConditionalExecute implements EnumerableAlg {
 
-    private EnumerableConditionalExecute( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode left, AlgNode right, Condition condition, Class<? extends Exception> exceptionClass, String exceptionMessage ) {
+    private EnumerableConditionalExecute( AlgCluster cluster, AlgTraitSet traitSet, AlgNode left, AlgNode right, Condition condition, Class<? extends Exception> exceptionClass, String exceptionMessage ) {
         super( cluster, traitSet, left, right, condition, exceptionClass, exceptionMessage );
     }
 

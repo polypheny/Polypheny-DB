@@ -48,7 +48,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
@@ -61,11 +61,11 @@ import org.polypheny.db.util.BuiltInMethod;
  */
 class LixToAlgTranslator {
 
-    final AlgOptCluster cluster;
+    final AlgCluster cluster;
     final JavaTypeFactory typeFactory;
 
 
-    LixToAlgTranslator( AlgOptCluster cluster ) {
+    LixToAlgTranslator( AlgCluster cluster ) {
         this.cluster = cluster;
         this.typeFactory = (JavaTypeFactory) cluster.getTypeFactory();
     }

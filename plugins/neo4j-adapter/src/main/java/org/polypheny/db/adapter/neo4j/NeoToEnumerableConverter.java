@@ -32,9 +32,9 @@ import org.polypheny.db.algebra.enumerable.PhysType;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.schema.trait.ModelTrait;
@@ -54,13 +54,13 @@ public class NeoToEnumerableConverter extends ConverterImpl implements Enumerabl
      * @param traits the output traits of this converter
      * @param child child alg (provides input traits)
      */
-    protected NeoToEnumerableConverter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child ) {
+    protected NeoToEnumerableConverter( AlgCluster cluster, AlgTraitSet traits, AlgNode child ) {
         super( cluster, ConventionTraitDef.INSTANCE, traits, child );
     }
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 0.8 );
     }
 
@@ -129,7 +129,7 @@ public class NeoToEnumerableConverter extends ConverterImpl implements Enumerabl
 
 
     /**
-     * Generates the relational specific code representation of the attached child nodes.
+     * Generates the algebra specific code representation of the attached child nodes.
      *
      * @param implementor is used build the code snippets by recursively moving through them
      * @param pref preferred result format, e.g. when SCALAR -> single result gets returned as single element, if ARRAY it is wrapped in an array

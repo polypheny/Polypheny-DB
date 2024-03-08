@@ -20,8 +20,6 @@ import java.io.Reader;
 
 /**
  * Factory for [language]AbstractParserImpl objects.
- *
- * A parser factory allows you to include a custom parser in {@link Planner} created through {@code Frameworks}.
  */
 public interface ParserFactory {
 

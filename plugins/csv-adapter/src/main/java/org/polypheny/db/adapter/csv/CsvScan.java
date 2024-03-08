@@ -49,9 +49,9 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 
 
@@ -66,7 +66,7 @@ public class CsvScan extends RelScan<CsvTable> implements EnumerableAlg {
     final int[] fields;
 
 
-    protected CsvScan( AlgOptCluster cluster, CsvTable table, CsvTranslatableTable csvTable, int[] fields ) {
+    protected CsvScan( AlgCluster cluster, CsvTable table, CsvTranslatableTable csvTable, int[] fields ) {
         super( cluster, cluster.traitSetOf( EnumerableConvention.INSTANCE ), table );
         this.csvTable = csvTable;
         this.fields = fields;
@@ -100,13 +100,13 @@ public class CsvScan extends RelScan<CsvTable> implements EnumerableAlg {
 
 
     @Override
-    public void register( AlgOptPlanner planner ) {
+    public void register( AlgPlanner planner ) {
         planner.addRule( CsvProjectScanRule.INSTANCE );
     }
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         // Multiply the cost by a factor that makes a scan more attractive if it has significantly fewer fields than the original scan.
         //
         // The "+ 2D" on top and bottom keeps the function fairly smooth.

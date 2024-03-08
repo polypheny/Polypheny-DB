@@ -49,9 +49,9 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.rules.JoinAddRedundantSemiJoinRule;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexChecker;
 import org.polypheny.db.rex.RexNode;
@@ -99,7 +99,7 @@ public abstract class Join extends BiAlg {
      * @param joinType Join type
      * @param variablesSet Set variables that are set by the LHS and used by the RHS and are not available to nodes above this Join in the tree
      */
-    protected Join( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode left, AlgNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinAlgType joinType ) {
+    protected Join( AlgCluster cluster, AlgTraitSet traitSet, AlgNode left, AlgNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinAlgType joinType ) {
         super( cluster, traitSet, left, right );
         this.condition = Objects.requireNonNull( condition );
         this.variablesSet = ImmutableSet.copyOf( variablesSet );
@@ -155,7 +155,7 @@ public abstract class Join extends BiAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         // REVIEW jvs: Just for now...
         double rowCount = mq.getTupleCount( this );
         return planner.getCostFactory().makeCost( rowCount, 0, 0 );

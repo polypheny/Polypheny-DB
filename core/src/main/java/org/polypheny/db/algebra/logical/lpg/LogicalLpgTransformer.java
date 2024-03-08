@@ -22,7 +22,7 @@ import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.core.lpg.LpgTransformer;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.type.PolyType;
 
@@ -32,7 +32,7 @@ public class LogicalLpgTransformer extends LpgTransformer {
     /**
      * Subclass of {@link LpgTransformer} not targeted at any particular engine or calling convention.
      */
-    public LogicalLpgTransformer( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, AlgDataType rowType, List<PolyType> operationOrder, Operation operation ) {
+    public LogicalLpgTransformer( AlgCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, AlgDataType rowType, List<PolyType> operationOrder, Operation operation ) {
         super( cluster, traitSet, inputs, rowType, operationOrder, operation );
     }
 

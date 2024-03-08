@@ -38,7 +38,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.polypheny.db.algebra.BiAlg;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 
 
 /**
@@ -50,7 +50,7 @@ abstract class MutableBiAlg extends MutableAlg {
     protected MutableAlg right;
 
 
-    protected MutableBiAlg( MutableAlgType type, AlgOptCluster cluster, AlgDataType rowType, MutableAlg left, MutableAlg right ) {
+    protected MutableBiAlg( MutableAlgType type, AlgCluster cluster, AlgDataType rowType, MutableAlg left, MutableAlg right ) {
         super( cluster, rowType, type );
         this.left = left;
         left.parent = this;

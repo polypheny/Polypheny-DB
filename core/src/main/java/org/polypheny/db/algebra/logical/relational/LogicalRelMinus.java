@@ -40,7 +40,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Minus;
 import org.polypheny.db.algebra.core.relational.RelAlg;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 
@@ -55,7 +55,7 @@ public final class LogicalRelMinus extends Minus implements RelAlg {
      *
      * Use {@link #create} unless you know what you're doing.
      */
-    public LogicalRelMinus( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
+    public LogicalRelMinus( AlgCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
         super( cluster, traitSet, inputs, all );
     }
 
@@ -72,7 +72,7 @@ public final class LogicalRelMinus extends Minus implements RelAlg {
      * Creates a LogicalMinus.
      */
     public static LogicalRelMinus create( List<AlgNode> inputs, boolean all ) {
-        final AlgOptCluster cluster = inputs.get( 0 ).getCluster();
+        final AlgCluster cluster = inputs.get( 0 ).getCluster();
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
         return new LogicalRelMinus( cluster, traitSet, inputs, all );
     }

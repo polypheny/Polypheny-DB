@@ -58,9 +58,9 @@ import org.polypheny.db.util.Util;
 
 
 /**
- * Abstract base for implementations of the {@link AlgOptPlanner} interface.
+ * Abstract base for implementations of the {@link AlgPlanner} interface.
  */
-public abstract class AbstractAlgOptPlanner implements AlgOptPlanner {
+public abstract class AbstractAlgPlanner implements AlgPlanner {
 
     /**
      * Regular expression for integer.
@@ -96,7 +96,7 @@ public abstract class AbstractAlgOptPlanner implements AlgOptPlanner {
     /**
      * Creates an AbstractRelOptPlanner.
      */
-    protected AbstractAlgOptPlanner( AlgOptCostFactory costFactory, Context context ) {
+    protected AbstractAlgPlanner( AlgOptCostFactory costFactory, Context context ) {
         assert costFactory != null;
         this.costFactory = costFactory;
         if ( context == null ) {
@@ -205,7 +205,7 @@ public abstract class AbstractAlgOptPlanner implements AlgOptPlanner {
 
 
     @Override
-    public AlgOptPlanner chooseDelegate() {
+    public AlgPlanner chooseDelegate() {
         return this;
     }
 

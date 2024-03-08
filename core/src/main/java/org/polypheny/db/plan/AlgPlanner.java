@@ -48,10 +48,10 @@ import org.slf4j.Logger;
 
 
 /**
- * A <code>RelOptPlanner</code> is a query optimizer: it transforms a relational expression into a semantically equivalent relational expression, according to
+ * A <code>RelOptPlanner</code> is a query optimizer: it transforms an algebra expression into a semantically equivalent relational expression, according to
  * a given set of rules and a cost model.
  */
-public interface AlgOptPlanner {
+public interface AlgPlanner {
 
     Logger LOGGER = PolyphenyDbTrace.getPlannerTracer();
 
@@ -143,7 +143,7 @@ public interface AlgOptPlanner {
     /**
      * Negotiates an appropriate planner to deal with distributed queries. The idea is that the schemas decide among themselves which has the most knowledge. Right now, the local planner retains control.
      */
-    AlgOptPlanner chooseDelegate();
+    AlgPlanner chooseDelegate();
 
     /**
      * Finds the most efficient expression to implement this query.
@@ -271,7 +271,7 @@ public interface AlgOptPlanner {
     void onCopy( AlgNode alg, AlgNode newAlg );
 
     /**
-     * Thrown by {@link AlgOptPlanner#findBestExp()}.
+     * Thrown by {@link AlgPlanner#findBestExp()}.
      */
     class CannotPlanException extends RuntimeException {
 

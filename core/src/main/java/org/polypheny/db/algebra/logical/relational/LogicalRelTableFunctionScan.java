@@ -43,9 +43,9 @@ import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.algebra.metadata.AlgColumnMapping;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
@@ -66,7 +66,7 @@ public class LogicalRelTableFunctionScan extends RelTableFunctionScan implements
      * @param rowType row type produced by function
      * @param columnMappings column mappings associated with this function
      */
-    public LogicalRelTableFunctionScan( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, RexNode rexCall, Type elementType, AlgDataType rowType, Set<AlgColumnMapping> columnMappings ) {
+    public LogicalRelTableFunctionScan( AlgCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, RexNode rexCall, Type elementType, AlgDataType rowType, Set<AlgColumnMapping> columnMappings ) {
         super( cluster, traitSet, inputs, rexCall, elementType, rowType, columnMappings );
     }
 
@@ -74,7 +74,7 @@ public class LogicalRelTableFunctionScan extends RelTableFunctionScan implements
     /**
      * Creates a LogicalTableFunctionScan.
      */
-    public static LogicalRelTableFunctionScan create( AlgOptCluster cluster, List<AlgNode> inputs, RexNode rexCall, Type elementType, AlgDataType rowType, Set<AlgColumnMapping> columnMappings ) {
+    public static LogicalRelTableFunctionScan create( AlgCluster cluster, List<AlgNode> inputs, RexNode rexCall, Type elementType, AlgDataType rowType, Set<AlgColumnMapping> columnMappings ) {
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
         return new LogicalRelTableFunctionScan( cluster, traitSet, inputs, rexCall, elementType, rowType, columnMappings );
     }
@@ -88,7 +88,7 @@ public class LogicalRelTableFunctionScan extends RelTableFunctionScan implements
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         // REVIEW jvs: what is supposed to be here for an abstract rel?
         return planner.getCostFactory().makeHugeCost();
     }

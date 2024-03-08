@@ -46,11 +46,11 @@ import org.polypheny.db.algebra.metadata.Metadata;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgImplementor;
-import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptNode;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
@@ -213,7 +213,7 @@ public interface AlgNode extends AlgOptNode, Cloneable {
      * @param mq Metadata query
      * @return Cost of this plan (not including children)
      */
-    AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq );
+    AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq );
 
     /**
      * Returns a metadata interface.
@@ -243,7 +243,7 @@ public interface AlgNode extends AlgOptNode, Cloneable {
      * @param planner Planner that plans this relational node
      * @return Relational expression that should be used by the planner
      */
-    AlgNode onRegister( AlgOptPlanner planner );
+    AlgNode onRegister( AlgPlanner planner );
 
     /**
      * Computes the digest, assigns it, and returns it. For planner use only.
@@ -307,12 +307,12 @@ public interface AlgNode extends AlgOptNode, Cloneable {
     /**
      * Registers any special rules specific to this kind of relational expression.
      * <p>
-     * The planner calls this method this first time that it sees a relational expression of this class. The derived class should call {@link AlgOptPlanner#addRule} for each rule,
+     * The planner calls this method this first time that it sees a relational expression of this class. The derived class should call {@link AlgPlanner#addRule} for each rule,
      * and then call {@code super.register}.
      *
      * @param planner Planner to be used to register additional relational expressions
      */
-    void register( AlgOptPlanner planner );
+    void register( AlgPlanner planner );
 
     /**
      * Accepts a visit from a shuttle.
@@ -355,7 +355,7 @@ public interface AlgNode extends AlgOptNode, Cloneable {
      * Else recursively hands call down if view in deeper level
      *
      */
-    default AlgNode unfoldView( @Nullable AlgNode parent, int index, AlgOptCluster cluster ) {
+    default AlgNode unfoldView( @Nullable AlgNode parent, int index, AlgCluster cluster ) {
         int i = 0;
         for ( AlgNode node : getInputs() ) {
             node.unfoldView( this, i++, cluster );
@@ -371,7 +371,7 @@ public interface AlgNode extends AlgOptNode, Cloneable {
         return getInputs().stream().anyMatch( AlgNode::containsView );
     }
 
-    default void replaceCluster( AlgOptCluster cluster ) {
+    default void replaceCluster( AlgCluster cluster ) {
         // empty on purpose
     }
 

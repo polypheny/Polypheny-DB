@@ -4,10 +4,10 @@
  *
  * <h2>Life-cycle</h2>
  *
- * A {@link org.polypheny.db.languages.NodeToAlgConverter} converts an SQL parse tree consisting of {@link org.polypheny.db.interpreter.Node} objects into a relational expression ({@link org.polypheny.db.algebra.AlgNode}).
+ * A {@link org.polypheny.db.languages.NodeToAlgConverter} converts an SQL parse tree consisting of {@link org.polypheny.db.interpreter.Node} objects into an algebra expression ({@link org.polypheny.db.algebra.AlgNode}).
  * Several kinds of nodes in this tree have row expressions ({@link org.polypheny.db.rex.RexNode}).
  *
- * After the relational expression has been optimized, a {@link org.polypheny.db.algebra.enumerable.JavaAlgImplementor} converts it into to a plan. If the plan is a Java parse tree, row-expressions are
+ * After the algebra expression has been optimized, a {@link org.polypheny.db.algebra.enumerable.JavaAlgImplementor} converts it into to a plan. If the plan is a Java parse tree, row-expressions are
  * translated into equivalent Java expressions.
  *
  * <h2>Expressions</h2>
@@ -21,9 +21,9 @@
  * <li>{@link org.polypheny.db.rex.RexVariable} represents a leaf of the tree. It has sub-types:
  * <ul>
  * <li>{@link org.polypheny.db.rex.RexCorrelVariable} is a correlating variable for nested-loop joins</li>
- * <li>{@link org.polypheny.db.rex.RexIndexRef} refers to a field of an input relational expression</li>
+ * <li>{@link org.polypheny.db.rex.RexIndexRef} refers to a field of an input algebra expression</li>
  * <li>{@link org.polypheny.db.rex.RexCall} is a call to an operator or function.  By means of special operators, we can use this construct to represent virtually every non-leaf node in the tree.</li>
- * <li>{@link org.polypheny.db.rex.RexRangeRef} refers to a collection of contiguous fields from an input relational expression. It usually exists only during translation.</li>
+ * <li>{@link org.polypheny.db.rex.RexRangeRef} refers to a collection of contiguous fields from an input algebra expression. It usually exists only during translation.</li>
  * </ul>
  * </li>
  * </ul>

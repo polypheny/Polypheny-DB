@@ -22,7 +22,7 @@ import org.polypheny.db.adapter.neo4j.NeoRelationalImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoRelAlg;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.relational.RelModify;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 
@@ -36,8 +36,8 @@ public class NeoModify extends RelModify<NeoEntity> implements NeoRelAlg {
      * <pre>UPDATE table SET iden1 = exp1, ident2 = exp2  WHERE condition</pre>
      * </blockquote>
      *
-     * @param cluster Cluster this relational expression belongs to
-     * @param traitSet Traits of this relational expression
+     * @param cluster Cluster this algebra expression belongs to
+     * @param traitSet Traits of this algebra expression
      * @param table Target table to modify
      * @param input Sub-query or filter condition
      * @param operation Modify operation (INSERT, UPDATE, DELETE)
@@ -45,7 +45,7 @@ public class NeoModify extends RelModify<NeoEntity> implements NeoRelAlg {
      * @param sourceExpressionList List of value expressions to be set (e.g. exp1, exp2); null if not UPDATE
      * @param flattened Whether set flattens the input row type
      */
-    public NeoModify( AlgOptCluster cluster, AlgTraitSet traitSet, NeoEntity table, AlgNode input, Operation operation, List<String> updateColumnList, List<? extends RexNode> sourceExpressionList, boolean flattened ) {
+    public NeoModify( AlgCluster cluster, AlgTraitSet traitSet, NeoEntity table, AlgNode input, Operation operation, List<String> updateColumnList, List<? extends RexNode> sourceExpressionList, boolean flattened ) {
         super( cluster, traitSet, table, input, operation, updateColumnList, sourceExpressionList, flattened );
     }
 

@@ -45,7 +45,7 @@ import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexLiteral;
@@ -67,7 +67,7 @@ public class LogicalRelValues extends Values implements RelAlg {
      * @param rowType Row type for tuples produced by this rel
      * @param tuples 2-dimensional array of tuple values to be produced; outer list contains tuples; each inner list is one tuple; all tuples must be of same length, conforming to rowType
      */
-    public LogicalRelValues( AlgOptCluster cluster, AlgTraitSet traitSet, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples ) {
+    public LogicalRelValues( AlgCluster cluster, AlgTraitSet traitSet, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples ) {
         super( cluster, rowType, tuples, traitSet.replace( ModelTrait.RELATIONAL ) );
     }
 
@@ -75,7 +75,7 @@ public class LogicalRelValues extends Values implements RelAlg {
     /**
      * Creates a LogicalValues.
      */
-    public static LogicalRelValues create( AlgOptCluster cluster, final AlgDataType rowType, final ImmutableList<ImmutableList<RexLiteral>> tuples ) {
+    public static LogicalRelValues create( AlgCluster cluster, final AlgDataType rowType, final ImmutableList<ImmutableList<RexLiteral>> tuples ) {
         final AlgMetadataQuery mq = cluster.getMetadataQuery();
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE )
                 .replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.values( mq, rowType, tuples ) );
@@ -94,7 +94,7 @@ public class LogicalRelValues extends Values implements RelAlg {
     /**
      * Creates a LogicalValues that outputs no rows of a given row type.
      */
-    public static LogicalRelValues createEmpty( AlgOptCluster cluster, AlgDataType rowType ) {
+    public static LogicalRelValues createEmpty( AlgCluster cluster, AlgDataType rowType ) {
         return create( cluster, rowType, ImmutableList.of() );
     }
 
@@ -102,7 +102,7 @@ public class LogicalRelValues extends Values implements RelAlg {
     /**
      * Creates a LogicalValues that outputs one row and one column.
      */
-    public static LogicalRelValues createOneRow( AlgOptCluster cluster ) {
+    public static LogicalRelValues createOneRow( AlgCluster cluster ) {
         final AlgDataType rowType =
                 cluster.getTypeFactory()
                         .builder()

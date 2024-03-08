@@ -45,9 +45,9 @@ import org.polypheny.db.algebra.enumerable.PhysType;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.type.PolyType;
@@ -60,7 +60,7 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
     private final FileSchema fileSchema;
 
 
-    public FileToEnumerableConverter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, Method enumeratorMethod, FileSchema fileSchema ) {
+    public FileToEnumerableConverter( AlgCluster cluster, AlgTraitSet traits, AlgNode input, Method enumeratorMethod, FileSchema fileSchema ) {
         super( cluster, ConventionTraitDef.INSTANCE, traits, input );
         this.enumeratorMethod = enumeratorMethod;
         this.fileSchema = fileSchema;
@@ -74,7 +74,7 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 0.1 );
     }
 

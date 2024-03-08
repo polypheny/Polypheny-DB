@@ -53,7 +53,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -534,7 +534,7 @@ public class MongoRules {
     public static class MongoDocuments extends DocumentValues implements MongoAlg {
 
 
-        public MongoDocuments( AlgOptCluster cluster, List<PolyDocument> documentTuples, List<RexDynamicParam> dynamicParams, AlgTraitSet traitSet ) {
+        public MongoDocuments( AlgCluster cluster, List<PolyDocument> documentTuples, List<RexDynamicParam> dynamicParams, AlgTraitSet traitSet ) {
             super( cluster, traitSet, documentTuples, dynamicParams );
         }
 

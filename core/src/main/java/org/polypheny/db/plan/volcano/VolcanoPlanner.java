@@ -83,15 +83,15 @@ import org.polypheny.db.algebra.rules.SortRemoveRule;
 import org.polypheny.db.algebra.rules.UnionToDistinctRule;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.plan.AbstractAlgOptPlanner;
+import org.polypheny.db.plan.AbstractAlgPlanner;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptCostFactory;
 import org.polypheny.db.plan.AlgOptListener;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -108,7 +108,7 @@ import org.polypheny.db.util.Util;
  * VolcanoPlanner optimizes queries by transforming expressions selectively according to a dynamic programming algorithm.
  */
 @Slf4j
-public class VolcanoPlanner extends AbstractAlgOptPlanner {
+public class VolcanoPlanner extends AbstractAlgPlanner {
 
     protected static final double COST_IMPROVEMENT = .5;
 
@@ -168,7 +168,7 @@ public class VolcanoPlanner extends AbstractAlgOptPlanner {
      * The importance of algebra expressions.
      *
      * The map contains only RelNodes whose importance has been overridden using
-     * {@link AlgOptPlanner#setImportance(AlgNode, double)}. Other RelNodes are presumed to have 'normal' importance.
+     * {@link AlgPlanner#setImportance(AlgNode, double)}. Other RelNodes are presumed to have 'normal' importance.
      *
      * If a {@link AlgNode} has 0 importance, all {@link AlgOptRuleCall}s using it are ignored, and future
      * RelOptRuleCalls are not queued up.
@@ -487,7 +487,7 @@ public class VolcanoPlanner extends AbstractAlgOptPlanner {
 
     /**
      * Finds the most efficient expression to implement the query given via
-     * {@link AlgOptPlanner#setRoot(AlgNode)}.
+     * {@link AlgPlanner#setRoot(AlgNode)}.
      *
      * The algorithm executes repeatedly in a series of phases. In each phase the exact rules that may be fired varies.
      * The mapping of phases to rule sets is maintained in the {@link #ruleQueue}.

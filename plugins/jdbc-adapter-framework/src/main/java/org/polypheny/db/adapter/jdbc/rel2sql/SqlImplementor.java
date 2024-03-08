@@ -345,7 +345,7 @@ public abstract class SqlImplementor {
 
 
     /**
-     * Creates a result based on a single relational expression.
+     * Creates a result based on a single algebra expression.
      */
     public Result result( SqlNode node, Collection<Clause> clauses, AlgNode alg, Map<String, AlgDataType> aliases ) {
         assert aliases == null
@@ -370,7 +370,7 @@ public abstract class SqlImplementor {
 
 
     /**
-     * Creates a result based on a join. (Each join could contain one or more relational expressions.)
+     * Creates a result based on a join. (Each join could contain one or more algebra expressions.)
      */
     public Result result( SqlNode join, Result leftResult, Result rightResult ) {
         final ImmutableMap.Builder<String, AlgDataType> builder = ImmutableMap.builder();
@@ -1045,8 +1045,8 @@ public abstract class SqlImplementor {
 
 
         /**
-         * Once you have a Result of implementing a child relational expression, call this method to create a Builder to
-         * implement the current relational expression by adding additional clauses to the SQL query.
+         * Once you have a Result of implementing a child algebra expression, call this method to create a Builder to
+         * implement the current algebra expression by adding additional clauses to the SQL query.
          * <p>
          * You need to declare which clauses you intend to add. If the clauses are "later", you can add to the same query.
          * For example, "GROUP BY" comes after "WHERE". But if they are the same or earlier, this method will
@@ -1056,7 +1056,7 @@ public abstract class SqlImplementor {
          * call {@link Builder#result(SqlNode, Collection, AlgNode, Map)} to fix the new query.
          *
          * @param alg Relational expression being implemented
-         * @param clauses Clauses that will be generated to implement current relational expression
+         * @param clauses Clauses that will be generated to implement current algebra expression
          * @return A builder
          */
         public Builder builder( AlgNode alg, boolean explicitColumnNames, Clause... clauses ) {

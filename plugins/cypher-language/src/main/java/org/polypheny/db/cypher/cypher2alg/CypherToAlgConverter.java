@@ -73,7 +73,7 @@ import org.polypheny.db.cypher.pattern.CypherPattern;
 import org.polypheny.db.cypher.query.CypherSingleQuery;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
@@ -96,10 +96,10 @@ public class CypherToAlgConverter {
     private final AlgBuilder algBuilder;
     private final Statement statement;
     private final RexBuilder rexBuilder;
-    private final AlgOptCluster cluster;
+    private final AlgCluster cluster;
 
 
-    public CypherToAlgConverter( Statement statement, AlgBuilder builder, RexBuilder rexBuilder, AlgOptCluster cluster ) {
+    public CypherToAlgConverter( Statement statement, AlgBuilder builder, RexBuilder rexBuilder, AlgCluster cluster ) {
         this.snapshot = statement.getTransaction().getSnapshot();
         this.statement = statement;
         this.algBuilder = builder;
@@ -108,7 +108,7 @@ public class CypherToAlgConverter {
     }
 
 
-    public AlgRoot convert( CypherNode query, ParsedQueryContext parsedContext, AlgOptCluster cluster ) {
+    public AlgRoot convert( CypherNode query, ParsedQueryContext parsedContext, AlgCluster cluster ) {
         long namespaceId = parsedContext.getNamespaceId();
 
         LogicalEntity entity = getEntity( namespaceId, query );
@@ -391,7 +391,7 @@ public class CypherToAlgConverter {
 
     public static class CypherContext {
 
-        public final AlgOptCluster cluster;
+        public final AlgCluster cluster;
         public final AlgBuilder algBuilder;
         public final RexBuilder rexBuilder;
 
@@ -419,7 +419,7 @@ public class CypherToAlgConverter {
         private CypherContext(
                 CypherNode original,
                 LogicalEntity graph,
-                AlgOptCluster cluster,
+                AlgCluster cluster,
                 AlgBuilder algBuilder,
                 RexBuilder rexBuilder,
                 Snapshot snapshot ) {

@@ -29,7 +29,7 @@ import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.sql.language.fun.SqlSingleValueAggFunction;
 import org.polypheny.db.sql.language.fun.SqlSumAggFunction;
@@ -43,7 +43,7 @@ import org.polypheny.db.util.Util;
  */
 public class MongoAggregate extends Aggregate implements MongoAlg {
 
-    public MongoAggregate( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) throws InvalidAlgException {
+    public MongoAggregate( AlgCluster cluster, AlgTraitSet traitSet, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) throws InvalidAlgException {
         super( cluster, traitSet, child, indicator, groupSet, groupSets, aggCalls );
         assert getConvention() == CONVENTION;
         assert getConvention() == child.getConvention();

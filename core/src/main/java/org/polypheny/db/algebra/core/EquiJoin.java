@@ -38,7 +38,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.Objects;
 import java.util.Set;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 
@@ -56,7 +56,7 @@ public abstract class EquiJoin extends Join {
      * Creates an EquiJoin.
      */
     public EquiJoin(
-            AlgOptCluster cluster,
+            AlgCluster cluster,
             AlgTraitSet traits,
             AlgNode left,
             AlgNode right,

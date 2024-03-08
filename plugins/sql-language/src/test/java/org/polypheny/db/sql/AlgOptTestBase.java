@@ -48,10 +48,10 @@ import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.metadata.AlgMetadataProvider;
 import org.polypheny.db.algebra.metadata.ChainedAlgMetadataProvider;
 import org.polypheny.db.algebra.metadata.DefaultAlgMetadataProvider;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.hep.HepPlanner;
 import org.polypheny.db.plan.hep.HepProgram;
 import org.polypheny.db.plan.hep.HepProgramBuilder;
@@ -101,7 +101,7 @@ abstract class AlgOptTestBase extends SqlToAlgTestBase {
      * @param planner Planner
      * @param sql SQL query
      */
-    protected void checkPlanning( AlgOptPlanner planner, String sql ) {
+    protected void checkPlanning( AlgPlanner planner, String sql ) {
         checkPlanning( tester, null, planner, sql );
     }
 
@@ -114,7 +114,7 @@ abstract class AlgOptTestBase extends SqlToAlgTestBase {
      * @param planner Planner
      * @param sql SQL query
      */
-    protected void checkPlanning( Tester tester, HepProgram preProgram, AlgOptPlanner planner, String sql ) {
+    protected void checkPlanning( Tester tester, HepProgram preProgram, AlgPlanner planner, String sql ) {
         checkPlanning( tester, preProgram, planner, sql, false );
     }
 
@@ -128,7 +128,7 @@ abstract class AlgOptTestBase extends SqlToAlgTestBase {
      * @param sql SQL query
      * @param unchanged Whether the rule is to have no effect
      */
-    protected void checkPlanning( Tester tester, HepProgram preProgram, AlgOptPlanner planner, String sql, boolean unchanged ) {
+    protected void checkPlanning( Tester tester, HepProgram preProgram, AlgPlanner planner, String sql, boolean unchanged ) {
         final DiffRepository diffRepos = getDiffRepos();
         String sql2 = diffRepos.expand( "sql", sql );
         final AlgRoot root = tester.convertSqlToAlg( sql2 );
@@ -140,7 +140,7 @@ abstract class AlgOptTestBase extends SqlToAlgTestBase {
         list.add( DefaultAlgMetadataProvider.INSTANCE );
         planner.registerMetadataProviders( list );
         AlgMetadataProvider plannerChain = ChainedAlgMetadataProvider.of( list );
-        final AlgOptCluster cluster = algInitial.getCluster();
+        final AlgCluster cluster = algInitial.getCluster();
         cluster.setMetadataProvider( plannerChain );
 
         AlgNode algBefore;

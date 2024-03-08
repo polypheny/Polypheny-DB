@@ -24,7 +24,7 @@ import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMdDistribution;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 
@@ -39,7 +39,7 @@ public class EnumerableFilter extends Filter implements EnumerableAlg {
      *
      * Use {@link #create} unless you know what you're doing.
      */
-    public EnumerableFilter( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode child, RexNode condition ) {
+    public EnumerableFilter( AlgCluster cluster, AlgTraitSet traitSet, AlgNode child, RexNode condition ) {
         super( cluster, traitSet, child, condition );
         assert getConvention() instanceof EnumerableConvention;
     }
@@ -49,7 +49,7 @@ public class EnumerableFilter extends Filter implements EnumerableAlg {
      * Creates an EnumerableFilter.
      */
     public static EnumerableFilter create( final AlgNode input, RexNode condition ) {
-        final AlgOptCluster cluster = input.getCluster();
+        final AlgCluster cluster = input.getCluster();
         final AlgMetadataQuery mq = cluster.getMetadataQuery();
         final AlgTraitSet traitSet =
                 cluster.traitSetOf( EnumerableConvention.INSTANCE )

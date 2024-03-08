@@ -34,7 +34,6 @@
 package org.polypheny.db.plan;
 
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.HashMap;
 import java.util.List;
@@ -71,7 +70,7 @@ public abstract class AlgOptRuleCall {
     public final AlgNode[] algs;
 
     @Getter
-    private final AlgOptPlanner planner;
+    private final AlgPlanner planner;
 
     @Getter
     private final List<AlgNode> parents;
@@ -82,11 +81,11 @@ public abstract class AlgOptRuleCall {
      *
      * @param planner Planner
      * @param operand Root operand
-     * @param algs Array of relational expressions which matched each operand
+     * @param algs Collection of algebra expressions which matched each operand
      * @param nodeInputs For each node which matched with {@code matchAnyChildren}=true, a list of the node's inputs
-     * @param parents list of parent RelNodes corresponding to the first relational expression in the array argument, if known; otherwise, null
+     * @param parents list of parent AlgNodes corresponding to the first algebra expression in the array argument, if known; otherwise, null
      */
-    protected AlgOptRuleCall( AlgOptPlanner planner, AlgOptRuleOperand operand, AlgNode[] algs, Map<AlgNode, List<AlgNode>> nodeInputs, List<AlgNode> parents ) {
+    protected AlgOptRuleCall( AlgPlanner planner, AlgOptRuleOperand operand, AlgNode[] algs, Map<AlgNode, List<AlgNode>> nodeInputs, List<AlgNode> parents ) {
         this.id = nextId++;
         this.planner = planner;
         this.operand0 = operand;
@@ -98,24 +97,13 @@ public abstract class AlgOptRuleCall {
     }
 
 
-    protected AlgOptRuleCall( AlgOptPlanner planner, AlgOptRuleOperand operand, AlgNode[] algs, Map<AlgNode, List<AlgNode>> nodeInputs ) {
+    protected AlgOptRuleCall( AlgPlanner planner, AlgOptRuleOperand operand, AlgNode[] algs, Map<AlgNode, List<AlgNode>> nodeInputs ) {
         this( planner, operand, algs, nodeInputs, null );
     }
 
 
     /**
-     * Returns a list of matched relational expressions.
-     *
-     * @return matched relational expressions
-     * @see #alg(int)
-     */
-    public List<AlgNode> getAlgList() {
-        return ImmutableList.copyOf( algs );
-    }
-
-
-    /**
-     * Retrieves the {@code ordinal}th matched relational expression. This corresponds to the {@code ordinal}th operand of the rule.
+     * Retrieves the {@code ordinal}th matched algebra expression. This corresponds to the {@code ordinal}th operand of the rule.
      *
      * @param ordinal Ordinal
      * @param <T> Type
@@ -128,16 +116,16 @@ public abstract class AlgOptRuleCall {
 
 
     /**
-     * Returns the children of a given relational expression node matched in a rule.
-     *
+     * Returns the children of a given algebra expression node matched in a rule.
+     * <p>
      * If the policy of the operand which caused the match is not {@link AlgOptRuleOperandChildPolicy#ANY}, the children will have their
-     * own operands and therefore be easily available in the array returned by the {@link #getAlgList()} method, so this method returns null.
-     *
+     * own operands, so this method returns null.
+     * <p>
      * This method is for {@link AlgOptRuleOperandChildPolicy#ANY}, which is generally used when a node can have a variable number of
      * children, and hence where the matched children are not retrievable by any other means.
      *
      * @param alg Relational expression
-     * @return Children of relational expression
+     * @return Children of algebra expression
      */
     public List<AlgNode> getChildAlgs( AlgNode alg ) {
         return nodeInputs.get( alg );
@@ -145,7 +133,7 @@ public abstract class AlgOptRuleCall {
 
 
     /**
-     * Assigns the input relational expressions of a given relational expression, as seen by this particular call. Is only called when the operand is {@link AlgOptRule#any()}.
+     * Assigns the input algebra expressions of a given algebra expression, as seen by this particular call. Is only called when the operand is {@link AlgOptRule#any()}.
      */
     protected void setChildAlgs( AlgNode alg, List<AlgNode> inputs ) {
         if ( nodeInputs.isEmpty() ) {
@@ -165,7 +153,7 @@ public abstract class AlgOptRuleCall {
 
     /**
      * Registers that a rule has produced an equivalent algebraic expression.
-     *
+     * <p>
      * Called by the rule whenever it finds a match. The implementation of this method guarantees that the original algebraic expression (that is, <code>this.algs[0]</code>)
      * has its traits propagated to the new algebraic expression (<code>alg</code>) and its unregistered children. Any trait not specifically set in the AlgTraitSet returned by
      * <code>alg.getTraits()</code> will be copied from <code>this.algs[0].getTraitSet()</code>.

@@ -943,7 +943,7 @@ public class DbmsMeta implements ProtobufMeta {
     /**
      * Creates an iterable for a result set.
      * <p>
-     * The default implementation just returns {@code iterable}, which it requires to be not null; derived classes may instead choose to execute the relational
+     * The default implementation just returns {@code iterable}, which it requires to be not null; derived classes may instead choose to execute the algebra
      * expression in {@code signature}.
      */
     @Override

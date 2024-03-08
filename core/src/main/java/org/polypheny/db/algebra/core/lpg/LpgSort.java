@@ -19,7 +19,7 @@ package org.polypheny.db.algebra.core.lpg;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
@@ -31,7 +31,7 @@ public abstract class LpgSort extends Sort implements LpgAlg {
      * Creates a {@link LpgSort}.
      * {@link ModelTrait#GRAPH} native node of a sort operation.
      */
-    public LpgSort( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, AlgCollation collation, RexNode offset, RexNode fetch ) {
+    public LpgSort( AlgCluster cluster, AlgTraitSet traits, AlgNode child, AlgCollation collation, RexNode offset, RexNode fetch ) {
         super( cluster, traits, child, collation, null, offset, fetch );
     }
 

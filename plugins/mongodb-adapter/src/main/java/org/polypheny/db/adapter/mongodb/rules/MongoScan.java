@@ -29,10 +29,10 @@ import org.polypheny.db.algebra.core.common.Scan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.logistic.DataModel;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.trait.ModelTraitDef;
 import org.polypheny.db.util.Pair;
@@ -53,7 +53,7 @@ public class MongoScan extends Scan<MongoEntity> implements MongoAlg {
      * @param traitSet Traits
      * @param table Table
      */
-    public MongoScan( AlgOptCluster cluster, AlgTraitSet traitSet, MongoEntity table ) {
+    public MongoScan( AlgCluster cluster, AlgTraitSet traitSet, MongoEntity table ) {
         super( cluster, traitSet, table );
         this.rowType = table.getTupleType( cluster.getTypeFactory() );
 
@@ -75,7 +75,7 @@ public class MongoScan extends Scan<MongoEntity> implements MongoAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         // scans with a small project list are cheaper
         final float f = getTupleType().getFieldCount() / 100f;
         return super.computeSelfCost( planner, mq ).multiplyBy( .1 * f );
@@ -83,7 +83,7 @@ public class MongoScan extends Scan<MongoEntity> implements MongoAlg {
 
 
     @Override
-    public void register( AlgOptPlanner planner ) {
+    public void register( AlgPlanner planner ) {
         for ( AlgOptRule rule : MongoRules.RULES ) {
             planner.addRuleDuringRuntime( rule );
         }

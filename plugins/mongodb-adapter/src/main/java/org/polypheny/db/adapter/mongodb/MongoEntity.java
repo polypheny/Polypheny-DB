@@ -91,7 +91,7 @@ import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
@@ -170,7 +170,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
 
 
     @Override
-    public AlgNode toAlg( AlgOptCluster cluster, AlgTraitSet traitSet ) {
+    public AlgNode toAlg( AlgCluster cluster, AlgTraitSet traitSet ) {
         return new MongoScan( cluster, traitSet.replace( MongoAlg.CONVENTION ), this );
     }
 
@@ -281,7 +281,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
 
     @Override
     public Modify<?> toModificationTable(
-            AlgOptCluster cluster,
+            AlgCluster cluster,
             AlgTraitSet traitSet,
             Entity table,
             AlgNode child,
@@ -301,7 +301,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
 
     @Override
     public Modify<?> toModificationCollection(
-            AlgOptCluster cluster,
+            AlgCluster cluster,
             AlgTraitSet traits,
             Entity collection,
             AlgNode child,

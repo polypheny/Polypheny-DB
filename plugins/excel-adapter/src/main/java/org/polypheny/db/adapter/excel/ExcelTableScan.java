@@ -32,9 +32,9 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 
 public class ExcelTableScan extends RelScan<ExcelTable> implements EnumerableAlg {
@@ -43,7 +43,7 @@ public class ExcelTableScan extends RelScan<ExcelTable> implements EnumerableAlg
     final int[] fields;
 
 
-    protected ExcelTableScan( ExcelTable table, AlgOptCluster cluster, ExcelTranslatableTable excelTable, int[] fields ) {
+    protected ExcelTableScan( ExcelTable table, AlgCluster cluster, ExcelTranslatableTable excelTable, int[] fields ) {
         super( cluster, cluster.traitSetOf( EnumerableConvention.INSTANCE ), table );
         this.excelTable = excelTable;
         this.fields = fields;
@@ -77,13 +77,13 @@ public class ExcelTableScan extends RelScan<ExcelTable> implements EnumerableAlg
 
 
     @Override
-    public void register( AlgOptPlanner planner ) {
+    public void register( AlgPlanner planner ) {
         //planner.addRule( ExcelProjectTableScanRule.INSTANCE );
     }
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         // Multiply the cost by a factor that makes a scan more attractive if it has significantly fewer fields than the original scan.
         //
         // The "+ 2D" on top and bottom keeps the function fairly smooth.

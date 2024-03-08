@@ -42,7 +42,7 @@ import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 
 
@@ -83,7 +83,7 @@ public class HepAlgVertex extends AbstractAlgNode {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         // HepAlgMetadataProvider is supposed to intercept this and redirect to the real rels. But sometimes it doesn't.
         return planner.getCostFactory().makeTinyCost();
     }

@@ -56,7 +56,7 @@ public class AlgBuildTestHelper extends CqlTestHelper {
         tableScanOrdinalities = new HashMap<>();
 
         if ( algBuildLevel == AlgBuildLevel.NONE ) {
-//            If NONE, then don't build any relational algebra.
+//            If NONE, then don't build any  algebra.
 //            Else, keep executing more statements.
         } else {
             algBuilder = algBuilder.scan( "test", "employee" );

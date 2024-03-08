@@ -41,9 +41,9 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.interpreter.Row;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.volcano.VolcanoCost;
 import org.polypheny.db.schema.types.FilterableEntity;
@@ -68,7 +68,7 @@ public class EnumerableScan extends RelScan<PhysicalTable> implements Enumerable
      *
      * Use {@link #create} unless you know what you are doing.
      */
-    public EnumerableScan( AlgOptCluster cluster, AlgTraitSet traitSet, PhysicalTable table, Class<?> elementType ) {
+    public EnumerableScan( AlgCluster cluster, AlgTraitSet traitSet, PhysicalTable table, Class<?> elementType ) {
         super( cluster, traitSet, table );
         assert getConvention() instanceof EnumerableConvention;
         this.elementType = elementType;
@@ -78,7 +78,7 @@ public class EnumerableScan extends RelScan<PhysicalTable> implements Enumerable
     /**
      * Creates an EnumerableScan.
      */
-    public static EnumerableScan create( AlgOptCluster cluster, Entity entity ) {
+    public static EnumerableScan create( AlgCluster cluster, Entity entity ) {
         PhysicalTable oPhysicalTable = entity.unwrap( PhysicalTable.class ).orElseThrow();
         Class<?> elementType = EnumerableScan.deduceElementType( oPhysicalTable );
         final AlgTraitSet traitSet =
@@ -255,7 +255,7 @@ public class EnumerableScan extends RelScan<PhysicalTable> implements Enumerable
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         if ( Catalog.mode == RunMode.TEST ) {
             // normally this enumerable is not used by Polypheny and is therefore "removed" by an infinite cost,
             // but theoretically it is able to handle scans on the application layer

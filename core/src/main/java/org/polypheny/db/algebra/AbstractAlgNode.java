@@ -54,10 +54,10 @@ import org.polypheny.db.algebra.metadata.Metadata;
 import org.polypheny.db.algebra.metadata.MetadataFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.Entity;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -110,7 +110,7 @@ public abstract class AbstractAlgNode implements AlgNode {
     // Setter is used to set the cluster in Views
     @Setter
     @Getter
-    private transient AlgOptCluster cluster;
+    private transient AlgCluster cluster;
 
     /**
      * unique id of this object -- for debugging
@@ -130,7 +130,7 @@ public abstract class AbstractAlgNode implements AlgNode {
     /**
      * Creates an <code>AbstractAlgNode</code>.
      */
-    public AbstractAlgNode( AlgOptCluster cluster, AlgTraitSet traitSet ) {
+    public AbstractAlgNode( AlgCluster cluster, AlgTraitSet traitSet ) {
         super();
         assert cluster != null;
         this.cluster = cluster;
@@ -184,7 +184,7 @@ public abstract class AbstractAlgNode implements AlgNode {
 
 
     @Override
-    public void register( AlgOptPlanner planner ) {
+    public void register( AlgPlanner planner ) {
         Util.discard( planner );
     }
 
@@ -290,7 +290,7 @@ public abstract class AbstractAlgNode implements AlgNode {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         // by default, assume cost is proportional to number of rows
         double tupleCount = mq.getTupleCount( this );
         return planner.getCostFactory().makeCost( tupleCount, tupleCount, 0 );
@@ -332,7 +332,7 @@ public abstract class AbstractAlgNode implements AlgNode {
 
 
     @Override
-    public AlgNode onRegister( AlgOptPlanner planner ) {
+    public AlgNode onRegister( AlgPlanner planner ) {
         List<AlgNode> oldInputs = getInputs();
         List<AlgNode> inputs = new ArrayList<>( oldInputs.size() );
         for ( final AlgNode input : oldInputs ) {
@@ -390,7 +390,7 @@ public abstract class AbstractAlgNode implements AlgNode {
 
 
     @Override
-    public void replaceCluster( AlgOptCluster cluster ) {
+    public void replaceCluster( AlgCluster cluster ) {
         for ( AlgNode input : getInputs() ) {
             input.replaceCluster( cluster );
         }

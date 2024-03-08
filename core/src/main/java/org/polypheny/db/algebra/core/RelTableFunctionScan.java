@@ -49,7 +49,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelTableFunctionScan;
 import org.polypheny.db.algebra.metadata.AlgColumnMapping;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
@@ -85,7 +85,7 @@ public abstract class RelTableFunctionScan extends AbstractAlgNode {
      * @param rowType Row type produced by function
      * @param columnMappings Column mappings associated with this function
      */
-    protected RelTableFunctionScan( AlgOptCluster cluster, AlgTraitSet traits, List<AlgNode> inputs, RexNode rexCall, Type elementType, AlgDataType rowType, Set<AlgColumnMapping> columnMappings ) {
+    protected RelTableFunctionScan( AlgCluster cluster, AlgTraitSet traits, List<AlgNode> inputs, RexNode rexCall, Type elementType, AlgDataType rowType, Set<AlgColumnMapping> columnMappings ) {
         super( cluster, traits );
         this.rexCall = rexCall;
         this.elementType = elementType;

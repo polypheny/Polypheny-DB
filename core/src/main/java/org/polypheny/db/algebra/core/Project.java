@@ -50,9 +50,9 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexChecker;
@@ -71,7 +71,7 @@ import org.polypheny.db.util.mapping.Mappings;
 
 
 /**
- * Relational expression that computes a set of 'select expressions' from its input relational expression.
+ * Relational expression that computes a set of 'select expressions' from its input algebra expression.
  *
  * @see LogicalRelProject
  */
@@ -83,13 +83,13 @@ public abstract class Project extends SingleAlg {
     /**
      * Creates a Project.
      *
-     * @param cluster Cluster that this relational expression belongs to
-     * @param traits Traits of this relational expression
-     * @param input Input relational expression
+     * @param cluster Cluster that this algebra expression belongs to
+     * @param traits Traits of this algebra expression
+     * @param input Input algebra expression
      * @param projects List of expressions for the input columns
      * @param rowType Output row type
      */
-    protected Project( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
+    protected Project( AlgCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
         super( cluster, traits, input );
         assert rowType != null;
         this.exps = ImmutableList.copyOf( projects );
@@ -187,7 +187,7 @@ public abstract class Project extends SingleAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         double dRows = mq.getTupleCount( getInput() );
         double dCpu = dRows * exps.size();
         double dIo = 0;

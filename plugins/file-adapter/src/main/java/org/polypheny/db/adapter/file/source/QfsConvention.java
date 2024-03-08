@@ -23,8 +23,8 @@ import org.polypheny.db.adapter.file.FileConvention;
 import org.polypheny.db.adapter.file.FileMethod;
 import org.polypheny.db.adapter.file.FileSchema;
 import org.polypheny.db.adapter.file.algebra.FileRules;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgPlanner;
 
 
 public class QfsConvention extends FileConvention {
@@ -40,7 +40,7 @@ public class QfsConvention extends FileConvention {
 
 
     @Override
-    public void register( AlgOptPlanner planner ) {
+    public void register( AlgPlanner planner ) {
         for ( AlgOptRule rule : FileRules.rules( this, FileMethod.EXECUTE_QFS.method, getFileSchema() ) ) {
             planner.addRule( rule );
         }

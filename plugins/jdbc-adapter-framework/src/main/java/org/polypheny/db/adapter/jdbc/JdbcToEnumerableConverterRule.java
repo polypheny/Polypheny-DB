@@ -42,7 +42,7 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Rule to convert a relational expression from {@link JdbcConvention} to {@link EnumerableConvention}.
+ * Rule to convert an algebra expression from {@link JdbcConvention} to {@link EnumerableConvention}.
  */
 public class JdbcToEnumerableConverterRule extends ConverterRule {
 

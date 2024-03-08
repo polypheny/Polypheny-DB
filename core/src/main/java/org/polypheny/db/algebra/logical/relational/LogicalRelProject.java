@@ -44,7 +44,7 @@ import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexIndexRef;
@@ -70,7 +70,7 @@ public final class LogicalRelProject extends Project implements RelAlg {
      * @param projects List of expressions for the input columns
      * @param rowType Output row type
      */
-    public LogicalRelProject( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
+    public LogicalRelProject( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
         super( cluster, traitSet.replace( ModelTrait.RELATIONAL ), input, projects, rowType );
         assert traitSet.containsIfApplicable( Convention.NONE );
     }
@@ -80,7 +80,7 @@ public final class LogicalRelProject extends Project implements RelAlg {
      * Creates a LogicalProject.
      */
     public static LogicalRelProject create( final AlgNode input, final List<? extends RexNode> projects, List<String> fieldNames ) {
-        final AlgOptCluster cluster = input.getCluster();
+        final AlgCluster cluster = input.getCluster();
         final AlgDataType rowType = RexUtil.createStructType( cluster.getTypeFactory(), projects, fieldNames, ValidatorUtil.F_SUGGESTER );
         return create( input, projects, rowType );
     }
@@ -90,7 +90,7 @@ public final class LogicalRelProject extends Project implements RelAlg {
      * Creates a LogicalProject, specifying row type rather than field names.
      */
     public static LogicalRelProject create( final AlgNode input, final List<? extends RexNode> projects, AlgDataType rowType ) {
-        final AlgOptCluster cluster = input.getCluster();
+        final AlgCluster cluster = input.getCluster();
         final AlgMetadataQuery mq = cluster.getMetadataQuery();
         final AlgTraitSet traitSet = cluster.traitSet()
                 .replace( Convention.NONE )

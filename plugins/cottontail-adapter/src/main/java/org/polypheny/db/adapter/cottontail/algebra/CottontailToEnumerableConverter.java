@@ -42,9 +42,9 @@ import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.type.ArrayType;
@@ -74,7 +74,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
      * @param traits the output traits of this converter
      * @param child child alg (provides input traits)
      */
-    public CottontailToEnumerableConverter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child ) {
+    public CottontailToEnumerableConverter( AlgCluster cluster, AlgTraitSet traits, AlgNode child ) {
         super( cluster, ConventionTraitDef.INSTANCE, traits, child );
     }
 
@@ -86,7 +86,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( .1 );
     }
 

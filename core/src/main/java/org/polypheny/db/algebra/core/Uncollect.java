@@ -44,7 +44,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelCorrelate;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.type.MapPolyType;
@@ -69,7 +69,7 @@ public class Uncollect extends SingleAlg {
      *
      * Use {@link #create} unless you know what you're doing.
      */
-    public Uncollect( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, boolean withOrdinality ) {
+    public Uncollect( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, boolean withOrdinality ) {
         super( cluster, traitSet, input );
         this.withOrdinality = withOrdinality;
         assert deriveRowType() != null : "invalid child rowtype";
@@ -94,7 +94,7 @@ public class Uncollect extends SingleAlg {
      * @param withOrdinality Whether output should contain an ORDINALITY column
      */
     public static Uncollect create( AlgTraitSet traitSet, AlgNode input, boolean withOrdinality ) {
-        final AlgOptCluster cluster = input.getCluster();
+        final AlgCluster cluster = input.getCluster();
         return new Uncollect( cluster, traitSet, input, withOrdinality );
     }
 

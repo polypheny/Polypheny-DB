@@ -36,7 +36,7 @@ package org.polypheny.db.algebra.mutable;
 
 import java.util.List;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 
 
 /**
@@ -44,7 +44,7 @@ import org.polypheny.db.plan.AlgOptCluster;
  */
 public class MutableUnion extends MutableSetOp {
 
-    private MutableUnion( AlgOptCluster cluster, AlgDataType rowType, List<MutableAlg> inputs, boolean all ) {
+    private MutableUnion( AlgCluster cluster, AlgDataType rowType, List<MutableAlg> inputs, boolean all ) {
         super( cluster, rowType, MutableAlgType.UNION, inputs, all );
     }
 

@@ -69,7 +69,7 @@ import org.polypheny.db.algebra.rules.ProjectScanRule;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.hep.HepPlanner;
 import org.polypheny.db.plan.hep.HepProgram;
 import org.polypheny.db.plan.hep.HepProgramBuilder;
@@ -323,7 +323,7 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
         //private static final String VISIT_METHOD_NAME = "visit";
 
 
-        CompilerImpl( Interpreter interpreter, AlgOptCluster cluster ) {
+        CompilerImpl( Interpreter interpreter, AlgCluster cluster ) {
             this.interpreter = interpreter;
             this.scalarCompiler = new JaninoRexCompiler( cluster.getRexBuilder() );
         }

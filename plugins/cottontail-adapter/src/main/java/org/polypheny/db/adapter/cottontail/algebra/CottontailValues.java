@@ -31,7 +31,7 @@ import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.type.PolyType;
@@ -41,7 +41,7 @@ import org.polypheny.db.util.Pair;
 
 public class CottontailValues extends Values implements CottontailAlg {
 
-    public CottontailValues( AlgOptCluster cluster, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, AlgTraitSet traits ) {
+    public CottontailValues( AlgCluster cluster, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, AlgTraitSet traits ) {
         super( cluster, rowType, tuples, traits );
     }
 

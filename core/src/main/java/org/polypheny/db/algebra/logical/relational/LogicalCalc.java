@@ -47,7 +47,7 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.rules.FilterCalcMergeRule;
 import org.polypheny.db.algebra.rules.FilterToCalcRule;
 import org.polypheny.db.algebra.rules.ProjectToCalcRule;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -77,13 +77,13 @@ public final class LogicalCalc extends Calc implements RelAlg {
     /**
      * Creates a LogicalCalc.
      */
-    public LogicalCalc( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode child, RexProgram program ) {
+    public LogicalCalc( AlgCluster cluster, AlgTraitSet traitSet, AlgNode child, RexProgram program ) {
         super( cluster, traitSet, child, program );
     }
 
 
     public static LogicalCalc create( final AlgNode input, final RexProgram program ) {
-        final AlgOptCluster cluster = input.getCluster();
+        final AlgCluster cluster = input.getCluster();
         final AlgMetadataQuery mq = cluster.getMetadataQuery();
         final AlgTraitSet traitSet = cluster.traitSet()
                 .replace( Convention.NONE )

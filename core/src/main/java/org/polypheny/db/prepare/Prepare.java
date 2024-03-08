@@ -54,8 +54,7 @@ import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.validate.ValidatorTable;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -111,7 +110,7 @@ public abstract class Prepare<T> {
      * @return an equivalent optimized relational expression
      */
     protected AlgRoot optimize( AlgRoot root ) {
-        final AlgOptPlanner planner = root.alg.getCluster().getPlanner();
+        final AlgPlanner planner = root.alg.getCluster().getPlanner();
 
         final DataContext dataContext = context.getDataContext();
         planner.setExecutor( new RexExecutorImpl( dataContext ) );
@@ -126,7 +125,7 @@ public abstract class Prepare<T> {
             @Override
             public void visit( AlgNode node, int ordinal, AlgNode parent ) {
                 if ( node instanceof RelScan ) {
-                    final AlgOptCluster cluster = node.getCluster();
+                    final AlgCluster cluster = node.getCluster();
                     final AlgNode r = node.getEntity().unwrap( TranslatableEntity.class ).orElseThrow().toAlg( cluster, node.getTraitSet() );
                     planner.registerClass( r );
                 }

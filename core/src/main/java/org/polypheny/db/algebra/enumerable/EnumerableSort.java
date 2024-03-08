@@ -25,9 +25,9 @@ import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
@@ -44,7 +44,7 @@ public class EnumerableSort extends Sort implements EnumerableAlg {
      *
      * Use {@link #create} unless you know what you're doing.
      */
-    public EnumerableSort( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, AlgCollation collation, RexNode offset, RexNode fetch ) {
+    public EnumerableSort( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, AlgCollation collation, RexNode offset, RexNode fetch ) {
         super( cluster, traitSet, input, collation, null, offset, fetch );
         assert getConvention() instanceof EnumerableConvention;
         assert getConvention() == input.getConvention();
@@ -55,7 +55,7 @@ public class EnumerableSort extends Sort implements EnumerableAlg {
      * Creates an EnumerableSort.
      */
     public static EnumerableSort create( AlgNode child, AlgCollation collation, RexNode offset, RexNode fetch ) {
-        final AlgOptCluster cluster = child.getCluster();
+        final AlgCluster cluster = child.getCluster();
         final AlgTraitSet traitSet = child.getTraitSet().replace( collation );
         return new EnumerableSort( cluster, traitSet, child, collation, offset, fetch );
     }
@@ -91,7 +91,7 @@ public class EnumerableSort extends Sort implements EnumerableAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 10 );
     }
 

@@ -25,11 +25,11 @@ import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.AlgDistributionTraitDef;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -62,7 +62,7 @@ public class TraitConversionTest {
         planner.addRule( new SingleLeafTraitRule() );
         planner.addRule( ExpandConversionRule.INSTANCE );
 
-        final AlgOptCluster cluster = PlannerTests.newCluster( planner );
+        final AlgCluster cluster = PlannerTests.newCluster( planner );
         final NoneLeafRel leafRel = new NoneLeafRel( cluster, "a" );
         final NoneSingleRel singleRel = new NoneSingleRel( cluster, leafRel );
         final AlgNode convertedRel = planner.changeTraits( singleRel, cluster.traitSetOf( PlannerTests.PHYS_CALLING_CONVENTION ) );
@@ -121,13 +121,13 @@ public class TraitConversionTest {
      */
     private static class RandomSingleRel extends TestSingleAlg {
 
-        RandomSingleRel( AlgOptCluster cluster, AlgNode input ) {
+        RandomSingleRel( AlgCluster cluster, AlgNode input ) {
             super( cluster, cluster.traitSetOf( PlannerTests.PHYS_CALLING_CONVENTION ).plus( SIMPLE_DISTRIBUTION_RANDOM ), input );
         }
 
 
         @Override
-        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
             return planner.getCostFactory().makeTinyCost();
         }
 
@@ -170,13 +170,13 @@ public class TraitConversionTest {
      */
     private static class SingletonLeafRel extends TestLeafAlg {
 
-        SingletonLeafRel( AlgOptCluster cluster, String label ) {
+        SingletonLeafRel( AlgCluster cluster, String label ) {
             super( cluster, cluster.traitSetOf( PlannerTests.PHYS_CALLING_CONVENTION ).plus( SIMPLE_DISTRIBUTION_SINGLETON ), label );
         }
 
 
         @Override
-        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
             return planner.getCostFactory().makeTinyCost();
         }
 
@@ -194,13 +194,13 @@ public class TraitConversionTest {
      */
     private static class BridgeRel extends TestSingleAlg {
 
-        BridgeRel( AlgOptCluster cluster, AlgNode input ) {
+        BridgeRel( AlgCluster cluster, AlgNode input ) {
             super( cluster, cluster.traitSetOf( PlannerTests.PHYS_CALLING_CONVENTION ).plus( SIMPLE_DISTRIBUTION_RANDOM ), input );
         }
 
 
         @Override
-        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
             return planner.getCostFactory().makeTinyCost();
         }
 
@@ -245,7 +245,7 @@ public class TraitConversionTest {
 
 
         @Override
-        public void register( AlgOptPlanner planner ) {
+        public void register( AlgPlanner planner ) {
         }
 
     }
@@ -275,7 +275,7 @@ public class TraitConversionTest {
 
 
         @Override
-        public AlgNode convert( AlgOptPlanner planner, AlgNode alg, SimpleDistribution toTrait, boolean allowInfiniteCostConverters ) {
+        public AlgNode convert( AlgPlanner planner, AlgNode alg, SimpleDistribution toTrait, boolean allowInfiniteCostConverters ) {
             if ( toTrait == SIMPLE_DISTRIBUTION_ANY ) {
                 return alg;
             }
@@ -285,7 +285,7 @@ public class TraitConversionTest {
 
 
         @Override
-        public boolean canConvert( AlgOptPlanner planner, SimpleDistribution fromTrait, SimpleDistribution toTrait ) {
+        public boolean canConvert( AlgPlanner planner, SimpleDistribution fromTrait, SimpleDistribution toTrait ) {
             return (fromTrait == toTrait)
                     || (toTrait == SIMPLE_DISTRIBUTION_ANY)
                     || (fromTrait == SIMPLE_DISTRIBUTION_SINGLETON
@@ -307,7 +307,7 @@ public class TraitConversionTest {
      */
     private static class NoneLeafRel extends TestLeafAlg {
 
-        NoneLeafRel( AlgOptCluster cluster, String label ) {
+        NoneLeafRel( AlgCluster cluster, String label ) {
             super( cluster, cluster.traitSetOf( Convention.NONE ), label );
         }
 
@@ -327,7 +327,7 @@ public class TraitConversionTest {
      */
     private static class NoneSingleRel extends TestSingleAlg {
 
-        NoneSingleRel( AlgOptCluster cluster, AlgNode input ) {
+        NoneSingleRel( AlgCluster cluster, AlgNode input ) {
             super( cluster, cluster.traitSetOf( Convention.NONE ), input );
         }
 

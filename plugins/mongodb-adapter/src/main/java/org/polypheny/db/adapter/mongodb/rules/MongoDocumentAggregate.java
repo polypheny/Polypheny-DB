@@ -27,7 +27,7 @@ import org.polypheny.db.algebra.core.document.DocumentAggregate;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.schema.trait.ModelTrait;
@@ -47,7 +47,7 @@ public class MongoDocumentAggregate extends DocumentAggregate implements MongoAl
      * @param child Input of this expression
      * @param aggCalls Aggregate calls
      */
-    protected MongoDocumentAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, RexNameRef group, List<LaxAggregateCall> aggCalls ) {
+    protected MongoDocumentAggregate( AlgCluster cluster, AlgTraitSet traits, AlgNode child, RexNameRef group, List<LaxAggregateCall> aggCalls ) {
         super( cluster, traits, child, group, aggCalls );
     }
 

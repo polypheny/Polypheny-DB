@@ -28,7 +28,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.ConstraintEnforcer;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
 
@@ -39,7 +39,7 @@ public class EnumerableConstraintEnforcer extends ConstraintEnforcer implements 
      * Left is the initial dml query, which modifies the entity
      * right is the control query, which tests if still all conditions are correct
      */
-    public EnumerableConstraintEnforcer( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode modify, AlgNode control, List<Class<? extends Exception>> exceptionClass, List<String> exceptionMessage ) {
+    public EnumerableConstraintEnforcer( AlgCluster cluster, AlgTraitSet traitSet, AlgNode modify, AlgNode control, List<Class<? extends Exception>> exceptionClass, List<String> exceptionMessage ) {
         super( cluster, traitSet, modify, control, exceptionClass, exceptionMessage );
     }
 

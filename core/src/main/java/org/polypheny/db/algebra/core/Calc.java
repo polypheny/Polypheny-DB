@@ -42,10 +42,10 @@ import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.logical.relational.LogicalCalc;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNode;
@@ -71,7 +71,7 @@ public abstract class Calc extends SingleAlg {
      * @param child Input relation
      * @param program Calc program
      */
-    protected Calc( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, RexProgram program ) {
+    protected Calc( AlgCluster cluster, AlgTraitSet traits, AlgNode child, RexProgram program ) {
         super( cluster, traits, child );
         this.rowType = program.getOutputRowType();
         this.program = program;
@@ -120,7 +120,7 @@ public abstract class Calc extends SingleAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         double dRows = mq.getTupleCount( this );
         double dCpu = mq.getTupleCount( getInput() ) * program.getExprCount();
         double dIo = 0;

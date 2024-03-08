@@ -35,7 +35,7 @@ package org.polypheny.db.tools;
 
 
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 
 
@@ -47,7 +47,7 @@ import org.polypheny.db.plan.AlgTraitSet;
  */
 public interface Program {
 
-    AlgNode run( AlgOptPlanner planner, AlgNode alg, AlgTraitSet requiredOutputTraits );
+    AlgNode run( AlgPlanner planner, AlgNode alg, AlgTraitSet requiredOutputTraits );
 
 }
 

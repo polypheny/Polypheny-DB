@@ -29,7 +29,7 @@ import org.polypheny.db.algebra.core.LaxAggregateCall;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.DocumentType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.schema.trait.ModelTrait;
@@ -48,7 +48,7 @@ public class DocumentAggregate extends SingleAlg implements DocumentAlg {
      * Creates a {@link DocumentAggregate}.
      * {@link ModelTrait#DOCUMENT} native node of an aggregate.
      */
-    protected DocumentAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, @Nullable RexNameRef group, List<LaxAggregateCall> aggCalls ) {
+    protected DocumentAggregate( AlgCluster cluster, AlgTraitSet traits, AlgNode child, @Nullable RexNameRef group, List<LaxAggregateCall> aggCalls ) {
         super( cluster, traits, child );
         this.group = group;
         this.aggCalls = ImmutableList.copyOf( aggCalls );

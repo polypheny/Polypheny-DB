@@ -36,9 +36,9 @@ import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.lpg.LpgUnwind;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.BuiltInMethod;
@@ -49,13 +49,13 @@ public class EnumerableLpgUnwind extends LpgUnwind implements EnumerableAlg {
     /**
      * Creates a {@link EnumerableLpgUnwind}.
      */
-    protected EnumerableLpgUnwind( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, int index, String alias ) {
+    protected EnumerableLpgUnwind( AlgCluster cluster, AlgTraitSet traits, AlgNode input, int index, String alias ) {
         super( cluster, traits, input, index, alias );
     }
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 2 );
     }
 

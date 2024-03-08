@@ -43,9 +43,9 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexChecker;
 import org.polypheny.db.rex.RexNode;
@@ -75,7 +75,7 @@ public abstract class Filter extends SingleAlg {
      * @param child input relational expression
      * @param condition boolean expression which determines whether a row is allowed to pass
      */
-    protected Filter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, RexNode condition ) {
+    protected Filter( AlgCluster cluster, AlgTraitSet traits, AlgNode child, RexNode condition ) {
         super( cluster, traits, child );
         assert condition != null;
         assert RexUtil.isFlat( condition ) : condition;
@@ -130,7 +130,7 @@ public abstract class Filter extends SingleAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         double dRows = mq.getTupleCount( this );
         double dCpu = mq.getTupleCount( getInput() );
         double dIo = 0;

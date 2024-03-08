@@ -48,7 +48,7 @@ import org.polypheny.db.catalog.logistic.ConstraintType;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexIndexRef;
@@ -70,7 +70,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
      * @param modify is the initial dml query, which modifies the entity
      * @param control is the control query, which tests if still all conditions are correct
      */
-    public LogicalConstraintEnforcer( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode modify, AlgNode control, List<Class<? extends Exception>> exceptionClasses, List<String> exceptionMessages ) {
+    public LogicalConstraintEnforcer( AlgCluster cluster, AlgTraitSet traitSet, AlgNode modify, AlgNode control, List<Class<? extends Exception>> exceptionClasses, List<String> exceptionMessages ) {
         super(
                 cluster,
                 traitSet,

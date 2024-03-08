@@ -17,8 +17,8 @@
 package org.polypheny.db.adapter.mongodb;
 
 import org.polypheny.db.adapter.mongodb.rules.MongoRules;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.Convention;
 
 public class MongoConvention extends Convention.Impl {
@@ -36,7 +36,7 @@ public class MongoConvention extends Convention.Impl {
 
 
     @Override
-    public void register( AlgOptPlanner planner ) {
+    public void register( AlgPlanner planner ) {
         for ( AlgOptRule rule : MongoRules.RULES ) {
             planner.addRuleDuringRuntime( rule );
         }

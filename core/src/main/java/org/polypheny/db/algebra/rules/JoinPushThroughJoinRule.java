@@ -41,7 +41,7 @@ import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptUtil;
@@ -123,7 +123,7 @@ public class JoinPushThroughJoinRule extends AlgOptRule {
         final AlgNode algC = call.alg( 2 );
         final AlgNode algA = bottomJoin.getLeft();
         final AlgNode algB = bottomJoin.getRight();
-        final AlgOptCluster cluster = topJoin.getCluster();
+        final AlgCluster cluster = topJoin.getCluster();
 
         //        topJoin
         //        /     \
@@ -212,7 +212,7 @@ public class JoinPushThroughJoinRule extends AlgOptRule {
         final AlgNode algC = call.alg( 2 );
         final AlgNode algA = bottomJoin.getLeft();
         final AlgNode algB = bottomJoin.getRight();
-        final AlgOptCluster cluster = topJoin.getCluster();
+        final AlgCluster cluster = topJoin.getCluster();
 
         //        topJoin
         //        /     \

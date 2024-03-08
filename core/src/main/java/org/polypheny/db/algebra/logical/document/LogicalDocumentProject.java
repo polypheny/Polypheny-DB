@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.document.DocumentProject;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.Pair;
@@ -33,7 +33,7 @@ public class LogicalDocumentProject extends DocumentProject {
     /**
      * Subclass of {@link DocumentProject} not targeted at any particular engine or calling convention.
      */
-    public LogicalDocumentProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, Map<String, ? extends RexNode> includes, List<String> excludes ) {
+    public LogicalDocumentProject( AlgCluster cluster, AlgTraitSet traits, AlgNode input, Map<String, ? extends RexNode> includes, List<String> excludes ) {
         super( cluster, traits, input, includes, excludes );
     }
 

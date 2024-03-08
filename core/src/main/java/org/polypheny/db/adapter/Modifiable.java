@@ -56,7 +56,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.rex.RexBuilder;
@@ -126,7 +126,7 @@ public interface Modifiable extends Scannable {
     }
 
 
-    static List<AlgNode> attachPreparedGraphNodeModifyDelete( Modifiable modifiable, AlgOptCluster cluster, Entity nodesTable, Entity nodePropertiesTable, AlgBuilder algBuilder ) {
+    static List<AlgNode> attachPreparedGraphNodeModifyDelete( Modifiable modifiable, AlgCluster cluster, Entity nodesTable, Entity nodePropertiesTable, AlgBuilder algBuilder ) {
         RexBuilder rexBuilder = algBuilder.getRexBuilder();
         AlgDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
 
@@ -174,7 +174,7 @@ public interface Modifiable extends Scannable {
         return new LogicalStreamer( alg.getCluster(), alg.getTraitSet(), provider, transformer );
     }
 
-    static List<AlgNode> attachPreparedGraphNodeModifyInsert( Modifiable modifiable, AlgOptCluster cluster, Entity nodesTable, Entity nodePropertiesTable, AlgBuilder algBuilder ) {
+    static List<AlgNode> attachPreparedGraphNodeModifyInsert( Modifiable modifiable, AlgCluster cluster, Entity nodesTable, Entity nodePropertiesTable, AlgBuilder algBuilder ) {
         RexBuilder rexBuilder = algBuilder.getRexBuilder();
         AlgDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
 
@@ -202,7 +202,7 @@ public interface Modifiable extends Scannable {
     }
 
 
-    static List<AlgNode> attachPreparedGraphEdgeModifyDelete( Modifiable modifiable, AlgOptCluster cluster, Entity edgesTable, Entity edgePropertiesTable, AlgBuilder algBuilder ) {
+    static List<AlgNode> attachPreparedGraphEdgeModifyDelete( Modifiable modifiable, AlgCluster cluster, Entity edgesTable, Entity edgePropertiesTable, AlgBuilder algBuilder ) {
         RexBuilder rexBuilder = algBuilder.getRexBuilder();
         AlgDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
 
@@ -229,7 +229,7 @@ public interface Modifiable extends Scannable {
     }
 
 
-    static List<AlgNode> attachPreparedGraphEdgeModifyInsert( Modifiable modifiable, AlgOptCluster cluster, Entity edgesTable, Entity edgePropertiesTable, AlgBuilder algBuilder ) {
+    static List<AlgNode> attachPreparedGraphEdgeModifyInsert( Modifiable modifiable, AlgCluster cluster, Entity edgesTable, Entity edgePropertiesTable, AlgBuilder algBuilder ) {
         RexBuilder rexBuilder = algBuilder.getRexBuilder();
         AlgDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
 

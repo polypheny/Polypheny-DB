@@ -38,7 +38,7 @@ import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.experimental.NonFinal;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
 
@@ -59,7 +59,7 @@ public abstract class BiAlg extends AbstractAlgNode {
     protected AlgNode right;
 
 
-    public BiAlg( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode left, AlgNode right ) {
+    public BiAlg( AlgCluster cluster, AlgTraitSet traitSet, AlgNode left, AlgNode right ) {
         super( cluster, traitSet );
         this.left = left;
         this.right = right;

@@ -46,7 +46,7 @@ import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.JoinInfo;
 import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 
@@ -94,7 +94,7 @@ class EnumerableMergeJoinRule extends ConverterRule {
         }
         final AlgNode left = newInputs.get( 0 );
         final AlgNode right = newInputs.get( 1 );
-        final AlgOptCluster cluster = join.getCluster();
+        final AlgCluster cluster = join.getCluster();
         AlgNode newRel;
         try {
             AlgTraitSet traits = join.getTraitSet().replace( EnumerableConvention.INSTANCE );

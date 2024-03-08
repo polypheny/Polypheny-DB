@@ -25,7 +25,7 @@ import org.polypheny.db.algebra.core.relational.RelationalTransformable;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.trait.ModelTrait;
@@ -36,12 +36,12 @@ public class LogicalDocumentScan extends DocumentScan<Entity> implements Relatio
     /**
      * Subclass of {@link DocumentScan} not targeted at any particular engine or calling convention.
      */
-    public LogicalDocumentScan( AlgOptCluster cluster, AlgTraitSet traitSet, Entity document ) {
+    public LogicalDocumentScan( AlgCluster cluster, AlgTraitSet traitSet, Entity document ) {
         super( cluster, traitSet.replace( ModelTrait.DOCUMENT ), document );
     }
 
 
-    public static AlgNode create( AlgOptCluster cluster, Entity collection ) {
+    public static AlgNode create( AlgCluster cluster, Entity collection ) {
         return new LogicalDocumentScan( cluster, cluster.traitSet(), collection );
     }
 

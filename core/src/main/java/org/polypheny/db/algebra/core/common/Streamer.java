@@ -25,7 +25,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.BiAlg;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
 @EqualsAndHashCode(callSuper = true)
@@ -45,13 +45,13 @@ public abstract class Streamer extends BiAlg {
      * @param provider provides the values which get streamed to the collector
      * @param collector uses the provided values and
      */
-    public Streamer( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode provider, AlgNode collector ) {
+    public Streamer( AlgCluster cluster, AlgTraitSet traitSet, AlgNode provider, AlgNode collector ) {
         super( cluster, traitSet, provider, collector );
     }
 
 
     /*@Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return getProvider().computeSelfCost( planner, mq ).plus( getCollector().computeSelfCost( planner, mq ) );
     }*/
 

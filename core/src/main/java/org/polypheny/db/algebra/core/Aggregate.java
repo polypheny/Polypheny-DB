@@ -60,9 +60,8 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Function;
 import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.nodes.validate.ValidatorException;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.runtime.PolyphenyDbException;
@@ -135,7 +134,7 @@ public abstract class Aggregate extends SingleAlg {
      * @param groupSets List of all grouping sets; null for just {@code groupSet}
      * @param aggCalls Collection of calls to aggregate functions
      */
-    protected Aggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
+    protected Aggregate( AlgCluster cluster, AlgTraitSet traits, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
         super( cluster, traits, child );
         this.indicator = indicator; // true is allowed, but discouraged
         this.aggCalls = ImmutableList.copyOf( aggCalls );
@@ -276,7 +275,7 @@ public abstract class Aggregate extends SingleAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         // REVIEW jvs:  This is bogus, but no more bogus than what's currently in Join.
         double rowCount = mq.getTupleCount( this );
         // Aggregates with more aggregate functions cost a bit more

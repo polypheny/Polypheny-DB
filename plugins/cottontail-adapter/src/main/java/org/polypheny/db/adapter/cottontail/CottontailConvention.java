@@ -21,8 +21,8 @@ import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailAlg;
 import org.polypheny.db.adapter.cottontail.rules.CottontailRules;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.Convention;
 
 
@@ -49,7 +49,7 @@ public class CottontailConvention extends Convention.Impl {
 
 
     @Override
-    public void register( AlgOptPlanner planner ) {
+    public void register( AlgPlanner planner ) {
         for ( AlgOptRule rule : CottontailRules.rules() ) {
             planner.addRuleDuringRuntime( rule );
         }

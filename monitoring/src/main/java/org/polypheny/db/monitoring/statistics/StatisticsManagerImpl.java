@@ -65,7 +65,7 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.monitoring.events.MonitoringType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.schema.impl.AbstractEntity;
@@ -449,7 +449,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
         AlgBuilder relBuilder = AlgBuilder.create( statement );
         final RexBuilder rexBuilder = relBuilder.getRexBuilder();
-        final AlgOptCluster cluster = AlgOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder, null, statement.getDataContext().getSnapshot() );
+        final AlgCluster cluster = AlgCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder, null, statement.getDataContext().getSnapshot() );
 
         AlgNode queryNode;
         LogicalRelScan tableScan = getLogicalScan( queryResult.getEntity().id, snapshot, cluster );
@@ -466,7 +466,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
     /**
      * Gets a tableScan for a given table.
      */
-    private LogicalRelScan getLogicalScan( long tableId, Snapshot snapshot, AlgOptCluster cluster ) {
+    private LogicalRelScan getLogicalScan( long tableId, Snapshot snapshot, AlgCluster cluster ) {
         return LogicalRelScan.create( cluster, snapshot.getLogicalEntity( tableId ).orElseThrow() );
     }
 
@@ -474,7 +474,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
     /**
      * Queries the database with an aggregate query, to get the min value or max value.
      */
-    private AlgNode getAggregateColumn( QueryResult queryResult, NodeType nodeType, RelScan<?> tableScan, RexBuilder rexBuilder, AlgOptCluster cluster ) {
+    private AlgNode getAggregateColumn( QueryResult queryResult, NodeType nodeType, RelScan<?> tableScan, RexBuilder rexBuilder, AlgCluster cluster ) {
         for ( int i = 0; i < tableScan.getTupleType().getFieldNames().size(); i++ ) {
             if ( tableScan.getTupleType().getFieldNames().get( i ).equals( queryResult.getColumn().name ) ) {
                 LogicalRelProject logicalRelProject = LogicalRelProject.create(
@@ -554,7 +554,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
     /**
      * Gets the amount of entries for a column
      */
-    private AlgNode getColumnCount( QueryResult queryResult, RelScan<?> tableScan, RexBuilder rexBuilder, AlgOptCluster cluster ) {
+    private AlgNode getColumnCount( QueryResult queryResult, RelScan<?> tableScan, RexBuilder rexBuilder, AlgCluster cluster ) {
         for ( int i = 0; i < tableScan.getTupleType().getFieldNames().size(); i++ ) {
             if ( queryResult.getColumn() != null && tableScan.getTupleType().getFieldNames().get( i ).equals( queryResult.getColumn().name ) ) {
                 LogicalRelProject logicalRelProject = LogicalRelProject.create(
@@ -578,7 +578,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
     /**
      * Gets the amount of entries for a table.
      */
-    private AlgNode getTableCount( RelScan<?> tableScan, AlgOptCluster cluster ) {
+    private AlgNode getTableCount( RelScan<?> tableScan, AlgCluster cluster ) {
         AggregateCall aggregateCall = getRowCountAggregateCall( cluster );
         return LogicalRelAggregate.create(
                 tableScan,
@@ -589,7 +589,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
 
     @Nonnull
-    private AggregateCall getRowCountAggregateCall( AlgOptCluster cluster ) {
+    private AggregateCall getRowCountAggregateCall( AlgCluster cluster ) {
         return AggregateCall.create(
                 OperatorRegistry.getAgg( OperatorName.COUNT ),
                 false,

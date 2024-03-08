@@ -21,7 +21,7 @@ import lombok.Value;
 import lombok.experimental.NonFinal;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
 @EqualsAndHashCode(callSuper = true)
@@ -32,7 +32,7 @@ public class DocumentUnwind extends SingleAlg implements DocumentAlg {
     public String path;
 
 
-    protected DocumentUnwind( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, String path ) {
+    protected DocumentUnwind( AlgCluster cluster, AlgTraitSet traits, AlgNode input, String path ) {
         super( cluster, traits, input );
 
         this.path = path;

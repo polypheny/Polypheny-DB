@@ -40,7 +40,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Exchange;
 import org.polypheny.db.algebra.core.relational.RelAlg;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 
@@ -50,7 +50,7 @@ import org.polypheny.db.plan.Convention;
  */
 public final class LogicalRelExchange extends Exchange implements RelAlg {
 
-    private LogicalRelExchange( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, AlgDistribution distribution ) {
+    private LogicalRelExchange( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, AlgDistribution distribution ) {
         super( cluster, traitSet, input, distribution );
         assert traitSet.containsIfApplicable( Convention.NONE );
     }
@@ -63,7 +63,7 @@ public final class LogicalRelExchange extends Exchange implements RelAlg {
      * @param distribution Distribution specification
      */
     public static LogicalRelExchange create( AlgNode input, AlgDistribution distribution ) {
-        AlgOptCluster cluster = input.getCluster();
+        AlgCluster cluster = input.getCluster();
         distribution = AlgDistributionTraitDef.INSTANCE.canonize( distribution );
         AlgTraitSet traitSet = input.getTraitSet().replace( Convention.NONE ).replace( distribution );
         return new LogicalRelExchange( cluster, traitSet, input, distribution );

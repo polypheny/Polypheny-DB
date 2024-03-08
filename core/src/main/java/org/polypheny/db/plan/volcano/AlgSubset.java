@@ -49,12 +49,12 @@ import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptListener.AlgChosenEvent;
 import org.polypheny.db.plan.AlgOptListener.AlgEquivalenceEvent;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.Litmus;
@@ -109,7 +109,7 @@ public class AlgSubset extends AbstractAlgNode {
     boolean boosted;
 
 
-    AlgSubset( AlgOptCluster cluster, AlgSet set, AlgTraitSet traits ) {
+    AlgSubset( AlgCluster cluster, AlgSet set, AlgTraitSet traits ) {
         super( cluster, traits );
         this.set = set;
         this.boosted = false;
@@ -129,7 +129,7 @@ public class AlgSubset extends AbstractAlgNode {
      * <li>After creation, {@code best} and {@code bestCost} are maintained incrementally by {@link #propagateCostImprovements0} and {@link AlgSet#mergeWith(VolcanoPlanner, AlgSet)}.</li>
      * </ol>
      */
-    private void computeBestCost( AlgOptPlanner planner ) {
+    private void computeBestCost( AlgPlanner planner ) {
         bestCost = planner.getCostFactory().makeInfiniteCost();
         final AlgMetadataQuery mq = getCluster().getMetadataQuery();
         for ( AlgNode alg : getAlgs() ) {
@@ -180,7 +180,7 @@ public class AlgSubset extends AbstractAlgNode {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return planner.getCostFactory().makeZeroCost();
     }
 
@@ -456,7 +456,7 @@ public class AlgSubset extends AbstractAlgNode {
                     planner.dump( pw );
                     pw.flush();
                     final String dump = sw.toString();
-                    RuntimeException e = new AlgOptPlanner.CannotPlanException( dump );
+                    RuntimeException e = new AlgPlanner.CannotPlanException( dump );
                     LOGGER.trace( "Caught exception in class={}, method=visit", getClass().getName(), e );
                     throw e;
                 }

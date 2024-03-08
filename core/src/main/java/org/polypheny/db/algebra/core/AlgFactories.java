@@ -70,7 +70,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalSortExchange;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
@@ -488,7 +488,7 @@ public class AlgFactories {
         /**
          * Creates a Values.
          */
-        AlgNode createValues( AlgOptCluster cluster, AlgDataType rowType, List<ImmutableList<RexLiteral>> tuples );
+        AlgNode createValues( AlgCluster cluster, AlgDataType rowType, List<ImmutableList<RexLiteral>> tuples );
 
     }
 
@@ -499,7 +499,7 @@ public class AlgFactories {
     private static class ValuesFactoryImpl implements ValuesFactory {
 
         @Override
-        public AlgNode createValues( AlgOptCluster cluster, AlgDataType rowType, List<ImmutableList<RexLiteral>> tuples ) {
+        public AlgNode createValues( AlgCluster cluster, AlgDataType rowType, List<ImmutableList<RexLiteral>> tuples ) {
             return LogicalRelValues.create( cluster, rowType, ImmutableList.copyOf( tuples ) );
         }
 
@@ -509,7 +509,7 @@ public class AlgFactories {
     public interface DocumentsFactory {
 
         AlgNode createDocuments(
-                AlgOptCluster cluster,
+                AlgCluster cluster,
                 List<PolyDocument> documents,
                 AlgDataType rowType );
 
@@ -520,7 +520,7 @@ public class AlgFactories {
 
         @Override
         public AlgNode createDocuments(
-                AlgOptCluster cluster,
+                AlgCluster cluster,
                 List<PolyDocument> documents,
                 AlgDataType rowType ) {
             return LogicalDocumentValues.create(
@@ -539,7 +539,7 @@ public class AlgFactories {
         /**
          * Creates a {@link RelScan}.
          */
-        AlgNode createRelScan( AlgOptCluster cluster, Entity entity );
+        AlgNode createRelScan( AlgCluster cluster, Entity entity );
 
     }
 
@@ -550,7 +550,7 @@ public class AlgFactories {
     private static class RelScanFactoryImpl implements ScanFactory {
 
         @Override
-        public AlgNode createRelScan( AlgOptCluster cluster, Entity entity ) {
+        public AlgNode createRelScan( AlgCluster cluster, Entity entity ) {
             // Check if AlgOptTable contains a View, in this case a LogicalViewScan needs to be created
             if ( entity.entityType == EntityType.VIEW ) {
                 return LogicalRelViewScan.create( cluster, entity );

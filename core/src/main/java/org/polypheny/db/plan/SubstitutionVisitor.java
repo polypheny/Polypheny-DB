@@ -152,7 +152,7 @@ public class SubstitutionVisitor {
 
     private final ImmutableList<UnifyRule> rules;
     private final Map<Pair<Class, Class>, List<UnifyRule>> ruleMap = new HashMap<>();
-    private final AlgOptCluster cluster;
+    private final AlgCluster cluster;
     private final RexSimplify simplify;
     private final Holder query;
     private final MutableAlg target;
@@ -861,7 +861,7 @@ public class SubstitutionVisitor {
         }
 
 
-        public AlgOptCluster getCluster() {
+        public AlgCluster getCluster() {
             return cluster;
         }
 
@@ -1652,7 +1652,7 @@ public class SubstitutionVisitor {
             final List<RexNode> newProjects = new ArrayList<>( project.getProjects() );
             newProjects.add( filter.getCondition() );
 
-            final AlgOptCluster cluster = filter.getCluster();
+            final AlgCluster cluster = filter.getCluster();
             AlgDataType newRowType =
                     cluster.getTypeFactory().builder()
                             .addAll( project.getTupleType().getFields() )

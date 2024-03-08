@@ -49,7 +49,7 @@ import org.polypheny.db.algebra.core.Correlate;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -61,7 +61,7 @@ import org.polypheny.db.util.ImmutableBitSet;
 public class EnumerableCorrelate extends Correlate implements EnumerableAlg {
 
     public EnumerableCorrelate(
-            AlgOptCluster cluster,
+            AlgCluster cluster,
             AlgTraitSet traits,
             AlgNode left,
             AlgNode right,
@@ -81,7 +81,7 @@ public class EnumerableCorrelate extends Correlate implements EnumerableAlg {
             CorrelationId correlationId,
             ImmutableBitSet requiredColumns,
             SemiJoinType joinType ) {
-        final AlgOptCluster cluster = left.getCluster();
+        final AlgCluster cluster = left.getCluster();
         final AlgMetadataQuery mq = cluster.getMetadataQuery();
         final AlgTraitSet traitSet = cluster.traitSetOf( EnumerableConvention.INSTANCE ).replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.enumerableCorrelate( mq, left, right, joinType ) );
         return new EnumerableCorrelate( cluster, traitSet, left, right, correlationId, requiredColumns, joinType );

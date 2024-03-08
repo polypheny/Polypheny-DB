@@ -57,7 +57,7 @@ import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
@@ -169,7 +169,7 @@ public class JdbcTable extends PhysicalTable implements TranslatableEntity, Scan
 
 
     @Override
-    public AlgNode toAlg( AlgOptCluster cluster, AlgTraitSet traitSet ) {
+    public AlgNode toAlg( AlgCluster cluster, AlgTraitSet traitSet ) {
         jdbcSchema.getConvention().register( cluster.getPlanner() );
         return new JdbcScan( cluster, this, jdbcSchema.getConvention() );
     }
@@ -194,7 +194,7 @@ public class JdbcTable extends PhysicalTable implements TranslatableEntity, Scan
 
     @Override
     public Modify<?> toModificationTable(
-            AlgOptCluster cluster,
+            AlgCluster cluster,
             AlgTraitSet algTraits,
             Entity table,
             AlgNode input,

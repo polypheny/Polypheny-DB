@@ -50,7 +50,7 @@ import org.polypheny.db.algebra.core.Calc;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.logical.relational.LogicalCalc;
 import org.polypheny.db.algebra.logical.relational.LogicalWindow;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
@@ -223,7 +223,7 @@ public abstract class ProjectToWindowRule extends AlgOptRule {
 
 
                     @Override
-                    protected AlgNode makeRel( AlgOptCluster cluster, AlgTraitSet traitSet, AlgBuilder algBuilder, AlgNode input, RexProgram program ) {
+                    protected AlgNode makeRel( AlgCluster cluster, AlgTraitSet traitSet, AlgBuilder algBuilder, AlgNode input, RexProgram program ) {
                         assert !program.containsAggs();
                         program = program.normalize( cluster.getRexBuilder(), null );
                         return super.makeRel( cluster, traitSet, algBuilder, input, program );
@@ -261,7 +261,7 @@ public abstract class ProjectToWindowRule extends AlgOptRule {
 
 
                     @Override
-                    protected AlgNode makeRel( AlgOptCluster cluster, AlgTraitSet traitSet, AlgBuilder algBuilder, AlgNode input, RexProgram program ) {
+                    protected AlgNode makeRel( AlgCluster cluster, AlgTraitSet traitSet, AlgBuilder algBuilder, AlgNode input, RexProgram program ) {
                         Preconditions.checkArgument( program.getCondition() == null, "WindowedAggregateRel cannot accept a condition" );
                         return LogicalWindow.create( cluster, traitSet, algBuilder, input, program );
                     }

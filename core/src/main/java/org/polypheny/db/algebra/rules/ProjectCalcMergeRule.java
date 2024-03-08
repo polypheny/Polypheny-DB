@@ -37,7 +37,7 @@ package org.polypheny.db.algebra.rules;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.logical.relational.LogicalCalc;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.rex.RexBuilder;
@@ -84,7 +84,7 @@ public class ProjectCalcMergeRule extends AlgOptRule {
 
         // Don't merge a project which contains windowed aggregates onto a calc. That would effectively be pushing a windowed aggregate down
         // through a filter. Transform the project into an identical calc, which we'll have chance to merge later, after the over is expanded.
-        final AlgOptCluster cluster = project.getCluster();
+        final AlgCluster cluster = project.getCluster();
         RexProgram program =
                 RexProgram.create(
                         calc.getTupleType(),

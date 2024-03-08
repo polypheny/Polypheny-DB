@@ -5,7 +5,7 @@
  *
  * A <dfn>planner</dfn> (also known as an <dfn>optimizer</dfn>) finds the most efficient implementation of a {@link org.polypheny.db.algebra.AlgNode relational expression}.
  *
- * Interface {@link org.polypheny.db.plan.AlgOptPlanner} defines a planner, and class {@link org.polypheny.db.plan.volcano.VolcanoPlanner} is an implementation which uses a
+ * Interface {@link org.polypheny.db.plan.AlgPlanner} defines a planner, and class {@link org.polypheny.db.plan.volcano.VolcanoPlanner} is an implementation which uses a
  * dynamic programming technique. It is based upon the Volcano optimizer [<a href="#graefe93">1</a>].
  *
  * Interface {@link org.polypheny.db.plan.AlgOptCost} defines a cost model; class {@link org.polypheny.db.plan.volcano.VolcanoCost} is the implementation for a <code>VolcanoPlanner</code>.

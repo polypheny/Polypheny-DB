@@ -40,7 +40,7 @@ import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -67,7 +67,7 @@ public class Collect extends SingleAlg {
      * @param child Child relational expression
      * @param fieldName Name of the sole output field
      */
-    public Collect( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode child, String fieldName ) {
+    public Collect( AlgCluster cluster, AlgTraitSet traitSet, AlgNode child, String fieldName ) {
         super( cluster, traitSet, child );
         this.fieldName = fieldName;
     }

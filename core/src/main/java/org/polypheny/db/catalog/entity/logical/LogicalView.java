@@ -36,7 +36,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.view.ViewManager.ViewVisitor;
 
 @EqualsAndHashCode(callSuper = true)
@@ -81,7 +81,7 @@ public class LogicalView extends LogicalTable {
     }
 
 
-    public AlgNode prepareView( AlgOptCluster cluster ) {
+    public AlgNode prepareView( AlgCluster cluster ) {
         AlgNode viewLogicalRoot = getDefinition();
         prepareView( viewLogicalRoot, cluster );
 
@@ -92,18 +92,18 @@ public class LogicalView extends LogicalTable {
     }
 
 
-    public void prepareView( AlgNode viewLogicalRoot, AlgOptCluster algOptCluster ) {
+    public void prepareView( AlgNode viewLogicalRoot, AlgCluster algCluster ) {
         if ( viewLogicalRoot instanceof AbstractAlgNode ) {
-            ((AbstractAlgNode) viewLogicalRoot).setCluster( algOptCluster );
+            ((AbstractAlgNode) viewLogicalRoot).setCluster( algCluster );
         }
         if ( viewLogicalRoot instanceof BiAlg ) {
-            prepareView( ((BiAlg) viewLogicalRoot).getLeft(), algOptCluster );
-            prepareView( ((BiAlg) viewLogicalRoot).getRight(), algOptCluster );
+            prepareView( ((BiAlg) viewLogicalRoot).getLeft(), algCluster );
+            prepareView( ((BiAlg) viewLogicalRoot).getRight(), algCluster );
         } else if ( viewLogicalRoot instanceof SingleAlg ) {
-            prepareView( ((SingleAlg) viewLogicalRoot).getInput(), algOptCluster );
+            prepareView( ((SingleAlg) viewLogicalRoot).getInput(), algCluster );
         }
         if ( viewLogicalRoot instanceof LogicalRelViewScan ) {
-            prepareView( ((LogicalRelViewScan) viewLogicalRoot).getAlgNode(), algOptCluster );
+            prepareView( ((LogicalRelViewScan) viewLogicalRoot).getAlgNode(), algCluster );
         }
     }
 

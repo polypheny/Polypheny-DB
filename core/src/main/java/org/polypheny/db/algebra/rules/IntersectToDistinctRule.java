@@ -39,7 +39,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Intersect;
 import org.polypheny.db.algebra.logical.relational.LogicalRelIntersect;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.rex.RexBuilder;
@@ -99,7 +99,7 @@ public class IntersectToDistinctRule extends AlgOptRule {
         if ( intersect.all ) {
             return; // nothing we can do
         }
-        final AlgOptCluster cluster = intersect.getCluster();
+        final AlgCluster cluster = intersect.getCluster();
         final RexBuilder rexBuilder = cluster.getRexBuilder();
         final AlgBuilder algBuilder = call.builder();
 

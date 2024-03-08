@@ -30,29 +30,24 @@ import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.config.PolyphenyDbConnectionConfigImpl;
 import org.polypheny.db.transaction.Statement;
 
+@Getter
 @Value
 public class ContextImpl implements Context {
 
-    @Getter
     @NonFinal
     Snapshot snapshot;
-    @Getter
     public JavaTypeFactory typeFactory;
-    @Getter
     public DataContext dataContext;
-    @Getter
     public Statement statement;
-    @Getter
     public String defaultNamespaceName;
 
 
-    public ContextImpl( Snapshot snapshot, DataContext dataContext, String defaultNamespaceName, long currentUserId, Statement statement ) {
+    public ContextImpl( Snapshot snapshot, DataContext dataContext, String defaultNamespaceName, Statement statement ) {
         this.snapshot = snapshot;
         this.typeFactory = dataContext.getTypeFactory();
         this.dataContext = dataContext;
         this.defaultNamespaceName = defaultNamespaceName;
         this.statement = statement;
-        this.currentUserId = currentUserId;
     }
 
 

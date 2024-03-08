@@ -118,7 +118,7 @@ import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptPredicateList;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -175,7 +175,7 @@ import org.polypheny.db.util.mapping.Mappings;
 public class AlgBuilder {
 
     @Getter
-    protected final AlgOptCluster cluster;
+    protected final AlgCluster cluster;
     protected final Snapshot snapshot;
     private final AlgFactories.FilterFactory filterFactory;
     private final AlgFactories.ProjectFactory projectFactory;
@@ -196,7 +196,7 @@ public class AlgBuilder {
     private final RexSimplify simplifier;
 
 
-    protected AlgBuilder( Context context, AlgOptCluster cluster, Snapshot snapshot ) {
+    protected AlgBuilder( Context context, AlgCluster cluster, Snapshot snapshot ) {
         this.cluster = cluster;
         this.snapshot = snapshot;
         if ( context == null ) {
@@ -252,12 +252,12 @@ public class AlgBuilder {
 
     public static AlgBuilder create( Statement statement ) {
         final RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
-        final AlgOptCluster cluster = AlgOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder, null, statement.getTransaction().getSnapshot() );
+        final AlgCluster cluster = AlgCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder, null, statement.getTransaction().getSnapshot() );
         return create( statement, cluster );
     }
 
 
-    public static AlgBuilder create( Statement statement, AlgOptCluster cluster ) {
+    public static AlgBuilder create( Statement statement, AlgCluster cluster ) {
         return new AlgBuilder( Contexts.EMPTY_CONTEXT, cluster, statement.getTransaction().getSnapshot() );
     }
 
@@ -291,7 +291,7 @@ public class AlgBuilder {
 
     /**
      * Creates a {@link AlgBuilderFactory}, a partially-created AlgBuilder.
-     * Just add a {@link AlgOptCluster}
+     * Just add a {@link AlgCluster}
      */
     public static AlgBuilderFactory proto( final Context context ) {
         return ( cluster, snapshot ) -> new AlgBuilder( context, cluster, snapshot );

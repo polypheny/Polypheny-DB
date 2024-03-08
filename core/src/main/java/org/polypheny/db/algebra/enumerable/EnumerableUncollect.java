@@ -45,7 +45,7 @@ import org.polypheny.db.algebra.core.Uncollect;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.functions.Functions.FlatProductInputType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.type.MapPolyType;
 import org.polypheny.db.util.BuiltInMethod;
@@ -62,7 +62,7 @@ public class EnumerableUncollect extends Uncollect implements EnumerableAlg {
      * <p>
      * Use {@link #create} unless you know what you're doing.
      */
-    public EnumerableUncollect( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode child, boolean withOrdinality ) {
+    public EnumerableUncollect( AlgCluster cluster, AlgTraitSet traitSet, AlgNode child, boolean withOrdinality ) {
         super( cluster, traitSet, child, withOrdinality );
         assert getConvention() instanceof EnumerableConvention;
         assert getConvention() == child.getConvention();
@@ -79,7 +79,7 @@ public class EnumerableUncollect extends Uncollect implements EnumerableAlg {
      * @param withOrdinality Whether output should contain an ORDINALITY column
      */
     public static EnumerableUncollect create( AlgTraitSet traitSet, AlgNode input, boolean withOrdinality ) {
-        final AlgOptCluster cluster = input.getCluster();
+        final AlgCluster cluster = input.getCluster();
         return new EnumerableUncollect( cluster, traitSet, input, withOrdinality );
     }
 

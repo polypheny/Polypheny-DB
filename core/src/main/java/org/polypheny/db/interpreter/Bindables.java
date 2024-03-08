@@ -78,12 +78,12 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.Entity;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexLiteral;
@@ -191,7 +191,7 @@ public class Bindables {
          *
          * Use {@link #create} unless you know what you are doing.
          */
-        BindableScan( AlgOptCluster cluster, AlgTraitSet traitSet, Entity entity, ImmutableList<RexNode> filters, ImmutableList<Integer> projects ) {
+        BindableScan( AlgCluster cluster, AlgTraitSet traitSet, Entity entity, ImmutableList<RexNode> filters, ImmutableList<Integer> projects ) {
             super( cluster, traitSet, entity );
             this.filters = Objects.requireNonNull( filters );
             this.projects = Objects.requireNonNull( projects );
@@ -202,7 +202,7 @@ public class Bindables {
         /**
          * Creates a BindableScan.
          */
-        public static BindableScan create( AlgOptCluster cluster, Entity entity ) {
+        public static BindableScan create( AlgCluster cluster, Entity entity ) {
             return create( cluster, entity, ImmutableList.of(), identity( entity ) );
         }
 
@@ -210,7 +210,7 @@ public class Bindables {
         /**
          * Creates a BindableScan.
          */
-        public static BindableScan create( AlgOptCluster cluster, Entity entity, List<RexNode> filters, List<Integer> projects ) {
+        public static BindableScan create( AlgCluster cluster, Entity entity, List<RexNode> filters, List<Integer> projects ) {
             final AlgTraitSet traitSet =
                     cluster.traitSetOf( BindableConvention.INSTANCE )
                             .replace( entity.dataModel.getModelTrait() )
@@ -245,7 +245,7 @@ public class Bindables {
 
 
         @Override
-        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
             // Cost factor for pushing filters
             double f = filters.isEmpty() ? 1d : 0.5d;
 
@@ -327,7 +327,7 @@ public class Bindables {
      */
     public static class BindableFilter extends Filter implements BindableAlg {
 
-        public BindableFilter( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, RexNode condition ) {
+        public BindableFilter( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, RexNode condition ) {
             super( cluster, traitSet, input, condition );
             assert getConvention() instanceof BindableConvention;
         }
@@ -337,7 +337,7 @@ public class Bindables {
          * Creates a BindableFilter.
          */
         public static BindableFilter create( final AlgNode input, RexNode condition ) {
-            final AlgOptCluster cluster = input.getCluster();
+            final AlgCluster cluster = input.getCluster();
             final AlgMetadataQuery mq = cluster.getMetadataQuery();
             final AlgTraitSet traitSet = cluster.traitSetOf( BindableConvention.INSTANCE ).replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.filter( mq, input ) );
             return new BindableFilter( cluster, traitSet, input, condition );
@@ -404,7 +404,7 @@ public class Bindables {
      */
     public static class BindableProject extends Project implements BindableAlg {
 
-        public BindableProject( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
+        public BindableProject( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
             super( cluster, traitSet, input, projects, rowType );
             assert getConvention() instanceof BindableConvention;
         }
@@ -467,7 +467,7 @@ public class Bindables {
      */
     public static class BindableSort extends Sort implements BindableAlg {
 
-        public BindableSort( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, AlgCollation collation, RexNode offset, RexNode fetch ) {
+        public BindableSort( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, AlgCollation collation, RexNode offset, RexNode fetch ) {
             super( cluster, traitSet, input, collation, null, offset, fetch );
             assert getConvention() instanceof BindableConvention;
         }
@@ -540,7 +540,7 @@ public class Bindables {
         /**
          * Creates a BindableJoin.
          */
-        protected BindableJoin( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode left, AlgNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinAlgType joinType ) {
+        protected BindableJoin( AlgCluster cluster, AlgTraitSet traitSet, AlgNode left, AlgNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinAlgType joinType ) {
             super( cluster, traitSet, left, right, condition, variablesSet, joinType );
         }
 
@@ -602,7 +602,7 @@ public class Bindables {
      */
     public static class BindableUnion extends Union implements BindableAlg {
 
-        public BindableUnion( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
+        public BindableUnion( AlgCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
             super( cluster, traitSet, inputs, all );
         }
 
@@ -638,7 +638,7 @@ public class Bindables {
      */
     public static class BindableValues extends Values implements BindableAlg {
 
-        BindableValues( AlgOptCluster cluster, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, AlgTraitSet traitSet ) {
+        BindableValues( AlgCluster cluster, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, AlgTraitSet traitSet ) {
             super( cluster, rowType, tuples, traitSet );
         }
 
@@ -699,7 +699,7 @@ public class Bindables {
      */
     public static class BindableAggregate extends Aggregate implements BindableAlg {
 
-        public BindableAggregate( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) throws InvalidAlgException {
+        public BindableAggregate( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) throws InvalidAlgException {
             super( cluster, traitSet, input, indicator, groupSet, groupSets, aggCalls );
             assert getConvention() instanceof BindableConvention;
 
@@ -768,7 +768,7 @@ public class Bindables {
             try {
                 return new BindableAggregate( alg.getCluster(), traitSet, convert( agg.getInput(), traitSet ), agg.indicator, agg.getGroupSet(), agg.getGroupSets(), agg.getAggCallList() );
             } catch ( InvalidAlgException e ) {
-                AlgOptPlanner.LOGGER.debug( e.toString() );
+                AlgPlanner.LOGGER.debug( e.toString() );
                 return null;
             }
         }
@@ -784,7 +784,7 @@ public class Bindables {
         /**
          * Creates an BindableWindowRel.
          */
-        BindableWindow( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, List<RexLiteral> constants, AlgDataType rowType, List<Group> groups ) {
+        BindableWindow( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, List<RexLiteral> constants, AlgDataType rowType, List<Group> groups ) {
             super( cluster, traitSet, input, constants, rowType, groups );
         }
 
@@ -796,7 +796,7 @@ public class Bindables {
 
 
         @Override
-        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
             return super.computeSelfCost( planner, mq ).multiplyBy( BindableConvention.COST_MULTIPLIER );
         }
 

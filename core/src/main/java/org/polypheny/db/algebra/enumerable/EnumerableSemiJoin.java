@@ -46,9 +46,9 @@ import org.polypheny.db.algebra.core.JoinInfo;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
@@ -65,7 +65,7 @@ public class EnumerableSemiJoin extends SemiJoin implements EnumerableAlg {
      *
      * Use {@link #create} unless you know what you're doing.
      */
-    EnumerableSemiJoin( AlgOptCluster cluster, AlgTraitSet traits, AlgNode left, AlgNode right, RexNode condition, ImmutableList<Integer> leftKeys, ImmutableList<Integer> rightKeys ) throws InvalidAlgException {
+    EnumerableSemiJoin( AlgCluster cluster, AlgTraitSet traits, AlgNode left, AlgNode right, RexNode condition, ImmutableList<Integer> leftKeys, ImmutableList<Integer> rightKeys ) throws InvalidAlgException {
         super( cluster, traits, left, right, condition, leftKeys, rightKeys );
     }
 
@@ -74,7 +74,7 @@ public class EnumerableSemiJoin extends SemiJoin implements EnumerableAlg {
      * Creates an EnumerableSemiJoin.
      */
     public static EnumerableSemiJoin create( AlgNode left, AlgNode right, RexNode condition, ImmutableList<Integer> leftKeys, ImmutableList<Integer> rightKeys ) {
-        final AlgOptCluster cluster = left.getCluster();
+        final AlgCluster cluster = left.getCluster();
         final AlgMetadataQuery mq = cluster.getMetadataQuery();
         final AlgTraitSet traitSet = cluster.traitSetOf( EnumerableConvention.INSTANCE ).replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.enumerableSemiJoin( mq, left, right ) );
         try {
@@ -101,7 +101,7 @@ public class EnumerableSemiJoin extends SemiJoin implements EnumerableAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         double rowCount = mq.getTupleCount( this );
 
         // Right-hand input is the "build", and hopefully small, input.

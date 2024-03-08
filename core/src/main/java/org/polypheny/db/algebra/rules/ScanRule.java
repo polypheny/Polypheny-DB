@@ -21,6 +21,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.common.Scan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -30,7 +31,7 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Planner rule that converts a {@link LogicalRelScan} to the result of calling {@link TranslatableEntity#toAlg(org.polypheny.db.plan.AlgOptCluster, AlgTraitSet)}.
+ * Planner rule that converts a {@link LogicalRelScan} to the result of calling {@link TranslatableEntity#toAlg(AlgCluster, AlgTraitSet)}.
  */
 public class ScanRule extends AlgOptRule {
 
@@ -40,7 +41,7 @@ public class ScanRule extends AlgOptRule {
     /**
      * Creates a ScanRule.
      *
-     * @param algBuilderFactory Builder for relational expressions
+     * @param algBuilderFactory Builder for algebra expressions
      */
     public ScanRule( AlgBuilderFactory algBuilderFactory ) {
         super( operand( Scan.class, Convention.NONE, r -> true, any() ), algBuilderFactory, ScanRule.class.getSimpleName() );

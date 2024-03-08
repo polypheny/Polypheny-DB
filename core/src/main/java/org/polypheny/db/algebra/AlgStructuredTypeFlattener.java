@@ -104,7 +104,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCorrelVariable;
@@ -173,7 +173,7 @@ public class AlgStructuredTypeFlattener implements AlgConsumingVisitor {
     private int iRestructureInput;
     private AlgDataType flattenedRootType;
     boolean restructured;
-    private final AlgOptCluster cluster;
+    private final AlgCluster cluster;
 
     @Getter
     private ImmutableMap<Class<? extends AlgNode>, Consumer<AlgNode>> handlers = ImmutableMap.copyOf(
@@ -234,7 +234,7 @@ public class AlgStructuredTypeFlattener implements AlgConsumingVisitor {
     public AlgStructuredTypeFlattener(
             AlgBuilder algBuilder,
             RexBuilder rexBuilder,
-            AlgOptCluster cluster,
+            AlgCluster cluster,
             boolean restructure ) {
         this.algBuilder = algBuilder;
         this.rexBuilder = rexBuilder;
@@ -720,7 +720,7 @@ public class AlgStructuredTypeFlattener implements AlgConsumingVisitor {
         // Translate the child.
         final AlgNode newInput = getNewForOldRel( alg.getInput() );
 
-        final AlgOptCluster cluster = alg.getCluster();
+        final AlgCluster cluster = alg.getCluster();
         RexProgramBuilder programBuilder =
                 new RexProgramBuilder(
                         newInput.getTupleType(),

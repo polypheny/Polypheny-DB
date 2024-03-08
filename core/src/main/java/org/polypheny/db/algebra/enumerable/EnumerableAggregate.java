@@ -62,7 +62,7 @@ import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl.SyntheticRecordType;
 import org.polypheny.db.rex.RexIndexRef;
@@ -79,7 +79,7 @@ import org.polypheny.db.util.Util;
 public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
 
 
-    public EnumerableAggregate( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) throws InvalidAlgException {
+    public EnumerableAggregate( AlgCluster cluster, AlgTraitSet traitSet, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) throws InvalidAlgException {
         super( cluster, traitSet, child, indicator, groupSet, groupSets, aggCalls );
         Preconditions.checkArgument( !indicator, "EnumerableAggregate no longer supports indicator fields" );
         assert getConvention() instanceof EnumerableConvention;

@@ -46,7 +46,7 @@ import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.nodes.OperatorImpl;
 import org.polypheny.db.nodes.validate.Validator;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.schema.AggregateFunction;
 import org.polypheny.db.schema.Function;
@@ -231,7 +231,7 @@ public class SqlTypeUtil {
             QueryLanguage language,
             Validator validator,
             Snapshot snapshot,
-            AlgOptCluster cluster,
+            AlgCluster cluster,
             RexConvertletTable convertletTable,
             Config config ) {
         if ( language == QueryLanguage.from( "sql" ) ) {
@@ -245,7 +245,7 @@ public class SqlTypeUtil {
     private SqlToAlgConverter getSqlToRelConverter(
             SqlValidator validator,
             Snapshot snapshot,
-            AlgOptCluster cluster,
+            AlgCluster cluster,
             SqlRexConvertletTable convertletTable,
             Config config ) {
         return new SqlToAlgConverter( validator, snapshot, cluster, convertletTable, config );

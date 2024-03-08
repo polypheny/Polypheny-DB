@@ -30,7 +30,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
@@ -50,7 +50,7 @@ public abstract class LpgUnwind extends SingleAlg implements LpgAlg {
      * @param traits
      * @param input Input relational expression
      */
-    protected LpgUnwind( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, int index, @Nullable String alias ) {
+    protected LpgUnwind( AlgCluster cluster, AlgTraitSet traits, AlgNode input, int index, @Nullable String alias ) {
         super( cluster, traits, adjustInputIfNecessary( input, index ) );
         assert this.input.getTupleType().getFieldCount() == 1 : "Unwind is for now only able on a single field.";
 
