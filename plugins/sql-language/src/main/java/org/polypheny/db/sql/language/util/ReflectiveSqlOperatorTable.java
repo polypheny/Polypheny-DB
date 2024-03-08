@@ -120,7 +120,7 @@ public abstract class ReflectiveSqlOperatorTable implements OperatorTable {
 
 
     /**
-     * Key for looking up operators. The name is stored in upper-case because we storeId case-insensitively, even in a case-sensitive session.
+     * Key for looking up operators. The name is stored in upper-case because we store case-insensitively, even in a case-sensitive session.
      */
     private static class Key extends Pair<String, Syntax> {
 
@@ -130,14 +130,10 @@ public abstract class ReflectiveSqlOperatorTable implements OperatorTable {
 
 
         private static Syntax normalize( Syntax syntax ) {
-            switch ( syntax ) {
-                case BINARY:
-                case PREFIX:
-                case POSTFIX:
-                    return syntax;
-                default:
-                    return Syntax.FUNCTION;
-            }
+            return switch ( syntax ) {
+                case BINARY, PREFIX, POSTFIX -> syntax;
+                default -> Syntax.FUNCTION;
+            };
         }
 
     }

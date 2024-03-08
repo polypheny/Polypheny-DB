@@ -27,7 +27,7 @@ import org.polypheny.db.rex.RexCall;
 
 /**
  * Implementation of {@link NotNullImplementor} that calls a given {@link java.lang.reflect.Method}.
- *
+ * <p>
  * When method is not static, a new instance of the required class is created.
  */
 public class ReflectiveCallNotNullImplementor implements NotNullImplementor {

@@ -62,7 +62,7 @@ public class EnumerableSemiJoin extends SemiJoin implements EnumerableAlg {
 
     /**
      * Creates an EnumerableSemiJoin.
-     *
+     * <p>
      * Use {@link #create} unless you know what you're doing.
      */
     EnumerableSemiJoin( AlgCluster cluster, AlgTraitSet traits, AlgNode left, AlgNode right, RexNode condition, ImmutableList<Integer> leftKeys, ImmutableList<Integer> rightKeys ) throws InvalidAlgException {

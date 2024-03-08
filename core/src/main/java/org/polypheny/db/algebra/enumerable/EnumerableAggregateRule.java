@@ -28,7 +28,7 @@ import org.polypheny.db.plan.Convention;
 /**
  * Rule to convert a {@link LogicalRelAggregate} to an {@link EnumerableAggregate}.
  */
-class EnumerableAggregateRule extends ConverterRule {
+public class EnumerableAggregateRule extends ConverterRule {
 
     EnumerableAggregateRule() {
         super( LogicalRelAggregate.class, Convention.NONE, EnumerableConvention.INSTANCE, "EnumerableAggregateRule" );

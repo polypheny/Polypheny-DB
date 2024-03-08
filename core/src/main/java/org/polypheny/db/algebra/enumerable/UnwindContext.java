@@ -37,6 +37,7 @@ public class UnwindContext {
     ParameterExpression _unset;
 
 
+    @SuppressWarnings("unused")
     public void activateUnwind( ParameterExpression _i, ParameterExpression _list, ParameterExpression _unset ) {
         useUnwind = true;
         this._i = _i;

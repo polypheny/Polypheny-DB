@@ -27,7 +27,7 @@ import org.polypheny.db.plan.Convention;
 /**
  * Rule to convert a {@link LogicalWindow} to an {@link EnumerableWindow}.
  */
-class EnumerableWindowRule extends ConverterRule {
+public class EnumerableWindowRule extends ConverterRule {
 
     EnumerableWindowRule() {
         super( LogicalWindow.class, Convention.NONE, EnumerableConvention.INSTANCE, "EnumerableWindowRule" );

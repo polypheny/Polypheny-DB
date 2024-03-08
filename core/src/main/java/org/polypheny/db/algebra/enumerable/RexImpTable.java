@@ -588,7 +588,6 @@ public class RexImpTable {
                 final RexCall call2 = call2( false, translator, call );
                 return implementCall( translator, call2, implementor, nullAs );
             };
-            default -> throw new AssertionError( nullPolicy );
         };
     }
 
@@ -2695,17 +2694,15 @@ public class RexImpTable {
             final PolyType typeName = call.getType().getPolyType();
             switch ( operand0.getType().getPolyType() ) {
                 case DATE:
-                    switch ( typeName ) {
-                        case TIMESTAMP:
-                            trop0 = Expressions.convert_(
-                                    Expressions.multiply( trop0, Expressions.constant( DateTimeUtils.MILLIS_PER_DAY ) ),
-                                    long.class );
-                            break;
-                        default:
-                            trop1 = switch ( typeName1 ) {
-                                case INTERVAL_DAY, INTERVAL_DAY_HOUR, INTERVAL_DAY_MINUTE, INTERVAL_DAY_SECOND, INTERVAL_HOUR, INTERVAL_HOUR_MINUTE, INTERVAL_HOUR_SECOND, INTERVAL_MINUTE, INTERVAL_MINUTE_SECOND, INTERVAL_SECOND -> Expressions.convert_( Expressions.divide( trop1, Expressions.constant( DateTimeUtils.MILLIS_PER_DAY ) ), int.class );
-                                default -> trop1;
-                            };
+                    if ( Objects.requireNonNull( typeName ) == PolyType.TIMESTAMP ) {
+                        trop0 = Expressions.convert_(
+                                Expressions.multiply( trop0, Expressions.constant( DateTimeUtils.MILLIS_PER_DAY ) ),
+                                long.class );
+                    } else {
+                        trop1 = switch ( typeName1 ) {
+                            case INTERVAL_DAY, INTERVAL_DAY_HOUR, INTERVAL_DAY_MINUTE, INTERVAL_DAY_SECOND, INTERVAL_HOUR, INTERVAL_HOUR_MINUTE, INTERVAL_HOUR_SECOND, INTERVAL_MINUTE, INTERVAL_MINUTE_SECOND, INTERVAL_SECOND -> Expressions.convert_( Expressions.divide( trop1, Expressions.constant( DateTimeUtils.MILLIS_PER_DAY ) ), int.class );
+                            default -> trop1;
+                        };
                     }
                     break;
                 case TIME:

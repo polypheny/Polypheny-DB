@@ -113,8 +113,7 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
 
 
     private Result implementRelationalOnGraph( EnumerableAlgImplementor implementor, Prefer pref ) {
-        Result impl = implementor.visitChild( this, 0, (EnumerableAlg) getInputs().get( 0 ), pref );
-        return impl;
+        return implementor.visitChild( this, 0, (EnumerableAlg) getInputs().get( 0 ), pref );
     }
 
 
