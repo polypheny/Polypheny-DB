@@ -199,7 +199,7 @@ Represents a time value.
 */
 message ProtoTime {
   // The value of the time
-  int32 value = 1;
+  int32 time = 1;
 }
 
 
