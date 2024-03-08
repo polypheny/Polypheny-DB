@@ -67,7 +67,7 @@ public class ExcelTableScan extends RelScan<ExcelTable> implements EnumerableAlg
 
     @Override
     public AlgDataType deriveRowType() {
-        final List<AlgDataTypeField> fieldList = entity.getRowType().getFields();
+        final List<AlgDataTypeField> fieldList = entity.getTupleType().getFields();
         final AlgDataTypeFactory.Builder builder = getCluster().getTypeFactory().builder();
         for ( int field : fields ) {
             builder.add( fieldList.get( field ) );
@@ -89,7 +89,7 @@ public class ExcelTableScan extends RelScan<ExcelTable> implements EnumerableAlg
         // The "+ 2D" on top and bottom keeps the function fairly smooth.
         //
         // For example, if table has 3 fields, project has 1 field, then factor = (1 + 2) / (3 + 2) = 0.6
-        return super.computeSelfCost( planner, mq ).multiplyBy( ((double) fields.length + 2D) / ((double) entity.getRowType().getFieldCount() + 2D) );
+        return super.computeSelfCost( planner, mq ).multiplyBy( ((double) fields.length + 2D) / ((double) entity.getTupleType().getFieldCount() + 2D) );
     }
 
 

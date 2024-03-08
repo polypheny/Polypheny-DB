@@ -92,11 +92,11 @@ public class FileTableModify extends RelModify<FileTranslatableEntity> implement
                 for ( RexNode src : getSourceExpressions() ) {
                     if ( src instanceof RexLiteral ) {
                         String logicalName = getUpdateColumns().get( i );
-                        AlgDataTypeField field = entity.getRowType().getField( logicalName, false, false );
+                        AlgDataTypeField field = entity.getTupleType().getField( logicalName, false, false );
                         values.add( new LiteralValue( Math.toIntExact( field.getId() ), ((RexLiteral) src).value ) );
                     } else if ( src instanceof RexDynamicParam ) {
                         String logicalName = getUpdateColumns().get( i );
-                        AlgDataTypeField field = entity.getRowType().getField( logicalName, false, false );
+                        AlgDataTypeField field = entity.getTupleType().getField( logicalName, false, false );
                         values.add( new DynamicValue( Math.toIntExact( field.getId() ), ((RexDynamicParam) src).getIndex() ) );
                     } else if ( src instanceof RexCall && src.getType().getPolyType() == PolyType.ARRAY ) {
                         values.add( FileUtil.fromArrayRexCall( (RexCall) src ) );

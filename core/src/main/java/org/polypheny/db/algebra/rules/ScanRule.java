@@ -43,7 +43,7 @@ public class ScanRule extends AlgOptRule {
      * @param algBuilderFactory Builder for relational expressions
      */
     public ScanRule( AlgBuilderFactory algBuilderFactory ) {
-        super( operandJ( Scan.class, Convention.NONE, r -> true, any() ), algBuilderFactory, ScanRule.class.getSimpleName() );
+        super( operand( Scan.class, Convention.NONE, r -> true, any() ), algBuilderFactory, ScanRule.class.getSimpleName() );
     }
 
 

@@ -161,7 +161,7 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
                         Class.class,
                         BuiltInMethod.TYPED_GET_ELEMENT_TYPE.method.getName(),
                         ImmutableList.of(),
-                        Blocks.toFunctionBlock( Expressions.return_( null, Expressions.constant( result.physType().getJavaRowType() ) ) ) ) );
+                        Blocks.toFunctionBlock( Expressions.return_( null, Expressions.constant( result.physType().getJavaTupleType() ) ) ) ) );
         return Expressions.classDecl(
                 Modifier.PUBLIC,
                 "Baz",
@@ -419,7 +419,7 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
 
 
     public EnumerableAlg.Result result( PhysType physType, BlockStatement block ) {
-        return new EnumerableAlg.Result( block, physType, JavaRowFormat.ARRAY );
+        return new EnumerableAlg.Result( block, physType, JavaTupleFormat.ARRAY );
     }
 
 
@@ -507,7 +507,7 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
         public void go( EnumerableAlg.Result result ) {
             final Set<Type> types = new LinkedHashSet<>();
             result.block().accept( new TypeFinder( types ) );
-            types.add( result.physType().getJavaRowType() );
+            types.add( result.physType().getJavaTupleType() );
             for ( Type type : types ) {
                 register( type );
             }

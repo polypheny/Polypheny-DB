@@ -2497,9 +2497,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             return RelationalResult.builder().error( e.getMessage() ).build();
         }
 
-        UiColumnDefinition[] header = new UiColumnDefinition[polyImplementation.getRowType().getFieldCount()];
+        UiColumnDefinition[] header = new UiColumnDefinition[polyImplementation.getTupleType().getFieldCount()];
         int counter = 0;
-        for ( AlgDataTypeField col : polyImplementation.getRowType().getFields() ) {
+        for ( AlgDataTypeField col : polyImplementation.getTupleType().getFields() ) {
             header[counter++] = UiColumnDefinition.builder()
                     .name( col.getName() )
                     .dataType( col.getType().getFullTypeString() )

@@ -111,10 +111,10 @@ public class SqlMultisetQueryConstructor extends SqlSpecialOperator {
         SqlSelect subSelect = call.operand( 0 );
         subSelect.validateExpr( (SqlValidator) validator, (SqlValidatorScope) scope );
         SqlValidatorNamespace ns = ((SqlValidator) validator).getSqlNamespace( subSelect );
-        assert null != ns.getRowType();
+        assert null != ns.getTupleType();
         return PolyTypeUtil.createMultisetType(
                 validator.getTypeFactory(),
-                ns.getRowType(),
+                ns.getTupleType(),
                 false );
     }
 

@@ -75,72 +75,72 @@ import org.polypheny.db.util.Util;
 public class PhysTypeImpl implements PhysType {
 
     private final JavaTypeFactory typeFactory;
-    private final AlgDataType rowType;
+    private final AlgDataType tupleType;
     private final Type javaRowClass;
     private final List<Class<?>> fieldClasses = new ArrayList<>();
-    final JavaRowFormat format;
+    final JavaTupleFormat format;
 
 
     /**
      * Creates a PhysTypeImpl.
      */
-    PhysTypeImpl( JavaTypeFactory typeFactory, AlgDataType rowType, Type javaRowClass, JavaRowFormat format ) {
+    PhysTypeImpl( JavaTypeFactory typeFactory, AlgDataType tupleType, Type javaTupleClass, JavaTupleFormat format ) {
         this.typeFactory = typeFactory;
-        this.rowType = rowType;
-        this.javaRowClass = javaRowClass;
+        this.tupleType = tupleType;
+        this.javaRowClass = javaTupleClass;
         this.format = format;
-        for ( AlgDataTypeField field : rowType.getFields() ) {
+        for ( AlgDataTypeField field : tupleType.getFields() ) {
             fieldClasses.add( EnumUtils.javaRowClass( typeFactory, field.getType() ) );
         }
     }
 
 
-    public static PhysType of( JavaTypeFactory typeFactory, AlgDataType rowType, JavaRowFormat format ) {
-        return of( typeFactory, rowType, format, true );
+    public static PhysType of( JavaTypeFactory typeFactory, AlgDataType tupleType, JavaTupleFormat format ) {
+        return of( typeFactory, tupleType, format, true );
     }
 
 
-    public static PhysType of( JavaTypeFactory typeFactory, AlgDataType rowType, JavaRowFormat format, boolean optimize ) {
-        final Type javaRowClass = format.javaRowClass( typeFactory, rowType );
-        return new PhysTypeImpl( typeFactory, rowType, javaRowClass, format );
+    public static PhysType of( JavaTypeFactory typeFactory, AlgDataType tupleType, JavaTupleFormat format, boolean optimize ) {
+        final Type javaRowClass = format.javaTupleClass( typeFactory, tupleType );
+        return new PhysTypeImpl( typeFactory, tupleType, javaRowClass, format );
     }
 
 
-    static PhysType of( final JavaTypeFactory typeFactory, Type javaRowClass ) {
+    static PhysType of( final JavaTypeFactory typeFactory, Type javaTupleClass ) {
         final Builder builder = typeFactory.builder();
-        if ( javaRowClass instanceof Types.RecordType recordType ) {
+        if ( javaTupleClass instanceof Types.RecordType recordType ) {
             for ( Types.RecordField field : recordType.getRecordFields() ) {
                 builder.add( null, field.getName(), null, typeFactory.createType( field.getType() ) );
             }
         }
-        AlgDataType rowType = builder.build();
+        AlgDataType tupleType = builder.build();
         // Do not optimize if there are 0 or 1 fields.
-        return new PhysTypeImpl( typeFactory, rowType, javaRowClass, JavaRowFormat.CUSTOM );
+        return new PhysTypeImpl( typeFactory, tupleType, javaTupleClass, JavaTupleFormat.CUSTOM );
     }
 
 
     @Override
-    public JavaRowFormat getFormat() {
+    public JavaTupleFormat getFormat() {
         return format;
     }
 
 
     @Override
-    public PhysType project( List<Integer> integers, JavaRowFormat format ) {
+    public PhysType project( List<Integer> integers, JavaTupleFormat format ) {
         return project( integers, false, format );
     }
 
 
     @Override
-    public PhysType project( List<Integer> integers, boolean indicator, JavaRowFormat format ) {
+    public PhysType project( List<Integer> integers, boolean indicator, JavaTupleFormat format ) {
         final Builder builder = typeFactory.builder();
         for ( int index : integers ) {
-            builder.add( rowType.getFields().get( index ) );
+            builder.add( tupleType.getFields().get( index ) );
         }
         if ( indicator ) {
             final AlgDataType booleanType = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.BOOLEAN ), false );
             for ( int index : integers ) {
-                builder.add( null, "i$" + rowType.getFields().get( index ).getName(), null, booleanType );
+                builder.add( null, "i$" + tupleType.getFields().get( index ).getName(), null, booleanType );
             }
         }
         AlgDataType projectedRowType = builder.build();
@@ -155,15 +155,15 @@ public class PhysTypeImpl implements PhysType {
 
 
     @Override
-    public Expression generateSelector( ParameterExpression parameter, List<Integer> fields, JavaRowFormat targetFormat ) {
+    public Expression generateSelector( ParameterExpression parameter, List<Integer> fields, JavaTupleFormat targetFormat ) {
         // Optimize target format
         if ( fields.size() == 1 ) {
-            targetFormat = JavaRowFormat.SCALAR;
+            targetFormat = JavaTupleFormat.SCALAR;
         } else {
-            targetFormat = JavaRowFormat.LIST;
+            targetFormat = JavaTupleFormat.LIST;
         }
         final PhysType targetPhysType = project( fields, targetFormat );
-        if ( Objects.requireNonNull( format ) == JavaRowFormat.SCALAR ) {
+        if ( Objects.requireNonNull( format ) == JavaTupleFormat.SCALAR ) {
             return Expressions.call( BuiltInMethod.IDENTITY_SELECTOR.method );
         } else if ( fields.size() == 1 ) {
             return Expressions.lambda( Function1.class, Expressions.arrayIndex( targetPhysType.record( fieldReferences( parameter, fields ) ), Expressions.constant( 0 ) ), parameter );
@@ -173,7 +173,7 @@ public class PhysTypeImpl implements PhysType {
 
 
     @Override
-    public Expression generateSelector( final ParameterExpression parameter, final List<Integer> fields, List<Integer> usedFields, JavaRowFormat targetFormat ) {
+    public Expression generateSelector( final ParameterExpression parameter, final List<Integer> fields, List<Integer> usedFields, JavaTupleFormat targetFormat ) {
         final PhysType targetPhysType = project( fields, true, targetFormat );
         final List<Expression> expressions = new ArrayList<>();
         for ( Ord<Integer> ord : Ord.zip( fields ) ) {
@@ -193,15 +193,15 @@ public class PhysTypeImpl implements PhysType {
 
 
     @Override
-    public Pair<Type, List<Expression>> selector( ParameterExpression parameter, List<Integer> fields, JavaRowFormat targetFormat ) {
+    public Pair<Type, List<Expression>> selector( ParameterExpression parameter, List<Integer> fields, JavaTupleFormat targetFormat ) {
         // Optimize target format
-        targetFormat = JavaRowFormat.LIST;
+        targetFormat = JavaTupleFormat.LIST;
 
         final PhysType targetPhysType = project( fields, targetFormat );
-        if ( Objects.requireNonNull( format ) == JavaRowFormat.SCALAR ) {
+        if ( Objects.requireNonNull( format ) == JavaTupleFormat.SCALAR ) {
             return Pair.of( parameter.getType(), ImmutableList.of( parameter ) );
         }
-        return Pair.of( targetPhysType.getJavaRowType(), fieldReferences( parameter, fields ) );
+        return Pair.of( targetPhysType.getJavaTupleType(), fieldReferences( parameter, fields ) );
     }
 
 
@@ -222,7 +222,7 @@ public class PhysTypeImpl implements PhysType {
         }
         return new PhysTypeImpl(
                 typeFactory,
-                typeFactory.createTypeWithNullability( rowType, true ),
+                typeFactory.createTypeWithNullability( tupleType, true ),
                 Primitive.box( javaRowClass ),
                 format );
     }
@@ -230,12 +230,12 @@ public class PhysTypeImpl implements PhysType {
 
     @Override
     public Expression convertTo( Expression exp, PhysType targetPhysType ) {
-        final JavaRowFormat targetFormat = targetPhysType.getFormat();
+        final JavaTupleFormat targetFormat = targetPhysType.getFormat();
         if ( format == targetFormat ) {
             return exp;
         }
         final ParameterExpression o_ = Expressions.parameter( javaRowClass, "o" );
-        final int fieldCount = rowType.getFieldCount();
+        final int fieldCount = tupleType.getFieldCount();
         return Expressions.call( exp, BuiltInMethod.SELECT.method, generateSelector( o_, Util.range( fieldCount ), targetFormat ) );
     }
 
@@ -416,8 +416,8 @@ public class PhysTypeImpl implements PhysType {
 
 
     @Override
-    public AlgDataType getRowType() {
-        return rowType;
+    public AlgDataType getTupleType() {
+        return tupleType;
     }
 
 
@@ -428,27 +428,27 @@ public class PhysTypeImpl implements PhysType {
 
 
     @Override
-    public Type getJavaRowType() {
+    public Type getJavaTupleType() {
         return javaRowClass;
     }
 
 
     @Override
     public Type getJavaFieldType( int index ) {
-        return format.javaFieldClass( typeFactory, rowType, index );
+        return format.javaFieldClass( typeFactory, tupleType, index );
     }
 
 
     @Override
     public PhysType component( int fieldOrdinal ) {
-        final AlgDataTypeField field = rowType.getFields().get( fieldOrdinal );
+        final AlgDataTypeField field = tupleType.getFields().get( fieldOrdinal );
         return PhysTypeImpl.of( typeFactory, toStruct( field.getType().getComponentType() ), format, false );
     }
 
 
     @Override
     public PhysType field( int ordinal ) {
-        final AlgDataTypeField field = rowType.getFields().get( ordinal );
+        final AlgDataTypeField field = tupleType.getFields().get( ordinal );
         final AlgDataType type = field.getType();
         return PhysTypeImpl.of( typeFactory, toStruct( type ), format, false );
     }
@@ -494,7 +494,7 @@ public class PhysTypeImpl implements PhysType {
 
     @Override
     public boolean fieldNullable( int field ) {
-        return rowType.getFields().get( field ).getType().isNullable();
+        return tupleType.getFields().get( field ).getType().isNullable();
     }
 
 

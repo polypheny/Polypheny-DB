@@ -91,7 +91,6 @@ import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
-import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.AlgTraitDef;
@@ -175,11 +174,6 @@ public class VolcanoPlanner extends AbstractAlgOptPlanner {
      * RelOptRuleCalls are not queued up.
      */
     final Map<AlgNode, Double> algImportances = new HashMap<>();
-
-    /**
-     * List of all schemas which have been registered.
-     */
-    private final Set<AlgOptSchema> registeredSchemas = new HashSet<>();
 
     /**
      * Holds rule calls waiting to be fired.
@@ -841,15 +835,6 @@ public class VolcanoPlanner extends AbstractAlgOptPlanner {
         addRule( ModelSwitcherRule.MODEL_SWITCHER_RULE_REL_GRAPH );
         addRule( ModelSwitcherRule.MODEL_SWITCHER_RULE_DOC_REL );
         addRule( ModelSwitcherRule.MODEL_SWITCHER_RULE_DOC_GRAPH );
-
-        // Document
-        // addRule( DocumentToEnumerableRule.PROJECT_TO_ENUMERABLE );
-        // addRule( DocumentToEnumerableRule.FILTER_TO_ENUMERABLE );
-        // addRule( DocumentToEnumerableRule.AGGREGATE_TO_ENUMERABLE );
-        // addRule( DocumentToEnumerableRule.SORT_TO_ENUMERABLE );
-        // addRule( MergeDocumentFilterRule.INSTANCE );
-
-        // Relational
     }
 
 
@@ -872,12 +857,6 @@ public class VolcanoPlanner extends AbstractAlgOptPlanner {
         addRule( SortRemoveRule.INSTANCE );
 
         // todo: rule which makes Project({OrdinalRef}) disappear
-    }
-
-
-    @Override
-    public void registerSchema( AlgOptSchema schema ) {
-        registeredSchemas.add( schema );
     }
 
 

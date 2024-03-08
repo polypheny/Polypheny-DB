@@ -25,7 +25,7 @@ import org.polypheny.db.algebra.core.Collect;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
-import org.polypheny.db.algebra.enumerable.JavaRowFormat;
+import org.polypheny.db.algebra.enumerable.JavaTupleFormat;
 import org.polypheny.db.algebra.enumerable.PhysType;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -56,7 +56,7 @@ public class EnumerableCollect extends Collect implements EnumerableAlg {
         final BlockBuilder builder = new BlockBuilder();
         final EnumerableAlg child = (EnumerableAlg) getInput();
         final Result result = implementor.visitChild( this, 0, child, Prefer.ARRAY );
-        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), JavaRowFormat.LIST );
+        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), JavaTupleFormat.LIST );
 
         Expression child_ = builder.append( "child", result.block() );
         Expression list_ = builder.append( "list", Expressions.call( child_, BuiltInMethod.ENUMERABLE_TO_LIST.method ) );

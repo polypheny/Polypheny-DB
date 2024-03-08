@@ -494,7 +494,7 @@ public abstract class SubQueryRemoveRule extends AlgOptRule {
 
         public SubQueryProjectRemoveRule( AlgBuilderFactory algBuilderFactory ) {
             super(
-                    operandJ( Project.class, null, RexUtil.SubQueryFinder::containsSubQuery, any() ),
+                    operand( Project.class, null, RexUtil.SubQueryFinder::containsSubQuery, any() ),
                     algBuilderFactory, "SubQueryRemoveRule:Project" );
         }
 
@@ -524,7 +524,7 @@ public abstract class SubQueryRemoveRule extends AlgOptRule {
 
         public SubQueryFilterRemoveRule( AlgBuilderFactory algBuilderFactory ) {
             super(
-                    operandJ( Filter.class, null, RexUtil.SubQueryFinder::containsSubQuery, any() ),
+                    operand( Filter.class, null, RexUtil.SubQueryFinder::containsSubQuery, any() ),
                     algBuilderFactory,
                     "SubQueryRemoveRule:Filter" );
         }
@@ -565,7 +565,7 @@ public abstract class SubQueryRemoveRule extends AlgOptRule {
 
         public SubQueryJoinRemoveRule( AlgBuilderFactory algBuilderFactory ) {
             super(
-                    operandJ( Join.class, null, RexUtil.SubQueryFinder::containsSubQuery, any() ),
+                    operand( Join.class, null, RexUtil.SubQueryFinder::containsSubQuery, any() ),
                     algBuilderFactory,
                     "SubQueryRemoveRule:Join" );
         }

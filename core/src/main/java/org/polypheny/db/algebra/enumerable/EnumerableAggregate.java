@@ -178,9 +178,9 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
 
         final PhysType inputPhysType = result.physType();
 
-        ParameterExpression parameter = Expressions.parameter( inputPhysType.getJavaRowType(), "a0" );
+        ParameterExpression parameter = Expressions.parameter( inputPhysType.getJavaTupleType(), "a0" );
 
-        final PhysType keyPhysType = inputPhysType.project( groupSet.asList(), getGroupType() != Group.SIMPLE, JavaRowFormat.LIST );
+        final PhysType keyPhysType = inputPhysType.project( groupSet.asList(), getGroupType() != Group.SIMPLE, JavaTupleFormat.LIST );
         final int groupCount = getGroupCount();
 
         final List<AggImpState> aggs = new ArrayList<>( aggCalls.size() );
@@ -239,8 +239,8 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
         //             return acc;
         //         }
         //     };
-        final ParameterExpression inParameter = Expressions.parameter( inputPhysType.getJavaRowType(), "in" );
-        final ParameterExpression acc_ = Expressions.parameter( accPhysType.getJavaRowType(), "acc" );
+        final ParameterExpression inParameter = Expressions.parameter( inputPhysType.getJavaTupleType(), "in" );
+        final ParameterExpression acc_ = Expressions.parameter( accPhysType.getJavaTupleType(), "acc" );
         for ( int i = 0, stateOffset = 0; i < aggs.size(); i++ ) {
             final BlockBuilder builder2 = new BlockBuilder();
             final AggImpState agg = aggs.get( i );
@@ -258,7 +258,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
                     new AggAddContextImpl( builder2, accumulator ) {
                         @Override
                         public List<RexNode> rexArguments() {
-                            List<AlgDataTypeField> inputTypes = inputPhysType.getRowType().getFields();
+                            List<AlgDataTypeField> inputTypes = inputPhysType.getTupleType().getFields();
                             List<RexNode> args = new ArrayList<>();
                             for ( int index : agg.call.getArgList() ) {
                                 args.add( RexIndexRef.of( index, inputTypes ) );
@@ -271,7 +271,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
                         public RexNode rexFilterArgument() {
                             return agg.call.filterArg < 0
                                     ? null
-                                    : RexIndexRef.of( agg.call.filterArg, inputPhysType.getRowType() );
+                                    : RexIndexRef.of( agg.call.filterArg, inputPhysType.getTupleType() );
                         }
 
 
@@ -305,7 +305,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
         if ( groupCount == 0 ) {
             key_ = null;
         } else {
-            final Type keyType = keyPhysType.getJavaRowType();
+            final Type keyType = keyPhysType.getJavaTupleType();
             key_ = Expressions.parameter( keyType, "key" );
             for ( int j = 0; j < groupCount; j++ ) {
                 final Expression ref = keyPhysType.fieldReference( key_, j );
@@ -389,11 +389,11 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
 
 
     private void declareParentAccumulator( List<Expression> initExpressions, BlockBuilder initBlock, PhysType accPhysType ) {
-        if ( accPhysType.getJavaRowType() instanceof SyntheticRecordType synType ) {
+        if ( accPhysType.getJavaTupleType() instanceof SyntheticRecordType synType ) {
             // We have to initialize the SyntheticRecordType instance this way, to avoid using a class constructor with too many parameters.
-            final ParameterExpression record0_ = Expressions.parameter( accPhysType.getJavaRowType(), "record0" );
+            final ParameterExpression record0_ = Expressions.parameter( accPhysType.getJavaTupleType(), "record0" );
             initBlock.add( Expressions.declare( 0, record0_, null ) );
-            initBlock.add( Expressions.statement( Expressions.assign( record0_, Expressions.new_( accPhysType.getJavaRowType() ) ) ) );
+            initBlock.add( Expressions.statement( Expressions.assign( record0_, Expressions.new_( accPhysType.getJavaTupleType() ) ) ) );
             List<Types.RecordField> fieldList = synType.getRecordFields();
             for ( int i = 0; i < initExpressions.size(); i++ ) {
                 Expression right = initExpressions.get( i );

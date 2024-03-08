@@ -79,13 +79,13 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
 
 
     @Override
-    public final void validate( AlgDataType targetRowType ) {
+    public final void validate( AlgDataType targetTupleType ) {
         switch ( status ) {
             case UNVALIDATED:
                 try {
                     status = SqlValidatorImpl.Status.IN_PROGRESS;
                     Preconditions.checkArgument( rowType == null, "Namespace.rowType must be null before validate has been called" );
-                    AlgDataType type = validateImpl( targetRowType );
+                    AlgDataType type = validateImpl( targetTupleType );
                     Preconditions.checkArgument( type != null, "validateImpl() returned null" );
                     setType( type );
                 } finally {
@@ -113,7 +113,7 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
 
 
     @Override
-    public AlgDataType getRowType() {
+    public AlgDataType getTupleType() {
         if ( rowType instanceof GraphType ) {
             return GraphType.ofRelational();
         }
@@ -130,13 +130,13 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
 
     @Override
     public AlgDataType getRowTypeSansSystemColumns() {
-        return getRowType();
+        return getTupleType();
     }
 
 
     @Override
     public AlgDataType getType() {
-        Util.discard( getRowType() );
+        Util.discard( getTupleType() );
         return type;
     }
 
@@ -162,13 +162,13 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
 
     @Override
     public SqlValidatorNamespace lookupChild( String name ) {
-        return validator.lookupFieldNamespace( getRowType(), name );
+        return validator.lookupFieldNamespace( getTupleType(), name );
     }
 
 
     @Override
     public boolean fieldExists( String name ) {
-        final AlgDataType rowType = getRowType();
+        final AlgDataType rowType = getTupleType();
         return validator.snapshot.nameMatcher.field( rowType, name ) != null;
     }
 

@@ -55,7 +55,7 @@ public class MongoScan extends Scan<MongoEntity> implements MongoAlg {
      */
     public MongoScan( AlgOptCluster cluster, AlgTraitSet traitSet, MongoEntity table ) {
         super( cluster, traitSet, table );
-        this.rowType = table.getRowType( cluster.getTypeFactory() );
+        this.rowType = table.getTupleType( cluster.getTypeFactory() );
 
         assert getConvention() == CONVENTION;
     }
@@ -70,7 +70,7 @@ public class MongoScan extends Scan<MongoEntity> implements MongoAlg {
 
     @Override
     public AlgDataType deriveRowType() {
-        return entity.getRowType( getCluster().getTypeFactory() );
+        return entity.getTupleType( getCluster().getTypeFactory() );
     }
 
 

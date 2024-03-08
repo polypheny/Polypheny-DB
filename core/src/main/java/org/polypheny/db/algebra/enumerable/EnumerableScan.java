@@ -157,7 +157,7 @@ public class EnumerableScan extends RelScan<PhysicalTable> implements Enumerable
 
 
     private Expression toRows( PhysType physType, Expression expression ) {
-        if ( physType.getFormat() == JavaRowFormat.SCALAR
+        if ( physType.getFormat() == JavaTupleFormat.SCALAR
                 && Object[].class.isAssignableFrom( elementType )
                 && getTupleType().getFieldCount() == 1
                 && (entity.unwrap( ScannableEntity.class ).isPresent()
@@ -165,12 +165,12 @@ public class EnumerableScan extends RelScan<PhysicalTable> implements Enumerable
                 || entity.unwrap( ProjectableFilterableEntity.class ).isPresent()) ) {
             return Expressions.call( BuiltInMethod.SLICE0.method, expression );
         }
-        JavaRowFormat oldFormat = format();
+        JavaTupleFormat oldFormat = format();
         if ( physType.getFormat() == oldFormat && !hasCollectionField( rowType ) ) {
             return expression;
         }
         final ParameterExpression row_ = Expressions.parameter( elementType, "row" );
-        final int fieldCount = entity.getRowType().getFieldCount();
+        final int fieldCount = entity.getTupleType().getFieldCount();
         List<Expression> expressionList = new ArrayList<>( fieldCount );
         for ( int i = 0; i < fieldCount; i++ ) {
             expressionList.add( fieldExpression( row_, i, physType, oldFormat ) );
@@ -182,19 +182,19 @@ public class EnumerableScan extends RelScan<PhysicalTable> implements Enumerable
     }
 
 
-    private Expression fieldExpression( ParameterExpression row_, int i, PhysType physType, JavaRowFormat format ) {
+    private Expression fieldExpression( ParameterExpression row_, int i, PhysType physType, JavaTupleFormat format ) {
         final Expression e = format.field( row_, i, null, physType.getJavaFieldType( i ) );
-        final AlgDataType algFieldType = physType.getRowType().getFields().get( i ).getType();
+        final AlgDataType algFieldType = physType.getTupleType().getFields().get( i ).getType();
         switch ( algFieldType.getPolyType() ) {
             case ARRAY:
             case MULTISET:
                 // We can't represent a multiset or array as a List<Employee>, because the consumer does not know the element type.
                 // The standard element type is List. We need to convert to a List<List>.
                 final JavaTypeFactory typeFactory = (JavaTypeFactory) getCluster().getTypeFactory();
-                final PhysType elementPhysType = PhysTypeImpl.of( typeFactory, algFieldType.getComponentType(), JavaRowFormat.CUSTOM );
+                final PhysType elementPhysType = PhysTypeImpl.of( typeFactory, algFieldType.getComponentType(), JavaTupleFormat.CUSTOM );
                 final MethodCallExpression e2 = Expressions.call( BuiltInMethod.AS_ENUMERABLE2.method, e );
                 final AlgDataType dummyType = this.rowType;
-                final Expression e3 = elementPhysType.convertTo( e2, PhysTypeImpl.of( typeFactory, dummyType, JavaRowFormat.LIST ) );
+                final Expression e3 = elementPhysType.convertTo( e2, PhysTypeImpl.of( typeFactory, dummyType, JavaTupleFormat.LIST ) );
                 return Expressions.call( e3, BuiltInMethod.ENUMERABLE_TO_LIST.method );
             default:
                 return e;
@@ -202,23 +202,23 @@ public class EnumerableScan extends RelScan<PhysicalTable> implements Enumerable
     }
 
 
-    private JavaRowFormat format() {
+    private JavaTupleFormat format() {
         int fieldCount = getTupleType().getFieldCount();
         if ( fieldCount == 0 ) {
-            return JavaRowFormat.LIST;
+            return JavaTupleFormat.LIST;
         }
         if ( Object[].class.isAssignableFrom( elementType ) ) {
-            return fieldCount == 1 ? JavaRowFormat.SCALAR : JavaRowFormat.ARRAY;
+            return fieldCount == 1 ? JavaTupleFormat.SCALAR : JavaTupleFormat.ARRAY;
         }
         if ( Row.class.isAssignableFrom( elementType ) ) {
-            return JavaRowFormat.ROW;
+            return JavaTupleFormat.ROW;
         }
         if ( fieldCount == 1 && (Object.class == elementType
                 || Primitive.is( elementType )
                 || Number.class.isAssignableFrom( elementType )) ) {
-            return JavaRowFormat.SCALAR;
+            return JavaTupleFormat.SCALAR;
         }
-        return JavaRowFormat.CUSTOM;
+        return JavaTupleFormat.CUSTOM;
     }
 
 

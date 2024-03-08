@@ -188,7 +188,7 @@ public abstract class DateRangeRules {
     public static class FilterDateRangeRule extends AlgOptRule {
 
         public FilterDateRangeRule( AlgBuilderFactory algBuilderFactory ) {
-            super( operandJ( Filter.class, null, FILTER_PREDICATE, any() ), algBuilderFactory, "FilterDateRangeRule" );
+            super( operand( Filter.class, null, FILTER_PREDICATE, any() ), algBuilderFactory, "FilterDateRangeRule" );
         }
 
 

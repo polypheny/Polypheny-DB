@@ -42,7 +42,6 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.ImplementationContext;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.Bindable;
-import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.type.entity.PolyValue;
 
 
@@ -55,8 +54,6 @@ public class PolySignature extends Meta.Signature {
 
     @JsonIgnore
     public final AlgDataType rowType;
-    @JsonIgnore
-    public final PolyphenyDbSchema rootSchema;
     @JsonIgnore
     private final List<AlgCollation> collationList;
     private final long maxRowCount;
@@ -72,7 +69,6 @@ public class PolySignature extends Meta.Signature {
             AlgDataType rowType,
             List<ColumnMetaData> columns,
             CursorFactory cursorFactory,
-            PolyphenyDbSchema rootSchema,
             List<AlgCollation> collationList,
             long maxRowCount,
             Bindable<PolyValue[]> bindable,
@@ -81,7 +77,6 @@ public class PolySignature extends Meta.Signature {
             DataModel dataModel ) {
         super( columns, sql, parameterList, internalParameters, cursorFactory, statementType );
         this.rowType = rowType;
-        this.rootSchema = rootSchema;
         this.collationList = collationList;
         this.maxRowCount = maxRowCount;
         this.bindable = bindable;
@@ -99,8 +94,8 @@ public class PolySignature extends Meta.Signature {
             return fromError( prepareQuery );
         }
         PolyImplementation implementation = prepareQuery.getImplementation();
-        if ( implementation.rowType != null ) {
-            for ( AlgDataTypeField field : prepareQuery.getImplementation().rowType.getFields() ) {
+        if ( implementation.tupleType != null ) {
+            for ( AlgDataTypeField field : prepareQuery.getImplementation().tupleType.getFields() ) {
                 AlgDataType type = field.getType();
                 parameters.add(
                         new AvaticaParameter(
@@ -117,10 +112,9 @@ public class PolySignature extends Meta.Signature {
                 "",
                 parameters,
                 new HashMap<>(),
-                implementation.getRowType(),
-                implementation.getColumns(),
+                implementation.getTupleType(),
+                implementation.getFields(),
                 implementation.getCursorFactory(),
-                null,
                 ImmutableList.of(),
                 implementation.getMaxRowCount(),
                 implementation.getBindable(),
@@ -138,7 +132,6 @@ public class PolySignature extends Meta.Signature {
                 new HashMap<>(),
                 null,
                 new ArrayList<>(),
-                null,
                 null,
                 ImmutableList.of(),
                 -1,

@@ -1635,7 +1635,7 @@ public class SubstitutionVisitor {
          */
         public FilterOnProjectRule( AlgBuilderFactory algBuilderFactory ) {
             super(
-                    operandJ(
+                    operand(
                             LogicalRelFilter.class,
                             null,
                             filter -> filter.getCondition() instanceof RexIndexRef,

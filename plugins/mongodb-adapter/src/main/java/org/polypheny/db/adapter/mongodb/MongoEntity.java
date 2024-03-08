@@ -144,11 +144,11 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
 
 
     @Override
-    public AlgDataType getRowType() {
+    public AlgDataType getTupleType() {
         if ( dataModel == DataModel.RELATIONAL ) {
             return buildProto().apply( AlgDataTypeFactory.DEFAULT );
         }
-        return super.getRowType();
+        return super.getTupleType();
     }
 
 

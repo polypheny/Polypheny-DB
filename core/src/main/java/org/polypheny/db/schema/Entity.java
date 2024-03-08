@@ -70,7 +70,7 @@ public interface Entity {
      * @param typeFactory Type factory with which to create the type
      * @return Row type
      */
-    AlgDataType getRowType( AlgDataTypeFactory typeFactory );
+    AlgDataType getTupleType( AlgDataTypeFactory typeFactory );
 
     default AlgDataTypeFactory getTypeFactory() {
         return new JavaTypeFactoryImpl();

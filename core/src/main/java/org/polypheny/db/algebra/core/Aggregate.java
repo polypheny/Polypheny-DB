@@ -261,14 +261,14 @@ public abstract class Aggregate extends SingleAlg {
 
 
     @Override
-    public double estimateRowCount( AlgMetadataQuery mq ) {
+    public double estimateTupleCount( AlgMetadataQuery mq ) {
         // Assume that each sort column has 50% of the value count.
         // Therefore, one sort column has .5 * rowCount, 2 sort columns give .75 * rowCount. Zero sort columns yields 1 row (or 0 if the input is empty).
         final int groupCount = groupSet.cardinality();
         if ( groupCount == 0 ) {
             return 1;
         } else {
-            double rowCount = super.estimateRowCount( mq );
+            double rowCount = super.estimateTupleCount( mq );
             rowCount *= 1.0 - Math.pow( .5, groupCount );
             return rowCount;
         }

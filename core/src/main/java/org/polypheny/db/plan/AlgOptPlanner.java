@@ -202,11 +202,6 @@ public interface AlgOptPlanner {
      */
     boolean isRegistered( AlgNode alg );
 
-    /**
-     * Tells this planner that a schema exists. This is the schema's chance to tell the planner about all of the special transformation rules.
-     */
-    void registerSchema( AlgOptSchema schema );
-
     void addRuleDuringRuntime( AlgOptRule operands );
 
     /**

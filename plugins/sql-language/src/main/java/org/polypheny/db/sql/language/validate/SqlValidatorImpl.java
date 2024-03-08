@@ -472,7 +472,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             boolean hasDynamicStruct = false;
             for ( ScopeChild child : scope.children ) {
                 final int before = fields.size();
-                if ( child.namespace.getRowType().isDynamicStruct() ) {
+                if ( child.namespace.getTupleType().isDynamicStruct() ) {
                     hasDynamicStruct = true;
                     // don't expand star if the underneath table is dynamic.
                     // Treat this star as a special field in validation/conversion and wait until execution time to expand this star.
@@ -493,7 +493,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                     final SqlNode from = child.namespace.getNode();
                     final SqlValidatorNamespace fromNs = getNamespace( from, scope );
                     assert fromNs != null;
-                    final AlgDataType rowType = fromNs.getRowType();
+                    final AlgDataType rowType = fromNs.getTupleType();
                     for ( AlgDataTypeField field : rowType.getFields() ) {
                         String columnName = field.getName();
 
@@ -776,7 +776,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 }
             }
             if ( ns != null ) {
-                AlgDataType rowType = ns.getRowType();
+                AlgDataType rowType = ns.getTupleType();
                 if ( rowType.isStruct() ) {
                     for ( AlgDataTypeField field : rowType.getFields() ) {
                         hintList.add( new MonikerImpl( field.getName(), MonikerType.COLUMN ) );
@@ -793,7 +793,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             // If there's only one alias, add all child columns
             SelectScope selectScope = SqlValidatorUtil.getEnclosingSelectScope( scope );
             if ( (selectScope != null) && (selectScope.getChildren().size() == 1) ) {
-                AlgDataType rowType = selectScope.getChildren().get( 0 ).getRowType();
+                AlgDataType rowType = selectScope.getChildren().get( 0 ).getTupleType();
                 for ( AlgDataTypeField field : rowType.getFields() ) {
                     hintList.add( new MonikerImpl( field.getName(), MonikerType.COLUMN ) );
                 }
@@ -1380,7 +1380,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         // this is OK because the source and target have identical values due to the self-join.
         // Note that we anonymize the source rather than the target because downstream, the optimizer rules don't want to see any projection on top of the target.
         IdentifierNamespace ns = new IdentifierNamespace( this, target, null, null );
-        AlgDataType rowType = ns.getRowType();
+        AlgDataType rowType = ns.getTupleType();
         SqlNode source = (SqlNode) updateCall.getTargetTable().clone( ParserPos.ZERO );
         final SqlNodeList selectList = new SqlNodeList( ParserPos.ZERO );
         int i = 1;
@@ -3056,8 +3056,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             }
 
             // Join on fields that occur exactly once on each side. Ignore fields that occur more than once on either side.
-            final AlgDataType leftRowType = getSqlNamespace( left ).getRowType();
-            final AlgDataType rightRowType = getSqlNamespace( right ).getRowType();
+            final AlgDataType leftRowType = getSqlNamespace( left ).getTupleType();
+            final AlgDataType rightRowType = getSqlNamespace( right ).getTupleType();
             final NameMatcher nameMatcher = snapshot.nameMatcher;
             List<String> naturalColumnNames = SqlValidatorUtil.deriveNaturalJoinColumnList( nameMatcher, leftRowType, rightRowType );
 
@@ -3128,7 +3128,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         if ( id.names.size() == 1 ) {
             String name = id.names.get( 0 );
             final SqlValidatorNamespace namespace = getSqlNamespace( leftOrRight );
-            final AlgDataType rowType = namespace.getRowType();
+            final AlgDataType rowType = namespace.getTupleType();
             final NameMatcher nameMatcher = snapshot.nameMatcher;
             final AlgDataTypeField field = nameMatcher.field( rowType, name );
             if ( field != null ) {
@@ -4001,7 +4001,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      * @return Rowtype
      */
     protected AlgDataType createTargetRowType( Entity table, SqlNodeList targetColumnList, boolean append, boolean allowDynamic ) {
-        AlgDataType baseRowType = table.getRowType();
+        AlgDataType baseRowType = table.getTupleType();
         if ( targetColumnList == null ) {
             return baseRowType;
         }
@@ -4066,7 +4066,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
         // REVIEW jvs: In FRG-365, this namespace row type is discarding the type inferred by inferUnknownTypes (which was invoked from validateSelect above).
         // It would be better if that information were used here so that we never saw any untyped nulls during checkTypeAssignment.
-        final AlgDataType sourceRowType = getSqlNamespace( source ).getRowType();
+        final AlgDataType sourceRowType = getSqlNamespace( source ).getTupleType();
         final AlgDataType logicalTargetRowType = getLogicalTargetRowType( targetRowType, insert );
         setValidatedNodeType( insert, logicalTargetRowType );
         final AlgDataType logicalSourceRowType = getLogicalSourceRowType( sourceRowType, insert );
@@ -4111,7 +4111,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                     }
                 };
         final List<ColumnStrategy> strategies = table.unwrap( LogicalTable.class ).orElseThrow().getColumnStrategies();
-        for ( final AlgDataTypeField field : table.getRowType().getFields() ) {
+        for ( final AlgDataTypeField field : table.getTupleType().getFields() ) {
             final AlgDataTypeField targetField = logicalTargetRowType.getField( field.getName(), true, false );
             switch ( strategies.get( field.getIndex() ) ) {
                 case NOT_NULLABLE:
@@ -4164,7 +4164,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         if ( insert.getTargetColumnList() == null && conformance.isInsertSubsetColumnsAllowed() ) {
             // Target an implicit subset of columns.
             final SqlNode source = insert.getSource();
-            final AlgDataType sourceRowType = getSqlNamespace( source ).getRowType();
+            final AlgDataType sourceRowType = getSqlNamespace( source ).getTupleType();
             final AlgDataType logicalSourceRowType = getLogicalSourceRowType( sourceRowType, insert );
             final AlgDataType implicitTargetRowType = typeFactory.createStructType( targetRowType.getFields().subList( 0, logicalSourceRowType.getFieldCount() ) );
             final SqlValidatorNamespace targetNamespace = getSqlNamespace( insert );
@@ -4336,7 +4336,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         final SqlSelect select = call.getSourceSelect();
         validateSelect( select, targetRowType );
 
-        final AlgDataType sourceRowType = getSqlNamespace( call ).getRowType();
+        final AlgDataType sourceRowType = getSqlNamespace( call ).getTupleType();
         checkTypeAssignment( sourceRowType, targetRowType, call );
 
         validateAccess( call.getTargetTable(), table, AccessEnum.UPDATE );
@@ -4685,7 +4685,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
         if ( allRows ) {
             final SqlValidatorNamespace sqlNs = getSqlNamespace( matchRecognize.getTableRef() );
-            final AlgDataType inputDataType = sqlNs.getRowType();
+            final AlgDataType inputDataType = sqlNs.getTupleType();
             for ( AlgDataTypeField fs : inputDataType.getFields() ) {
                 if ( !typeBuilder.nameExists( fs.getName() ) ) {
                     typeBuilder.add( fs );
@@ -4765,7 +4765,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
         final AlgDataType rowType = typeBuilder.build();
         if ( matchRecognize.getMeasureList().size() == 0 ) {
-            ns.setType( getSqlNamespace( matchRecognize.getTableRef() ).getRowType() );
+            ns.setType( getSqlNamespace( matchRecognize.getTableRef() ).getTupleType() );
         } else {
             ns.setType( rowType );
         }
@@ -5510,7 +5510,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             super( getOrderScope( select ) );
             this.select = select;
             this.root = root;
-            this.aliasList = getSqlNamespace( select ).getRowType().getFieldNames();
+            this.aliasList = getSqlNamespace( select ).getTupleType().getFieldNames();
         }
 
 

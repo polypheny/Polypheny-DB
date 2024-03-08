@@ -84,7 +84,7 @@ public abstract class ValuesReduceRule extends AlgOptRule {
      */
     public static final ValuesReduceRule FILTER_INSTANCE =
             new ValuesReduceRule(
-                    operand( LogicalRelFilter.class, operandJ( LogicalRelValues.class, null, Values::isNotEmpty, none() ) ),
+                    operand( LogicalRelFilter.class, operand( LogicalRelValues.class, null, Values::isNotEmpty, none() ) ),
                     AlgFactories.LOGICAL_BUILDER,
                     "ValuesReduceRule(Filter)" ) {
                 @Override
@@ -100,7 +100,7 @@ public abstract class ValuesReduceRule extends AlgOptRule {
      */
     public static final ValuesReduceRule PROJECT_INSTANCE =
             new ValuesReduceRule(
-                    operand( LogicalRelProject.class, operandJ( LogicalRelValues.class, null, Values::isNotEmpty, none() ) ),
+                    operand( LogicalRelProject.class, operand( LogicalRelValues.class, null, Values::isNotEmpty, none() ) ),
                     AlgFactories.LOGICAL_BUILDER,
                     "ValuesReduceRule(Project)" ) {
                 @Override
@@ -120,7 +120,7 @@ public abstract class ValuesReduceRule extends AlgOptRule {
                             LogicalRelProject.class,
                             operand(
                                     LogicalRelFilter.class,
-                                    operandJ( LogicalRelValues.class, null, Values::isNotEmpty, none() ) ) ),
+                                    operand( LogicalRelValues.class, null, Values::isNotEmpty, none() ) ) ),
                     AlgFactories.LOGICAL_BUILDER,
                     "ValuesReduceRule(Project-Filter)" ) {
                 @Override

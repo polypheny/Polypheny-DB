@@ -95,7 +95,7 @@ public class EnumerableUncollect extends Uncollect implements EnumerableAlg {
         final BlockBuilder builder = new BlockBuilder();
         final EnumerableAlg child = (EnumerableAlg) getInput();
         final Result result = implementor.visitChild( this, 0, child, pref );
-        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), JavaRowFormat.LIST );
+        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), JavaTupleFormat.LIST );
 
         // final Enumerable<List<Employee>> child = <<child adapter>>;
         // return child.selectMany(FLAT_PRODUCT);

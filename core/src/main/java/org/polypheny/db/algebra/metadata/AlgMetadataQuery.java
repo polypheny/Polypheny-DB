@@ -48,6 +48,7 @@ import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.ExplainLevel;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.TupleCount;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPredicateList;
@@ -108,7 +109,7 @@ public class AlgMetadataQuery {
     private BuiltInMetadata.Predicates.Handler predicatesHandler;
     private BuiltInMetadata.AllPredicates.Handler allPredicatesHandler;
     private BuiltInMetadata.NodeTypes.Handler nodeTypesHandler;
-    private BuiltInMetadata.RowCount.Handler rowCountHandler;
+    private TupleCount.Handler rowCountHandler;
     private BuiltInMetadata.Selectivity.Handler selectivityHandler;
     private BuiltInMetadata.Size.Handler sizeHandler;
     private BuiltInMetadata.UniqueKeys.Handler uniqueKeysHandler;
@@ -186,7 +187,7 @@ public class AlgMetadataQuery {
         this.predicatesHandler = initialHandler( BuiltInMetadata.Predicates.Handler.class );
         this.allPredicatesHandler = initialHandler( BuiltInMetadata.AllPredicates.Handler.class );
         this.nodeTypesHandler = initialHandler( BuiltInMetadata.NodeTypes.Handler.class );
-        this.rowCountHandler = initialHandler( BuiltInMetadata.RowCount.Handler.class );
+        this.rowCountHandler = initialHandler( TupleCount.Handler.class );
         this.selectivityHandler = initialHandler( BuiltInMetadata.Selectivity.Handler.class );
         this.sizeHandler = initialHandler( BuiltInMetadata.Size.Handler.class );
         this.uniqueKeysHandler = initialHandler( BuiltInMetadata.UniqueKeys.Handler.class );
@@ -219,7 +220,7 @@ public class AlgMetadataQuery {
 
 
     /**
-     * Returns the {@link BuiltInMetadata.RowCount#getRowCount()} statistic.
+     * Returns the {@link TupleCount#getTupleCount()} statistic.
      *
      * @param alg the relational expression
      * @return estimated row count, or null if no reliable estimate can be determined
@@ -227,10 +228,10 @@ public class AlgMetadataQuery {
     public Double getTupleCount( AlgNode alg ) {
         for ( ; ; ) {
             try {
-                Double result = rowCountHandler.getRowCount( alg, this );
+                Double result = rowCountHandler.getTupleCount( alg, this );
                 return validateResult( result );
             } catch ( JaninoRelMetadataProvider.NoHandler e ) {
-                rowCountHandler = revise( e.algClass, BuiltInMetadata.RowCount.DEF );
+                rowCountHandler = revise( e.algClass, TupleCount.DEF );
             }
         }
     }

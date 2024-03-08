@@ -21,6 +21,6 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 
 public interface Typed {
 
-    AlgDataType getRowType( AlgDataTypeFactory typeFactory );
+    AlgDataType getTupleType( AlgDataTypeFactory typeFactory );
 
 }

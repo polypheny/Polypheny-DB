@@ -239,7 +239,7 @@ public abstract class AbstractAlgNode implements AlgNode {
 
 
     @Override
-    public double estimateRowCount( AlgMetadataQuery mq ) {
+    public double estimateTupleCount( AlgMetadataQuery mq ) {
         return 1.0;
     }
 

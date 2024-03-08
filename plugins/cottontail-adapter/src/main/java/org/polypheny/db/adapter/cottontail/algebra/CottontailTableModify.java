@@ -147,7 +147,7 @@ public class CottontailTableModify extends RelModify<CottontailEntity> implement
         final List<String> physicalColumnNames = new ArrayList<>();
         final List<String> logicalColumnNames = new ArrayList<>();
         final List<PolyType> columnTypes = new ArrayList<>();
-        for ( AlgDataTypeField field : context.table.getRowType().getFields() ) {
+        for ( AlgDataTypeField field : context.table.getTupleType().getFields() ) {
             physicalColumnNames.add( field.getPhysicalName() );
             logicalColumnNames.add( field.getName() );
             columnTypes.add( field.getType().getPolyType() );

@@ -86,7 +86,7 @@ import org.apache.calcite.linq4j.tree.Types;
 import org.bson.BsonDocument;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.algebra.enumerable.JavaRowFormat;
+import org.polypheny.db.algebra.enumerable.JavaTupleFormat;
 import org.polypheny.db.algebra.exceptions.ConstraintViolationException;
 import org.polypheny.db.algebra.json.JsonConstructorNullClause;
 import org.polypheny.db.algebra.json.JsonExistsErrorBehavior;
@@ -2409,7 +2409,7 @@ public class Functions {
      * Implements the {@code .} (field access) operator on an object whose type is not known until runtime.
      * <p>
      * A struct object can be represented in various ways by the runtime and depends on the
-     * {@link JavaRowFormat}.
+     * {@link JavaTupleFormat}.
      */
     @Experimental
     @SuppressWarnings("unused")

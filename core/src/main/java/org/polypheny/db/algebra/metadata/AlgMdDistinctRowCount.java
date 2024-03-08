@@ -208,7 +208,7 @@ public class AlgMdDistinctRowCount implements MetadataHandler<BuiltInMetadata.Di
         double selectivity = AlgMdUtil.guessSelectivity( predicate );
 
         // assume half the rows are duplicates
-        double nRows = alg.estimateRowCount( mq ) / 2;
+        double nRows = alg.estimateTupleCount( mq ) / 2;
         return AlgMdUtil.numDistinctVals( nRows, nRows * selectivity );
     }
 

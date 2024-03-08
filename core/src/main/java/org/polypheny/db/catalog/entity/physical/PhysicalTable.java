@@ -64,7 +64,7 @@ public class PhysicalTable extends PhysicalEntity {
 
 
     @Override
-    public AlgDataType getRowType() {
+    public AlgDataType getTupleType() {
         return buildProto().apply( AlgDataTypeFactory.DEFAULT );
     }
 

@@ -116,8 +116,8 @@ public class EnumerableJoin extends EquiJoin implements EnumerableAlg {
         }
 
         // Cheaper if the smaller number of rows is coming from the LHS. Model this by adding L log L to the cost.
-        final double rightRowCount = right.estimateRowCount( mq );
-        final double leftRowCount = left.estimateRowCount( mq );
+        final double rightRowCount = right.estimateTupleCount( mq );
+        final double leftRowCount = left.estimateTupleCount( mq );
         if ( Double.isInfinite( leftRowCount ) ) {
             rowCount = leftRowCount;
         } else {
@@ -163,7 +163,7 @@ public class EnumerableJoin extends EquiJoin implements EnumerableAlg {
         // we need this false flag to avoid that the enumerables are reused which would lead to the same enumerable being accessed from both sides
         Expression rightExpression = builder.append( "right" + System.nanoTime(), rightResult.block(), false );
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.preferArray() );
-        final PhysType keyPhysType = leftResult.physType().project( leftKeys, JavaRowFormat.LIST );
+        final PhysType keyPhysType = leftResult.physType().project( leftKeys, JavaTupleFormat.LIST );
         return implementor.result(
                 physType,
                 builder.append(

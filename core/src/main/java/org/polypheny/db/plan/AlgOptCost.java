@@ -47,7 +47,7 @@ public interface AlgOptCost {
 
     /**
      * @return number of rows processed; this should not be confused with the row count produced by a relational expression
-     * ({@link AlgNode#estimateRowCount})
+     * ({@link AlgNode#estimateTupleCount})
      */
     double getRows();
 

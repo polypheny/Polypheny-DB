@@ -33,13 +33,11 @@ public interface Context {
     JavaTypeFactory getTypeFactory();
 
     /**
-     * Returns the root schema
+     * Returns the associated snapshot.
      */
     Snapshot getSnapshot();
 
     String getDefaultNamespaceName();
-
-    List<String> getDefaultSchemaPath();
 
     void updateSnapshot();
 
@@ -49,14 +47,12 @@ public interface Context {
 
     /**
      * Returns the path of the object being analyzed, or null.
-     *
+     * <p>
      * The object is being analyzed is typically a view. If it is already being analyzed further up the stack,
      * the view definition can be deduced to be cyclic.
      */
     List<String> getObjectPath();
 
     Statement getStatement();
-
-    long getCurrentUserId();
 
 }

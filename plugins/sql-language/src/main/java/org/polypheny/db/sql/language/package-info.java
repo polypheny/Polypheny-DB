@@ -57,7 +57,6 @@
  *
  * {@link org.polypheny.db.sql.language.validate.SqlValidator} checks that a tree of {@link org.polypheny.db.sql.language.SqlNode}s is semantically valid.
  * You supply a {@link org.polypheny.db.algebra.operators.OperatorTable} to describe the available functions and operators, and a
- * {@link org.polypheny.db.nodes.validate.ValidatorCatalogReader} for access to the database's catalog.
  *
  * <h2>Generating SQL</h2>
  *

@@ -98,7 +98,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
             resolved.found( ns, nullable, this, path, null );
             return;
         }
-        final AlgDataType rowType = ns.getRowType();
+        final AlgDataType rowType = ns.getTupleType();
         if ( rowType.isStruct() ) {
             Entity validatorTable = ns.getTable();
 
@@ -139,7 +139,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
     protected void addColumnNames( SqlValidatorNamespace ns, List<Moniker> colNames ) {
         final AlgDataType rowType;
         try {
-            rowType = ns.getRowType();
+            rowType = ns.getTupleType();
         } catch ( Error e ) {
             // namespace is not good - bail out.
             return;
@@ -244,7 +244,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                         if ( !map2.isEmpty() ) {
                             final List<String> list = new ArrayList<>();
                             for ( ScopeChild entry : map2.values() ) {
-                                final AlgDataTypeField field = liberalMatcher.field( entry.namespace.getRowType(), columnName );
+                                final AlgDataTypeField field = liberalMatcher.field( entry.namespace.getTupleType(), columnName );
                                 list.add( field.getName() );
                             }
                             Collections.sort( list );
@@ -264,9 +264,9 @@ public abstract class DelegatingScope implements SqlValidatorScope {
 
             final ResolvedImpl resolved = new ResolvedImpl();
             resolveInNamespace( namespace, false, identifier.names, nameMatcher, Path.EMPTY, resolved );
-            final AlgDataTypeField field = nameMatcher.field( namespace.getRowType(), columnName );
+            final AlgDataTypeField field = nameMatcher.field( namespace.getTupleType(), columnName );
             if ( field != null ) {
-                if ( hasAmbiguousUnresolvedStar( namespace.getRowType(), field, columnName ) ) {
+                if ( hasAmbiguousUnresolvedStar( namespace.getTupleType(), field, columnName ) ) {
                     throw validator.newValidationError( identifier, Static.RESOURCE.columnAmbiguous( columnName ) );
                 }
 
@@ -324,7 +324,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
 
                 // Adding table name is for RecordType column with StructKind.PEEK_FIELDS or StructKind.PEEK_FIELDS only.
                 // Access to a field in a RecordType column of other StructKind should always be qualified with table name.
-                final AlgDataTypeField field = nameMatcher.field( fromNs.getRowType(), columnName );
+                final AlgDataTypeField field = nameMatcher.field( fromNs.getTupleType(), columnName );
                 if ( field != null ) {
                     switch ( field.getType().getStructKind() ) {
                         case PEEK_FIELDS:

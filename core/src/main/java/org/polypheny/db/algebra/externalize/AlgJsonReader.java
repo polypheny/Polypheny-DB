@@ -57,7 +57,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.schema.Namespace;
@@ -76,15 +75,13 @@ public class AlgJsonReader {
     };
 
     private final AlgOptCluster cluster;
-    private final AlgOptSchema algOptSchema;
     private final AlgJson algJson = new AlgJson( null );
     private final Map<String, AlgNode> algMap = new LinkedHashMap<>();
     private AlgNode lastAlg;
 
 
-    public AlgJsonReader( AlgOptCluster cluster, AlgOptSchema algOptSchema, Namespace namespace ) {
+    public AlgJsonReader( AlgOptCluster cluster, Namespace namespace ) {
         this.cluster = cluster;
-        this.algOptSchema = algOptSchema;
         Util.discard( namespace );
     }
 
@@ -191,13 +188,6 @@ public class AlgJsonReader {
 
 
             @Override
-            public List<List<Integer>> getIntegerListList( String tag ) {
-                //noinspection unchecked
-                return (List<List<Integer>>) jsonAlg.get( tag );
-            }
-
-
-            @Override
             public Object get( String tag ) {
                 return jsonAlg.get( tag );
             }
@@ -229,7 +219,7 @@ public class AlgJsonReader {
 
 
             @Override
-            public AlgDataType getRowType( String tag ) {
+            public AlgDataType getTupleType( String tag ) {
                 final Object o = jsonAlg.get( tag );
                 return algJson.toType( cluster.getTypeFactory(), o );
             }

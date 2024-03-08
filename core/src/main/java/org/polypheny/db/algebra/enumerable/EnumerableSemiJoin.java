@@ -105,8 +105,8 @@ public class EnumerableSemiJoin extends SemiJoin implements EnumerableAlg {
         double rowCount = mq.getTupleCount( this );
 
         // Right-hand input is the "build", and hopefully small, input.
-        final double rightRowCount = right.estimateRowCount( mq );
-        final double leftRowCount = left.estimateRowCount( mq );
+        final double rightRowCount = right.estimateTupleCount( mq );
+        final double leftRowCount = left.estimateTupleCount( mq );
         if ( Double.isInfinite( leftRowCount ) ) {
             rowCount = leftRowCount;
         } else {

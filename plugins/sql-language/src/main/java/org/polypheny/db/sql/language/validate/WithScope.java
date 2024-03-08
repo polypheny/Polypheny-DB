@@ -69,7 +69,7 @@ class WithScope extends ListScope {
     public void resolveTable( List<String> names, NameMatcher nameMatcher, Path path, Resolved resolved ) {
         if ( names.size() == 1 && names.equals( withItem.name.names ) ) {
             final SqlValidatorNamespace ns = validator.getSqlNamespace( withItem );
-            final Step path2 = path.plus( ns.getRowType(), 0, names.get( 0 ), StructKind.FULLY_QUALIFIED );
+            final Step path2 = path.plus( ns.getTupleType(), 0, names.get( 0 ), StructKind.FULLY_QUALIFIED );
             LogicalNamespace namespace = validator.snapshot.getNamespace( names.get( 0 ) ).orElseThrow();
             Entity entity = validator.snapshot.rel().getTable( names.get( 0 ), names.get( 1 ) ).orElseThrow();
             resolved.found( ns, false, null, path2, null );
@@ -83,7 +83,7 @@ class WithScope extends ListScope {
     public void resolve( List<String> names, NameMatcher nameMatcher, boolean deep, Resolved resolved ) {
         if ( names.size() == 1 && names.equals( withItem.name.names ) ) {
             final SqlValidatorNamespace ns = validator.getSqlNamespace( withItem );
-            final Step path = Path.EMPTY.plus( ns.getRowType(), 0, names.get( 0 ), StructKind.FULLY_QUALIFIED );
+            final Step path = Path.EMPTY.plus( ns.getTupleType(), 0, names.get( 0 ), StructKind.FULLY_QUALIFIED );
             Entity entity = validator.snapshot.rel().getTable( names.get( 0 ), names.get( 1 ) ).orElseThrow();
             resolved.found( ns, false, null, path, null );
             return;

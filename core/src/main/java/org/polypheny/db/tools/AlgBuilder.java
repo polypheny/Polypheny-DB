@@ -120,7 +120,6 @@ import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptPredicateList;
-import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Context;
@@ -292,7 +291,7 @@ public class AlgBuilder {
 
     /**
      * Creates a {@link AlgBuilderFactory}, a partially-created AlgBuilder.
-     * Just add a {@link AlgOptCluster} and a {@link AlgOptSchema}
+     * Just add a {@link AlgOptCluster}
      */
     public static AlgBuilderFactory proto( final Context context ) {
         return ( cluster, snapshot ) -> new AlgBuilder( context, cluster, snapshot );
@@ -1328,7 +1327,7 @@ public class AlgBuilder {
 
         final AlgNode scan = scanFactory.createRelScan( cluster, entity );
         push( scan );
-        rename( entity.getRowType().getFieldNames() );
+        rename( entity.getTupleType().getFieldNames() );
         return this;
     }
 
@@ -1336,7 +1335,7 @@ public class AlgBuilder {
     public AlgBuilder scan( @Nonnull Entity entity ) {
         final AlgNode scan = scanFactory.createRelScan( cluster, entity );
         push( scan );
-        rename( entity.getRowType().getFieldNames() );
+        rename( entity.getTupleType().getFieldNames() );
         return this;
     }
 
@@ -1395,13 +1394,13 @@ public class AlgBuilder {
 
     public AlgBuilder lpgScan( long logicalId ) {
         LogicalGraph graph = snapshot.graph().getGraph( logicalId ).orElseThrow();
-        stack.add( new Frame( new LogicalLpgScan( cluster, cluster.traitSet().replace( ModelTrait.GRAPH ), graph, graph.getRowType() ) ) );
+        stack.add( new Frame( new LogicalLpgScan( cluster, cluster.traitSet().replace( ModelTrait.GRAPH ), graph, graph.getTupleType() ) ) );
         return this;
     }
 
 
     public AlgBuilder lpgScan( Entity entity ) {
-        stack.add( new Frame( new LogicalLpgScan( cluster, cluster.traitSet().replace( ModelTrait.GRAPH ), entity, entity.getRowType() ) ) );
+        stack.add( new Frame( new LogicalLpgScan( cluster, cluster.traitSet().replace( ModelTrait.GRAPH ), entity, entity.getTupleType() ) ) );
         return this;
     }
 

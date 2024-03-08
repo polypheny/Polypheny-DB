@@ -156,7 +156,7 @@ public interface AlgNode extends AlgOptNode, Cloneable {
      * @param mq Metadata query
      * @return Estimate of the number of rows this relational expression will return
      */
-    double estimateRowCount( AlgMetadataQuery mq );
+    double estimateTupleCount( AlgMetadataQuery mq );
 
     /**
      * Returns the names of variables that are set in this relational expression but also used and therefore not available to parents of this relational expression.
@@ -388,7 +388,7 @@ public interface AlgNode extends AlgOptNode, Cloneable {
     }
 
     /**
-     * Context of a relational expression, for purposes of checking validity.
+     * Context of an algebra expression, for purposes of checking validity.
      */
     interface Context {
 

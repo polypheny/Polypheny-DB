@@ -309,9 +309,9 @@ public class JdbcRules {
 
 
         @Override
-        public double estimateRowCount( AlgMetadataQuery mq ) {
-            final double leftRowCount = left.estimateRowCount( mq );
-            final double rightRowCount = right.estimateRowCount( mq );
+        public double estimateTupleCount( AlgMetadataQuery mq ) {
+            final double leftRowCount = left.estimateTupleCount( mq );
+            final double rightRowCount = right.estimateTupleCount( mq );
             return Math.max( leftRowCount, rightRowCount );
         }
 
@@ -381,7 +381,7 @@ public class JdbcRules {
 
 
         @Override
-        public double estimateRowCount( AlgMetadataQuery mq ) {
+        public double estimateTupleCount( AlgMetadataQuery mq ) {
             return AlgMdUtil.estimateFilteredRows( getInput(), program, mq );
         }
 

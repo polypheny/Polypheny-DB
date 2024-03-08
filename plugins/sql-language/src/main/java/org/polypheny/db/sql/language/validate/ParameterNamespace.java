@@ -50,7 +50,7 @@ class ParameterNamespace extends AbstractNamespace {
 
 
     @Override
-    public AlgDataType getRowType() {
+    public AlgDataType getTupleType() {
         return type;
     }
 

@@ -27,7 +27,7 @@ import org.polypheny.db.algebra.convert.ConverterImpl;
 import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
-import org.polypheny.db.algebra.enumerable.JavaRowFormat;
+import org.polypheny.db.algebra.enumerable.JavaTupleFormat;
 import org.polypheny.db.algebra.enumerable.PhysType;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
@@ -92,8 +92,8 @@ public class NeoToEnumerableConverter extends ConverterImpl implements Enumerabl
 
         final AlgDataType rowType = getTupleType();
 
-        // PhysType is Enumerable Adapter class that maps database types (getRowType) with physical Java types (getJavaTypes())
-        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), rowType, pref.prefer( JavaRowFormat.ARRAY ) );
+        // PhysType is Enumerable Adapter class that maps database types (getTupleType) with physical Java types (getJavaTypes())
+        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), rowType, pref.prefer( JavaTupleFormat.ARRAY ) );
 
         final Expression graph = blockBuilder.append( "graph", graphImplementor.getGraph().asExpression() );
 
@@ -143,8 +143,8 @@ public class NeoToEnumerableConverter extends ConverterImpl implements Enumerabl
 
         final AlgDataType rowType = getTupleType();
 
-        // PhysType is Enumerable Adapter class that maps SQL types (getRowType) with physical Java types (getJavaTypes())
-        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), rowType, pref.prefer( JavaRowFormat.ARRAY ) );
+        // PhysType is Enumerable Adapter class that maps SQL types (getTupleType) with physical Java types (getJavaTypes())
+        final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), rowType, pref.prefer( JavaTupleFormat.ARRAY ) );
 
         final Expression entity = blockBuilder.append( "entity", neoImplementor.getEntity().asExpression( NeoEntity.NeoQueryable.class ) );
 

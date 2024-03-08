@@ -163,7 +163,7 @@ public abstract class Join extends BiAlg {
 
 
     @Override
-    public double estimateRowCount( AlgMetadataQuery mq ) {
+    public double estimateTupleCount( AlgMetadataQuery mq ) {
         return Util.first( AlgMdUtil.getJoinRowCount( mq, this, condition ), 1D );
     }
 

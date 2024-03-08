@@ -52,12 +52,12 @@ import org.polypheny.db.util.BuiltInMethod;
 
 
 /**
- * How a row is represented as a Java value.
+ * How a Tuple is represented as a Java value.
  */
-public enum JavaRowFormat {
+public enum JavaTupleFormat {
     CUSTOM {
         @Override
-        Type javaRowClass( JavaTypeFactory typeFactory, AlgDataType type ) {
+        Type javaTupleClass( JavaTypeFactory typeFactory, AlgDataType type ) {
             assert type.getFieldCount() > 1;
             return typeFactory.getJavaClass( type );
         }
@@ -70,12 +70,12 @@ public enum JavaRowFormat {
 
 
         @Override
-        public Expression record( Type javaRowClass, List<Expression> expressions ) {
+        public Expression record( Type javaTupleClass, List<Expression> expressions ) {
             if ( expressions.isEmpty() ) {
-                assert javaRowClass == Unit.class;
-                return Expressions.field( null, javaRowClass, "INSTANCE" );
+                assert javaTupleClass == Unit.class;
+                return Expressions.field( null, javaTupleClass, "INSTANCE" );
             }
-            return Expressions.new_( javaRowClass, expressions );
+            return Expressions.new_( javaTupleClass, expressions );
         }
 
 
@@ -93,7 +93,7 @@ public enum JavaRowFormat {
 
     SCALAR {
         @Override
-        Type javaRowClass( JavaTypeFactory typeFactory, AlgDataType type ) {
+        Type javaTupleClass( JavaTypeFactory typeFactory, AlgDataType type ) {
             assert type.getFieldCount() == 1;
             return typeFactory.getJavaClass( type.getFields().get( 0 ).getType() );
         }
@@ -101,19 +101,14 @@ public enum JavaRowFormat {
 
         @Override
         Type javaFieldClass( JavaTypeFactory typeFactory, AlgDataType type, int index ) {
-            return javaRowClass( typeFactory, type );
+            return javaTupleClass( typeFactory, type );
         }
 
 
         @Override
-        public Expression record( Type javaRowClass, List<Expression> expressions ) {
+        public Expression record( Type javaTupleClass, List<Expression> expressions ) {
             assert expressions.size() == 1;
             return Expressions.newArrayInit( PolyValue.class, expressions );
-            /*if ( !TypeUtils.isAssignable( javaRowClass, PolyValue.class ) ) {
-                return Expressions.call( PolyLong.class, "of", expressions.get( 0 ) );
-            }*/
-
-            //return expressions.get( 0 );
         }
 
 
@@ -130,7 +125,7 @@ public enum JavaRowFormat {
      */
     LIST {
         @Override
-        Type javaRowClass( JavaTypeFactory typeFactory, AlgDataType type ) {
+        Type javaTupleClass( JavaTypeFactory typeFactory, AlgDataType type ) {
             return PolyList.class;
         }
 
@@ -142,7 +137,7 @@ public enum JavaRowFormat {
 
 
         @Override
-        public Expression record( Type javaRowClass, List<Expression> expressions ) {
+        public Expression record( Type javaTupleClass, List<Expression> expressions ) {
             if ( expressions.isEmpty() ) {
                 return Expressions.field(
                         null,
@@ -174,7 +169,7 @@ public enum JavaRowFormat {
      */
     ROW {
         @Override
-        Type javaRowClass( JavaTypeFactory typeFactory, AlgDataType type ) {
+        Type javaTupleClass( JavaTypeFactory typeFactory, AlgDataType type ) {
             return Row.class;
         }
 
@@ -186,7 +181,7 @@ public enum JavaRowFormat {
 
 
         @Override
-        public Expression record( Type javaRowClass, List<Expression> expressions ) {
+        public Expression record( Type javaTupleClass, List<Expression> expressions ) {
             return Expressions.call( BuiltInMethod.ROW_AS_COPY.method, expressions );
         }
 
@@ -203,7 +198,7 @@ public enum JavaRowFormat {
 
     ARRAY {
         @Override
-        Type javaRowClass( JavaTypeFactory typeFactory, AlgDataType type ) {
+        Type javaTupleClass( JavaTypeFactory typeFactory, AlgDataType type ) {
             return PolyValue[].class;
         }
 
@@ -215,7 +210,7 @@ public enum JavaRowFormat {
 
 
         @Override
-        public Expression record( Type javaRowClass, List<Expression> expressions ) {
+        public Expression record( Type javaTupleClass, List<Expression> expressions ) {
             return Expressions.newArrayInit( PolyValue.class, expressions );
         }
 
@@ -238,7 +233,7 @@ public enum JavaRowFormat {
     };
 
 
-    public JavaRowFormat optimize( AlgDataType rowType ) {
+    public JavaTupleFormat optimize( AlgDataType rowType ) {
         return switch ( rowType.getFieldCount() ) {
             case 0 -> LIST;
             case 1 -> SCALAR;
@@ -252,10 +247,10 @@ public enum JavaRowFormat {
     }
 
 
-    abstract Type javaRowClass( JavaTypeFactory typeFactory, AlgDataType type );
+    abstract Type javaTupleClass( JavaTypeFactory typeFactory, AlgDataType type );
 
     /**
-     * Returns the java class that is used to physically store the given field. For instance, a non-null int field can still be stored in a field of type {@code Object.class} in {@link JavaRowFormat#ARRAY} case.
+     * Returns the java class that is used to physically store the given field. For instance, a non-null int field can still be stored in a field of type {@code Object.class} in {@link JavaTupleFormat#ARRAY} case.
      *
      * @param typeFactory type factory to resolve java types
      * @param type row type
@@ -264,7 +259,7 @@ public enum JavaRowFormat {
      */
     abstract Type javaFieldClass( JavaTypeFactory typeFactory, AlgDataType type, int index );
 
-    public abstract Expression record( Type javaRowClass, List<Expression> expressions );
+    public abstract Expression record( Type javaTupleClass, List<Expression> expressions );
 
 
     public Expression comparer() {

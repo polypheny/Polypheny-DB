@@ -71,7 +71,7 @@ public abstract class FilterScanRule extends AlgOptRule {
      */
     public static final FilterScanRule INSTANCE =
             new FilterScanRule(
-                    operand( Filter.class, operandJ( RelScan.class, null, FilterScanRule::test, none() ) ),
+                    operand( Filter.class, operand( RelScan.class, null, FilterScanRule::test, none() ) ),
                     AlgFactories.LOGICAL_BUILDER,
                     "FilterScanRule" ) {
                 @Override
@@ -91,7 +91,7 @@ public abstract class FilterScanRule extends AlgOptRule {
                             Filter.class,
                             operand(
                                     EnumerableInterpreter.class,
-                                    operandJ(
+                                    operand(
                                             RelScan.class,
                                             null, FilterScanRule::test, none() ) ) ),
                     AlgFactories.LOGICAL_BUILDER,
@@ -130,7 +130,7 @@ public abstract class FilterScanRule extends AlgOptRule {
             projects = scan.identity();
         }
 
-        final Mapping mapping = Mappings.target( projects, scan.getEntity().getRowType().getFieldCount() );
+        final Mapping mapping = Mappings.target( projects, scan.getEntity().getTupleType().getFieldCount() );
         filters.add( RexUtil.apply( mapping, filter.getCondition() ) );
 
         call.transformTo( BindableScan.create( scan.getCluster(), scan.getEntity(), filters.build(), projects ) );

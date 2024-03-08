@@ -138,8 +138,8 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
         // If there is a projection and no filter, it is sufficient to just load the data of the projected columns.
         // If a filter is given, the whole table has to be loaded (because of the column references)
         // If we have an UPDATE operation, the whole table has to be loaded as well, to generate the hashes
-        this.columnTypes = entity.getRowType().getFields();
-        this.projectedTypes = entity.getRowType().getFields();
+        this.columnTypes = entity.getTupleType().getFields();
+        this.projectedTypes = entity.getTupleType().getFields();
 
         if ( condition == null && projectionMapping != null && operation != Operation.UPDATE ) {
             List<AlgDataTypeField> projectedTypes = new ArrayList<>( Collections.nCopies( projectionMapping.size(), null ) );
@@ -148,7 +148,7 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
                 AlgDataTypeField field = null;
                 if ( value.valueType == ValueType.INPUT ) {
                     int index = ((InputValue) projectionMapping.get( i )).getIndex();
-                    field = entity.getRowType().getFields().get( index );
+                    field = entity.getTupleType().getFields().get( index );
                 }
                 projectedTypes.set( i, field );
             }

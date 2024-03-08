@@ -109,7 +109,7 @@ public class EnumerableValues extends Values implements EnumerableAlg {
                         implementor.getTypeFactory(),
                         getTupleType(),
                         pref.preferCustom() );
-        final Type rowClass = physType.getJavaRowType();
+        final Type rowClass = physType.getJavaTupleType();
 
         final List<Expression> expressions = new ArrayList<>();
         final List<AlgDataTypeField> fields = rowType.getFields();

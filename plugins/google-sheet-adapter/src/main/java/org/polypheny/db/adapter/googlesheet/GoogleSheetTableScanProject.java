@@ -73,7 +73,7 @@ public class GoogleSheetTableScanProject extends RelScan<GoogleSheetTable> imple
 
     @Override
     public AlgDataType deriveRowType() {
-        final List<AlgDataTypeField> fieldList = entity.getRowType().getFields();
+        final List<AlgDataTypeField> fieldList = entity.getTupleType().getFields();
         final AlgDataTypeFactory.Builder builder = getCluster().getTypeFactory().builder();
         for ( int field : fields ) {
             builder.add( fieldList.get( field ) );
@@ -84,7 +84,7 @@ public class GoogleSheetTableScanProject extends RelScan<GoogleSheetTable> imple
 
     @Override
     public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        return super.computeSelfCost( planner, mq ).multiplyBy( ((double) fields.length + 2D) / ((double) entity.getRowType().getFieldCount() + 2D) );
+        return super.computeSelfCost( planner, mq ).multiplyBy( ((double) fields.length + 2D) / ((double) entity.getTupleType().getFieldCount() + 2D) );
     }
 
 

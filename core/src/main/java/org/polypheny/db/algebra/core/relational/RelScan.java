@@ -65,14 +65,14 @@ public abstract class RelScan<E extends Entity> extends Scan<E> implements RelAl
 
 
     @Override
-    public double estimateRowCount( AlgMetadataQuery mq ) {
-        return entity.getRowCount();
+    public double estimateTupleCount( AlgMetadataQuery mq ) {
+        return entity.getTupleCount();
     }
 
 
     @Override
     public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        double dRows = entity.getRowCount();
+        double dRows = entity.getTupleCount();
         double dCpu = dRows + 1; // ensure non-zero cost
         double dIo = 0;
         return planner.getCostFactory().makeCost( dRows, dCpu, dIo );
@@ -84,7 +84,7 @@ public abstract class RelScan<E extends Entity> extends Scan<E> implements RelAl
         if ( entity.dataModel == DataModel.DOCUMENT ) {
             return DocumentType.ofCrossRelational();
         }
-        return entity.getRowType().asRelational();
+        return entity.getTupleType().asRelational();
     }
 
 
@@ -92,7 +92,7 @@ public abstract class RelScan<E extends Entity> extends Scan<E> implements RelAl
      * Returns an identity projection for the given table.
      */
     public static ImmutableList<Integer> identity( Entity entity ) {
-        return ImmutableList.copyOf( IntStream.range( 0, entity.getRowType().getFieldCount() ).boxed().collect( Collectors.toList() ) );
+        return ImmutableList.copyOf( IntStream.range( 0, entity.getTupleType().getFieldCount() ).boxed().collect( Collectors.toList() ) );
     }
 
 

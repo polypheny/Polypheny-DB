@@ -101,7 +101,7 @@ public class SemiJoin extends EquiJoin {
 
 
     @Override
-    public double estimateRowCount( AlgMetadataQuery mq ) {
+    public double estimateTupleCount( AlgMetadataQuery mq ) {
         return Util.first( AlgMdUtil.getSemiJoinRowCount( mq, left, right, joinType, condition ), 1D );
     }
 

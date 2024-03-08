@@ -100,10 +100,10 @@ import org.polypheny.db.algebra.metadata.BuiltInMetadata.Parallelism;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.PercentageOriginalRows;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.PopulationSize;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.Predicates;
-import org.polypheny.db.algebra.metadata.BuiltInMetadata.RowCount;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.Selectivity;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.Size;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.TableReferences;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.TupleCount;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.UniqueKeys;
 import org.polypheny.db.algebra.metadata.Metadata;
 import org.polypheny.db.catalog.snapshot.Snapshot;
@@ -397,7 +397,7 @@ public enum BuiltInMethod {
     COLLATIONS( Collation.class, "collations" ),
     DISTRIBUTION( Distribution.class, "distribution" ),
     NODE_TYPES( NodeTypes.class, "getNodeTypes" ),
-    ROW_COUNT( RowCount.class, "getRowCount" ),
+    TUPLE_COUNT( TupleCount.class, "getTupleCount" ),
     MAX_ROW_COUNT( MaxRowCount.class, "getMaxRowCount" ),
     MIN_ROW_COUNT( MinRowCount.class, "getMinRowCount" ),
     DISTINCT_ROW_COUNT( DistinctRowCount.class, "getDistinctRowCount", ImmutableBitSet.class, RexNode.class ),

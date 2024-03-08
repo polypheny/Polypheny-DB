@@ -529,7 +529,7 @@ public abstract class ReturnTypes {
      */
     public static final PolyReturnTypeInference SCOPE = opBinding -> {
         CallBinding callBinding = (CallBinding) opBinding;
-        return callBinding.getValidator().getNamespace( callBinding.getCall() ).getRowType();
+        return callBinding.getValidator().getNamespace( callBinding.getCall() ).getTupleType();
     };
 
     /**

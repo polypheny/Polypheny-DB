@@ -114,7 +114,7 @@ public abstract class Calc extends SingleAlg {
 
 
     @Override
-    public double estimateRowCount( AlgMetadataQuery mq ) {
+    public double estimateTupleCount( AlgMetadataQuery mq ) {
         return AlgMdUtil.estimateFilteredRows( getInput(), program, mq );
     }
 

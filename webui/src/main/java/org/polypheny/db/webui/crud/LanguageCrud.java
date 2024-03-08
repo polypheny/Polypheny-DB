@@ -276,7 +276,7 @@ public class LanguageCrud {
         }
 
         List<UiColumnDefinition> header = new ArrayList<>();
-        for ( AlgDataTypeField field : context.getIterator().getImplementation().rowType.getFields() ) {
+        for ( AlgDataTypeField field : context.getIterator().getImplementation().tupleType.getFields() ) {
             String columnName = field.getName();
 
             String filter = getFilter( field, request.filter );
@@ -368,7 +368,7 @@ public class LanguageCrud {
 
             GraphResultBuilder<?, ?> builder = GraphResult.builder()
                     .data( data.stream().map( r -> Arrays.stream( r ).map( LanguageCrud::toJson ).toArray( String[]::new ) ).toArray( String[][]::new ) )
-                    .header( context.getIterator().getImplementation().rowType.getFields().stream().map( FieldDefinition::of ).toArray( FieldDefinition[]::new ) )
+                    .header( context.getIterator().getImplementation().tupleType.getFields().stream().map( FieldDefinition::of ).toArray( FieldDefinition[]::new ) )
                     .query( context.getQuery().getQuery() )
                     .language( context.getQuery().getLanguage() )
                     .dataModel( context.getIterator().getImplementation().getDataModel() )
@@ -401,7 +401,7 @@ public class LanguageCrud {
             boolean hasMoreRows = context.getIterator().hasMoreRows();
 
             return DocResult.builder()
-                    .header( context.getIterator().getImplementation().rowType.getFields().stream().map( FieldDefinition::of ).toArray( FieldDefinition[]::new ) )
+                    .header( context.getIterator().getImplementation().tupleType.getFields().stream().map( FieldDefinition::of ).toArray( FieldDefinition[]::new ) )
                     .data( data.stream().map( d -> d.get( 0 ).toJson() ).toArray( String[]::new ) )
                     .query( context.getQuery().getQuery() )
                     .language( context.getQuery().getLanguage() )

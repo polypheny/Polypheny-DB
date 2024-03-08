@@ -59,7 +59,7 @@ public abstract class Intersect extends SetOp {
 
 
     @Override
-    public double estimateRowCount( AlgMetadataQuery mq ) {
+    public double estimateTupleCount( AlgMetadataQuery mq ) {
         // REVIEW jvs:  I just pulled this out of a hat.
         double dRows = Double.MAX_VALUE;
         for ( AlgNode input : inputs ) {

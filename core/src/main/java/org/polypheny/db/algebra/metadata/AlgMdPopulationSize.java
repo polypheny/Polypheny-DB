@@ -118,7 +118,7 @@ public class AlgMdPopulationSize implements MetadataHandler<BuiltInMetadata.Popu
 
     public Double getPopulationSize( Values alg, AlgMetadataQuery mq, ImmutableBitSet groupKey ) {
         // assume half the rows are duplicates
-        return alg.estimateRowCount( mq ) / 2;
+        return alg.estimateTupleCount( mq ) / 2;
     }
 
 

@@ -95,7 +95,7 @@ public class MongoProject extends Project implements MongoAlg {
         final List<String> excludes = new ArrayList<>();
         final List<String> unwinds = new ArrayList<>();
         // We use our specialized rowType to derive the mapped underlying column identifiers
-        AlgDataType mongoRowType = implementor.getRowType();
+        AlgDataType mongoRowType = implementor.getTupleType();
 
         BsonDocument documents = new BsonDocument();
 

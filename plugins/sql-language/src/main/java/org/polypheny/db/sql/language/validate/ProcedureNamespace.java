@@ -55,7 +55,7 @@ public class ProcedureNamespace extends AbstractNamespace {
         } else if ( operator instanceof SqlUserDefinedTableMacro ) {
             assert type.getPolyType() == PolyType.CURSOR : "User-defined table macro should have CURSOR type, not " + type;
             final SqlUserDefinedTableMacro udf = (SqlUserDefinedTableMacro) operator;
-            return udf.getTable( validator.typeFactory, callBinding.sqlOperands() ).getRowType( validator.typeFactory );
+            return udf.getTable( validator.typeFactory, callBinding.sqlOperands() ).getTupleType( validator.typeFactory );
         }
         return type;
     }

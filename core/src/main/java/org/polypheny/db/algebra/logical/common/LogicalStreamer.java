@@ -128,7 +128,7 @@ public class LogicalStreamer extends Streamer {
             // at the moment no data model is able to conditionally insert
             attachFilter( modify, algBuilder, rexBuilder );
         } else {
-            if ( input.getTupleType().getFieldCount() != modify.getEntity().getRowType().getFieldCount() ) {
+            if ( input.getTupleType().getFieldCount() != modify.getEntity().getTupleType().getFieldCount() ) {
                 return null;
             }
             // attach a projection, so the values can be inserted on execution
@@ -175,12 +175,12 @@ public class LogicalStreamer extends Streamer {
 
 
     public static void attachFilter( AlgNode modify, AlgBuilder algBuilder, RexBuilder rexBuilder ) {
-        List<Integer> indexes = IntStream.range( 0, modify.getEntity().getRowType().getFieldCount() ).boxed().toList();
+        List<Integer> indexes = IntStream.range( 0, modify.getEntity().getTupleType().getFieldCount() ).boxed().toList();
 
         if ( modify.getEntity().unwrap( PhysicalTable.class ).isPresent() ) {
             indexes = new ArrayList<>();
             for ( long fieldId : modify.getEntity().unwrap( PhysicalTable.class ).orElseThrow().getUniqueFieldIds() ) {
-                indexes.add( modify.getEntity().getRowType().getFieldIds().indexOf( fieldId ) );
+                indexes.add( modify.getEntity().getTupleType().getFieldIds().indexOf( fieldId ) );
             }
         }
 
@@ -193,14 +193,14 @@ public class LogicalStreamer extends Streamer {
         List<RexNode> fields = new ArrayList<>();
         int i = 0;
         int j = 0;
-        for ( AlgDataTypeField field : entity.getRowType().getFields() ) {
+        for ( AlgDataTypeField field : entity.getTupleType().getFields() ) {
             if ( !indexes.contains( i ) ) {
                 i++;
                 continue;
             }
             fields.add(
                     algBuilder.equals(
-                            rexBuilder.makeInputRef( entity.getRowType(), i ),
+                            rexBuilder.makeInputRef( entity.getTupleType(), i ),
                             rexBuilder.makeDynamicParam( field.getType(), i ) ) );
             i++;
             j++;
@@ -260,7 +260,7 @@ public class LogicalStreamer extends Streamer {
         @Override
         public RexNode visitFieldAccess( RexFieldAccess fieldAccess ) {
             int index = fieldAccess.getField().getIndex();
-            return new RexIndexRef( index, entity.getRowType().getFields().get( index ).getType() );
+            return new RexIndexRef( index, entity.getTupleType().getFields().get( index ).getType() );
         }
 
 

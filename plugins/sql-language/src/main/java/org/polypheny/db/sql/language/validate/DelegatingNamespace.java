@@ -56,8 +56,8 @@ public abstract class DelegatingNamespace implements SqlValidatorNamespace {
 
 
     @Override
-    public AlgDataType getRowType() {
-        return namespace.getRowType();
+    public AlgDataType getTupleType() {
+        return namespace.getTupleType();
     }
 
 

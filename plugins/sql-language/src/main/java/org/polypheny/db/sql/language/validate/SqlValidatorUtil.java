@@ -554,7 +554,7 @@ public class SqlValidatorUtil {
     public static boolean containsMonotonic( SqlValidatorScope scope ) {
         for ( SqlValidatorNamespace ns : children( scope ) ) {
             ns = ns.resolve();
-            for ( String field : ns.getRowType().getFieldNames() ) {
+            for ( String field : ns.getTupleType().getFieldNames() ) {
                 if ( !ns.getMonotonicity( field ).mayRepeat() ) {
                     return true;
                 }

@@ -76,7 +76,7 @@ public abstract class SingleAlg extends AbstractAlgNode {
 
 
     @Override
-    public double estimateRowCount( AlgMetadataQuery mq ) {
+    public double estimateTupleCount( AlgMetadataQuery mq ) {
         // Not necessarily correct, but a better default than AbstractRelNode's 1.0
         return mq.getTupleCount( input );
     }

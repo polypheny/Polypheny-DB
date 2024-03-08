@@ -54,7 +54,7 @@ import org.codehaus.commons.compiler.IClassBodyEvaluator;
 import org.codehaus.commons.compiler.ICompilerFactory;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.constant.ConformanceEnum;
-import org.polypheny.db.algebra.enumerable.JavaRowFormat;
+import org.polypheny.db.algebra.enumerable.JavaTupleFormat;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
 import org.polypheny.db.algebra.enumerable.RexToLixTranslator;
 import org.polypheny.db.algebra.enumerable.RexToLixTranslator.InputGetter;
@@ -108,7 +108,7 @@ public class JaninoRexCompiler implements Interpreter.ScalarCompiler {
                         ImmutableList.of(
                                 Pair.of(
                                         Expressions.field( context_, BuiltInMethod.CONTEXT_VALUES.field ),
-                                        PhysTypeImpl.of( javaTypeFactory, inputRowType, JavaRowFormat.ARRAY, false ) ) ) );
+                                        PhysTypeImpl.of( javaTypeFactory, inputRowType, JavaTupleFormat.ARRAY, false ) ) ) );
         final Function1<String, InputGetter> correlates = a0 -> {
             throw new UnsupportedOperationException();
         };

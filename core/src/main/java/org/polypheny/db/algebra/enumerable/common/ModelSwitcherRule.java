@@ -40,7 +40,7 @@ public class ModelSwitcherRule extends AlgOptRule {
 
 
     public ModelSwitcherRule( ModelTrait in, ModelTrait out ) {
-        super( operandJ( AlgNode.class, out, r -> false, any() ), "ModelSwitcherRule_" + in + "_" + out );
+        super( operand( AlgNode.class, out, r -> false, any() ), "ModelSwitcherRule_" + in + "_" + out );
     }
 
 

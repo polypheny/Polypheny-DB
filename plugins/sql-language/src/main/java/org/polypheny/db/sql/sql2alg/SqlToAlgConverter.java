@@ -1811,8 +1811,8 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                 final SqlValidatorNamespace leftNamespace = validator.getSqlNamespace( left );
                 final SqlValidatorNamespace rightNamespace = validator.getSqlNamespace( right );
                 if ( isNatural ) {
-                    final AlgDataType leftRowType = leftNamespace.getRowType();
-                    final AlgDataType rightRowType = rightNamespace.getRowType();
+                    final AlgDataType leftRowType = leftNamespace.getTupleType();
+                    final AlgDataType rightRowType = rightNamespace.getTupleType();
                     final List<String> columnList = SqlValidatorUtil.deriveNaturalJoinColumnList( snapshot.nameMatcher, leftRowType, rightRowType );
                     conditionExp = convertUsing( leftNamespace, rightNamespace, columnList );
                 } else {
@@ -1895,7 +1895,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         final SqlValidatorScope scope = validator.getMatchRecognizeScope( matchRecognize );
 
         final Blackboard matchBb = createBlackboard( scope, null, false );
-        final AlgDataType rowType = ns.getRowType();
+        final AlgDataType rowType = ns.getTupleType();
         // convert inner query, could be a table name or a derived table
         SqlNode expr = matchRecognize.getTableRef();
         convertFrom( matchBb, expr );
@@ -2103,12 +2103,6 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         // Expand table macro if possible. It's more efficient than LogicalTableFunctionScan.
         final SqlCallBinding callBinding = new SqlCallBinding( bb.scope.getValidator(), bb.scope, call );
         if ( operator instanceof SqlUserDefinedTableMacro udf ) {
-            //final TranslatableEntity table = udf.getTable( typeFactory, callBinding.sqlOperands() );
-            //final LogicalTable catalogTable = Catalog.getInstance().getTable( table.getId() );
-            //final AlgDataType rowType = table.getRowType( typeFactory );
-            //AlgOptEntity algOptEntity = AlgOptEntityImpl.create( null, rowType, table, catalogTable, null );
-            //AlgNode converted = toAlg( algOptEntity );
-            //bb.setRoot( converted, true );
             return;
         }
 
@@ -2224,7 +2218,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
                 for ( int i = 0; i < childNamespaceIndex; i++ ) {
                     SqlValidatorNamespace child = children.get( i );
-                    namespaceOffset += child.getRowType().getFieldCount();
+                    namespaceOffset += child.getTupleType().getFieldCount();
                 }
             }
 
@@ -2360,7 +2354,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             List<RexNode> operands = new ArrayList<>();
             int offset = 0;
             for ( SqlValidatorNamespace n : ImmutableList.of( leftNamespace, rightNamespace ) ) {
-                final AlgDataType rowType = n.getRowType();
+                final AlgDataType rowType = n.getTupleType();
                 final AlgDataTypeField field = nameMatcher.field( rowType, name );
                 operands.add( rexBuilder.makeInputRef( field.getType(), offset + field.getIndex() ) );
                 offset += rowType.getFields().size();
@@ -2522,7 +2516,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             final SelectScope selectScope = SqlValidatorUtil.getEnclosingSelectScope( bb.scope );
             assert selectScope != null;
             final SqlValidatorNamespace selectNamespace = validator.getSqlNamespace( selectScope.getNode() );
-            final List<String> names = selectNamespace.getRowType().getFieldNames();
+            final List<String> names = selectNamespace.getTupleType().getFieldNames();
             int sysFieldCount = selectList.size() - names.size();
             for ( SqlNode expr : selectList.getSqlList() ) {
                 projects.add(
@@ -2818,12 +2812,12 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         // Lazily create a blackboard that contains all non-generated columns.
         final Supplier<Blackboard> bb = () -> {
             RexNode sourceRef = rexBuilder.makeRangeReference( scan );
-            return createInsertBlackboard( table, sourceRef, table.getRowType().getFieldNames() );
+            return createInsertBlackboard( table, sourceRef, table.getTupleType().getFieldNames() );
         };
 
         int virtualCount = 0;
         final List<RexNode> list = new ArrayList<>();
-        for ( AlgDataTypeField f : table.getRowType().getFields() ) {
+        for ( AlgDataTypeField f : table.getTupleType().getFields() ) {
             final ColumnStrategy strategy = ief.generationStrategy( table, f.getIndex() );
             if ( Objects.requireNonNull( strategy ) == ColumnStrategy.VIRTUAL ) {
                 list.add( ief.newColumnDefaultValue( table, f.getIndex(), bb.get() ) );
@@ -2873,7 +2867,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         collectInsertTargets( call, sourceRef, targetColumnNames, columnExprs );
 
         final Entity targetTable = getTargetTable( call );
-        final AlgDataType targetRowType = targetTable.getRowType();//AlgOptEntityImpl.realRowType( targetTable );
+        final AlgDataType targetRowType = targetTable.getTupleType();//AlgOptEntityImpl.realRowType( targetTable );
         final List<AlgDataTypeField> targetFields = targetRowType.getFields();
         boolean isDocument = call.getSchemaType() == DataModel.DOCUMENT;
 
@@ -2929,7 +2923,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
         // Assign expressions for non-generated columns.
         final List<ColumnStrategy> strategies = targetTable.unwrap( LogicalTable.class ).orElseThrow().getColumnStrategies();
-        final List<String> targetFields = targetTable.getRowType().getFieldNames();
+        final List<String> targetFields = targetTable.getTupleType().getFieldNames();
         for ( String targetColumnName : targetColumnNames ) {
             final int i = targetFields.indexOf( targetColumnName );
             switch ( strategies.get( i ) ) {
@@ -2975,7 +2969,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
      */
     protected void collectInsertTargets( SqlInsert call, final RexNode sourceRef, final List<String> targetColumnNames, List<RexNode> columnExprs ) {
         final Entity targetTable = getTargetTable( call );
-        final AlgDataType tableRowType = targetTable.getRowType();
+        final AlgDataType tableRowType = targetTable.getTupleType();
         SqlNodeList targetColumnList = call.getTargetColumnList();
         if ( targetColumnList == null ) {
             if ( validator.getConformance().isInsertSubsetColumnsAllowed() ) {
@@ -3067,7 +3061,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
         // convert update column list from SqlIdentifier to String
         final List<String> targetColumnNameList = new ArrayList<>();
-        final AlgDataType targetRowType = targetTable.getRowType();
+        final AlgDataType targetRowType = targetTable.getTupleType();
         for ( SqlNode node : call.getTargetColumnList().getSqlList() ) {
             SqlIdentifier id = (SqlIdentifier) node;
             AlgDataTypeField field = SqlValidatorUtil.getTargetField( targetRowType, typeFactory, id, snapshot, targetTable );
@@ -3092,7 +3086,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
         // convert update column list from SqlIdentifier to String
         final List<String> targetColumnNameList = new ArrayList<>();
-        final AlgDataType targetRowType = targetTable.getRowType();
+        final AlgDataType targetRowType = targetTable.getTupleType();
         SqlUpdate updateCall = call.getUpdateCall();
         if ( updateCall != null ) {
             for ( SqlNode targetColumn : updateCall.getTargetColumnList().getSqlList() ) {
@@ -3784,14 +3778,14 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                     int i = 0;
                     int offset = 0;
                     for ( SqlValidatorNamespace c : ancestorScope1.getChildren() ) {
-                        builder.addAll( c.getRowType().getFields() );
+                        builder.addAll( c.getTupleType().getFields() );
                         if ( i == resolve.path.steps().get( 0 ).i ) {
-                            for ( AlgDataTypeField field : c.getRowType().getFields() ) {
+                            for ( AlgDataTypeField field : c.getTupleType().getFields() ) {
                                 fields.put( field.getName(), field.getIndex() + offset );
                             }
                         }
                         ++i;
-                        offset += c.getRowType().getFieldCount();
+                        offset += c.getTupleType().getFieldCount();
                     }
                     final RexNode c = rexBuilder.makeCorrel( builder.uniquify().build(), correlId );
                     return Pair.of( c, fields.build() );

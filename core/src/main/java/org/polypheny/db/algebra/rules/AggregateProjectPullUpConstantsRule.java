@@ -93,7 +93,7 @@ public class AggregateProjectPullUpConstantsRule extends AlgOptRule {
      */
     public AggregateProjectPullUpConstantsRule( Class<? extends Aggregate> aggregateClass, Class<? extends AlgNode> inputClass, AlgBuilderFactory algBuilderFactory, String description ) {
         super(
-                operandJ( aggregateClass, null, Aggregate::isSimple, operand( inputClass, any() ) ),
+                operand( aggregateClass, null, Aggregate::isSimple, operand( inputClass, any() ) ),
                 algBuilderFactory, description );
     }
 

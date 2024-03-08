@@ -57,8 +57,6 @@ import org.polypheny.db.schema.Namespace.Schema;
 public interface SchemaPlus extends Namespace, Schema {
 
 
-    PolyphenyDbSchema polyphenyDbSchema();
-
     /**
      * Returns the parent schema, or null if this schema has no parent.
      */

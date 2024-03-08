@@ -109,7 +109,7 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
 
         final Result result = implementor.visitChild( this, 0, child, pref );
 
-        final PhysType physType = PhysTypeImpl.of( typeFactory, getTupleType(), JavaRowFormat.ARRAY );
+        final PhysType physType = PhysTypeImpl.of( typeFactory, getTupleType(), JavaTupleFormat.ARRAY );
 
         // final Enumerable<Employee> inputEnumerable = <<child adapter>>;
         // return new Enumerable<IntString>() {
@@ -117,9 +117,9 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
         //         return new Enumerator<IntString>() {
         //             public void reset() {
         // ...
-        Type outputJavaType = physType.getJavaRowType();
+        Type outputJavaType = physType.getJavaTupleType();
         final Type enumeratorType = Types.of( Enumerator.class, outputJavaType );
-        Type inputJavaType = result.physType().getJavaRowType();
+        Type inputJavaType = result.physType().getJavaTupleType();
         ParameterExpression inputEnumerator = Expressions.parameter( Types.of( Enumerator.class, inputJavaType ), "inputEnumerator" );
         Expression input = RexToLixTranslator.convert( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_CURRENT.method ), inputJavaType );
 

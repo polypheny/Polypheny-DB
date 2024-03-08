@@ -39,8 +39,8 @@ class JoinNamespace extends AbstractNamespace {
 
     @Override
     protected AlgDataType validateImpl( AlgDataType targetRowType ) {
-        AlgDataType leftType = validator.getSqlNamespace( join.getLeft() ).getRowType();
-        AlgDataType rightType = validator.getSqlNamespace( join.getRight() ).getRowType();
+        AlgDataType leftType = validator.getSqlNamespace( join.getLeft() ).getTupleType();
+        AlgDataType rightType = validator.getSqlNamespace( join.getRight() ).getTupleType();
         final AlgDataTypeFactory typeFactory = validator.getTypeFactory();
         switch ( join.getJoinType() ) {
             case LEFT:

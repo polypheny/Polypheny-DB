@@ -49,7 +49,6 @@ import org.polypheny.db.algebra.metadata.MetadataFactoryImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
 
 
@@ -89,7 +88,6 @@ public class AlgOptCluster {
         this.planner = Objects.requireNonNull( planner );
         this.typeFactory = Objects.requireNonNull( typeFactory );
         this.rexBuilder = rexBuilder;
-        RexNode originalExpression = rexBuilder.makeLiteral( "?" );
 
         // set up a default alg metadata provider, giving the planner first crack at everything
         setMetadataProvider( DefaultAlgMetadataProvider.INSTANCE );

@@ -139,7 +139,7 @@ public abstract class Filter extends SingleAlg {
 
 
     @Override
-    public double estimateRowCount( AlgMetadataQuery mq ) {
+    public double estimateTupleCount( AlgMetadataQuery mq ) {
         return AlgMdUtil.estimateFilteredRows( getInput(), condition, mq );
     }
 

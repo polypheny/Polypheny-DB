@@ -2030,7 +2030,7 @@ public class Util {
         for ( AlgCollation collation : entity.getCollations() ) {
             final AlgFieldCollation fieldCollation = collation.getFieldCollations().get( 0 );
             final int fieldIndex = fieldCollation.getFieldIndex();
-            if ( fieldIndex < entity.getRowType().getFieldCount() && entity.getRowType().getFieldNames().get( fieldIndex ).equals( columnName ) ) {
+            if ( fieldIndex < entity.getTupleType().getFieldCount() && entity.getTupleType().getFieldNames().get( fieldIndex ).equals( columnName ) ) {
                 return fieldCollation.direction.monotonicity();
             }
         }

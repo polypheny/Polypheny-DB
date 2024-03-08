@@ -57,14 +57,14 @@ public class CottontailValues extends Values implements CottontailAlg {
         final List<Pair<String, PolyType>> physicalColumnNames = new ArrayList<>();
         List<Integer> tupleIndexes = new ArrayList<>();
         int i = 0;
-        List<String> fieldNames = context.table.getRowType().getFieldNames();
+        List<String> fieldNames = context.table.getTupleType().getFieldNames();
         for ( AlgDataTypeField field : this.rowType.getFields() ) {
             if ( !fieldNames.contains( field.getName() ) ) {
                 continue;
             }
             int index = fieldNames.indexOf( field.getName() );
             physicalColumnNames.add( new Pair<>(
-                    context.table.getRowType().getFields().get( index ).getPhysicalName(),
+                    context.table.getTupleType().getFields().get( index ).getPhysicalName(),
                     field.getType().getPolyType() ) );
 
             tupleIndexes.add( field.getIndex() );

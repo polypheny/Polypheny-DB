@@ -27,7 +27,7 @@ public interface ValidatorNamespace {
      *
      * @return Row type of this namespace, never null, always a struct
      */
-    AlgDataType getRowType();
+    AlgDataType getTupleType();
 
 
     default DataModel getDataModel() {

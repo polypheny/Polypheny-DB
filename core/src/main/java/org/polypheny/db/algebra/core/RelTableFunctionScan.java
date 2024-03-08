@@ -147,12 +147,12 @@ public abstract class RelTableFunctionScan extends AbstractAlgNode {
 
 
     @Override
-    public double estimateRowCount( AlgMetadataQuery mq ) {
+    public double estimateTupleCount( AlgMetadataQuery mq ) {
         // Calculate result as the sum of the input row count estimates, assuming there are any, otherwise use the superclass default. So for a no-input UDX, behave like an AbstractRelNode;
         // for a one-input UDX, behave like a SingleRel; for a multi-input UDX, behave like UNION ALL.
         // TODO jvs 10-Sep-2007: UDX-supplied costing metadata.
         if ( inputs.size() == 0 ) {
-            return super.estimateRowCount( mq );
+            return super.estimateTupleCount( mq );
         }
         double nRows = 0.0;
         for ( AlgNode input : inputs ) {

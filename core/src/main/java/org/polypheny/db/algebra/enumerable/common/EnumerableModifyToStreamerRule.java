@@ -42,7 +42,7 @@ public class EnumerableModifyToStreamerRule extends AlgOptRule {
      * and prepared {@link Modify}, which can be useful if the executing store is not able to perform the {@link Scan} query natively.
      */
     private EnumerableModifyToStreamerRule( Class<? extends Modify<?>> modify ) {
-        super( operandJ( modify, Convention.NONE, r -> !r.streamed, any() ), "Enumerable" + modify.getSimpleName() + "ToStreamerRule" );
+        super( operand( modify, Convention.NONE, r -> !r.streamed, any() ), "Enumerable" + modify.getSimpleName() + "ToStreamerRule" );
     }
 
 

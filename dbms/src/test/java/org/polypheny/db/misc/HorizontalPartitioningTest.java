@@ -1312,7 +1312,7 @@ public class HorizontalPartitioningTest {
                     long initialAdapterId = placement.adapterId;
 
                     // Check how many columnPlacements are added to the one DataPlacement
-                    assertEquals( table.getColumnIds().size(), Catalog.snapshot().alloc().getAllocsOfPlacement( placement.id ).get( 0 ).getRowType().getFieldCount() );
+                    assertEquals( table.getColumnIds().size(), Catalog.snapshot().alloc().getAllocsOfPlacement( placement.id ).get( 0 ).getTupleType().getFieldCount() );
 
                     // Check how many partitionPlacements are added to the one DataPlacement
                     assertEquals( partitionsToCreate, Catalog.snapshot().alloc().getPartitionsFromLogical( table.id ).size() );

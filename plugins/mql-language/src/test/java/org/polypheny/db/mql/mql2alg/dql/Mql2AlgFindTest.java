@@ -390,8 +390,7 @@ public class Mql2AlgFindTest extends Mql2AlgTest {
 
         assertTrue( root.alg instanceof DocumentScan );
 
-        DocumentScan scan = (DocumentScan) root.alg;
-        //assertTrue( scan.getRowType().getFieldNames().contains( "_id" ) );
+        DocumentScan<?> scan = (DocumentScan<?>) root.alg;
         assertTrue( scan.getTupleType().getFieldNames().contains( "d" ) );
     }
 

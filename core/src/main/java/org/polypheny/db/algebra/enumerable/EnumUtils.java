@@ -161,18 +161,18 @@ public class EnumUtils {
 
         // Generate all fields.
         final List<Expression> expressions = new ArrayList<>();
-        final int outputFieldCount = physType.getRowType().getFieldCount();
+        final int outputFieldCount = physType.getTupleType().getFieldCount();
         for ( Ord<PhysType> ord : Ord.zip( inputPhysTypes ) ) {
             final PhysType inputPhysType = ord.e.makeNullable( joinType.generatesNullsOn( ord.i ) );
             // If input item is just a primitive, we do not generate specialized primitive apply override since it won't be called anyway
             // Function<T> always operates on boxed arguments
-            final ParameterExpression parameter = Expressions.parameter( Primitive.box( inputPhysType.getJavaRowType() ), EnumUtils.LEFT_RIGHT.get( ord.i ) );
+            final ParameterExpression parameter = Expressions.parameter( Primitive.box( inputPhysType.getJavaTupleType() ), EnumUtils.LEFT_RIGHT.get( ord.i ) );
             parameters.add( parameter );
             if ( expressions.size() == outputFieldCount ) {
                 // For instance, if semi-join needs to return just the left inputs
                 break;
             }
-            final int fieldCount = inputPhysType.getRowType().getFieldCount();
+            final int fieldCount = inputPhysType.getTupleType().getFieldCount();
             for ( int i = 0; i < fieldCount; i++ ) {
                 Expression expression = inputPhysType.fieldReference( parameter, i, physType.getJavaFieldType( expressions.size() ) );
                 if ( joinType.generatesNullsOn( ord.i ) ) {
@@ -441,8 +441,8 @@ public class EnumUtils {
             PhysType rightPhysType,
             RexNode condition ) {
         final BlockBuilder builder = new BlockBuilder();
-        final ParameterExpression left_ = Expressions.parameter( leftPhysType.getJavaRowType(), "left" );
-        final ParameterExpression right_ = Expressions.parameter( rightPhysType.getJavaRowType(), "right" );
+        final ParameterExpression left_ = Expressions.parameter( leftPhysType.getJavaTupleType(), "left" );
+        final ParameterExpression right_ = Expressions.parameter( rightPhysType.getJavaTupleType(), "right" );
         final RexProgramBuilder program = new RexProgramBuilder(
                 implementor.getTypeFactory().builder()
                         .addAll( left.getTupleType().getFields() )

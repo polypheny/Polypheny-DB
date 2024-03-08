@@ -47,7 +47,6 @@ import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.prepare.Prepare;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
-import org.polypheny.db.rex.MockAlgOptPlanner;
 import org.polypheny.db.sql.DiffRepository;
 import org.polypheny.db.sql.MockSqlOperatorTable;
 import org.polypheny.db.sql.SqlLanguageDependent;
@@ -182,7 +181,7 @@ public abstract class SqlToAlgTestBase extends SqlLanguageDependent {
 
 
     /**
-     * Default implementation of {@link Tester}, using mock classes and {@link MockAlgOptPlanner}.
+     * Default implementation of {@link Tester}.
      */
     public static class TesterImpl implements Tester {
 

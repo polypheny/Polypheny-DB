@@ -67,8 +67,8 @@ public abstract class PhysicalEntity extends Entity {
 
 
     @Override
-    public double getRowCount() {
-        return getRowCount( logicalId );
+    public double getTupleCount() {
+        return getTupleCount( logicalId );
     }
 
 

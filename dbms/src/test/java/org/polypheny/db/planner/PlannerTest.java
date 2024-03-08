@@ -108,7 +108,7 @@ public class PlannerTest {
     public static class DynamicRule extends AlgOptRule {
 
         public DynamicRule() {
-            super( operandJ( LeafDummyNode.class, Convention.NONE, r -> true, any() ), DynamicRule.class.getSimpleName() );
+            super( operand( LeafDummyNode.class, Convention.NONE, r -> true, any() ), DynamicRule.class.getSimpleName() );
         }
 
 
@@ -129,7 +129,7 @@ public class PlannerTest {
 
 
         public PhysRule() {
-            super( operandJ( AlgNode.class, Convention.NONE, r -> r instanceof LeafDummyNode || r instanceof SingleDummyNode, any() ), PhysRule.class.getSimpleName() );
+            super( operand( AlgNode.class, Convention.NONE, r -> r instanceof LeafDummyNode || r instanceof SingleDummyNode, any() ), PhysRule.class.getSimpleName() );
         }
 
 

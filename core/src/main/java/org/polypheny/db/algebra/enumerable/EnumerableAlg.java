@@ -63,27 +63,27 @@ public interface EnumerableAlg extends AlgNode {
         ANY;
 
 
-        public JavaRowFormat preferCustom() {
-            return prefer( JavaRowFormat.CUSTOM );
+        public JavaTupleFormat preferCustom() {
+            return prefer( JavaTupleFormat.CUSTOM );
         }
 
 
-        public JavaRowFormat preferArray() {
-            return prefer( JavaRowFormat.ARRAY );
+        public JavaTupleFormat preferArray() {
+            return prefer( JavaTupleFormat.ARRAY );
         }
 
 
-        public JavaRowFormat prefer( JavaRowFormat format ) {
+        public JavaTupleFormat prefer( JavaTupleFormat format ) {
             return switch ( this ) {
-                case CUSTOM -> JavaRowFormat.CUSTOM;
-                case ARRAY -> JavaRowFormat.ARRAY;
+                case CUSTOM -> JavaTupleFormat.CUSTOM;
+                case ARRAY -> JavaTupleFormat.ARRAY;
                 default -> format;
             };
         }
 
 
-        public Prefer of( JavaRowFormat format ) {
-            if ( Objects.requireNonNull( format ) == JavaRowFormat.ARRAY ) {
+        public Prefer of( JavaTupleFormat format ) {
+            if ( Objects.requireNonNull( format ) == JavaTupleFormat.ARRAY ) {
                 return ARRAY;
             }
             return CUSTOM;
@@ -96,7 +96,7 @@ public interface EnumerableAlg extends AlgNode {
      *
      * @param physType Describes the Java type returned by this relational expression, and the mapping between it and the fields of the logical row type.
      */
-    record Result(BlockStatement block, PhysType physType, JavaRowFormat format) {
+    record Result(BlockStatement block, PhysType physType, JavaTupleFormat format) {
 
     }
 

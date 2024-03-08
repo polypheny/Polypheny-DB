@@ -122,16 +122,16 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
 
         AlgOptCluster cluster = AlgOptCluster.create( getCluster().getPlanner(), getCluster().getRexBuilder(), out, snapshot );
 
-        LogicalRelValues nodeValues = new LogicalRelValues( cluster, out, entities.get( 0 ).getRowType(), getNodeValues( nodes ) );
-        LogicalRelValues nodePropertyValues = new LogicalRelValues( cluster, out, entities.get( 1 ).getRowType(), getNodePropertyValues( nodes ) );
+        LogicalRelValues nodeValues = new LogicalRelValues( cluster, out, entities.get( 0 ).getTupleType(), getNodeValues( nodes ) );
+        LogicalRelValues nodePropertyValues = new LogicalRelValues( cluster, out, entities.get( 1 ).getTupleType(), getNodePropertyValues( nodes ) );
 
         if ( edges.isEmpty() ) {
             return Arrays.asList( nodeValues, nodePropertyValues.tuples.isEmpty() ? null : nodePropertyValues );
         }
 
         assert entities.size() == 4 && entities.get( 2 ) != null && entities.get( 3 ) != null;
-        LogicalRelValues edgeValues = new LogicalRelValues( cluster, out, entities.get( 2 ).getRowType(), getEdgeValues( edges ) );
-        LogicalRelValues edgePropertyValues = new LogicalRelValues( cluster, out, entities.get( 3 ).getRowType(), getEdgePropertyValues( edges ) );
+        LogicalRelValues edgeValues = new LogicalRelValues( cluster, out, entities.get( 2 ).getTupleType(), getEdgeValues( edges ) );
+        LogicalRelValues edgePropertyValues = new LogicalRelValues( cluster, out, entities.get( 3 ).getTupleType(), getEdgePropertyValues( edges ) );
 
         return Arrays.asList(
                 nodeValues,

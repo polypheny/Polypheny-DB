@@ -230,26 +230,26 @@ public abstract class BuiltInMetadata {
 
 
     /**
-     * Metadata about the number of rows returned by a relational expression.
+     * Metadata about the number of tuples returned by an expression.
      */
-    public interface RowCount extends Metadata {
+    public interface TupleCount extends Metadata {
 
-        MetadataDef<RowCount> DEF = MetadataDef.of( RowCount.class, RowCount.Handler.class, BuiltInMethod.ROW_COUNT.method );
+        MetadataDef<TupleCount> DEF = MetadataDef.of( TupleCount.class, TupleCount.Handler.class, BuiltInMethod.TUPLE_COUNT.method );
 
         /**
          * Estimates the number of rows which will be returned by a relational expression. The default implementation for this query asks the alg itself
-         * via {@link AlgNode#estimateRowCount}, but metadata providers can override this with their own cost models.
+         * via {@link AlgNode#estimateTupleCount}, but metadata providers can override this with their own cost models.
          *
          * @return estimated row count, or null if no reliable estimate can be determined
          */
-        Double getRowCount();
+        Double getTupleCount();
 
         /**
          * Handler API.
          */
-        interface Handler extends MetadataHandler<RowCount> {
+        interface Handler extends MetadataHandler<TupleCount> {
 
-            Double getRowCount( AlgNode r, AlgMetadataQuery mq );
+            Double getTupleCount( AlgNode r, AlgMetadataQuery mq );
 
         }
 

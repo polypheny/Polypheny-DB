@@ -80,7 +80,7 @@ public abstract class SemiJoinRule extends AlgOptRule {
                 operand(
                         projectClass,
                         some(
-                                operandJ(
+                                operand(
                                         joinClass,
                                         null,
                                         IS_LEFT_OR_INNER,
@@ -93,13 +93,13 @@ public abstract class SemiJoinRule extends AlgOptRule {
 
     protected SemiJoinRule( Class<Join> joinClass, Class<Aggregate> aggregateClass, AlgBuilderFactory algBuilderFactory, String description ) {
         super(
-                operandJ(
+                operand(
                         joinClass,
                         null,
                         IS_LEFT_OR_INNER,
                         some(
                                 operand( AlgNode.class, any() ),
-                                operandJ( aggregateClass, null, IS_EMPTY_AGGREGATE, any() ) ) ),
+                                operand( aggregateClass, null, IS_EMPTY_AGGREGATE, any() ) ) ),
                 algBuilderFactory, description );
     }
 

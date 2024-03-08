@@ -289,10 +289,8 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
         if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
             for ( final LogicalForeignKey foreignKey : Stream.concat( foreignKeys.stream(), exportedKeys.stream() ).toList() ) {
                 builder.clear();
-                //final AlgOptSchema algOptSchema = modify.getCatalogReader();
-                //final AlgOptTable scanOptTable = algOptSchema.getTableForMember( Collections.singletonList( foreignKey.getTableName() ) );
-                //final AlgOptTable refOptTable = algOptSchema.getTableForMember( Collections.singletonList( foreignKey.getReferencedKeyTableName() ) );
-                final AlgNode scan = builder.scan( foreignKey.getSchemaName(), foreignKey.getTableName() ).build();//LogicalTableScan.create( modify.getCluster(), scanOptTable );
+
+                final AlgNode scan = builder.scan( foreignKey.getSchemaName(), foreignKey.getTableName() ).build();
                 final AlgNode ref = builder.scan( foreignKey.getSchemaName(), foreignKey.getReferencedKeyTableName() ).build();
 
                 builder.push( scan );

@@ -109,8 +109,8 @@ public class EnumerableMergeJoin extends EquiJoin implements EnumerableAlg {
     @Override
     public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
         // We assume that the inputs are sorted. The price of sorting them has already been paid. The cost of the join is therefore proportional to the input and output size.
-        final double rightRowCount = right.estimateRowCount( mq );
-        final double leftRowCount = left.estimateRowCount( mq );
+        final double rightRowCount = right.estimateTupleCount( mq );
+        final double leftRowCount = left.estimateTupleCount( mq );
         final double rowCount = mq.getTupleCount( this );
         final double d = leftRowCount + rightRowCount + rowCount;
         return planner.getCostFactory().makeCost( d, 0, 0 );
@@ -122,10 +122,10 @@ public class EnumerableMergeJoin extends EquiJoin implements EnumerableAlg {
         BlockBuilder builder = new BlockBuilder();
         final Result leftResult = implementor.visitChild( this, 0, (EnumerableAlg) left, pref );
         final Expression leftExpression = builder.append( "left" + System.nanoTime(), leftResult.block() );
-        final ParameterExpression left_ = Expressions.parameter( leftResult.physType().getJavaRowType(), "left" );
+        final ParameterExpression left_ = Expressions.parameter( leftResult.physType().getJavaTupleType(), "left" );
         final Result rightResult = implementor.visitChild( this, 1, (EnumerableAlg) right, pref );
         final Expression rightExpression = builder.append( "right" + System.nanoTime(), rightResult.block() );
-        final ParameterExpression right_ = Expressions.parameter( rightResult.physType().getJavaRowType(), "right" );
+        final ParameterExpression right_ = Expressions.parameter( rightResult.physType().getJavaTupleType(), "right" );
         final JavaTypeFactory typeFactory = implementor.getTypeFactory();
         final PhysType physType = PhysTypeImpl.of( typeFactory, getTupleType(), pref.preferArray() );
         final List<Expression> leftExpressions = new ArrayList<>();
@@ -136,8 +136,8 @@ public class EnumerableMergeJoin extends EquiJoin implements EnumerableAlg {
             leftExpressions.add( Types.castIfNecessary( keyClass, leftResult.physType().fieldReference( left_, pair.left ) ) );
             rightExpressions.add( Types.castIfNecessary( keyClass, rightResult.physType().fieldReference( right_, pair.right ) ) );
         }
-        final PhysType leftKeyPhysType = leftResult.physType().project( leftKeys, JavaRowFormat.LIST );
-        final PhysType rightKeyPhysType = rightResult.physType().project( rightKeys, JavaRowFormat.LIST );
+        final PhysType leftKeyPhysType = leftResult.physType().project( leftKeys, JavaTupleFormat.LIST );
+        final PhysType rightKeyPhysType = rightResult.physType().project( rightKeys, JavaTupleFormat.LIST );
         return implementor.result(
                 physType,
                 builder.append(

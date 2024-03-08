@@ -53,7 +53,7 @@ public class FileScan extends RelScan<FileTranslatableEntity> implements FileAlg
 
     @Override
     public AlgDataType deriveRowType() {
-        return fileTable.getRowType();
+        return fileTable.getTupleType();
     }
 
 

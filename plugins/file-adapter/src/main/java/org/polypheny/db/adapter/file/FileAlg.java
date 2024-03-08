@@ -107,7 +107,7 @@ public interface FileAlg extends AlgNode {
                 int i = 0;
                 List<Value> mapping = new ArrayList<>();
                 for ( Value update : updates ) {
-                    AlgDataTypeField field = getFileTable().getRowType().getField( columnNames.get( i ), false, false );
+                    AlgDataTypeField field = getFileTable().getTupleType().getField( columnNames.get( i ), false, false );
                     int index = field.getIndex();
                     update.setColumnReference( index );
                     mapping.add( new InputValue( update.columnReference, index ) );

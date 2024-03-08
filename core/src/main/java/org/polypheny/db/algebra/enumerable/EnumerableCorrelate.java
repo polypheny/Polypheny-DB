@@ -107,7 +107,7 @@ public class EnumerableCorrelate extends Correlate implements EnumerableAlg {
         Expression leftExpression = builder.append( "left", leftResult.block() );
 
         final BlockBuilder corrBlock = new BlockBuilder();
-        Type corrVarType = leftResult.physType().getJavaRowType();
+        Type corrVarType = leftResult.physType().getJavaTupleType();
         ParameterExpression corrRef; // correlate to be used in inner loop
         ParameterExpression corrArg; // argument to correlate lambda (must be boxed)
         if ( !Primitive.is( corrVarType ) ) {
@@ -130,7 +130,7 @@ public class EnumerableCorrelate extends Correlate implements EnumerableAlg {
                 PhysTypeImpl.of(
                         implementor.getTypeFactory(),
                         getTupleType(),
-                        pref.prefer( JavaRowFormat.CUSTOM ) );
+                        pref.prefer( JavaTupleFormat.CUSTOM ) );
 
         Expression selector =
                 EnumUtils.joinSelector(

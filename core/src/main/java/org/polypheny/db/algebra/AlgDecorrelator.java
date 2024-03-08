@@ -1845,7 +1845,7 @@ public class AlgDecorrelator implements AlgProducingVisitor<Frame> {
                             operand( AlgNode.class, any() ),
                             operand(
                                     LogicalRelProject.class,
-                                    operandJ( LogicalRelAggregate.class,
+                                    operand( LogicalRelAggregate.class,
                                             null, Aggregate::isSimple,
                                             operand( LogicalRelProject.class, operand( AlgNode.class, any() ) ) ) ) ),
                     algBuilderFactory,

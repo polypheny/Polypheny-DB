@@ -59,7 +59,7 @@ public class DefaultAlgMetadataProvider extends ChainedAlgMetadataProvider {
                         AlgMdExpressionLineage.SOURCE,
                         AlgMdTableReferences.SOURCE,
                         AlgMdNodeTypes.SOURCE,
-                        AlgMdRowCount.SOURCE,
+                        AlgMdTupleCount.SOURCE,
                         AlgMdMaxRowCount.SOURCE,
                         AlgMdMinRowCount.SOURCE,
                         AlgMdUniqueKeys.SOURCE,

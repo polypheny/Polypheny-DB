@@ -84,7 +84,6 @@ public class PolyResultSet extends AvaticaResultSet {
                         signature.rowType,
                         columnMetaDataList,
                         CursorFactory.deduce( columnMetaDataList, null ),
-                        signature.rootSchema,
                         ImmutableList.of(),
                         -1,
                         null,

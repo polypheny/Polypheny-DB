@@ -68,7 +68,7 @@ public abstract class Minus extends SetOp {
 
 
     @Override
-    public double estimateRowCount( AlgMetadataQuery mq ) {
+    public double estimateTupleCount( AlgMetadataQuery mq ) {
         return AlgMdUtil.getMinusRowCount( mq, this );
     }
 

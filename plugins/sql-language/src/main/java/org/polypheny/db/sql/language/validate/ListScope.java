@@ -189,7 +189,7 @@ public abstract class ListScope extends DelegatingScope {
         if ( child0 != null ) {
             final Step path =
                     Path.EMPTY.plus(
-                            child0.namespace.getRowType(),
+                            child0.namespace.getTupleType(),
                             child0.ordinal,
                             child0.name,
                             StructKind.FULLY_QUALIFIED );
@@ -235,7 +235,7 @@ public abstract class ListScope extends DelegatingScope {
         AlgDataType type = null;
         for ( ScopeChild child : children ) {
             SqlValidatorNamespace childNs = child.namespace;
-            final AlgDataType childRowType = childNs.getRowType();
+            final AlgDataType childRowType = childNs.getTupleType();
             final AlgDataTypeField field = nameMatcher.field( childRowType, columnName );
             if ( field != null ) {
                 found++;

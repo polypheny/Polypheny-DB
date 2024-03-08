@@ -99,7 +99,7 @@ public class AggregateUnionAggregateRule extends AlgOptRule {
      */
     public AggregateUnionAggregateRule( Class<? extends Aggregate> aggregateClass, Class<? extends Union> unionClass, Class<? extends AlgNode> firstUnionInputClass, Class<? extends AlgNode> secondUnionInputClass, AlgBuilderFactory algBuilderFactory, String desc ) {
         super(
-                operandJ(
+                operand(
                         aggregateClass,
                         null,
                         Aggregate::isSimple,

@@ -228,10 +228,10 @@ public class ScanNode implements Node {
                 filter2 = filter;
                 inputRowType = alg.getTupleType();
             } else {
-                final Mapping mapping = Mappings.target( acceptedProjects, alg.getEntity().getRowType().getFieldCount() );
+                final Mapping mapping = Mappings.target( acceptedProjects, alg.getEntity().getTupleType().getFieldCount() );
                 filter2 = RexUtil.apply( mapping, filter );
                 final AlgDataTypeFactory.Builder builder = alg.getCluster().getTypeFactory().builder();
-                final List<AlgDataTypeField> fieldList = alg.getEntity().getRowType().getFields();
+                final List<AlgDataTypeField> fieldList = alg.getEntity().getTupleType().getFields();
                 for ( int acceptedProject : acceptedProjects ) {
                     builder.add( fieldList.get( acceptedProject ) );
                 }

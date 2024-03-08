@@ -110,7 +110,7 @@ public abstract class ProjectToWindowRule extends AlgOptRule {
          */
         public CalcToWindowRule( AlgBuilderFactory algBuilderFactory ) {
             super(
-                    operandJ( Calc.class, null, calc -> RexOver.containsOver( calc.getProgram() ), any() ),
+                    operand( Calc.class, null, calc -> RexOver.containsOver( calc.getProgram() ), any() ),
                     algBuilderFactory, "ProjectToWindowRule" );
         }
 
@@ -140,7 +140,7 @@ public abstract class ProjectToWindowRule extends AlgOptRule {
          */
         public ProjectToLogicalProjectAndWindowRule( AlgBuilderFactory algBuilderFactory ) {
             super(
-                    operandJ(
+                    operand(
                             Project.class,
                             null,
                             project -> RexOver.containsOver( project.getProjects(), null ),

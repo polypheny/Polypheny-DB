@@ -64,7 +64,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterImpl;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
-import org.polypheny.db.algebra.enumerable.JavaRowFormat;
+import org.polypheny.db.algebra.enumerable.JavaTupleFormat;
 import org.polypheny.db.algebra.enumerable.PhysType;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
@@ -173,7 +173,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 PhysTypeImpl.of(
                         implementor.getTypeFactory(),
                         getTupleType(),
-                        pref.prefer( JavaRowFormat.CUSTOM ) );
+                        pref.prefer( JavaTupleFormat.CUSTOM ) );
         final JdbcConvention jdbcConvention = (JdbcConvention) child.getConvention();
         SqlString sqlString = generateSql( jdbcConvention.dialect, jdbcConvention.getJdbcSchema() );
         String sql = sqlString.getSql();
@@ -302,7 +302,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             CalendarPolicy calendarPolicy,
             SqlDialect dialect ) {
         final Primitive primitive = Primitive.ofBoxOr( PolyValue.ofPrimitive( physType.fieldClass( i ), rowType.getFields().get( i ).getType().getPolyType() ) );
-        final AlgDataType fieldType = physType.getRowType().getFields().get( i ).getType();
+        final AlgDataType fieldType = physType.getTupleType().getFields().get( i ).getType();
         final List<Expression> dateTimeArgs = new ArrayList<>();
         dateTimeArgs.add( Expressions.constant( i + 1 ) );
         PolyType polyType = fieldType.getPolyType();

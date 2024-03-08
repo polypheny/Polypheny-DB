@@ -247,7 +247,7 @@ public final class Schemas {
      * Returns an {@link org.apache.calcite.linq4j.Enumerable} over the rows of a given table, not applying any filters and projecting all columns, representing each row as an object array.
      */
     public static Enumerable<PolyValue[]> enumerable( final ProjectableFilterableEntity table, final DataContext root ) {
-        return table.scan( root, ImmutableList.of(), identity( table.getRowType( root.getTypeFactory() ).getFieldCount() ) );
+        return table.scan( root, ImmutableList.of(), identity( table.getTupleType( root.getTypeFactory() ).getFieldCount() ) );
     }
 
 
@@ -315,13 +315,6 @@ public final class Schemas {
 
 
             @Override
-            public List<String> getDefaultSchemaPath() {
-                // schemaPath is usually null. If specified, it overrides schema as the context within which the SQL is validated.
-                return schemaPath;
-            }
-
-
-            @Override
             public void updateSnapshot() {
                 snapshot = Catalog.snapshot();
             }
@@ -351,11 +344,6 @@ public final class Schemas {
             }
 
 
-            @Override
-            public long getCurrentUserId() {
-                return 0;
-            }
-
         };
     }
 
@@ -364,7 +352,7 @@ public final class Schemas {
      * Returns an implementation of {@link AlgProtoDataType} that asks a given table for its row type with a given type factory.
      */
     public static AlgProtoDataType proto( final Entity entity ) {
-        return entity::getRowType;
+        return entity::getTupleType;
     }
 
 

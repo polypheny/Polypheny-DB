@@ -230,7 +230,7 @@ public class AlgMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Colum
 
         // Detect the case where a physical table expression is performing projection, and say we don't know instead of making any assumptions.
         // (Theoretically we could try to map the projection using column names.)  This detection assumes the table expression doesn't handle rename as well.
-        if ( entity.getRowType() != alg.getTupleType() ) {
+        if ( entity.getTupleType() != alg.getTupleType() ) {
             return null;
         }
 

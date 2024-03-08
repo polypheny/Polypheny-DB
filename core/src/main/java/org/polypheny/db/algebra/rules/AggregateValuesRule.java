@@ -75,11 +75,11 @@ public class AggregateValuesRule extends AlgOptRule {
      */
     public AggregateValuesRule( AlgBuilderFactory algBuilderFactory ) {
         super(
-                operandJ(
+                operand(
                         Aggregate.class,
                         null,
                         aggregate -> aggregate.getGroupCount() == 0,
-                        operandJ( Values.class, null, values -> values.getTuples().isEmpty(), none() ) ),
+                        operand( Values.class, null, values -> values.getTuples().isEmpty(), none() ) ),
                 algBuilderFactory, null );
     }
 

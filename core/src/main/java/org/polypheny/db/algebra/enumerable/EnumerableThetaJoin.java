@@ -93,8 +93,8 @@ public class EnumerableThetaJoin extends Join implements EnumerableAlg {
                 }
         }
 
-        final double rightRowCount = right.estimateRowCount( mq );
-        final double leftRowCount = left.estimateRowCount( mq );
+        final double rightRowCount = right.estimateTupleCount( mq );
+        final double leftRowCount = left.estimateTupleCount( mq );
         if ( Double.isInfinite( leftRowCount ) ) {
             rowCount = leftRowCount;
         }
@@ -136,7 +136,7 @@ public class EnumerableThetaJoin extends Join implements EnumerableAlg {
         Expression rightExpression = builder.append( "right" + System.nanoTime(), rightResult.block() );
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.preferArray() );
         final JoinInfo info = JoinInfo.of( left, right, condition );
-        final PhysType keyPhysType = leftResult.physType().project( info.leftKeys, JavaRowFormat.LIST );
+        final PhysType keyPhysType = leftResult.physType().project( info.leftKeys, JavaTupleFormat.LIST );
 
         return implementor.result(
                 physType,

@@ -147,7 +147,7 @@ public abstract class Values extends AbstractAlgNode {
 
     // implement AlgNode
     @Override
-    public double estimateRowCount( AlgMetadataQuery mq ) {
+    public double estimateTupleCount( AlgMetadataQuery mq ) {
         return tuples.size();
     }
 

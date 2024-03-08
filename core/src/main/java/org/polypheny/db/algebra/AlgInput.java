@@ -83,9 +83,7 @@ public interface AlgInput {
 
     List<Integer> getIntegerList( String tag );
 
-    List<List<Integer>> getIntegerListList( String tag );
-
-    AlgDataType getRowType( String tag );
+    AlgDataType getTupleType( String tag );
 
     AlgCollation getCollation();
 

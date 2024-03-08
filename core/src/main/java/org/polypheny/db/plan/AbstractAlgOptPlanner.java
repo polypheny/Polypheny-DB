@@ -211,11 +211,6 @@ public abstract class AbstractAlgOptPlanner implements AlgOptPlanner {
 
 
     @Override
-    public void registerSchema( AlgOptSchema schema ) {
-    }
-
-
-    @Override
     public long getAlgMetadataTimestamp( AlgNode alg ) {
         return 0;
     }

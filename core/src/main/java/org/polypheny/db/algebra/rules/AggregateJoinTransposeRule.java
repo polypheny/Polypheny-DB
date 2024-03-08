@@ -95,11 +95,11 @@ public class AggregateJoinTransposeRule extends AlgOptRule {
      */
     public AggregateJoinTransposeRule( Class<? extends Aggregate> aggregateClass, Class<? extends Join> joinClass, AlgBuilderFactory algBuilderFactory, boolean allowFunctions ) {
         super(
-                operandJ(
+                operand(
                         aggregateClass,
                         null,
                         agg -> isAggregateSupported( agg, allowFunctions ),
-                        operandJ( joinClass, null, join -> join.getJoinType() == JoinAlgType.INNER, any() ) ),
+                        operand( joinClass, null, join -> join.getJoinType() == JoinAlgType.INNER, any() ) ),
                 algBuilderFactory, null );
         this.allowFunctions = allowFunctions;
     }

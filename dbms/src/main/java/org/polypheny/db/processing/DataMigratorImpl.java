@@ -322,7 +322,7 @@ public class DataMigratorImpl implements DataMigrator {
             Map<Long, Integer> resultColMapping = new HashMap<>();
             for ( AllocationColumn column : selectedColumns ) {
                 int i = 0;
-                for ( AlgDataTypeField metaData : implementation.getRowType().getFields() ) {
+                for ( AlgDataTypeField metaData : implementation.getTupleType().getFields() ) {
                     if ( metaData.getName().equalsIgnoreCase( column.getLogicalColumnName() ) ) {
                         resultColMapping.put( column.getColumnId(), i );
                     }
@@ -369,7 +369,7 @@ public class DataMigratorImpl implements DataMigrator {
                 }
                 List<AlgDataTypeField> fields;
                 if ( isMaterializedView ) {
-                    fields = targetAlg.alg.getEntity().getRowType().getFields();
+                    fields = targetAlg.alg.getEntity().getTupleType().getFields();
                 } else {
                     fields = sourceAlg.validatedRowType.getFields();
                 }

@@ -17,7 +17,6 @@
 package org.polypheny.db.prepare;
 
 
-import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Properties;
 import lombok.Getter;
@@ -45,8 +44,6 @@ public class ContextImpl implements Context {
     public Statement statement;
     @Getter
     public String defaultNamespaceName;
-    @Getter
-    public long currentUserId;
 
 
     public ContextImpl( Snapshot snapshot, DataContext dataContext, String defaultNamespaceName, long currentUserId, Statement statement ) {
@@ -56,14 +53,6 @@ public class ContextImpl implements Context {
         this.defaultNamespaceName = defaultNamespaceName;
         this.statement = statement;
         this.currentUserId = currentUserId;
-    }
-
-
-    @Override
-    public List<String> getDefaultSchemaPath() {
-        return defaultNamespaceName == null
-                ? ImmutableList.of()
-                : ImmutableList.of( defaultNamespaceName );
     }
 
 

@@ -45,22 +45,22 @@ import org.polypheny.db.util.Pair;
 
 
 /**
- * Physical type of a row.
+ * Physical type of tuple.
  * <p>
- * Consists of the SQL row type (returned by {@link #getRowType()}), the Java type of the row (returned by {@link #getJavaRowType()}), and methods to generate expressions to access fields, generate records,
+ * Consists of the tuple type (returned by {@link #getTupleType()}), the Java type of the tuple (returned by {@link #getJavaTupleType()}), and methods to generate expressions to access fields, generate records,
  * and so forth. Together, the records encapsulate how the logical type maps onto the physical type.
  */
 public interface PhysType {
 
     /**
-     * Returns the Java type (often a Class) that represents a row. For example, in one row format, always returns {@code Object[].class}.
+     * Returns the Java type (often a Class) that represents a tuple. For example, in one tuple format, always returns {@code Object[].class}.
      */
-    Type getJavaRowType();
+    Type getJavaTupleType();
 
     /**
      * Returns the Java class that is used to store the field with the given ordinal.
      * <p>
-     * For instance, when the java row type is {@code Object[]}, the java field type is {@code Object} even if the field is not nullable.
+     * For instance, when the java tuple type is {@code Object[]}, the java field type is {@code Object} even if the field is not nullable.
      */
     Type getJavaFieldType( int field );
 
@@ -75,9 +75,9 @@ public interface PhysType {
     PhysType component( int field );
 
     /**
-     * Returns the SQL row type.
+     * Returns the tuple type.
      */
-    AlgDataType getRowType();
+    AlgDataType getTupleType();
 
     /**
      * Returns the Java class of the field with the given ordinal.
@@ -135,14 +135,14 @@ public interface PhysType {
     Expression generateAccessor( List<Integer> fields );
 
     /**
-     * Generates a selector for the given fields from an expression, with the default row format.
+     * Generates a selector for the given fields from an expression, with the default tuple format.
      */
     Expression generateSelector( ParameterExpression parameter, List<Integer> fields );
 
     /**
      * Generates a lambda expression that is a selector for the given fields from an expression.
      */
-    Expression generateSelector( ParameterExpression parameter, List<Integer> fields, JavaRowFormat targetFormat );
+    Expression generateSelector( ParameterExpression parameter, List<Integer> fields, JavaTupleFormat targetFormat );
 
     /**
      * Generates a lambda expression that is a selector for the given fields from an expression.
@@ -150,24 +150,24 @@ public interface PhysType {
      * {@code usedFields} must be a subset of {@code fields}. For each field, there is a corresponding indicator field. If a field is used, its value is assigned and its indicator is left {@code false}.
      * If a field is not used, its value is not assigned and its indicator is set to {@code true}; This will become a value of 1 when {@code GROUPING(field)} is called.
      */
-    Expression generateSelector( ParameterExpression parameter, List<Integer> fields, List<Integer> usedFields, JavaRowFormat targetFormat );
+    Expression generateSelector( ParameterExpression parameter, List<Integer> fields, List<Integer> usedFields, JavaTupleFormat targetFormat );
 
     /**
      * Generates a selector for the given fields from an expression. Only used by EnumerableWindow.
      */
-    Pair<Type, List<Expression>> selector( ParameterExpression parameter, List<Integer> fields, JavaRowFormat targetFormat );
+    Pair<Type, List<Expression>> selector( ParameterExpression parameter, List<Integer> fields, JavaTupleFormat targetFormat );
 
     /**
      * Projects a given collection of fields from this input record, into a particular preferred output format. The output format is optimized if there are 0 or 1 fields.
      */
-    PhysType project( List<Integer> integers, JavaRowFormat format );
+    PhysType project( List<Integer> integers, JavaTupleFormat format );
 
     /**
      * Projects a given collection of fields from this input record, optionally with indicator fields, into a particular preferred output format.
      * <p>
      * The output format is optimized if there are 0 or 1 fields and indicators are disabled.
      */
-    PhysType project( List<Integer> integers, boolean indicator, JavaRowFormat format );
+    PhysType project( List<Integer> integers, boolean indicator, JavaTupleFormat format );
 
     /**
      * Returns a lambda to create a collation key and a comparator. The comparator is sometimes null.
@@ -180,22 +180,22 @@ public interface PhysType {
     Expression generateComparator( AlgCollation collation );
 
     /**
-     * Returns a expression that yields a comparer, or null if this type is comparable.
+     * Returns an expression that yields a comparer, or null if this type is comparable.
      */
     Expression comparer();
 
     /**
-     * Generates an expression that creates a record for a row, initializing its fields with the given expressions. There must be one expression per field.
+     * Generates an expression that creates a record for a tuple, initializing its fields with the given expressions. There must be one expression per field.
      *
      * @param expressions Expression to initialize each field
-     * @return Expression to create a row
+     * @return Expression to create a tuple
      */
     Expression record( List<Expression> expressions );
 
     /**
      * Returns the format.
      */
-    JavaRowFormat getFormat();
+    JavaTupleFormat getFormat();
 
     List<Expression> accessors( Expression parameter, List<Integer> argList );
 
@@ -205,7 +205,7 @@ public interface PhysType {
     PhysType makeNullable( boolean nullable );
 
     /**
-     * Converts an enumerable of this physical type to an enumerable that uses a given physical type for its rows.
+     * Converts an enumerable of this physical type to an enumerable that uses a given physical type for its tuples.
      */
     Expression convertTo( Expression expression, PhysType targetPhysType );
 

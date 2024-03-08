@@ -82,7 +82,7 @@ public abstract class Entity implements PolyObject, Wrapper, Serializable, Catal
     }
 
 
-    public AlgDataType getRowType() {
+    public AlgDataType getTupleType() {
         return switch ( dataModel ) {
             case RELATIONAL -> throw new UnsupportedOperationException( "Should be overwritten by child" );
             case DOCUMENT -> DocumentType.ofId();
@@ -92,8 +92,8 @@ public abstract class Entity implements PolyObject, Wrapper, Serializable, Catal
 
 
     @Override
-    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
-        return getRowType();
+    public AlgDataType getTupleType( AlgDataTypeFactory typeFactory ) {
+        return getTupleType();
     }
 
 
@@ -109,12 +109,12 @@ public abstract class Entity implements PolyObject, Wrapper, Serializable, Catal
     }
 
 
-    public double getRowCount() {
-        return getRowCount( id );
+    public double getTupleCount() {
+        return getTupleCount( id );
     }
 
 
-    public double getRowCount( long id ) {
+    public double getTupleCount( long id ) {
         Long count = StatisticsManager.getInstance().tupleCountPerEntity( id );
         if ( count == null ) {
             return 0;
@@ -128,7 +128,7 @@ public abstract class Entity implements PolyObject, Wrapper, Serializable, Catal
     }
 
 
-    public Boolean isKey( ImmutableBitSet columns ) {
+    public Boolean isKey( ImmutableBitSet fields ) {
         return null;
     }
 

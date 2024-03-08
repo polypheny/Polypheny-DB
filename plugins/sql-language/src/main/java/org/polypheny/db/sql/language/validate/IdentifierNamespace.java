@@ -227,14 +227,14 @@ public class IdentifierNamespace extends AbstractNamespace {
             }
         }
 
-        AlgDataType rowType = resolvedNamespace.getRowType();
+        AlgDataType rowType = resolvedNamespace.getTupleType();
 
         if ( extendList != null ) {
             if ( !(resolvedNamespace instanceof EntityNamespace) ) {
                 throw new GenericRuntimeException( "cannot convert" );
             }
             resolvedNamespace = ((EntityNamespace) resolvedNamespace).extend( extendList );
-            rowType = resolvedNamespace.getRowType();
+            rowType = resolvedNamespace.getTupleType();
         }
 
         // Build a list of monotonic expressions.

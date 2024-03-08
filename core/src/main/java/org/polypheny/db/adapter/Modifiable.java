@@ -184,7 +184,7 @@ public interface Modifiable extends Scannable {
                 List.of(
                         rexBuilder.makeDynamicParam( nonNullGraphId.apply( typeFactory ), 0 ), // id
                         rexBuilder.makeDynamicParam( nonNullText.apply( typeFactory ), 1 ) ), // label
-                nodesTable.getRowType() );
+                nodesTable.getTupleType() );
 
         inputs.add( getModify( nodesTable, preparedNodes, Modify.Operation.INSERT, null, null ) );
 
@@ -194,7 +194,7 @@ public interface Modifiable extends Scannable {
                         rexBuilder.makeDynamicParam( nonNullGraphId.apply( typeFactory ), 0 ), // id
                         rexBuilder.makeDynamicParam( nonNullText.apply( typeFactory ), 1 ), // key
                         rexBuilder.makeDynamicParam( nullableText.apply( typeFactory ), 2 ) ), // value
-                nodePropertiesTable.getRowType() );
+                nodePropertiesTable.getTupleType() );
 
         inputs.add( getModify( nodePropertiesTable, preparedNProperties, Modify.Operation.INSERT, null, null ) );
 
@@ -241,7 +241,7 @@ public interface Modifiable extends Scannable {
                         rexBuilder.makeDynamicParam( nullableText.apply( typeFactory ), 1 ), // label
                         rexBuilder.makeDynamicParam( nullableGraphId.apply( typeFactory ), 2 ), // source
                         rexBuilder.makeDynamicParam( nullableGraphId.apply( typeFactory ), 3 ) ), // target
-                edgesTable.getRowType() );
+                edgesTable.getTupleType() );
 
         inputs.add( getModify( edgesTable, preparedEdges, Modify.Operation.INSERT, null, null ) );
 
@@ -251,7 +251,7 @@ public interface Modifiable extends Scannable {
                         rexBuilder.makeDynamicParam( nonNullGraphId.apply( typeFactory ), 0 ), // id
                         rexBuilder.makeDynamicParam( nonNullText.apply( typeFactory ), 1 ), // key
                         rexBuilder.makeDynamicParam( nullableText.apply( typeFactory ), 2 ) ), // value
-                edgePropertiesTable.getRowType() );
+                edgePropertiesTable.getTupleType() );
 
         inputs.add( getModify( edgePropertiesTable, preparedEProperties, Modify.Operation.INSERT, null, null ) );
 

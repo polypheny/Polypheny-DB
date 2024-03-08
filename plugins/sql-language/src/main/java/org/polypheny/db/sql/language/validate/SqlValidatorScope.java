@@ -378,7 +378,7 @@ public interface SqlValidatorScope extends ValidatorScope {
         public AlgDataType rowType() {
             return namespace.getValidator()
                     .getTypeFactory()
-                    .createTypeWithNullability( namespace.getRowType(), nullable );
+                    .createTypeWithNullability( namespace.getTupleType(), nullable );
         }
 
     }

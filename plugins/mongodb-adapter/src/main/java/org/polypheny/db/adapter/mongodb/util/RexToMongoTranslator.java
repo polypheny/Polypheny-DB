@@ -273,7 +273,7 @@ public class RexToMongoTranslator extends RexVisitorImpl<String> {
             return "{\"$slice\":[ " + left + "," + skip + "," + return_ + "]}";
         } else if ( call.isA( Kind.MQL_EXCLUDE ) ) {
             String parent = implementor
-                    .getRowType()
+                    .getTupleType()
                     .getFieldNames()
                     .get( ((RexIndexRef) call.operands.get( 0 )).getIndex() );
 

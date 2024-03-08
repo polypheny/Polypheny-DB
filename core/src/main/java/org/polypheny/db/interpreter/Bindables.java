@@ -222,7 +222,7 @@ public class Bindables {
         @Override
         public AlgDataType deriveRowType() {
             final AlgDataTypeFactory.Builder builder = getCluster().getTypeFactory().builder();
-            final List<AlgDataTypeField> fieldList = entity.getRowType().getFields();
+            final List<AlgDataTypeField> fieldList = entity.getTupleType().getFields();
             for ( int project : projects ) {
                 builder.add( fieldList.get( project ) );
             }
@@ -251,7 +251,7 @@ public class Bindables {
 
             // Cost factor for pushing fields
             // The "+ 2d" on top and bottom keeps the function fairly smooth.
-            double p = ((double) projects.size() + 2d) / ((double) entity.getRowType().getFieldCount() + 2d);
+            double p = ((double) projects.size() + 2d) / ((double) entity.getTupleType().getFieldCount() + 2d);
 
             // Multiply the cost by a factor that makes a scan more attractive if filters and projects are pushed to the table scan
             return super.computeSelfCost( planner, mq ).multiplyBy( f * p * 0.01d * 100.0d );  //TODO(s3lph): Temporary *100, otherwise foreign key enforcement breaks

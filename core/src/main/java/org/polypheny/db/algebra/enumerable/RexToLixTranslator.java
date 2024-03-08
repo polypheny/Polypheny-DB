@@ -195,7 +195,7 @@ public class RexToLixTranslator {
             InputGetter inputGetter, Function1<String, InputGetter> correlates ) {
         List<Type> storageTypes = null;
         if ( outputPhysType != null ) {
-            final AlgDataType rowType = outputPhysType.getRowType();
+            final AlgDataType rowType = outputPhysType.getTupleType();
             storageTypes = new ArrayList<>( rowType.getFieldCount() );
             for ( int i = 0; i < rowType.getFieldCount(); i++ ) {
                 storageTypes.add( outputPhysType.getJavaFieldType( i ) );
@@ -1205,7 +1205,7 @@ public class RexToLixTranslator {
             int offset = 0;
             for ( Pair<Expression, PhysType> input : inputs ) {
                 final PhysType physType = input.right;
-                int fieldCount = physType.getRowType().getFieldCount();
+                int fieldCount = physType.getTupleType().getFieldCount();
                 if ( index >= offset + fieldCount ) {
                     offset += fieldCount;
                     continue;

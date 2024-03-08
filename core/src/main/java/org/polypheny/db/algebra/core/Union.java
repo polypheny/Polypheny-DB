@@ -66,7 +66,7 @@ public abstract class Union extends SetOp {
 
 
     @Override
-    public double estimateRowCount( AlgMetadataQuery mq ) {
+    public double estimateTupleCount( AlgMetadataQuery mq ) {
         double dRows = AlgMdUtil.getUnionAllRowCount( mq, this );
         if ( !all ) {
             dRows *= 0.5;

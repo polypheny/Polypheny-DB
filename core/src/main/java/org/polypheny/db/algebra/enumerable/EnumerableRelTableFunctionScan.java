@@ -75,15 +75,15 @@ public class EnumerableRelTableFunctionScan extends RelTableFunctionScan impleme
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         BlockBuilder bb = new BlockBuilder();
         // Non-array user-specified types are not supported yet
-        final JavaRowFormat format;
+        final JavaTupleFormat format;
         if ( getElementType() == null ) {
-            format = JavaRowFormat.ARRAY;
+            format = JavaTupleFormat.ARRAY;
         } else if ( rowType.getFieldCount() == 1 && isQueryable() ) {
-            format = JavaRowFormat.SCALAR;
+            format = JavaTupleFormat.SCALAR;
         } else if ( getElementType() instanceof Class && Object[].class.isAssignableFrom( (Class<?>) getElementType() ) ) {
-            format = JavaRowFormat.ARRAY;
+            format = JavaTupleFormat.ARRAY;
         } else {
-            format = JavaRowFormat.CUSTOM;
+            format = JavaTupleFormat.CUSTOM;
         }
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), format, false );
         RexToLixTranslator t = RexToLixTranslator.forAggregation( (JavaTypeFactory) getCluster().getTypeFactory(), bb, null, implementor.getConformance() );

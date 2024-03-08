@@ -114,7 +114,6 @@ public class CottontailFilter extends Filter implements CottontailAlg {
             // intentionally empty
         }
 
-//        Translator translator = new Translator( this.getRowType() )
         return predicate;
     }
 

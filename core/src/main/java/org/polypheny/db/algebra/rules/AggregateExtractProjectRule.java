@@ -71,7 +71,7 @@ public class AggregateExtractProjectRule extends AlgOptRule {
      */
     public AggregateExtractProjectRule( Class<? extends Aggregate> aggregateClass, Class<? extends AlgNode> inputClass, AlgBuilderFactory algBuilderFactory ) {
         // Predicate prevents matching against an Aggregate whose input is already a Project. Prevents this rule firing repeatedly.
-        this( operand( aggregateClass, operandJ( inputClass, null, r -> !(r instanceof Project), any() ) ), algBuilderFactory );
+        this( operand( aggregateClass, operand( inputClass, null, r -> !(r instanceof Project), any() ) ), algBuilderFactory );
     }
 
 

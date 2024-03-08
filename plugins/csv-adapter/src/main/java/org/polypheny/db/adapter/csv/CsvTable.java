@@ -70,20 +70,6 @@ public abstract class CsvTable extends PhysicalTable {
     }
 
 
-    /*@Override
-    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
-        if ( protoRowType != null ) {
-            return protoRowType.apply( typeFactory );
-        }
-        if ( fieldTypes == null ) {
-            fieldTypes = new ArrayList<>();
-            return CsvEnumerator.deduceRowType( (JavaTypeFactory) typeFactory, source, fieldTypes );
-        } else {
-            return CsvEnumerator.deduceRowType( (JavaTypeFactory) typeFactory, source, null );
-        }
-    }*/
-
-
     /**
      * Various degrees of table "intelligence".
      */

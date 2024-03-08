@@ -78,7 +78,7 @@ public class MatchRecognizeScope extends ListScope {
     findQualifyingTableNames( String columnName, SqlNode ctx, NameMatcher nameMatcher ) {
         final Map<String, ScopeChild> map = new HashMap<>();
         for ( ScopeChild child : children ) {
-            final AlgDataType rowType = child.namespace.getRowType();
+            final AlgDataType rowType = child.namespace.getTupleType();
             if ( nameMatcher.field( rowType, columnName ) != null ) {
                 map.put( STAR, child );
             }

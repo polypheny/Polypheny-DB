@@ -162,8 +162,8 @@ public abstract class Correlate extends BiAlg {
     public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
         double rowCount = mq.getTupleCount( this );
 
-        final double rightRowCount = right.estimateRowCount( mq );
-        final double leftRowCount = left.estimateRowCount( mq );
+        final double rightRowCount = right.estimateTupleCount( mq );
+        final double leftRowCount = left.estimateTupleCount( mq );
         if ( Double.isInfinite( leftRowCount ) || Double.isInfinite( rightRowCount ) ) {
             return planner.getCostFactory().makeInfiniteCost();
         }

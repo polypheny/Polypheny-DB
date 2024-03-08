@@ -66,7 +66,7 @@ public class ProjectRemoveRule extends AlgOptRule {
      */
     public ProjectRemoveRule( AlgBuilderFactory algBuilderFactory ) {
         // Create a specialized operand to detect non-matches early. This keeps the rule queue short.
-        super( operandJ( Project.class, null, ProjectRemoveRule::isTrivial, any() ), algBuilderFactory, null );
+        super( operand( Project.class, null, ProjectRemoveRule::isTrivial, any() ), algBuilderFactory, null );
     }
 
 

@@ -42,8 +42,8 @@ public abstract class DelegatingSqlValidatorTable implements ValidatorTable {
 
 
     @Override
-    public AlgDataType getRowType() {
-        return table.getRowType();
+    public AlgDataType getTupleType() {
+        return table.getTupleType();
     }
 
 

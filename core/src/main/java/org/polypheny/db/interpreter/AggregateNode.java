@@ -55,7 +55,7 @@ import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.enumerable.AggAddContext;
 import org.polypheny.db.algebra.enumerable.AggImpState;
-import org.polypheny.db.algebra.enumerable.JavaRowFormat;
+import org.polypheny.db.algebra.enumerable.JavaTupleFormat;
 import org.polypheny.db.algebra.enumerable.PhysType;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
 import org.polypheny.db.algebra.enumerable.RexToLixTranslator;
@@ -199,14 +199,14 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
             int stateSize = agg.state.size();
 
             final BlockBuilder builder2 = new BlockBuilder();
-            final PhysType inputPhysType = PhysTypeImpl.of( typeFactory, alg.getInput().getTupleType(), JavaRowFormat.ARRAY );
+            final PhysType inputPhysType = PhysTypeImpl.of( typeFactory, alg.getInput().getTupleType(), JavaTupleFormat.ARRAY );
             final Builder builder = typeFactory.builder();
             for ( Expression expression : agg.state ) {
                 builder.add( null, "a", null, typeFactory.createJavaType( (Class) expression.getType() ) );
             }
-            final PhysType accPhysType = PhysTypeImpl.of( typeFactory, builder.build(), JavaRowFormat.ARRAY );
-            final ParameterExpression inParameter = Expressions.parameter( inputPhysType.getJavaRowType(), "in" );
-            final ParameterExpression acc_ = Expressions.parameter( accPhysType.getJavaRowType(), "acc" );
+            final PhysType accPhysType = PhysTypeImpl.of( typeFactory, builder.build(), JavaTupleFormat.ARRAY );
+            final ParameterExpression inParameter = Expressions.parameter( inputPhysType.getJavaTupleType(), "in" );
+            final ParameterExpression acc_ = Expressions.parameter( accPhysType.getJavaTupleType(), "acc" );
 
             List<Expression> accumulator = new ArrayList<>( stateSize );
             for ( int j = 0; j < stateSize; j++ ) {
@@ -220,7 +220,7 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
                         public List<RexNode> rexArguments() {
                             List<RexNode> args = new ArrayList<>();
                             for ( int index : agg.call.getArgList() ) {
-                                args.add( RexIndexRef.of( index, inputPhysType.getRowType() ) );
+                                args.add( RexIndexRef.of( index, inputPhysType.getTupleType() ) );
                             }
                             return args;
                         }
@@ -230,7 +230,7 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
                         public RexNode rexFilterArgument() {
                             return agg.call.filterArg < 0
                                     ? null
-                                    : RexIndexRef.of( agg.call.filterArg, inputPhysType.getRowType() );
+                                    : RexIndexRef.of( agg.call.filterArg, inputPhysType.getTupleType() );
                         }
 
 

@@ -24,9 +24,8 @@ import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.languages.mql2alg.MqlToAlgConverter;
 import org.polypheny.db.mql.mql.MqlTest;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.Contexts;
+import org.polypheny.db.plan.volcano.VolcanoPlanner;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
-import org.polypheny.db.rex.MockAlgOptPlanner;
 import org.polypheny.db.rex.RexBuilder;
 
 
@@ -41,7 +40,7 @@ public abstract class Mql2AlgTest extends MqlTest {
 
     static {
         factory = AlgDataTypeFactory.DEFAULT;
-        cluster = AlgOptCluster.create( new MockAlgOptPlanner( Contexts.empty() ), new RexBuilder( factory ), null, null );
+        cluster = AlgOptCluster.create( new VolcanoPlanner(), new RexBuilder( factory ), null, null );
         snapshot = Catalog.snapshot();
         MQL_TO_ALG_CONVERTER = new MqlToAlgConverter( snapshot, cluster );
     }

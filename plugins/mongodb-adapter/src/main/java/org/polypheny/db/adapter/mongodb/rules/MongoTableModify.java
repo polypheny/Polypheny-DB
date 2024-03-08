@@ -147,7 +147,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
         ((MongoAlg) input).implement( condImplementor );
         implementor.filter = condImplementor.filter;
         //assert condImplementor.getStaticRowType() instanceof MongoRowType;
-        AlgDataType rowType = condImplementor.getRowType();
+        AlgDataType rowType = condImplementor.getTupleType();
         int pos = 0;
         BsonDocument doc = new BsonDocument();
         List<BsonDocument> docDocs = new ArrayList<>();
@@ -386,7 +386,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
         MongoEntity entity = implementor.getEntity();
         GridFSBucket bucket = implementor.getBucket();
         //noinspection AssertWithSideEffects
-        assert input.getTupleType().getFieldCount() == this.getEntity().getRowType().getFieldCount();
+        assert input.getTupleType().getFieldCount() == this.getEntity().getTupleType().getFieldCount();
         implementor.setEntity( entity );
 
         int pos = 0;
@@ -399,7 +399,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
                 doc.append( physicalName, BsonUtil.getAsBson( (RexLiteral) rexNode, bucket ) );
             } else if ( rexNode instanceof RexCall ) {
                 PolyType type = this.entity
-                        .getRowType( getCluster().getTypeFactory() )
+                        .getTupleType( getCluster().getTypeFactory() )
                         .getFields()
                         .get( pos )
                         .getType()
@@ -456,8 +456,8 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
             valRowType = values.getTupleType();
         }
 
-        List<String> columnNames = entity.getRowType().getFieldNames();
-        List<Long> columnIds = entity.getRowType().getFieldIds();
+        List<String> columnNames = entity.getTupleType().getFieldNames();
+        List<Long> columnIds = entity.getTupleType().getFieldIds();
         for ( ImmutableList<RexLiteral> literals : values.tuples ) {
             BsonDocument doc = new BsonDocument();
             int pos = 0;

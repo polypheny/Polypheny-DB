@@ -114,7 +114,7 @@ public class JdbcTable extends PhysicalTable implements TranslatableEntity, Scan
 
 
     private List<Pair<ColumnMetaData.Rep, Integer>> fieldClasses( final JavaTypeFactory typeFactory ) {
-        final AlgDataType rowType = getRowType();
+        final AlgDataType rowType = getTupleType();
         return rowType.getFields().stream().map( f -> {
             final AlgDataType type = f.getType();
             final Class<?> clazz = (Class<?>) typeFactory.getJavaClass( type );

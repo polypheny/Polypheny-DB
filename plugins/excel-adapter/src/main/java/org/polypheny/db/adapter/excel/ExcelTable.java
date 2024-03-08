@@ -58,7 +58,7 @@ public class ExcelTable extends PhysicalTable {
 
 
     @Override
-    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
+    public AlgDataType getTupleType( AlgDataTypeFactory typeFactory ) {
         if ( protoRowType != null ) {
             return protoRowType.apply( typeFactory );
         }

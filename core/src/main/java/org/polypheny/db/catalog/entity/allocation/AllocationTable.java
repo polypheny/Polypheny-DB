@@ -54,7 +54,7 @@ public class AllocationTable extends AllocationEntity {
 
 
     @Override
-    public AlgDataType getRowType() {
+    public AlgDataType getTupleType() {
         final AlgDataTypeFactory.Builder fieldInfo = AlgDataTypeFactory.DEFAULT.builder();
 
         for ( AllocationColumn column : getColumns().stream().sorted( Comparator.comparingInt( a -> a.position ) ).toList() ) {

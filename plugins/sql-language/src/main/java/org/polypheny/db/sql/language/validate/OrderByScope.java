@@ -75,7 +75,7 @@ public class OrderByScope extends DelegatingScope {
         if ( identifier.isSimple() && validator.getConformance().isSortByAlias() ) {
             final String name = identifier.names.get( 0 );
             final SqlValidatorNamespace selectNs = validator.getSqlNamespace( select );
-            final AlgDataType rowType = selectNs.getRowType();
+            final AlgDataType rowType = selectNs.getTupleType();
 
             final NameMatcher nameMatcher = validator.snapshot.nameMatcher;
             final AlgDataTypeField field = nameMatcher.field( rowType, name );
@@ -111,7 +111,7 @@ public class OrderByScope extends DelegatingScope {
     @Override
     public AlgDataType resolveColumn( String name, SqlNode ctx ) {
         final SqlValidatorNamespace selectNs = validator.getSqlNamespace( select );
-        final AlgDataType rowType = selectNs.getRowType();
+        final AlgDataType rowType = selectNs.getTupleType();
         final NameMatcher nameMatcher = validator.snapshot.nameMatcher;
         final AlgDataTypeField field = nameMatcher.field( rowType, name );
         if ( field != null ) {

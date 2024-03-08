@@ -75,9 +75,9 @@ public class EnumerableDocumentUnwind extends DocumentUnwind implements Enumerab
 
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.prefer( res.format() ) );
 
-        Type outputJavaType = physType.getJavaRowType();
+        Type outputJavaType = physType.getJavaTupleType();
         final Type enumeratorType = Types.of( Enumerator.class, outputJavaType );
-        Type inputJavaType = res.physType().getJavaRowType();
+        Type inputJavaType = res.physType().getJavaTupleType();
 
         ParameterExpression inputEnumerator = Expressions.parameter( Types.of( Enumerator.class, PolyValue[].class ), "inputEnumerator" );
 

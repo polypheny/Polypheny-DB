@@ -96,7 +96,7 @@ public class FilterProjectTransposeRule extends AlgOptRule {
      */
     public <F extends Filter, P extends Project> FilterProjectTransposeRule( Class<F> filterClass, Predicate<? super F> filterPredicate, Class<P> projectClass, Predicate<? super P> projectPredicate, boolean copyFilter, boolean copyProject, AlgBuilderFactory algBuilderFactory ) {
         this(
-                operandJ( filterClass, null, filterPredicate, operandJ( projectClass, null, projectPredicate, any() ) ),
+                operand( filterClass, null, filterPredicate, operand( projectClass, null, projectPredicate, any() ) ),
                 copyFilter, copyProject, algBuilderFactory );
     }
 

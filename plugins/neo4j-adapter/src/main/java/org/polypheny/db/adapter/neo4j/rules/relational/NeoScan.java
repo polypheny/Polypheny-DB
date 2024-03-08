@@ -58,7 +58,7 @@ public class NeoScan extends RelScan<NeoEntity> implements NeoRelAlg {
 
         if ( !implementor.isDml() || !implementor.isPrepared() ) {
             List<NeoStatement> mapping = entity
-                    .getRowType()
+                    .getTupleType()
                     .getFields()
                     .stream().map( f -> (NeoStatement) as_( literal_( PolyString.of( entity.name + "." + f.getPhysicalName() ) ), literal_( PolyString.of( f.getName() ) ) ) )
                     .toList();

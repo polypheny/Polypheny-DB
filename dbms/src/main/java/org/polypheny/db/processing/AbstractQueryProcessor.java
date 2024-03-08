@@ -1328,7 +1328,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             eventData.setAlgCompareString( selectedPlan.getRoutedRoot().alg.algCompareString() );
             if ( selectedPlan.getPhysicalQueryClass() != null ) {
                 eventData.setPhysicalQueryClass( selectedPlan.getPhysicalQueryClass() );
-                //eventData.setRowCount( (int) selectedPlan.getRoutedRoot().alg.estimateRowCount( selectedPlan.getRoutedRoot().alg.getCluster().getMetadataQuery() ) );
+                //eventData.setRowCount( (int) selectedPlan.getRoutedRoot().alg.estimateTupleCount( selectedPlan.getRoutedRoot().alg.getCluster().getMetadataQuery() ) );
             }
 
             if ( RoutingManager.POST_COST_AGGREGATION_ACTIVE.getBoolean() ) {

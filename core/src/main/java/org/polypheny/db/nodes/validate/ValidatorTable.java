@@ -28,13 +28,11 @@ import org.polypheny.db.util.Wrapper;
 
 /**
  * Supplies a {@link Validator} with the metadata for a table.
- *
- * #@see ValidatorCatalogReader
  */
 public interface ValidatorTable extends Wrapper {
 
 
-    AlgDataType getRowType();
+    AlgDataType getTupleType();
 
     List<String> getQualifiedName();
 
@@ -48,7 +46,7 @@ public interface ValidatorTable extends Wrapper {
         for ( AlgCollation collation : table.getStatistic().getCollations() ) {
             final AlgFieldCollation fieldCollation = collation.getFieldCollations().get( 0 );
             final int fieldIndex = fieldCollation.getFieldIndex();
-            if ( fieldIndex < table.getRowType().getFieldCount() && table.getRowType().getFieldNames().get( fieldIndex ).equals( columnName ) ) {
+            if ( fieldIndex < table.getTupleType().getFieldCount() && table.getTupleType().getFieldNames().get( fieldIndex ).equals( columnName ) ) {
                 return fieldCollation.direction.monotonicity();
             }
         }

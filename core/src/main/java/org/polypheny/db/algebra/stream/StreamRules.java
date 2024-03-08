@@ -55,11 +55,9 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
 import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
-import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.types.StreamableEntity;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
@@ -161,7 +159,7 @@ public class StreamRules {
             super(
                     operand(
                             Delta.class,
-                            operandJ( Aggregate.class, null, Aggregate::noIndicator, any() ) ),
+                            operand( Aggregate.class, null, Aggregate::noIndicator, any() ) ),
                     algBuilderFactory, null );
         }
 
@@ -269,15 +267,6 @@ public class StreamRules {
             final AlgOptCluster cluster = delta.getCluster();
             Optional<StreamableEntity> oStreamableTable = scan.entity.unwrap( StreamableEntity.class );
             if ( oStreamableTable.isPresent() ) {
-                final Entity entity1 = oStreamableTable.get().stream();
-                final LogicalTable catalogTable = scan.entity.unwrap( LogicalTable.class ).orElse( null );
-                /*final CatalogPartitionPlacement placement = scan.entity.unwrap( PhysicalTable.class ).getPartitionPlacement().unwrap( CatalogPartitionPlacement.class );
-                final AlgOptEntity algOptEntity2 =
-                        AlgOptEntityImpl.create( algOptEntity.getRelOptSchema(),
-                                algOptEntity.getRowType(),
-                                entity1,
-                                catalogTable,
-                                placement );*/
                 final LogicalRelScan newScan = LogicalRelScan.create( cluster, null );
                 call.transformTo( newScan );
             }

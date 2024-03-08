@@ -172,7 +172,7 @@ public class Rest {
         AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder, null, Catalog.getInstance().getSnapshot() );
 
         // Values
-        AlgDataType tableRowType = table.getRowType();
+        AlgDataType tableRowType = table.getTupleType();
         List<AlgDataTypeField> tableRows = tableRowType.getFields();
         List<String> valueColumnNames = this.valuesColumnNames( resourcePatchRequest.values );
         List<RexNode> rexValues = this.valuesNode( statement, algBuilder, rexBuilder, resourcePatchRequest, tableRows, inputStreams ).get( 0 );
@@ -269,7 +269,7 @@ public class Rest {
         LogicalTable table = getLogicalTable( transaction.getSnapshot(), insertValueRequest.tables.get( 0 ).getNamespaceName(), insertValueRequest.tables.get( 0 ).getName() );
 
         // Values
-        AlgDataType tableRowType = table.getRowType();
+        AlgDataType tableRowType = table.getTupleType();
         List<AlgDataTypeField> tableRows = tableRowType.getFields();
 
         AlgOptPlanner planner = statement.getQueryProcessor().getPlanner();
@@ -555,7 +555,7 @@ public class Rest {
             log.debug( "AlgRoot was prepared." );
 
             final ResultIterator iter = result.execute( statement, 1 );
-            restResult = new RestResult( algRoot.kind, iter, result.rowType, result.getColumns() );
+            restResult = new RestResult( algRoot.kind, iter, result.tupleType, result.getFields() );
             restResult.transform();
             long executionTime = restResult.getExecutionTime();
             if ( !algRoot.kind.belongsTo( Kind.DML ) ) {
