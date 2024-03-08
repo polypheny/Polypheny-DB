@@ -43,10 +43,7 @@ public class PIServer {
 
 
     void startServer( ServerSocketChannel server, ClientManager clientManager, String name, Function<SocketChannel, Transport> createTransport ) throws IOException {
-        if ( log.isTraceEnabled() ) {
-            log.trace( "proto-interface server started on {}", server.getLocalAddress().toString() );
-        }
-        log.info( "Proto Interface started and is listening on {}", server.getLocalAddress() );
+        log.info( "Proto Interface started and is listening for {} connections on {}", name.toLowerCase(), server.getLocalAddress() );
         Thread acceptor = new Thread( () -> acceptLoop( server, clientManager, name, createTransport ), "ProtoInterface" + name + "Server" );
         acceptor.start();
         servers.add( server );
