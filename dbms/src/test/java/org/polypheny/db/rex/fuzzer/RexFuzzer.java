@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.test.fuzzer;
+package org.polypheny.db.rex.fuzzer;
 
 
 import java.util.ArrayList;
@@ -46,7 +46,7 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.test.RexProgramBuilderBase;
+import org.polypheny.db.rex.RexProgramBuilderBase;
 import org.polypheny.db.type.PolyType;
 
 

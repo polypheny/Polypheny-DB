@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
@@ -48,6 +47,7 @@ import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexTransformer;
+import org.polypheny.db.schemas.HrSnapshot;
 import org.polypheny.db.sql.language.SqlToAlgTestBase;
 import org.polypheny.db.type.PolyType;
 
@@ -55,7 +55,7 @@ import org.polypheny.db.type.PolyType;
 /**
  * Tests transformations on rex nodes.
  */
-public class RexTransformerTest {
+public class RexTransformerTest extends SqlLanguageDependent {
 
     RexBuilder rexBuilder = null;
     RexNode x;
@@ -63,17 +63,17 @@ public class RexTransformerTest {
     RexNode z;
     RexNode trueRex;
     RexNode falseRex;
-    AlgDataType boolRelDataType;
+    AlgDataType boolAlgDataType;
     AlgDataTypeFactory typeFactory;
 
 
     /**
-     * Converts a SQL string to a relational expression using mock schema.
+     * Converts a SQL string to an algebraic expression using mock schema.
      */
     private static AlgNode toAlg( String sql ) {
         final SqlToAlgTestBase test = new SqlToAlgTestBase() {
         };
-        return test.createTester().convertSqlToAlg( sql ).alg;
+        return test.createTester().convertSqlToAlg( sql, new HrSnapshot() ).alg;
     }
 
 
@@ -81,17 +81,17 @@ public class RexTransformerTest {
     public void setUp() {
         typeFactory = new JavaTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         rexBuilder = new RexBuilder( typeFactory );
-        boolRelDataType = typeFactory.createPolyType( PolyType.BOOLEAN );
+        boolAlgDataType = typeFactory.createPolyType( PolyType.BOOLEAN );
 
         x = new RexIndexRef(
                 0,
-                typeFactory.createTypeWithNullability( boolRelDataType, true ) );
+                typeFactory.createTypeWithNullability( boolAlgDataType, true ) );
         y = new RexIndexRef(
                 1,
-                typeFactory.createTypeWithNullability( boolRelDataType, true ) );
+                typeFactory.createTypeWithNullability( boolAlgDataType, true ) );
         z = new RexIndexRef(
                 2,
-                typeFactory.createTypeWithNullability( boolRelDataType, true ) );
+                typeFactory.createTypeWithNullability( boolAlgDataType, true ) );
         trueRex = rexBuilder.makeLiteral( true );
         falseRex = rexBuilder.makeLiteral( false );
     }
@@ -101,7 +101,7 @@ public class RexTransformerTest {
     public void testDown() {
         typeFactory = null;
         rexBuilder = null;
-        boolRelDataType = null;
+        boolAlgDataType = null;
         x = y = z = trueRex = falseRex = null;
     }
 
@@ -287,7 +287,7 @@ public class RexTransformerTest {
 
     @Test
     public void testSimpleIdentifier() {
-        RexNode node = rexBuilder.makeInputRef( boolRelDataType, 0 );
+        RexNode node = rexBuilder.makeInputRef( boolAlgDataType, 0 );
         check( Boolean.TRUE, node, "=(IS TRUE($0), true)" );
     }
 
@@ -348,7 +348,6 @@ public class RexTransformerTest {
      * Test case for "RelOptUtil.splitJoinCondition attempts to split a Join-Condition which has a remaining condition".
      */
     @Test
-    @Disabled // refactor
     public void testSplitJoinCondition() {
         final String sql = """
                 select *\s
@@ -372,7 +371,7 @@ public class RexTransformerTest {
                 null,
                 null );
 
-        assertThat( remaining.toString(), is( "<>(CAST($0):INTEGER NOT NULL, $9)" ) );
+        assertThat( remaining.toString(), is( "<>($0, $1)" ) );
         assertThat( leftJoinKeys.isEmpty(), is( true ) );
         assertThat( rightJoinKeys.isEmpty(), is( true ) );
     }

@@ -17,7 +17,6 @@
 package org.polypheny.db.languages;
 
 import java.io.Reader;
-import org.polypheny.db.tools.Planner;
 
 /**
  * Factory for [language]AbstractParserImpl objects.

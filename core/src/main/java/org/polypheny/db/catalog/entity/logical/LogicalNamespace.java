@@ -26,6 +26,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.With;
+import lombok.experimental.NonFinal;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.PolyObject;
 import org.polypheny.db.catalog.logistic.DataModel;
@@ -36,6 +37,7 @@ import org.polypheny.db.type.entity.PolyValue;
 @EqualsAndHashCode(callSuper = false)
 @With
 @Value
+@NonFinal // for testing
 public class LogicalNamespace implements PolyObject, Comparable<LogicalNamespace> {
 
     @Serial

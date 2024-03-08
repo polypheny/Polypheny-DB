@@ -23,7 +23,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.plan.AlgOptUtil;
-import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.tools.PigAlgBuilder;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.Util;

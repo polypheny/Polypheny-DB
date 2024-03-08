@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,26 +12,9 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
-package org.polypheny.db.test;
+package org.polypheny.db.rex;
 
 
 import com.google.common.collect.ImmutableList;
@@ -42,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import org.apache.calcite.linq4j.QueryProvider;
+import org.junit.jupiter.api.BeforeAll;
+import org.polypheny.db.TestHelper;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -52,14 +37,6 @@ import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptPredicateList;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
-import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexDynamicParam;
-import org.polypheny.db.rex.RexExecutor;
-import org.polypheny.db.rex.RexExecutorImpl;
-import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.rex.RexSimplify;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
@@ -98,6 +75,12 @@ public abstract class RexProgramBuilderBase {
     // Note: JUnit 4 creates new instance for each test method, so we initialize these structures on demand
     // It maps non-nullable type to struct of (10 nullable, 10 non-nullable) fields
     private Map<AlgDataType, RexDynamicParam> dynamicParams;
+
+
+    @BeforeAll
+    public static void init() {
+        TestHelper.getInstance();
+    }
 
 
     /**

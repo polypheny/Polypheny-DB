@@ -67,14 +67,6 @@ public class PigAlgBuilder extends AlgBuilder {
     }
 
 
-    /**
-     * Creates a PigRelBuilder.
-     */
-    public static PigAlgBuilder create( FrameworkConfig config ) {
-        final AlgBuilder algBuilder = AlgBuilder.create( config );
-        return new PigAlgBuilder( config.getContext(), algBuilder.cluster, algBuilder.snapshot );
-    }
-
 
     public static PigAlgBuilder create( Statement statement, AlgOptCluster cluster ) {
         return new PigAlgBuilder( Contexts.EMPTY_CONTEXT, cluster, statement.getTransaction().getSnapshot() );

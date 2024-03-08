@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.test;
+package org.polypheny.db.rex;
 
 
 import com.google.common.collect.ImmutableList;
@@ -32,7 +32,6 @@ import org.polypheny.db.plan.AlgOptRuleOperand;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.volcano.VolcanoPlannerPhase;
-import org.polypheny.db.rex.RexExecutorImpl;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.util.Pair;
 
@@ -47,8 +46,6 @@ public class MockAlgOptPlanner extends AbstractAlgOptPlanner {
     private AlgOptRule rule;
 
     private AlgNode transformationResult;
-
-    private long metadataTimestamp = 0L;
 
 
     /**
@@ -91,7 +88,7 @@ public class MockAlgOptPlanner extends AbstractAlgOptPlanner {
 
     @Override
     public boolean addRule( AlgOptRule rule ) {
-        assert this.rule == null : "MockRelOptPlanner only supports a single rule";
+        assert this.rule == null : "MockAlgOptPlanner only supports a single rule";
         this.rule = rule;
         return false;
     }
@@ -131,7 +128,7 @@ public class MockAlgOptPlanner extends AbstractAlgOptPlanner {
      *
      * @param alg Relational expression
      * @param parent Parent relational expression
-     * @param ordinalInParent Ordinal of relational expression among its siblings
+     * @param ordinalInParent Ordinal of algebraic expression among its siblings
      * @return whether match occurred
      */
     private boolean matchRecursive( AlgNode alg, AlgNode parent, int ordinalInParent ) {
@@ -216,15 +213,8 @@ public class MockAlgOptPlanner extends AbstractAlgOptPlanner {
 
     @Override
     public long getAlgMetadataTimestamp( AlgNode alg ) {
+        long metadataTimestamp = 0L;
         return metadataTimestamp;
-    }
-
-
-    /**
-     * Allow tests to tweak the timestamp.
-     */
-    public void setRelMetadataTimestamp( long metadataTimestamp ) {
-        this.metadataTimestamp = metadataTimestamp;
     }
 
 

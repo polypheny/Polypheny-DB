@@ -75,7 +75,6 @@ import org.polypheny.db.sql.language.utils.SqlTester.VmName;
 import org.polypheny.db.sql.language.utils.SqlTests;
 import org.polypheny.db.sql.language.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.language.validate.SqlValidatorScope;
-import org.polypheny.db.test.PolyphenyDbAssert;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyType;
@@ -84,6 +83,7 @@ import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.Holder;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.PolyphenyDbAssert;
 import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.Util;
 

@@ -250,24 +250,6 @@ public class AlgBuilder {
     }
 
 
-    /**
-     * Creates a AlgBuilder.
-     */
-    public static AlgBuilder create( FrameworkConfig config ) {
-        final AlgOptCluster[] cluster = new AlgOptCluster[1];
-        final Snapshot[] snapshot = new Snapshot[1];
-        Frameworks.withPrepare(
-                new Frameworks.PrepareAction<Void>( config ) {
-                    @Override
-                    public Void apply( AlgOptCluster c, Snapshot s ) {
-                        cluster[0] = c;
-                        snapshot[0] = s;
-                        return null;
-                    }
-                } );
-        return new AlgBuilder( config.getContext(), cluster[0], config.getSnapshot() );
-    }
-
 
     public static AlgBuilder create( Statement statement ) {
         final RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );

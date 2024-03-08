@@ -116,7 +116,6 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.schema.trait.ModelTraitDef;
-import org.polypheny.db.tools.Frameworks.PrepareAction;
 import org.polypheny.db.type.ExtraPolyTypes;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Util;
@@ -423,44 +422,16 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
      */
     private static String getTypeName( AlgDataType type ) {
         final PolyType polyType = type.getPolyType();
-        switch ( polyType ) {
-            /*
-            case ARRAY:
-            case MULTISET:
-            case MAP:
-            case ROW:
-                return type.toString(); // e.g. "INTEGER ARRAY"
-             */
-            case INTERVAL_YEAR_MONTH:
-                return "INTERVAL_YEAR_TO_MONTH";
-            case INTERVAL_DAY_HOUR:
-                return "INTERVAL_DAY_TO_HOUR";
-            case INTERVAL_DAY_MINUTE:
-                return "INTERVAL_DAY_TO_MINUTE";
-            case INTERVAL_DAY_SECOND:
-                return "INTERVAL_DAY_TO_SECOND";
-            case INTERVAL_HOUR_MINUTE:
-                return "INTERVAL_HOUR_TO_MINUTE";
-            case INTERVAL_HOUR_SECOND:
-                return "INTERVAL_HOUR_TO_SECOND";
-            case INTERVAL_MINUTE_SECOND:
-                return "INTERVAL_MINUTE_TO_SECOND";
-            default:
-                return polyType.getName(); // e.g. "DECIMAL", "INTERVAL_YEAR_MONTH"
-        }
-    }
-
-
-    /**
-     * Executes a prepare action.
-     */
-    public <R> R perform( PrepareAction<R> action ) {
-        final Context prepareContext = action.getConfig().getPrepareContext();
-        final JavaTypeFactory typeFactory = prepareContext.getTypeFactory();
-        final RexBuilder rexBuilder = new RexBuilder( typeFactory );
-        final AlgOptPlanner planner = createPlanner( prepareContext, action.getConfig().getContext(), action.getConfig().getCostFactory() );
-        final AlgOptCluster cluster = createCluster( planner, rexBuilder, null, prepareContext.getDataContext().getSnapshot() );
-        return action.apply( cluster, prepareContext.getDataContext().getSnapshot() );
+        return switch ( polyType ) {
+            case INTERVAL_YEAR_MONTH -> "INTERVAL_YEAR_TO_MONTH";
+            case INTERVAL_DAY_HOUR -> "INTERVAL_DAY_TO_HOUR";
+            case INTERVAL_DAY_MINUTE -> "INTERVAL_DAY_TO_MINUTE";
+            case INTERVAL_DAY_SECOND -> "INTERVAL_DAY_TO_SECOND";
+            case INTERVAL_HOUR_MINUTE -> "INTERVAL_HOUR_TO_MINUTE";
+            case INTERVAL_HOUR_SECOND -> "INTERVAL_HOUR_TO_SECOND";
+            case INTERVAL_MINUTE_SECOND -> "INTERVAL_MINUTE_TO_SECOND";
+            default -> polyType.getName(); // e.g. "DECIMAL", "INTERVAL_YEAR_MONTH"
+        };
     }
 
 

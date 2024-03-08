@@ -26,8 +26,8 @@ import org.polypheny.db.mql.mql.MqlTest;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
+import org.polypheny.db.rex.MockAlgOptPlanner;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.test.MockAlgOptPlanner;
 
 
 public abstract class Mql2AlgTest extends MqlTest {

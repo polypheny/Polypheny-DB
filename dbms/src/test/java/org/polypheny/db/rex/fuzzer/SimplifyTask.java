@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.test.fuzzer;
+package org.polypheny.db.rex.fuzzer;
 
 
 import org.polypheny.db.rex.RexNode;

@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.polypheny.db.test.Matchers.isLinux;
+import static org.polypheny.db.util.Matchers.isLinux;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultiset;
@@ -106,7 +106,6 @@ import org.polypheny.db.functions.Functions;
 import org.polypheny.db.runtime.ComparableList;
 import org.polypheny.db.runtime.ConsList;
 import org.polypheny.db.runtime.Resources;
-import org.polypheny.db.test.Matchers;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;

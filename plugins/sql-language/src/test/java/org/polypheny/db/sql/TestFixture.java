@@ -21,20 +21,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
-import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.DataContext.SlimDataContext;
-import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptPredicateList;
 import org.polypheny.db.plan.RexImplicationChecker;
-import org.polypheny.db.prepare.ContextImpl;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexExecutorImpl;
@@ -42,9 +35,6 @@ import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexSimplify;
-import org.polypheny.db.schema.Schemas;
-import org.polypheny.db.tools.FrameworkConfig;
-import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyLong;
@@ -64,7 +54,7 @@ import org.polypheny.db.util.TimestampString;
 
 /**
  * Contains all the nourishment a test case could possibly need.
- *
+ * <p>
  * We put the data in here, rather than as fields in the test case, so that the data can be garbage-collected as soon as the test has executed.
  */
 @SuppressWarnings("WeakerAccess")
@@ -149,31 +139,6 @@ public class TestFixture {
                 .build();
 
         final Holder<RexExecutorImpl> holder = Holder.of( null );
-
-        //PolyphenyDbSchema rootSchema = AbstractPolyphenyDbSchema.createSnapshot( "" );
-        FrameworkConfig config = Frameworks.newConfigBuilder()
-                //.defaultSnapshot( rootSchema.plus() )
-                .prepareContext( new ContextImpl(
-                        Catalog.snapshot(),
-                        new SlimDataContext() {
-                            @Override
-                            public JavaTypeFactory getTypeFactory() {
-                                return new JavaTypeFactoryImpl();
-                            }
-                        },
-                        "",
-                        0,
-                        null ) )
-                .build();
-        Frameworks.withPrepare(
-                new Frameworks.PrepareAction<Void>( config ) {
-                    @Override
-                    public Void apply( AlgOptCluster cluster, Snapshot snapshot ) {
-                        DataContext dataContext = Schemas.createDataContext( snapshot );
-                        holder.set( new RexExecutorImpl( dataContext ) );
-                        return null;
-                    }
-                } );
 
         executor = holder.get();
         simplify = new RexSimplify( rexBuilder, AlgOptPredicateList.EMPTY, executor ).withParanoid( true );

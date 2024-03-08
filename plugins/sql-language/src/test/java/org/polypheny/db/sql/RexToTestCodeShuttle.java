@@ -33,7 +33,7 @@ import org.polypheny.db.type.PolyType;
 
 
 /**
- * Converts {@link RexNode} into a string form usable for inclusion into {@link RexProgramFuzzyTest}. For instance, it converts {@code AND(=(?0.bool0, true), =(?0.bool1, true))} to {@code isTrue(and(eq(vBool(0), trueLiteral), eq(vBool(1), trueLiteral)))}.
+ *  For instance, it converts {@code AND(=(?0.bool0, true), =(?0.bool1, true))} to {@code isTrue(and(eq(vBool(0), trueLiteral), eq(vBool(1), trueLiteral)))}.
  */
 public class RexToTestCodeShuttle extends RexVisitorImpl<String> {
 

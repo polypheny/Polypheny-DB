@@ -38,7 +38,6 @@ import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -47,9 +46,6 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.prepare.ContextImpl;
-import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexExecutable;
 import org.polypheny.db.rex.RexExecutorImpl;
@@ -58,11 +54,8 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexSlot.SelfPopulatingList;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.sql.language.SqlBinaryOperator;
 import org.polypheny.db.sql.language.fun.SqlMonotonicBinaryOperator;
-import org.polypheny.db.tools.FrameworkConfig;
-import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.checker.OperandTypes;
@@ -88,30 +81,6 @@ public class RexExecutorTest extends SqlLanguageDependent {
 
     protected void check( final Action action ) throws Exception {
         Snapshot snapshot = Catalog.snapshot();
-        FrameworkConfig config = Frameworks.newConfigBuilder()
-                .prepareContext( new ContextImpl(
-                        snapshot,
-                        new SlimDataContext() {
-                            @Override
-                            public JavaTypeFactory getTypeFactory() {
-                                return new JavaTypeFactoryImpl();
-                            }
-                        },
-                        "",
-                        0,
-                        null ) )
-                .build();
-        Frameworks.withPrepare(
-                new Frameworks.PrepareAction<Void>( config ) {
-                    @Override
-                    public Void apply( AlgOptCluster cluster, Snapshot snapshot ) {
-                        final RexBuilder rexBuilder = cluster.getRexBuilder();
-                        DataContext dataContext = Schemas.createDataContext( snapshot );
-                        final RexExecutorImpl executor = new RexExecutorImpl( dataContext );
-                        action.check( rexBuilder, executor );
-                        return null;
-                    }
-                } );
     }
 
 
