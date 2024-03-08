@@ -21,6 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
+import org.polypheny.db.adapter.DataContext.SlimDataContext;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -47,7 +49,6 @@ import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.DateString;
-import org.polypheny.db.util.Holder;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
@@ -137,10 +138,13 @@ public class TestFixture {
                 .add( null, "time", null, timeDataType )
                 .add( null, "string", null, stringDataType )
                 .build();
+        executor = new RexExecutorImpl( new SlimDataContext() {
+            @Override
+            public JavaTypeFactory getTypeFactory() {
+                return new JavaTypeFactoryImpl();
+            }
+        } );
 
-        final Holder<RexExecutorImpl> holder = Holder.of( null );
-
-        executor = holder.get();
         simplify = new RexSimplify( rexBuilder, AlgOptPredicateList.EMPTY, executor ).withParanoid( true );
         checker = new RexImplicationChecker( rexBuilder, executor, rowType );
     }

@@ -38,9 +38,15 @@ public class SqlLanguageDependent {
 
     public static TestHelper testHelper;
 
+    public static boolean initialized = false;
+
     @BeforeAll
     public static void startUp() {
+        if ( initialized ) {
+            return;
+        }
         setupSqlAndSchema();
+        initialized = true;
     }
 
 
