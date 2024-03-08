@@ -296,14 +296,13 @@ public class PIService {
     }
 
 
-    public void getSupportedLanguages( LanguageRequest request, StreamObserver<LanguageResponse> responseObserver ) {
+    public void getSupportedLanguages( LanguageRequest request, ResponseMaker<LanguageResponse> responseObserver ) {
         /* called as client auth check */
         getClient();
         LanguageResponse supportedLanguages = LanguageResponse.newBuilder()
                 .addAllLanguageNames( new LinkedList<>() )
                 .build();
-        responseObserver.onNext( supportedLanguages );
-        responseObserver.onCompleted();
+        responseObserver.makeResponse( supportedLanguages );
     }
 
 
@@ -344,11 +343,10 @@ public class PIService {
     }
 
 
-    public void getNamespace( NamespaceRequest request, StreamObserver<Namespace> responseObserver ) {
+    public void getNamespace( NamespaceRequest request, ResponseMaker<Namespace> responseObserver ) {
         /* called as client auth check */
         getClient();
-        responseObserver.onNext( DbMetaRetriever.getNamespace( request.getNamespaceName() ) );
-        responseObserver.onCompleted();
+        responseObserver.makeResponse( DbMetaRetriever.getNamespace( request.getNamespaceName() ) );
     }
 
 
