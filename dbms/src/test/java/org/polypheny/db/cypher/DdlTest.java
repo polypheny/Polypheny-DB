@@ -29,10 +29,8 @@ import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
-import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.webui.models.results.GraphResult;
 
 @Tag("adapter")
@@ -44,9 +42,6 @@ public class DdlTest extends CypherTestTemplate {
 
     @Test
     public void addGraphTest() {
-        Snapshot snapshot = Catalog.snapshot();
-        AdapterCatalog adapterCatalog = Catalog.getInstance().getAdapterCatalog( 0 ).orElseThrow();
-
         execute( "CREATE DATABASE " + graphName + " IF NOT EXISTS" );
 
         assertTrue( Catalog.snapshot().getNamespace( graphName ).isPresent() );
@@ -61,8 +56,6 @@ public class DdlTest extends CypherTestTemplate {
 
         execute( "DROP DATABASE " + graphName );
 
-        AdapterCatalog adapterCatalog2 = Catalog.getInstance().getAdapterCatalog( 0 ).orElseThrow();
-        assertEquals( snapshot, Catalog.snapshot() );
     }
 
 

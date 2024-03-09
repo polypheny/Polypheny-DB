@@ -89,7 +89,7 @@ public class SnapshotImpl implements Snapshot {
 
         this.namespaces = ImmutableMap.copyOf( namespaces );
 
-        this.namespaceNames = ImmutableMap.copyOf( namespaces.values().stream().collect( Collectors.toMap( n -> n.name, n -> n ) ) );
+        this.namespaceNames = ImmutableMap.copyOf( namespaces.values().stream().collect( Collectors.toMap( n -> n.name.toLowerCase(), n -> n ) ) );
 
         this.alloc = alloc;
 
@@ -128,7 +128,7 @@ public class SnapshotImpl implements Snapshot {
         }
         namespace = namespaceNames.get( name.toLowerCase() );
 
-        if ( namespace != null && !namespace.caseSensitive ) {
+        if ( namespace != null ) {
             return Optional.of( namespace );
         }
 

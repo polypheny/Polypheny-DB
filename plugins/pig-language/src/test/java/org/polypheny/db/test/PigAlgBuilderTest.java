@@ -146,8 +146,8 @@ public class PigAlgBuilderTest extends PigTestTemplate {
                   LogicalRelAggregate(model=[RELATIONAL], group=[{0}], =[COLLECT($4)])
                     LogicalRelProject(model=[RELATIONAL], empno=[$0], deptno=[$1], job=[$2], mgr=[$3], $f4=[ROW($0, $1, $2, $3)])
                       LogicalRelScan(model=[RELATIONAL], table=[0], layer=[LOGICAL])
-                  LogicalRelAggregate(model=[RELATIONAL], group=[{0}], =[COLLECT($1)])
-                    LogicalRelProject(model=[RELATIONAL], deptno=[$0], $f1=[ROW($0)])
+                  LogicalRelAggregate(model=[RELATIONAL], group=[{0}], =[COLLECT($2)])
+                    LogicalRelProject(model=[RELATIONAL], deptno=[$0], dname=[$1], $f2=[ROW($0, $1)])
                       LogicalRelScan(model=[RELATIONAL], table=[0], layer=[LOGICAL])
                 """;
         assertThat( str( root ), is( plan ) );

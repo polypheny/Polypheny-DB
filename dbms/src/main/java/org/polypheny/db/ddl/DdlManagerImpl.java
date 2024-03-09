@@ -2697,8 +2697,6 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void dropNamespace( String namespaceName, boolean ifExists, Statement statement ) {
-        namespaceName = namespaceName.toLowerCase();
-
         // Check if there is a schema with this name
         Optional<LogicalNamespace> optionalNamespace = catalog.getSnapshot().getNamespace( namespaceName );
         if ( optionalNamespace.isEmpty() ) {

@@ -42,19 +42,19 @@ public class SqlLanguageDependent {
 
     @BeforeAll
     public static void startUp() {
-        if ( initialized ) {
-            return;
-        }
         setupSqlAndSchema();
-        initialized = true;
     }
 
 
     public static void setupSqlAndSchema() {
+        if ( initialized ) {
+            return;
+        }
         PolyphenyDb.mode = RunMode.TEST;
         testHelper = TestHelper.getInstance();
         createTestSchema( testHelper );
         createHrSchema( testHelper );
+        initialized = true;
     }
 
 

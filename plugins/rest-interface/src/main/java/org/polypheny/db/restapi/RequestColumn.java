@@ -18,18 +18,27 @@ package org.polypheny.db.restapi;
 
 
 import java.util.Objects;
+import lombok.Getter;
+import lombok.Setter;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 
 
 public class RequestColumn {
 
+    @Getter
     private final LogicalColumn column;
     private final int tableScanIndex;
+    @Setter
+    @Getter
     private int logicalIndex;
+    @Getter
     private final String fullyQualifiedName;
+    @Getter
     private final String alias;
+    @Getter
     private final AggFunction aggregate;
+    @Getter
     private final boolean explicit;
 
 
@@ -65,41 +74,6 @@ public class RequestColumn {
 
     public int getScanIndex() {
         return tableScanIndex;
-    }
-
-
-    public int getLogicalIndex() {
-        return logicalIndex;
-    }
-
-
-    public String getFullyQualifiedName() {
-        return fullyQualifiedName;
-    }
-
-
-    public String getAlias() {
-        return alias;
-    }
-
-
-    public LogicalColumn getColumn() {
-        return column;
-    }
-
-
-    public AggFunction getAggregate() {
-        return aggregate;
-    }
-
-
-    public boolean isExplicit() {
-        return explicit;
-    }
-
-
-    public void setLogicalIndex( int logicalIndex ) {
-        this.logicalIndex = logicalIndex;
     }
 
     // The alias of a column in a request perfectly identifies it when it comes to uniqueness!

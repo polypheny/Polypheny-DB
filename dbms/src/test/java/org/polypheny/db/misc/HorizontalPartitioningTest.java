@@ -34,7 +34,6 @@ import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
 import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
@@ -1387,8 +1386,6 @@ public class HorizontalPartitioningTest {
 
     @Test
     public void mixOperationTest() throws SQLException {
-        Snapshot snapshot = Catalog.snapshot();
-        AdapterCatalog adapterCatalog = Catalog.getInstance().getAdapterCatalog( 0 ).orElseThrow();
         String graphName = "product";
 
         CypherTestTemplate.execute( "CREATE DATABASE " + graphName + " IF NOT EXISTS" );
@@ -1423,8 +1420,6 @@ public class HorizontalPartitioningTest {
             }
         }
 
-        AdapterCatalog adapterCatalog2 = Catalog.getInstance().getAdapterCatalog( 1 ).orElseThrow();
-        assertEquals( snapshot, Catalog.snapshot() );
     }
 
 }

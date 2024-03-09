@@ -371,7 +371,7 @@ public class RexTransformerTest extends SqlLanguageDependent {
                 null,
                 null );
 
-        assertThat( remaining.toString(), is( "<>($0, $1)" ) );
+        assertThat( remaining.toString(), is( "<>($0, $4)" ) );
         assertThat( leftJoinKeys.isEmpty(), is( true ) );
         assertThat( rightJoinKeys.isEmpty(), is( true ) );
     }

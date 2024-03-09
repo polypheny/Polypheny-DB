@@ -19,7 +19,6 @@ package org.polypheny.db.avatica;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -222,23 +221,20 @@ public class DbmsMeta implements ProtobufMeta {
 
     private MetaResultSet createMetaResultSet( final ConnectionHandle ch, final StatementHandle statementHandle, Enumerable<PolyValue[]> enumerable, Class<?> clazz, String... names ) {
         final List<ColumnMetaData> columns = new ArrayList<>();
-        final List<Field> fields = new ArrayList<>();
-        //final List<String> fieldNames = new ArrayList<>();
+
+        int i = 0;
         for ( String name : names ) {
-            final int index = fields.size();
             final String fieldName = AvaticaUtils.toCamelCase( name );
-            final Field field;
+            final Class<?> type;
             try {
-                field = clazz.getField( fieldName );
-            } catch ( NoSuchFieldException e ) {
+                type = clazz.isRecord() ? clazz.getMethod( fieldName ).getReturnType() : clazz.getField( fieldName ).getType();
+            } catch ( NoSuchFieldException | NoSuchMethodException e ) {
                 throw new GenericRuntimeException( e );
             }
-            columns.add( MetaImpl.columnMetaData( name, index, field.getType(), false ) );
-            fields.add( field );
-            //fieldNames.add( fieldName );
+            columns.add( MetaImpl.columnMetaData( name, i, type, false ) );
+            i++;
         }
 
-        //return createMetaResultSet( ch, statementHandle, Collections.emptyMap(), columns, CursorFactory.record( clazz, fields, fieldNames ), new Frame( 0, true, iterable ) );
         return createMetaResultSet( ch, statementHandle, new HashMap<>(), columns, enumerable );
     }
 
