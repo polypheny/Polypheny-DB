@@ -90,8 +90,6 @@ public class MongoNamespace implements Namespace, Schema, Expressible {
      * Creates a MongoDB schema.
      *
      * @param database Mongo database name, e.g. "foodmart"
-     * @param transactionProvider
-     * @param mongoStore
      */
     public MongoNamespace( long id, String database, MongoClient connection, TransactionProvider transactionProvider, MongoStore mongoStore ) {
         this.id = id;

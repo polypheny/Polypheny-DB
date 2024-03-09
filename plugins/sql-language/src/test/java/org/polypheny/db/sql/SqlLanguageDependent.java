@@ -17,6 +17,8 @@
 package org.polypheny.db.sql;
 
 import java.util.List;
+import lombok.SneakyThrows;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.TestHelper;
@@ -38,7 +40,6 @@ public class SqlLanguageDependent {
 
     public static TestHelper testHelper;
 
-    public static boolean initialized = false;
 
     @BeforeAll
     public static void startUp() {
@@ -46,19 +47,58 @@ public class SqlLanguageDependent {
     }
 
 
+    @AfterAll
+    public static void tearDown() {
+        removeTestSchema();
+        removeHrSchema();
+    }
+
+
+    @SneakyThrows
+    private static void removeHrSchema() {
+
+        TransactionManager transactionManager = testHelper.getTransactionManager();
+
+        Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Sql Test" );
+
+        DdlManager manager = DdlManager.getInstance();
+
+        Catalog.snapshot().rel().getTable( Catalog.defaultNamespaceId, "hr" ).ifPresent( table -> {
+            manager.dropTable( table, transaction.createStatement() );
+        } );
+        transaction.commit();
+    }
+
+
+    @SneakyThrows
+    private static void removeTestSchema() {
+        TransactionManager transactionManager = testHelper.getTransactionManager();
+
+        Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Sql Test" );
+
+        DdlManager manager = DdlManager.getInstance();
+
+        Catalog.snapshot().rel().getTable( Catalog.defaultNamespaceId, "dept" ).ifPresent( table -> {
+            manager.dropTable( table, transaction.createStatement() );
+        } );
+
+        Catalog.snapshot().rel().getTable( Catalog.defaultNamespaceId, "emp" ).ifPresent( table -> {
+            manager.dropTable( table, transaction.createStatement() );
+        } );
+        transaction.commit();
+    }
+
+
+    @SneakyThrows
     public static void setupSqlAndSchema() {
-        if ( initialized ) {
-            return;
-        }
         PolyphenyDb.mode = RunMode.TEST;
         testHelper = TestHelper.getInstance();
         createTestSchema( testHelper );
         createHrSchema( testHelper );
-        initialized = true;
     }
 
 
-    private static void createHrSchema( TestHelper testHelper ) {
+    private static void createHrSchema( TestHelper testHelper ) throws TransactionException {
 
         TransactionManager transactionManager = testHelper.getTransactionManager();
 
@@ -77,6 +117,8 @@ public class SqlLanguageDependent {
         );
 
         manager.createTable( Catalog.defaultNamespaceId, "hr", columns, constraints, true, null, null, transaction.createStatement() );
+
+        transaction.commit();
 
     }
 

@@ -250,6 +250,7 @@ public class MongoPlugin extends PolyPlugin {
             if ( splits.length >= 2 ) {
                 database = splits[0] + "_" + splits[1];
             }
+            database = database.toLowerCase( Locale.ROOT ) + "_" + id;
             currentNamespace = new MongoNamespace( id, database, this.client, transactionProvider, this );
         }
 
