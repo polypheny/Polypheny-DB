@@ -16,7 +16,6 @@
 
 package org.polypheny.db.catalog.catalogs;
 
-import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,15 +39,12 @@ import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
-import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.util.Pair;
 
 @Getter
 @EqualsAndHashCode(callSuper = true)
 @Value
 public class DocAdapterCatalog extends AdapterCatalog {
-
-    public BinarySerializer<DocAdapterCatalog> serializer = PolySerializable.buildSerializer( DocAdapterCatalog.class );
 
 
     public DocAdapterCatalog( long adapterId ) {
