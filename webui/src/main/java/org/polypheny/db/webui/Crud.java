@@ -409,7 +409,19 @@ public class Crud implements InformationObserver {
                     if ( request.depth > 2 ) {
                         List<CatalogColumn> columns = catalog.getColumns( table.id );
                         for ( CatalogColumn column : columns ) {
-                            tableElement.addChild( new SidebarElement( schema.name + "." + table.name + "." + column.name, column.name, schema.namespaceType, request.routerLinkRoot, icon ).setCssClass( "sidebarColumn" ) );
+                            tableElement.addChild(new SidebarElement(schema.name + "." + table.name + "." + column.name, column.name, schema.namespaceType, request.routerLinkRoot, icon).setCssClass("sidebarColumn"));
+                            List<CatalogConstraint> constraints = catalog.getConstraints(table.id);
+                            List<CatalogIndex> Indexes = catalog.getIndexes(table.id,false);
+
+                            for (CatalogConstraint constraint : constraints)
+                            {
+                               tableElement.addChild(new SidebarElement(schema.name + "." + table.name +"." +constraint.name , constraint.name , schema.namespaceType , request.routerLinkRoot , icon)).setCssClass("sidebarConstrain");
+                            }
+                            for(CatalogIndex index : Indexes)
+                            {
+                                tableElement.addChild(new SidebarElement(schema.name + "." + table.name +"." +index.name , index.name , schema.namespaceType , request.routerLinkRoot , icon)).setCssClass("sidebarIndexes");
+                            }
+
                         }
                     }
 
