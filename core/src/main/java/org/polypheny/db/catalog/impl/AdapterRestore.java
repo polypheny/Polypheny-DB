@@ -16,12 +16,10 @@
 
 package org.polypheny.db.catalog.impl;
 
-import io.activej.serializer.annotations.Deserialize;
-import io.activej.serializer.annotations.Serialize;
+import io.activej.serializer.annotations.SerializeRecord;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
@@ -29,41 +27,20 @@ import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 
-public class AdapterRestore {
-
-    @Serialize
-    public final long adapterId;
-
-    @Serialize
-    public final Map<Long, List<PhysicalEntity>> physicals;
-
-    @Serialize
-    public final Map<Long, AllocationEntity> allocations;
-
-
-    public AdapterRestore( long adapterId ) {
-        this( adapterId, Map.of(), Map.of() );
-    }
-
+@SerializeRecord
+public record AdapterRestore(
+        long adapterId,
+        Map<Long, List<PhysicalEntity>> physicals,
+        Map<Long, AllocationEntity> allocations
+) {
 
     public AdapterRestore(
-            @Deserialize("adapterId") long adapterId,
-            @Deserialize("physicals") Map<Long, List<PhysicalEntity>> physicals,
-            @Deserialize("allocations") Map<Long, AllocationEntity> allocations ) {
+            long adapterId,
+            Map<Long, List<PhysicalEntity>> physicals,
+            Map<Long, AllocationEntity> allocations ) {
         this.adapterId = adapterId;
         this.physicals = new ConcurrentHashMap<>( physicals );
         this.allocations = new ConcurrentHashMap<>( allocations );
-    }
-
-
-    private List<PhysicalEntity> normalize( List<PhysicalEntity> physicals ) {
-        return physicals.stream().map( PhysicalEntity::normalize ).collect( Collectors.toList() );
-    }
-
-
-    public void addPhysicals( AllocationEntity allocation, List<PhysicalEntity> physicals ) {
-        this.physicals.put( allocation.id, normalize( physicals ) );
-        this.allocations.put( allocation.id, allocation );
     }
 
 

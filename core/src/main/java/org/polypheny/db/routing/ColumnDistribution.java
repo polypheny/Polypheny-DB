@@ -107,7 +107,7 @@ public final class ColumnDistribution implements FieldDistribution {
         if ( table.getDataModel() != DataModel.RELATIONAL || table.primaryKey == null ) {
             return List.of();
         }
-        return snapshot.rel().getPrimaryKey( table.primaryKey ).orElseThrow().columnIds.stream().map( columnId -> snapshot.rel().getColumn( columnId ).orElseThrow() ).toList();
+        return snapshot.rel().getPrimaryKey( table.primaryKey ).orElseThrow().fieldIds.stream().map( columnId -> snapshot.rel().getColumn( columnId ).orElseThrow() ).toList();
     }
 
 

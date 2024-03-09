@@ -93,7 +93,7 @@ public class SqlProcessor extends Processor {
 
     static {
         SqlParser.ConfigBuilder configConfigBuilder = Parser.configBuilder();
-        configConfigBuilder.setCaseSensitive( RuntimeConfig.RELATIONAL_CASE_SENSITIVE.getBoolean() );
+        configConfigBuilder.setCaseSensitive( false );
         configConfigBuilder.setUnquotedCasing( Casing.UNCHANGED );
         configConfigBuilder.setQuotedCasing( Casing.UNCHANGED );
         parserConfig = configConfigBuilder.build();
@@ -391,14 +391,8 @@ public class SqlProcessor extends Processor {
         int i = 0;
         for ( Node node : columnList.getList() ) {
             SqlIdentifier identifier = (SqlIdentifier) node;
-            if ( RuntimeConfig.RELATIONAL_CASE_SENSITIVE.getBoolean() ) {
-                if ( identifier.getSimple().equals( name ) ) {
-                    return i;
-                }
-            } else {
-                if ( identifier.getSimple().equalsIgnoreCase( name ) ) {
-                    return i;
-                }
+            if ( identifier.getSimple().equalsIgnoreCase( name ) ) {
+                return i;
             }
             i++;
         }

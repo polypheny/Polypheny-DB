@@ -1350,12 +1350,12 @@ public class HorizontalPartitioningTest {
                         if ( place.adapterId == otherAdapterId ) {
                             assertEquals( 2, Catalog.snapshot().alloc().getColumns( place.id ).size() );
                             assertEquals( 3, Catalog.snapshot().alloc().getAllocsOfPlacement( place.id ).size() );
-                            //Assertions.assertEquals( 2, Catalog.snapshot().alloc().getColumnPlacementsOnAdapterPerTable( adapterId, table.id ).size() );
+                            //Assertions.assertEquals( 2, Catalog.snapshot().alloc().getColumnPlacementsOnAdapterPerEntity( adapterId, table.id ).size() );
                             //Assertions.assertEquals( 3, Catalog.snapshot().alloc().getPartitionsOnDataPlacement( adapterId, table.id ).size() );
                         } else if ( place.adapterId == initialAdapterId ) {
                             assertEquals( 3, Catalog.snapshot().alloc().getColumns( place.id ).size() );
                             assertEquals( 4, Catalog.snapshot().alloc().getAllocsOfPlacement( place.id ).size() );
-                            //Assertions.assertEquals( 3, Catalog.snapshot().alloc().getColumnPlacementsOnAdapterPerTable( initialAdapterId, table.id ).size() );
+                            //Assertions.assertEquals( 3, Catalog.snapshot().alloc().getColumnPlacementsOnAdapterPerEntity( initialAdapterId, table.id ).size() );
                             //Assertions.assertEquals( 4, Catalog.snapshot().alloc().getPartitionsOnDataPlacement( initialAdapterId, table.id ).size() );
                         }
                     }

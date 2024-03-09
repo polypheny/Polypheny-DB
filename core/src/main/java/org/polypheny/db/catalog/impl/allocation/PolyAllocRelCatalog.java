@@ -28,7 +28,6 @@ import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.catalogs.AllocationRelationalCatalog;
@@ -230,24 +229,6 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
     @Override
     public void updatePartition( long partitionId, Long partitionGroupId ) {
 
-    }
-
-
-    @Override
-    public AllocationPartition addPartition( long namespaceId, long adapterId, long tableId, PlacementType placementType, DataPlacementRole role ) {
-        /*long id = idBuilder.getNewPartitionId();
-        AllocationPartitionOld partition = new AllocationPartitionOld(
-                id,
-                namespaceId,
-                tableId,
-                adapterId,
-                placementType,
-                role );
-
-        allocationPartitions.put( Pair.of( adapterId, id ), partition );
-        return partition;*
-         */
-        throw new NotImplementedException();
     }
 
 

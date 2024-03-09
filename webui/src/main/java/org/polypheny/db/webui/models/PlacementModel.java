@@ -20,6 +20,7 @@ package org.polypheny.db.webui.models;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Value;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.logistic.EntityType;
@@ -190,7 +191,7 @@ public class PlacementModel {
 
         public ColumnPlacement( AllocationColumn allocationColumn ) {
             this.tableId = allocationColumn.logicalTableId;
-            this.tableName = allocationColumn.getLogicalTableName();
+            this.tableName = Catalog.snapshot().getLogicalEntity( allocationColumn.logicalTableId ).orElseThrow().name;
             this.columnId = allocationColumn.columnId;
             this.columnName = allocationColumn.getLogicalColumnName();
             this.storeId = (int) allocationColumn.adapterId;

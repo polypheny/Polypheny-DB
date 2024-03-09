@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
@@ -32,6 +33,7 @@ import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.snapshot.LogicalDocSnapshot;
 
 @Slf4j
+@EqualsAndHashCode
 public class LogicalDocSnapshotImpl implements LogicalDocSnapshot {
 
     private final ImmutableMap<Long, LogicalNamespace> namespaces;
@@ -92,37 +94,5 @@ public class LogicalDocSnapshotImpl implements LogicalDocSnapshot {
     }
 
 
-    @Override
-    public boolean equals( Object o ) {
-        if ( this == o ) {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() ) {
-            return false;
-        }
-
-        LogicalDocSnapshotImpl that = (LogicalDocSnapshotImpl) o;
-
-        if ( !namespaces.equals( that.namespaces ) ) {
-            return false;
-        }
-        if ( !collections.equals( that.collections ) ) {
-            return false;
-        }
-        if ( !collectionNames.equals( that.collectionNames ) ) {
-            return false;
-        }
-        return namespaceCollections.equals( that.namespaceCollections );
-    }
-
-
-    @Override
-    public int hashCode() {
-        int result = namespaces.hashCode();
-        result = 31 * result + collections.hashCode();
-        result = 31 * result + collectionNames.hashCode();
-        result = 31 * result + namespaceCollections.hashCode();
-        return result;
-    }
 
 }

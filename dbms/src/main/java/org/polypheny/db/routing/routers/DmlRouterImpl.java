@@ -128,7 +128,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         }
 
         long pkid = table.primaryKey;
-        List<Long> pkColumnIds = catalog.getSnapshot().rel().getPrimaryKey( pkid ).orElseThrow().columnIds;
+        List<Long> pkColumnIds = catalog.getSnapshot().rel().getPrimaryKey( pkid ).orElseThrow().fieldIds;
         LogicalColumn pkColumn = catalog.getSnapshot().rel().getColumn( pkColumnIds.get( 0 ) ).orElseThrow();
 
         // Essentially gets a list of all stores where this table resides
@@ -915,7 +915,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         }
 
         long pkid = catalogTable.primaryKey;
-        List<Long> pkColumnIds = snapshot.rel().getPrimaryKey( pkid ).orElseThrow().columnIds;
+        List<Long> pkColumnIds = snapshot.rel().getPrimaryKey( pkid ).orElseThrow().fieldIds;
         LogicalColumn pkColumn = snapshot.rel().getColumn( pkColumnIds.get( 0 ) ).orElseThrow();
         List<AllocationColumn> pkPlacements = snapshot.alloc().getColumnFromLogical( pkColumn.id ).orElseThrow();
 

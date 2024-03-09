@@ -686,89 +686,13 @@ public class RexToLixTranslator {
                     return RexImpTable.FALSE_EXPR;
             }
         }
-        /*Type javaClass = typeFactory.getJavaClass( type );
-        final Object value2;
-        switch ( literal.getType().getPolyType() ) {
-            case DECIMAL:
-                final BigDecimal bd = literal.value.asBigDecimal();
-                if ( javaClass == float.class ) {
-                    return Expressions.constant( bd, javaClass );
-                } else if ( javaClass == double.class ) {
-                    return Expressions.constant( bd, javaClass );
-                }
-                assert javaClass == BigDecimal.class;
-                return Expressions.new_( BigDecimal.class, Expressions.constant( bd.toString() ) );
-            case DATE:
-            case TIME:
-            case TIME_WITH_LOCAL_TIME_ZONE:
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_MONTH:
-                value2 = literal.getValue( Integer.class );
-                javaClass = int.class;
-                break;
-            case TIMESTAMP:
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
-                value2 = literal.getValue( Long.class );
-                javaClass = long.class;
-                break;
-            case CHAR:
-            case VARCHAR:
-                value2 = literal.getValue( String.class );
-                break;
-            case BINARY:
-            case VARBINARY:
-                return Expressions.new_(
-                        ByteString.class,
-                        Expressions.constant( literal.getValue( byte[].class ), byte[].class ) );
-            case SYMBOL:
-                value2 = literal.getValue( Enum.class );
-                javaClass = value2.getClass();
-                break;
-            case ARRAY:
-                AlgDataType componentType;
-                if ( type.getComponentType() != null ) {
-                    componentType = type.getComponentType();
-                } else {
-                    componentType = type;
-                }
-                value2 = literal.getValue( List.class ).stream().map( e -> translateLiteral( (RexLiteral) e, componentType, typeFactory, nullAs ) ).collect( Collectors.toList() );
-                javaClass = List.class;
-                break;
-            case EDGE:
-                return literal.getValue( PolyEdge.class ).asExpression();
-            case NODE:
-                return literal.getValue( PolyNode.class ).asExpression();
-            case PATH:
-                return literal.getValue( PolyPath.class ).asExpression();
-            case DOCUMENT:
-                return ((PolyValue) literal.getValue()).asExpression();
-            default:
-                final Primitive primitive = Primitive.ofBoxOr( javaClass );
-                final Comparable<?> value = literal.getValue( Comparable.class );
-                if ( primitive != null && value instanceof Number ) {
-                    value2 = primitive.number( (Number) value );
-                } else {
-                    value2 = value;
-                }
-        }
-        return Expressions.constant( value2, javaClass );*/
         return literal.value.asExpression();
     }
 
 
     public List<Expression> translateList( List<RexNode> operandList, RexImpTable.NullAs nullAs ) {
-        return translateList( operandList, nullAs, EnumUtils.internalTypes( operandList ) );
+        // we use default storage type in this case
+        return translateList( operandList, nullAs, operandList.stream().map( o -> (Type) null ).toList() );
     }
 
 
@@ -789,7 +713,8 @@ public class RexToLixTranslator {
      * @return translated expressions
      */
     public List<Expression> translateList( List<? extends RexNode> operandList ) {
-        return translateList( operandList, EnumUtils.internalTypes( operandList ) );
+        // we use default storage type in this case
+        return translateList( operandList, operandList.stream().map( o -> (Type) null ).toList() );
     }
 
 

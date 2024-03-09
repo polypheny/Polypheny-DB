@@ -48,7 +48,7 @@ import org.polypheny.db.util.BuiltInMethod;
 public class EnumerableLpgTransformer extends LpgTransformer implements EnumerableAlg {
 
     /**
-     * Creates an <code>AbstractRelNode</code>.
+     * Creates an <code>AbstractAlgNode</code>.
      */
     public EnumerableLpgTransformer( AlgCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, AlgDataType rowType, List<PolyType> operationOrder, Operation operation ) {
         super( cluster, traitSet, inputs, rowType, operationOrder, operation );

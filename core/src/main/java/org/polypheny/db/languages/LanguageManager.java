@@ -97,7 +97,7 @@ public class LanguageManager {
         List<ParsedQueryContext> parsedQueries;
 
         try {
-            parsedQueries = context.getLanguage().getSplitter().apply( context );
+            parsedQueries = context.getLanguage().splitter().apply( context );
         } catch ( Throwable e ) {
             log.warn( "Error on preparing query: " + e.getMessage() );
             if ( transaction.isAnalyze() ) {
@@ -111,7 +111,7 @@ public class LanguageManager {
             statement.getOverviewDuration().stop( "Parsing" );
         }
 
-        Processor processor = context.getLanguage().getProcessorSupplier().get();
+        Processor processor = context.getLanguage().processorSupplier().get();
         List<ImplementationContext> implementationContexts = new ArrayList<>();
         boolean previousDdl = false;
         for ( ParsedQueryContext parsed : parsedQueries ) {
@@ -151,7 +151,7 @@ public class LanguageManager {
                         parsed.addTransaction( transaction );
                     }
                     previousDdl = false;
-                    if ( context.getLanguage().getValidatorSupplier() != null ) {
+                    if ( context.getLanguage().validatorSupplier() != null ) {
                         if ( transaction.isAnalyze() ) {
                             statement.getOverviewDuration().start( "Validation" );
                         }
@@ -208,6 +208,7 @@ public class LanguageManager {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
                 // Ignore
+                log.warn( "Error during rollback: " + ex.getMessage() );
             }
         }
     }
@@ -241,7 +242,7 @@ public class LanguageManager {
 
 
     public static List<ParsedQueryContext> toQueryNodes( QueryContext queries ) {
-        Processor processor = queries.getLanguage().getProcessorSupplier().get();
+        Processor processor = queries.getLanguage().processorSupplier().get();
         List<String> splitQueries = Arrays.stream( queries.getQuery().split( ";" ) ).filter( q -> !q.trim().isEmpty() ).toList();
 
         return splitQueries.stream().flatMap( q -> processor.parse( q ).stream().map( single -> Pair.of( single, q ) ) )

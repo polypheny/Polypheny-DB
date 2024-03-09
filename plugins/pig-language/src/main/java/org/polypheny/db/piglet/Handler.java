@@ -39,6 +39,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -46,6 +47,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.piglet.Ast.Direction;
 import org.polypheny.db.piglet.Ast.PigNode;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
@@ -110,9 +112,8 @@ public class Handler {
                 builder.push( input );
                 System.out.println( input.getTupleType() );
                 for ( AlgDataTypeField field : input.getTupleType().getFields() ) {
-                    switch ( field.getType().getPolyType() ) {
-                        case ARRAY:
-                            System.out.println( field );
+                    if ( Objects.requireNonNull( field.getType().getPolyType() ) == PolyType.ARRAY ) {
+                        System.out.println( field );
                     }
                 }
                 for ( Ast.Stmt stmt : foreachNested.nestedStmtList ) {
@@ -205,7 +206,7 @@ public class Handler {
 
 
     /**
-     * Executes a relational expression and prints the output.
+     * Executes an algebra expression and prints the output.
      *
      * The default implementation does nothing.
      *
@@ -294,16 +295,12 @@ public class Handler {
 
     private AlgDataType toType( Ast.ScalarType type ) {
         final AlgDataTypeFactory typeFactory = builder.getTypeFactory();
-        switch ( type.name ) {
-            case "boolean":
-                return typeFactory.createPolyType( PolyType.BOOLEAN );
-            case "int":
-                return typeFactory.createPolyType( PolyType.INTEGER );
-            case "float":
-                return typeFactory.createPolyType( PolyType.REAL );
-            default:
-                return typeFactory.createPolyType( PolyType.VARCHAR );
-        }
+        return switch ( type.name ) {
+            case "boolean" -> typeFactory.createPolyType( PolyType.BOOLEAN );
+            case "int" -> typeFactory.createPolyType( PolyType.INTEGER );
+            case "float" -> typeFactory.createPolyType( PolyType.REAL );
+            default -> typeFactory.createPolyType( PolyType.VARCHAR );
+        };
     }
 
 
@@ -337,17 +334,15 @@ public class Handler {
             Pair<Ast.Identifier, Ast.Direction> pair ) {
         if ( pair.left.isStar() ) {
             for ( RexNode node : builder.fields() ) {
-                switch ( pair.right ) {
-                    case DESC:
-                        node = builder.desc( node );
+                if ( Objects.requireNonNull( pair.right ) == Direction.DESC ) {
+                    node = builder.desc( node );
                 }
                 nodes.add( node );
             }
         } else {
             RexNode node = toRex( pair.left );
-            switch ( pair.right ) {
-                case DESC:
-                    node = builder.desc( node );
+            if ( Objects.requireNonNull( pair.right ) == Direction.DESC ) {
+                node = builder.desc( node );
             }
             nodes.add( node );
         }
@@ -391,32 +386,20 @@ public class Handler {
 
 
     private static Operator op( Ast.Op op ) {
-        switch ( op ) {
-            case EQ:
-                return OperatorRegistry.get( OperatorName.EQUALS );
-            case NE:
-                return OperatorRegistry.get( OperatorName.NOT_EQUALS );
-            case GT:
-                return OperatorRegistry.get( OperatorName.GREATER_THAN );
-            case GTE:
-                return OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL );
-            case LT:
-                return OperatorRegistry.get( OperatorName.LESS_THAN );
-            case LTE:
-                return OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL );
-            case AND:
-                return OperatorRegistry.get( OperatorName.AND );
-            case OR:
-                return OperatorRegistry.get( OperatorName.OR );
-            case NOT:
-                return OperatorRegistry.get( OperatorName.NOT );
-            case PLUS:
-                return OperatorRegistry.get( OperatorName.PLUS );
-            case MINUS:
-                return OperatorRegistry.get( OperatorName.MINUS );
-            default:
-                throw new AssertionError( "unknown: " + op );
-        }
+        return switch ( op ) {
+            case EQ -> OperatorRegistry.get( OperatorName.EQUALS );
+            case NE -> OperatorRegistry.get( OperatorName.NOT_EQUALS );
+            case GT -> OperatorRegistry.get( OperatorName.GREATER_THAN );
+            case GTE -> OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL );
+            case LT -> OperatorRegistry.get( OperatorName.LESS_THAN );
+            case LTE -> OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL );
+            case AND -> OperatorRegistry.get( OperatorName.AND );
+            case OR -> OperatorRegistry.get( OperatorName.OR );
+            case NOT -> OperatorRegistry.get( OperatorName.NOT );
+            case PLUS -> OperatorRegistry.get( OperatorName.PLUS );
+            case MINUS -> OperatorRegistry.get( OperatorName.MINUS );
+            default -> throw new AssertionError( "unknown: " + op );
+        };
     }
 
 

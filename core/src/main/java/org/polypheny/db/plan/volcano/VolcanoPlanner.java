@@ -1532,10 +1532,10 @@ public class VolcanoPlanner extends AbstractAlgPlanner {
     }
 
 
-    // implement RelOptPlanner
+    // implement AlgOptPlanner
     @Override
     public void addListener( AlgOptListener newListener ) {
-        // TODO jvs 6-Apr-2006:  new superclass AbstractRelOptPlanner now defines a multicast listener; just need to hook it in
+        // TODO jvs 6-Apr-2006:  new superclass AbstractAlgOptPlanner now defines a multicast listener; just need to hook it in
         if ( listener != null ) {
             throw Util.needToImplement( "multiple VolcanoPlanner listeners" );
         }

@@ -48,7 +48,7 @@ import org.slf4j.Logger;
 
 
 /**
- * A <code>RelOptPlanner</code> is a query optimizer: it transforms an algebra expression into a semantically equivalent relational expression, according to
+ * A <code>AlgOptPlanner</code> is a query optimizer: it transforms an algebra expression into a semantically equivalent algebra expression, according to
  * a given set of rules and a cost model.
  */
 public interface AlgPlanner {
@@ -59,7 +59,7 @@ public interface AlgPlanner {
     /**
      * Sets the root node of this query.
      *
-     * @param alg Relational expression
+     * @param alg Algebra expression
      */
     void setRoot( AlgNode alg );
 
@@ -71,9 +71,9 @@ public interface AlgPlanner {
     AlgNode getRoot();
 
     /**
-     * Registers a alg trait definition. If the {@link AlgTraitDef} has already been registered, does nothing.
+     * Registers an alg trait definition. If the {@link AlgTraitDef} has already been registered, does nothing.
      *
-     * @return whether the RelTraitDef was added, as per {@link java.util.Collection#add}
+     * @return whether the AlgTraitDef was added, as per {@link java.util.Collection#add}
      */
     boolean addAlgTraitDef( AlgTraitDef<?> algTraitDef );
 
@@ -99,7 +99,7 @@ public interface AlgPlanner {
 
     /**
      * Registers a rule.
-     *
+     * <p>
      * If the rule has already been registered, does nothing. This method determines if the given rule is a {@link ConverterRule} and pass the
      * ConverterRule to all {@link #addAlgTraitDef(AlgTraitDef) registered} AlgTraitDef instances.
      *
@@ -132,11 +132,11 @@ public interface AlgPlanner {
 
 
     /**
-     * Changes a algebraic expression to an equivalent one with a different set of traits.
+     * Changes an algebraic expression to an equivalent one with a different set of traits.
      *
-     * @param alg Relational expression (may or may not have been registered; must not have the desired traits)
-     * @param toTraits Trait set to convert the relational expression to
-     * @return Relational expression with desired traits. Never null, but may be abstract
+     * @param alg Algebra expression (may or may not have been registered; must not have the desired traits)
+     * @param toTraits Trait set to convert the algebra expression to
+     * @return Algbera expression with desired traits. Never null, but may be abstract
      */
     AlgNode changeTraits( AlgNode alg, AlgTraitSet toTraits );
 
@@ -160,7 +160,7 @@ public interface AlgPlanner {
     /**
      * Computes the cost of a AlgNode. In most cases, this just dispatches to {@link AlgMetadataQuery#getCumulativeCost}.
      *
-     * @param alg Relational expression of interest
+     * @param alg Algebra expression of interest
      * @param mq Metadata query
      * @return estimated cost
      */
@@ -169,9 +169,9 @@ public interface AlgPlanner {
 
     /**
      * Registers an algebra expression in the expression bank.
-     *
+     * <p>
      * After it has been registered, you may not modify it.
-     *
+     * <p>
      * The expression must not already have been registered. If you are not sure whether it has been registered, call {@link #ensureRegistered(AlgNode, AlgNode)}.
      *
      * @param alg Algebraic expression to register (must not already be registered)
@@ -182,20 +182,20 @@ public interface AlgPlanner {
 
     /**
      * Registers an algebra expression if it is not already registered.
-     *
+     * <p>
      * If {@code equivAlg} is specified, {@code alg} is placed in the same equivalence set. It is OK if {@code equivAlg} has different traits;
      * {@code alg} will end up in a different subset of the same set.
-     *
+     * <p>
      * It is OK if {@code alg} is a subset.
      *
      * @param alg Algebraic expression to register
      * @param equivAlg Algebraic expression it is equivalent to (may be null)
-     * @return Registered relational expression
+     * @return Registered algebra expression
      */
     AlgNode ensureRegistered( AlgNode alg, AlgNode equivAlg );
 
     /**
-     * Determines whether a relational expression has been registered.
+     * Determines whether an algebra expression has been registered.
      *
      * @param alg expression to test
      * @return whether alg has been registered
@@ -213,8 +213,8 @@ public interface AlgPlanner {
 
     /**
      * Gives this planner a chance to register one or more {@link AlgMetadataProvider}s in the chain which will be used to answer metadata queries.
-     *
-     * Planners which use their own relational expressions internally to represent concepts such as equivalence classes will generally need to supply corresponding metadata providers.
+     * <p>
+     * Planners which use their own algebra expressions internally to represent concepts such as equivalence classes will generally need to supply corresponding metadata providers.
      *
      * @param list receives planner's custom providers, if any
      */
@@ -229,12 +229,12 @@ public interface AlgPlanner {
     long getAlgMetadataTimestamp( AlgNode alg );
 
     /**
-     * Sets the importance of a relational expression.
-     *
+     * Sets the importance of an algebra expression.
+     * <p>
      * An important use of this method is when a {@link AlgOptRule} has created an algebra expression which is indisputably better than the original algebra expression.
-     * The rule set the original relational expression's importance to zero, to reduce the search space. Pending rule calls are cancelled, and future rules will not fire.
+     * The rule set the original algebra expression's importance to zero, to reduce the search space. Pending rule calls are cancelled, and future rules will not fire.
      *
-     * @param alg Relational expression
+     * @param alg Algebra expression
      * @param importance Importance
      */
     void setImportance( AlgNode alg, double importance );
@@ -242,13 +242,13 @@ public interface AlgPlanner {
     /**
      * Registers a class of AlgNode. If this class of {@link AlgNode} has been seen before, does nothing.
      *
-     * @param node Relational expression
+     * @param node Algebra expression
      */
     void registerClass( AlgNode node );
 
     /**
      * Creates an empty trait set. It contains all registered traits, and the default values of any traits that have them.
-     *
+     * <p>
      * The empty trait set acts as the prototype (a kind of factory) for all subsequently created trait sets.
      *
      * @return Empty trait set
@@ -266,7 +266,7 @@ public interface AlgPlanner {
     RexExecutor getExecutor();
 
     /**
-     * Called when a algebraic expression is copied to a similar expression.
+     * Called when an algebraic expression is copied to a similar expression.
      */
     void onCopy( AlgNode alg, AlgNode newAlg );
 

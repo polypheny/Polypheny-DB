@@ -42,21 +42,21 @@ import org.polypheny.db.plan.volcano.AlgSubset;
 
 
 /**
- * RelTraitDef represents a class of {@link AlgTrait}s. Implementations of RelTraitDef may be singletons under the following conditions:
+ * {@link AlgTraitDef} represents a class of {@link AlgTrait}s. Implementations of {@link AlgTraitDef} may be singletons under the following conditions:
  *
  * <ol>
- * <li>if the set of all possible associated RelTraits is finite and fixed (e.g. all RelTraits for this RelTraitDef are known at compile time). For example, the CallingConvention trait
+ * <li>if the set of all possible associated AlgTraits is finite and fixed (e.g. all AlgTraits for this {@link AlgTraitDef} are known at compile time). For example, the CallingConvention trait
  * meets this requirement, because CallingConvention is effectively an enumeration.</li>
  *
  * <li>Either
  * <ul>
  * <li> {@link #canConvert(AlgPlanner, AlgTrait, AlgTrait)} and {@link #convert(AlgPlanner, AlgNode, AlgTrait, boolean)} do not require planner-instance-specific information, <b>or</b></li>
- * <li>the RelTraitDef manages separate sets of conversion data internally. See {@link ConventionTraitDef} for an example of this.</li>
+ * <li>the {@link AlgTraitDef} manages separate sets of conversion data internally. See {@link ConventionTraitDef} for an example of this.</li>
  * </ul>
  * </li>
  * </ol>
  *
- * Otherwise, a new instance of RelTraitDef must be constructed and registered with each new planner instantiated.</p>
+ * Otherwise, a new instance of {@link AlgTraitDef} must be constructed and registered with each new planner instantiated.</p>
  *
  * @param <T> Trait that this trait definition is based upon
  */
@@ -64,7 +64,7 @@ public abstract class AlgTraitDef<T extends AlgTrait<?>> {
 
     /**
      * Cache of traits.
-     *
+     * <p>
      * Uses weak interner to allow GC.
      */
     private final Interner<T> interner = Interners.newWeakInterner();
@@ -75,8 +75,8 @@ public abstract class AlgTraitDef<T extends AlgTrait<?>> {
 
 
     /**
-     * Whether a relational expression may possess more than one instance of this trait simultaneously.
-     *
+     * Whether an algebra expression may possess more than one instance of this trait simultaneously.
+     * <p>
      * A subset has only one instance of a trait.
      */
     public boolean multiple() {
@@ -85,19 +85,19 @@ public abstract class AlgTraitDef<T extends AlgTrait<?>> {
 
 
     /**
-     * @return the specific RelTrait type associated with this RelTraitDef.
+     * @return the specific AlgTrait type associated with this AlgTraitDef.
      */
     public abstract Class<T> getTraitClass();
 
     /**
-     * @return a simple name for this RelTraitDef (for use in {@link AlgNode#explain}).
+     * @return a simple name for this AlgTraitDef (for use in {@link AlgNode#explain}).
      */
     public abstract String getSimpleName();
 
 
     /**
      * Takes an arbitrary Trait and returns the canonical representation of that Trait. Canonized Trait objects may always be compared using the equality operator (<code>==</code>).
-     *
+     * <p>
      * If an equal AlgTrait has already been canonized and is still in use, it will be returned. Otherwise, the given Trait is made canonical and returned.
      *
      * @param trait a possibly non-canonical Trait
@@ -110,11 +110,11 @@ public abstract class AlgTraitDef<T extends AlgTrait<?>> {
 
 
     /**
-     * Converts the given {@link AlgNode} to the given RelTrait.
+     * Converts the given {@link AlgNode} to the given AlgTrait.
      *
      * @param planner the planner requesting the conversion
      * @param alg {@link AlgNode} to convert
-     * @param toTrait RelTrait to convert to
+     * @param toTrait AlgTrait to convert to
      * @param allowInfiniteCostConverters flag indicating whether infinite cost converters are allowed
      * @return a converted {@link AlgNode} or null if conversion is not possible
      */
@@ -137,10 +137,10 @@ public abstract class AlgTraitDef<T extends AlgTrait<?>> {
      * @param planner the planner requesting the conversion test
      * @param fromTrait the AlgTrait to convert from
      * @param toTrait the AlgTrait to convert to
-     * @param fromRel the {@link AlgNode} to convert from (with fromTrait)
+     * @param fromAlg the {@link AlgNode} to convert from (with fromTrait)
      * @return true if fromTrait can be converted to toTrait
      */
-    public boolean canConvert( AlgPlanner planner, T fromTrait, T toTrait, AlgNode fromRel ) {
+    public boolean canConvert( AlgPlanner planner, T fromTrait, T toTrait, AlgNode fromAlg ) {
         return canConvert( planner, fromTrait, toTrait );
     }
 

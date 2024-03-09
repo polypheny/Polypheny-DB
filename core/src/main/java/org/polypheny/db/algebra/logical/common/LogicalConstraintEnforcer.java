@@ -137,7 +137,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
                 builder.push( scan );
                 // Enforce uniqueness between the already existing values and the new values
                 List<RexIndexRef> keys = constraint.key
-                        .getColumnNames()
+                        .getFieldNames()
                         .stream()
                         .map( builder::field )
                         .collect( Collectors.toList() );
@@ -165,21 +165,21 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
             for ( final LogicalForeignKey foreignKey : Stream.concat( foreignKeys.stream(), exportedKeys.stream() ).toList() ) {
                 builder.clear();
                 final LogicalTable scanOptTable = snapshot.getTable( foreignKey.entityId ).orElseThrow();
-                final LogicalTable refOptTable = snapshot.getTable( foreignKey.referencedKeyTableId ).orElseThrow();
+                final LogicalTable refOptTable = snapshot.getTable( foreignKey.referencedKeyEntityId ).orElseThrow();
                 final AlgNode scan = LogicalRelScan.create( modify.getCluster(), scanOptTable );
                 final LogicalRelScan ref = LogicalRelScan.create( modify.getCluster(), refOptTable );
 
                 builder.push( scan );
-                builder.project( foreignKey.getColumnNames().stream().map( builder::field ).collect( Collectors.toList() ) );
+                builder.project( foreignKey.getFieldNames().stream().map( builder::field ).collect( Collectors.toList() ) );
 
                 builder.push( ref );
-                builder.project( foreignKey.getReferencedKeyColumnNames().stream().map( builder::field ).collect( Collectors.toList() ) );
+                builder.project( foreignKey.getReferencedKeyFieldNames().stream().map( builder::field ).collect( Collectors.toList() ) );
 
                 RexNode joinCondition = rexBuilder.makeLiteral( true );
 
-                for ( int i = 0; i < foreignKey.getColumnNames().size(); i++ ) {
-                    final String column = foreignKey.getColumnNames().get( i );
-                    final String referencedColumn = foreignKey.getReferencedKeyColumnNames().get( i );
+                for ( int i = 0; i < foreignKey.getFieldNames().size(); i++ ) {
+                    final String column = foreignKey.getFieldNames().get( i );
+                    final String referencedColumn = foreignKey.getReferencedKeyFieldNames().get( i );
                     RexNode joinComparison = rexBuilder.makeCall(
                             OperatorRegistry.get( OperatorName.EQUALS ),
                             builder.field( 2, 1, referencedColumn ),
@@ -191,7 +191,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
                 final AlgNode join = builder.join( JoinAlgType.LEFT, joinCondition ).build();
                 //builder.project( builder.fields() );
                 builder.push( LogicalRelFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NULL ), rexBuilder.makeInputRef( join, join.getTupleType().getFieldCount() - 1 ) ) ) );
-                builder.project( builder.field( foreignKey.getColumnNames().get( 0 ) ) );
+                builder.project( builder.field( foreignKey.getFieldNames().get( 0 ) ) );
                 builder.rename( Collections.singletonList( "count$" + pos ) );
                 builder.projectPlus( builder.literal( pos ) );
 
@@ -263,7 +263,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
                 builder.scan( table );//LogicalTableScan.create( modify.getCluster(), modify.getTable() );
                 // Enforce uniqueness between the already existing values and the new values
                 List<RexIndexRef> keys = constraint.key
-                        .getColumnNames()
+                        .getFieldNames()
                         .stream()
                         .map( builder::field )
                         .collect( Collectors.toList() );
@@ -291,19 +291,19 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
                 builder.clear();
 
                 final AlgNode scan = builder.scan( foreignKey.getSchemaName(), foreignKey.getTableName() ).build();
-                final AlgNode ref = builder.scan( foreignKey.getSchemaName(), foreignKey.getReferencedKeyTableName() ).build();
+                final AlgNode ref = builder.scan( foreignKey.getSchemaName(), foreignKey.getReferencedKeyEntityName() ).build();
 
                 builder.push( scan );
-                builder.project( foreignKey.getColumnNames().stream().map( builder::field ).collect( Collectors.toList() ) );
+                builder.project( foreignKey.getFieldNames().stream().map( builder::field ).collect( Collectors.toList() ) );
 
                 builder.push( ref );
-                builder.project( foreignKey.getReferencedKeyColumnNames().stream().map( builder::field ).collect( Collectors.toList() ) );
+                builder.project( foreignKey.getReferencedKeyFieldNames().stream().map( builder::field ).collect( Collectors.toList() ) );
 
                 RexNode joinCondition = rexBuilder.makeLiteral( true );
 
-                for ( int i = 0; i < foreignKey.getColumnNames().size(); i++ ) {
-                    final String column = foreignKey.getColumnNames().get( i );
-                    final String referencedColumn = foreignKey.getReferencedKeyColumnNames().get( i );
+                for ( int i = 0; i < foreignKey.getFieldNames().size(); i++ ) {
+                    final String column = foreignKey.getFieldNames().get( i );
+                    final String referencedColumn = foreignKey.getReferencedKeyFieldNames().get( i );
                     RexNode joinComparison = rexBuilder.makeCall(
                             OperatorRegistry.get( OperatorName.EQUALS ),
                             builder.field( 2, 1, referencedColumn ),
@@ -315,7 +315,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
                 final AlgNode join = builder.join( JoinAlgType.LEFT, joinCondition ).build();
                 //builder.project( builder.fields() );
                 builder.push( LogicalRelFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NULL ), rexBuilder.makeInputRef( join, join.getTupleType().getFieldCount() - 1 ) ) ) );
-                builder.project( builder.field( foreignKey.getColumnNames().get( 0 ) ) );
+                builder.project( builder.field( foreignKey.getFieldNames().get( 0 ) ) );
                 builder.rename( Collections.singletonList( "count$" + pos ) );
                 builder.projectPlus( builder.literal( pos ) );
 

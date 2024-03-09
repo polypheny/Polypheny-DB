@@ -23,8 +23,8 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
-import lombok.Value;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.nodes.validate.Validator;
@@ -33,41 +33,16 @@ import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 
-@Value
-public class QueryLanguage {
 
-    @NotNull
-    DataModel dataModel;
-    @NotNull
-    String serializedName;
-    @NotNull
-    List<String> otherNames;
-    @Nullable
-    ParserFactory factory;
-    @NotNull
-    Supplier<Processor> processorSupplier;
-    @Nullable
-    BiFunction<Context, Snapshot, Validator> validatorSupplier;
-    @NotNull
-    Function<QueryContext, List<ParsedQueryContext>> splitter;
-
-
-    public QueryLanguage(
-            @NotNull DataModel dataModel,
-            @NotNull String serializedName,
-            @NotNull List<String> otherNames,
-            @Nullable ParserFactory factory,
-            @NotNull Supplier<Processor> processorSupplier,
-            @Nullable BiFunction<Context, Snapshot, Validator> validatorSupplier,
-            @NotNull Function<QueryContext, List<ParsedQueryContext>> splitter ) {
-        this.dataModel = dataModel;
-        this.serializedName = serializedName;
-        this.factory = factory;
-        this.processorSupplier = processorSupplier;
-        this.validatorSupplier = validatorSupplier;
-        this.otherNames = otherNames;
-        this.splitter = splitter;
-    }
+public record QueryLanguage(
+        @NotNull DataModel dataModel,
+        @NotNull String serializedName,
+        @NotNull List<String> otherNames,
+        @Nullable ParserFactory factory,
+        @NotNull Supplier<Processor> processorSupplier,
+        @Nullable BiFunction<Context, Snapshot, Validator> validatorSupplier,
+        @NotNull Function<QueryContext, List<ParsedQueryContext>> splitter
+) {
 
 
     public static QueryLanguage from( String name ) {
@@ -75,7 +50,7 @@ public class QueryLanguage {
 
         return LanguageManager.getLanguages().stream().filter( l -> Objects.equals( l.serializedName, normalized ) || l.otherNames.contains( normalized ) )
                 .findFirst()
-                .orElseThrow( () -> new RuntimeException( "The query language seems not to be supported!" ) );
+                .orElseThrow( () -> new GenericRuntimeException( "The query language seems not to be supported!" ) );
 
     }
 

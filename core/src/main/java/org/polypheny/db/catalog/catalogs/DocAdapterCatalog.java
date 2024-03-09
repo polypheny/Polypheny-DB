@@ -150,9 +150,4 @@ public class DocAdapterCatalog extends AdapterCatalog {
     }
 
 
-    @Override
-    public PolySerializable copy() {
-        return PolySerializable.deserialize( serialize(), DocAdapterCatalog.class );
-    }
-
 }

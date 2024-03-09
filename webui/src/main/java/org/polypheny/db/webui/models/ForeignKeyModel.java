@@ -39,7 +39,7 @@ public class ForeignKeyModel extends KeyModel {
 
 
     public static ForeignKeyModel from( LogicalKey key, long referencedEntityId, List<Long> referencedIds ) {
-        return new ForeignKeyModel( key.getId(), key.getEntityId(), key.getNamespaceId(), key.getColumnIds(), referencedEntityId, referencedIds );
+        return new ForeignKeyModel( key.getId(), key.getEntityId(), key.getNamespaceId(), key.getFieldIds(), referencedEntityId, referencedIds );
     }
 
 }

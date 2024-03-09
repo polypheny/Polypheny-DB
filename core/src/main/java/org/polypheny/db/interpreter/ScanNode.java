@@ -130,10 +130,9 @@ public class ScanNode implements Node {
         final Type elementType = queryableTable.getElementType();
 
         final Enumerable<Row<PolyValue>> rowEnumerable;
-        if ( elementType instanceof Class ) {
+        if ( elementType instanceof Class<?> type ) {
             final Queryable<PolyValue[]> queryable = Schemas.queryable( root, List.of( Catalog.getInstance().getSnapshot().getNamespace( alg.entity.namespaceId ).orElseThrow().name, alg.entity.name ) );
             ImmutableList.Builder<Field> fieldBuilder = ImmutableList.builder();
-            Class<?> type = (Class<?>) elementType;
             for ( Field field : type.getFields() ) {
                 if ( Modifier.isPublic( field.getModifiers() ) && !Modifier.isStatic( field.getModifiers() ) ) {
                     fieldBuilder.add( field );

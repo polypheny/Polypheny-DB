@@ -141,24 +141,7 @@ public class PhysicalColumn extends PhysicalField {
 
 
     public AlgDataType getAlgDataType( final AlgDataTypeFactory typeFactory ) {
-        // todo merge with LogicalColumn
-        AlgDataType elementType;
-        if ( this.length != null && this.scale != null && this.type.allowsPrecScale( true, true ) ) {
-            elementType = typeFactory.createPolyType( this.type, this.length, this.scale );
-        } else if ( this.length != null && this.type.allowsPrecNoScale() ) {
-            elementType = typeFactory.createPolyType( this.type, this.length );
-        } else {
-            assert this.type.allowsNoPrecNoScale();
-            elementType = typeFactory.createPolyType( this.type );
-        }
-
-        if ( collectionsType == PolyType.ARRAY ) {
-            elementType = typeFactory.createArrayType( elementType, cardinality != null ? cardinality : -1, dimension != null ? dimension : -1 );
-        } else if ( collectionsType == PolyType.MAP ) {
-            elementType = typeFactory.createMapType( typeFactory.createPolyType( PolyType.ANY ), elementType );
-        }
-
-        return typeFactory.createTypeWithNullability( elementType, nullable );
+        return LogicalColumn.getAlgDataType( typeFactory, this.length, this.scale, this.type, collectionsType, cardinality, dimension, nullable );
     }
 
 }

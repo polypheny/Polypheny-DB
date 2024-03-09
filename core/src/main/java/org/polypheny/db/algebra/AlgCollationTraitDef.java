@@ -109,11 +109,11 @@ public class AlgCollationTraitDef extends AlgTraitDef<AlgCollation> {
 
 
     @Override
-    public boolean canConvert( AlgPlanner planner, AlgCollation fromTrait, AlgCollation toTrait, AlgNode fromRel ) {
+    public boolean canConvert( AlgPlanner planner, AlgCollation fromTrait, AlgCollation toTrait, AlgNode fromAlg ) {
         // Returns true only if we can convert.  In this case, we can only convert if the fromTrait (the input) has fields that the toTrait wants to sort.
         for ( AlgFieldCollation field : toTrait.getFieldCollations() ) {
             int index = field.getFieldIndex();
-            if ( index >= fromRel.getTupleType().getFieldCount() ) {
+            if ( index >= fromAlg.getTupleType().getFieldCount() ) {
                 return false;
             }
         }

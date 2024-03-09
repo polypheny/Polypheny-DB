@@ -39,6 +39,11 @@ public class MockRelSnapshot implements LogicalRelSnapshot {
     private final MockSnapshot snapshot;
 
 
+    /**
+     * Creates a MockRelSnapshot, which provides pre-mocked entities to a callee.
+     * The MockRelSnapshot does ignore casing when comparing entity names.
+     * Be aware that callers still might rely on case-sensitivity.
+     */
     public MockRelSnapshot( MockSnapshot snapshot ) {
         this.snapshot = snapshot;
     }

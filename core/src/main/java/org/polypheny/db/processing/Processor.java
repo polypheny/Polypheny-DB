@@ -66,10 +66,10 @@ public abstract class Processor {
     PolyImplementation getImplementation( Statement statement, ExecutableStatement node, ParsedQueryContext context ) throws TransactionException {
         node.execute( statement.getPrepareContext(), statement, context );
         statement.getTransaction().commit();
-        //Catalog.getInstance().commit();
+
         return new PolyImplementation(
                 null,
-                context.getLanguage().getDataModel(),
+                context.getLanguage().dataModel(),
                 new ExecutionTimeMonitor(),
                 null,
                 Kind.CREATE_NAMESPACE, // technically correct, maybe change

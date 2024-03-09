@@ -186,7 +186,7 @@ public class Ast {
 
         @Override
         public Kind getKind() {
-            throw new UnsupportedOperationException( "Pig does not support this operation." );
+            return Kind.OTHER;
         }
 
 

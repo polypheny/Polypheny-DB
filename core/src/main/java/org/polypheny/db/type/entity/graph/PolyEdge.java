@@ -22,7 +22,7 @@ import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
-import io.activej.serializer.SimpleSerializerDef;
+import io.activej.serializer.def.SimpleSerializerDef;
 import java.util.List;
 import java.util.UUID;
 import lombok.EqualsAndHashCode;

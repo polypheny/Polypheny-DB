@@ -18,7 +18,6 @@ package org.polypheny.db.catalog.snapshot.impl;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -29,9 +28,10 @@ import java.util.Optional;
 import java.util.TreeSet;
 import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
+import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.Value;
-import org.apache.commons.compress.utils.Lists;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgNode;
@@ -51,6 +51,8 @@ import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.util.Pair;
 
 @Value
+@Slf4j
+@EqualsAndHashCode
 public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
     ImmutableMap<Long, LogicalNamespace> namespaces;
@@ -229,7 +231,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
 
     private ImmutableMap<long[], LogicalKey> buildColumnsKey() {
-        Map<long[], LogicalKey> map = keys.entrySet().stream().collect( Collectors.toMap( e -> e.getValue().columnIds.stream().mapToLong( c -> c ).toArray(), Entry::getValue, getDuplicateError() ) );
+        Map<long[], LogicalKey> map = keys.entrySet().stream().collect( Collectors.toMap( e -> e.getValue().fieldIds.stream().mapToLong( c -> c ).toArray(), Entry::getValue, getDuplicateError() ) );
 
         return ImmutableMap.copyOf( map );
     }
@@ -430,7 +432,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
     @Override
     public @NonNull List<LogicalForeignKey> getExportedKeys( long tableId ) {
-        return foreignKeys.values().stream().filter( k -> k.referencedKeyTableId == tableId ).collect( Collectors.toList() );
+        return foreignKeys.values().stream().filter( k -> k.referencedKeyEntityId == tableId ).collect( Collectors.toList() );
     }
 
 
@@ -544,125 +546,5 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
         return Optional.ofNullable( keys.get( id ) );
     }
 
-
-    @Override
-    public boolean equals( Object o ) {
-        if ( this == o ) {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() ) {
-            return false;
-        }
-
-        LogicalRelSnapshotImpl that = (LogicalRelSnapshotImpl) o;
-
-        if ( !Objects.equals( namespaces, that.namespaces ) ) {
-            return false;
-        }
-        if ( !Objects.equals( namespaceNames, that.namespaceNames ) ) {
-            return false;
-        }
-        if ( !Objects.equals( namespaceCaseSensitive, that.namespaceCaseSensitive ) ) {
-            return false;
-        }
-        if ( !Objects.equals( tables, that.tables ) ) {
-            return false;
-        }
-        if ( !Objects.equals( views, that.views ) ) {
-            return false;
-        }
-        if ( !Objects.equals( tableNames, that.tableNames ) ) {
-            return false;
-        }
-        if ( !Objects.equals( tablesNamespace, that.tablesNamespace ) ) {
-            return false;
-        }
-        if ( !Objects.equals( tableColumns, that.tableColumns ) ) {
-            return false;
-        }
-        if ( !Objects.equals( columns, that.columns ) ) {
-            return false;
-        }
-        if ( !Objects.equals( columnNames, that.columnNames ) ) {
-            return false;
-        }
-        if ( !Objects.equals( keys, that.keys ) ) {
-            return false;
-        }
-        if ( !Objects.equals( tableKeys, that.tableKeys ) ) {
-            return false;
-        }
-        if ( !Objects.equals( columnsKeys.values(), that.columnsKeys.values() ) ) {
-            return false;
-        }
-        if ( columnsKeys.size() != that.columnsKeys.size() || Lists.newArrayList( Pair.zip( columnsKeys.keySet(), that.columnsKeys.keySet() ).iterator() ).stream().anyMatch( p -> !Arrays.equals( p.left, p.right ) ) ) {
-            return false;
-        }
-        if ( !Objects.equals( index, that.index ) ) {
-            return false;
-        }
-        if ( !Objects.equals( constraints, that.constraints ) ) {
-            return false;
-        }
-        if ( !Objects.equals( foreignKeys, that.foreignKeys ) ) {
-            return false;
-        }
-        if ( !Objects.equals( primaryKeys, that.primaryKeys ) ) {
-            return false;
-        }
-        if ( !Objects.equals( keyToIndexes, that.keyToIndexes ) ) {
-            return false;
-        }
-        if ( !Objects.equals( tableColumnIdColumn, that.tableColumnIdColumn ) ) {
-            return false;
-        }
-        if ( !Objects.equals( tableColumnNameColumn, that.tableColumnNameColumn ) ) {
-            return false;
-        }
-        if ( !Objects.equals( tableIdColumnNameColumn, that.tableIdColumnNameColumn ) ) {
-            return false;
-        }
-        if ( !Objects.equals( tableConstraints, that.tableConstraints ) ) {
-            return false;
-        }
-        if ( !Objects.equals( tableForeignKeys, that.tableForeignKeys ) ) {
-            return false;
-        }
-        if ( !Objects.equals( nodes, that.nodes ) ) {
-            return false;
-        }
-        return Objects.equals( connectedViews, that.connectedViews );
-    }
-
-
-    @Override
-    public int hashCode() {
-        int result = namespaces != null ? namespaces.hashCode() : 0;
-        result = 31 * result + (namespaceNames != null ? namespaceNames.hashCode() : 0);
-        result = 31 * result + (namespaceCaseSensitive != null ? namespaceCaseSensitive.hashCode() : 0);
-        result = 31 * result + (tables != null ? tables.hashCode() : 0);
-        result = 31 * result + (views != null ? views.hashCode() : 0);
-        result = 31 * result + (tableNames != null ? tableNames.hashCode() : 0);
-        result = 31 * result + (tablesNamespace != null ? tablesNamespace.hashCode() : 0);
-        result = 31 * result + (tableColumns != null ? tableColumns.hashCode() : 0);
-        result = 31 * result + (columns != null ? columns.hashCode() : 0);
-        result = 31 * result + (columnNames != null ? columnNames.hashCode() : 0);
-        result = 31 * result + (keys != null ? keys.hashCode() : 0);
-        result = 31 * result + (tableKeys != null ? tableKeys.hashCode() : 0);
-        result = 31 * result + (columnsKeys != null ? columnsKeys.hashCode() : 0);
-        result = 31 * result + (index != null ? index.hashCode() : 0);
-        result = 31 * result + (constraints != null ? constraints.hashCode() : 0);
-        result = 31 * result + (foreignKeys != null ? foreignKeys.hashCode() : 0);
-        result = 31 * result + (primaryKeys != null ? primaryKeys.hashCode() : 0);
-        result = 31 * result + (keyToIndexes != null ? keyToIndexes.hashCode() : 0);
-        result = 31 * result + (tableColumnIdColumn != null ? tableColumnIdColumn.hashCode() : 0);
-        result = 31 * result + (tableColumnNameColumn != null ? tableColumnNameColumn.hashCode() : 0);
-        result = 31 * result + (tableIdColumnNameColumn != null ? tableIdColumnNameColumn.hashCode() : 0);
-        result = 31 * result + (tableConstraints != null ? tableConstraints.hashCode() : 0);
-        result = 31 * result + (tableForeignKeys != null ? tableForeignKeys.hashCode() : 0);
-        result = 31 * result + (nodes != null ? nodes.hashCode() : 0);
-        result = 31 * result + (connectedViews != null ? connectedViews.hashCode() : 0);
-        return result;
-    }
 
 }

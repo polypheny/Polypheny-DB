@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableList;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serial;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
@@ -47,10 +47,10 @@ public class LogicalForeignKey extends LogicalKey {
     public long referencedKeyId;
 
     @Serialize
-    public long referencedKeySchemaId;
+    public long referencedKeyNamespaceId;
 
     @Serialize
-    public long referencedKeyTableId;
+    public long referencedKeyEntityId;
 
     @Serialize
     public ForeignKeyOption updateRule;
@@ -59,7 +59,7 @@ public class LogicalForeignKey extends LogicalKey {
     public ForeignKeyOption deleteRule;
 
     @Serialize
-    public ImmutableList<Long> referencedKeyColumnIds;
+    public ImmutableList<Long> referencedKeyFieldIds;
 
 
     public LogicalForeignKey(
@@ -68,66 +68,66 @@ public class LogicalForeignKey extends LogicalKey {
             @Deserialize("entityId") final long entityId,
             @Deserialize("namespaceId") final long namespaceId,
             @Deserialize("referencedKeyId") final long referencedKeyId,
-            @Deserialize("referencedKeyTableId") final long referencedKeyTableId,
-            @Deserialize("referencedKeySchemaId") final long referencedKeySchemaId,
-            @Deserialize("columnIds") final List<Long> columnIds,
-            @Deserialize("referencedKeyColumnIds") final List<Long> referencedKeyColumnIds,
+            @Deserialize("referencedKeyEntityId") final long referencedKeyEntityId,
+            @Deserialize("referencedKeyNamespaceId") final long referencedKeyNamespaceId,
+            @Deserialize("fieldIds") final List<Long> fieldIds,
+            @Deserialize("referencedKeyFieldIds") final List<Long> referencedKeyFieldIds,
             @Deserialize("updateRule") final ForeignKeyOption updateRule,
             @Deserialize("deleteRule") final ForeignKeyOption deleteRule ) {
-        super( id, entityId, namespaceId, columnIds, EnforcementTime.ON_COMMIT );
+        super( id, entityId, namespaceId, fieldIds, EnforcementTime.ON_COMMIT );
         this.name = name;
         this.referencedKeyId = referencedKeyId;
-        this.referencedKeyTableId = referencedKeyTableId;
-        this.referencedKeySchemaId = referencedKeySchemaId;
-        this.referencedKeyColumnIds = ImmutableList.copyOf( referencedKeyColumnIds );
+        this.referencedKeyEntityId = referencedKeyEntityId;
+        this.referencedKeyNamespaceId = referencedKeyNamespaceId;
+        this.referencedKeyFieldIds = ImmutableList.copyOf( referencedKeyFieldIds );
         this.updateRule = updateRule;
         this.deleteRule = deleteRule;
     }
 
 
-    public String getReferencedKeySchemaName() {
-        return Catalog.snapshot().getNamespace( referencedKeySchemaId ).orElseThrow().name;
+    public String getReferencedKeyNamespaceName() {
+        return Catalog.snapshot().getNamespace( referencedKeyNamespaceId ).orElseThrow().name;
     }
 
 
-    public String getReferencedKeyTableName() {
-        return Catalog.snapshot().rel().getTable( referencedKeyTableId ).orElseThrow().name;
+    public String getReferencedKeyEntityName() {
+        return Catalog.snapshot().rel().getTable( referencedKeyEntityId ).orElseThrow().name;
     }
 
 
-    public List<String> getReferencedKeyColumnNames() {
+    public List<String> getReferencedKeyFieldNames() {
         Snapshot snapshot = Catalog.snapshot();
-        List<String> columnNames = new LinkedList<>();
-        for ( long columnId : referencedKeyColumnIds ) {
-            columnNames.add( snapshot.rel().getColumn( columnId ).orElseThrow().name );
+        List<String> fieldsNames = new ArrayList<>();
+        for ( long fieldId : referencedKeyFieldIds ) {
+            fieldsNames.add( snapshot.rel().getColumn( fieldId ).orElseThrow().name );
         }
-        return columnNames;
+        return fieldsNames;
     }
 
 
     // Used for creating ResultSets
-    public List<LogicalForeignKeyColumn> getCatalogForeignKeyColumns() {
+    public List<LogicalForeignKeyField> getCatalogForeignKeyFields() {
         int i = 1;
-        List<LogicalForeignKeyColumn> list = new LinkedList<>();
-        List<String> referencedKeyColumnNames = getReferencedKeyColumnNames();
-        for ( String columnName : getColumnNames() ) {
-            list.add( new LogicalForeignKeyColumn( entityId, name, i, referencedKeyColumnNames.get( i - 1 ), columnName ) );
+        List<LogicalForeignKeyField> list = new ArrayList<>();
+        List<String> referencedKeyFieldNames = getReferencedKeyFieldNames();
+        for ( String columnName : getFieldNames() ) {
+            list.add( new LogicalForeignKeyField( entityId, name, i, referencedKeyFieldNames.get( i - 1 ), columnName ) );
             i++;
         }
         return list;
     }
 
 
-    public PolyValue[] getParameterArray( String referencedKeyColumnName, String foreignKeyColumnName, int keySeq ) {
+    public PolyValue[] getParameterArray( String referencedKeyFieldName, String foreignKeyFieldName, int keySeq ) {
         return new PolyValue[]{
                 PolyString.of( Catalog.DATABASE_NAME ),
-                PolyString.of( getReferencedKeySchemaName() ),
-                PolyString.of( getReferencedKeyTableName() ),
-                PolyString.of( referencedKeyColumnName ),
+                PolyString.of( getReferencedKeyNamespaceName() ),
+                PolyString.of( getReferencedKeyEntityName() ),
+                PolyString.of( referencedKeyFieldName ),
                 PolyString.of( Catalog.DATABASE_NAME ),
                 PolyString.of( getSchemaName() ),
                 PolyString.of( getTableName() ),
-                PolyString.of( foreignKeyColumnName ),
+                PolyString.of( foreignKeyFieldName ),
                 PolyInteger.of( keySeq ),
                 PolyInteger.of( updateRule.getId() ),
                 PolyInteger.of( deleteRule.getId() ),
@@ -139,17 +139,17 @@ public class LogicalForeignKey extends LogicalKey {
 
     // Used for creating ResultSets
     @RequiredArgsConstructor
-    public static class LogicalForeignKeyColumn implements PolyObject {
+    public static class LogicalForeignKeyField implements PolyObject {
 
         @Serial
         private static final long serialVersionUID = 3287177728197412000L;
 
-        private final long tableId;
+        private final long entityId;
         private final String foreignKeyName;
 
         private final int keySeq;
-        private final String referencedKeyColumnName;
-        private final String foreignKeyColumnName;
+        private final String referencedKeyFieldName;
+        private final String foreignKeyFieldName;
 
 
         @SneakyThrows
@@ -157,29 +157,13 @@ public class LogicalForeignKey extends LogicalKey {
         public PolyValue[] getParameterArray() {
             return Catalog.snapshot()
                     .rel()
-                    .getForeignKey( tableId, foreignKeyName )
+                    .getForeignKey( entityId, foreignKeyName )
                     .orElseThrow()
-                    .getParameterArray( referencedKeyColumnName, foreignKeyColumnName, keySeq );
+                    .getParameterArray( referencedKeyFieldName, foreignKeyFieldName, keySeq );
         }
 
 
-        @RequiredArgsConstructor
-        public static class PrimitiveCatalogForeignKeyColumn {
-
-            public final String pktableCat;
-            public final String pktableSchem;
-            public final String pktableName;
-            public final String pkcolumnName;
-            public final String fktableCat;
-            public final String fktableSchem;
-            public final String fktableName;
-            public final String fkcolumnName;
-            public final int keySeq;
-            public final Integer updateRule;
-            public final Integer deleteRule;
-            public final String fkName;
-            public final String pkName;
-            public final Integer deferrability;
+        public record PrimitiveCatalogForeignKeyColumn(String pktableCat, String pktableSchem, String pktableName, String pkcolumnName, String fktableCat, String fktableSchem, String fktableName, String fkcolumnName, int keySeq, Integer updateRule, Integer deleteRule, String fkName, String pkName, Integer deferrability) {
 
         }
 

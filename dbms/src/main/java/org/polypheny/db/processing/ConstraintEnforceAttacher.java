@@ -225,10 +225,10 @@ public class ConstraintEnforceAttacher {
                 // TODO: Here we get issues with batch queries
                 //
                 builder.push( input );
-                builder.project( constraint.key.getColumnNames().stream().map( builder::field ).toList() );
+                builder.project( constraint.key.getFieldNames().stream().map( builder::field ).toList() );
                 builder.push( scan );
-                builder.project( constraint.key.getColumnNames().stream().map( builder::field ).toList() );
-                for ( final String column : constraint.key.getColumnNames() ) {
+                builder.project( constraint.key.getFieldNames().stream().map( builder::field ).toList() );
+                for ( final String column : constraint.key.getFieldNames() ) {
                     RexNode joinComparison = rexBuilder.makeCall(
                             OperatorRegistry.get( OperatorName.EQUALS ),
                             builder.field( 2, 1, column ),
@@ -256,8 +256,8 @@ public class ConstraintEnforceAttacher {
                         LogicalRelProject project = (LogicalRelProject) input;
                         List<Map<Long, PolyValue>> parameterValues = statement.getDataContext().getParameterValues();
                         final Set<List<PolyValue>> uniqueSet = new HashSet<>( parameterValues.get( 0 ).size() );
-                        final Map<String, Integer> columnMap = new HashMap<>( constraint.key.columnIds.size() );
-                        for ( final String columnName : constraint.key.getColumnNames() ) {
+                        final Map<String, Integer> columnMap = new HashMap<>( constraint.key.fieldIds.size() );
+                        for ( final String columnName : constraint.key.getFieldNames() ) {
                             int i = project.getTupleType().getField( columnName, true, false ).getIndex();
                             columnMap.put( columnName, i );
                         }
@@ -283,14 +283,14 @@ public class ConstraintEnforceAttacher {
                     // (And anyway, pushing this down to stores seems rather inefficient)
                     final List<? extends List<RexLiteral>> tuples = values.getTuples();
                     final Set<List<RexLiteral>> uniqueSet = new HashSet<>( tuples.size() );
-                    final Map<String, Integer> columnMap = new HashMap<>( constraint.key.columnIds.size() );
-                    for ( final String columnName : constraint.key.getColumnNames() ) {
+                    final Map<String, Integer> columnMap = new HashMap<>( constraint.key.fieldIds.size() );
+                    for ( final String columnName : constraint.key.getFieldNames() ) {
                         int i = values.getTupleType().getField( columnName, true, false ).getIndex();
                         columnMap.put( columnName, i );
                     }
                     for ( final List<RexLiteral> tuple : tuples ) {
-                        List<RexLiteral> projection = new ArrayList<>( constraint.key.columnIds.size() );
-                        for ( final String columnName : constraint.key.getColumnNames() ) {
+                        List<RexLiteral> projection = new ArrayList<>( constraint.key.fieldIds.size() );
+                        for ( final String columnName : constraint.key.getFieldNames() ) {
                             projection.add( tuple.get( columnMap.get( columnName ) ) );
                         }
                         uniqueSet.add( projection );
@@ -301,7 +301,7 @@ public class ConstraintEnforceAttacher {
                 } else {
                     builder.clear();
                     builder.push( input );
-                    builder.aggregate( builder.groupKey( constraint.key.getColumnNames().stream().map( builder::field ).toList() ), builder.aggregateCall( OperatorRegistry.getAgg( OperatorName.COUNT ) ).as( "count" ) );
+                    builder.aggregate( builder.groupKey( constraint.key.getFieldNames().stream().map( builder::field ).toList() ), builder.aggregateCall( OperatorRegistry.getAgg( OperatorName.COUNT ) ).as( "count" ) );
                     builder.filter( builder.call( OperatorRegistry.get( OperatorName.GREATER_THAN ), builder.field( "count" ), builder.literal( 1 ) ) );
                     final AlgNode innerCheck = builder.build();
                     final LogicalConditionalExecute ilce = LogicalConditionalExecute.create( innerCheck, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
@@ -321,16 +321,16 @@ public class ConstraintEnforceAttacher {
             final RexBuilder rexBuilder = root.getCluster().getRexBuilder();
             for ( final LogicalForeignKey foreignKey : foreignKeys ) {
 
-                final LogicalTable entity = statement.getDataContext().getSnapshot().rel().getTable( foreignKey.referencedKeyTableId ).orElseThrow();
+                final LogicalTable entity = statement.getDataContext().getSnapshot().rel().getTable( foreignKey.referencedKeyEntityId ).orElseThrow();
                 final LogicalRelScan scan = LogicalRelScan.create( root.getCluster(), entity );
                 RexNode joinCondition = rexBuilder.makeLiteral( true );
                 builder.push( input );
-                builder.project( foreignKey.getColumnNames().stream().map( builder::field ).collect( Collectors.toList() ) );
+                builder.project( foreignKey.getFieldNames().stream().map( builder::field ).collect( Collectors.toList() ) );
                 builder.push( scan );
-                builder.project( foreignKey.getReferencedKeyColumnNames().stream().map( builder::field ).collect( Collectors.toList() ) );
-                for ( int i = 0; i < foreignKey.getColumnNames().size(); ++i ) {
-                    final String column = foreignKey.getColumnNames().get( i );
-                    final String referencedColumn = foreignKey.getReferencedKeyColumnNames().get( i );
+                builder.project( foreignKey.getReferencedKeyFieldNames().stream().map( builder::field ).collect( Collectors.toList() ) );
+                for ( int i = 0; i < foreignKey.getFieldNames().size(); ++i ) {
+                    final String column = foreignKey.getFieldNames().get( i );
+                    final String referencedColumn = foreignKey.getReferencedKeyFieldNames().get( i );
                     RexNode joinComparison = rexBuilder.makeCall(
                             OperatorRegistry.get( OperatorName.EQUALS ),
                             builder.field( 2, 1, referencedColumn ),
@@ -362,7 +362,7 @@ public class ConstraintEnforceAttacher {
                 // Check if update affects this constraint
                 boolean affected = false;
                 for ( final String c : root.getUpdateColumns() ) {
-                    if ( constraint.key.getColumnNames().contains( c ) ) {
+                    if ( constraint.key.getFieldNames().contains( c ) ) {
                         affected = true;
                         break;
                     }
@@ -380,11 +380,11 @@ public class ConstraintEnforceAttacher {
                 builder.push( input );
                 List<RexNode> projects = new ArrayList<>();
                 List<String> names = new ArrayList<>();
-                for ( final String column : primaryKey.getColumnNames() ) {
+                for ( final String column : primaryKey.getFieldNames() ) {
                     projects.add( builder.field( column ) );
                     names.add( column );
                 }
-                for ( final String column : constraint.key.getColumnNames() ) {
+                for ( final String column : constraint.key.getFieldNames() ) {
                     if ( root.getUpdateColumns().contains( column ) ) {
                         projects.add( root.getSourceExpressions().get( nameMap.get( column ) ) );
                     } else {
@@ -401,14 +401,14 @@ public class ConstraintEnforceAttacher {
                 List<LogicalColumn> columns = snapshot.getColumns( table.id );
                 List<String> columNames = columns.stream().map( c -> c.name ).toList();
 
-                List<RexNode> conditionList1 = primaryKey.getColumnNames().stream().map( c ->
+                List<RexNode> conditionList1 = primaryKey.getFieldNames().stream().map( c ->
                         builder.call(
                                 OperatorRegistry.get( OperatorName.EQUALS ),
                                 builder.field( names.indexOf( c ) ),
                                 builder.field( names.size() + columNames.indexOf( c ) )
                         ) ).collect( Collectors.toList() );
 
-                List<RexNode> conditionList2 = constraint.key.getColumnNames().stream().map( c ->
+                List<RexNode> conditionList2 = constraint.key.getFieldNames().stream().map( c ->
                         builder.call(
                                 OperatorRegistry.get( OperatorName.EQUALS ),
                                 builder.field( names.indexOf( "$projected$." + c ) ),
@@ -439,7 +439,7 @@ public class ConstraintEnforceAttacher {
                 builder.clear();
                 builder.push( input );
                 projects = new ArrayList<>();
-                for ( final String column : constraint.key.getColumnNames() ) {
+                for ( final String column : constraint.key.getFieldNames() ) {
                     if ( root.getUpdateColumns().contains( column ) ) {
                         projects.add( root.getSourceExpressions().get( nameMap.get( column ) ) );
                     } else {
@@ -471,13 +471,13 @@ public class ConstraintEnforceAttacher {
             for ( final LogicalForeignKey foreignKey : foreignKeys ) {
                 final String constraintRule = "ON UPDATE " + foreignKey.updateRule;
                 AlgNode input = root.getInput().accept( new DeepCopyShuttle() );
-                final List<RexNode> projects = new ArrayList<>( foreignKey.columnIds.size() );
-                final List<RexNode> foreignProjects = new ArrayList<>( foreignKey.columnIds.size() );
-                final LogicalTable foreignTable = snapshot.getTable( foreignKey.referencedKeyTableId ).orElseThrow();
+                final List<RexNode> projects = new ArrayList<>( foreignKey.fieldIds.size() );
+                final List<RexNode> foreignProjects = new ArrayList<>( foreignKey.fieldIds.size() );
+                final LogicalTable foreignTable = snapshot.getTable( foreignKey.referencedKeyEntityId ).orElseThrow();
                 builder.push( input );
-                for ( int i = 0; i < foreignKey.columnIds.size(); ++i ) {
-                    final String columnName = foreignKey.getColumnNames().get( i );
-                    final String foreignColumnName = foreignKey.getReferencedKeyColumnNames().get( i );
+                for ( int i = 0; i < foreignKey.fieldIds.size(); ++i ) {
+                    final String columnName = foreignKey.getFieldNames().get( i );
+                    final String foreignColumnName = foreignKey.getReferencedKeyFieldNames().get( i );
                     final LogicalColumn foreignColumn = snapshot.getColumn( foreignTable.id, foreignColumnName ).orElseThrow();
                     RexNode newValue;
                     int targetIndex;
@@ -500,7 +500,7 @@ public class ConstraintEnforceAttacher {
                 }
                 builder
                         .project( projects )
-                        .scan( foreignKey.getReferencedKeyTableName() )
+                        .scan( foreignKey.getReferencedKeyEntityName() )
                         .project( foreignProjects );
                 RexNode condition = rexBuilder.makeLiteral( true );
                 for ( int i = 0; i < projects.size(); ++i ) {
@@ -516,7 +516,7 @@ public class ConstraintEnforceAttacher {
                 final AlgNode check = LogicalRelFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NULL ), rexBuilder.makeInputRef( join, projects.size() * 2 - 1 ) ) );
                 final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
                         String.format( "Update violates foreign key constraint `%s` (`%s` %s -> `%s` %s, %s)",
-                                foreignKey.name, table.name, foreignKey.getColumnNames(), foreignTable.name, foreignKey.getReferencedKeyColumnNames(), constraintRule ) );
+                                foreignKey.name, table.name, foreignKey.getFieldNames(), foreignTable.name, foreignKey.getReferencedKeyFieldNames(), constraintRule ) );
                 lce.setCheckDescription( String.format( "Enforcement of foreign key `%s`.`%s`", table.name, foreignKey.name ) );
                 lceRoot = lce;
             }
@@ -542,12 +542,12 @@ public class ConstraintEnforceAttacher {
                 } else {
                     pInput = root.getInput().accept( new DeepCopyShuttle() );
                 }
-                final List<RexNode> projects = new ArrayList<>( foreignKey.columnIds.size() );
-                final List<RexNode> foreignProjects = new ArrayList<>( foreignKey.columnIds.size() );
+                final List<RexNode> projects = new ArrayList<>( foreignKey.fieldIds.size() );
+                final List<RexNode> foreignProjects = new ArrayList<>( foreignKey.fieldIds.size() );
                 final LogicalTable foreignTable = snapshot.getTable( foreignKey.entityId ).orElseThrow();
-                for ( int i = 0; i < foreignKey.columnIds.size(); ++i ) {
-                    final String columnName = foreignKey.getReferencedKeyColumnNames().get( i );
-                    final String foreignColumnName = foreignKey.getColumnNames().get( i );
+                for ( int i = 0; i < foreignKey.fieldIds.size(); ++i ) {
+                    final String columnName = foreignKey.getReferencedKeyFieldNames().get( i );
+                    final String foreignColumnName = foreignKey.getFieldNames().get( i );
                     final LogicalColumn column = snapshot.getColumn( table.id, columnName ).orElseThrow();
                     final LogicalColumn foreignColumn = snapshot.getColumn( foreignTable.id, foreignColumnName ).orElseThrow();
                     final RexNode inputRef = new RexIndexRef( column.position - 1, rexBuilder.getTypeFactory().createPolyType( column.type ) );
@@ -574,7 +574,7 @@ public class ConstraintEnforceAttacher {
                 final LogicalConditionalExecute lce = LogicalConditionalExecute.create( join, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
                         String.format( "%s violates foreign key constraint `%s` (`%s` %s -> `%s` %s, %s)",
                                 root.isUpdate() ? "Update" : "Delete",
-                                foreignKey.name, foreignTable.name, foreignKey.getColumnNames(), table.name, foreignKey.getReferencedKeyColumnNames(), constraintRule ) );
+                                foreignKey.name, foreignTable.name, foreignKey.getFieldNames(), table.name, foreignKey.getReferencedKeyFieldNames(), constraintRule ) );
                 lce.setCheckDescription( String.format( "Enforcement of foreign key `%s`.`%s`", foreignTable.name, foreignKey.name ) );
                 lceRoot = lce;
             }

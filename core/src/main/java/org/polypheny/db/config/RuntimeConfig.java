@@ -62,9 +62,9 @@ public enum RuntimeConfig {
             ConfigType.BOOLEAN
     ), // Druid
 
-    RELATIONAL_CASE_SENSITIVE(
+    NAMESPACE_DEFAULT_CASE_SENSITIVE(
             "runtime/caseSensitive",
-            "Whether identifiers are matched case-sensitively.",
+            "Whether a relational namespace is case-sensitive if not specified otherwise.",
             false,
             ConfigType.BOOLEAN
     ),

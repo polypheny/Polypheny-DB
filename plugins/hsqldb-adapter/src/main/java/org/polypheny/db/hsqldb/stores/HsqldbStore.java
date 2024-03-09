@@ -122,7 +122,7 @@ public class HsqldbStore extends AbstractJdbcStore {
 
         builder.append( "(" );
         boolean first = true;
-        for ( long columnId : index.key.columnIds ) {
+        for ( long columnId : index.key.fieldIds ) {
             if ( !first ) {
                 builder.append( ", " );
             }

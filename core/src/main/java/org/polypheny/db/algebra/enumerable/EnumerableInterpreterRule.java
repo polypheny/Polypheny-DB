@@ -54,7 +54,7 @@ public class EnumerableInterpreterRule extends ConverterRule {
     /**
      * Creates an EnumerableInterpreterRule.
      *
-     * @param algBuilderFactory Builder for relational expressions
+     * @param algBuilderFactory Builder for algebra expressions
      */
     public EnumerableInterpreterRule( AlgBuilderFactory algBuilderFactory ) {
         super( AlgNode.class, r -> true, BindableConvention.INSTANCE, EnumerableConvention.INSTANCE, algBuilderFactory, "EnumerableInterpreterRule" );

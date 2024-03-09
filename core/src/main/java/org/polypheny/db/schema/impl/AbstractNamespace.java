@@ -49,7 +49,6 @@ import org.polypheny.db.plan.Convention;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.SchemaVersion;
-import org.polypheny.db.schema.Schemas;
 
 
 /**
@@ -95,7 +94,8 @@ public class AbstractNamespace implements Namespace {
 
     @Override
     public Expression getExpression( Snapshot snapshot, long id ) {
-        return Schemas.subSchemaExpression( null, id, null, getClass() );
+        //return Schemas.subSchemaExpression( null, id, null, getClass() );
+        return null;
     }
 
 

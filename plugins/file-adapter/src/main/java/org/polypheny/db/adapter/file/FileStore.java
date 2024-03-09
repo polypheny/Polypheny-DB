@@ -475,7 +475,7 @@ public class FileStore extends DataStore<RelAdapterCatalog> {
     @Override
     public List<FunctionalIndexInfo> getFunctionalIndexes( LogicalTable catalogTable ) {
         // TODO: Check if this is correct and ind better approach
-        List<Long> pkIds = Catalog.snapshot().rel().getPrimaryKey( catalogTable.primaryKey ).orElseThrow().columnIds;
+        List<Long> pkIds = Catalog.snapshot().rel().getPrimaryKey( catalogTable.primaryKey ).orElseThrow().fieldIds;
         return ImmutableList.of( new FunctionalIndexInfo( pkIds, "PRIMARY (unique)" ) );
     }
 

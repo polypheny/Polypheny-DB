@@ -49,11 +49,11 @@ public class KeyModel extends IdEntity {
 
     public static KeyModel from( LogicalKey key ) {
         if ( key instanceof LogicalPrimaryKey ) {
-            return new KeyModel( key.id, key.entityId, key.namespaceId, key.columnIds, true );
+            return new KeyModel( key.id, key.entityId, key.namespaceId, key.fieldIds, true );
         } else if ( key instanceof LogicalForeignKey foreignKey ) {
-            return new ForeignKeyModel( key.id, key.entityId, key.namespaceId, key.columnIds, foreignKey.referencedKeyTableId, foreignKey.referencedKeyColumnIds );
+            return new ForeignKeyModel( key.id, key.entityId, key.namespaceId, key.fieldIds, foreignKey.referencedKeyEntityId, foreignKey.referencedKeyFieldIds );
         }
-        return new KeyModel( key.id, key.entityId, key.namespaceId, key.columnIds, false );
+        return new KeyModel( key.id, key.entityId, key.namespaceId, key.fieldIds, false );
     }
 
 }

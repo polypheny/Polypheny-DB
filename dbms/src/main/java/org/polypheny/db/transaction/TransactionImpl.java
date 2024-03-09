@@ -203,6 +203,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         }
 
         Catalog.getInstance().commit();
+
         // Free resources hold by statements
         statements.forEach( Statement::close );
 
@@ -260,7 +261,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         // note dl, while caching the processors works in most cases,
         // it can lead to validator bleed when using multiple simultaneous insert for example
         // caching therefore is not possible atm
-        return language.getProcessorSupplier().get();
+        return language.processorSupplier().get();
     }
 
 

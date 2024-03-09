@@ -34,16 +34,24 @@
 package org.polypheny.db.test;
 
 
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.piglet.Handler;
-import org.polypheny.db.tools.PigAlgBuilder;
-
 import java.io.PrintWriter;
 import java.io.Writer;
-import java.sql.Array;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Types;
+import java.util.List;
+import java.util.stream.IntStream;
+import org.polypheny.db.PolyImplementation;
+import org.polypheny.db.ResultIterator;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.piglet.Handler;
+import org.polypheny.db.tools.PigAlgBuilder;
+import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.util.Pair;
 
 
 /**
@@ -62,7 +70,23 @@ class PolyphenyDbHandler extends Handler {
 
     @Override
     protected void dump( AlgNode alg ) {
-        throw new RuntimeException( "Unsupported!" );
+        Transaction transaction = PigletParserTest.transaction;
+        Statement statement = transaction.createStatement();
+
+        final List<Pair<Integer, String>> fields = Pair.zip( IntStream.range( 0, alg.getTupleType().getFieldCount() ).boxed().toList(), alg.getTupleType().getFieldNames() );
+        final AlgCollation collation =
+                alg instanceof Sort
+                        ? ((Sort) alg).collation
+                        : AlgCollations.EMPTY;
+
+        AlgRoot root = new AlgRoot( alg, alg.getTupleType(), Kind.SELECT, fields, collation );
+
+        // Prepare
+        PolyImplementation polyImplementation = statement.getQueryProcessor().prepareQuery( root, true );
+
+        ResultIterator iterator = polyImplementation.execute( statement, -1 );
+        dump( iterator, true );
+
         /* try ( PreparedStatement preparedStatement = RelRunners.run( alg ) ) {
             final ResultSet resultSet = preparedStatement.executeQuery();
             dump( resultSet, true );
@@ -72,10 +96,11 @@ class PolyphenyDbHandler extends Handler {
     }
 
 
-    private void dump( ResultSet resultSet, boolean newline ) throws SQLException {
-        final int columnCount = resultSet.getMetaData().getColumnCount();
+    private void dump( ResultIterator iterator, boolean newline ) {
+        List<List<PolyValue>> result = iterator.getAllRowsAndClose();
+        final int columnCount = result.isEmpty() ? 0 : result.get( 0 ).size();
         int r = 0;
-        while ( resultSet.next() ) {
+        for ( List<PolyValue> values : result ) {
             if ( !newline && r++ > 0 ) {
                 writer.print( "," );
             }
@@ -87,10 +112,10 @@ class PolyphenyDbHandler extends Handler {
                 }
             } else {
                 writer.print( '(' );
-                dumpColumn( resultSet, 1 );
+                dumpColumn( values, 1 );
                 for ( int i = 2; i <= columnCount; i++ ) {
                     writer.print( ',' );
-                    dumpColumn( resultSet, i );
+                    dumpColumn( values, i );
                 }
                 if ( newline ) {
                     writer.println( ')' );
@@ -107,22 +132,24 @@ class PolyphenyDbHandler extends Handler {
      *
      * @param i Column ordinal, 1-based
      */
-    private void dumpColumn( ResultSet resultSet, int i ) throws SQLException {
-        final int t = resultSet.getMetaData().getColumnType( i );
-        switch ( t ) {
-            case Types.ARRAY:
+    private void dumpColumn( List<PolyValue> tuple, int i ) {
+        final PolyValue value = tuple.get( i );
+
+        writer.print( value.toJson() );
+        /*switch ( value.getType() ) {
+            case PolyType.ARRAY:
                 final Array array = resultSet.getArray( i );
                 writer.print( "{" );
                 dump( array.getResultSet(), false );
                 writer.print( "}" );
                 return;
-            case Types.REAL:
+            case PolyType.FLOAT:
                 writer.print( resultSet.getString( i ) );
                 writer.print( "F" );
                 return;
             default:
                 writer.print( resultSet.getString( i ) );
-        }
+        }*/
     }
 
 }

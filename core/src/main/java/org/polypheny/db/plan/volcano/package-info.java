@@ -37,13 +37,13 @@
  * <p>New traits are added to the planner in one of two ways:</p>
  * <ol>
  * <li>If the new trait is integral to Polypheny-DB, then each and every implementation of {@link org.polypheny.db.algebra.AlgNode} should include its manifestation of the trait as part of the {@link org.polypheny.db.plan.AlgTraitSet} passed to
- * {@link org.polypheny.db.algebra.AbstractAlgNode}'s constructor. It may be useful to provide alternate <code>AbstractRelNode</code> constructors if most relational expressions use a single manifestation of the trait.</li>
+ * {@link org.polypheny.db.algebra.AbstractAlgNode}'s constructor. It may be useful to provide alternate <code>AbstractAlgNode</code> constructors if most relational expressions use a single manifestation of the trait.</li>
  *
  * <li>If the new trait describes some aspect of a Farrago extension, then the RelNodes passed to {@link org.polypheny.db.plan.volcano.VolcanoPlanner#setRoot(AlgNode)} should have
  * their trait sets expanded before the <code>setRoot(AlgNode)</code> call.</li>*
  * </ol>
  *
- * The second trait extension mechanism requires that implementations of {@code org.polypheny.db.alg.AbstractRelNode#clone()} must not assume the type and quantity of traits in their trait set.
+ * The second trait extension mechanism requires that implementations of {@code org.polypheny.db.alg.AbstractAlgNode#clone()} must not assume the type and quantity of traits in their trait set.
  * In either case, the new <code>RelTraitDef</code> implementation must be {@link org.polypheny.db.plan.volcano.VolcanoPlanner#addAlgTraitDef(AlgTraitDef)} registered with the planner.
  *
  * A {@link org.polypheny.db.plan.volcano.AlgSubset} is a subset of a <code>AlgSet</code> containing expressions which are equivalent and which have the same <code>Convention</code>.

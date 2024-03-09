@@ -56,6 +56,8 @@ dependencies {
     } // Apache 2.0
 
     implementation group: "org.ow2.asm", name: "asm", version: asm_version  // Apache 2.0
+    implementation group: "org.ow2.asm", name: "asm-tree", version: asm_version  // Apache 2.0
+    implementation group: "org.ow2.asm", name: "asm-commons", version: asm_version  // Apache 2.0
 
 
     // --- Test Compile ---
@@ -136,8 +138,8 @@ licensee {
     }
 
     allowDependency('org.ow2.asm', 'asm', '9.6') { because 'BSD 3-Clause' }
-    allowDependency('org.ow2.asm', 'asm-tree', '9.4') { because 'BSD 3-Clause' }
-    allowDependency('org.ow2.asm', 'asm-commons', '9.4') { because 'BSD 3-Clause' }
+    allowDependency('org.ow2.asm', 'asm-tree', '9.6') { because 'BSD 3-Clause' }
+    allowDependency('org.ow2.asm', 'asm-commons', '9.6') { because 'BSD 3-Clause' }
 
     // Glassfish
     allowDependency('org.glassfish.hk2.external', 'jakarta.inject', '2.6.1') { because 'Eclipse Public License v. 2.0' }

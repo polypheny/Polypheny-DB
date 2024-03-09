@@ -80,7 +80,6 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.Util;
 
 
 /**
@@ -255,10 +254,6 @@ public class EnumUtils {
         return type;
     }
 
-
-    static List<Type> internalTypes( List<? extends RexNode> operandList ) {
-        return Util.transform( operandList, node -> null );
-    }
 
 
     static Expression enforce( final Type storageType, final Expression e ) {

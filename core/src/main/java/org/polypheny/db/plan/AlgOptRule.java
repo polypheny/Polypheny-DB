@@ -50,7 +50,7 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * A <code>RelOptRule</code> transforms an expression into another. It has a list of {@link AlgOptRuleOperand}s, which determine whether the rule can be
+ * A <code>AlgOptRule</code> transforms an expression into another. It has a list of {@link AlgOptRuleOperand}s, which determine whether the rule can be
  * applied to a particular section of the tree.
  * <p>
  * The optimizer figures out which rules are applicable, then calls {@link #onMatch} on each of them.
@@ -487,7 +487,7 @@ public abstract class AlgOptRule {
     /**
      * Converts one trait of an algebra expression, if it does not already have that trait.
      *
-     * @param alg Relational expression to convert
+     * @param alg Algebra expression to convert
      * @param toTrait Desired trait
      * @return an algebra expression with the desired trait; never null
      */

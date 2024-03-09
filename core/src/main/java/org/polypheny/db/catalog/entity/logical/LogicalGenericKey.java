@@ -29,9 +29,9 @@ public class LogicalGenericKey extends LogicalKey {
             @Deserialize("id") final long id,
             @Deserialize("entityId") final long entityId,
             @Deserialize("namespaceId") final long namespaceId,
-            @Deserialize("columnIds") final List<Long> columnIds,
+            @Deserialize("fieldIds") final List<Long> fieldIds,
             @Deserialize("enforcementTime") EnforcementTime enforcementTime ) {
-        super( id, entityId, namespaceId, columnIds, enforcementTime );
+        super( id, entityId, namespaceId, fieldIds, enforcementTime );
     }
 
 }

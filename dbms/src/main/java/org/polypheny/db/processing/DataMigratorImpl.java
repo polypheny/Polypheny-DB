@@ -260,7 +260,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         List<LogicalColumn> copyColumns = new ArrayList<>( columns );
         // we add the primary key columns to the list of columns to copy, if they are not already in the list
-        snapshot.rel().getPrimaryKey( source.primaryKey ).orElseThrow().columnIds.forEach( pkColumnId -> {
+        snapshot.rel().getPrimaryKey( source.primaryKey ).orElseThrow().fieldIds.forEach( pkColumnId -> {
             if ( columns.stream().noneMatch( c -> c.id == pkColumnId ) ) {
                 copyColumns.add( snapshot.rel().getColumn( pkColumnId ).orElseThrow() );
             }
@@ -472,7 +472,7 @@ public class DataMigratorImpl implements DataMigrator {
         LogicalRelSnapshot snapshot = Catalog.getInstance().getSnapshot().rel();
         LogicalTable catalogTable = snapshot.getTable( to.get( 0 ).logicalTableId ).orElseThrow();
         LogicalPrimaryKey primaryKey = snapshot.getPrimaryKey( catalogTable.primaryKey ).orElseThrow();
-        for ( long cid : primaryKey.columnIds ) {
+        for ( long cid : primaryKey.fieldIds ) {
             AllocationColumn ccp = Catalog.getInstance().getSnapshot().alloc().getColumn( to.get( 0 ).placementId, cid ).orElseThrow();
             LogicalColumn logicalColumn = snapshot.getColumn( cid ).orElseThrow();
             RexNode c = builder.equals(

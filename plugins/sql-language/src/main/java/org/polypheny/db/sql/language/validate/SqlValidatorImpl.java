@@ -77,7 +77,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryLanguage;
@@ -174,7 +173,7 @@ import org.slf4j.Logger;
  */
 public class SqlValidatorImpl implements SqlValidatorWithHints {
 
-    NameMatcher nameMatcher = NameMatchers.withCaseSensitive( RuntimeConfig.RELATIONAL_CASE_SENSITIVE.getBoolean() );
+    NameMatcher nameMatcher = NameMatchers.withCaseSensitive( false );
 
     public static final Logger TRACER = PolyphenyDbTrace.PARSER_LOGGER;
 

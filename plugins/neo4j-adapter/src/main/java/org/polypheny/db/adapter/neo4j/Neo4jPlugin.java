@@ -378,7 +378,7 @@ public class Neo4jPlugin extends PolyPlugin {
             NeoEntity physical = adapterCatalog.fromAllocation( allocation.id, NeoEntity.class );
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
             IndexTypes type = IndexTypes.valueOf( index.method.toUpperCase( Locale.ROOT ) );
-            List<Long> columns = index.key.columnIds;
+            List<Long> columns = index.key.fieldIds;
 
             String physicalIndexName = "idx" + index.key.entityId + "_" + index.id;
 

@@ -67,7 +67,7 @@ import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.type.entity.PolyValue;
 
 /**
- * Relational Neo4j representation of a {@link org.polypheny.db.schema.PolyphenyDbSchema} entity
+ * Relational Neo4j representation of a {@link PhysicalEntity} entity
  */
 @Slf4j
 @SuperBuilder(toBuilder = true)

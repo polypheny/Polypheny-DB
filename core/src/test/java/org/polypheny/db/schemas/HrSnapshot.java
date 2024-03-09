@@ -78,7 +78,8 @@ public class HrSnapshot extends MockSnapshot {
         ) ) );
 
         mock( new MockTable( "dept", List.of(), List.of(
-                new MockColumnInfo( "deptno", false, PolyType.INTEGER )
+                new MockColumnInfo( "deptno", false, PolyType.INTEGER ),
+                new MockColumnInfo( "dname", false, PolyType.VARCHAR, 255 )
         ) ) );
     }
 

@@ -47,7 +47,7 @@ public class PigProcessor extends Processor {
 
     @Override
     public List<? extends Node> parse( String query ) {
-        this.query = query;
+        this.query = query.trim();
         final StopWatch stopWatch = new StopWatch();
         if ( log.isDebugEnabled() ) {
             log.debug( "Parsing PolyPIG statement ..." );
@@ -59,6 +59,9 @@ public class PigProcessor extends Processor {
         }
 
         try {
+            if ( !query.endsWith( ";" ) ) {
+                query = query + ";";
+            }
             parsed = new PigletParser( new StringReader( query ) ).stmtListEof();
         } catch ( ParseException e ) {
             log.error( "Caught exception", e );

@@ -94,7 +94,7 @@ public abstract class AbstractAlgPlanner implements AlgPlanner {
 
 
     /**
-     * Creates an AbstractRelOptPlanner.
+     * Creates an AbstractAlgOptPlanner.
      */
     protected AbstractAlgPlanner( AlgOptCostFactory costFactory, Context context ) {
         assert costFactory != null;
@@ -107,7 +107,7 @@ public abstract class AbstractAlgPlanner implements AlgPlanner {
         Optional<CancelFlag> oCancelFlag = context.unwrap( CancelFlag.class );
         this.cancelFlag = oCancelFlag.map( c -> c.atomicBoolean ).orElseGet( AtomicBoolean::new );
 
-        // Add abstract {@link AlgNode} classes. No RelNodes will ever be registered with these types, but some operands may use them.
+        // Add abstract {@link AlgNode} classes. No AlgNodes will ever be registered with these types, but some operands may use them.
         classes.add( AlgNode.class );
         classes.add( AlgSubset.class );
     }
@@ -347,16 +347,16 @@ public abstract class AbstractAlgPlanner implements AlgPlanner {
      * Takes care of tracing and listener notification when a rule's transformation is applied.
      *
      * @param ruleCall description of rule call
-     * @param newRel result of transformation
+     * @param algNode result of transformation
      * @param before true before registration of new alg; false after
      */
-    protected void notifyTransformation( AlgOptRuleCall ruleCall, AlgNode newRel, boolean before ) {
+    protected void notifyTransformation( AlgOptRuleCall ruleCall, AlgNode algNode, boolean before ) {
         if ( before && LOGGER.isDebugEnabled() ) {
-            LOGGER.debug( "call#{}: Rule {} arguments {} produced {}", ruleCall.id, ruleCall.getRule(), Arrays.toString( ruleCall.algs ), newRel );
+            LOGGER.debug( "call#{}: Rule {} arguments {} produced {}", ruleCall.id, ruleCall.getRule(), Arrays.toString( ruleCall.algs ), algNode );
         }
 
         if ( listener != null ) {
-            AlgOptListener.RuleProductionEvent event = new AlgOptListener.RuleProductionEvent( this, newRel, ruleCall, before );
+            AlgOptListener.RuleProductionEvent event = new AlgOptListener.RuleProductionEvent( this, algNode, ruleCall, before );
             listener.ruleProductionSucceeded( event );
         }
     }
@@ -365,7 +365,7 @@ public abstract class AbstractAlgPlanner implements AlgPlanner {
     /**
      * Takes care of tracing and listener notification when a alg is chosen as part of the final plan.
      *
-     * @param alg chosen rel
+     * @param alg chosen alg
      */
     protected void notifyChosen( AlgNode alg ) {
         LOGGER.debug( "For final plan, using {}", alg );
@@ -380,7 +380,7 @@ public abstract class AbstractAlgPlanner implements AlgPlanner {
     /**
      * Takes care of tracing and listener notification when a alg equivalence is detected.
      *
-     * @param alg chosen rel
+     * @param alg chosen alg
      */
     protected void notifyEquivalence( AlgNode alg, Object equivalenceClass, boolean physical ) {
         if ( listener != null ) {
@@ -391,9 +391,9 @@ public abstract class AbstractAlgPlanner implements AlgPlanner {
 
 
     /**
-     * Takes care of tracing and listener notification when a alg is discarded
+     * Takes care of tracing and listener notification when an alg is discarded
      *
-     * @param alg discarded rel
+     * @param alg discarded alg
      */
     protected void notifyDiscard( AlgNode alg ) {
         if ( listener != null ) {
@@ -409,7 +409,7 @@ public abstract class AbstractAlgPlanner implements AlgPlanner {
 
 
     /**
-     * Returns sub-classes of relational expression.
+     * Returns sub-classes of algebra expression.
      */
     public Iterable<Class<? extends AlgNode>> subClasses( final Class<? extends AlgNode> clazz ) {
         return Util.filter( classes, clazz::isAssignableFrom );

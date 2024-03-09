@@ -41,14 +41,13 @@ import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.schema.Namespace;
-import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.util.Pair;
 
 @Value
 @NonFinal
 @Slf4j
 @SerializeClass(subclasses = { DocAdapterCatalog.class, RelAdapterCatalog.class, GraphAdapterCatalog.class })
-public abstract class AdapterCatalog implements PolySerializable {
+public abstract class AdapterCatalog {
 
     IdBuilder idBuilder = IdBuilder.getInstance();
 

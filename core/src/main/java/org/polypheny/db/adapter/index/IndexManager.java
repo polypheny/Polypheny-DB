@@ -178,8 +178,8 @@ public class IndexManager {
                 persistent,
                 Catalog.getInstance().getSnapshot().getNamespace( key.namespaceId ).orElseThrow(),
                 table,
-                key.getColumnNames(),
-                pk.getColumnNames() );
+                key.getFieldNames(),
+                pk.getFieldNames() );
         indexById.put( id, index );
         indexByName.put( name, index );
         final Transaction tx = statement.getTransaction();

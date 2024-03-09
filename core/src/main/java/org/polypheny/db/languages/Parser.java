@@ -103,7 +103,7 @@ public interface Parser {
 
 
         private ConfigBuilder() {
-            parserFactory = QueryLanguage.from( "sql" ).getFactory();
+            parserFactory = QueryLanguage.from( "sql" ).factory();
         }
 
 

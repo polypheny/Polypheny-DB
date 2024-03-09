@@ -176,7 +176,6 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public long createNamespace( String name, DataModel type, boolean ifNotExists, boolean replace ) {
-        name = name.toLowerCase();
         // Check if there is already a namespace with this name
         Optional<LogicalNamespace> optionalNamespace = catalog.getSnapshot().getNamespace( name );
         if ( optionalNamespace.isPresent() ) {
@@ -187,8 +186,9 @@ public class DdlManagerImpl extends DdlManager {
                 throw new GenericRuntimeException( "Replacing namespace is not yet supported." );
             }
         }
+        boolean caseSensitive = RuntimeConfig.NAMESPACE_DEFAULT_CASE_SENSITIVE.getBoolean();
 
-        return catalog.createNamespace( name, type, false );
+        return catalog.createNamespace( name, type, caseSensitive );
     }
 
 
@@ -726,7 +726,7 @@ public class DdlManagerImpl extends DdlManager {
         // Check if placement includes primary key columns
         LogicalPrimaryKey primaryKey = catalog.getSnapshot().rel().getPrimaryKey( table.primaryKey ).orElseThrow();
 
-        for ( long cId : primaryKey.columnIds ) {
+        for ( long cId : primaryKey.fieldIds ) {
             if ( newColumns.stream().noneMatch( c -> c.id == cId ) ) {
                 adjustedColumns.add( catalog.getSnapshot().rel().getColumn( cId ).orElseThrow() );
             }
@@ -736,7 +736,7 @@ public class DdlManagerImpl extends DdlManager {
         AllocationPlacement placement = catalog.getAllocRel( table.namespaceId ).addPlacement( table.id, table.namespaceId, dataStore.adapterId );
         PartitionProperty property = catalog.getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow();
 
-        addAllocationsForPlacement( table.namespaceId, statement, table, placement.id, adjustedColumns, primaryKey.columnIds, property.partitionIds, dataStore );
+        addAllocationsForPlacement( table.namespaceId, statement, table, placement.id, adjustedColumns, primaryKey.fieldIds, property.partitionIds, dataStore );
 
         Catalog.getInstance().updateSnapshot();
 
@@ -831,7 +831,7 @@ public class DdlManagerImpl extends DdlManager {
 
         // Check if column is part of a key
         for ( LogicalKey key : snapshot.getTableKeys( table.id ) ) {
-            if ( key.columnIds.contains( column.id ) ) {
+            if ( key.fieldIds.contains( column.id ) ) {
                 if ( snapshot.isPrimaryKey( key.id ) ) {
                     throw new GenericRuntimeException( "Cannot drop column '" + column.name + "' because it is part of the primary key." );
                 } else if ( snapshot.isIndex( key.id ) ) {
@@ -1242,7 +1242,7 @@ public class DdlManagerImpl extends DdlManager {
                 checkIndexDependent( table, store, snapshot, allocationColumn );
                 // Check whether the column is a primary key column
                 LogicalPrimaryKey primaryKey = snapshot.getPrimaryKey( table.primaryKey ).orElseThrow();
-                if ( primaryKey.columnIds.contains( allocationColumn.columnId ) ) {
+                if ( primaryKey.fieldIds.contains( allocationColumn.columnId ) ) {
                     // Check if the placement type is manual. If so, change to automatic
                     if ( allocationColumn.placementType == PlacementType.MANUAL ) {
                         // Make placement manual
@@ -1270,7 +1270,7 @@ public class DdlManagerImpl extends DdlManager {
     private static void checkIndexDependent( LogicalTable table, DataStore<?> store, LogicalRelSnapshot snapshot, AllocationColumn allocationColumn ) {
         // Check whether there are any indexes located on the storeId requiring this column
         for ( LogicalIndex index : snapshot.getIndexes( table.id, false ) ) {
-            if ( index.location == store.getAdapterId() && index.key.columnIds.contains( allocationColumn.columnId ) ) {
+            if ( index.location == store.getAdapterId() && index.key.fieldIds.contains( allocationColumn.columnId ) ) {
                 throw new GenericRuntimeException( "The index with name %s depends on the columns %s", index.name, snapshot.getColumn( allocationColumn.columnId ).map( c -> c.name ).orElse( "null" ) );
             }
         }
@@ -1472,7 +1472,7 @@ public class DdlManagerImpl extends DdlManager {
         }
         // Check whether there are any indexes located on the storeId requiring this column
         for ( LogicalIndex index : catalog.getSnapshot().rel().getIndexes( table.id, false ) ) {
-            if ( index.location == store.getAdapterId() && index.key.columnIds.contains( column.id ) ) {
+            if ( index.location == store.getAdapterId() && index.key.fieldIds.contains( column.id ) ) {
                 throw new GenericRuntimeException( "Cannot remove the column %s, as there is a index %s using it", column, index.name );
             }
         }
@@ -1483,7 +1483,7 @@ public class DdlManagerImpl extends DdlManager {
 
         // Check whether the column to drop is a primary key
         LogicalPrimaryKey primaryKey = catalog.getSnapshot().rel().getPrimaryKey( table.primaryKey ).orElseThrow();
-        if ( primaryKey.columnIds.contains( column.id ) ) {
+        if ( primaryKey.fieldIds.contains( column.id ) ) {
             throw new GenericRuntimeException( "Cannot drop primary key" );
         }
         for ( AllocationPartition partition : catalog.getSnapshot().alloc().getPartitionsFromLogical( table.id ) ) {
@@ -1589,7 +1589,7 @@ public class DdlManagerImpl extends DdlManager {
         findUnderlyingTablesOfView( algNode, underlyingTables, fieldList );
 
         // add check if underlying table is of model document -> mql, relational -> sql
-        underlyingTables.keySet().forEach( tableId -> checkModelLangCompatibility( language.getDataModel(), namespaceId ) );
+        underlyingTables.keySet().forEach( tableId -> checkModelLangCompatibility( language.dataModel(), namespaceId ) );
 
         LogicalView view = catalog.getLogicalRel( namespaceId ).addView(
                 viewName,
@@ -1654,7 +1654,7 @@ public class DdlManagerImpl extends DdlManager {
         LogicalRelSnapshot relSnapshot = snapshot.rel();
 
         // add check if underlying table is of model document -> mql, relational -> sql
-        underlying.keySet().forEach( tableId -> checkModelLangCompatibility( language.getDataModel(), namespaceId ) );
+        underlying.keySet().forEach( tableId -> checkModelLangCompatibility( language.dataModel(), namespaceId ) );
 
         if ( materializedCriteria.getCriteriaType() == CriteriaType.UPDATE ) {
             List<EntityType> entityTypes = new ArrayList<>();
@@ -2252,7 +2252,7 @@ public class DdlManagerImpl extends DdlManager {
         // Get primary key of table and use PK to find all DataPlacements of table
         long pkid = partitionInfo.table.primaryKey;
         LogicalRelSnapshot relSnapshot = catalog.getSnapshot().rel();
-        List<Long> pkColumnIds = relSnapshot.getPrimaryKey( pkid ).orElseThrow().columnIds;
+        List<Long> pkColumnIds = relSnapshot.getPrimaryKey( pkid ).orElseThrow().fieldIds;
 
         // This gets us only one ccp per storeId (first part of PK)
         boolean fillStores = false;
@@ -2311,7 +2311,7 @@ public class DdlManagerImpl extends DdlManager {
             // Add new index
             LogicalIndex newIndex = catalog.getLogicalRel( partitionInfo.table.namespaceId ).addIndex(
                     unPartitionedTable.id,
-                    index.key.columnIds,
+                    index.key.fieldIds,
                     index.unique,
                     index.method,
                     index.methodDisplayName,
@@ -2553,7 +2553,7 @@ public class DdlManagerImpl extends DdlManager {
 
         // Get primary key of table and use PK to find all DataPlacements of table
         long pkid = table.primaryKey;
-        List<Long> pkColumnIds = relSnapshot.getPrimaryKey( pkid ).orElseThrow().columnIds;
+        List<Long> pkColumnIds = relSnapshot.getPrimaryKey( pkid ).orElseThrow().fieldIds;
         // Basically get first part of PK even if its compound of PK it is sufficient
         // This gets us only one ccp per storeId (first part of PK)
 
@@ -2607,7 +2607,7 @@ public class DdlManagerImpl extends DdlManager {
             // Add new index
             LogicalIndex newIndex = catalog.getLogicalRel( table.namespaceId ).addIndex(
                     table.id,
-                    index.key.columnIds,
+                    index.key.fieldIds,
                     index.unique,
                     index.method,
                     index.methodDisplayName,

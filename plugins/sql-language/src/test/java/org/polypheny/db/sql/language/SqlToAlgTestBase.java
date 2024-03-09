@@ -264,7 +264,7 @@ public abstract class SqlToAlgTestBase extends SqlLanguageDependent {
 
             QueryLanguage language = QueryLanguage.from( "sql" );
 
-            Processor processor = language.getProcessorSupplier().get();
+            Processor processor = language.processorSupplier().get();
 
             List<? extends Node> nodes = processor.parse( sql );
 

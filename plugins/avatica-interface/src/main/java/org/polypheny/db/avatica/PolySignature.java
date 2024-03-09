@@ -138,7 +138,7 @@ public class PolySignature extends Meta.Signature {
                 null,
                 PolyImplementation.toStatementType( prepareQuery.getQuery().getQueryNode().map( Node::getKind ).orElse( Kind.SELECT ) ),
                 null,
-                prepareQuery.getQuery().getLanguage().getDataModel()
+                prepareQuery.getQuery().getLanguage().dataModel()
         );
     }
 

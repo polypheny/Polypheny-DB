@@ -429,7 +429,7 @@ public class MongoPlugin extends PolyPlugin {
 
             switch ( type ) {
                 case SINGLE:
-                    List<String> columns = index.key.getColumnNames();
+                    List<String> columns = index.key.getFieldNames();
                     if ( columns.size() > 1 ) {
                         throw new GenericRuntimeException( "A \"SINGLE INDEX\" can not have multiple columns." );
                     }
@@ -438,7 +438,7 @@ public class MongoPlugin extends PolyPlugin {
 
                 case DEFAULT:
                 case COMPOUND:
-                    addCompositeIndex( index, index.key.getColumnNames(), physical, physicalIndexName );
+                    addCompositeIndex( index, index.key.getFieldNames(), physical, physicalIndexName );
                     break;
 /*
             case MULTIKEY:
@@ -473,7 +473,7 @@ public class MongoPlugin extends PolyPlugin {
         private void addCompositeIndex( LogicalIndex index, List<String> columns, PhysicalEntity physical, String physicalIndexName ) {
             Document doc = new Document();
 
-            Pair.zip( index.key.columnIds, columns ).forEach( p -> doc.append( getPhysicalColumnName( p.left ), 1 ) );
+            Pair.zip( index.key.fieldIds, columns ).forEach( p -> doc.append( getPhysicalColumnName( p.left ), 1 ) );
 
             IndexOptions options = new IndexOptions();
             options.unique( index.unique );

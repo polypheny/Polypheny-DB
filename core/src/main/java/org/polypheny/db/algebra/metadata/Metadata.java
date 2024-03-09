@@ -39,24 +39,24 @@ import org.polypheny.db.plan.AlgPlanner;
 
 
 /**
- * Metadata about a relational expression.
- *
+ * Metadata about an algebra expression.
+ * <p>
  * For particular types of metadata, a sub-class defines one of more methods to query that metadata. Then a {@link AlgMetadataProvider} can offer those kinds of metadata for particular sub-classes of {@link AlgNode}.
- *
+ * <p>
  * User code (typically in a planner rule or an implementation of {@link AlgNode#computeSelfCost(AlgPlanner, AlgMetadataQuery)}) acquires a {@code Metadata} instance by calling {@link AlgNode#metadata}.
- *
+ * <p>
  * A {@code Metadata} instance already knows which particular {@code AlgNode} it is describing, so the methods do not pass in the {@code AlgNode}. In fact, quite a few metadata methods have no extra parameters. For instance, you can
  * get the row-count as follows:
  *
  * <blockquote><pre><code>
  * {@link AlgNode} alg;
- * double rowCount = alg.metadata(RowCount.class).rowCount();
+ * double tupleCount = alg.metadata(TupleCount.class).rowCount();
  * </code></pre></blockquote>
  */
 public interface Metadata {
 
     /**
-     * Returns the relational expression that this metadata is about.
+     * Returns the algebra expression that this metadata is about.
      */
     AlgNode alg();
 

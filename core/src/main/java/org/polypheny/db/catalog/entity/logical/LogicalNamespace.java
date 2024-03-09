@@ -23,7 +23,6 @@ import java.io.Serial;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.With;
 import lombok.experimental.NonFinal;
@@ -89,13 +88,7 @@ public class LogicalNamespace implements PolyObject, Comparable<LogicalNamespace
     }
 
 
-    @RequiredArgsConstructor
-    public static class PrimitiveCatalogSchema {
-
-        public final String tableSchem;
-        public final String tableCatalog;
-        public final String owner;
-        public final String schemaType;
+    public record PrimitiveCatalogSchema(String tableSchem, String tableCatalog, String owner, String schemaType) {
 
     }
 

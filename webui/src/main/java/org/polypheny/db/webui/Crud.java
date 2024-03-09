@@ -311,7 +311,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         List<String> primaryColumns;
         if ( table.primaryKey != null ) {
             LogicalPrimaryKey primaryKey = Catalog.snapshot().rel().getPrimaryKey( table.primaryKey ).orElseThrow();
-            primaryColumns = new ArrayList<>( primaryKey.getColumnNames() );
+            primaryColumns = new ArrayList<>( primaryKey.getFieldNames() );
         } else {
             primaryColumns = new ArrayList<>();
         }
@@ -835,7 +835,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         }
 
         LogicalPrimaryKey pk = Catalog.snapshot().rel().getPrimaryKey( table.primaryKey ).orElseThrow();
-        for ( long colId : pk.columnIds ) {
+        for ( long colId : pk.fieldIds ) {
             LogicalColumn col = columns.get( colId );
             String condition;
             if ( filter.containsKey( col.name ) ) {
@@ -983,7 +983,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         List<String> primaryColumns;
         if ( table.primaryKey != null ) {
             LogicalPrimaryKey primaryKey = Catalog.snapshot().rel().getPrimaryKey( table.primaryKey ).orElseThrow();
-            primaryColumns = new ArrayList<>( primaryKey.getColumnNames() );
+            primaryColumns = new ArrayList<>( primaryKey.getFieldNames() );
         } else {
             primaryColumns = new ArrayList<>();
         }
@@ -1050,9 +1050,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
             long adapterId = allocs.get( 0 ).adapterId;
             LogicalPrimaryKey primaryKey = Catalog.snapshot().rel().getPrimaryKey( tablee.primaryKey ).orElseThrow();
-            List<String> pkColumnNames = primaryKey.getColumnNames();
+            List<String> pkColumnNames = primaryKey.getFieldNames();
             List<UiColumnDefinition> columns = new ArrayList<>();
-            for ( AllocationColumn ccp : Catalog.snapshot().alloc().getColumnPlacementsOnAdapterPerTable( adapterId, tablee.id ) ) {
+            for ( AllocationColumn ccp : Catalog.snapshot().alloc().getColumnPlacementsOnAdapterPerEntity( adapterId, tablee.id ) ) {
                 LogicalColumn col = Catalog.snapshot().rel().getColumn( ccp.columnId ).orElseThrow();
                 columns.add( UiColumnDefinition.builder()
                         .name( col.name )
@@ -1420,7 +1420,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         // get primary key
         if ( table.primaryKey != null ) {
             LogicalPrimaryKey primaryKey = Catalog.snapshot().rel().getPrimaryKey( table.primaryKey ).orElseThrow();
-            for ( String columnName : primaryKey.getColumnNames() ) {
+            for ( String columnName : primaryKey.getFieldNames() ) {
                 if ( !temp.containsKey( "" ) ) {
                     temp.put( "", new ArrayList<>() );
                 }
@@ -1436,7 +1436,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         List<LogicalConstraint> constraints = Catalog.snapshot().rel().getConstraints( table.id );
         for ( LogicalConstraint logicalConstraint : constraints ) {
             if ( logicalConstraint.type == ConstraintType.UNIQUE ) {
-                temp.put( logicalConstraint.name, new ArrayList<>( logicalConstraint.key.getColumnNames() ) );
+                temp.put( logicalConstraint.name, new ArrayList<>( logicalConstraint.key.getFieldNames() ) );
             }
         }
         for ( Map.Entry<String, List<String>> entry : temp.entrySet() ) {
@@ -1575,7 +1575,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 storeUniqueName = Catalog.snapshot().getAdapter( logicalIndex.location ).orElseThrow().uniqueName;
             }
             arr[0] = logicalIndex.name;
-            arr[1] = String.join( ", ", logicalIndex.key.getColumnNames() );
+            arr[1] = String.join( ", ", logicalIndex.key.getFieldNames() );
             arr[2] = storeUniqueName;
             arr[3] = logicalIndex.methodDisplayName;
             arr[4] = logicalIndex.type.name();
@@ -1698,7 +1698,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         PlacementModel p = new PlacementModel( snapshot.alloc().getFromLogical( table.id ).size() > 1, snapshot.alloc().getPartitionGroupNames( table.id ), table.entityType );
         if ( table.entityType != EntityType.VIEW ) {
             long pkid = table.primaryKey;
-            List<Long> pkColumnIds = snapshot.rel().getPrimaryKey( pkid ).orElseThrow().columnIds;
+            List<Long> pkColumnIds = snapshot.rel().getPrimaryKey( pkid ).orElseThrow().fieldIds;
             LogicalColumn pkColumn = snapshot.rel().getColumn( pkColumnIds.get( 0 ) ).orElseThrow();
             List<AllocationColumn> pkPlacements = snapshot.alloc().getColumnFromLogical( pkColumn.id ).orElseThrow();
             for ( AllocationColumn placement : pkPlacements ) {
@@ -1707,7 +1707,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 p.addAdapter( new RelationalStore(
                         adapter.getUniqueName(),
                         adapter.getUniqueName(),
-                        snapshot.alloc().getColumnPlacementsOnAdapterPerTable( adapter.getAdapterId(), table.id ),
+                        snapshot.alloc().getColumnPlacementsOnAdapterPerEntity( adapter.getAdapterId(), table.id ),
                         snapshot.alloc().getPartitionGroupsIndexOnDataPlacement( placement.adapterId, placement.logicalTableId ),
                         property.numPartitionGroups,
                         property.partitionType ) );
@@ -2239,14 +2239,14 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 // get foreign keys
                 List<LogicalForeignKey> foreignKeys = Catalog.snapshot().rel().getForeignKeys( table.id );
                 for ( LogicalForeignKey logicalForeignKey : foreignKeys ) {
-                    for ( int i = 0; i < logicalForeignKey.getReferencedKeyColumnNames().size(); i++ ) {
+                    for ( int i = 0; i < logicalForeignKey.getReferencedKeyFieldNames().size(); i++ ) {
                         fKeys.add( ForeignKey.builder()
-                                .targetSchema( logicalForeignKey.getReferencedKeySchemaName() )
-                                .targetTable( logicalForeignKey.getReferencedKeyTableName() )
-                                .targetColumn( logicalForeignKey.getReferencedKeyColumnNames().get( i ) )
+                                .targetSchema( logicalForeignKey.getReferencedKeyNamespaceName() )
+                                .targetTable( logicalForeignKey.getReferencedKeyEntityName() )
+                                .targetColumn( logicalForeignKey.getReferencedKeyFieldNames().get( i ) )
                                 .sourceSchema( logicalForeignKey.getSchemaName() )
                                 .sourceTable( logicalForeignKey.getTableName() )
-                                .sourceColumn( logicalForeignKey.getColumnNames().get( i ) )
+                                .sourceColumn( logicalForeignKey.getFieldNames().get( i ) )
                                 .fkName( logicalForeignKey.name )
                                 .onUpdate( logicalForeignKey.updateRule.toString() )
                                 .onDelete( logicalForeignKey.deleteRule.toString() )
@@ -2264,7 +2264,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 // get primary key with its columns
                 if ( table.primaryKey != null ) {
                     LogicalPrimaryKey primaryKey = Catalog.snapshot().rel().getPrimaryKey( table.primaryKey ).orElseThrow();
-                    for ( String columnName : primaryKey.getColumnNames() ) {
+                    for ( String columnName : primaryKey.getFieldNames() ) {
                         dbTable.addPrimaryKeyField( columnName );
                     }
                 }
@@ -2274,10 +2274,10 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 for ( LogicalConstraint logicalConstraint : logicalConstraints ) {
                     if ( logicalConstraint.type == ConstraintType.UNIQUE ) {
                         // TODO: unique constraints can be over multiple columns.
-                        if ( logicalConstraint.key.getColumnNames().size() == 1 &&
+                        if ( logicalConstraint.key.getFieldNames().size() == 1 &&
                                 logicalConstraint.key.getSchemaName().equals( dbTable.getSchema() ) &&
                                 logicalConstraint.key.getTableName().equals( dbTable.getTableName() ) ) {
-                            dbTable.addUniqueColumn( logicalConstraint.key.getColumnNames().get( 0 ) );
+                            dbTable.addUniqueColumn( logicalConstraint.key.getFieldNames().get( 0 ) );
                         }
                         // table.addUnique( new ArrayList<>( catalogConstraint.key.columnNames ));
                     }
@@ -2287,10 +2287,10 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 List<LogicalIndex> logicalIndices = Catalog.snapshot().rel().getIndexes( table.id, true );
                 for ( LogicalIndex logicalIndex : logicalIndices ) {
                     // TODO: unique indexes can be over multiple columns.
-                    if ( logicalIndex.key.getColumnNames().size() == 1 &&
+                    if ( logicalIndex.key.getFieldNames().size() == 1 &&
                             logicalIndex.key.getSchemaName().equals( dbTable.getSchema() ) &&
                             logicalIndex.key.getTableName().equals( dbTable.getTableName() ) ) {
-                        dbTable.addUniqueColumn( logicalIndex.key.getColumnNames().get( 0 ) );
+                        dbTable.addUniqueColumn( logicalIndex.key.getFieldNames().get( 0 ) );
                     }
                     // table.addUnique( new ArrayList<>( catalogIndex.key.columnNames ));
                 }
@@ -2383,7 +2383,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
         // Wrap {@link AlgNode} into a RelRoot
         final AlgDataType rowType = result.getTupleType();
-        final List<Pair<Integer, String>> fields = Pair.zip( IntStream.range( 0, rowType.getFieldCount() ).boxed().collect( Collectors.toList() ), rowType.getFieldNames() );
+        final List<Pair<Integer, String>> fields = Pair.zip( IntStream.range( 0, rowType.getFieldCount() ).boxed().toList(), rowType.getFieldNames() );
         final AlgCollation collation =
                 result instanceof Sort
                         ? ((Sort) result).collation

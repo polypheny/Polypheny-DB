@@ -20,18 +20,11 @@ package org.polypheny.db.test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.lang.reflect.Field;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.plan.AlgOptUtil;
-import org.polypheny.db.schemas.HrSnapshot;
-import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.PigAlgBuilder;
-import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.util.Util;
 
 
@@ -39,37 +32,22 @@ import org.polypheny.db.util.Util;
  * Unit test for {@link PigAlgBuilder}.
  */
 
-public class PigAlgBuilderTest {
-
-    public static TestHelper helper;
-    private static Transaction transaction;
-    private static PigAlgBuilder builder;
+public class PigAlgBuilderTest extends PigTestTemplate {
 
 
-    @BeforeAll
-    public static void init() throws NoSuchFieldException {
-        helper = TestHelper.getInstance();
-        transaction = helper.getTransaction();
-        builder = PigAlgBuilder.create( transaction.createStatement() );
-
-        Field f = AlgBuilder.class.getDeclaredField( "snapshot" );
-        f.setAccessible( true );
-        try {
-            f.set( builder, new HrSnapshot() );
-        } catch ( IllegalAccessException e ) {
-            throw new RuntimeException( e );
+    public static TestHelper helper() {
+        if ( helper == null ) {
+            helper = TestHelper.getInstance();
         }
-
+        return helper;
     }
 
 
-    @AfterAll
-    public static void cleanUp() {
-        try {
-            transaction.commit();
-        } catch ( TransactionException e ) {
-            throw new RuntimeException( e );
+    public static PigAlgBuilder builder() {
+        if ( builder == null ) {
+            throw new IllegalStateException( "builder not initialized" );
         }
+        return builder;
     }
 
 

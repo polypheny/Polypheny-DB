@@ -32,7 +32,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.Pattern;
-import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
 import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.Operator;
@@ -41,33 +40,32 @@ import org.polypheny.db.util.NameMatchers;
 
 public interface Snapshot extends OperatorTable {
 
-    NameMatcher nameMatcher = NameMatchers.withCaseSensitive( RuntimeConfig.RELATIONAL_CASE_SENSITIVE.getBoolean() );
+    NameMatcher nameMatcher = NameMatchers.withCaseSensitive( false );
 
     long id();
 
 
     /**
-     * Get all schemas which fit to the specified filter pattern.
-     * <code>getNamespaces(xid, null, null)</code> returns all schemas of all databases.
+     * Get all namespaces which fit to the specified filter pattern.
      *
-     * @param name Pattern for the schema name. null returns all.
-     * @return List of schemas which fit to the specified filter. If there is no schema which meets the criteria, an empty list is returned.
+     * @param name Pattern for the namespace name. null returns all.
+     * @return List of namespaces which fit to the specified filter. If there is no namespace which meets the criteria, an empty list is returned.
      */
     @NotNull List<LogicalNamespace> getNamespaces( @Nullable Pattern name );
 
     /**
-     * Returns the schema with the specified id.
+     * Returns the namespace with the specified id.
      *
-     * @param id The id of the schema
-     * @return The schema
+     * @param id The id of the namespace
+     * @return The namespace
      */
     @NotNull Optional<LogicalNamespace> getNamespace( long id );
 
     /**
-     * Returns the schema with the given name in the specified database.
+     * Returns the namespace with the given name.
      *
-     * @param name The name of the schema
-     * @return The schema
+     * @param name The name of the namespace
+     * @return The namespace
      */
     @NotNull Optional<LogicalNamespace> getNamespace( String name );
 
@@ -126,15 +124,6 @@ public interface Snapshot extends OperatorTable {
      */
     @NotNull
     Optional<LogicalQueryInterface> getQueryInterface( String uniqueName );
-
-    /**
-     * Get a query interface by its id
-     *
-     * @param id The id of the query interface
-     * @return The CatalogQueryInterface
-     */
-    @NotNull
-    Optional<LogicalQueryInterface> getQueryInterface( long id );
 
     @NotNull Optional<QueryInterfaceTemplate> getInterfaceTemplate( String name );
 

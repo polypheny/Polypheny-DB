@@ -34,10 +34,10 @@ import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
-import io.activej.serializer.SerializerBuilder;
-import io.activej.serializer.SimpleSerializerDef;
+import io.activej.serializer.SerializerFactory;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeClass;
+import io.activej.serializer.def.SimpleSerializerDef;
 import java.lang.reflect.Type;
 import java.sql.Timestamp;
 import java.util.Calendar;
@@ -151,7 +151,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
 
     @JsonIgnore
     // used internally to serialize into binary format
-    public static BinarySerializer<PolyValue> serializer = SerializerBuilder.create( CLASS_LOADER )
+    public static BinarySerializer<PolyValue> serializer = SerializerFactory.builder()
             .with( PolyInteger.class, ctx -> new PolyIntegerSerializerDef() )
             .with( PolyValue.class, ctx -> new PolyValueSerializerDef() )
             .with( PolyString.class, ctx -> new PolyStringSerializerDef() )
@@ -168,7 +168,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             .with( PolyBoolean.class, ctx -> new PolyBooleanSerializerDef() )
             .with( PolyGraph.class, ctx -> new PolyGraphSerializerDef() )
             .with( PolyLong.class, ctx -> new PolyLongSerializerDef() )
-            .build( PolyValue.class );
+            .build().create( CLASS_LOADER, PolyValue.class );
 
 
     public static final ObjectMapper JSON_WRAPPER = JsonMapper.builder()

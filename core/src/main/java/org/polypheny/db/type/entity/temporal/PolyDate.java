@@ -50,13 +50,23 @@ public class PolyDate extends PolyTemporal {
     @JsonCreator
     public PolyDate( @JsonProperty("millisSinceEpoch") Long millisSinceEpoch ) {
         super( PolyType.DATE );
-        this.millisSinceEpoch = millisSinceEpoch == null ? null : millisSinceEpoch - millisSinceEpoch % DateTimeUtils.MILLIS_PER_DAY; // move to 00:00:00
+        this.millisSinceEpoch = millisSinceEpoch == null ? null : normalize( millisSinceEpoch );
+    }
+
+
+    private Long normalize( @NotNull Long millisSinceEpoch ) {
+        if ( millisSinceEpoch < 0 ) {
+            long diff = millisSinceEpoch % DateTimeUtils.MILLIS_PER_DAY;
+            return millisSinceEpoch - (diff == 0 ? 0 : DateTimeUtils.MILLIS_PER_DAY + diff); // move to 00:00:00
+        }
+        return millisSinceEpoch - millisSinceEpoch % DateTimeUtils.MILLIS_PER_DAY; // move to 00:00:00
     }
 
 
     public static PolyDate of( Long millisSinceEpoch ) {
         return new PolyDate( millisSinceEpoch );
     }
+
 
     public static PolyDate of( PolyNumber number ) {
         return new PolyDate( number.longValue() );

@@ -72,11 +72,6 @@ public class AllocationColumn implements PolyObject {
     }
 
 
-    public String getLogicalTableName() {
-        //return Catalog.snapshot().rel().getTable( tableId ).orElseThrow().name;
-        return null;
-    }
-
 
     public String getLogicalColumnName() {
         return Catalog.snapshot().rel().getColumn( columnId ).orElseThrow().name;
@@ -87,7 +82,7 @@ public class AllocationColumn implements PolyObject {
     @Override
     public PolyValue[] getParameterArray() {
         return new PolyValue[]{
-                PolyString.of( getLogicalTableName() ),
+                PolyString.of( "alloc_" + columnId ),
                 PolyString.of( placementType.name() ) };
     }
 

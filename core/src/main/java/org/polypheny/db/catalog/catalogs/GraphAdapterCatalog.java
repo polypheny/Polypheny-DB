@@ -149,12 +149,6 @@ public class GraphAdapterCatalog extends AdapterCatalog {
     }
 
 
-    @Override
-    public PolySerializable copy() {
-        return PolySerializable.deserialize( serialize(), GraphAdapterCatalog.class );
-    }
-
-
     public PhysicalColumn updateColumnType( long allocId, LogicalColumn newCol ) {
         PhysicalColumn old = getField( newCol.id, allocId ).unwrap( PhysicalColumn.class ).orElseThrow();
         PhysicalColumn column = new PhysicalColumn( old.name, newCol.tableId, allocId, old.adapterId, old.position, newCol );

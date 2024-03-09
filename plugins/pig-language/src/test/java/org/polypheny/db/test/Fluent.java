@@ -73,8 +73,8 @@ class Fluent {
 
 
     public Fluent explainContains( String expected ) throws ParseException {
+        final PigAlgBuilder builder = PigAlgBuilderTest.builder();
         final Program program = parseProgram( pig );
-        final PigAlgBuilder builder = PigAlgBuilder.create( PigAlgBuilderTest.helper.getTransaction().createStatement() );
         new Handler( builder ).handle( program );
         assertThat( Util.toLinux( AlgOptUtil.toString( builder.peek() ) ), is( expected ) );
         return this;
@@ -113,7 +113,7 @@ class Fluent {
 
     public Fluent returns( Function<String, Void> checker ) throws ParseException {
         final Program program = parseProgram( pig );
-        final PigAlgBuilder builder = PigAlgBuilder.create( PigAlgBuilderTest.helper.getTransaction().createStatement() );
+        final PigAlgBuilder builder = PigAlgBuilderTest.builder();
         final StringWriter sw = new StringWriter();
         new PolyphenyDbHandler( builder, sw ).handle( program );
         checker.apply( Util.toLinux( sw.toString() ) );

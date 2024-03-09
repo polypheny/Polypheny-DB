@@ -1208,7 +1208,6 @@ public class RexBuilder {
         final List<RexNode> operands;
         switch ( type.getPolyType() ) {
             case CHAR:
-                //return makeLiteral( padRight( poly.asString(), type.getPrecision() ), type.getPolyType() );
             case VARCHAR:
                 AlgDataType algType = typeFactory.createPolyType( type.getPolyType(), type.getPrecision() );
                 type = typeFactory.createTypeWithCharsetAndCollation( algType, poly.asString().charset, type.getCollation() );

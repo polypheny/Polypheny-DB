@@ -122,7 +122,7 @@ public abstract class Result<E, F> {
 
         @Override
         public void serialize( QueryLanguage value, JsonGenerator gen, SerializerProvider serializers ) throws IOException {
-            gen.writeString( value.getSerializedName() );
+            gen.writeString( value.serializedName() );
         }
 
     }

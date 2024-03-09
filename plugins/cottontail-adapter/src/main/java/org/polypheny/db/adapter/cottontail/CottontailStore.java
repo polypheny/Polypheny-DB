@@ -442,7 +442,7 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
                                 .setName( physical.name ) );
 
         final IndexDefinition.Builder definition = IndexDefinition.newBuilder().setType( indexType ).setName( indexName );
-        for ( long columnId : index.key.columnIds ) {
+        for ( long columnId : index.key.fieldIds ) {
             PhysicalColumn column = adapterCatalog.getColumn( columnId, allocation.id );
             definition.addColumns( ColumnName.newBuilder().setName( column.name ) );
         }

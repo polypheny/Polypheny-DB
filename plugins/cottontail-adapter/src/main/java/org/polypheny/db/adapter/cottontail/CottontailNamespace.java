@@ -90,7 +90,6 @@ public class CottontailNamespace extends AbstractNamespace implements Schema {
             CottontailWrapper wrapper,
             CottontailStore cottontailStore
     ) {
-        //final CottontailConvention convention = CottontailConvention.of( name );
         return new CottontailNamespace( id, wrapper, cottontailStore, name );
     }
 

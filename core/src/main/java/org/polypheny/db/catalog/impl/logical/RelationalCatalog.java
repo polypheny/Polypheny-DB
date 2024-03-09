@@ -128,15 +128,14 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
     PropertyChangeSupport listeners = new PropertyChangeSupport( this );
 
 
-    public void change() {
-        listeners.firePropertyChange( "change", null, null );
+    public void change( String propertyName, Object oldValue, Object newValue ) {
+        listeners.firePropertyChange( propertyName, oldValue, newValue );
     }
 
 
     public RelationalCatalog( LogicalNamespace namespace ) {
         this( namespace, new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>() );
     }
-
 
 
     @Override
@@ -156,7 +155,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
         long id = idBuilder.getNewLogicalId();
         LogicalTable table = new LogicalTable( id, name, logicalNamespace.id, entityType, null, modifiable );
         tables.put( id, table );
-        change();
+        change( "table", null, id );
         return table;
     }
 
@@ -169,7 +168,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
         tables.put( id, view );
         nodes.put( id, definition );
-        change();
+        change( "view", null, id );
         return view;
     }
 
@@ -192,7 +191,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
         tables.put( id, materializedViewTable );
         nodes.put( id, definition );
-        change();
+        change( "materializedView", null, id );
         return materializedViewTable;
     }
 
@@ -200,7 +199,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
     @Override
     public void renameTable( long tableId, String name ) {
         tables.put( tableId, tables.get( tableId ).toBuilder().name( name ).build() );
-        change();
+        change( "rename", tableId, name );
     }
 
 
@@ -210,7 +209,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
             columns.remove( columnId );
         }
         tables.remove( tableId );
-        change();
+        change( "delete", tableId, null );
     }
 
 
@@ -219,7 +218,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
         tables.put( tableId, tables.get( tableId ).toBuilder().primaryKey( keyId ).build() );
 
         keys.put( keyId, new LogicalPrimaryKey( keys.get( keyId ) ) );
-        change();
+        change( "primaryKey", tableId, keyId );
     }
 
 
@@ -245,7 +244,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
             indexes.put( id, index );
         }
         listeners.firePropertyChange( "index", null, keyId );
-        change();
+        change( "index", null, id );
         return index;
     }
 
@@ -266,7 +265,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
         synchronized ( this ) {
             keys.put( id, key );
         }
-        change();
+        change( "key", null, id );
         return id;
     }
 
@@ -274,21 +273,21 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
     @Override
     public void setIndexPhysicalName( long indexId, String physicalName ) {
         indexes.put( indexId, indexes.get( indexId ).toBuilder().physicalName( physicalName ).build() );
-        change();
+        change( "index", indexId, physicalName );
     }
 
 
     @Override
     public void deleteIndex( long indexId ) {
         indexes.remove( indexId );
-        change();
+        change( "index", indexId, null );
     }
 
 
     @Override
     public void deleteKey( long id ) {
         keys.remove( id );
-        change();
+        change( "key", id, null );
     }
 
 
@@ -297,7 +296,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
         long id = idBuilder.getNewFieldId();
         LogicalColumn column = new LogicalColumn( id, name, tableId, logicalNamespace.id, position, type, collectionsType, length, scale, dimension, cardinality, nullable, collation, null );
         columns.put( id, column );
-        change();
+        change( "column", null, id );
         return column;
     }
 
@@ -305,14 +304,14 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
     @Override
     public void renameColumn( long columnId, String name ) {
         columns.put( columnId, columns.get( columnId ).toBuilder().name( name ).build() );
-        change();
+        change( "column", columnId, name );
     }
 
 
     @Override
     public void setColumnPosition( long columnId, int position ) {
         columns.put( columnId, columns.get( columnId ).toBuilder().position( position ).build() );
-        change();
+        change( "column", columnId, position );
     }
 
 
@@ -323,28 +322,28 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
         }
 
         columns.put( columnId, columns.get( columnId ).toBuilder().type( type ).length( length ).scale( scale ).dimension( dimension ).cardinality( cardinality ).build() );
-        change();
+        change( "column", columnId, type );
     }
 
 
     @Override
     public void setNullable( long columnId, boolean nullable ) {
         columns.put( columnId, columns.get( columnId ).toBuilder().nullable( nullable ).build() );
-        change();
+        change( "column", columnId, nullable );
     }
 
 
     @Override
     public void setCollation( long columnId, Collation collation ) {
         columns.put( columnId, columns.get( columnId ).toBuilder().collation( collation ).build() );
-        change();
+        change( "column", columnId, collation );
     }
 
 
     @Override
     public void deleteColumn( long columnId ) {
         columns.remove( columnId );
-        change();
+        change( "column", columnId, null );
     }
 
 
@@ -352,7 +351,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
     public LogicalColumn setDefaultValue( long columnId, PolyType type, PolyValue defaultValue ) {
         LogicalColumn column = columns.get( columnId ).toBuilder().defaultValue( new LogicalDefaultValue( columnId, type, defaultValue, "defaultValue" ) ).build();
         columns.put( columnId, column );
-        change();
+        change( "column", columnId, defaultValue );
         return column;
     }
 
@@ -360,7 +359,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
     @Override
     public void deleteDefaultValue( long columnId ) {
         columns.put( columnId, columns.get( columnId ).toBuilder().defaultValue( null ).build() );
-        change();
+        change( "column", columnId, null );
     }
 
 
@@ -388,7 +387,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
         }
         long keyId = getOrAddKey( tableId, columnIds, EnforcementTime.ON_QUERY );
         setPrimaryKey( tableId, keyId );
-        change();
+        change( "primaryKey", tableId, keyId );
         return tables.get( tableId );
     }
 
@@ -427,7 +426,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
         synchronized ( this ) {
             keys.remove( keyId );
         }
-        change();
+        change( "key", keyId, null );
     }
 
 
@@ -465,11 +464,11 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
         List<LogicalKey> childKeys = snapshot.rel().getTableKeys( referencesTableId );
 
         for ( LogicalKey refKey : childKeys ) {
-            if ( refKey.columnIds.size() != referencesIds.size() || !refKey.columnIds.containsAll( referencesIds ) || !new HashSet<>( referencesIds ).containsAll( refKey.columnIds ) ) {
+            if ( refKey.fieldIds.size() != referencesIds.size() || !refKey.fieldIds.containsAll( referencesIds ) || !new HashSet<>( referencesIds ).containsAll( refKey.fieldIds ) ) {
                 continue;
             }
             int i = 0;
-            for ( long referencedColumnId : refKey.columnIds ) {
+            for ( long referencedColumnId : refKey.fieldIds ) {
                 LogicalColumn referencingColumn = snapshot.rel().getColumn( columnIds.get( i++ ) ).orElseThrow();
                 LogicalColumn referencedColumn = snapshot.rel().getColumn( referencedColumnId ).orElseThrow();
                 if ( referencedColumn.type != referencingColumn.type ) {
@@ -492,7 +491,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
                     onDelete );
             synchronized ( this ) {
                 keys.put( keyId, key );
-                change();
+                change( "key", null, keyId );
             }
             return;
         }
@@ -514,7 +513,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
         long id = idBuilder.getNewConstraintId();
         synchronized ( this ) {
             constraints.put( id, new LogicalConstraint( id, keyId, ConstraintType.UNIQUE, constraintName, Objects.requireNonNull( keys.get( keyId ) ) ) );
-            change();
+            change( "constraint", null, id );
         }
         return tables.get( tableId );
     }
@@ -537,7 +536,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
             setPrimaryKey( tableId, null );
             deleteKeyIfNoLongerUsed( table.primaryKey );
         }
-        change();
+        change( "primaryKey", tableId, null );
     }
 
 
@@ -547,7 +546,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
         synchronized ( this ) {
             deleteKeyIfNoLongerUsed( logicalForeignKey.id );
         }
-        change();
+        change( "key", foreignKeyId, null );
     }
 
 
@@ -558,7 +557,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
             constraints.remove( logicalConstraint.id );
         }
         deleteKeyIfNoLongerUsed( logicalConstraint.keyId );
-        change();
+        change( "constraint", constraintId, null );
     }
 
 
@@ -573,7 +572,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
         synchronized ( this ) {
             tables.put( materializedViewId, old.toBuilder().materializedCriteria( materializedCriteria ).build() );
         }
-        change();
+        change( "materializedView", materializedViewId, null );
     }
 
 

@@ -74,6 +74,11 @@ public class GraphCatalog implements PolySerializable, LogicalGraphCatalog {
     }
 
 
+    public void change( String propertyName, Object oldValue, Object newValue ) {
+        listeners.firePropertyChange( propertyName, oldValue, newValue );
+    }
+
+
     @Override
     public PolySerializable copy() {
         return PolySerializable.deserialize( serialize(), GraphCatalog.class );
@@ -88,13 +93,13 @@ public class GraphCatalog implements PolySerializable, LogicalGraphCatalog {
 
     @Override
     public void addGraphAlias( long graphId, String alias, boolean ifNotExists ) {
-        change();
+        change( "alias", null, alias );
     }
 
 
     @Override
     public void removeGraphAlias( long graphId, String alias, boolean ifExists ) {
-        change();
+        change( "alias", alias, null );
     }
 
 
@@ -102,7 +107,7 @@ public class GraphCatalog implements PolySerializable, LogicalGraphCatalog {
     public LogicalGraph addGraph( long id, String name, boolean modifiable ) {
         LogicalGraph graph = new LogicalGraph( id, name, modifiable, logicalNamespace.caseSensitive );
         graphs.put( id, graph );
-        change();
+        change( "add", null, graph );
         return graph;
     }
 
@@ -110,7 +115,7 @@ public class GraphCatalog implements PolySerializable, LogicalGraphCatalog {
     @Override
     public void deleteGraph( long id ) {
         graphs.remove( id );
-        change();
+        change( "delete", id, null );
     }
 
 }

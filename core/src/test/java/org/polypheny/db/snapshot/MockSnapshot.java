@@ -119,12 +119,6 @@ public class MockSnapshot implements Snapshot {
 
 
     @Override
-    public @NotNull Optional<LogicalQueryInterface> getQueryInterface( long id ) {
-        throw new UnsupportedOperationException();
-    }
-
-
-    @Override
     public @NotNull Optional<QueryInterfaceTemplate> getInterfaceTemplate( String name ) {
         throw new UnsupportedOperationException();
     }

@@ -80,16 +80,16 @@ import org.polypheny.db.catalog.entity.PolyObject;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn.PrimitiveCatalogColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
-import org.polypheny.db.catalog.entity.logical.LogicalForeignKey.LogicalForeignKeyColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalForeignKey.LogicalForeignKeyColumn.PrimitiveCatalogForeignKeyColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalForeignKey.LogicalForeignKeyField;
+import org.polypheny.db.catalog.entity.logical.LogicalForeignKey.LogicalForeignKeyField.PrimitiveCatalogForeignKeyColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
-import org.polypheny.db.catalog.entity.logical.LogicalIndex.LogicalIndexColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalIndex.LogicalIndexColumn.PrimitiveCatalogIndexColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalIndex.LogicalIndexField;
+import org.polypheny.db.catalog.entity.logical.LogicalIndex.LogicalIndexField.PrimitiveCatalogIndexColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace.PrimitiveCatalogSchema;
 import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
-import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey.LogicalPrimaryKeyColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey.LogicalPrimaryKeyColumn.PrimitiveCatalogPrimaryKeyColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey.LogicalPrimaryKeyField;
+import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey.LogicalPrimaryKeyField.PrimitiveCatalogPrimaryKeyColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTable.PrimitiveCatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -540,7 +540,7 @@ public class DbmsMeta implements ProtobufMeta {
             final Pattern tablePattern = table == null ? null : new Pattern( table );
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
             final List<LogicalTable> catalogEntities = getLogicalTables( schemaPattern, tablePattern );
-            List<LogicalPrimaryKeyColumn> primaryKeyColumns = new LinkedList<>();
+            List<LogicalPrimaryKeyField> primaryKeyColumns = new LinkedList<>();
             for ( LogicalTable catalogTable : catalogEntities ) {
                 if ( catalogTable.primaryKey != null ) {
                     final LogicalPrimaryKey primaryKey = catalog.getSnapshot().rel().getPrimaryKey( catalogTable.primaryKey ).orElseThrow();
@@ -576,10 +576,10 @@ public class DbmsMeta implements ProtobufMeta {
             final Pattern tablePattern = table == null ? null : new Pattern( table );
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
             final List<LogicalTable> catalogEntities = getLogicalTables( schemaPattern, tablePattern );
-            List<LogicalForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
+            List<LogicalForeignKeyField> foreignKeyColumns = new LinkedList<>();
             for ( LogicalTable catalogTable : catalogEntities ) {
                 List<LogicalForeignKey> importedKeys = catalog.getSnapshot().rel().getForeignKeys( catalogTable.id );
-                importedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyColumns() ) );
+                importedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyFields() ) );
             }
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
@@ -619,10 +619,10 @@ public class DbmsMeta implements ProtobufMeta {
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
 
             final List<LogicalTable> catalogEntities = getLogicalTables( schemaPattern, tablePattern );
-            List<LogicalForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
+            List<LogicalForeignKeyField> foreignKeyColumns = new LinkedList<>();
             for ( LogicalTable catalogTable : catalogEntities ) {
                 List<LogicalForeignKey> exportedKeys = catalog.getSnapshot().rel().getExportedKeys( catalogTable.id );
-                exportedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyColumns() ) );
+                exportedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyFields() ) );
             }
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
@@ -735,16 +735,16 @@ public class DbmsMeta implements ProtobufMeta {
             final Pattern tablePattern = table == null ? null : new Pattern( table );
             final Pattern namespacePattern = namespace == null ? null : new Pattern( namespace );
             final List<LogicalTable> entities = getLogicalTables( namespacePattern, tablePattern );
-            List<LogicalIndexColumn> logicalIndexColumns = new ArrayList<>();
+            List<LogicalIndexField> logicalIndexFields = new ArrayList<>();
             for ( LogicalTable entity : entities ) {
                 List<LogicalIndex> logicalIndexInfos = catalog.getSnapshot().rel().getIndexes( entity.id, unique );
-                logicalIndexInfos.forEach( info -> logicalIndexColumns.addAll( info.getCatalogIndexColumns() ) );
+                logicalIndexInfos.forEach( info -> logicalIndexFields.addAll( info.getIndexFields() ) );
             }
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
                     ch,
                     statementHandle,
-                    toEnumerable( logicalIndexColumns ),
+                    toEnumerable( logicalIndexFields ),
                     PrimitiveCatalogIndexColumn.class,
                     // According to JDBC standard:
                     "TABLE_CAT",    // The name of the database in which the specified table resides.
