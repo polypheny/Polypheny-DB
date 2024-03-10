@@ -18,7 +18,6 @@ package org.polypheny.db.catalog.snapshot.impl;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -196,8 +195,10 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
     private ImmutableMap<Long, TreeSet<LogicalColumn>> buildTableColumns() {
         Map<Long, TreeSet<LogicalColumn>> map = new HashMap<>();
-        tables.values().forEach( t -> map.put( t.id, new TreeSet<>( Comparator.comparingInt( a -> a.position ) ) ) );
-        columns.forEach( ( k, v ) -> map.get( v.tableId ).add( v ) );
+        tables.values().forEach( t -> map.put( t.id, new TreeSet<>( ( a, b ) -> a.position == b.position ? (int) (a.id - a.id) : a.position - b.position ) ) ); // while this should not happen, we ensure consistency with this
+        columns.forEach( ( k, v ) -> {
+            map.get( v.tableId ).add( v );
+        } );
         return ImmutableMap.copyOf( map );
     }
 
@@ -270,7 +271,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
 
     public String getAdjustedName( long namespaceId, String entityName ) {
-        return namespaces.get( namespaceId ).caseSensitive ? entityName : entityName.toLowerCase();
+        return Objects.requireNonNull( namespaces.get( namespaceId ) ).caseSensitive ? entityName : entityName.toLowerCase();
     }
 
 
@@ -282,7 +283,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
         if ( name != null ) {
             tables = tables.stream().filter( t -> this.namespaces.get( t.namespaceId ) != null )
                     .filter( t ->
-                            this.namespaces.get( t.namespaceId ).caseSensitive
+                            Objects.requireNonNull( this.namespaces.get( t.namespaceId ) ).caseSensitive
                                     ? t.name.matches( name.toRegex() )
                                     : t.name.matches( name.toRegex().toLowerCase() ) ).toList();
         }
@@ -317,6 +318,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     public @NonNull Optional<LogicalTable> getTables( @Nullable String namespaceName, @NonNull String name ) {
         LogicalNamespace namespace = namespaceNames.get( namespaceName );
 
+        assert namespace != null;
         return Optional.ofNullable( tableNames.get( Pair.of( namespace.id, (namespace.caseSensitive ? name : name.toLowerCase()) ) ) );
     }
 
@@ -367,13 +369,13 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     public @NonNull List<LogicalColumn> getColumns( Pattern tableName, Pattern columnName ) {
         List<LogicalTable> tables = getTables( null, tableName );
         if ( columnName == null ) {
-            return tables.stream().flatMap( t -> tableColumns.get( t.id ).stream() ).toList();
+            return tables.stream().flatMap( t -> Objects.requireNonNull( tableColumns.get( t.id ) ).stream() ).toList();
         }
 
         return tables
                 .stream()
                 .flatMap( t -> tableColumns.get( t.id ).stream().filter(
-                        c -> namespaces.get( t.namespaceId ).caseSensitive
+                        c -> Objects.requireNonNull( namespaces.get( t.namespaceId ) ).caseSensitive
                                 ? c.name.matches( columnName.toRegex() )
                                 : c.name.toLowerCase().matches( columnName.toLowerCase().toRegex() ) ) ).toList();
 
@@ -438,7 +440,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
     @Override
     public @NonNull List<LogicalConstraint> getConstraints( long tableId ) {
-        List<Long> keysOfTable = getTableKeys( tableId ).stream().map( t -> t.id ).collect( Collectors.toList() );
+        List<Long> keysOfTable = getTableKeys( tableId ).stream().map( t -> t.id ).toList();
         return constraints.values().stream().filter( c -> keysOfTable.contains( c.keyId ) ).collect( Collectors.toList() );
     }
 

@@ -152,7 +152,7 @@ public class SqlLanguageDependent {
                 new FieldInformation( "mgr", new ColumnTypeInformation( PolyType.INTEGER, null, null, null, null, null, true ), null, null, 3 ),
                 new FieldInformation( "hiredate", new ColumnTypeInformation( PolyType.DATE, null, null, null, null, null, true ), null, null, 4 ),
                 new FieldInformation( "salary", new ColumnTypeInformation( PolyType.DECIMAL, null, null, 7, 2, null, true ), null, null, 5 ),
-                new FieldInformation( "deptno", new ColumnTypeInformation( PolyType.INTEGER, null, null, 0, 0, null, true ), null, null, 5 )
+                new FieldInformation( "deptno", new ColumnTypeInformation( PolyType.INTEGER, null, null, null, null, null, true ), null, null, 6 )
         );
 
         constraints = List.of(

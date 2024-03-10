@@ -69,7 +69,6 @@ public class LogicalColumn implements PolyObject, Comparable<LogicalColumn> {
     public @SerializeNullable PolyType collectionsType;
 
     @Serialize
-    //@SerializeVarLength // fixes bug with 255 length
     public @SerializeNullable Integer length; // JDBC length or precision depending on type
 
     @Serialize
