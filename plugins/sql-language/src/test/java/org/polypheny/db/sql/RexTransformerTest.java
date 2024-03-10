@@ -37,6 +37,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgOptUtil.Logic;
@@ -374,6 +375,9 @@ public class RexTransformerTest extends SqlLanguageDependent {
         assertThat( remaining.toString(), is( "<>($0, $4)" ) );
         assertThat( leftJoinKeys.isEmpty(), is( true ) );
         assertThat( rightJoinKeys.isEmpty(), is( true ) );
+
+        // reset mock
+        Catalog.getInstance().updateSnapshot();
     }
 
 
