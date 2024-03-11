@@ -16,24 +16,24 @@
 
 package org.polypheny.db.jdbc;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.jdbc.PolyhenyResultSet;
 
 public class JdbcResultSetTest {
 
-    private static final String TABLE_SQL = "CREATE TABLE IF NOT EXISTS resultset_test (id INT, hex_value VARCHAR(2))";
+    private static final String TABLE_SQL = "CREATE TABLE IF NOT EXISTS resultset_test (id INT PRIMARY KEY, hex_value VARCHAR(2))";
     private static final String DROP_TABLE_SQL = "DROP TABLE resultset_test";
     private static final String DATA_SQL = buildInsertSql();
 
