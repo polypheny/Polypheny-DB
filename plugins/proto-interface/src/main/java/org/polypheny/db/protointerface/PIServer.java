@@ -17,12 +17,14 @@
 package org.polypheny.db.protointerface;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.net.Inet4Address;
+import java.net.InetSocketAddress;
+import java.net.StandardProtocolFamily;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Function;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.protointerface.transport.PlainTransport;
 import org.polypheny.db.protointerface.transport.Transport;
@@ -31,31 +33,37 @@ import org.polypheny.db.util.Util;
 @Slf4j
 public class PIServer {
 
-    private final List<ServerSocket> servers = new ArrayList<>();
+    private final List<ServerSocketChannel> servers = new ArrayList<>();
     private final int port = 20590; // TODO: configurable
 
 
     public PIServer( ClientManager clientManager ) throws IOException {
-        startServer( port, clientManager, "Plain", PlainTransport::accept );
+        startServer( createInetServer( port ), clientManager, "Plain", PlainTransport::accept );
     }
 
 
-    void startServer( int port, ClientManager clientManager, String name, Function<Socket, Transport> createConnection ) throws IOException {
-        ServerSocket server = new ServerSocket( port, 16, InetAddress.getLoopbackAddress() );
+    void startServer( ServerSocketChannel server, ClientManager clientManager, String name, Function<SocketChannel, Transport> createTransport ) throws IOException {
         if ( log.isTraceEnabled() ) {
-            log.trace( "proto-interface server started on port {}", port );
+            log.trace( "proto-interface server started on {}", server.getLocalAddress().toString() );
         }
-        Thread acceptor = new Thread( () -> acceptLoop( server, clientManager, name, createConnection ), "ProtoInterface" + name + "Server" );
+        log.info( "Proto Interface started and is listening on {}", server.getLocalAddress() );
+        Thread acceptor = new Thread( () -> acceptLoop( server, clientManager, name, createTransport ), "ProtoInterface" + name + "Server" );
         acceptor.start();
         servers.add( server );
     }
 
 
-    void acceptLoop( ServerSocket server, ClientManager clientManager, String name, Function<Socket, Transport> createConnection ) {
+    ServerSocketChannel createInetServer( int port ) throws IOException {
+        return ServerSocketChannel.open( StandardProtocolFamily.INET )
+                .bind( new InetSocketAddress( Inet4Address.getLoopbackAddress(), port ) );
+    }
+
+
+    void acceptLoop( ServerSocketChannel server, ClientManager clientManager, String name, Function<SocketChannel, Transport> createTransport ) {
         while ( true ) {
             try {
-                Socket s = server.accept();
-                Thread t = new Thread( () -> PIService.acceptConnection( createConnection.apply( s ), clientManager ), "ProtoInterface" + name + "ClientConnection" );
+                SocketChannel s = server.accept();
+                Thread t = new Thread( () -> PIService.acceptConnection( createTransport.apply( s ), clientManager ), "ProtoInterface" + name + "ClientConnection" );
                 t.start();
             } catch ( IOException e ) {
                 log.error( e.getMessage() );
