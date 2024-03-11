@@ -24,8 +24,8 @@ import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.cql.BooleanGroup.ColumnOpsBooleanOperator;
-import org.polypheny.db.cql.BooleanGroup.TableOpsBooleanOperator;
+import org.polypheny.db.cql.BooleanGroup.EntityOpsBooleanOperator;
+import org.polypheny.db.cql.BooleanGroup.FieldOpsBooleanOperator;
 import org.polypheny.db.cql.exception.InvalidModifierException;
 import org.polypheny.db.cql.exception.UnknownIndexException;
 import org.polypheny.db.cql.utils.Tree;
@@ -39,20 +39,19 @@ import org.polypheny.db.util.Pair;
 @Slf4j
 public class CqlQueryBuilder {
 
-    private final Stack<Tree<BooleanGroup<ColumnOpsBooleanOperator>, Filter>> filters;
-    private final Map<String, TableIndex> tableIndexMapping;
-    private final Map<String, ColumnIndex> columnIndexMapping;
-    private final List<Pair<ColumnIndex, Map<String, Modifier>>> sortSpecifications;
+    private final Stack<Tree<BooleanGroup<FieldOpsBooleanOperator>, Filter>> filters;
+    private final Map<String, EntityIndex> entityIndexMapping;
+    private final Map<String, FieldIndex> fieldIndexMapping;
+    private final List<Pair<FieldIndex, Map<String, Modifier>>> sortSpecifications;
     private final Projections projections;
-    private Tree<Combiner, TableIndex> queryRelation;
-    private TableIndex lastTableIndex;
+    private Tree<Combiner, EntityIndex> queryRelation;
+    private EntityIndex lastEntityIndex;
 
 
-    public CqlQueryBuilder( String databaseName ) {
+    public CqlQueryBuilder( String namespace ) {
         this.filters = new Stack<>();
-        this.tableIndexMapping = new TreeMap<>( String.CASE_INSENSITIVE_ORDER );
-        Map<String, TableIndex> tableAliases = new TreeMap<>( String.CASE_INSENSITIVE_ORDER );
-        this.columnIndexMapping = new TreeMap<>( String.CASE_INSENSITIVE_ORDER );
+        this.entityIndexMapping = new TreeMap<>( String.CASE_INSENSITIVE_ORDER );
+        this.fieldIndexMapping = new TreeMap<>( String.CASE_INSENSITIVE_ORDER );
         this.sortSpecifications = new ArrayList<>();
         this.projections = new Projections();
     }
@@ -80,7 +79,7 @@ public class CqlQueryBuilder {
             generateDefaultQueryRelation();
         }
 
-        Tree<BooleanGroup<ColumnOpsBooleanOperator>, Filter> queryFilters = null;
+        Tree<BooleanGroup<FieldOpsBooleanOperator>, Filter> queryFilters = null;
         if ( filters.size() == 1 ) {
             log.debug( "Found filters." );
             queryFilters = filters.pop();
@@ -92,29 +91,29 @@ public class CqlQueryBuilder {
         return new CqlQuery(
                 queryRelation,
                 queryFilters,
-                tableIndexMapping,
-                columnIndexMapping,
+                entityIndexMapping,
+                fieldIndexMapping,
                 sortSpecifications,
                 projections );
     }
 
 
     /**
-     * Generates a default relation made by of INNER JOIN-ing the tables
-     * of all the columns (including columns in filters, sort specifications
+     * Generates a default relation made by of INNER JOIN-ing the entitys
+     * of all the fields (including fields in filters, sort specifications
      * and projections) used in the query.
      */
     private void generateDefaultQueryRelation() {
         log.debug( "Generating Default Query Relation." );
         AtomicBoolean first = new AtomicBoolean( true );
-        tableIndexMapping.forEach( ( tableName, tableIndex ) -> {
+        entityIndexMapping.forEach( ( entityName, entityIndex ) -> {
             if ( first.get() ) {
-                addTable( tableIndex );
+                addEntity( entityIndex );
                 first.set( false );
             } else {
-                BooleanGroup<TableOpsBooleanOperator> innerJoin = new BooleanGroup<>( TableOpsBooleanOperator.AND );
+                BooleanGroup<EntityOpsBooleanOperator> innerJoin = new BooleanGroup<>( EntityOpsBooleanOperator.AND );
                 try {
-                    combineRelationWith( tableIndex, innerJoin );
+                    combineRelationWith( entityIndex, innerJoin );
                 } catch ( InvalidModifierException e ) {
                     log.error( "Exception Unexpected.", e );
                     throw new GenericRuntimeException( "This exception will never be throws since the BooleanGroup used has no modifiers." );
@@ -125,120 +124,116 @@ public class CqlQueryBuilder {
 
 
     /**
-     * Creates and adds a {@link TableIndex} as represented by the
+     * Creates and adds a {@link EntityIndex} as represented by the
      * input parameter.
      *
-     * @param fullyQualifiedTableName Expected format: SCHEMA_NAME.TABLE_NAME.
-     * @return {@link TableIndex}.
+     * @param fullyQualifiedEntityName Expected format: NAMESPACE_NAME.ENTITY_NAME.
+     * @return {@link EntityIndex}.
      * @throws UnknownIndexException Thrown if the {@link org.polypheny.db.catalog.Catalog}
-     * does not contain the table as specified by the input parameter.
+     * does not contain the entity as specified by the input parameter.
      */
-    public TableIndex addTableIndex( String fullyQualifiedTableName ) throws UnknownIndexException {
-        String[] split = fullyQualifiedTableName.split( "\\." );
+    public EntityIndex addEntityIndex( String fullyQualifiedEntityName ) throws UnknownIndexException {
+        String[] split = fullyQualifiedEntityName.split( "\\." );
 
         assert split.length == 2;
 
-        return addTableIndex( split[0], split[1] );
+        return addEntityIndex( split[0], split[1] );
     }
 
 
     /**
-     * Creates and adds a {@link TableIndex} as represented by the
+     * Creates and adds a {@link EntityIndex} as represented by the
      * input parameters.
      *
-     * @return {@link TableIndex}.
-     * @throws UnknownIndexException Thrown if the {@link org.polypheny.db.catalog.Catalog}
-     * does not contain the table as specified by the input parameters.
+     * @return {@link EntityIndex}.
      */
-    public TableIndex addTableIndex( String schemaName, String tableName ) throws UnknownIndexException {
-        String fullyQualifiedTableName = schemaName + "." + tableName;
+    public EntityIndex addEntityIndex( String namespaceName, String entityName ) {
+        String fullyQualifiedEntityName = namespaceName + "." + entityName;
 
-        if ( !this.tableIndexMapping.containsKey( fullyQualifiedTableName ) ) {
-            TableIndex tableIndex = TableIndex.createIndex( schemaName, tableName );
-            this.tableIndexMapping.put( tableIndex.fullyQualifiedName, tableIndex );
+        if ( !this.entityIndexMapping.containsKey( fullyQualifiedEntityName ) ) {
+            EntityIndex entityIndex = EntityIndex.createIndex( namespaceName, entityName );
+            this.entityIndexMapping.put( entityIndex.fullyQualifiedName, entityIndex );
         }
-        return this.tableIndexMapping.get( fullyQualifiedTableName );
+        return this.entityIndexMapping.get( fullyQualifiedEntityName );
     }
 
 
     /**
-     * Creates and adds a {@link ColumnIndex} as represented by the
-     * input parameter. It also adds the {@link TableIndex} of the
-     * table that the column belongs to.
+     * Creates and adds a {@link FieldIndex} as represented by the
+     * input parameter. It also adds the {@link EntityIndex} of the
+     * entity that the field belongs to.
      *
-     * @param fullyQualifiedColumnName Expected format: SCHEMA_NAME.TABLE_NAME.COLUMN_NAME.
-     * @return {@link ColumnIndex}.
+     * @param fullyQualifiedFieldName Expected format: NAMESPACE_NAME.NAMESPACE_NAME.field_NAME.
+     * @return {@link FieldIndex}.
      * @throws UnknownIndexException Thrown if the {@link org.polypheny.db.catalog.Catalog}
-     * does not contain the column as specified by the input parameter.
+     * does not contain the Field as specified by the input parameter.
      */
-    public ColumnIndex addColumnIndex( String fullyQualifiedColumnName ) throws UnknownIndexException {
-        String[] split = fullyQualifiedColumnName.split( "\\." );
+    public FieldIndex addFieldIndex( String fullyQualifiedFieldName ) throws UnknownIndexException {
+        String[] split = fullyQualifiedFieldName.split( "\\." );
         assert split.length == 3;
-        return addColumnIndex( split[0], split[1], split[2] );
+        return addFieldIndex( split[0], split[1], split[2] );
     }
 
 
     /**
-     * Creates and adds a {@link ColumnIndex} as represented by the
-     * input parameter. It also adds the {@link TableIndex} of the
-     * table that the column belongs to.
+     * Creates and adds a {@link FieldIndex} as represented by the
+     * input parameter. It also adds the {@link EntityIndex} of the
+     * entity that the field belongs to.
      *
-     * @return {@link ColumnIndex}.
-     * @throws UnknownIndexException Thrown if the {@link org.polypheny.db.catalog.Catalog}
-     * does not contain the column as specified by the input parameter.
+     * @return {@link FieldIndex}.
      */
-    public ColumnIndex addColumnIndex( String schemaName, String tableName, String columnName ) throws UnknownIndexException {
-        addTableIndex( schemaName, tableName );
+    public FieldIndex addFieldIndex( String namespaceName, String entityName, String fieldName ) {
+        addEntityIndex( namespaceName, entityName );
 
-        String fullyQualifiedColumnName = schemaName + "." + tableName + "." + columnName;
-        if ( !columnIndexMapping.containsKey( fullyQualifiedColumnName ) ) {
-            ColumnIndex columnIndex = ColumnIndex.createIndex( schemaName, tableName, columnName );
-            columnIndexMapping.put( columnIndex.fullyQualifiedName, columnIndex );
+        String fullyQualifiedFieldName = namespaceName + "." + entityName + "." + fieldName;
+        if ( !fieldIndexMapping.containsKey( fullyQualifiedFieldName ) ) {
+            FieldIndex fieldIndex = FieldIndex.createIndex( namespaceName, entityName, fieldName );
+            fieldIndexMapping.put( fieldIndex.fullyQualifiedName, fieldIndex );
         }
 
-        return columnIndexMapping.get( fullyQualifiedColumnName );
+        return fieldIndexMapping.get( fullyQualifiedFieldName );
     }
 
 
     /**
-     * Adds the first {@link TableIndex} to {@link #queryRelation}.
-     * It should only be called once, when adding the first {@link TableIndex}.
+     * Adds the first {@link EntityIndex} to {@link #queryRelation}.
+     * It should only be called once, when adding the first {@link EntityIndex}.
      */
-    public void addTable( TableIndex tableIndex ) {
+    public void addEntity( EntityIndex entityIndex ) {
         assert this.queryRelation == null;
         if ( log.isDebugEnabled() ) {
-            log.debug( "Adding first TableIndex '{}' for QueryRelation.", tableIndex.fullyQualifiedName );
+            log.debug( "Adding first EntityIndex '{}' for QueryRelation.", entityIndex.fullyQualifiedName );
         }
-        this.queryRelation = new Tree<>( tableIndex );
-        this.lastTableIndex = tableIndex;
+        this.queryRelation = new Tree<>( entityIndex );
+        this.lastEntityIndex = entityIndex;
     }
 
 
     /**
-     * Combines the existing {@link #queryRelation} with {@link TableIndex}
-     * using {@link Combiner}. It should only be called after {@link #addTable(TableIndex)}.
+     * Combines the existing {@link #queryRelation} with {@link EntityIndex}
+     * using {@link Combiner}. It should only be called after {@link #addEntity(EntityIndex)}.
      *
-     * @param tableIndex table to be combined.
-     * @param booleanGroup {@link BooleanGroup<TableOpsBooleanOperator>} to
+     * @param entityIndex entity to be combined.
+     * @param booleanGroup {@link BooleanGroup< EntityOpsBooleanOperator >} to
      * create {@link Combiner}.
      * @throws InvalidModifierException Thrown if invalid modifier names are used.
      */
-    public void combineRelationWith( TableIndex tableIndex, BooleanGroup<TableOpsBooleanOperator> booleanGroup ) throws InvalidModifierException {
+    public void combineRelationWith( EntityIndex entityIndex, BooleanGroup<EntityOpsBooleanOperator> booleanGroup ) throws InvalidModifierException {
         assert this.queryRelation != null;
 
         if ( log.isDebugEnabled() ) {
-            log.debug( "Creating combiner and combining QueryRelation with TableIndex '{}'.", tableIndex.fullyQualifiedName );
+            log.debug( "Creating combiner and combining QueryRelation with EntityIndex '{}'.", entityIndex.fullyQualifiedName );
         }
 
-        Combiner combiner = Combiner.createCombiner( booleanGroup, this.lastTableIndex, tableIndex );
+        Combiner combiner = Combiner.createCombiner( booleanGroup, this.lastEntityIndex, entityIndex );
 
         this.queryRelation = new Tree<>(
                 this.queryRelation,
                 combiner,
-                new Tree<>( tableIndex )
+                new Tree<>( entityIndex )
         );
 
-        this.lastTableIndex = tableIndex;
+        this.lastEntityIndex = entityIndex;
     }
 
 
@@ -249,20 +244,20 @@ public class CqlQueryBuilder {
         if ( log.isDebugEnabled() ) {
             log.debug( "Adding filter '{}'.", filter.toString() );
         }
-        Tree<BooleanGroup<ColumnOpsBooleanOperator>, Filter> root = new Tree<>( filter );
+        Tree<BooleanGroup<FieldOpsBooleanOperator>, Filter> root = new Tree<>( filter );
         this.filters.push( root );
     }
 
 
     /**
-     * Merges the last two added {@link Filter}s using the {@link BooleanGroup<ColumnOpsBooleanOperator>}
+     * Merges the last two added {@link Filter}s using the {@link BooleanGroup< FieldOpsBooleanOperator >}
      */
-    public void mergeFilterSubtreesWith( BooleanGroup<ColumnOpsBooleanOperator> booleanGroup ) {
+    public void mergeFilterSubtreesWith( BooleanGroup<FieldOpsBooleanOperator> booleanGroup ) {
         if ( log.isDebugEnabled() ) {
             log.debug( "Merging filter subtrees with boolean group '{}'.", booleanGroup.toString() );
         }
-        Tree<BooleanGroup<ColumnOpsBooleanOperator>, Filter> right = this.filters.pop();
-        Tree<BooleanGroup<ColumnOpsBooleanOperator>, Filter> left = this.filters.pop();
+        Tree<BooleanGroup<FieldOpsBooleanOperator>, Filter> right = this.filters.pop();
+        Tree<BooleanGroup<FieldOpsBooleanOperator>, Filter> left = this.filters.pop();
 
         left = new Tree<>(
                 left,
@@ -277,12 +272,12 @@ public class CqlQueryBuilder {
     /**
      * Adds to the sort specification list.
      */
-    public void addSortSpecification( ColumnIndex columnIndex, Map<String, Modifier> modifiers ) {
+    public void addSortSpecification( FieldIndex fieldIndex, Map<String, Modifier> modifiers ) {
         if ( log.isDebugEnabled() ) {
-            log.debug( "Adding sort specification for '{}'.", columnIndex.fullyQualifiedName );
+            log.debug( "Adding sort specification for '{}'.", fieldIndex.fullyQualifiedName );
         }
         this.sortSpecifications.add(
-                new Pair<>( columnIndex, modifiers )
+                new Pair<>( fieldIndex, modifiers )
         );
     }
 
@@ -290,8 +285,8 @@ public class CqlQueryBuilder {
     /**
      * Creates and adds the {@link Projections.Projection}.
      */
-    public void addProjection( ColumnIndex columnIndex, Map<String, Modifier> modifiers ) {
-        projections.add( columnIndex, modifiers );
+    public void addProjection( FieldIndex fieldIndex, Map<String, Modifier> modifiers ) {
+        projections.add( fieldIndex, modifiers );
     }
 
 

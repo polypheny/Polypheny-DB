@@ -52,7 +52,7 @@ public interface DataMigrator {
             AllocationPlacement target );
 
     /**
-     * Currently used to to transfer data if unpartitioned is about to be partitioned.
+     * Currently used to transfer data if unpartitioned is about to be partitioned.
      *
      * @param transaction Transactional scope
      * @param store Target Store where data should be migrated to

@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.ethereum.EthereumPlugin.EthereumDataSource;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -28,20 +29,20 @@ import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
-import org.polypheny.db.schema.Namespace.Schema;
-import org.polypheny.db.schema.impl.AbstractNamespace;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.Util;
 
-public class EthereumNamespace extends AbstractNamespace implements Schema {
+public class EthereumNamespace extends Namespace {
 
     private final String clientUrl;
-    private Map<String, EthereumTable> tableMap = new HashMap<>();
+    private final Map<String, EthereumTable> tableMap = new HashMap<>();
 
 
-    public EthereumNamespace( long id, String clientUrl ) {
-        super( id );
+    public EthereumNamespace( long id, long adapterId, String clientUrl ) {
+        super( id, adapterId );
         this.clientUrl = clientUrl;
     }
 
@@ -125,6 +126,12 @@ public class EthereumNamespace extends AbstractNamespace implements Schema {
         } catch ( IllegalArgumentException e ) {
             return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
         }
+    }
+
+
+    @Override
+    protected @Nullable Convention getConvention() {
+        return null; // no convention
     }
 
 }

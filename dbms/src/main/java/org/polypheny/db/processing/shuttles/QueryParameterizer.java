@@ -380,9 +380,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
     @Override
     public AlgNode visit( LogicalDocumentModify initial ) {
         LogicalDocumentModify modify = super.visit( initial ).unwrap( LogicalDocumentModify.class ).orElseThrow();
-        List<RexNode> newSourceExpression;
-
-        newSourceExpression = new ArrayList<>();
+        List<RexNode> newSourceExpression = new ArrayList<>();
         for ( RexNode node : modify.getUpdates().values() ) {
             newSourceExpression.add( node.accept( this ) );
         }

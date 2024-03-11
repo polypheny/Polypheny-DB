@@ -46,8 +46,7 @@ import org.polypheny.db.util.Wrapper;
  * Table.
  *
  * The typical way for a table to be created is when Polypheny-DB interrogates a user-defined schema in order to validate
- * names appearing in a SQL query. Polypheny-DB finds the schema by calling {@link Namespace#getSubNamespace(String)} on the
- * connection's root schema, then gets a table by calling {@link Namespace#getEntity(String)}.
+ * names appearing in a SQL query.
  *
  * Note that a table does not know its name. It is in fact possible for a table to be used more than once, perhaps under
  * multiple names or under multiple schemas. (Compare with the <a href="http://en.wikipedia.org/wiki/Inode">i-node</a> concept
@@ -89,11 +88,6 @@ public interface Entity {
     Long getPartitionId();
 
     Long getAdapterId();
-
-    /**
-     * Type of table.
-     */
-    TableType getJdbcTableType();
 
     /**
      * Determines whether the given {@code column} has been rolled up.

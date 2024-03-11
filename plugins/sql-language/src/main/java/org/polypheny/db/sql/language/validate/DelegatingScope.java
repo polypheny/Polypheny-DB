@@ -18,9 +18,7 @@ package org.polypheny.db.sql.language.validate;
 
 
 import com.google.common.collect.ImmutableList;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -33,9 +31,8 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.DynamicRecordType;
 import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.catalog.entity.Entity;
-import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.schema.CustomColumnResolvingEntity;
+import org.polypheny.db.schema.CustomFieldResolvingEntity;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlNode;
@@ -85,8 +82,8 @@ public abstract class DelegatingScope implements SqlValidatorScope {
 
 
     @Override
-    public void resolve( List<String> names, NameMatcher nameMatcher, boolean deep, Resolved resolved ) {
-        parent.resolve( names, nameMatcher, deep, resolved );
+    public void resolve( List<String> names, boolean deep, Resolved resolved ) {
+        parent.resolve( names, deep, resolved );
     }
 
 
@@ -100,10 +97,10 @@ public abstract class DelegatingScope implements SqlValidatorScope {
         }
         final AlgDataType rowType = ns.getTupleType();
         if ( rowType.isStruct() ) {
-            Entity validatorTable = ns.getTable();
+            Entity validatorEntity = ns.getEntity();
 
-            if ( validatorTable != null && validatorTable.unwrap( CustomColumnResolvingEntity.class ).isPresent() ) {
-                final List<Pair<AlgDataTypeField, List<String>>> entries = validatorTable.unwrap( CustomColumnResolvingEntity.class ).get().resolveColumn( rowType, validator.getTypeFactory(), names );
+            if ( validatorEntity != null && validatorEntity.unwrap( CustomFieldResolvingEntity.class ).isPresent() ) {
+                final List<Pair<AlgDataTypeField, List<String>>> entries = validatorEntity.unwrap( CustomFieldResolvingEntity.class ).get().resolveColumn( rowType, validator.getTypeFactory(), names );
                 for ( Pair<AlgDataTypeField, List<String>> entry : entries ) {
                     final AlgDataTypeField field = entry.getKey();
                     final List<String> remainder = entry.getValue();
@@ -165,15 +162,15 @@ public abstract class DelegatingScope implements SqlValidatorScope {
 
     @Override
     @SuppressWarnings("deprecation")
-    public Pair<String, SqlValidatorNamespace> findQualifyingTableName( String columnName, SqlNode ctx ) {
+    public Pair<String, SqlValidatorNamespace> findQualifyingEntityName( String columnName, SqlNode ctx ) {
         //noinspection deprecation
-        return parent.findQualifyingTableName( columnName, ctx );
+        return parent.findQualifyingEntityName( columnName, ctx );
     }
 
 
     @Override
-    public Map<String, ScopeChild> findQualifyingTableNames( String columnName, SqlNode ctx, NameMatcher nameMatcher ) {
-        return parent.findQualifyingTableNames( columnName, ctx, nameMatcher );
+    public Map<String, ScopeChild> findQualifyingEntityNames( String columnName, SqlNode ctx, NameMatcher nameMatcher ) {
+        return parent.findQualifyingEntityNames( columnName, ctx, nameMatcher );
     }
 
 
@@ -191,14 +188,14 @@ public abstract class DelegatingScope implements SqlValidatorScope {
 
     @Override
     @SuppressWarnings("deprecation")
-    public SqlValidatorNamespace getTableNamespace( List<String> names ) {
-        return parent.getTableNamespace( names );
+    public SqlValidatorNamespace getEntityNamespace( List<String> names ) {
+        return parent.getEntityNamespace( names );
     }
 
 
     @Override
-    public void resolveTable( List<String> names, NameMatcher nameMatcher, Path path, Resolved resolved ) {
-        parent.resolveTable( names, nameMatcher, path, resolved );
+    public void resolveEntity( List<String> names, Path path, Resolved resolved ) {
+        parent.resolveEntity( names, path, resolved );
     }
 
 
@@ -219,7 +216,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
 
     /**
      * Converts an identifier into a fully-qualified identifier. For example, the "empno" in "select empno from emp natural join dept" becomes "emp.empno".
-     *
+     * <p>
      * If the identifier cannot be resolved, throws. Never returns null.
      */
     @Override
@@ -229,34 +226,22 @@ public abstract class DelegatingScope implements SqlValidatorScope {
         }
 
         final SqlIdentifier previous = identifier;
-        final NameMatcher nameMatcher = Snapshot.nameMatcher;
+        final NameMatcher nameMatcher = NameMatchers.withCaseSensitive( false );
         String columnName;
-        final String tableName;
+        final String entityName;
         final SqlValidatorNamespace namespace;
         if ( identifier.names.size() == 1 ) {
             columnName = identifier.names.get( 0 );
-            final Map<String, ScopeChild> map = findQualifyingTableNames( columnName, identifier, nameMatcher );
+            final Map<String, ScopeChild> map = findQualifyingEntityNames( columnName, identifier, nameMatcher );
             switch ( map.size() ) {
                 case 0:
-                    if ( nameMatcher.isCaseSensitive() ) {
-                        final NameMatcher liberalMatcher = NameMatchers.liberal();
-                        final Map<String, ScopeChild> map2 = findQualifyingTableNames( columnName, identifier, liberalMatcher );
-                        if ( !map2.isEmpty() ) {
-                            final List<String> list = new ArrayList<>();
-                            for ( ScopeChild entry : map2.values() ) {
-                                final AlgDataTypeField field = liberalMatcher.field( entry.namespace.getTupleType(), columnName );
-                                list.add( field.getName() );
-                            }
-                            Collections.sort( list );
-                            throw validator.newValidationError( identifier, Static.RESOURCE.columnNotFoundDidYouMean( columnName, Util.sepList( list, "', '" ) ) );
-                        }
-                    } else if ( SqlValidatorUtil.isNotRelational( validator ) ) {
+                    if ( SqlValidatorUtil.isNotRelational( validator ) ) {
                         return SqlQualified.create( this, 0, validator.getSqlNamespace( identifier ), identifier );
                     }
-                    throw validator.newValidationError( identifier, Static.RESOURCE.columnNotFound( columnName ) );
+                    throw validator.newValidationError( identifier, Static.RESOURCE.fieldNotFound( columnName ) );
                 case 1:
-                    tableName = map.keySet().iterator().next();
-                    namespace = map.get( tableName ).namespace;
+                    entityName = map.keySet().iterator().next();
+                    namespace = map.get( entityName ).namespace;
                     break;
                 default:
                     throw validator.newValidationError( identifier, Static.RESOURCE.columnAmbiguous( columnName ) );
@@ -276,7 +261,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
             final ParserPos pos = identifier.getPos();
             identifier =
                     new SqlIdentifier(
-                            ImmutableList.of( tableName, columnName ),
+                            ImmutableList.of( entityName, columnName ),
                             null,
                             pos,
                             ImmutableList.of( ParserPos.ZERO, pos ) );
@@ -291,7 +276,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
         for ( ; i > 0; i-- ) {
             final SqlIdentifier prefix = identifier.getComponent( 0, i );
             resolved.clear();
-            resolve( prefix.names, nameMatcher, false, resolved );
+            resolve( prefix.names, false, resolved );
             if ( resolved.count() == 1 ) {
                 final Resolve resolve = resolved.only();
                 fromNs = resolve.namespace;
@@ -299,31 +284,31 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                 fromRowType = resolve.rowType();
                 break;
             }
-            // Look for a table alias that is the wrong case.
+            // Look for an entity alias that is the wrong case.
             if ( nameMatcher.isCaseSensitive() ) {
                 final NameMatcher liberalMatcher = NameMatchers.liberal();
                 resolved.clear();
-                resolve( prefix.names, liberalMatcher, false, resolved );
+                resolve( prefix.names, false, resolved );
                 if ( resolved.count() == 1 ) {
                     final Step lastStep = Util.last( resolved.only().path.steps() );
                     throw validator.newValidationError(
                             prefix,
-                            Static.RESOURCE.tableNameNotFoundDidYouMean( prefix.toString(), lastStep.name ) );
+                            Static.RESOURCE.entityNameNotFoundDidYouMean( prefix.toString(), lastStep.name ) );
                 }
             }
         }
         if ( fromNs == null ) {
-            // Look for a column not qualified by a table alias.
+            // Look for a column not qualified by an entity alias.
             columnName = identifier.names.get( 0 );
-            final Map<String, ScopeChild> map = findQualifyingTableNames( columnName, identifier, nameMatcher );
+            final Map<String, ScopeChild> map = findQualifyingEntityNames( columnName, identifier, nameMatcher );
             if ( map.size() == 1 ) {
                 final Entry<String, ScopeChild> entry = map.entrySet().iterator().next();
-                final String tableName2 = map.keySet().iterator().next();
+                final String entityName2 = map.keySet().iterator().next();
 
                 fromPath = Path.EMPTY;
 
-                // Adding table name is for RecordType column with StructKind.PEEK_FIELDS or StructKind.PEEK_FIELDS only.
-                // Access to a field in a RecordType column of other StructKind should always be qualified with table name.
+                // Adding entity name is for TupleType field with StructKind.PEEK_FIELDS or StructKind.PEEK_FIELDS only.
+                // Access to a field in a RecordType column of other StructKind should always be qualified with entity name.
                 final AlgDataTypeField field = nameMatcher.field( fromNs.getTupleType(), columnName );
                 if ( field != null ) {
                     switch ( field.getType().getStructKind() ) {
@@ -331,31 +316,31 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                         case PEEK_FIELDS_DEFAULT:
                         case PEEK_FIELDS_NO_EXPAND:
                             columnName = field.getName(); // use resolved field name
-                            resolve( ImmutableList.of( tableName2 ), nameMatcher, false, resolved );
+                            resolve( ImmutableList.of( entityName2 ), false, resolved );
                             if ( resolved.count() == 1 ) {
                                 final Resolve resolve = resolved.only();
                                 fromRowType = resolve.rowType();
                                 identifier = identifier
                                         .setName( 0, columnName )
-                                        .add( 0, tableName2, ParserPos.ZERO );
+                                        .add( 0, entityName2, ParserPos.ZERO );
                                 ++i;
                                 ++size;
                             }
                             break;
                         default:
-                            // Throw an error if the table was not found.
-                            // If one or more of the child namespaces allows peeking (e.g. if they are Phoenix column families) then we relax the SQL standard requirement that record fields are qualified by table alias.
+                            // Throw an error if the entity was not found.
+                            // If one or more of the child namespaces allows peeking (e.g. if they are Phoenix column families) then we relax the SQL standard requirement that record fields are qualified by entity alias.
                             final SqlIdentifier prefix = identifier.skipLast( 1 );
-                            throw validator.newValidationError( prefix, Static.RESOURCE.tableNameNotFound( prefix.toString() ) );
+                            throw validator.newValidationError( prefix, Static.RESOURCE.entityNameNotFound( prefix.toString() ) );
                     }
                 }
             } else {
                 final SqlIdentifier prefix1 = identifier.skipLast( 1 );
-                throw validator.newValidationError( prefix1, Static.RESOURCE.tableNameNotFound( prefix1.toString() ) );
+                throw validator.newValidationError( prefix1, Static.RESOURCE.entityNameNotFound( prefix1.toString() ) );
             }
         }
 
-        // If a table alias is part of the identifier, make sure that the table alias uses the same case as it was defined. For example, in
+        // If an entity alias is part of the identifier, make sure that the entity alias uses the same case as it was defined. For example, in
         //
         //    SELECT e.empno FROM Emp as E
         //
@@ -389,7 +374,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                         final SqlIdentifier prefix = identifier.getComponent( 0, i );
                         final SqlIdentifier suffix3 = identifier.getComponent( i, k + 1 );
                         final Step step = Util.last( resolved.resolves.get( 0 ).path.steps() );
-                        throw validator.newValidationError( suffix3, Static.RESOURCE.columnNotFoundInTableDidYouMean( suffix3.toString(), prefix.toString(), step.name ) );
+                        throw validator.newValidationError( suffix3, Static.RESOURCE.fieldNotFoundInEntityDidYouMean( suffix3.toString(), prefix.toString(), step.name ) );
                     }
                 }
                 // Find the shortest suffix that also fails. Suppose we cannot resolve "a.b.c"; we find we cannot resolve "a.b" but can resolve "a". So, the error will be "Column 'a.b' not found".
@@ -404,7 +389,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                 }
                 final SqlIdentifier prefix = identifier.getComponent( 0, i );
                 final SqlIdentifier suffix3 = identifier.getComponent( i, k + 1 );
-                throw validator.newValidationError( suffix3, Static.RESOURCE.columnNotFoundInTable( suffix3.toString(), prefix.toString() ) );
+                throw validator.newValidationError( suffix3, Static.RESOURCE.fieldNotFoundInEntity( suffix3.toString(), prefix.toString() ) );
             case 1:
                 path = resolved.only().path;
                 break;
@@ -443,7 +428,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
         for ( Step step : path.steps() ) {
             final String name = identifier.names.get( k );
             if ( step.i < 0 ) {
-                throw validator.newValidationError( identifier, Static.RESOURCE.columnNotFound( name ) );
+                throw validator.newValidationError( identifier, Static.RESOURCE.fieldNotFound( name ) );
             }
             final AlgDataTypeField field0 = step.rowType.getFields().get( step.i );
             final String fieldName = field0.getName();
@@ -464,7 +449,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
             ++k;
         }
 
-        // Multiple name components may have been resolved as one step by CustomResolvingTable.
+        // Multiple name components may have been resolved as one step by CustomResolvingEntity.
         if ( identifier.names.size() > k ) {
             identifier = identifier.getComponent( 0, k );
         }

@@ -195,19 +195,19 @@ public interface PolyphenyDbResource {
     ExInst<ValidatorException> databaseNotFound( String a0 );
 
     @BaseMessage("Entity ''{0}'' not found")
-    ExInst<ValidatorException> tableNameNotFound( String a0 );
+    ExInst<ValidatorException> entityNameNotFound( String a0 );
 
     @BaseMessage("Entity ''{0}'' not found; did you mean ''{1}''?")
-    ExInst<ValidatorException> tableNameNotFoundDidYouMean( String a0, String a1 );
+    ExInst<ValidatorException> entityNameNotFoundDidYouMean( String a0, String a1 );
 
     @BaseMessage("Value ''{0}'' is not valid JSON; {1}")
     ExInst<ValidatorException> notValidJson( String a0, String a1 );
 
     /**
-     * Same message as {@link #tableNameNotFound(String)} but a different kind of exception, so it can be used in {@code AlgBuilder}.
+     * Same message as {@link #entityNameNotFound(String)} but a different kind of exception, so it can be used in {@code AlgBuilder}.
      */
     @BaseMessage("Entity ''{0}'' not found")
-    ExInst<PolyphenyDbException> tableNotFound( String tableName );
+    ExInst<PolyphenyDbException> entityNotFound( String tableName );
 
     @BaseMessage("Object ''{0}'' not found")
     ExInst<ValidatorException> objectNotFound( String a0 );
@@ -225,16 +225,16 @@ public interface PolyphenyDbResource {
     ExInst<ValidatorException> notASequence( String a0 );
 
     @BaseMessage("Field ''{0}'' not found in any entity")
-    ExInst<ValidatorException> columnNotFound( String a0 );
+    ExInst<ValidatorException> fieldNotFound( String a0 );
 
     @BaseMessage("Field ''{0}'' not found in any entity; did you mean ''{1}''?")
-    ExInst<ValidatorException> columnNotFoundDidYouMean( String a0, String a1 );
+    ExInst<ValidatorException> fieldNotFoundDidYouMean( String a0, String a1 );
 
     @BaseMessage("Field ''{0}'' not found in entity ''{1}''")
-    ExInst<ValidatorException> columnNotFoundInTable( String a0, String a1 );
+    ExInst<ValidatorException> fieldNotFoundInEntity( String a0, String a1 );
 
     @BaseMessage("Field ''{0}'' not found in entity ''{1}''; did you mean ''{2}''?")
-    ExInst<ValidatorException> columnNotFoundInTableDidYouMean( String a0, String a1, String a2 );
+    ExInst<ValidatorException> fieldNotFoundInEntityDidYouMean( String a0, String a1, String a2 );
 
     @BaseMessage("Field ''{0}'' is ambiguous")
     ExInst<ValidatorException> columnAmbiguous( String a0 );
@@ -653,10 +653,10 @@ public interface PolyphenyDbResource {
     @BaseMessage("In user-defined aggregate class ''{0}'', first parameter to ''add'' method must be the accumulator (the return type of the ''init'' method)")
     ExInst<RuntimeException> firstParameterOfAdd( String className );
 
-    @BaseMessage("FilterableTable.scan returned a filter that was not in the original list: {0}")
-    ExInst<PolyphenyDbException> filterableTableInventedFilter( String s );
+    @BaseMessage("FilterableEntity.scan returned a filter that was not in the original list: {0}")
+    ExInst<PolyphenyDbException> filterableEntityInventedFilter( String s );
 
-    @BaseMessage("FilterableTable.scan must not return null")
+    @BaseMessage("FilterableEntity.scan must not return null")
     ExInst<PolyphenyDbException> filterableScanReturnedNull();
 
     @BaseMessage("Cannot convert entity ''{0}'' to stream")

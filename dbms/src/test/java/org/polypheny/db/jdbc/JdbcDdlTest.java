@@ -100,7 +100,7 @@ public class JdbcDdlTest {
     @Test
     public void testTypes() throws SQLException {
         // Check if there are new types missing in this test
-        assertEquals( PolyType.availableTypes().size(), 17, "Unexpected number of available types" );
+        assertEquals( 18, PolyType.allowedFieldTypes().size(), "Unexpected number of available types" );
 
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -164,7 +164,7 @@ public class JdbcDdlTest {
     @Test
     public void viewTestTypes() throws SQLException {
         // Check if there are new types missing in this test
-        assertEquals( 17, PolyType.availableTypes().size(), "Unexpected number of available types" );
+        assertEquals( 18, PolyType.allowedFieldTypes().size(), "Unexpected number of available types" );
 
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -228,7 +228,7 @@ public class JdbcDdlTest {
     @Test
     public void materializedTestTime() throws SQLException {
         // Check if there are new types missing in this test
-        assertEquals( PolyType.availableTypes().size(), 17, "Unexpected number of available types" );
+        assertEquals( 18, PolyType.allowedFieldTypes().size(), "Unexpected number of available types" );
 
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -261,7 +261,7 @@ public class JdbcDdlTest {
     @Test
     public void materializedTestTimeStamp() throws SQLException {
         // Check if there are new types missing in this test
-        assertEquals( PolyType.availableTypes().size(), 17, "Unexpected number of available types" );
+        assertEquals( 18, PolyType.allowedFieldTypes().size(), "Unexpected number of available types" );
 
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -294,7 +294,7 @@ public class JdbcDdlTest {
     @Test
     public void materializedTestTypes() throws SQLException {
         // Check if there are new types missing in this test
-        assertEquals( PolyType.availableTypes().size(), 17, "Unexpected number of available types" );
+        assertEquals( 18, PolyType.allowedFieldTypes().size(), "Unexpected number of available types" );
 
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -355,7 +355,7 @@ public class JdbcDdlTest {
     @Test
     public void nullTest() throws SQLException {
         // Check if there are new types missing in this test
-        assertEquals( PolyType.availableTypes().size(), 17, "Unexpected number of available types" );
+        assertEquals( 18, PolyType.allowedFieldTypes().size(), "Unexpected number of available types" );
 
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

@@ -392,6 +392,12 @@ public class TemporalFunctions {
     }
 
 
+    @SuppressWarnings("unused")
+    public static Long dateToLongAddLocal( Date v ) {
+        return v == null ? null : dateToLong( v ) + 3 * LOCAL_TZ.getOffset( v.getTime() );
+    }
+
+
     /**
      * Converts the Java type used for UDF parameters of SQL TIME type ({@link java.sql.Time}) to internal representation (int).
      * <p>

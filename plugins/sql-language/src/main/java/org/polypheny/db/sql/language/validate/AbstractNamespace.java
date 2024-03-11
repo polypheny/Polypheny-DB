@@ -28,6 +28,7 @@ import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.sql.language.SqlNode;
+import org.polypheny.db.util.NameMatchers;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
@@ -155,7 +156,7 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
 
 
     @Override
-    public Entity getTable() {
+    public Entity getEntity() {
         return null;
     }
 
@@ -169,7 +170,7 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
     @Override
     public boolean fieldExists( String name ) {
         final AlgDataType rowType = getTupleType();
-        return validator.snapshot.nameMatcher.field( rowType, name ) != null;
+        return NameMatchers.withCaseSensitive( false ).field( rowType, name ) != null;
     }
 
 

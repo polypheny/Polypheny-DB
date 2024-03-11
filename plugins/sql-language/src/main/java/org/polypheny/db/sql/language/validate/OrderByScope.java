@@ -28,6 +28,7 @@ import org.polypheny.db.sql.language.SqlNodeList;
 import org.polypheny.db.sql.language.SqlSelect;
 import org.polypheny.db.util.Moniker;
 import org.polypheny.db.util.NameMatcher;
+import org.polypheny.db.util.NameMatchers;
 
 
 /**
@@ -77,7 +78,7 @@ public class OrderByScope extends DelegatingScope {
             final SqlValidatorNamespace selectNs = validator.getSqlNamespace( select );
             final AlgDataType rowType = selectNs.getTupleType();
 
-            final NameMatcher nameMatcher = validator.snapshot.nameMatcher;
+            final NameMatcher nameMatcher = NameMatchers.withCaseSensitive( false );
             final AlgDataTypeField field = nameMatcher.field( rowType, name );
             final int aliasCount = aliasCount( nameMatcher, name );
             if ( aliasCount > 1 ) {
@@ -112,7 +113,7 @@ public class OrderByScope extends DelegatingScope {
     public AlgDataType resolveColumn( String name, SqlNode ctx ) {
         final SqlValidatorNamespace selectNs = validator.getSqlNamespace( select );
         final AlgDataType rowType = selectNs.getTupleType();
-        final NameMatcher nameMatcher = validator.snapshot.nameMatcher;
+        final NameMatcher nameMatcher = NameMatchers.withCaseSensitive( false );
         final AlgDataTypeField field = nameMatcher.field( rowType, name );
         if ( field != null ) {
             return field.getType();

@@ -164,7 +164,7 @@ public class ScanNode implements Node {
         final Enumerable<PolyValue[]> enumerable = filterableTable.scan( root, mutableFilters );
         for ( RexNode filter : mutableFilters ) {
             if ( !filters.contains( filter ) ) {
-                throw RESOURCE.filterableTableInventedFilter( filter.toString() ).ex();
+                throw RESOURCE.filterableEntityInventedFilter( filter.toString() ).ex();
             }
         }
         final Enumerable<Row<PolyValue>> rowEnumerable = Enumerables.toRow( enumerable );
@@ -186,7 +186,7 @@ public class ScanNode implements Node {
             final Enumerable<PolyValue[]> enumerable1 = pfTable.scan( root, mutableFilters, projectInts );
             for ( RexNode filter : mutableFilters ) {
                 if ( !filters.contains( filter ) ) {
-                    throw RESOURCE.filterableTableInventedFilter( filter.toString() ).ex();
+                    throw RESOURCE.filterableEntityInventedFilter( filter.toString() ).ex();
                 }
             }
             final ImmutableBitSet usedFields = AlgOptUtil.InputFinder.bits( mutableFilters, null );

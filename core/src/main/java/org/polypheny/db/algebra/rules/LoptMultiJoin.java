@@ -106,7 +106,7 @@ public class LoptMultiJoin {
     private final ImmutableBitSet[] outerJoinFactors;
 
     /**
-     * Bitmap corresponding to the fields projected from each join factor, after row scan processing has completed. This excludes fields referenced in join conditions,
+     * Bitmap corresponding to the fields projected from each join factor, after row relScan processing has completed. This excludes fields referenced in join conditions,
      * unless the field appears in the final projection list.
      */
     private List<ImmutableBitSet> projFields;

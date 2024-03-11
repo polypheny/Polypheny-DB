@@ -195,7 +195,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
     private ImmutableMap<Long, TreeSet<LogicalColumn>> buildTableColumns() {
         Map<Long, TreeSet<LogicalColumn>> map = new HashMap<>();
-        tables.values().forEach( t -> map.put( t.id, new TreeSet<>( ( a, b ) -> a.position == b.position ? (int) (a.id - a.id) : a.position - b.position ) ) ); // while this should not happen, we ensure consistency with this
+        tables.values().forEach( t -> map.put( t.id, new TreeSet<>( ( a, b ) -> a.position == b.position ? (int) (a.id - b.id) : a.position - b.position ) ) ); // while this should not happen, we ensure consistency with this
         columns.forEach( ( k, v ) -> {
             map.get( v.tableId ).add( v );
         } );

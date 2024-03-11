@@ -130,7 +130,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
         List<String> errorMessages = new ArrayList<>();
         List<Class<? extends Exception>> errorClasses = new ArrayList<>();
         if ( (modify.isInsert() || modify.isMerge() || modify.isUpdate()) && RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() ) {
-            //builder.scan( table.getNamespaceName(), table.name );
+            //builder.relScan( table.getNamespaceName(), table.name );
             for ( LogicalConstraint constraint : constraints ) {
                 builder.clear();
                 final AlgNode scan = LogicalRelScan.create( modify.getCluster(), modify.getEntity() );
@@ -257,10 +257,10 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
         List<String> errorMessages = new ArrayList<>();
         List<Class<? extends Exception>> errorClasses = new ArrayList<>();
         if ( RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() ) {
-            //builder.scan( table.getNamespaceName(), table.name );
+            //builder.relScan( table.getNamespaceName(), table.name );
             for ( LogicalConstraint constraint : constraints ) {
                 builder.clear();
-                builder.scan( table );//LogicalTableScan.create( modify.getCluster(), modify.getTable() );
+                builder.relScan( table );//LogicalTableScan.create( modify.getCluster(), modify.getTable() );
                 // Enforce uniqueness between the already existing values and the new values
                 List<RexIndexRef> keys = constraint.key
                         .getFieldNames()
@@ -290,8 +290,8 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
             for ( final LogicalForeignKey foreignKey : Stream.concat( foreignKeys.stream(), exportedKeys.stream() ).toList() ) {
                 builder.clear();
 
-                final AlgNode scan = builder.scan( foreignKey.getSchemaName(), foreignKey.getTableName() ).build();
-                final AlgNode ref = builder.scan( foreignKey.getSchemaName(), foreignKey.getReferencedKeyEntityName() ).build();
+                final AlgNode scan = builder.relScan( foreignKey.getSchemaName(), foreignKey.getTableName() ).build();
+                final AlgNode ref = builder.relScan( foreignKey.getSchemaName(), foreignKey.getReferencedKeyEntityName() ).build();
 
                 builder.push( scan );
                 builder.project( foreignKey.getFieldNames().stream().map( builder::field ).collect( Collectors.toList() ) );

@@ -50,7 +50,7 @@ import org.polypheny.db.util.Pair;
 
 
 /**
- * Relational expression representing a scan of a table in a Mongo data source.
+ * Relational expression representing a relScan of a table in a Mongo data source.
  */
 @Slf4j
 public class MongoToEnumerableConverter extends ConverterImpl implements EnumerableAlg {

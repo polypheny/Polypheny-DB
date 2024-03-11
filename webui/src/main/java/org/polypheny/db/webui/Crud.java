@@ -2630,7 +2630,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      * Get all supported data types of the DBMS.
      */
     public void getTypeInfo( final Context ctx ) {
-        ctx.json( PolyType.availableTypes().stream().map( PolyTypeModel::from ).collect( Collectors.toList() ) );
+        ctx.json( PolyType.allowedFieldTypes().stream().map( PolyTypeModel::from ).collect( Collectors.toList() ) );
     }
 
 

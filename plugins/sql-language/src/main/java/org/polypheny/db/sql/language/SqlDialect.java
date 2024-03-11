@@ -802,6 +802,11 @@ public class SqlDialect {
     }
 
 
+    public boolean handlesUtcCorrectly() {
+        return true;
+    }
+
+
     public enum IntervalParameterStrategy {CAST, MULTIPLICATION, NONE}
 
 

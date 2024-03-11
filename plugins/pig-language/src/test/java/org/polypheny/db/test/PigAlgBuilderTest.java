@@ -65,7 +65,7 @@ public class PigAlgBuilderTest extends PigTestTemplate {
         //   SELECT *
         //   FROM emp
 
-        final AlgNode root = builder.scan( "emp" ).build();
+        final AlgNode root = builder.relScan( "emp" ).build();
         assertThat( str( root ), is( "LogicalRelScan(model=[RELATIONAL], table=[0], layer=[LOGICAL])\n" ) );
     }
 
@@ -76,7 +76,7 @@ public class PigAlgBuilderTest extends PigTestTemplate {
         // Syntax:
         //   alias = DISTINCT alias [PARTITION BY partitioner] [PARALLEL n];
         final AlgNode root = builder
-                .scan( "emp" )
+                .relScan( "emp" )
                 .project( builder.field( "deptno" ) )
                 .distinct()
                 .build();
@@ -118,7 +118,7 @@ public class PigAlgBuilderTest extends PigTestTemplate {
         // Equivalent to Pig Latin:
         //   r = GROUP e BY (deptno, job);
         final AlgNode root = builder
-                .scan( "emp" )
+                .relScan( "emp" )
                 .group( null, null, -1, builder.groupKey( "deptno", "job" ).alias( "e" ) )
                 .build();
         final String plan = """
@@ -135,8 +135,8 @@ public class PigAlgBuilderTest extends PigTestTemplate {
         // Equivalent to Pig Latin:
         //   r = GROUP e BY deptno, d BY deptno;
         final AlgNode root = builder
-                .scan( "emp" )
-                .scan( "dept" )
+                .relScan( "emp" )
+                .relScan( "dept" )
                 .group( null, null, -1,
                         builder.groupKey( "deptno" ).alias( "e" ),
                         builder.groupKey( "deptno" ).alias( "d" ) )

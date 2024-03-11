@@ -62,9 +62,21 @@ public enum RuntimeConfig {
             ConfigType.BOOLEAN
     ), // Druid
 
-    NAMESPACE_DEFAULT_CASE_SENSITIVE(
-            "runtime/caseSensitive",
+    RELATIONAL_NAMESPACE_DEFAULT_CASE_SENSITIVE(
+            "runtime/relationalCaseSensitive",
             "Whether a relational namespace is case-sensitive if not specified otherwise.",
+            false,
+            ConfigType.BOOLEAN
+    ),
+    DOCUMENT_NAMESPACE_DEFAULT_CASE_SENSITIVE(
+            "runtime/documentCaseSensitive",
+            "Whether a document namespace is case-sensitive if not specified otherwise.",
+            false,
+            ConfigType.BOOLEAN
+    ),
+    GRAPH_NAMESPACE_DEFAULT_CASE_SENSITIVE(
+            "runtime/graphCaseSensitive",
+            "Whether a graph (namespace) is case-sensitive if not specified otherwise.",
             false,
             ConfigType.BOOLEAN
     ),
@@ -335,13 +347,13 @@ public enum RuntimeConfig {
 
     JOINED_TABLE_SCAN_CACHE(
             "runtime/joinedScanCache",
-            "Whether to use the joined table scan caching.",
+            "Whether to use the joined table relScan caching.",
             false,
             ConfigType.BOOLEAN ),
 
     JOINED_TABLE_SCAN_CACHE_SIZE(
             "runtime/joinedScanCacheSize",
-            "Size of the joined table scan cache. If the limit is reached, the least recently used entry is removed.",
+            "Size of the joined table relScan cache. If the limit is reached, the least recently used entry is removed.",
             1000,
             ConfigType.INTEGER ),
 
@@ -488,7 +500,12 @@ public enum RuntimeConfig {
             "Connection and respones timeout for autodocker.",
             45,
             ConfigType.INTEGER
-    );
+    ),
+    SERIALIZATION_BUFFER_SIZE(
+            "runtime/serialization",
+            "How big the buffersize for catalog objects should be.",
+            200000,
+            ConfigType.INTEGER );
 
 
     private final String key;

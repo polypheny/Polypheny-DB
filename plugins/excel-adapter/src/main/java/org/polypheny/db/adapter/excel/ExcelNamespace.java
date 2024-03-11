@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
@@ -31,15 +32,15 @@ import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.schema.Namespace.Schema;
-import org.polypheny.db.schema.impl.AbstractNamespace;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.Source;
 import org.polypheny.db.util.Sources;
 import org.polypheny.db.util.Util;
 
-public class ExcelNamespace extends AbstractNamespace implements Schema {
+public class ExcelNamespace extends Namespace {
 
     private final URL directoryUrl;
     private final ExcelTable.Flavor flavor;
@@ -52,13 +53,13 @@ public class ExcelNamespace extends AbstractNamespace implements Schema {
      *
      * @param directoryUrl Directory that holds {@code .Excel} files
      */
-    public ExcelNamespace( long id, URL directoryUrl, ExcelTable.Flavor flavor ) {
-        this( id, directoryUrl, flavor, "" );
+    public ExcelNamespace( long id, long adapterId, URL directoryUrl, ExcelTable.Flavor flavor ) {
+        this( id, adapterId, directoryUrl, flavor, "" );
     }
 
 
-    public ExcelNamespace( long id, URL directoryUrl, ExcelTable.Flavor flavor, String sheet ) {
-        super( id );
+    public ExcelNamespace( long id, long adapterId, URL directoryUrl, ExcelTable.Flavor flavor, String sheet ) {
+        super( id, adapterId );
         this.directoryUrl = directoryUrl;
         this.flavor = flavor;
         this.sheet = sheet;
@@ -91,7 +92,6 @@ public class ExcelNamespace extends AbstractNamespace implements Schema {
         return physical;
 
     }
-
 
 
     /**
@@ -175,6 +175,12 @@ public class ExcelNamespace extends AbstractNamespace implements Schema {
         } catch ( IllegalArgumentException e ) {
             return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
         }
+    }
+
+
+    @Override
+    protected @Nullable Convention getConvention() {
+        return null; // no convention
     }
 
 }

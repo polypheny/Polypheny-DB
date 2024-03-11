@@ -124,7 +124,7 @@ public class LogicalStreamer extends Streamer {
 
         if ( !modify.isInsert() ) {
             // get collection, which is modified
-            algBuilder.scan( modify.getEntity() );
+            algBuilder.relScan( modify.getEntity() );
             // at the moment no data model is able to conditionally insert
             attachFilter( modify, algBuilder, rexBuilder );
         } else {

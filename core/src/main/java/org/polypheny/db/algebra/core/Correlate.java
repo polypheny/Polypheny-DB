@@ -174,7 +174,7 @@ public abstract class Correlate extends BiAlg {
         AlgOptCost rightCost = planner.getCost( getRight(), mq );
         AlgOptCost rescanCost = rightCost.multiplyBy( Math.max( 1.0, restartCount - 1 ) );
 
-        return planner.getCostFactory().makeCost( rowCount /* generate results */ + leftRowCount /* scan left results */, 0, 0 ).plus( rescanCost );
+        return planner.getCostFactory().makeCost( rowCount /* generate results */ + leftRowCount /* relScan left results */, 0, 0 ).plus( rescanCost );
     }
 
 

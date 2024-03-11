@@ -25,7 +25,6 @@ import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.Contexts;
-import org.polypheny.db.processing.DeepCopyShuttle;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.routing.FieldDistribution;
 import org.polypheny.db.transaction.Statement;
@@ -33,7 +32,7 @@ import org.polypheny.db.type.entity.document.PolyDocument;
 
 
 /**
- * Extension of RelBuilder for routed plans with some more information.
+ * Extension of AlgBuilder for routed plans with some more information.
  */
 @Setter
 @Getter
@@ -52,21 +51,6 @@ public class RoutedAlgBuilder extends AlgBuilder {
     }
 
 
-    public static RoutedAlgBuilder createCopy( Statement statement, AlgCluster cluster, RoutedAlgBuilder builder ) {
-        final RoutedAlgBuilder newBuilder = RoutedAlgBuilder.create( statement, cluster );
-        newBuilder.fieldDistribution = builder.fieldDistribution;
-
-        if ( builder.stackSize() > 0 ) {
-            for ( int i = 0; i < builder.stackSize(); i++ ) {
-                final AlgNode node = builder.peek( i ).accept( new DeepCopyShuttle() );
-                newBuilder.push( node );
-            }
-        }
-
-        return newBuilder;
-    }
-
-
     @Override
     public RoutedAlgBuilder values( Iterable<? extends List<RexLiteral>> tupleList, AlgDataType rowType ) {
         super.values( tupleList, rowType );
@@ -75,8 +59,8 @@ public class RoutedAlgBuilder extends AlgBuilder {
 
 
     @Override
-    public RoutedAlgBuilder scan( List<String> tableNames ) {
-        super.scan( tableNames );
+    public RoutedAlgBuilder relScan( List<String> tableNames ) {
+        super.relScan( tableNames );
         return this;
     }
 

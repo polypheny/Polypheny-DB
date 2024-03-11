@@ -35,13 +35,12 @@ import org.polypheny.db.monitoring.repository.PersistentMonitoringRepository;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 
 @Slf4j
-public class MapDbRepository implements PersistentMonitoringRepository {
+public class InMemoryRepository implements PersistentMonitoringRepository {
 
     private static final String FILE_PATH = "simpleBackendDb";
     private static final String FOLDER_NAME = "monitoring";
-    protected final HashMap<Class<?>, Map<UUID, MonitoringDataPoint>> data = new HashMap<>();
-    //protected DB simpleBackendDb;
-    protected HashMap<String, QueryPostCostImpl> queryPostCosts;
+    protected final Map<Class<?>, Map<UUID, MonitoringDataPoint>> data = new HashMap<>();
+    protected Map<String, QueryPostCostImpl> queryPostCosts;
 
 
     @Override
@@ -60,7 +59,6 @@ public class MapDbRepository implements PersistentMonitoringRepository {
 
         if ( table != null ) {
             table.put( dataPoint.id(), dataPoint );
-            //this.simpleBackendDb.commit();
         }
     }
 
@@ -213,13 +211,6 @@ public class MapDbRepository implements PersistentMonitoringRepository {
         synchronized ( this ) {
             File folder = PolyphenyHomeDirManager.getInstance().registerNewFolder( folderName );
 
-            /*if ( Catalog.resetCatalog ) {
-                StatusService.printInfo( "Resetting monitoring repository on startup." );
-
-                if ( new File( folder, filePath ).exists() ) {
-                    new File( folder, filePath ).delete();
-                }
-            }*/
 
             // Assume that file is locked
             boolean fileLocked = true;
@@ -229,21 +220,7 @@ public class MapDbRepository implements PersistentMonitoringRepository {
 
             long start = System.currentTimeMillis();
             long finish = System.currentTimeMillis();
-            /*while ( fileLocked && ((finish - start) < timeThreshold) ) {
-                try {
-                    simpleBackendDb = DBMaker
-                            .fileDB( new File( folder, filePath ) )
-                            .closeOnJvmShutdown()
-                            .transactionEnable()
-                            .fileMmapEnableIfSupported()
-                            .fileMmapPreclearDisable()
-                            .make();
-                    fileLocked = false;
-                } catch ( DBException e ) {
-                    log.warn( "Monitoring Repository is currently locked by another process. Waiting..." );
-                }
-                finish = System.currentTimeMillis();
-            }*/
+
             // Exceeded threshold
             if ( (finish - start) >= timeThreshold ) {
                 throw new GenericRuntimeException( "Initializing Monitoring Repository took too long...\nMake sure that no other "
@@ -257,13 +234,13 @@ public class MapDbRepository implements PersistentMonitoringRepository {
 
 
     private void initializePostCosts() {
-        queryPostCosts = new HashMap<>();//simpleBackendDb.treeMap( QueryPostCost.class.getName(), Serializer.STRING, Serializer.JAVA ).createOrOpen();
+        queryPostCosts = new HashMap<>();
     }
 
 
     private void createPersistentTable( Class<? extends MonitoringDataPoint> classPersistentData ) {
         if ( classPersistentData != null ) {
-            final Map<UUID, MonitoringDataPoint> treeMap = new HashMap<>();//simpleBackendDb.treeMap( classPersistentData.getName(), Serializer.UUID, Serializer.JAVA ).createOrOpen();
+            final Map<UUID, MonitoringDataPoint> treeMap = new HashMap<>();
             data.put( classPersistentData, treeMap );
         }
     }

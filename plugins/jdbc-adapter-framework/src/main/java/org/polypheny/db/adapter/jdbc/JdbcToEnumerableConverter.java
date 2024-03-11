@@ -105,7 +105,7 @@ import org.polypheny.db.util.BuiltInMethod;
 
 
 /**
- * Relational expression representing a scan of a table in a JDBC data source.
+ * Relational expression representing a relScan of a table in a JDBC data source.
  */
 @Slf4j
 public class JdbcToEnumerableConverter extends ConverterImpl implements EnumerableAlg {
@@ -306,7 +306,6 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
         final List<Expression> dateTimeArgs = new ArrayList<>();
         dateTimeArgs.add( Expressions.constant( i + 1 ) );
         PolyType polyType = fieldType.getPolyType();
-        boolean offset = false;
         switch ( calendarPolicy ) {
             case LOCAL:
                 dateTimeArgs.add( calendar_ );
@@ -319,10 +318,6 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 polyType = PolyType.ANY;
                 break;
             case SHIFT:
-                offset = switch ( polyType ) {
-                    case TIMESTAMP, DATE -> true;
-                    default -> offset;
-                };
                 break;
         }
         final Expression source = switch ( polyType ) {
@@ -332,11 +327,6 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             case DATE -> Expressions.call( resultSet_, "getDate", Expressions.constant( i + 1 ), UTC_EXPRESSION );
             case TIME -> Expressions.call( resultSet_, "getTime", Expressions.constant( i + 1 ), LOCAL_EXPRESSION );
             case TIMESTAMP -> Expressions.call( resultSet_, "getTimestamp", Expressions.constant( i + 1 ), UTC_EXPRESSION );
-            /*case DATE, TIME, TIMESTAMP -> Expressions.call(
-                    getMethod( polyType, fieldType.isNullable(), offset ),
-                    Expressions.<Expression>list()
-                            .append( Expressions.call( resultSet_, getMethod2( polyType ), dateTimeArgs ) )
-                            .appendIf( offset, getTimeZoneExpression( implementor ) ) );*/
             case FILE, AUDIO, IMAGE, VIDEO -> Expressions.call( resultSet_, BuiltInMethod.RESULTSET_GETBYTES.method, Expressions.constant( i + 1 ) );
             default -> Expressions.call( resultSet_, jdbcGetMethod( primitive ), Expressions.constant( i + 1 ) );
         };
@@ -388,47 +378,61 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
 
     private static Expression getOfPolyExpression( AlgDataType fieldType, Expression source, ParameterExpression resultSet_, int i, SqlDialect dialect ) {
         final Expression poly;
+        String methodName = fieldType.isNullable() ? "ofNullable" : "of";
         switch ( fieldType.getPolyType() ) {
             case BIGINT:
-                poly = Expressions.call( PolyLong.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Number.class ) );
+                poly = Expressions.call( PolyLong.class, methodName, Expressions.convert_( source, Number.class ) );
                 break;
             case VARCHAR:
             case CHAR:
-                poly = Expressions.call( PolyString.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, String.class ) );
+                poly = Expressions.call( PolyString.class, methodName, Expressions.convert_( source, String.class ) );
                 break;
             case SMALLINT:
             case TINYINT:
             case INTEGER:
-                poly = Expressions.call( PolyInteger.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Number.class ) );
+                poly = Expressions.call( PolyInteger.class, methodName, Expressions.convert_( source, Number.class ) );
                 break;
             case BOOLEAN:
-                poly = Expressions.call( PolyBoolean.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Boolean.class ) );
+                poly = Expressions.call( PolyBoolean.class, methodName, Expressions.convert_( source, Boolean.class ) );
                 break;
             case FLOAT:
             case REAL:
-                poly = Expressions.call( PolyFloat.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Number.class ) );
+                poly = Expressions.call( PolyFloat.class, methodName, Expressions.convert_( source, Number.class ) );
                 break;
             case DOUBLE:
-                poly = Expressions.call( PolyDouble.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Number.class ) );
+                poly = Expressions.call( PolyDouble.class, methodName, Expressions.convert_( source, Number.class ) );
                 break;
             case TIME:
-                poly = Expressions.call( PolyTime.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Time.class ) );
+                poly = Expressions.call( PolyTime.class, methodName, Expressions.convert_( source, Time.class ) );
                 break;
             case TIMESTAMP:
-                poly = Expressions.call( PolyTimestamp.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Timestamp.class ) );
+                UnaryExpression timestamp = Expressions.convert_( source, Timestamp.class );
+                Expression temp = Expressions.call( PolyTimestamp.class, methodName, timestamp );
+                if ( !dialect.handlesUtcCorrectly() ) {
+                    // some stores do not adhere to Jdbc standard and return timestamps in local time even if using UTC calendar
+                    temp = Expressions.call( temp, "addLocal" );
+                }
+                poly = temp;
                 break;
             case DATE:
-                poly = Expressions.call( PolyDate.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Date.class ) );
+                Expression date = Expressions.convert_( source, Date.class );
+                if ( !dialect.handlesUtcCorrectly() ) {
+                    // some stores do not adhere to Jdbc standard and return dates in local time even if using UTC calendar
+                    date = Expressions.convert_( Expressions.call(
+                            TemporalFunctions.class, "dateToLongAddLocal", date ), Long.class );
+                }
+                poly = Expressions.call( PolyDate.class, methodName, date );
+
                 break;
             case DECIMAL:
-                poly = Expressions.call( PolyBigDecimal.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Number.class ), Expressions.constant( fieldType.getPrecision() ), Expressions.constant( fieldType.getScale() ) );
+                poly = Expressions.call( PolyBigDecimal.class, methodName, Expressions.convert_( source, Number.class ), Expressions.constant( fieldType.getPrecision() ), Expressions.constant( fieldType.getScale() ) );
                 break;
             case ARRAY:
-                poly = Expressions.call( PolyList.class, fieldType.isNullable() ? "ofNullable" : "of", source ); // todo might change
+                poly = Expressions.call( PolyList.class, methodName, source );
                 break;
             case VARBINARY:
                 if ( dialect.supportsComplexBinary() ) {
-                    poly = Expressions.call( PolyBinary.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, byte[].class ) );
+                    poly = Expressions.call( PolyBinary.class, methodName, Expressions.convert_( source, byte[].class ) );
                 } else {
                     poly = Expressions.call( PolyBinary.class, "fromTypedJson", Expressions.convert_( source, String.class ), Expressions.constant( PolyBinary.class ) );
                 }
@@ -440,7 +444,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             case AUDIO:
             case IMAGE:
             case VIDEO:
-                poly = Expressions.call( PolyBlob.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, byte[].class ) );
+                poly = Expressions.call( PolyBlob.class, methodName, Expressions.convert_( source, byte[].class ) );
                 break;
             default:
                 log.warn( "potentially unhandled polyValue" );

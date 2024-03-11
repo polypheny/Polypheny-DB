@@ -35,12 +35,9 @@ package org.polypheny.db.adapter.jdbc;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -53,14 +50,10 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Namespace;
-import org.polypheny.db.schema.Namespace.Schema;
-import org.polypheny.db.schema.SchemaVersion;
 import org.polypheny.db.schema.types.Expressible;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.type.PolyType;
@@ -73,7 +66,7 @@ import org.polypheny.db.type.PolyType;
  * against those tables, pushing down as much as possible of the query logic to SQL.
  */
 @Slf4j
-public class JdbcSchema implements Namespace, Schema, Expressible {
+public class JdbcSchema extends Namespace implements Expressible {
 
     final ConnectionFactory connectionFactory;
     public final SqlDialect dialect;
@@ -95,6 +88,7 @@ public class JdbcSchema implements Namespace, Schema, Expressible {
             JdbcConvention convention,
             Map<String, JdbcTable> tableMap,
             Adapter<?> adapter ) {
+        super( id, adapter.getAdapterId() );
         this.id = id;
         this.connectionFactory = connectionFactory;
         this.dialect = dialect;
@@ -118,6 +112,7 @@ public class JdbcSchema implements Namespace, Schema, Expressible {
             @NonNull SqlDialect dialect,
             JdbcConvention convention,
             Adapter<?> adapter ) {
+        super( id, adapter.getAdapterId() );
         this.id = id;
         this.connectionFactory = connectionFactory;
         this.dialect = dialect;
@@ -125,12 +120,6 @@ public class JdbcSchema implements Namespace, Schema, Expressible {
         this.convention = convention;
         this.tableMap = new HashMap<>();
         this.adapter = adapter;
-    }
-
-
-    @Override
-    public Long getAdapterId() {
-        return adapter.getAdapterId();
     }
 
 
@@ -155,24 +144,6 @@ public class JdbcSchema implements Namespace, Schema, Expressible {
     }
 
 
-    @Override
-    public boolean isMutable() {
-        return true;
-    }
-
-
-    @Override
-    public Namespace snapshot( SchemaVersion version ) {
-        return new JdbcSchema(
-                id,
-                connectionFactory,
-                dialect,
-                convention,
-                tableMap,
-                adapter );
-    }
-
-
     // Used by generated code (see class JdbcToEnumerableConverter).
     public ConnectionHandler getConnectionHandler( DataContext dataContext ) {
         try {
@@ -184,33 +155,9 @@ public class JdbcSchema implements Namespace, Schema, Expressible {
     }
 
 
-    @Override
-    public Expression getExpression( Snapshot snapshot, long id ) {
-        return asExpression();//Schemas.subSchemaExpression( Catalog.getInstance().getAdapterCatalog( getAdapterId() ), id, getAdapterId(), JdbcSchema.class );
-    }
-
-
     protected Multimap<String, Function> getFunctions() {
         // TODO: populate map from JDBC metadata
         return ImmutableMultimap.of();
-    }
-
-
-    @Override
-    public final Collection<Function> getFunctions( String name ) {
-        return getFunctions().get( name ); // never null
-    }
-
-
-    @Override
-    public final Set<String> getFunctionNames() {
-        return getFunctions().keySet();
-    }
-
-
-    @Override
-    public Entity getEntity( String name ) {
-        return getTableMap().get( name );
     }
 
 
@@ -255,41 +202,9 @@ public class JdbcSchema implements Namespace, Schema, Expressible {
     }
 
 
-    @Override
-    public Set<String> getEntityNames() {
-        // This method is called during a cache refresh. We can take it as a signal that we need to re-build our own cache.
-        return getTableMap().keySet();
-    }
-
-
     protected Map<String, AlgProtoDataType> getTypes() {
         // TODO: populate map from JDBC metadata
         return ImmutableMap.of();
-    }
-
-
-    @Override
-    public AlgProtoDataType getType( String name ) {
-        return getTypes().get( name );
-    }
-
-
-    @Override
-    public Set<String> getTypeNames() {
-        return getTypes().keySet();
-    }
-
-
-    @Override
-    public Namespace getSubNamespace( String name ) {
-        // JDBC does not support sub-schemas.
-        return null;
-    }
-
-
-    @Override
-    public Set<String> getSubNamespaceNames() {
-        return ImmutableSet.of();
     }
 
 

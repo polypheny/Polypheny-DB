@@ -56,9 +56,9 @@ import org.polypheny.db.plan.AlgTraitSet;
 
 
 /**
- * Relational expression representing a scan of a CSV file.
+ * Relational expression representing a relScan of a CSV file.
  *
- * Like any table scan, it serves as a leaf node of a query tree.
+ * Like any table relScan, it serves as a leaf node of a query tree.
  */
 public class CsvScan extends RelScan<CsvTable> implements EnumerableAlg {
 
@@ -107,7 +107,7 @@ public class CsvScan extends RelScan<CsvTable> implements EnumerableAlg {
 
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
-        // Multiply the cost by a factor that makes a scan more attractive if it has significantly fewer fields than the original scan.
+        // Multiply the cost by a factor that makes a relScan more attractive if it has significantly fewer fields than the original relScan.
         //
         // The "+ 2D" on top and bottom keeps the function fairly smooth.
         //
@@ -120,9 +120,6 @@ public class CsvScan extends RelScan<CsvTable> implements EnumerableAlg {
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.preferArray() );
 
-        /*if ( table instanceof JsonTable ) {
-            return implementor.result( physType, Blocks.toBlock( Expressions.call( table.getExpression( JsonTable.class ), "enumerable" ) ) );
-        }*/
         return implementor.result( physType, Blocks.toBlock( Expressions.call( entity.asExpression( CsvTranslatableTable.class ), "project", implementor.getRootExpression(), Expressions.constant( fields ) ) ) );
     }
 

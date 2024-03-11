@@ -84,7 +84,7 @@ public class ExcelTableScan extends RelScan<ExcelTable> implements EnumerableAlg
 
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
-        // Multiply the cost by a factor that makes a scan more attractive if it has significantly fewer fields than the original scan.
+        // Multiply the cost by a factor that makes a relScan more attractive if it has significantly fewer fields than the original relScan.
         //
         // The "+ 2D" on top and bottom keeps the function fairly smooth.
         //
@@ -97,9 +97,6 @@ public class ExcelTableScan extends RelScan<ExcelTable> implements EnumerableAlg
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.preferArray() );
 
-        /*if ( table instanceof JsonTable ) {
-            return implementor.result( physType, Blocks.toBlock( Expressions.call( table.getExpression( JsonTable.class ), "enumerable" ) ) );
-        }*/
         return implementor.result( physType, Blocks.toBlock( Expressions.call( entity.asExpression( ExcelTranslatableTable.class ), "project", implementor.getRootExpression(), Expressions.constant( fields ) ) ) );
     }
 

@@ -70,6 +70,7 @@ import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.nodes.Function;
@@ -82,6 +83,7 @@ import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
@@ -209,6 +211,9 @@ public class JdbcRules {
             if ( convertInputTraits && !canJoinOnCondition( join.getCondition() ) ) {
                 return null;
             }
+            if ( containsAggregateSubquery( join.getLeft() ) || containsAggregateSubquery( join.getRight() ) ) {
+                return null;
+            }
             try {
                 return new JdbcJoin(
                         join.getCluster(),
@@ -222,6 +227,11 @@ public class JdbcRules {
                 LOGGER.debug( e.toString() );
                 return null;
             }
+        }
+
+
+        private boolean containsAggregateSubquery( AlgNode input ) {
+            return input instanceof Aggregate || (input instanceof AlgSubset subset && subset.getOriginal() instanceof Aggregate);
         }
 
 
@@ -437,12 +447,25 @@ public class JdbcRules {
                     && !userDefinedFunctionInProject( project )
                     && !knnFunctionInProject( project )
                     && !multimediaFunctionInProject( project )
+                    && !contains( project, List.of( OperatorName.INITCAP ) )
                     && !DocumentRules.containsJson( project )
                     && !DocumentRules.containsDocument( project )
                     && !UnsupportedRexCallVisitor.containsModelItem( project.getProjects() )
                     && out.dialect.supportsProject( project )
                     && (out.dialect.supportsNestedArrays() || !itemOperatorInProject( project ));
 
+        }
+
+
+        private static boolean contains( Project project, List<OperatorName> operatorNames ) {
+            for ( RexNode node : project.getChildExps() ) {
+                if ( node instanceof RexCall call ) {
+                    if ( operatorNames.contains( call.op.getOperatorName() ) ) {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
 
 

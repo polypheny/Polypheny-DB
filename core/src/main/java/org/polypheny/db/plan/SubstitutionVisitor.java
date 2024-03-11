@@ -219,7 +219,7 @@ public class SubstitutionVisitor {
         visitor.go( target );
 
         // Populate the list of leaves in the tree under "target". Leaves are all nodes that are not parents.
-        // For determinism, it is important that the list is in scan order.
+        // For determinism, it is important that the list is in relScan order.
         allNodes.removeAll( parents );
         targetLeaves = ImmutableList.copyOf( allNodes );
 

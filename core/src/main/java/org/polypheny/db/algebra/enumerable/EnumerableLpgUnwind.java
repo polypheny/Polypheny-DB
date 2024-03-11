@@ -122,7 +122,6 @@ public class EnumerableLpgUnwind extends LpgUnwind implements EnumerableAlg {
         ConditionalStatement ifNotSet = EnumUtils.ifThen(
                 unset_,
                 Expressions.block(
-                        //Expressions.statement( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_MOVE_NEXT.method ) ),
                         assignNextElement( list_, inputEnumerator ),
                         Expressions.statement( Expressions.assign( i_, Expressions.constant( 0 ) ) ),
                         Expressions.statement( Expressions.assign( unset_, Expressions.constant( false ) ) )

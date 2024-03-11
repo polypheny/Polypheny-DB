@@ -389,13 +389,13 @@ public class ConstraintEnforceAttacher {
                         projects.add( root.getSourceExpressions().get( nameMap.get( column ) ) );
                     } else {
                         // TODO(s3lph): For now, let's assume that all columns are actually present.
-                        //  Otherwise this would require either some black magic project rewrites or joining against another table scan
+                        //  Otherwise this would require either some black magic project rewrites or joining against another table relScan
                         projects.add( builder.field( column ) );
                     }
                     names.add( "$projected$." + column );
                 }
                 builder.project( projects );
-                builder.scan( table.name );
+                builder.relScan( table.name );
                 builder.join( JoinAlgType.INNER, builder.literal( true ) );
 
                 List<LogicalColumn> columns = snapshot.getColumns( table.id );
@@ -444,7 +444,7 @@ public class ConstraintEnforceAttacher {
                         projects.add( root.getSourceExpressions().get( nameMap.get( column ) ) );
                     } else {
                         // TODO(s3lph): For now, let's assume that all columns are actually present.
-                        //  Otherwise this would require either some black magic project rewrites or joining against another table scan
+                        //  Otherwise this would require either some black magic project rewrites or joining against another table relScan
                         projects.add( builder.field( column ) );
                     }
                 }
@@ -500,7 +500,7 @@ public class ConstraintEnforceAttacher {
                 }
                 builder
                         .project( projects )
-                        .scan( foreignKey.getReferencedKeyEntityName() )
+                        .relScan( foreignKey.getReferencedKeyEntityName() )
                         .project( foreignProjects );
                 RexNode condition = rexBuilder.makeLiteral( true );
                 for ( int i = 0; i < projects.size(); ++i ) {
@@ -558,7 +558,7 @@ public class ConstraintEnforceAttacher {
                 builder
                         .push( pInput )
                         .project( projects )
-                        .scan( foreignKey.getTableName() )
+                        .relScan( foreignKey.getTableName() )
                         .project( foreignProjects );
                 RexNode condition = rexBuilder.makeLiteral( true );
                 for ( int i = 0; i < projects.size(); ++i ) {

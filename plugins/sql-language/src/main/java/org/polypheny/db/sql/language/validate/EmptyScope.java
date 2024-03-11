@@ -25,7 +25,7 @@ import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlDataTypeSpec;
@@ -75,12 +75,12 @@ class EmptyScope implements SqlValidatorScope {
 
 
     @Override
-    public void resolve( List<String> names, NameMatcher nameMatcher, boolean deep, Resolved resolved ) {
+    public void resolve( List<String> names, boolean deep, Resolved resolved ) {
     }
 
 
     @Override
-    public SqlValidatorNamespace getTableNamespace( List<String> names ) {
+    public SqlValidatorNamespace getEntityNamespace( List<String> names ) {
         Entity table = validator.snapshot.rel().getTable( names.get( 0 ), names.get( 1 ) ).orElse( null );
         return table != null
                 ? new EntityNamespace( validator, table )
@@ -89,20 +89,20 @@ class EmptyScope implements SqlValidatorScope {
 
 
     @Override
-    public void resolveTable( List<String> names, NameMatcher nameMatcher, Path path, Resolved resolved ) {
-        LogicalTable table;
+    public void resolveEntity( List<String> names, Path path, Resolved resolved ) {
+        LogicalEntity entity;
         if ( names.size() == 3 ) {
-            table = validator.snapshot.rel().getTable( names.get( 1 ), names.get( 2 ) ).orElse( null );
+            entity = validator.snapshot.rel().getTable( names.get( 1 ), names.get( 2 ) ).orElse( null );
         } else if ( names.size() == 2 ) {
-            table = validator.snapshot.rel().getTable( names.get( 0 ), names.get( 1 ) ).orElse( null );
+            entity = validator.snapshot.rel().getTable( names.get( 0 ), names.get( 1 ) ).orElse( null );
         } else if ( names.size() == 1 ) {
-            table = validator.snapshot.rel().getTable( Catalog.defaultNamespaceId, names.get( 0 ) ).orElse( null );
+            entity = validator.snapshot.rel().getTable( Catalog.defaultNamespaceId, names.get( 0 ) ).orElse( null );
         } else {
             throw new GenericRuntimeException( "Table is not known" );
         }
 
-        if ( table != null ) {
-            resolved.found( new EntityNamespace( validator, table ), false, null, Path.EMPTY, List.of() );
+        if ( entity != null ) {
+            resolved.found( new EntityNamespace( validator, entity ), false, null, Path.EMPTY, List.of() );
         }
 
     }
@@ -145,13 +145,13 @@ class EmptyScope implements SqlValidatorScope {
 
 
     @Override
-    public Pair<String, SqlValidatorNamespace> findQualifyingTableName( String columnName, SqlNode ctx ) {
-        throw validator.newValidationError( ctx, Static.RESOURCE.columnNotFound( columnName ) );
+    public Pair<String, SqlValidatorNamespace> findQualifyingEntityName( String columnName, SqlNode ctx ) {
+        throw validator.newValidationError( ctx, Static.RESOURCE.fieldNotFound( columnName ) );
     }
 
 
     @Override
-    public Map<String, ScopeChild> findQualifyingTableNames( String columnName, SqlNode ctx, NameMatcher nameMatcher ) {
+    public Map<String, ScopeChild> findQualifyingEntityNames( String columnName, SqlNode ctx, NameMatcher nameMatcher ) {
         return ImmutableMap.of();
     }
 

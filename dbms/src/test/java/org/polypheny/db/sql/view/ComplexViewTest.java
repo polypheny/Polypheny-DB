@@ -26,7 +26,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
@@ -808,10 +807,6 @@ public class ComplexViewTest {
     }
 
 
-    // SELECT NOT POSSIBLE
-    // java.lang.AssertionError: type mismatch: ref: VARCHAR(55) NOT NULL input: INTEGER NOT NULL
-    // new Object for result must be created correctly
-    @Disabled
     @Test
     public void testQ2() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -1292,10 +1287,6 @@ public class ComplexViewTest {
     }
 
 
-    // SELECT NOT POSSIBLE
-    // Not possible to Select java.lang.AssertionError: type mismatch: ref: DECIMAL(19, 2) NOT NULL input: INTEGER NOT NULL
-    // renamed value to valueAA
-    @Disabled // todo dl fix, this is an error with the outmost sum, were it uses an inner version
     @Test
     public void testQ11() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -1347,10 +1338,6 @@ public class ComplexViewTest {
     }
 
 
-    // Select not possible
-    // Caused by: java.sql.SQLSyntaxErrorException: data type cast needed for parameter or null literal in statement [SELECT "t0"."l_shipmode", COALESCE(SUM(CASE WHEN "t1"."o_orderpriority" = ? OR "t1"."o_orderpriority" = ? THEN ? ELSE ? END), 0) AS "high_line_count", COALESCE(SUM(CASE WHEN "t1"."o_orderpriority" <> ? AND "t1"."o_orderpriority" <> ? THEN ? ELSE ? END), 0) AS "low_line_count"
-    // changed and l_shipmode in (?,?) to and l_shipmode = 'mode'
-    //@Disabled
     @Test
     public void testQ12() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -1511,7 +1498,6 @@ public class ComplexViewTest {
     }
 
 
-    // changed max(total_revenue) to total_revenue // Not possible in normal to SELECT aggregate within inner query
     @Test
     public void testQ15() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -1550,7 +1536,7 @@ public class ComplexViewTest {
                                         s_suppkey = supplier_no
                                         AND total_revenue = (
                                             SELECT
-                                                total_revenue
+                                                MAX(total_revenue)
                                             FROM
                                                 revenue0
                                         )
@@ -1569,9 +1555,6 @@ public class ComplexViewTest {
     }
 
 
-    // Select not possible
-    // Caused by: org.hsqldb.HsqlException: data type cast needed for parameter or null literal
-    //@Disabled
     @Test
     public void testQ16() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -1679,7 +1662,7 @@ public class ComplexViewTest {
     // Select not possible
     // Caused by: org.hsqldb.HsqlException: data type of expression is not boolean
     // java.lang.RuntimeException: While executing SQL [SELECT "t8"."c_name", "t8"."c_custkey", "t8"."o_orderkey", "t8"."o_orderdate", "t8"."o_totalprice", COALESCE(SUM("t"."l_quantity"), 0) FROM (SELECT "t6"."c_custkey", "t6"."c_name", "t6"."o_orderkey", "t6"."o_totalprice", "t6"."o_orderdate", COALESCE(SUM("t"."l_quantity"), 0) FROM (SELECT "col72" AS "l_orderkey", "col76" AS "l_quantity" FROM "PUBLIC"."tab12") AS "t" INNER JOIN (SELECT "t5"."c_custkey", "t5"."c_name", "t4"."o_orderkey", "t4"."o_custkey", "t4"."o_totalprice", "t4"."o_orderdate", "t2"."col72" AS "l_orderkey" FROM (SELECT "col72" FROM (SELECT "col72", "col76" FROM "PUBLIC"."tab12" GROUP BY "col72", "col76" HAVING "col76" > ?) AS "t1" GROUP BY "col72") AS "t2" INNER JOIN (SELECT "col63" AS "o_orderkey", "col64" AS "o_custkey", "col66" AS "o_totalprice", "col67" AS "o_orderdate" FROM "PUBLIC"."tab11" WHERE ?) AS "t4" ON "t2"."col72" = "t4"."o_orderkey" INNER JOIN (SELECT "col55" AS "c_custkey", "col56" AS "c_name" FROM "PUBLIC"."tab10") AS "t5" ON "t4"."o_custkey" = "t5"."c_custkey") AS "t6" ON "t"."l_orderkey" = "t6"."o_orderkey" GROUP BY "t6"."c_custkey", "t6"."c_name", "t6"."o_orderkey", "t6"."o_totalprice", "t6"."o_orderdate" ORDER BY "t6"."o_totalprice" DESC, "t6"."o_orderdate") AS "t8"] on JDBC sub-schema
-    @Disabled
+    //@Disabled
     @Test
     public void testQ18() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -1725,7 +1708,7 @@ public class ComplexViewTest {
                                                 o_totalprice DESC,
                                                 o_orderdate
                                             LIMIT 100""" ),
-                            ImmutableList.of( new Object[]{} )
+                            ImmutableList.of( new Object[]{ "CName", 1, 1, Date.valueOf( "2020-07-03" ), 65.15, 20.15 } )
                     );
 
                     connection.commit();
@@ -1804,9 +1787,6 @@ public class ComplexViewTest {
     }
 
 
-    // SELECT NOT POSSIBLE
-    // java.lang.AssertionError: type mismatch: ref: VARCHAR(25) NOT NULL input: INTEGER NOT NULL
-    @Disabled
     @Test
     public void testQ20() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -1855,7 +1835,7 @@ public class ComplexViewTest {
                                                 AND n_name = 'Mouse'
                                             ORDER BY
                                                 s_name""" ),
-                            ImmutableList.of( new Object[]{} )
+                            ImmutableList.of()
                     );
 
                     connection.commit();
@@ -1868,9 +1848,6 @@ public class ComplexViewTest {
     }
 
 
-    // SELECT NOT POSSIBLE
-    // java.lang.AssertionError: type mismatch: ref: INTEGER NOT NULL input: VARCHAR(1) NOT NULL
-    @Disabled
     @Test
     public void testQ21() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -1923,7 +1900,7 @@ public class ComplexViewTest {
                                                 s_name
                                             LIMIT 100"""
                             ),
-                            ImmutableList.of( new Object[]{} )
+                            ImmutableList.of()
                     );
 
                     connection.commit();
@@ -1936,9 +1913,6 @@ public class ComplexViewTest {
     }
 
 
-    // SELECT NOT POSSIBLE
-    // Caused by: java.sql.SQLException: General error
-    @Disabled
     @Test
     public void testQ22() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -1985,7 +1959,7 @@ public class ComplexViewTest {
                                                 cntrycode
                                             ORDER BY
                                                 cntrycode""" ),
-                            ImmutableList.of( new Object[]{} )
+                            ImmutableList.of()
                     );
 
                     connection.commit();

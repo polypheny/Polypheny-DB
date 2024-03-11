@@ -54,7 +54,7 @@ public interface SqlValidatorNamespace extends ValidatorNamespace {
     /**
      * Returns the underlying table, or null if there is none.
      */
-    Entity getTable();
+    Entity getEntity();
 
     /**
      * Returns the type of this namespace.

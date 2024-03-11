@@ -60,7 +60,7 @@ import org.polypheny.db.tools.AlgBuilderFactory;
  * <blockquote><pre>(select X.x1, Y.y1 from X, Y where X.x2 = Y.y2 and X.x3 = 1 and Y.y3 = 2)</pre></blockquote>
  *
  * The {@link MultiJoin} associated with (X, Y) associates x1 with X and y1 with Y. Although x3 and y3 need to be read due
- * to the filters, they are not required after the row scan has completed and therefore are not saved. The join fields, x2
+ * to the filters, they are not required after the row relScan has completed and therefore are not saved. The join fields, x2
  * and y2, are also tracked separately.
  *
  * Note that by only pulling up projects that are on top of {@link MultiJoin}s, we preserve projections on top of row scans.

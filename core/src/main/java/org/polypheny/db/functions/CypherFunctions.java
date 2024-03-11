@@ -106,6 +106,7 @@ public class CypherFunctions {
     }
 
 
+
     /**
      * Transforms the relational normalized edges into {@link PolyEdge}s
      *
@@ -302,6 +303,12 @@ public class CypherFunctions {
 
         if ( obj.isList() ) {
             return obj.asList();
+        } else if ( obj.isString() ) {
+            try {
+                return (PolyList<?>) PolyValue.fromJson( obj.asString().value );
+            } catch ( Exception ignored ) {
+                // ignore
+            }
         }
         return PolyList.of( obj );
     }

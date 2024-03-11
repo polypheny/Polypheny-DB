@@ -22,7 +22,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
@@ -226,8 +225,6 @@ public class ViewTest {
     }
 
 
-    //SELECT not possible if inner Select with MAX()
-    @Disabled
     @Test
     public void selectAggregateInnerSelectTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -240,7 +237,7 @@ public class ViewTest {
 
                 try {
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT viewTestLocTable.postcode FROM viewTestLocTable, viewTestDepTable WHERE viewTestLocTable.postcode = (SELECT max(postcode) FROM viewTestLocTable)" ),
+                            statement.executeQuery( "SELECT viewTestLocTable.postcode FROM viewTestLocTable WHERE viewTestLocTable.postcode = (SELECT max(postcode) FROM viewTestLocTable)" ),
                             ImmutableList.of(
                                     new Object[]{ 99900 }
                             )

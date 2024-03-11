@@ -27,7 +27,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
-import org.polypheny.db.cql.BooleanGroup.TableOpsBooleanOperator;
+import org.polypheny.db.cql.BooleanGroup.EntityOpsBooleanOperator;
 import org.polypheny.db.cql.exception.InvalidMethodInvocation;
 import org.polypheny.db.cql.exception.InvalidModifierException;
 import org.polypheny.db.rex.RexBuilder;
@@ -57,12 +57,12 @@ public class Combiner {
     }
 
 
-    public static Combiner createCombiner( BooleanGroup<TableOpsBooleanOperator> booleanGroup, TableIndex left, TableIndex right ) throws InvalidModifierException {
+    public static Combiner createCombiner( BooleanGroup<EntityOpsBooleanOperator> booleanGroup, EntityIndex left, EntityIndex right ) throws InvalidModifierException {
         log.debug( "Creating Combiner." );
         log.debug( "Setting default values for modifiers." );
 
         Map<String, Object> modifiers = new HashMap<>( modifiersLookupTable );
-        if ( booleanGroup.booleanOperator == TableOpsBooleanOperator.AND ) {
+        if ( booleanGroup.booleanOperator == EntityOpsBooleanOperator.AND ) {
             modifiers.put( "on", new String[]{ "all" } );
         } else {
             modifiers.put( "on", new String[]{ "none" } );
@@ -116,9 +116,9 @@ public class Combiner {
     }
 
 
-    private static CombinerType determineCombinerType( TableOpsBooleanOperator tableOpsBooleanOperator, String nullValue ) {
+    private static CombinerType determineCombinerType( EntityOpsBooleanOperator entityOpsBooleanOperator, String nullValue ) {
         log.debug( "Determining Combiner Type." );
-        if ( tableOpsBooleanOperator == TableOpsBooleanOperator.OR ) {
+        if ( entityOpsBooleanOperator == EntityOpsBooleanOperator.OR ) {
             if ( nullValue.equals( "both" ) ) {
                 return CombinerType.JOIN_FULL;
             } else if ( nullValue.equals( "left" ) ) {
@@ -132,7 +132,7 @@ public class Combiner {
     }
 
 
-    private static String[] getColumnsToJoinOn( TableIndex left, TableIndex right, String[] columnStrs ) throws InvalidModifierException {
+    private static String[] getColumnsToJoinOn( EntityIndex left, EntityIndex right, String[] columnStrs ) throws InvalidModifierException {
         assert columnStrs.length > 0;
 
         if ( log.isDebugEnabled() ) {
@@ -164,7 +164,7 @@ public class Combiner {
     }
 
 
-    private static String[] getCommonColumns( TableIndex table1, TableIndex table2 ) {
+    private static String[] getCommonColumns( EntityIndex table1, EntityIndex table2 ) {
         // TODO: Create a cache and check if in cache.
 
         if ( log.isDebugEnabled() ) {

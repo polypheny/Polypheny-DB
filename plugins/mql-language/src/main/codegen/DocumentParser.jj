@@ -29,8 +29,8 @@ import org.polypheny.db.languages.mql.MqlReplace;
 import org.polypheny.db.languages.mql.MqlSave;
 import org.polypheny.db.languages.mql.MqlUpdate;
 import org.polypheny.db.languages.mql.MqlShowDatabase;
-import org.polypheny.db.languages.mql.MqlUseDatabase;
-import org.polypheny.db.languages.mql.MqlDropDatabase;
+import org.polypheny.db.languages.mql.MqlUseNamespace;
+import org.polypheny.db.languages.mql.MqlDropNamespace;
 import org.polypheny.db.languages.mql.MqlAddPlacement;
 import org.polypheny.db.languages.mql.MqlDeletePlacement;
 import org.polypheny.db.languages.mql.parser.MqlAbstractParserImpl;
@@ -132,6 +132,8 @@ TOKEN : /* IDENTIFIERS */ // for nested documentValues check out Document_Splits
 < DROP: "drop(" >
 |
 < DROP_DATABASE: "dropDatabase(" >
+|
+< DROP_NAMESPACE: "dropNamespace(" >
 |
 < SAVE: "save" >
 |
@@ -404,7 +406,7 @@ MqlNode Statement() :
     {return n;}
     |
     <USE> name = Literal()
-    {return new MqlUseDatabase( getPos(), name);}
+    {return new MqlUseNamespace( getPos(), name);}
     |
     <USE_DB>
     {return new MqlShowDatabase( getPos() );}
@@ -414,7 +416,7 @@ MqlNode Statement() :
 MqlNode Db_Statement():
 {
     MqlNode n;
-    String name;
+    String name = null;
     String source;
     BsonArray array = null;
     BsonDocument doc = null;
@@ -434,8 +436,11 @@ MqlNode Db_Statement():
         <CREATE_VIEW> name = Literal() < COMMA > source = Literal() (< COMMA > array=Array() )? ")"
         {n = new MqlCreateView(getPos(), name, source, array);}
     |
-        <DROP_DATABASE> ")"
-        {n = new MqlDropDatabase(getPos());}
+        <DROP_DATABASE> (name = Literal())? ")"
+        {n = new MqlDropNamespace(getPos());}
+    |
+        <DROP_NAMESPACE> (name = Literal())? ")"
+        {n = new MqlDropNamespace(getPos());}
     |
         n = Collection_Statement(null)
     |

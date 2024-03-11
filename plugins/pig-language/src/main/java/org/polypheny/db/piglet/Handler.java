@@ -81,7 +81,7 @@ public class Handler {
         switch ( pigNode.op ) {
             case LOAD:
                 final Ast.LoadStmt load = (Ast.LoadStmt) pigNode;
-                builder.scan( (String) load.name.value );
+                builder.relScan( (String) load.name.value );
                 register( load.target.value );
                 return this;
 

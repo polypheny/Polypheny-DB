@@ -123,7 +123,6 @@ public final class Schemas {
         Snapshot snapshot = root.getSnapshot();
 
         throw new NotImplementedException();
-        //return queryable( root, snapshot, names.iterator().next() );
     }
 
 
@@ -131,7 +130,6 @@ public final class Schemas {
      * Returns a {@link Queryable}, given a schema and entity name.
      */
     public static Queryable<PolyValue[]> queryable( DataContext root, Snapshot snapshot, String entityName ) {
-        //QueryableEntity table = (QueryableEntity) schema.getEntity( tableName );
         LogicalTable table = snapshot.rel().getTable( null, entityName ).orElseThrow();
         return table.unwrap( QueryableEntity.class ).orElseThrow().asQueryable( root, snapshot );
     }

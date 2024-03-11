@@ -50,8 +50,8 @@ public abstract class DelegatingNamespace implements SqlValidatorNamespace {
 
 
     @Override
-    public Entity getTable() {
-        return namespace.getTable();
+    public Entity getEntity() {
+        return namespace.getEntity();
     }
 
 

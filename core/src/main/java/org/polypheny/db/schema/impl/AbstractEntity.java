@@ -42,7 +42,6 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Statistics;
-import org.polypheny.db.schema.TableType;
 import org.polypheny.db.util.Wrapper;
 
 
@@ -71,12 +70,6 @@ public abstract class AbstractEntity implements Entity, Wrapper {
         this.id = id;
         this.partitionId = partitionId;
         this.adapterId = adapterId;
-    }
-
-
-    @Override
-    public TableType getJdbcTableType() {
-        return TableType.TABLE;
     }
 
 

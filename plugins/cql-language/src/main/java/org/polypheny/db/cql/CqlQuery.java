@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.Set;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.cql.BooleanGroup.ColumnOpsBooleanOperator;
+import org.polypheny.db.cql.BooleanGroup.FieldOpsBooleanOperator;
 import org.polypheny.db.cql.utils.Tree;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryLanguage;
@@ -35,11 +35,11 @@ import org.polypheny.db.util.Pair;
  * Packaging all the information in a CQL query together.
  */
 public record CqlQuery(
-        Tree<Combiner, TableIndex> queryRelation,
-        Tree<BooleanGroup<ColumnOpsBooleanOperator>, Filter> filters,
-        Map<String, TableIndex> tableIndexMapping,
-        Map<String, ColumnIndex> columnIndexMapping,
-        List<Pair<ColumnIndex, Map<String, Modifier>>> sortSpecifications,
+        Tree<Combiner, EntityIndex> queryRelation,
+        Tree<BooleanGroup<FieldOpsBooleanOperator>, Filter> filters,
+        Map<String, EntityIndex> tableIndexMapping,
+        Map<String, FieldIndex> columnIndexMapping,
+        List<Pair<FieldIndex, Map<String, Modifier>>> sortSpecifications,
         Projections projections
 ) implements Node {
 
@@ -78,7 +78,7 @@ public record CqlQuery(
         stringBuilder.append( "relation " ).append( queryRelation );
         if ( sortSpecifications != null && !sortSpecifications.isEmpty() ) {
             stringBuilder.append( " " );
-            for ( Pair<ColumnIndex, Map<String, Modifier>> sortSpecification : sortSpecifications ) {
+            for ( Pair<FieldIndex, Map<String, Modifier>> sortSpecification : sortSpecifications ) {
                 stringBuilder.append( sortSpecification.toString() );
             }
             stringBuilder.append( " " );

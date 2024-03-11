@@ -44,7 +44,7 @@ public enum AlgOptRuleOperandChildPolicy {
     ANY,
 
     /**
-     * Signifies that operand has no children. Therefore it matches a leaf node, such as a table scan or VALUES operator.
+     * Signifies that operand has no children. Therefore it matches a leaf node, such as a table relScan or VALUES operator.
      *
      * {@code RelOptRuleOperand(Foo.class, NONE)} is equivalent to {@code RelOptRuleOperand(Foo.class)} but we prefer the former because it is more explicit.
      */

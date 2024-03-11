@@ -657,7 +657,7 @@ public class RequestParser {
                         break;
                     case TIMESTAMP:
                         Instant instant = LocalDateTime.parse( literal ).toInstant( ZoneOffset.UTC );
-                        long millisecondsSinceEpoch = instant.toEpochMilli();// * 1000L + instant.getNano() / 1000000L;
+                        long millisecondsSinceEpoch = instant.toEpochMilli();
                         parsedLiteral = PolyTimestamp.of( millisecondsSinceEpoch );
                         break;
                     case TIME:
@@ -713,10 +713,6 @@ public class RequestParser {
 
         for ( Object objectColumnName : rowValuesMap.keySet() ) {
             String stringColumnName = (String) objectColumnName;
-            /*if ( possibleValue.startsWith( "_" ) ) {
-                log.debug( "FIX THIS MESSAGE: {}", possibleValue );
-                continue;
-            }*/
 
             // Make sure we actually have a column
             RequestColumn column = nameMapping.get( stringColumnName );
@@ -731,7 +727,7 @@ public class RequestParser {
             result.add( new Pair<>( column, parsedValue ) );
         }
 
-        // TODO js: Do I need logical or table scan indices here?
+        // TODO js: Do I need logical or table relScan indices here?
         result.sort( Comparator.comparingInt( p -> p.left.getLogicalIndex() ) );
 
         return result;

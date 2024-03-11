@@ -174,6 +174,12 @@ public class MonetdbSqlDialect extends SqlDialect {
 
 
     @Override
+    public boolean handlesUtcCorrectly() {
+        return false;
+    }
+
+
+    @Override
     public boolean supportsSort( Sort sort ) {
         MonetdbRexVisitor visitor = new MonetdbRexVisitor();
         sort.getChildExps().forEach( n -> n.accept( visitor ) );

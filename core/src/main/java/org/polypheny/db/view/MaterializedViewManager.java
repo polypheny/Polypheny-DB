@@ -72,7 +72,7 @@ public abstract class MaterializedViewManager {
             @NonNull AlgRoot algRoot,
             @NonNull LogicalMaterializedView materializedView );
 
-    public abstract void notifyModifiedTables( Transaction transaction, Collection<Long> ids );
+    public abstract void notifyModifiedEntities( Transaction transaction, Collection<Long> ids );
 
     public abstract void updateData( Transaction transaction, long viewId );
 
@@ -84,10 +84,10 @@ public abstract class MaterializedViewManager {
 
 
     /**
-     * to track updates on tables for materialized views with update freshness
+     * to track updates on entities for materialized views with update freshness
      */
     @Getter
-    public static class TableUpdateVisitor extends AlgShuttleImpl {
+    public static class EntityUpdateVisitor extends AlgShuttleImpl {
 
         private final List<Long> ids = new ArrayList<>();
 

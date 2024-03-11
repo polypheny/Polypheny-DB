@@ -35,12 +35,8 @@ import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
 import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.util.NameMatcher;
-import org.polypheny.db.util.NameMatchers;
 
 public interface Snapshot extends OperatorTable {
-
-    NameMatcher nameMatcher = NameMatchers.withCaseSensitive( false );
 
     long id();
 

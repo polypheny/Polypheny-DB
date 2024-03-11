@@ -147,7 +147,6 @@ public class CaseTest {
 
 
     @Test
-    @Tag("cottontailRequired")
     public void coalesceTest() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

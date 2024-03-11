@@ -32,6 +32,7 @@ import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.util.CatalogEvent;
 import org.polypheny.db.type.PolySerializable;
 
 @Getter
@@ -68,9 +69,10 @@ public class DocumentCatalog implements PolySerializable, LogicalDocumentCatalog
     PropertyChangeSupport listeners = new PropertyChangeSupport( this );
 
 
-    public void change() {
-        listeners.firePropertyChange( "change", null, null );
+    public void change( CatalogEvent event, Object oldValue, Object newValue ) {
+        listeners.firePropertyChange( event.name(), oldValue, newValue );
     }
+
 
     @Override
     public PolySerializable copy() {
@@ -83,7 +85,7 @@ public class DocumentCatalog implements PolySerializable, LogicalDocumentCatalog
         long id = idBuilder.getNewLogicalId();
         LogicalCollection collection = new LogicalCollection( id, name, logicalNamespace.id, entity, modifiable );
         collections.put( id, collection );
-        change();
+        change( CatalogEvent.LOGICAL_DOC_ENTITY_CREATED, null, collection );
         return collection;
     }
 
@@ -91,7 +93,7 @@ public class DocumentCatalog implements PolySerializable, LogicalDocumentCatalog
     @Override
     public void deleteCollection( long id ) {
         collections.remove( id );
-        change();
+        change( CatalogEvent.LOGICAL_DOC_ENTITY_DROPPED, id, null );
     }
 
 
@@ -99,7 +101,7 @@ public class DocumentCatalog implements PolySerializable, LogicalDocumentCatalog
     public void renameCollection( LogicalCollection collection, String newName ) {
         LogicalCollection newCollection = collection.toBuilder().name( newName ).build();
         collections.put( newCollection.id, newCollection );
-        change();
+        change( CatalogEvent.LOGICAL_DOC_ENTITY_RENAMED, collection, newCollection );
     }
 
 

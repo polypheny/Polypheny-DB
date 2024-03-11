@@ -153,9 +153,9 @@ import org.polypheny.db.util.mapping.Mappings;
  *   FtrsIndexScanRel(table=[T], index=[clustered])
  * </code></pre></blockquote>
  * <p>
- * The index scan produces a flattened row type <code>(boolean, smallint, bigint, double)</code> (the boolean is a null
+ * The index relScan produces a flattened row type <code>(boolean, smallint, bigint, double)</code> (the boolean is a null
  * indicator for c1), and the projection picks out the desired attributes (omitting <code>$0</code> and
- * <code>$1</code> altogether). After optimization, the projection might be pushed down into the index scan,
+ * <code>$1</code> altogether). After optimization, the projection might be pushed down into the index relScan,
  * resulting in a final tree like
  *
  * <blockquote><pre><code>

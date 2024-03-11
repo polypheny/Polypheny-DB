@@ -614,6 +614,11 @@ public class Functions {
     }
 
 
+    public static PolyString initcap( PolyString s ) {
+        return PolyString.of( initcap( s.value ) );
+    }
+
+
     /**
      * SQL INITCAP(string) function.
      */
@@ -698,6 +703,11 @@ public class Functions {
      */
     public static String trim( boolean left, boolean right, String seek, String s ) {
         return trim( left, right, seek, s, true );
+    }
+
+
+    public static PolyString trim( boolean left, boolean right, PolyString seek, PolyString s, boolean strict ) {
+        return PolyString.of( trim( left, right, seek.value, s.value, strict ) );
     }
 
 

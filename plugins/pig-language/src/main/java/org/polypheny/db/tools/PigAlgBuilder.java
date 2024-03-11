@@ -80,16 +80,16 @@ public class PigAlgBuilder extends AlgBuilder {
 
 
     @Override
-    public PigAlgBuilder scan( String... tableNames ) {
+    public PigAlgBuilder relScan( String... tableNames ) {
         lastAlias = null;
-        return (PigAlgBuilder) super.scan( tableNames );
+        return (PigAlgBuilder) super.relScan( tableNames );
     }
 
 
     @Override
-    public PigAlgBuilder scan( List<String> tableNames ) {
+    public PigAlgBuilder relScan( List<String> tableNames ) {
         lastAlias = null;
-        return (PigAlgBuilder) super.scan( tableNames );
+        return (PigAlgBuilder) super.relScan( tableNames );
     }
 
 
@@ -107,7 +107,7 @@ public class PigAlgBuilder extends AlgBuilder {
      * @return This builder
      */
     public PigAlgBuilder load( String path, RexNode loadFunction, AlgDataType rowType ) {
-        scan( path.replace( ".csv", "" ) ); // TODO: use a UDT
+        relScan( path.replace( ".csv", "" ) ); // TODO: use a UDT
         return this;
     }
 

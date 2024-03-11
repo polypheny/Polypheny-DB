@@ -37,7 +37,6 @@ public interface LogicalRelSnapshot {
 
     /**
      * Get all tables of the specified schema which fit to the specified filters.
-     * <code>getTables(xid, databaseName, null, null, null)</code> returns all tables of the database.
      *
      * @param name Pattern for the table name. null returns all.
      * @return List of tables which fit to the specified filters. If there is no table which meets the criteria, an empty list is returned.

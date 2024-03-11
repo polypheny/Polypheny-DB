@@ -144,13 +144,6 @@ public class HsqldbSqlDialect extends SqlDialect {
 
     @Override
     public Expression getExpression( AlgDataType fieldType, Expression child ) {
-        /*return switch ( fieldType.getPolyType() ) {
-            case TEXT -> {
-                UnaryExpression client = Expressions.convert_( child, JDBCClobClient.class );
-                yield super.getExpression( fieldType, Expressions.call( HsqldbSqlDialect.class, "toString", client ) );
-            }
-            default -> super.getExpression( fieldType, child );
-        };*/
         return super.getExpression( fieldType, child );
     }
 

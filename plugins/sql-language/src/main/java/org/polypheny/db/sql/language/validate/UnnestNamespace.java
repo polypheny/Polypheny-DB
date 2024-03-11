@@ -45,13 +45,13 @@ class UnnestNamespace extends AbstractNamespace {
 
 
     @Override
-    public Entity getTable() {
+    public Entity getEntity() {
         final SqlNode toUnnest = unnest.operand( 0 );
         if ( toUnnest instanceof SqlIdentifier ) {
             // When operand of SqlIdentifier type does not have struct, fake a table for UnnestNamespace
             final SqlIdentifier id = (SqlIdentifier) toUnnest;
             final SqlQualified qualified = this.scope.fullyQualify( id );
-            return qualified.namespace.getTable();
+            return qualified.namespace.getEntity();
         }
         return null;
     }

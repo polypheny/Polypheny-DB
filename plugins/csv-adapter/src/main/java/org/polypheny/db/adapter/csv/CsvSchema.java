@@ -41,6 +41,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.DataSource.ExportedColumn;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -49,8 +50,7 @@ import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.schema.Namespace.Schema;
-import org.polypheny.db.schema.impl.AbstractNamespace;
+import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.Source;
@@ -61,7 +61,7 @@ import org.polypheny.db.util.Util;
 /**
  * Schema mapped onto a directory of CSV files. Each table in the schema is a CSV file in that directory.
  */
-public class CsvSchema extends AbstractNamespace implements Schema {
+public class CsvSchema extends Namespace {
 
     private final URL directoryUrl;
     private final CsvTable.Flavor flavor;
@@ -75,8 +75,8 @@ public class CsvSchema extends AbstractNamespace implements Schema {
      * @param directoryUrl Directory that holds {@code .csv} files
      * @param flavor Whether to instantiate flavor tables that undergo query optimization
      */
-    public CsvSchema( long id, URL directoryUrl, CsvTable.Flavor flavor ) {
-        super( id );
+    public CsvSchema( long id, long adapterId, URL directoryUrl, CsvTable.Flavor flavor ) {
+        super( id, adapterId );
         this.directoryUrl = directoryUrl;
         this.flavor = flavor;
     }
@@ -125,18 +125,17 @@ public class CsvSchema extends AbstractNamespace implements Schema {
     private AlgDataType sqlType( AlgDataTypeFactory typeFactory, PolyType dataTypeName, Integer length, Integer scale, String typeString ) {
         // Fall back to ANY if type is unknown
         final PolyType polyType = Util.first( dataTypeName, PolyType.ANY );
-        switch ( polyType ) {
-            case ARRAY:
-                AlgDataType component = null;
-                if ( typeString != null && typeString.endsWith( " ARRAY" ) ) {
-                    // E.g. hsqldb gives "INTEGER ARRAY", so we deduce the component type "INTEGER".
-                    final String remaining = typeString.substring( 0, typeString.length() - " ARRAY".length() );
-                    component = parseTypeString( typeFactory, remaining );
-                }
-                if ( component == null ) {
-                    component = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
-                }
-                return typeFactory.createArrayType( component, -1 );
+        if ( polyType == PolyType.ARRAY ) {
+            AlgDataType component = null;
+            if ( typeString != null && typeString.endsWith( " ARRAY" ) ) {
+                // E.g. hsqldb gives "INTEGER ARRAY", so we deduce the component type "INTEGER".
+                final String remaining = typeString.substring( 0, typeString.length() - " ARRAY".length() );
+                component = parseTypeString( typeFactory, remaining );
+            }
+            if ( component == null ) {
+                component = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
+            }
+            return typeFactory.createArrayType( component, -1 );
         }
         if ( scale != null && length != null && length >= 0 && scale >= 0 && polyType.allowsPrecScale( true, true ) ) {
             return typeFactory.createPolyType( polyType, length, scale );
@@ -186,70 +185,9 @@ public class CsvSchema extends AbstractNamespace implements Schema {
 
 
     @Override
-    public Convention getConvention() {
-        return null;
+    protected @Nullable Convention getConvention() {
+        return null; // No convention
     }
-
-//    /**
-//     * Looks for a suffix on a string and returns either the string with the suffix removed or the original string.
-//     */
-//    private static String trim( String s, String suffix ) {
-//        String trimmed = trimOrNull( s, suffix );
-//        return trimmed != null ? trimmed : s;
-//    }
-//
-//
-//    /**
-//     * Looks for a suffix on a string and returns either the string with the suffix removed or null.
-//     */
-//    private static String trimOrNull( String s, String suffix ) {
-//        return s.endsWith( suffix )
-//                ? s.substring( 0, s.length() - suffix.length() )
-//                : null;
-//    }
-//
-//
-//    @Override
-//    public Map<String, Table> getTables() {
-//        if ( tableMap == null ) {
-//            tableMap = createTableMap();
-//        }
-//        return tableMap;
-//    }
-//
-//
-//    private Map<String, Table> createTableMap() {
-//        // Look for files in the directory ending in ".csv", ".csv.gz", ".json", ".json.gz".
-//        final Source baseSource = Sources.of( directoryFile );
-//        File[] files = directoryFile.listFiles( ( dir, name ) -> {
-//            final String nameSansGz = trim( name, ".gz" );
-//            return nameSansGz.endsWith( ".csv" ) || nameSansGz.endsWith( ".json" );
-//        } );
-//        if ( files == null ) {
-//            System.out.println( "directory " + directoryFile + " not found" );
-//            files = new File[0];
-//        }
-//        // Build a map from table name to table; each file becomes a table.
-//        final ImmutableMap.Builder<String, Table> builder = ImmutableMap.builder();
-//        for ( File file : files ) {
-//            Source source = Sources.of( file );
-//            Source sourceSansGz = source.trim( ".gz" );
-//            final Source sourceSansJson = sourceSansGz.trimOrNull( ".json" );
-//            if ( sourceSansJson != null ) {
-//                JsonTable table = new JsonTable( source );
-//                builder.put( sourceSansJson.relative( baseSource ).path(), table );
-//                continue;
-//            }
-//            final Source sourceSansCsv = sourceSansGz.trim( ".csv" );
-//
-//            final Table table = createTable( source );
-//            builder.put( sourceSansCsv.relative( baseSource ).path(), table );
-//        }
-//        return builder.build();
-//    }
-//
-//
-//
 
 }
 

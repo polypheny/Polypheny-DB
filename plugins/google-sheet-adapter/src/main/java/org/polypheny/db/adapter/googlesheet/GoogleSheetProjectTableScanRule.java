@@ -27,7 +27,7 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Planner rule that projects from a {@GoogleTable} scan just the columns needed to satisfy a projection. If the
+ * Planner rule that projects from a {@GoogleTable} relScan just the columns needed to satisfy a projection. If the
  * projection's expressions are trivial, the projection is removed.
  */
 public class GoogleSheetProjectTableScanRule extends AlgOptRule {

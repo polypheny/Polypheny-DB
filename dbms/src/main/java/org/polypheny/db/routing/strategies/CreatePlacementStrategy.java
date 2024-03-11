@@ -22,11 +22,11 @@ import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 
 
 /**
- * Interface to define, on which storeId(s) tables and columns are created.
+ * Interface to define, on which store(s) entities and fields are created.
  */
 public interface CreatePlacementStrategy {
 
-    List<DataStore<?>> getDataStoresForNewColumn( LogicalColumn addedColumn );
+    List<DataStore<?>> getDataStoresForNewRelField( LogicalColumn addedField );
 
     List<DataStore<?>> getDataStoresForNewEntity();
 

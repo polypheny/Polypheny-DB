@@ -96,7 +96,7 @@ public abstract class Index {
             cols.addAll( targetColumns );
         }
         final AlgNode scan = builder
-                .scan( table )
+                .relScan( table )
                 .project( cols.stream().map( builder::field ).collect( Collectors.toList() ) )
                 .build();
         final QueryProcessor processor = statement.getQueryProcessor();

@@ -47,7 +47,7 @@ import org.polypheny.db.schema.trait.ModelTrait;
 
 
 /**
- * Relational expression representing a scan of a table in a JDBC data source.
+ * Relational expression representing a relScan of a table in a JDBC data source.
  */
 public class JdbcScan extends RelScan<JdbcTable> implements JdbcAlg {
 

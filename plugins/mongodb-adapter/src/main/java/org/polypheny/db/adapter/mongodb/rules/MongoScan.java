@@ -39,7 +39,7 @@ import org.polypheny.db.util.Pair;
 
 
 /**
- * Relational expression representing a scan of a MongoDB collection.
+ * Relational expression representing a relScan of a MongoDB collection.
  * <p>
  * Additional operations might be applied, using the "find" or "aggregate" methods.</p>
  */

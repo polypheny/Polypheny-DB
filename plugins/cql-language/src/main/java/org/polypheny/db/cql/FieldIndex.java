@@ -26,7 +26,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
  * Packaging column information together.
  */
 @Slf4j
-public class ColumnIndex {
+public class FieldIndex {
 
     public final LogicalColumn logicalColumn;
     public final String fullyQualifiedName;
@@ -35,7 +35,7 @@ public class ColumnIndex {
     public final String columnName;
 
 
-    public ColumnIndex(
+    public FieldIndex(
             final LogicalColumn logicalColumn,
             final String schemaName,
             final String tableName,
@@ -48,11 +48,11 @@ public class ColumnIndex {
     }
 
 
-    public static ColumnIndex createIndex( String schemaName, String tableName, String columnName ) {
-        log.debug( "Creating ColumnIndex." );
+    public static FieldIndex createIndex( String schemaName, String tableName, String columnName ) {
+        log.debug( "Creating FieldIndex." );
         LogicalNamespace namespace = Catalog.snapshot().getNamespace( schemaName ).orElseThrow();
         LogicalColumn column = Catalog.snapshot().rel().getColumn( namespace.id, tableName, columnName ).orElseThrow();
-        return new ColumnIndex( column, schemaName, tableName, columnName );
+        return new FieldIndex( column, schemaName, tableName, columnName );
     }
 
 

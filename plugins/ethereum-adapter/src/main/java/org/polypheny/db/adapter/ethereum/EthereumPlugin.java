@@ -130,7 +130,7 @@ public class EthereumPlugin extends PolyPlugin {
 
         @Override
         public void updateNamespace( String name, long id ) {
-            currentNamespace = new EthereumNamespace( id, this.clientURL );
+            currentNamespace = new EthereumNamespace( id, adapterId, this.clientURL );
         }
 
 

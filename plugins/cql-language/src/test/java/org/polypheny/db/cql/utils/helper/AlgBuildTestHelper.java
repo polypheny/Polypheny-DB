@@ -25,7 +25,7 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
-import org.polypheny.db.cql.TableIndex;
+import org.polypheny.db.cql.EntityIndex;
 import org.polypheny.db.cql.exception.UnknownIndexException;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexIndexRef;
@@ -59,10 +59,10 @@ public class AlgBuildTestHelper extends CqlTestHelper {
 //            If NONE, then don't build any  algebra.
 //            Else, keep executing more statements.
         } else {
-            algBuilder = algBuilder.scan( "test", "employee" );
-            algBuilder = algBuilder.scan( "test", "dept" );
+            algBuilder = algBuilder.relScan( "test", "employee" );
+            algBuilder = algBuilder.relScan( "test", "dept" );
             if ( algBuildLevel == AlgBuildLevel.TABLE_SCAN ) {
-//                If TABLE_SCAN, then scan has already been done.
+//                If TABLE_SCAN, then relScan has already been done.
 //                Else, keep executing more statements.
             } else {
                 algBuilder = algBuilder.join( JoinAlgType.INNER );
@@ -72,15 +72,15 @@ public class AlgBuildTestHelper extends CqlTestHelper {
                 } else {
                     List<RexNode> inputRefs = new ArrayList<>();
                     List<String> columnNames = new ArrayList<>();
-                    List<TableIndex> tableIndices = new ArrayList<>();
-                    tableIndices.add( TableIndex.createIndex( "test", "employee" ) );
-                    tableIndices.add( TableIndex.createIndex( "test", "dept" ) );
+                    List<EntityIndex> tableIndices = new ArrayList<>();
+                    tableIndices.add( EntityIndex.createIndex( "test", "employee" ) );
+                    tableIndices.add( EntityIndex.createIndex( "test", "dept" ) );
                     Catalog catalog = Catalog.getInstance();
 
-                    for ( TableIndex tableIndex : tableIndices ) {
-                        for ( Long columnId : tableIndex.catalogTable.getColumnIds() ) {
+                    for ( EntityIndex entityIndex : tableIndices ) {
+                        for ( Long columnId : entityIndex.catalogTable.getColumnIds() ) {
                             LogicalColumn column = catalog.getSnapshot().rel().getColumn( columnId ).orElseThrow();
-                            columnNames.add( tableIndex.fullyQualifiedName + "." + column.name );
+                            columnNames.add( entityIndex.fullyQualifiedName + "." + column.name );
                             RexIndexRef inputRef = rexBuilder.makeInputRef( algBuilder.peek(), inputRefs.size() );
                             tableScanOrdinalities.put( columnId, inputRefs.size() );
                             inputRefs.add( inputRef );

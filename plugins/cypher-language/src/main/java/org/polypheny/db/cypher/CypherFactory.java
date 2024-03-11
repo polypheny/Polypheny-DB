@@ -27,8 +27,8 @@ import org.polypheny.db.cypher.admin.CypherAdminCommand;
 import org.polypheny.db.cypher.admin.CypherAdminCommand.AccessType;
 import org.polypheny.db.cypher.admin.CypherAlterDatabase;
 import org.polypheny.db.cypher.admin.CypherAlterDatabaseAlias;
-import org.polypheny.db.cypher.admin.CypherCreateDatabase;
 import org.polypheny.db.cypher.admin.CypherCreateDatabaseAlias;
+import org.polypheny.db.cypher.admin.CypherCreateNamespace;
 import org.polypheny.db.cypher.admin.CypherCreateRole;
 import org.polypheny.db.cypher.admin.CypherDenyPrivilege;
 import org.polypheny.db.cypher.admin.CypherDropAlias;
@@ -717,7 +717,7 @@ public interface CypherFactory {
     }
 
     static CypherAdminCommand createDatabase( ParserPos pos, boolean replace, CypherSimpleEither<String, CypherParameter> databaseName, boolean ifNotExists, CypherWaitClause wait, CypherSimpleEither options, CypherSimpleEither<String, CypherParameter> store ) {
-        return new CypherCreateDatabase( pos, replace, databaseName, ifNotExists, wait, options, store );
+        return new CypherCreateNamespace( pos, replace, databaseName, ifNotExists, wait, options, store );
     }
 
     static CypherAdminCommand dropDatabase( ParserPos pos, CypherSimpleEither<String, CypherParameter> databaseName, boolean ifExists, boolean dumpData, CypherWaitClause wait ) {

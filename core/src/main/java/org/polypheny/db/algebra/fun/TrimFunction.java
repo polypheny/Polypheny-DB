@@ -16,12 +16,26 @@
 
 package org.polypheny.db.algebra.fun;
 
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.nodes.Operator;
 
 public interface TrimFunction extends Operator {
 
-    enum Flag {
+    enum Flag implements TrimFlagHolder {
         BOTH, LEADING, TRAILING;
+
+
+        @Override
+        public Flag getFlag() {
+            return this;
+        }
+    }
+
+
+    interface TrimFlagHolder {
+
+        @Nullable
+        Flag getFlag();
     }
 
 }

@@ -40,7 +40,6 @@ import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.relational.RelModify;
-import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -312,11 +311,11 @@ public class Rest {
         boolean firstTable = true;
         for ( LogicalTable catalogTable : tables ) {
             if ( firstTable ) {
-                algBuilder = algBuilder.scan( catalogTable.getNamespaceName(), catalogTable.name );
+                algBuilder = algBuilder.relScan( catalogTable.getNamespaceName(), catalogTable.name );
                 firstTable = false;
             } else {
                 algBuilder = algBuilder
-                        .scan( catalogTable.getNamespaceName(), catalogTable.name )
+                        .relScan( catalogTable.getNamespaceName(), catalogTable.name )
                         .join( JoinAlgType.INNER, rexBuilder.makeLiteral( true ) );
             }
         }
@@ -342,13 +341,6 @@ public class Rest {
                     AlgDataTypeField typeField = filterMap.get( column.getColumn().name );
                     RexNode inputRef = rexBuilder.makeInputRef( baseNodeForFilters, typeField.getIndex() );
                     PolyValue param = filterOperationPair.right;
-                    /*if ( param instanceof TimestampString ) {
-                        param = PolyTimeStamp.of( ((TimestampString) param).getMillisSinceEpoch() );
-                    } else if ( param instanceof TimeString ) {
-                        param = PolyTime.of( ((TimeString) param).getMillisOfDay() );
-                    } else if ( param instanceof DateString ) {
-                        param = PolyDate.of( ((DateString) param).toCalendar().getTime() );
-                    }*/
                     statement.getDataContext().addParameterValues( index, typeField.getType(), ImmutableList.of( param ) );
                     RexNode rightHandSide = rexBuilder.makeDynamicParam( typeField.getType(), index );
                     index++;
@@ -360,7 +352,6 @@ public class Rest {
             if ( req != null && log.isDebugEnabled() ) {
                 log.debug( "Finished processing filters. Session ID: {}.", req.getSession().getId() );
             }
-//            algBuilder = algBuilder.filter( filterNodes );
             if ( req != null && log.isDebugEnabled() ) {
                 log.debug( "Added filters to relation. Session ID: {}.", req.getSession().getId() );
             }
@@ -470,7 +461,7 @@ public class Rest {
                 inputFields.add( column.getLogicalIndex() );
                 String fieldName = column.getAlias();
                 AggregateCall aggregateCall = AggregateCall.create(
-                        (Operator & AggFunction) column.getAggregate(),
+                        column.getAggregate(),
                         false,
                         false,
                         inputFields,
@@ -514,10 +505,10 @@ public class Rest {
 
 
     AlgBuilder sort( AlgBuilder algBuilder, RexBuilder rexBuilder, List<Pair<RequestColumn, Boolean>> sorts, int limit, int offset ) {
-        if ( (sorts == null || sorts.size() == 0) && (limit >= 0 || offset >= 0) ) {
+        if ( (sorts == null || sorts.isEmpty()) && (limit >= 0 || offset >= 0) ) {
             algBuilder = algBuilder.limit( offset, limit );
 //            log.debug( "Added limit and offset to relation. Session ID: {}.", req.session().id() );
-        } else if ( sorts != null && sorts.size() != 0 ) {
+        } else if ( sorts != null && !sorts.isEmpty() ) {
             List<RexNode> sortingNodes = new ArrayList<>();
             AlgNode baseNodeForSorts = algBuilder.peek();
             for ( Pair<RequestColumn, Boolean> sort : sorts ) {

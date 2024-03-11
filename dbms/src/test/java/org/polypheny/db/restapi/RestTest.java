@@ -48,7 +48,7 @@ import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
-@SuppressWarnings("SqlDialectInspection")
+@SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
 @Tag("adapter")
 public class RestTest {
@@ -180,10 +180,8 @@ public class RestTest {
     // --------------- Tests ---------------
 
 
-    @Test // this needs to be rewritten
-    @Tag("hsqldbExcluded")
+    @Test
     @Tag("monetdbExcluded")
-    @Tag("postgresqlExcluded")
     public void testOperations() {
         // Insert
         HttpRequest<?> request = buildRestInsert( "restschema.resttest", ImmutableList.of( getTestRow() ) );

@@ -4951,7 +4951,7 @@ CypherAdminCommand DropDatabase( Token start ):
     boolean dumpData = false;
 }
 {
-    <DATABASE> databaseName=SymbolicDatabaseNameStringOrParameter()
+    (<DATABASE>|<NAMESPACE>) databaseName=SymbolicDatabaseNameStringOrParameter()
     ( <IF> <EXISTS> { ifExists = true; } )?
     ( ( <DUMP> { dumpData = true; } | <DESTROY> ) <DATA> )?
     ( wait = WaitClause() )?

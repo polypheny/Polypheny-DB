@@ -325,7 +325,7 @@ public class GoogleSheetSource extends DataSource<RelAdapterCatalog> {
 
     @Override
     public void updateNamespace( String name, long id ) {
-        currentNamespace = new GoogleSheetNamespace( id, this.sheetsUrl, this.querySize, this );
+        currentNamespace = new GoogleSheetNamespace( id, adapterId, this.sheetsUrl, this.querySize, this );
     }
 
 

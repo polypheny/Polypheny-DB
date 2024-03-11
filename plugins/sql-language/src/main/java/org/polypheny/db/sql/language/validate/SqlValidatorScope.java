@@ -42,7 +42,7 @@ import org.polypheny.db.util.Pair;
 
 /**
  * Name-resolution scope. Represents any position in a parse tree than an expression can be, or anything in the parse tree which has columns.
- *
+ * <p>
  * When validating an expression, say "foo"."bar", you first use the {@link #resolve} method of the scope where the expression is defined to locate "foo". If successful, this returns a {@link SqlValidatorNamespace namespace} describing the type of the resulting object.
  */
 public interface SqlValidatorScope extends ValidatorScope {
@@ -61,22 +61,21 @@ public interface SqlValidatorScope extends ValidatorScope {
      * Looks up a node with a given name. Returns null if none is found.
      *
      * @param names Name of node to find, maybe partially or fully qualified
-     * @param nameMatcher Name matcher
      * @param deep Whether to look more than one level deep
      * @param resolved Callback wherein to write the match(es) we find
      */
-    void resolve( List<String> names, NameMatcher nameMatcher, boolean deep, Resolved resolved );
+    void resolve( List<String> names, boolean deep, Resolved resolved );
 
     /**
-     * @deprecated Use {@link #findQualifyingTableNames(String, SqlNode, NameMatcher)}
+     * @deprecated Use {@link #findQualifyingEntityNames(String, SqlNode, NameMatcher)}
      */
     @Deprecated
     // to be removed before 2.0
-    Pair<String, SqlValidatorNamespace> findQualifyingTableName( String columnName, SqlNode ctx );
+    Pair<String, SqlValidatorNamespace> findQualifyingEntityName( String columnName, SqlNode ctx );
 
     /**
      * Finds all table aliases which are implicitly qualifying an unqualified column name.
-     *
+     * <p>
      * This method is only implemented in scopes (such as {@link SelectScope}) which can be the context for name-resolution. In scopes such as {@link IdentifierNamespace}, it throws {@link UnsupportedOperationException}.
      *
      * @param columnName Column name
@@ -84,7 +83,7 @@ public interface SqlValidatorScope extends ValidatorScope {
      * @param nameMatcher Name matcher
      * @return Map of applicable table alias and namespaces, never null, empty if no aliases found
      */
-    Map<String, ScopeChild> findQualifyingTableNames( String columnName, SqlNode ctx, NameMatcher nameMatcher );
+    Map<String, ScopeChild> findQualifyingEntityNames( String columnName, SqlNode ctx, NameMatcher nameMatcher );
 
     /**
      * Collects the {@link Moniker}s of all possible columns in this scope.
@@ -133,7 +132,7 @@ public interface SqlValidatorScope extends ValidatorScope {
 
     /**
      * Resolves a single identifier to a column, and returns the datatype of that column.
-     *
+     * <p>
      * If it cannot find the column, returns null. If the column is ambiguous, throws an error with context <code>ctx</code>.
      *
      * @param name Name of column
@@ -157,22 +156,21 @@ public interface SqlValidatorScope extends ValidatorScope {
     void validateExpr( SqlNode expr );
 
     /**
-     * @deprecated Use {@link #resolveTable(List, NameMatcher, Path, Resolved)}.
+     * @deprecated Use {@link #resolveEntity(List, Path, Resolved)}.
      */
     @Deprecated
     // to be removed before 2.0
-    SqlValidatorNamespace getTableNamespace( List<String> names );
+    SqlValidatorNamespace getEntityNamespace( List<String> names );
 
     /**
-     * Looks up a table in this scope from its name. If found, calls {@link Resolved#resolve(List, NameMatcher, boolean, Resolved)}. {@link EntityNamespace} that wraps it. If the "table" is defined in a {@code WITH} clause it may be a query, not a table after all.
-     *
-     * The name matcher is not null, and one typically uses {@link org.polypheny.db.catalog.snapshot.Snapshot#nameMatcher}.
+     * Looks up a table in this scope from its name. If found, calls {@link SqlValidatorScope#resolve(List, boolean, Resolved)}. {@link EntityNamespace} that wraps it. If the "table" is defined in a {@code WITH} clause it may be a query, not a table after all.
+     * <p>
+     * The name matcher is not null, and one typically uses {@link org.polypheny.db.util.NameMatchers}.
      *
      * @param names Name of table, may be qualified or fully-qualified
-     * @param nameMatcher Name matcher
      * @param path List of names that we have traversed through so far
      */
-    void resolveTable( List<String> names, NameMatcher nameMatcher, Path path, Resolved resolved );
+    void resolveEntity( List<String> names, Path path, Resolved resolved );
 
     /**
      * Converts the type of an expression to nullable, if the context warrants it.

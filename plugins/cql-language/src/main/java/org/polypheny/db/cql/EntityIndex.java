@@ -25,7 +25,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
  * Packaging table information together.
  */
 @Slf4j
-public class TableIndex {
+public class EntityIndex {
 
     public final LogicalTable catalogTable;
     public final String fullyQualifiedName;
@@ -33,7 +33,7 @@ public class TableIndex {
     public final String tableName;
 
 
-    public TableIndex( final LogicalTable catalogTable, final String schemaName, final String tableName ) {
+    public EntityIndex( final LogicalTable catalogTable, final String schemaName, final String tableName ) {
         this.catalogTable = catalogTable;
         this.fullyQualifiedName = schemaName + "." + tableName;
         this.schemaName = schemaName;
@@ -41,11 +41,11 @@ public class TableIndex {
     }
 
 
-    public static TableIndex createIndex( String namespaceName, String tableName ) {
-        log.debug( "Creating TableIndex." );
+    public static EntityIndex createIndex( String namespaceName, String tableName ) {
+        log.debug( "Creating EntityIndex." );
         Catalog catalog = Catalog.getInstance();
         LogicalTable table = catalog.getSnapshot().rel().getTable( namespaceName, tableName ).orElseThrow();
-        return new TableIndex( table, namespaceName, tableName );
+        return new EntityIndex( table, namespaceName, tableName );
     }
 
 

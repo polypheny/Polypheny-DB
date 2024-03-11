@@ -152,7 +152,7 @@ public class FileStore extends DataStore<RelAdapterCatalog> {
     @Override
     public void updateNamespace( String name, long id ) {
         if ( currentNamespace == null ) {
-            currentNamespace = new FileStoreSchema( id, name, this );
+            currentNamespace = new FileStoreSchema( id, adapterId, name, this );
         }
 
         putNamespace( currentNamespace );

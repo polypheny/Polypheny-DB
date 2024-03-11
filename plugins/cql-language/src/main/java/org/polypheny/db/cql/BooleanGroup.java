@@ -61,7 +61,7 @@ public class BooleanGroup<E extends BooleanGroup.BooleanOperator> {
     /**
      * Boolean operators that are to be used with tables.
      */
-    public enum TableOpsBooleanOperator implements BooleanOperator {
+    public enum EntityOpsBooleanOperator implements BooleanOperator {
         AND( "and" ),
         OR( "or" );
 
@@ -69,7 +69,7 @@ public class BooleanGroup<E extends BooleanGroup.BooleanOperator> {
         private final String booleanOperator;
 
 
-        TableOpsBooleanOperator( String booleanOperator ) {
+        EntityOpsBooleanOperator( String booleanOperator ) {
             this.booleanOperator = booleanOperator;
         }
 
@@ -85,7 +85,7 @@ public class BooleanGroup<E extends BooleanGroup.BooleanOperator> {
     /**
      * Boolean operators that are to be used with columns.
      */
-    public enum ColumnOpsBooleanOperator implements BooleanOperator {
+    public enum FieldOpsBooleanOperator implements BooleanOperator {
         AND( "and" ),
         OR( "or" ),
         NOT( "not" ),
@@ -95,7 +95,7 @@ public class BooleanGroup<E extends BooleanGroup.BooleanOperator> {
         private final String booleanOperator;
 
 
-        ColumnOpsBooleanOperator( String booleanOperator ) {
+        FieldOpsBooleanOperator( String booleanOperator ) {
             this.booleanOperator = booleanOperator;
         }
 

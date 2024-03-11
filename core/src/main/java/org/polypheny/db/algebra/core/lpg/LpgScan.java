@@ -30,7 +30,7 @@ public abstract class LpgScan<E extends Entity> extends Scan<E> implements LpgAl
 
     /**
      * Creates a {@link LpgScan}.
-     * {@link ModelTrait#GRAPH} native node, which is able to scan a LPG graph.
+     * {@link ModelTrait#GRAPH} native node, which is able to relScan a LPG graph.
      */
     public LpgScan( AlgCluster cluster, AlgTraitSet traitSet, E graph ) {
         super( cluster, traitSet.replace( ModelTrait.GRAPH ), graph );

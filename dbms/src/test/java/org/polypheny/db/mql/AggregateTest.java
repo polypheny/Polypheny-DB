@@ -236,7 +236,6 @@ public class AggregateTest extends MqlTestTemplate {
 
     //$limit
     @Test
-    @Tag("cottontailExcluded")
     public void limitTest() {
         List<String> expected = ImmutableList.of(
                 "{\"test\":\"val1\",\"key\":1}" );
@@ -340,8 +339,6 @@ public class AggregateTest extends MqlTestTemplate {
 
 
     @Test
-    @Tag("cottontailExcluded") // cottontail does not support skips/offset queries
-    // without a limit therefore this test cannot be performed correctly using this adapter
     public void skipTest() {
         List<String> expected = ImmutableList.of(
                 "{\"test\":1.3,\"key\":{\"key\":\"val\"}}",

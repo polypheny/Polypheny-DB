@@ -114,7 +114,7 @@ public class CypherToAlgConverter {
         LogicalEntity entity = getEntity( namespaceId, query );
 
         if ( query.isFullScan() ) {
-            // simple full graph scan
+            // simple full graph relScan
             return AlgRoot.of( buildFullScan( (LogicalGraph) entity ), Kind.SELECT );
         }
 

@@ -62,9 +62,11 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.functions.TemporalFunctions;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.Static;
 
 
@@ -285,7 +287,11 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                 preparedStatement.setTime( i, value.asTime().asSqlTime(), Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) ) );
                 break;
             case TIMESTAMP:
-                preparedStatement.setTimestamp( i, value.asTimestamp().asSqlTimestamp(), Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) ) );
+                if ( !connectionHandler.getDialect().handlesUtcCorrectly() ) {
+                    preparedStatement.setTimestamp( i, PolyTimestamp.of( value.asTimestamp().millisSinceEpoch - 3 * TemporalFunctions.LOCAL_TZ.getRawOffset() ).asSqlTimestamp() );
+                } else {
+                    preparedStatement.setTimestamp( i, value.asTimestamp().asSqlTimestamp(), Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) ) );
+                }
                 break;
             case VARBINARY:
             case BINARY:

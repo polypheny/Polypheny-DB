@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,70 +34,38 @@
 package org.polypheny.db.schema;
 
 
-import java.util.Map;
+import java.util.List;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.util.Pair;
 
 
 /**
- * Factory for {@link Entity} objects.
- *
- * A table factory allows you to include custom tables in a model file.
- * For example, here is a model that contains a custom table that generates a range of integers.
- *
- * <blockquote><pre>{
- *   version: '1.0',
- *   defaultSnapshot: 'MATH',
- *   schemas: [
- *     {
- *       name: 'MATH',
- *       tables: [
- *         {
- *           name: 'INTEGERS',
- *           type: 'custom',
- *           factory: 'com.acme.IntegerTable',
- *           operand: {
- *             start: 3,
- *             end: 7,
- *             column: 'N'
- *           }
- *         }
- *       ]
- *     }
- *   ]
- * }</pre></blockquote>
- *
- * Given that schema, the query
- *
- * <blockquote><pre>SELECT * FROM math.integers</pre></blockquote>
- *
- * returns
- *
- * <blockquote><pre>
- * +---+
- * | N |
- * +---+
- * | 3 |
- * | 4 |
- * | 5 |
- * | 6 |
- * +---+
- * </pre></blockquote>
- *
- * A class that implements TableFactory specified in a schema must have a public default constructor.
- *
- * @param <T> Sub-type of table created by this factory
+ * Extension to {@link Entity} that specifies a custom way to resolve column names.
+ * <p>
+ * It is optional for a Table to implement this interface. If Table does not implement this interface, column resolving will
+ * be performed in the default way.
+ * <p>
+ * <strong>NOTE: This class is experimental and subject to change/removal without notice</strong>.
  */
-public interface TableFactory<T extends Entity> {
+public interface CustomFieldResolvingEntity extends Entity {
 
     /**
-     * Creates a Table.
+     * Resolve a column based on the name components. One or more the input name components can be resolved to one field in
+     * the table row type, along with a remainder list of name components which have not been resolved within this call, and
+     * which in turn can be potentially resolved as sub-field names. In the meantime, this method can return multiple matches,
+     * which is a list of pairs containing the resolved field and the remaining name components.
      *
-     * @param schema Schema this table belongs to
-     * @param name Name of this table
-     * @param operand The "operand" JSON property
-     * @param rowType Row type. Specified if the "columns" JSON property.
+     * @param rowType the table row type
+     * @param typeFactory the type factory
+     * @param names the name components to be resolved
+     * @return a list of pairs containing the resolved field and the remaining name components.
      */
-    T create( SchemaPlus schema, String name, Map<String, Object> operand, AlgDataType rowType );
+    List<Pair<AlgDataTypeField, List<String>>> resolveColumn(
+            AlgDataType rowType,
+            AlgDataTypeFactory typeFactory,
+            List<String> names );
 
 }
 

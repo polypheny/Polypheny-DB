@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonToken;
 import java.sql.Time;
+import java.util.TimeZone;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -87,7 +88,7 @@ public class PolyTime extends PolyTemporal {
                 return poly.asTime();
             }
         }
-        throw new NotImplementedException( "convert value to Boolean" );
+        throw new NotImplementedException( "convert value to Time" );
     }
 
 
@@ -133,6 +134,12 @@ public class PolyTime extends PolyTemporal {
     @Override
     public Long getMillisSinceEpoch() {
         return ofDay == null ? null : Long.valueOf( ofDay );
+    }
+
+
+    @Override
+    public PolyTime addLocal() {
+        return ofDay == null ? this : PolyTime.of( ofDay + TimeZone.getDefault().getRawOffset() );
     }
 
 

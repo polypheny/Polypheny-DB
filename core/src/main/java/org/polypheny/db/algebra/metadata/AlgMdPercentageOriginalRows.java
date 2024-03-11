@@ -119,7 +119,7 @@ public class AlgMdPercentageOriginalRows implements MetadataHandler<BuiltInMetad
             return null;
         }
 
-        if ( alg.getInputs().size() == 0 ) {
+        if ( alg.getInputs().isEmpty() ) {
             // Assume no filtering happening at leaf.
             return 1.0;
         }

@@ -16,29 +16,21 @@
 
 package org.polypheny.db.adapter.neo4j;
 
-import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
 import org.polypheny.db.adapter.neo4j.Neo4jPlugin.Neo4jStore;
-import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.impl.Expressible;
-import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Namespace;
-import org.polypheny.db.schema.Namespace.Schema;
-import org.polypheny.db.schema.SchemaVersion;
 
 
-public class NeoNamespace implements Namespace, Schema, Expressible {
+public class NeoNamespace extends Namespace implements Expressible {
 
     @Getter
     private final long id;
@@ -57,6 +49,7 @@ public class NeoNamespace implements Namespace, Schema, Expressible {
      * @param id id of the namespace
      */
     public NeoNamespace( Driver db, TransactionProvider transactionProvider, Neo4jStore neo4jStore, long id ) {
+        super( id, neo4jStore.getAdapterId() );
         this.id = id;
         this.graph = db;
         this.store = neo4jStore;
@@ -79,72 +72,6 @@ public class NeoNamespace implements Namespace, Schema, Expressible {
 
     @Override
     public Expression asExpression() {
-        return null;
-    }
-
-
-    @Override
-    public Namespace getSubNamespace( String name ) {
-        return null;
-    }
-
-
-    @Override
-    public Set<String> getSubNamespaceNames() {
-        return null;
-    }
-
-
-    @Override
-    public Entity getEntity( String name ) {
-        return null;
-    }
-
-
-    @Override
-    public Set<String> getEntityNames() {
-        return null;
-    }
-
-
-    @Override
-    public AlgProtoDataType getType( String name ) {
-        return null;
-    }
-
-
-    @Override
-    public Set<String> getTypeNames() {
-        return null;
-    }
-
-
-    @Override
-    public Collection<Function> getFunctions( String name ) {
-        return null;
-    }
-
-
-    @Override
-    public Set<String> getFunctionNames() {
-        return null;
-    }
-
-
-    @Override
-    public Expression getExpression( Snapshot snapshot, long id ) {
-        return null;
-    }
-
-
-    @Override
-    public boolean isMutable() {
-        return false;
-    }
-
-
-    @Override
-    public Namespace snapshot( SchemaVersion version ) {
         return null;
     }
 

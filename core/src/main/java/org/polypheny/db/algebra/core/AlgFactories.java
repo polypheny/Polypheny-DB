@@ -566,7 +566,7 @@ public class AlgFactories {
      * Creates a {@link ScanFactory} that can expand {@link TranslatableEntity} instances.
      *
      * @param scanFactory Factory for non-translatable tables
-     * @return Table scan factory
+     * @return Table relScan factory
      */
     @Nonnull
     public static ScanFactory expandingScanFactory( @Nonnull ScanFactory scanFactory ) {

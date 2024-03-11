@@ -39,9 +39,9 @@ import org.polypheny.db.plan.AlgTraitSet;
 
 
 /**
- * Relational expression representing a scan of a Google Sheet.
+ * Relational expression representing a relScan of a Google Sheet.
  *
- * Like any table scan, it serves as a leaf node of a query tree.
+ * Like any table relScan, it serves as a leaf node of a query tree.
  */
 public class GoogleSheetTableScanProject extends RelScan<GoogleSheetTable> implements EnumerableAlg {
 

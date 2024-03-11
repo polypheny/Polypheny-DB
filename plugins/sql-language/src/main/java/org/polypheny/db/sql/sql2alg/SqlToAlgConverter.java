@@ -237,6 +237,7 @@ import org.polypheny.db.util.InitializerContext;
 import org.polypheny.db.util.InitializerExpressionFactory;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.NameMatcher;
+import org.polypheny.db.util.NameMatchers;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.NullInitializerExpressionFactory;
 import org.polypheny.db.util.NumberUtil;
@@ -1813,7 +1814,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                 if ( isNatural ) {
                     final AlgDataType leftRowType = leftNamespace.getTupleType();
                     final AlgDataType rightRowType = rightNamespace.getTupleType();
-                    final List<String> columnList = SqlValidatorUtil.deriveNaturalJoinColumnList( snapshot.nameMatcher, leftRowType, rightRowType );
+                    final List<String> columnList = SqlValidatorUtil.deriveNaturalJoinColumnList( NameMatchers.withCaseSensitive( false ), leftRowType, rightRowType );
                     conditionExp = convertUsing( leftNamespace, rightNamespace, columnList );
                 } else {
                     conditionExp =
@@ -2189,9 +2190,9 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             String originalRelName = lookup.getOriginalRelName();
             String originalFieldName = fieldAccess.getField().getName();
 
-            final NameMatcher nameMatcher = Snapshot.nameMatcher;
+            final NameMatcher nameMatcher = NameMatchers.withCaseSensitive( false );
             final SqlValidatorScope.ResolvedImpl resolved = new SqlValidatorScope.ResolvedImpl();
-            lookup.bb.scope.resolve( ImmutableList.of( originalRelName ), nameMatcher, false, resolved );
+            lookup.bb.scope.resolve( ImmutableList.of( originalRelName ), false, resolved );
             assert resolved.count() == 1;
             final SqlValidatorScope.Resolve resolve = resolved.only();
             final SqlValidatorNamespace foundNs = resolve.namespace;
@@ -2280,9 +2281,9 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             DeferredLookup lookup = mapCorrelToDeferred.get( correlName );
             String originalRelName = lookup.getOriginalRelName();
 
-            final NameMatcher nameMatcher = Snapshot.nameMatcher;
+            final NameMatcher nameMatcher = NameMatchers.withCaseSensitive( false );
             final SqlValidatorScope.ResolvedImpl resolved = new SqlValidatorScope.ResolvedImpl();
-            lookup.bb.scope.resolve( ImmutableList.of( originalRelName ), nameMatcher, false, resolved );
+            lookup.bb.scope.resolve( ImmutableList.of( originalRelName ), false, resolved );
 
             SqlValidatorScope ancestorScope = resolved.only().scope;
 
@@ -2348,7 +2349,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
      */
     private @Nonnull
     RexNode convertUsing( SqlValidatorNamespace leftNamespace, SqlValidatorNamespace rightNamespace, List<String> nameList ) {
-        final NameMatcher nameMatcher = snapshot.nameMatcher;
+        final NameMatcher nameMatcher = NameMatchers.withCaseSensitive( false );
         final List<RexNode> list = new ArrayList<>();
         for ( String name : nameList ) {
             List<RexNode> operands = new ArrayList<>();
@@ -2879,11 +2880,11 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             fieldNames = new ArrayList<>( Collections.nCopies( size, null ) );
         }
 
-        final InitializerExpressionFactory initializerFactory = getInitializerFactory( validator.getSqlNamespace( call ).getTable() );
+        final InitializerExpressionFactory initializerFactory = getInitializerFactory( validator.getSqlNamespace( call ).getEntity() );
 
         // Walk the name list and place the associated value in the expression list according to the ordinal value returned from the table construct, leaving nulls in the list for columns
         // that are not referenced.
-        final NameMatcher nameMatcher = snapshot.nameMatcher;
+        final NameMatcher nameMatcher = NameMatchers.withCaseSensitive( false );
 
         for ( Pair<String, RexNode> p : Pair.zip( targetColumnNames, columnExprs ) ) {
             AlgDataTypeField field = nameMatcher.field( targetRowType, p.left );
@@ -3383,7 +3384,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             fieldNames.add( deriveAlias( expr, aliases, i ) );
         }
 
-        fieldNames = ValidatorUtil.uniquify( fieldNames, snapshot.nameMatcher.isCaseSensitive() );
+        fieldNames = ValidatorUtil.uniquify( fieldNames, false );
 
         algBuilder.push( bb.root ).projectNamed( exprs, fieldNames, true );
         bb.setRoot( algBuilder.build(), false );
@@ -3734,9 +3735,9 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                 }
                 return Pair.of( node, null );
             }
-            final NameMatcher nameMatcher = scope.getValidator().getSnapshot().nameMatcher;
+            final NameMatcher nameMatcher = NameMatchers.withCaseSensitive( false );
             final SqlValidatorScope.ResolvedImpl resolved = new SqlValidatorScope.ResolvedImpl();
-            scope.resolve( qualified.prefix(), nameMatcher, false, resolved );
+            scope.resolve( qualified.prefix(), false, resolved );
             if ( !(resolved.count() == 1) ) {
                 return null;
             }

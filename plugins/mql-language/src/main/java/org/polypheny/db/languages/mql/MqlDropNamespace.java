@@ -16,8 +16,7 @@
 
 package org.polypheny.db.languages.mql;
 
-import lombok.Getter;
-import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.mql.Mql.Type;
@@ -27,27 +26,25 @@ import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 
 
-@Getter
-public class MqlUseDatabase extends MqlNode implements ExecutableStatement {
+public class MqlDropNamespace extends MqlNode implements ExecutableStatement {
 
-    private final String database;
-
-
-    public MqlUseDatabase( ParserPos pos, String database ) {
+    public MqlDropNamespace( ParserPos pos ) {
         super( pos );
-        this.database = database;
     }
 
 
     @Override
     public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
-        DdlManager.getInstance().createNamespace( this.database, DataModel.DOCUMENT, true, false );
+        long namespaceId = parsedQueryContext.getNamespaceId();
+
+        DdlManager.getInstance().dropNamespace( Catalog.snapshot().getNamespace( namespaceId ).orElseThrow().name, true, statement );
     }
 
 
     @Override
     public Type getMqlKind() {
-        return Type.USE_DATABASE;
+        return Type.DROP_DATABASE;
     }
+
 
 }

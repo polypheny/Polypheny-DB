@@ -17,11 +17,11 @@
 package org.polypheny.db.monitoring.core;
 
 import java.io.File;
-import org.polypheny.db.monitoring.MapDbRepository;
+import org.polypheny.db.monitoring.InMemoryRepository;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 
 
-public class TestMapDbRepository extends MapDbRepository {
+public class TestInMemoryRepository extends InMemoryRepository {
 
     private static final String FILE_PATH = "testDb";
     private static final String FOLDER_NAME = "monitoring";

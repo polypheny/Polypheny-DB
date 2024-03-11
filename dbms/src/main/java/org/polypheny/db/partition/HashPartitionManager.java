@@ -37,14 +37,7 @@ public class HashPartitionManager extends AbstractPartitionManager {
 
     @Override
     public long getTargetPartitionId( LogicalTable table, PartitionProperty property, String columnValue ) {
-        long hashValue = columnValue.hashCode() * -1;
-
-        // Don't want any neg. value for now
-        if ( hashValue <= 0 ) {
-            hashValue *= -1;
-        }
-
-        //PartitionProperty property = Catalog.getInstance().getSnapshot().alloc().getPartitionProperty( targetEntities.id ).orElseThrow();
+        long hashValue = Math.abs( columnValue.hashCode() );
 
         // Get designated HASH partition based on number of internal partitions
         int partitionIndex = (int) (hashValue % property.partitionIds.size());
@@ -62,7 +55,7 @@ public class HashPartitionManager extends AbstractPartitionManager {
             throw new GenericRuntimeException( "PartitionType HASH does not support the assignment of values to partitions" );
         }
         if ( numPartitionGroups < 2 ) {
-            throw new GenericRuntimeException( "You can't partition a table with less than 2 partitions. You only specified: '" + numPartitionGroups + "'" );
+            throw new GenericRuntimeException( "You can't partition a table if you only specify one partition. You only specified: '" + numPartitionGroups + "'" );
         }
 
         return partitionGroupQualifiers;

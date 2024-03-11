@@ -26,7 +26,6 @@ import org.apache.calcite.avatica.AvaticaClientRuntimeException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -188,7 +187,7 @@ public class ForeignKeyConstraintTest {
 
     @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
-    @Disabled // todo dl enable as soon as such inserts work correctly
+    //@Disabled // todo dl enable as soon as such inserts work correctly
     public void testInsertSelectNoConflict( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -232,7 +231,6 @@ public class ForeignKeyConstraintTest {
 
     @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
-    @Disabled // todo dl enable as soon as such inserts work correctly
     public void testInsertSelectConflict( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -254,7 +252,7 @@ public class ForeignKeyConstraintTest {
                     try {
                         statement.executeUpdate( "INSERT INTO constraint_test2 SELECT ctid + 10 AS ct2id, ctid * 2 AS ctid FROM constraint_test" );
                         Assertions.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( RuntimeException e ) {
+                    } catch ( Throwable e ) {
                         if ( !(e.getMessage().contains( "Remote driver error:" ) && e.getMessage().contains( "Transaction violates foreign key constraint" )) ) {
                             throw new RuntimeException( "Unexpected exception", e );
                         }

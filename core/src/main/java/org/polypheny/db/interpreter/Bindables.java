@@ -253,7 +253,7 @@ public class Bindables {
             // The "+ 2d" on top and bottom keeps the function fairly smooth.
             double p = ((double) projects.size() + 2d) / ((double) entity.getTupleType().getFieldCount() + 2d);
 
-            // Multiply the cost by a factor that makes a scan more attractive if filters and projects are pushed to the table scan
+            // Multiply the cost by a factor that makes a relScan more attractive if filters and projects are pushed to the table relScan
             return super.computeSelfCost( planner, mq ).multiplyBy( f * p * 0.01d * 100.0d );  //TODO(s3lph): Temporary *100, otherwise foreign key enforcement breaks
         }
 

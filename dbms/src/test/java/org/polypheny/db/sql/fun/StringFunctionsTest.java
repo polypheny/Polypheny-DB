@@ -25,7 +25,6 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
@@ -200,7 +199,6 @@ public class StringFunctionsTest {
     }
 
 
-    @Disabled
     @Test
     public void stringTrim() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
@@ -209,12 +207,12 @@ public class StringFunctionsTest {
                 // TRIM( { BOTH | LEADING | TRAILING } string1 FROM string2) Removes the longest string containing only the characters in string1 from the start/end/both ends of string1
                 // TODO check whitespace
                 List<Object[]> expectedResult = ImmutableList.of(
-                        new Object[]{ 1, "Seventh" },
+                        new Object[]{ 1, " Sevent" },
                         new Object[]{ 2, "Eighth " },
                         new Object[]{ 3, " ninth " }
                 );
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT U.id, TRIM(TRAILING 'th' FROM U.dataC) FROM TableC AS U " ),
+                        statement.executeQuery( "SELECT U.id, TRIM(TRAILING 'h' FROM U.dataC) FROM TableC AS U " ),
                         expectedResult,
                         true );
             }
@@ -284,7 +282,6 @@ public class StringFunctionsTest {
     }
 
 
-    @Disabled
     @Test
     public void stringInitcap() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {

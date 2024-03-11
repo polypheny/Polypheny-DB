@@ -174,16 +174,16 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      * update candidates for materialized view with freshness updates
      *
      * @param transaction transaction of the commit
-     * @param tableIds table that was changed
+     * @param entityIds entity that was changed
      */
     @Override
-    public void notifyModifiedTables( Transaction transaction, Collection<Long> tableIds ) {
-        if ( tableIds.isEmpty() ) {
+    public void notifyModifiedEntities( Transaction transaction, Collection<Long> entityIds ) {
+        if ( entityIds.isEmpty() ) {
             return;
         }
 
-        for ( long tableId : tableIds ) {
-            Optional<LogicalTable> tableOptional = Catalog.snapshot().rel().getTable( tableId );
+        for ( long entityId : entityIds ) {
+            Optional<LogicalTable> tableOptional = Catalog.snapshot().rel().getTable( entityId );
 
             if ( tableOptional.isEmpty() ) {
                 continue;
@@ -213,9 +213,9 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
 
     /**
-     * Checks if materialized view  with freshness update needs to be updated after a change on the underlying table
+     * Checks if materialized view  with freshness update needs to be updated after a change on the underlying entity
      *
-     * @param potentialInteresting id of underlying table that was updated
+     * @param potentialInteresting id of underlying entity that was updated
      */
     public void materializedUpdate( long potentialInteresting ) {
         Snapshot snapshot = Catalog.getInstance().getSnapshot();
@@ -281,7 +281,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      */
     public void prepareToUpdate( long materializedId ) {
         Catalog catalog = Catalog.getInstance();
-        LogicalTable table = catalog.getSnapshot().getLogicalEntity( materializedId ).map( e -> e.unwrap( LogicalTable.class ).orElseThrow() ).orElseThrow();
+        LogicalTable entity = catalog.getSnapshot().getLogicalEntity( materializedId ).map( e -> e.unwrap( LogicalTable.class ).orElseThrow() ).orElseThrow();
 
         Transaction transaction = getTransactionManager().startTransaction(
                 Catalog.defaultUserId,
@@ -290,21 +290,19 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
         try {
             Statement statement = transaction.createStatement();
-            // Get a shared global schema lock (only DDLs acquire an exclusive global schema lock)
-            //idAccesses.add( Pair.of( LockManager.GLOBAL_LOCK, LockMode.SHARED ) );
-            Optional<LogicalMaterializedView> optionalTable = table.unwrap( LogicalMaterializedView.class );
-            if ( optionalTable.isEmpty() ) {
+            Optional<LogicalMaterializedView> optionalEntity = entity.unwrap( LogicalMaterializedView.class );
+            if ( optionalEntity.isEmpty() ) {
                 log.warn( "Materialized view with id {} does not longer exist", materializedId );
                 return;
             }
 
             // Get locks for individual tables
-            EntityAccessMap access = new EntityAccessMap( optionalTable.get().getDefinition(), new HashMap<>() );
+            EntityAccessMap access = new EntityAccessMap( optionalEntity.get().getDefinition(), new HashMap<>() );
             Collection<Entry<EntityIdentifier, LockMode>> idAccesses = new ArrayList<>( access.getAccessedEntityPair() );
             // if we don't lock exclusively for the target here we can produce deadlocks on underlying stores,
             // as we could end up with two concurrent shared locks waiting for an exclusive lock on the same entity or each other's entities
             catalog.getSnapshot().alloc().getFromLogical( materializedId )
-                    .forEach( allocation -> idAccesses.add( Pair.of( new EntityIdentifier( table.id, allocation.id, NamespaceLevel.ENTITY_LEVEL ), LockMode.EXCLUSIVE ) ) );
+                    .forEach( allocation -> idAccesses.add( Pair.of( new EntityIdentifier( entity.id, allocation.id, NamespaceLevel.ENTITY_LEVEL ), LockMode.EXCLUSIVE ) ) );
 
             LockManager.INSTANCE.lock( idAccesses, (TransactionImpl) statement.getTransaction() );
         } catch ( DeadlockException e ) {
@@ -370,7 +368,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
                 // Build {@link AlgNode} to build delete Statement from materialized view
                 AlgBuilder deleteAlgBuilder = AlgBuilder.create( deleteStatement );
-                AlgNode deleteAlg = deleteAlgBuilder.scan( materializedView ).build();
+                AlgNode deleteAlg = deleteAlgBuilder.relScan( materializedView ).build();
 
                 // Build {@link AlgNode} to build insert Statement from materialized view
                 Statement targetStatementDelete = transaction.createStatement();
@@ -418,12 +416,12 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
     }
 
 
-    private void prepareSourceAlg( Statement sourceStatement, AlgCollation algCollation, AlgNode sourceRel ) {
+    private void prepareSourceAlg( Statement sourceStatement, AlgCollation algCollation, AlgNode sourceAlg ) {
         AlgCluster cluster = AlgCluster.create(
                 sourceStatement.getQueryProcessor().getPlanner(),
                 new RexBuilder( sourceStatement.getTransaction().getTypeFactory() ), null, sourceStatement.getDataContext().getSnapshot() );
 
-        prepareNode( sourceRel, cluster, algCollation );
+        prepareNode( sourceAlg, cluster, algCollation );
     }
 
 

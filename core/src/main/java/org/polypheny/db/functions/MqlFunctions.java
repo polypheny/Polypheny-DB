@@ -374,7 +374,7 @@ public class MqlFunctions {
     /**
      * Retrieves an element in the underlying array
      *
-     * @param input the array to scan
+     * @param input the array to relScan
      * @param index the element, which is retrieved, negative starts form behind
      * @return the element at the specified position, else null
      */
@@ -394,7 +394,7 @@ public class MqlFunctions {
     /**
      * Retrieves an element in the underlying array
      *
-     * @param input the array to scan
+     * @param input the array to relScan
      * @param index the element, which is retrieved, negative starts form behind
      * @return the element at the specified position, else null
      */
@@ -407,7 +407,7 @@ public class MqlFunctions {
     /**
      * Retrieves an element in the underlying array
      *
-     * @param input the array to scan
+     * @param input the array to relScan
      * @param index the element, which is retrieved, negative starts form behind
      * @return the element at the specified position, else null
      */
@@ -627,7 +627,7 @@ public class MqlFunctions {
     /**
      * Removes the provided filter from the doc
      *
-     * @param doc the document to scan
+     * @param doc the document to relScan
      * @param excluded the element to exclude
      */
     private static void excludeBson( PolyValue doc, List<List<PolyString>> excluded ) {

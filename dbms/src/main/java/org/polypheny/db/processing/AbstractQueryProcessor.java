@@ -1200,7 +1200,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         this.prepareMonitoring( statement, logicalRoot, isAnalyze, isSubquery, queryInformation );
 
         // Update which tables where changed used for Materialized Views
-        MaterializedViewManager.getInstance().notifyModifiedTables( statement.getTransaction(), queryInformation.allModifiedEntities );
+        MaterializedViewManager.getInstance().notifyModifiedEntities( statement.getTransaction(), queryInformation.allModifiedEntities );
 
         return queryInformation;
     }

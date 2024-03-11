@@ -1079,8 +1079,13 @@ public enum PolyType {
     }
 
 
-    public static Set<PolyType> availableTypes() {
-        return ImmutableSet.of( BOOLEAN, TINYINT, SMALLINT, INTEGER, JSON, BIGINT, DECIMAL, REAL, DOUBLE, DATE, TIME, TIMESTAMP, VARCHAR, FILE, IMAGE, VIDEO, AUDIO );
+    /**
+     * The set of types that are allowed for field in an entity (e.g. columns in a table).
+     *
+     * @return allowed field types
+     */
+    public static Set<PolyType> allowedFieldTypes() {
+        return ImmutableSet.of( BOOLEAN, TINYINT, SMALLINT, INTEGER, JSON, BIGINT, DECIMAL, REAL, DOUBLE, DATE, TIME, TIMESTAMP, VARCHAR, TEXT, FILE, IMAGE, VIDEO, AUDIO );
     }
 
 

@@ -28,8 +28,8 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.cql.ColumnFilter;
-import org.polypheny.db.cql.ColumnIndex;
 import org.polypheny.db.cql.Comparator;
+import org.polypheny.db.cql.FieldIndex;
 import org.polypheny.db.cql.LiteralFilter;
 import org.polypheny.db.cql.Relation;
 import org.polypheny.db.cql.exception.UnknownIndexException;
@@ -57,9 +57,9 @@ public class FilterTest extends AlgBuildTestHelper {
 
         RuntimeException thrown = assertThrows( RuntimeException.class, () -> {
             ColumnFilter columnFilter = new ColumnFilter(
-                    ColumnIndex.createIndex( "test", "dept", "deptno" ),
+                    FieldIndex.createIndex( "test", "dept", "deptno" ),
                     new Relation( Comparator.EQUALS ),
-                    ColumnIndex.createIndex( "test", "employee", "deptno" )
+                    FieldIndex.createIndex( "test", "employee", "deptno" )
             );
             columnFilter.convert2RexNode( baseNode, rexBuilder, filterMap );
         } );
@@ -69,7 +69,7 @@ public class FilterTest extends AlgBuildTestHelper {
     @Test
     public void testLiteralFilter() throws UnknownIndexException {
         LiteralFilter literalFilter = new LiteralFilter(
-                ColumnIndex.createIndex( "test", "employee", "deptno" ),
+                FieldIndex.createIndex( "test", "employee", "deptno" ),
                 new Relation( Comparator.EQUALS ),
                 "1"
         );

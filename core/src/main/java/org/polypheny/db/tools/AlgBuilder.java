@@ -310,7 +310,7 @@ public class AlgBuilder {
 
     /**
      * Adds a relational expression to be the input to the next relational expression constructed.
-     *
+     * <p>
      * This method is usual when you want to weave in relational expressions that are not supported by the builder. If, while
      * creating such expressions, you need to use previously built expressions as inputs, call
      * {@link #build()} to pop those inputs.
@@ -361,7 +361,7 @@ public class AlgBuilder {
 
     /**
      * Returns the final relational expression.
-     *
+     * <p>
      * Throws if the stack is empty.
      */
     public AlgNode build() {
@@ -468,7 +468,7 @@ public class AlgBuilder {
 
     /**
      * Creates a reference to a field by name.
-     *
+     * <p>
      * Equivalent to {@code field(1, 0, fieldName)}.
      *
      * @param fieldName Field name
@@ -499,7 +499,7 @@ public class AlgBuilder {
 
     /**
      * Creates a reference to an input field by ordinal.
-     *
+     * <p>
      * Equivalent to {@code field(1, 0, ordinal)}.
      *
      * @param fieldOrdinal Field ordinal
@@ -737,7 +737,7 @@ public class AlgBuilder {
 
     /**
      * Creates an AND.
-     *
+     * <p>
      * Simplifies the expression a little:
      * {@code e AND TRUE} becomes {@code e};
      * {@code e AND e2 AND NOT e} becomes {@code e2}.
@@ -935,7 +935,7 @@ public class AlgBuilder {
 
     /**
      * Creates a group key, identified by field positions in the underlying relational expression.
-     *
+     * <p>
      * This method of creating a group key does not allow you to group on new expressions, only column projections, but is
      * efficient, especially when you are coming from an existing {@link Aggregate}.
      */
@@ -946,7 +946,7 @@ public class AlgBuilder {
 
     /**
      * Creates a group key with grouping sets, both identified by field positions in the underlying relational expression.
-     *
+     * <p>
      * This method of creating a group key does not allow you to group on new expressions, only column projections, but is
      * efficient, especially when you are coming from an existing {@link Aggregate}.
      */
@@ -996,7 +996,7 @@ public class AlgBuilder {
 
     /**
      * Creates a call to an aggregate function.
-     *
+     * <p>
      * To add other operands, apply
      * {@link AggCall#distinct()},
      * {@link AggCall#approximate(boolean)},
@@ -1018,7 +1018,7 @@ public class AlgBuilder {
 
     /**
      * Creates a call to an aggregate function.
-     *
+     * <p>
      * To add other operands, apply
      * {@link AggCall#distinct()},
      * {@link AggCall#approximate(boolean)},
@@ -1307,14 +1307,14 @@ public class AlgBuilder {
 
     /**
      * Creates a {@link RelScan} of the table with a given name.
-     *
+     * <p>
      * Throws if the table does not exist.
-     *
+     * <p>
      * Returns this builder.
      *
      * @param tableNames Name of table (can optionally be qualified)
      */
-    public AlgBuilder scan( List<String> tableNames ) {
+    public AlgBuilder relScan( List<String> tableNames ) {
         final List<String> names = ImmutableList.copyOf( tableNames );
         final LogicalTable entity;
         if ( tableNames.size() == 2 ) {
@@ -1332,7 +1332,7 @@ public class AlgBuilder {
     }
 
 
-    public AlgBuilder scan( @Nonnull Entity entity ) {
+    public AlgBuilder relScan( @Nonnull Entity entity ) {
         final AlgNode scan = scanFactory.createRelScan( cluster, entity );
         push( scan );
         rename( entity.getTupleType().getFieldNames() );
@@ -1353,7 +1353,7 @@ public class AlgBuilder {
     }
 
 
-    public AlgBuilder scan( @Nonnull PhysicalEntity entity ) {
+    public AlgBuilder relScan( @Nonnull PhysicalEntity entity ) {
         final AlgNode scan = scanFactory.createRelScan( cluster, entity );
         push( scan );
         return this;
@@ -1362,15 +1362,15 @@ public class AlgBuilder {
 
     /**
      * Creates a {@link RelScan} of the table with a given name.
-     *
+     * <p>
      * Throws if the table does not exist.
-     *
+     * <p>
      * Returns this builder.
      *
      * @param tableNames Name of table (can optionally be qualified)
      */
-    public AlgBuilder scan( String... tableNames ) {
-        return scan( ImmutableList.copyOf( tableNames ) );
+    public AlgBuilder relScan( String... tableNames ) {
+        return relScan( ImmutableList.copyOf( tableNames ) );
     }
 
 
@@ -1427,7 +1427,7 @@ public class AlgBuilder {
 
     /**
      * Creates a {@link Filter} of an array of predicates.
-     *
+     * <p>
      * The predicates are combined using AND, and optimized in a similar way to the {@link #and} method.
      * If the result is TRUE no filter is created.
      */
@@ -1438,7 +1438,7 @@ public class AlgBuilder {
 
     /**
      * Creates a {@link Filter} of a list of predicates.
-     *
+     * <p>
      * The predicates are combined using AND, and optimized in a similar way to the {@link #and} method.
      * If the result is TRUE no filter is created.
      */
@@ -1472,7 +1472,7 @@ public class AlgBuilder {
 
     /**
      * Creates a {@link Project} of the given list of expressions.
-     *
+     * <p>
      * Infers names as would {@link #project(Iterable, Iterable)} if all suggested names were null.
      *
      * @param nodes Expressions
@@ -1512,7 +1512,7 @@ public class AlgBuilder {
 
     /**
      * Creates a {@link Project} of the given list of expressions, using the given names.
-     *
+     * <p>
      * Names are deduced as follows:
      * <ul>
      * <li>If the length of {@code fieldNames} is greater than the index of the current entry in {@code nodes}, and the entry in {@code fieldNames} is not null, uses it; otherwise</li>
@@ -1640,7 +1640,7 @@ public class AlgBuilder {
 
     /**
      * Whether to attempt to merge consecutive {@link Project} operators.
-     *
+     * <p>
      * The default implementation returns {@code true}; subclasses may disable merge by overriding to return {@code false}.
      */
     @Experimental
@@ -1651,10 +1651,10 @@ public class AlgBuilder {
 
     /**
      * Creates a {@link Project} of the given expressions and field names, and optionally optimizing.
-     *
+     * <p>
      * If {@code fieldNames} is null, or if a particular entry in {@code fieldNames} is null, derives field names from
      * the input expressions.
-     *
+     * <p>
      * If {@code force} is false, and the input is a {@code Project}, and the expressions  make the trivial
      * projection ($0, $1, ...), modifies the input.
      *
@@ -1701,9 +1701,9 @@ public class AlgBuilder {
 
     /**
      * Ensures that the field names match those given.
-     *
+     * <p>
      * If all fields have the same name, adds nothing; if any fields do not have the same name, adds a {@link Project}.
-     *
+     * <p>
      * Note that the names can be short-lived. Other {@code AlgBuilder} operations make no guarantees about the field names
      * of the rows they produce.
      *
@@ -1738,7 +1738,7 @@ public class AlgBuilder {
 
     /**
      * Infers the alias of an expression.
-     *
+     * <p>
      * If the expression was created by {@link #alias}, replaces the expression in the project list.
      */
     private String inferAlias( List<RexNode> exprList, RexNode expr, int i ) {
@@ -2080,7 +2080,7 @@ public class AlgBuilder {
 
     /**
      * Creates a {@link Join} using USING syntax.
-     *
+     * <p>
      * For each of the field names, both left and right inputs must have a field of that name. Constructs a join condition
      * that the left and right fields are equal.
      *
@@ -2132,10 +2132,10 @@ public class AlgBuilder {
 
     /**
      * Creates a {@link Values}.
-     *
+     * <p>
      * The {@code values} array must have the same number of entries as {@code fieldNames}, or an integer multiple if you
      * wish to create multiple rows.
-     *
+     * <p>
      * If there are zero rows, or if all values of an any column are null, this method cannot deduce the type of columns.
      * For these cases, call {@link #values(Iterable, AlgDataType)}.
      *
@@ -2213,10 +2213,10 @@ public class AlgBuilder {
 
     /**
      * Creates a relational expression that reads from an input and throws all of the rows away.
-     *
+     * <p>
      * Note that this method always pops one relational expression from the stack. {@code values}, in contrast, does not
      * pop any relational expressions, and always produces a leaf.
-     *
+     * <p>
      * The default implementation creates a {@link Values} with the same specified row type as the input, and ignores the
      * input entirely. But schema-on-query systems such as Drill might override this method to create a relation expression
      * that retains the input, just to read its schema.
@@ -2229,7 +2229,7 @@ public class AlgBuilder {
 
     /**
      * Creates a {@link Values} with a specified row type.
-     *
+     * <p>
      * This method can handle cases that {@link #values(String[], Object...)} cannot, such as all values of a column being
      * null, or there being zero rows.
      *
@@ -2246,7 +2246,7 @@ public class AlgBuilder {
 
     /**
      * Creates a {@link Values} with a specified row type.
-     *
+     * <p>
      * This method can handle cases that {@link #values(String[], Object...)} cannot, such as all values of a column being
      * null, or there being zero rows.
      *
@@ -2330,7 +2330,7 @@ public class AlgBuilder {
 
     /**
      * Creates a {@link Sort} by field ordinals.
-     *
+     * <p>
      * Negative fields mean descending: -1 means field(0) descending, -2 means field(1) descending, etc.
      */
     public AlgBuilder sort( int... fields ) {
@@ -2644,7 +2644,7 @@ public class AlgBuilder {
 
     /**
      * Clears the stack.
-     *
+     * <p>
      * The builder's state is now the same as when it was created.
      */
     public void clear() {
@@ -2708,7 +2708,7 @@ public class AlgBuilder {
 
         /**
          * Assigns an alias to this group key.
-         *
+         * <p>
          * Used to assign field names in the {@code group} operation.
          */
         GroupKey alias( String alias );
@@ -2906,7 +2906,7 @@ public class AlgBuilder {
 
     /**
      * Collects the extra expressions needed for {@link #aggregate}.
-     *
+     * <p>
      * The extra expressions come from the group key and as arguments to aggregate calls, and later there will be
      * a {@link #project} or a {@link #rename(List)} if necessary.
      */
@@ -2947,7 +2947,7 @@ public class AlgBuilder {
 
     /**
      * Builder stack frame.
-     *
+     * <p>
      * Describes a previously created relational expression and information about how table aliases map into its row type.
      */
     private static class Frame {

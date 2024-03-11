@@ -119,7 +119,7 @@ public class PolyDate extends PolyTemporal {
                 return ofDays( poly.asNumber().intValue() );
             }
         }
-        throw new NotImplementedException( "convert value to Boolean" );
+        throw new NotImplementedException( "convert value to Date" );
     }
 
 
@@ -194,6 +194,12 @@ public class PolyDate extends PolyTemporal {
     @Override
     public PolySerializable copy() {
         return PolySerializable.deserialize( serialize(), PolyDate.class );
+    }
+
+
+    @Override
+    public PolyTemporal addLocal() {
+        return this; // no hour value
     }
 
 }

@@ -33,7 +33,7 @@ public class MapDBMonitoringPlugin extends PolyPlugin {
 
     @Override
     public void start() {
-        PolyPluginManager.setPersistentRepository( new MapDbRepository() );
+        PolyPluginManager.setPersistentRepository( new InMemoryRepository() );
     }
 
 }

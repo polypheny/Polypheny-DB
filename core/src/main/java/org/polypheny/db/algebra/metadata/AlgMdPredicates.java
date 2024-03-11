@@ -154,7 +154,7 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
 
 
     /**
-     * Infers predicates for a table scan.
+     * Infers predicates for a table relScan.
      */
     public AlgOptPredicateList getPredicates( RelScan table, AlgMetadataQuery mq ) {
         return AlgOptPredicateList.EMPTY;

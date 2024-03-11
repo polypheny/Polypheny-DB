@@ -93,7 +93,7 @@ public interface Scannable {
 
     default AlgNode getRelScan( long allocId, AlgBuilder builder ) {
         PhysicalEntity entity = getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 );
-        return builder.scan( entity ).build();
+        return builder.relScan( entity ).build();
     }
 
 
@@ -109,10 +109,10 @@ public interface Scannable {
         if ( physicals == null ) {
             throw new GenericRuntimeException( "This should not happen." );
         }
-        builder.scan( physicals.get( 0 ) );//node
-        builder.scan( physicals.get( 1 ) );//node Props
-        builder.scan( physicals.get( 2 ) );//edge
-        builder.scan( physicals.get( 3 ) );//edge Props
+        builder.relScan( physicals.get( 0 ) );//node
+        builder.relScan( physicals.get( 1 ) );//node Props
+        builder.relScan( physicals.get( 2 ) );//edge
+        builder.relScan( physicals.get( 3 ) );//edge Props
 
         builder.transform( ModelTrait.GRAPH, GraphType.of(), false, null );
 
@@ -138,7 +138,7 @@ public interface Scannable {
     static AlgNode getDocumentScanSubstitute( Scannable scannable, long allocId, AlgBuilder builder ) {
         builder.clear();
         PhysicalEntity table = scannable.getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 ).unwrap( PhysicalEntity.class ).orElseThrow();
-        builder.scan( table );
+        builder.relScan( table );
         AlgDataType rowType = DocumentType.ofId();
         builder.transform( ModelTrait.DOCUMENT, rowType, false, null );
         return builder.build();

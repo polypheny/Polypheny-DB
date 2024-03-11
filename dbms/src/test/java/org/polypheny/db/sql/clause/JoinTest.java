@@ -306,4 +306,17 @@ public class JoinTest {
         }
     }
 
+
+    @Test
+    public void fullMaxTest() throws SQLException {
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeQuery( """
+                        SELECT Join_Customers.CustomerId
+                        FROM Join_Customers, Join_Orders WHERE Join_Customers.CustomerId = (SELECT MAX(CustomerId) FROM Join_Customers)""" );
+            }
+        }
+    }
+
 }

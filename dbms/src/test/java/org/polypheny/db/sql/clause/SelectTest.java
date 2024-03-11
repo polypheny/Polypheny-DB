@@ -210,7 +210,7 @@ public class SelectTest {
 
         AlgBuilder builder = AlgBuilder.create( statement );
 
-        AlgNode scan = builder.scan( "public", "TableC" ).build();
+        AlgNode scan = builder.relScan( "public", "TableC" ).build();
         PolyImplementation impl = statement.getQueryProcessor().prepareQuery( AlgRoot.of( scan, Kind.SELECT ), false );
 
         ResultIterator iter = impl.execute( statement, 2 );

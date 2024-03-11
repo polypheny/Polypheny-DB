@@ -31,7 +31,7 @@ public class SqlArrayLiteral extends SqlLiteral {
 
 
     /**
-     * Creates a <code>SqlLiteral</code>.
+     * Creates a <code>SqlArrayLiteral</code>.
      */
     protected SqlArrayLiteral( PolyList<PolyValue> value, AlgDataType type, ParserPos pos ) {
         super( value, type.getPolyType(), pos );

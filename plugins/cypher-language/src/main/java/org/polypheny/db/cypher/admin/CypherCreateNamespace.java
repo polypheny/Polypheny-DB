@@ -36,27 +36,27 @@ import org.polypheny.db.transaction.Statement;
 
 
 @Getter
-public class CypherCreateDatabase extends CypherAdminCommand implements ExecutableStatement {
+public class CypherCreateNamespace extends CypherAdminCommand implements ExecutableStatement {
 
     private final boolean replace;
-    private final String databaseName;
+    private final String namespaceName;
     private final boolean ifNotExists;
     private final CypherWaitClause wait;
     private final CypherSimpleEither<?, ?> options;
     private final String store;
 
 
-    public CypherCreateDatabase(
+    public CypherCreateNamespace(
             ParserPos pos,
             boolean replace,
-            CypherSimpleEither<String, CypherParameter> databaseName,
+            CypherSimpleEither<String, CypherParameter> namespaceName,
             boolean ifNotExists,
             CypherWaitClause wait,
             CypherSimpleEither<?, ?> options,
             CypherSimpleEither<String, CypherParameter> store ) {
         super( pos );
         this.replace = replace;
-        this.databaseName = getNameOrNull( databaseName );
+        this.namespaceName = getNameOrNull( namespaceName );
         this.ifNotExists = ifNotExists;
         this.wait = wait;
         this.options = options;
@@ -83,12 +83,12 @@ public class CypherCreateDatabase extends CypherAdminCommand implements Executab
             dataStore = List.of( manager.getStore( store ).get() );
         }
 
-        if ( Catalog.snapshot().getNamespace( databaseName ).isPresent() && !ifNotExists ) {
+        if ( Catalog.snapshot().getNamespace( namespaceName ).isPresent() && !ifNotExists ) {
             throw new GenericRuntimeException( "Namespace does already exist" );
         }
 
         DdlManager.getInstance().createGraph(
-                databaseName,
+                namespaceName,
                 true,
                 dataStore,
                 ifNotExists,
@@ -112,7 +112,7 @@ public class CypherCreateDatabase extends CypherAdminCommand implements Executab
 
     @Override
     public @Nullable String getEntity() {
-        return databaseName;
+        return namespaceName;
     }
 
 }

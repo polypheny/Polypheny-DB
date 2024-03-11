@@ -160,7 +160,7 @@ public abstract class SqlNode implements Node {
      * For the details of this algorithm, see {@link SqlCall#unparse}.
      *
      * @param writer Target writer
-     * @param leftPrec The precedence of the {@link SqlNode} immediately preceding this node in a depth-first scan of the parse tree
+     * @param leftPrec The precedence of the {@link SqlNode} immediately preceding this node in a depth-first relScan of the parse tree
      * @param rightPrec The precedence of the {@link SqlNode} immediately
      */
     public abstract void unparse( SqlWriter writer, int leftPrec, int rightPrec );

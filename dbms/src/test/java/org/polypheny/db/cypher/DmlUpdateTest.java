@@ -97,7 +97,7 @@ public class DmlUpdateTest extends CypherTestTemplate {
 
 
     @Test
-    @Disabled
+    @Disabled // Extension of Cypher implementation required
     public void updatePropertyReturnTest() {
         execute( "MATCH (a:Animal {name: 'Kira'})\n"
                 + "SET a.age = 4\n"
@@ -106,7 +106,7 @@ public class DmlUpdateTest extends CypherTestTemplate {
 
 
     @Test
-    @Disabled
+    @Disabled // Extension of Cypher implementation required
     public void updateRelationshipExistingPropertyTest() {
         execute( "MATCH (:Person {name:'Max Muster'})-[rel:OWNER_OF]->(a:Animal {name: 'Kira'})\n"
                 + "SET rel.since = 2018" );
@@ -114,7 +114,7 @@ public class DmlUpdateTest extends CypherTestTemplate {
 
 
     @Test
-    @Disabled
+    @Disabled // Extension of Cypher implementation required
     public void updateRelationshipNewPropertyTest() {
         execute( "MATCH (:Person {name:'Max Muster'})-[rel:OWNER_OF]->(a:Animal {name: 'Kira'})\n"
                 + "SET rel.status = 'fresh'" );

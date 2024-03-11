@@ -530,7 +530,7 @@ public class LoptSemiJoinOptimizer {
             savings *= 2.0;
         }
 
-        // Compute the cost of doing an extra scan on the dimension table, including the distinct sort on top of the scan; if the dimension columns are already unique, no need to add on the dup removal cost.
+        // Compute the cost of doing an extra relScan on the dimension table, including the distinct sort on top of the relScan; if the dimension columns are already unique, no need to add on the dup removal cost.
         final Double dimSortCost = mq.getTupleCount( dimRel );
         final Double dupRemCost = uniq ? 0 : dimSortCost;
         final AlgOptCost dimCost = mq.getCumulativeCost( dimRel );

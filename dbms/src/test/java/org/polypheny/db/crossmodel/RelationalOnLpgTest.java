@@ -23,7 +23,6 @@ import java.sql.ResultSet;
 import java.util.List;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
@@ -120,17 +119,6 @@ public class RelationalOnLpgTest extends CrossModelTestTemplate {
             ResultSet result = s.executeQuery( String.format( "SELECT properties, labels FROM \"%s\".\"%s\"", GRAPH_NAME, DATA_LABEL ) );
             TestHelper.checkResultSet( result,
                     ImmutableList.of( new Object[]{ "{\"key\":\"3\"}", new Object[]{ DATA_LABEL } } ) );
-        } );
-
-    }
-
-
-    @Test
-    @Disabled
-    public void itemSelectTest() {
-        executeStatements( ( s, c ) -> {
-            ResultSet result = s.executeQuery( String.format( "SELECT properties[\"key\"] FROM \"%s\".\"%s\"", GRAPH_NAME, DATA_LABEL ) );
-            TestHelper.checkResultSet( result, ImmutableList.of( new Object[]{ "3" } ) );
         } );
 
     }

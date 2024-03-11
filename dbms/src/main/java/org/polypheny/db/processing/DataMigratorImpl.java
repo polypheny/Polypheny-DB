@@ -415,7 +415,7 @@ public class DataMigratorImpl implements DataMigrator {
         AlgBuilder builder = AlgBuilder.create( statement, cluster );
 
         if ( to.isEmpty() ) {
-            builder.scan( allocation );
+            builder.relScan( allocation );
         } else {
             builder.push( LogicalRelValues.createOneRow( cluster ) );
             builder.project( values, columnNames );
@@ -465,7 +465,7 @@ public class DataMigratorImpl implements DataMigrator {
         AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
 
         AlgBuilder builder = AlgBuilder.create( statement, cluster );
-        builder.scan( allocation );
+        builder.relScan( allocation );
 
         // build condition
         RexNode condition = null;
@@ -552,7 +552,6 @@ public class DataMigratorImpl implements DataMigrator {
         //Map PartitionId to TargetStatementQueue
         Map<Long, AlgRoot> targetAlgs = new HashMap<>();
 
-        //AllocationTable allocation = snapshot.alloc().getAlloc( sourcePlacement.id, table.id ).map( a -> a.unwrap( AllocationTable.class ) ).orElseThrow();
         List<AllocationColumn> columns = snapshot.alloc().getColumns( targetTables.get( 0 ).placementId );
         for ( AllocationTable targetTable : targetTables ) {
             if ( targetTable.getColumns().size() == columns.size() ) {

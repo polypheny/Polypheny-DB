@@ -129,7 +129,7 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> {
 
     @Override
     public void updateNamespace( String name, long id ) {
-        currentNamespace = new ExcelNamespace( id, excelDir, Flavor.SCANNABLE, this.sheetName );
+        currentNamespace = new ExcelNamespace( id, adapterId, excelDir, Flavor.SCANNABLE, this.sheetName );
     }
 
 

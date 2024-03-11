@@ -17,6 +17,7 @@
 package org.polypheny.db.cypher;
 
 
+import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -26,6 +27,8 @@ import java.sql.Statement;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
@@ -58,6 +61,17 @@ public class DdlTest extends CypherTestTemplate {
 
     }
 
+
+    @ParameterizedTest(name = "Create namespace with naming: {0}")
+    @ValueSource(strings = { "DATABASE", "NAMESPACE" })
+    public void createNamespaceTest( String namespaceName ) {
+        String name = "namespaceTest";
+
+        execute( format( "CREATE %s %s", namespaceName, name ) );
+
+        execute( format( "DROP %s %s", namespaceName, name ) );
+
+    }
 
     @Test
     public void addPlacementTest() throws SQLException {

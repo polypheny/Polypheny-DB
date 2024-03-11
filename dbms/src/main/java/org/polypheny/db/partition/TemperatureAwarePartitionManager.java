@@ -44,7 +44,7 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager {
     public long getTargetPartitionId( LogicalTable table, PartitionProperty property, String columnValue ) {
         // Get partition manager
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
-        //PartitionProperty property = Catalog.getInstance().getSnapshot().alloc().getPartitionProperty( targetEntities.id ).orElseThrow();
+
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( ((TemperaturePartitionProperty) property).getInternalPartitionFunction() );
 
         return partitionManager.getTargetPartitionId( table, property, columnValue );

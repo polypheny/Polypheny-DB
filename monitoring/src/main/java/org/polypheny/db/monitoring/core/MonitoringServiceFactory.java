@@ -26,11 +26,11 @@ import org.polypheny.db.plugins.PolyPluginManager;
 public class MonitoringServiceFactory {
 
     public static MonitoringService createMonitoringService( boolean resetRepository ) {
-        // Create mapDB repository
+        // Create repository
         PersistentMonitoringRepository persistentRepo = PolyPluginManager.getPERSISTENT_MONITORING();
         StatisticRepository statisticRepo = new StatisticRepository();
 
-        // Initialize the mapDB repo and execute connection
+        // Initialize the repo and open connection
         persistentRepo.initialize( resetRepository );
 
         // Create monitoring service with dependencies

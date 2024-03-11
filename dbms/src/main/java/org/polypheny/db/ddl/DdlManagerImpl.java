@@ -186,7 +186,10 @@ public class DdlManagerImpl extends DdlManager {
                 throw new GenericRuntimeException( "Replacing namespace is not yet supported." );
             }
         }
-        boolean caseSensitive = RuntimeConfig.NAMESPACE_DEFAULT_CASE_SENSITIVE.getBoolean();
+        boolean caseSensitive = type == DataModel.RELATIONAL
+                ? RuntimeConfig.RELATIONAL_NAMESPACE_DEFAULT_CASE_SENSITIVE.getBoolean() : type == DataModel.DOCUMENT
+                ? RuntimeConfig.DOCUMENT_NAMESPACE_DEFAULT_CASE_SENSITIVE.getBoolean() :
+                type == DataModel.GRAPH && RuntimeConfig.GRAPH_NAMESPACE_DEFAULT_CASE_SENSITIVE.getBoolean();
 
         return catalog.createNamespace( name, type, caseSensitive );
     }
@@ -477,7 +480,7 @@ public class DdlManagerImpl extends DdlManager {
         addedColumn = addDefaultValue( table.namespaceId, defaultValue, addedColumn );
 
         // Ask router on which stores this column shall be placed
-        List<DataStore<?>> stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewColumn( addedColumn );
+        List<DataStore<?>> stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewRelField( addedColumn );
 
         // Add column on underlying data stores and insert default value
         for ( DataStore<?> store : stores ) {
@@ -922,7 +925,6 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private int getKeyUniqueCount( long keyId ) {
-        //LogicalKey key = Catalog.snapshot().rel().getKey( keyId );
         int count = 0;
         if ( Catalog.snapshot().rel().getPrimaryKey( keyId ).isPresent() ) {
             count++;
@@ -1490,7 +1492,6 @@ public class DdlManagerImpl extends DdlManager {
             AllocationEntity allocation = catalog.getSnapshot().alloc().getAlloc( optionalPlacement.get().id, partition.id ).orElseThrow();
             // Drop Column on storeId
             store.dropColumn( statement.getPrepareContext(), allocation.id, column.id );
-            //allocation = catalog.getSnapshot().alloc().getEntity( storeId.getAdapterId(), table.id ).orElseThrow();
         }
         // Drop column placement
         catalog.getAllocRel( table.namespaceId ).deleteColumn( optionalPlacement.get().id, column.id );

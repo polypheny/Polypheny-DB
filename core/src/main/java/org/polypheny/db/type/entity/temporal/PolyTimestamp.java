@@ -115,8 +115,9 @@ public class PolyTimestamp extends PolyTemporal {
                 return poly.asTimestamp();
             }
         }
-        throw new NotImplementedException( "convert value to Boolean" );
+        throw new NotImplementedException( "convert value to Timestamp" );
     }
+
 
 
     @Nullable
@@ -192,6 +193,12 @@ public class PolyTimestamp extends PolyTemporal {
             return dateString.substring( 0, dateString.length() - 4 );
         }
         return dateString;
+    }
+
+
+    @Override
+    public PolyTimestamp addLocal() {
+        return millisSinceEpoch == null ? this : PolyTimestamp.of( millisSinceEpoch + 3L * TimeZone.getDefault().getRawOffset() );
     }
 
 }

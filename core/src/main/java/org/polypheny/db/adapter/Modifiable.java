@@ -134,7 +134,7 @@ public interface Modifiable extends Scannable {
 
         // id = ? && label = ?
         algBuilder
-                .scan( nodesTable )
+                .relScan( nodesTable )
                 .filter(
                         algBuilder.equals(
                                 rexBuilder.makeInputRef( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE ), 0 ),
@@ -144,7 +144,7 @@ public interface Modifiable extends Scannable {
 
         // id = ?
         algBuilder
-                .scan( nodePropertiesTable )
+                .relScan( nodePropertiesTable )
                 .filter(
                         algBuilder.equals(
                                 rexBuilder.makeInputRef( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE ), 0 ),
@@ -210,7 +210,7 @@ public interface Modifiable extends Scannable {
 
         // id = ?
         algBuilder
-                .scan( edgesTable )
+                .relScan( edgesTable )
                 .filter( algBuilder.equals(
                         rexBuilder.makeInputRef( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE ), 0 ),
                         rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE ), 0 ) ) );
@@ -219,7 +219,7 @@ public interface Modifiable extends Scannable {
 
         // id = ?
         algBuilder
-                .scan( edgePropertiesTable )
+                .relScan( edgePropertiesTable )
                 .filter(
                         algBuilder.equals(
                                 rexBuilder.makeInputRef( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE ), 0 ),
@@ -366,8 +366,8 @@ public interface Modifiable extends Scannable {
         } else {
             // left side
             AlgNode provider = builder.build();
-            // build scan for right
-            builder.scan( oTable.get() );
+            // build relScan for right
+            builder.relScan( oTable.get() );
             // attach filter for condition
             LogicalStreamer.attachFilter( oTable.get(), builder, provider.getCluster().getRexBuilder(), List.of( 0 ) );
 

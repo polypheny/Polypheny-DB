@@ -112,7 +112,7 @@ public class AlgMdAllPredicates implements MetadataHandler<BuiltInMetadata.AllPr
 
 
     /**
-     * Extract predicates for a table scan.
+     * Extract predicates for a table relScan.
      */
     public AlgOptPredicateList getAllPredicates( RelScan table, AlgMetadataQuery mq ) {
         return AlgOptPredicateList.EMPTY;

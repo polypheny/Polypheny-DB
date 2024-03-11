@@ -98,7 +98,7 @@ public class Qfs extends DataSource<RelAdapterCatalog> {
 
     @Override
     public void updateNamespace( String name, long id ) {
-        currentNamespace = new QfsSchema( id, name, this );
+        currentNamespace = new QfsSchema( id, adapterId, name, this );
     }
 
 
@@ -343,10 +343,13 @@ public class Qfs extends DataSource<RelAdapterCatalog> {
     @SuppressWarnings("UnnecessaryModifier")
     public static interface Exclude {
 
+        @SuppressWarnings("unused")
         void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation );
 
+        @SuppressWarnings("unused")
         List<PhysicalEntity> refreshTable( long allocId );
 
+        @SuppressWarnings("unused")
         void dropTable( Context context, long allocId );
 
     }

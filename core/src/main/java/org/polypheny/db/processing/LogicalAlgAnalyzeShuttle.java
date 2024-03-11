@@ -327,7 +327,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
         addScannedEntity( scan.getEntity().dataModel, getLogicalId( scan ) );
 
-        // get available columns for every table scan
+        // get available columns for every table relScan
         this.getAvailableColumns( scan );
 
         return super.visit( scan );

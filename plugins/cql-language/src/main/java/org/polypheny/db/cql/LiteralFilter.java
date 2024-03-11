@@ -33,13 +33,13 @@ import org.polypheny.db.rex.RexNode;
 @Slf4j
 public class LiteralFilter implements Filter {
 
-    private final ColumnIndex columnIndex;
+    private final FieldIndex fieldIndex;
     private final Relation relation;
     private final String searchTerm;
 
 
-    public LiteralFilter( ColumnIndex columnIndex, Relation relation, String searchTerm ) {
-        this.columnIndex = columnIndex;
+    public LiteralFilter( FieldIndex fieldIndex, Relation relation, String searchTerm ) {
+        this.fieldIndex = fieldIndex;
         this.relation = relation;
         this.searchTerm = searchTerm;
     }
@@ -50,7 +50,7 @@ public class LiteralFilter implements Filter {
         if ( log.isDebugEnabled() ) {
             log.debug( "Converting '{}' to RexNode.", this );
         }
-        AlgDataTypeField typeField = filterMap.get( columnIndex.fullyQualifiedName );
+        AlgDataTypeField typeField = filterMap.get( fieldIndex.fullyQualifiedName );
         RexNode lhs = rexBuilder.makeInputRef( baseNode, typeField.getIndex() );
         RexNode rhs = rexBuilder.makeLiteral( searchTerm );
         rhs = rexBuilder.makeCast( typeField.getType(), rhs );
@@ -65,7 +65,7 @@ public class LiteralFilter implements Filter {
 
     @Override
     public String toString() {
-        return columnIndex.toString() + relation.toString() + " \"" + searchTerm + "\" ";
+        return fieldIndex.toString() + relation.toString() + " \"" + searchTerm + "\" ";
     }
 
 }

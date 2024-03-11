@@ -126,7 +126,6 @@ import org.polypheny.db.runtime.Enumerables;
 import org.polypheny.db.runtime.RandomFunction;
 import org.polypheny.db.runtime.SortedMultiMap;
 import org.polypheny.db.runtime.Utilities;
-import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.types.QueryableEntity;
 import org.polypheny.db.schema.types.ScannableEntity;
@@ -165,9 +164,7 @@ public enum BuiltInMethod {
     BATCH_ITERATOR_GET_ENUM( BatchIteratorEnumerable.class, "getEnumerable" ),
     INTO( ExtendedEnumerable.class, "into", Collection.class ),
     REMOVE_ALL( ExtendedEnumerable.class, "removeAll", Collection.class ),
-    SCHEMA_GET_SUB_SCHEMA( Namespace.class, "getSubNamespace", String.class ),
 
-    SCHEMA_GET_TABLE( Namespace.class, "getEntity", String.class ),
     SCHEMA_PLUS_UNWRAP( SchemaPlus.class, "unwrapOrThrow", Class.class ),
     DATA_CONTEXT_GET( DataContext.class, "get", String.class ),
     DATA_CONTEXT_GET_PARAMETER_VALUE( DataContext.class, "getParameterValue", long.class ),

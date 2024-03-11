@@ -88,6 +88,7 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.fun.TrimFunction.Flag;
+import org.polypheny.db.algebra.fun.TrimFunction.TrimFlagHolder;
 import org.polypheny.db.algebra.fun.UserDefined;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -1833,7 +1834,7 @@ public class RexImpTable {
         public Expression implement( RexToLixTranslator translator, RexCall call, List<Expression> translatedOperands ) {
             final boolean strict = !translator.conformance.allowExtendedTrim();
             final Object value = ((ConstantExpression) translatedOperands.get( 0 )).value;
-            Flag flag = (Flag) value;
+            Flag flag = ((TrimFlagHolder) value).getFlag();
             return Expressions.call(
                     BuiltInMethod.TRIM.method,
                     Expressions.constant( flag == Flag.BOTH || flag == Flag.LEADING ),

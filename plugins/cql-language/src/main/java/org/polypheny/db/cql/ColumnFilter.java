@@ -31,12 +31,12 @@ import org.polypheny.db.rex.RexNode;
 @Slf4j
 public class ColumnFilter implements Filter {
 
-    private final ColumnIndex left;
+    private final FieldIndex left;
     private final Relation relation;
-    private final ColumnIndex right;
+    private final FieldIndex right;
 
 
-    public ColumnFilter( ColumnIndex left, Relation relation, ColumnIndex right ) {
+    public ColumnFilter( FieldIndex left, Relation relation, FieldIndex right ) {
         this.left = left;
         this.relation = relation;
         this.right = right;

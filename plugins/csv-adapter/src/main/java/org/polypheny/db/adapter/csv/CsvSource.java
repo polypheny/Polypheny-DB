@@ -110,7 +110,7 @@ public class CsvSource extends DataSource<RelAdapterCatalog> {
 
     @Override
     public void updateNamespace( String name, long id ) {
-        currentNamespace = new CsvSchema( id, csvDir, Flavor.SCANNABLE );
+        currentNamespace = new CsvSchema( id, adapterId, csvDir, Flavor.SCANNABLE );
     }
 
 

@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.concurrent.CountDownLatch;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -36,7 +35,6 @@ import org.polypheny.db.TestHelper.JdbcConnection;
  */
 public class BasicMaterializedViewTest {
 
-    private final CountDownLatch waiter = new CountDownLatch( 1 );
 
     private final static String VIEW_TEST_EMP_TABLE_SQL = "CREATE TABLE viewTestEmpTable ("
             + "empId INTEGER NOT NULL,"
@@ -530,7 +528,7 @@ public class BasicMaterializedViewTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                // Deploy additional storeId
+                // Deploy additional store
                 statement.executeUpdate( "ALTER ADAPTERS ADD \"store3\" USING 'Hsqldb' AS 'Store'"
                         + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
 
@@ -579,10 +577,10 @@ public class BasicMaterializedViewTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                // Deploy additional storeId
+                // Deploy additional store
                 statement.executeUpdate( "ALTER ADAPTERS ADD \"store2\" USING 'Hsqldb' AS 'Store'"
                         + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
-                // Deploy additional storeId
+                // Deploy additional store
                 statement.executeUpdate( "ALTER ADAPTERS ADD \"store3\" USING 'Hsqldb' AS 'Store'"
                         + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
 
