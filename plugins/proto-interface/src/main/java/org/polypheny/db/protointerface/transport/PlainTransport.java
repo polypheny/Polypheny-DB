@@ -18,25 +18,31 @@ package org.polypheny.db.protointerface.transport;
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.SocketChannel;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.util.Util;
 
 public class PlainTransport implements Transport {
 
-    protected Socket con;
-    protected InputStream in;
-    protected OutputStream out;
+    protected final SocketChannel con;
 
 
-    PlainTransport( Socket con ) throws IOException {
+    PlainTransport( SocketChannel con ) throws IOException {
         this.con = con;
-        this.in = con.getInputStream();
-        this.out = con.getOutputStream();
+    }
+
+
+    private void writeEntireBuffer( ByteBuffer bb ) throws IOException {
+        synchronized ( con ) {
+            while ( bb.remaining() > 0 ) {
+                int i = con.write( bb );
+                if ( i == -1 ) {
+                    throw new EOFException();
+                }
+            }
+        }
     }
 
 
@@ -46,26 +52,36 @@ public class PlainTransport implements Transport {
         bb.order( ByteOrder.LITTLE_ENDIAN );
         bb.putLong( msg.length );
         bb.put( msg );
-        out.write( bb.array() );
+        bb.rewind();
+        writeEntireBuffer( bb );
+    }
+
+
+    private void readEntireBuffer( ByteBuffer bb ) throws IOException {
+        synchronized ( con ) {
+            while ( bb.remaining() > 0 ) {
+                int i = con.read( bb );
+                if ( i == -1 ) {
+                    throw new EOFException();
+                }
+            }
+            bb.rewind();
+        }
     }
 
 
     @Override
     public byte[] receiveMessage() throws IOException {
-        byte[] b = in.readNBytes( 8 );
-        if ( b.length != 8 ) {
-            if ( b.length == 0 ) { // EOF
-                throw new EOFException();
-            }
-            throw new IOException( "short read" );
-        }
-        ByteBuffer bb = ByteBuffer.wrap( b );
+        ByteBuffer bb = ByteBuffer.allocate( 8 );
+        readEntireBuffer( bb );
         bb.order( ByteOrder.LITTLE_ENDIAN ); // TODO Big endian like other network protocols?
         long length = bb.getLong();
         if ( length == 0 ) {
             throw new IOException( "Invalid message length" );
         }
-        return in.readNBytes( (int) length );
+        bb = ByteBuffer.allocate( (int) length );
+        readEntireBuffer( bb );
+        return bb.array();
     }
 
 
@@ -75,7 +91,7 @@ public class PlainTransport implements Transport {
     }
 
 
-    public static Transport accept( Socket con ) {
+    public static Transport accept( SocketChannel con ) {
         try {
             return new PlainTransport( con );
         } catch ( IOException e ) {
