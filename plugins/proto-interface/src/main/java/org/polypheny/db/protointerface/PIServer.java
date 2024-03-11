@@ -16,10 +16,12 @@
 
 package org.polypheny.db.protointerface;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetSocketAddress;
 import java.net.StandardProtocolFamily;
+import java.net.UnixDomainSocketAddress;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
@@ -28,6 +30,8 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.protointerface.transport.PlainTransport;
 import org.polypheny.db.protointerface.transport.Transport;
+import org.polypheny.db.protointerface.transport.UnixTransport;
+import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.util.Util;
 
 @Slf4j
@@ -39,6 +43,7 @@ public class PIServer {
 
     public PIServer( ClientManager clientManager ) throws IOException {
         startServer( createInetServer( port ), clientManager, "Plain", PlainTransport::accept );
+        startServer( createUnixServer( "polypheny-proto.sock" ), clientManager, "Unix", UnixTransport::accept );
     }
 
 
@@ -53,6 +58,15 @@ public class PIServer {
     ServerSocketChannel createInetServer( int port ) throws IOException {
         return ServerSocketChannel.open( StandardProtocolFamily.INET )
                 .bind( new InetSocketAddress( Inet4Address.getLoopbackAddress(), port ) );
+    }
+
+
+    ServerSocketChannel createUnixServer( String path ) throws IOException {
+        PolyphenyHomeDirManager phm = PolyphenyHomeDirManager.getInstance();
+        File f = phm.registerNewFile( path );
+        f.delete();
+        return ServerSocketChannel.open( StandardProtocolFamily.UNIX )
+                .bind( UnixDomainSocketAddress.of( f.getAbsolutePath() ) );
     }
 
 

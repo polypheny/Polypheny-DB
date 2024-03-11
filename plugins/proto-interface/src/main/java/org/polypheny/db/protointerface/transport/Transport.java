@@ -18,8 +18,11 @@ package org.polypheny.db.protointerface.transport;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Optional;
 
 public interface Transport extends Closeable {
+
+    Optional<String> getPeer();
 
     void sendMessage( byte[] msg ) throws IOException;
 
