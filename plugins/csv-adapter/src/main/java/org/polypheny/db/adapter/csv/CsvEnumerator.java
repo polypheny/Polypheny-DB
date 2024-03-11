@@ -281,42 +281,42 @@ class CsvEnumerator<E> implements Enumerator<E> {
             }
             switch ( fieldType ) {
                 case BOOLEAN:
-                    if ( string.length() == 0 ) {
+                    if (string==null || string.length() == 0 ) {
                         return null;
                     }
                     return Boolean.parseBoolean( string );
                 case BYTE:
-                    if ( string.length() == 0 ) {
+                    if (string==null || string.length() == 0 ) {
                         return null;
                     }
                     return Byte.parseByte( string );
                 case SHORT:
-                    if ( string.length() == 0 ) {
+                    if (string==null || string.length() == 0 ) {
                         return null;
                     }
                     return Short.parseShort( string );
                 case INT:
-                    if ( string.length() == 0 ) {
+                    if (string==null || string.length() == 0 ) {
                         return null;
                     }
                     return Integer.parseInt( string );
                 case LONG:
-                    if ( string.length() == 0 ) {
+                    if (string==null || string.length() == 0 ) {
                         return null;
                     }
                     return Long.parseLong( string );
                 case FLOAT:
-                    if ( string.length() == 0 ) {
+                    if (string==null || string.length() == 0 ) {
                         return null;
                     }
                     return Float.parseFloat( string );
                 case DOUBLE:
-                    if ( string.length() == 0 ) {
+                    if (string==null || string.length() == 0 ) {
                         return null;
                     }
                     return Double.parseDouble( string );
                 case DATE:
-                    if ( string.length() == 0 ) {
+                    if (string==null || string.length() == 0 ) {
                         return null;
                     }
                     try {
@@ -326,7 +326,7 @@ class CsvEnumerator<E> implements Enumerator<E> {
                         return null;
                     }
                 case TIME:
-                    if ( string.length() == 0 ) {
+                    if (string==null || string.length() == 0 ) {
                         return null;
                     }
                     try {
@@ -336,7 +336,7 @@ class CsvEnumerator<E> implements Enumerator<E> {
                         return null;
                     }
                 case TIMESTAMP:
-                    if ( string.length() == 0 ) {
+                    if (string==null || string.length() == 0 ) {
                         return null;
                     }
                     try {
