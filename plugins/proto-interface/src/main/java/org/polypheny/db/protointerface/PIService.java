@@ -270,7 +270,7 @@ public class PIService {
             return responseObserver.makeResponse( ConnectionResponse );
         }
 
-        uuid = clientManager.registerConnection( request );
+        uuid = clientManager.registerConnection( request, con );
         return responseObserver.makeResponse( ConnectionResponse );
     }
 
