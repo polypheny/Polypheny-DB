@@ -16,6 +16,7 @@
 
 package org.polypheny.db.protointerface;
 
+import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.net.Inet4Address;
@@ -28,6 +29,7 @@ import java.util.ArrayList;
 import java.util.function.Function;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.protointerface.transport.PlainTransport;
 import org.polypheny.db.protointerface.transport.Transport;
 import org.polypheny.db.protointerface.transport.UnixTransport;
@@ -65,10 +67,22 @@ public class PIServer {
         PolyphenyHomeDirManager phm = PolyphenyHomeDirManager.getInstance();
         File f = phm.registerNewFile( path );
         f.delete();
-        ServerSocketChannel s =  ServerSocketChannel.open( StandardProtocolFamily.UNIX )
+        ServerSocketChannel s = ServerSocketChannel.open( StandardProtocolFamily.UNIX )
                 .bind( UnixDomainSocketAddress.of( f.getAbsolutePath() ) );
         f.setWritable( true, false );
         return s;
+    }
+
+
+    void acceptConnection( SocketChannel s, Function<SocketChannel, Transport> createTransport, ClientManager clientManager ) {
+        try {
+            PIService.acceptConnection( createTransport.apply( s ), clientManager );
+        } catch ( GenericRuntimeException e ) {
+            if ( e.getCause() instanceof EOFException ) {
+                return;
+            }
+            throw e;
+        }
     }
 
 
@@ -76,7 +90,7 @@ public class PIServer {
         while ( true ) {
             try {
                 SocketChannel s = server.accept();
-                Thread t = new Thread( () -> PIService.acceptConnection( createTransport.apply( s ), clientManager ), "ProtoInterface" + name + "ClientConnection" );
+                Thread t = new Thread( () -> acceptConnection( s, createTransport, clientManager ), "ProtoInterface" + name + "ClientConnection" );
                 t.start();
             } catch ( IOException e ) {
                 log.error( e.getMessage() );
