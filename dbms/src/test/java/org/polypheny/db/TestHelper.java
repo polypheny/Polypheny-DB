@@ -713,7 +713,7 @@ public class TestHelper {
     public static class JdbcConnection implements AutoCloseable {
 
         private final static String dbHost = "localhost";
-        private final static int port = 7659;
+        private final static int port = 20590;
 
         private final Connection conn;
 
