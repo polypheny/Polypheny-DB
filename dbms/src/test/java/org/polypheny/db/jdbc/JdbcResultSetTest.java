@@ -161,7 +161,7 @@ public class JdbcResultSetTest {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
                 Connection connection = jdbcConnection.getConnection();
                 Statement statement = connection.createStatement() ) {
-            statement.executeUpdate( "CREATE TABLE IF NOT EXISTS my_table (id INT, nullvalue VARCHAR(30))" );
+            statement.executeUpdate( "CREATE TABLE IF NOT EXISTS my_table (id INT PRIMARY KEY, nullvalue VARCHAR(30))" );
             statement.executeUpdate( "INSERT INTO my_table VALUES (1, NULL)" );
             ResultSet rs = statement.executeQuery( "SELECT * FROM my_table" );
             rs.next();
