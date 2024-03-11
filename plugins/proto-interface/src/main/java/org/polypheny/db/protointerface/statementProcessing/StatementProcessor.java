@@ -17,29 +17,31 @@
 package org.polypheny.db.protointerface.statementProcessing;
 
 import com.google.common.collect.ImmutableMap;
+import java.util.List;
 import java.util.Map;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Node;
+import org.polypheny.db.processing.ImplementationContext;
 import org.polypheny.db.processing.Processor;
+import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.protointerface.PIServiceException;
 import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.protointerface.relational.RelationalMetaRetriever;
 import org.polypheny.db.protointerface.statements.PIPreparedStatement;
 import org.polypheny.db.protointerface.statements.PIStatement;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.Pair;
 
 public class StatementProcessor {
 
-    private static final Map<QueryLanguage, StatementImplementer> EXECUTORS =
-            ImmutableMap.<QueryLanguage, StatementImplementer>builder()
-                    .put( QueryLanguage.from( "sql" ), new SqlImplementer() )
-                    .put( QueryLanguage.from( "mongo" ), new MongoImplementer() )
-                    .build();
+    private static final String ORIGIN = "Proto-Interface";
+
     private static final Map<DataModel, Executor> RESULT_RETRIEVERS =
             ImmutableMap.<DataModel, Executor>builder()
                     .put( DataModel.RELATIONAL, new RelationalExecutor() )
@@ -48,14 +50,24 @@ public class StatementProcessor {
 
 
     public static void implement( PIStatement piStatement ) {
-        StatementImplementer statementImplementer = EXECUTORS.get( piStatement.getLanguage() );
-        if ( statementImplementer == null ) {
-            throw new PIServiceException( "No executor registered for language " + piStatement.getLanguage(),
-                    "I9005",
-                    9005
+        Statement statement = piStatement.getStatement();
+        if ( statement == null ) {
+            throw new PIServiceException( "Statement is not linked to a PolyphenyStatement",
+                    "I9003",
+                    9003
             );
         }
-        statementImplementer.implement( piStatement );
+        QueryContext context = QueryContext.builder()
+                .query( piStatement.getQuery() )
+                .language( piStatement.getLanguage() )
+                .namespaceId( piStatement.getNamespace().id )
+                .origin( ORIGIN )
+                .build();
+        List<ImplementationContext> implementations = LanguageManager.getINSTANCE().anyPrepareQuery( context, statement );
+        if ( implementations.get( 0 ).getImplementation() == null ) {
+            throw new GenericRuntimeException( implementations.get( 0 ).getException().orElseThrow() );
+        }
+        piStatement.setImplementation( implementations.get( 0 ).getImplementation() );
     }
 
 
