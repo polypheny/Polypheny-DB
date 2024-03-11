@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.SocketChannel;
+import java.util.Optional;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.util.Util;
 
@@ -31,6 +32,12 @@ public class PlainTransport implements Transport {
 
     PlainTransport( SocketChannel con ) throws IOException {
         this.con = con;
+    }
+
+
+    @Override
+    public Optional<String> getPeer() {
+        return Optional.empty();
     }
 
 
