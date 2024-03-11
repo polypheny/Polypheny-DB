@@ -27,7 +27,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 import com.google.common.collect.ImmutableList;
 import java.sql.Array;
 import java.sql.Blob;
-import java.sql.CallableStatement;
 import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -50,6 +49,7 @@ import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.jdbc.PolyConnection;
+import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.jdbctypes.PolyphenyBlob;
 import org.polypheny.jdbc.jdbctypes.PolyphenyClob;
 
@@ -87,16 +87,15 @@ public class JdbcConnectionTest {
 
     @Test
     public void timeZoneTestNoTimezone() throws SQLException {
-        Time expected = Time.valueOf( "11:59:32" );
         String url = "jdbc:polypheny://pa:@" + dbHost + ":" + port;
         String tableDdl = "CREATE TABLE test(id INTEGER PRIMARY KEY, testtime TIME NOT NULL)";
         String insert = "INSERT INTO test VALUES (0, time '11:59:32')";
         String select = "SELECT testtime FROM test";
         try ( Connection con = jdbcConnect( url );
-                Statement statemnet = con.createStatement() ) {
-            statemnet.execute( tableDdl );
-            statemnet.execute( insert );
-            ResultSet rs = statemnet.executeQuery( select );
+                Statement statement = con.createStatement() ) {
+            statement.execute( tableDdl );
+            statement.execute( insert );
+            ResultSet rs = statement.executeQuery( select );
             TestHelper.checkResultSet( rs, ImmutableList.of( new Object[]{ Time.valueOf( "11:59:32" ) } ) );
         }
     }
@@ -203,7 +202,7 @@ public class JdbcConnectionTest {
         String url = "jdbc:polypheny://pa:@" + dbHost + ":" + port;
         Properties properties = new Properties();
         properties.setProperty( "isolation", "SERIALIZABLE" );
-        assertThrows( SQLException.class, () -> jdbcConnect( url ) );
+        assertThrows( SQLException.class, () -> jdbcConnect( url, properties ) );
     }
 
 
@@ -212,7 +211,7 @@ public class JdbcConnectionTest {
         String url = "jdbc:polypheny://pa:@" + dbHost + ":" + port;
         Properties properties = new Properties();
         properties.setProperty( "isolation", "DIRTY" );
-        assertThrows( SQLException.class, () -> jdbcConnect( url ) );
+        assertThrows( SQLException.class, () -> jdbcConnect( url, properties ) );
     }
 
 
@@ -232,7 +231,7 @@ public class JdbcConnectionTest {
         String url = "jdbc:polypheny://pa:@" + dbHost + ":" + port;
         Properties properties = new Properties();
         properties.setProperty( "isolation", "REPEATABLE_READ" );
-        assertThrows( SQLException.class, () -> jdbcConnect( url ) );
+        assertThrows( SQLException.class, () -> jdbcConnect( url, properties ) );
     }
 
 
@@ -253,7 +252,7 @@ public class JdbcConnectionTest {
         String url = "jdbc:polypheny://pa:@" + dbHost + ":" + port;
         Properties properties = new Properties();
         properties.setProperty( "holdability", "HOLD" );
-        assertThrows( SQLException.class, () -> jdbcConnect( url ) );
+        assertThrows( SQLException.class, () -> jdbcConnect( url, properties ) );
     }
 
 
@@ -335,8 +334,20 @@ public class JdbcConnectionTest {
 
 
     @Test
-    public void setNamespaceTest() throws SQLException {
-        String namespaceName = "testSpace";
+    public void setInvalidNamespaceTest() {
+        String namespaceName = "nonexistentNamespace";
+        assertThrows( ProtoInterfaceServiceException.class, () -> {
+            try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+                Connection connection = jdbcConnection.getConnection();
+                connection.setSchema( namespaceName );
+            }
+        } );
+    }
+
+
+    @Test
+    public void setValidNamespaceTest() throws SQLException {
+        String namespaceName = "public";
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
             connection.setSchema( namespaceName );
