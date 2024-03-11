@@ -65,8 +65,10 @@ public class PIServer {
         PolyphenyHomeDirManager phm = PolyphenyHomeDirManager.getInstance();
         File f = phm.registerNewFile( path );
         f.delete();
-        return ServerSocketChannel.open( StandardProtocolFamily.UNIX )
+        ServerSocketChannel s =  ServerSocketChannel.open( StandardProtocolFamily.UNIX )
                 .bind( UnixDomainSocketAddress.of( f.getAbsolutePath() ) );
+        f.setWritable( true, false );
+        return s;
     }
 
 

@@ -23,7 +23,6 @@ import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
@@ -32,6 +31,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.protointerface.proto.ConnectionRequest;
+import org.polypheny.db.protointerface.transport.Transport;
 import org.polypheny.db.protointerface.utils.PropertyUtils;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -71,7 +71,7 @@ public class ClientManager {
     }
 
 
-    public String registerConnection( ConnectionRequest connectionRequest ) throws AuthenticationException, TransactionException, PIServiceException {
+    public String registerConnection( ConnectionRequest connectionRequest, Transport t ) throws AuthenticationException, TransactionException, PIServiceException {
         byte[] raw = new byte[32];
         new SecureRandom().nextBytes( raw );
         String uuid = Base64.getUrlEncoder().encodeToString( raw );
@@ -79,12 +79,19 @@ public class ClientManager {
         if ( log.isTraceEnabled() ) {
             log.trace( "User {} tries to establish connection via proto interface.", uuid );
         }
-        String username = connectionRequest.hasUsername() ? connectionRequest.getUsername() : Catalog.USER_NAME;
-        String password = connectionRequest.hasPassword() ? connectionRequest.getPassword() : null;
-        if ( password == null ) {
-            throw new AuthenticationException( "A password is required" );
+        LogicalUser user;
+        Optional<LogicalUser> peer = t.getPeer().flatMap( u -> Catalog.getInstance().getSnapshot().getUser( u ) );
+        if ( peer.isPresent() ) {
+            user = peer.get();
+        } else {
+            String username = connectionRequest.hasUsername() ? connectionRequest.getUsername() : Catalog.USER_NAME;
+            String password = connectionRequest.hasPassword() ? connectionRequest.getPassword() : null;
+            if ( password == null ) {
+                throw new AuthenticationException( "A password is required" );
+            }
+            user = authenticator.authenticate( username, password );
         }
-        LogicalUser user = authenticator.authenticate( username, password );
+
         Transaction transaction = transactionManager.startTransaction( user.id, false, "proto-interface" );
         transaction.commit();
         LogicalNamespace namespace = getNamespaceOrDefault( connectionRequest );
