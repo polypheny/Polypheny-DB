@@ -43,7 +43,7 @@ import org.polypheny.jdbc.PolyphenyStatement;
 //@Category({ AdapterTestSuite.class, CassandraExcluded.class })
 public class JdbcStatementTest {
 
-    private static final String CREATE_TEST_TABLE = "CREATE TABLE IF NOT EXISTS my_table (id INT, name VARCHAR(50))";
+    private static final String CREATE_TEST_TABLE = "CREATE TABLE IF NOT EXISTS my_table (id INT PRIMARY KEY, name VARCHAR(50))";
 
     private static final String INSERT_TEST_DATA = "INSERT INTO my_table values(1, 'A'), (2, 'B'), (3, 'C'), (4, 'D')";
 
