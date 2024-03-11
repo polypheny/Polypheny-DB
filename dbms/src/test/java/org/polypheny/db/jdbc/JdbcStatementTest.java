@@ -111,9 +111,8 @@ public class JdbcStatementTest {
         ) {
             statement.execute( CREATE_TEST_TABLE );
             int rowsChanged = statement.executeUpdate( INSERT_TEST_DATA );
-            assertEquals( 0, rowsChanged );
             connection.rollback();
-            // assertEquals( 4, rowsChanged ); Polypheny currently returns 0 as update count if multiple rows are inserted in one statement
+            assertEquals( 4, rowsChanged );
         }
     }
 
@@ -174,9 +173,8 @@ public class JdbcStatementTest {
         ) {
             statement.execute( CREATE_TEST_TABLE );
             assertFalse( statement.execute( INSERT_TEST_DATA ) );
-            assertEquals( 0, statement.getUpdateCount() );
             connection.rollback();
-            //assertEquals(4, statement.getUpdateCount() ); Polypheny currently returns 0 as update count if multiple rows are inserted in one statement
+            assertEquals(4, statement.getUpdateCount() );
         }
     }
 
@@ -222,8 +220,7 @@ public class JdbcStatementTest {
         ) {
             statement.execute( CREATE_TEST_TABLE );
             assertFalse( statement.execute( INSERT_TEST_DATA ) );
-            assertEquals( 0, statement.getUpdateCount() );
-            //assertEquals(4, statement.getUpdateCount() ); Polypheny currently returns 0 as update count if multiple rows are inserted in one statement
+            assertEquals(4, statement.getUpdateCount() );
             assertNull( statement.getResultSet() );
             connection.rollback();
         }
