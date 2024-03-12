@@ -20,6 +20,8 @@ package org.polypheny.db.sql.language.ddl.altertable;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.ForeignKeyOption;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
@@ -100,6 +102,14 @@ public class SqlAlterTableAddForeignKey extends SqlAlterTable {
     public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
         LogicalTable logicalTable = getTableFailOnEmpty( context, table );
         LogicalTable refTable = getTableFailOnEmpty( context, referencesTable );
+
+        if ( logicalTable.entityType != EntityType.ENTITY ) {
+            throw new GenericRuntimeException( "Entity " + logicalTable.getNamespaceName() + "." + logicalTable.getName() + " is not an entity, which can used for constraints." );
+        }
+
+        if ( refTable.entityType != EntityType.ENTITY ) {
+            throw new GenericRuntimeException( "Entity " + refTable.getNamespaceName() + "." + refTable.getName() + " is not an entity, which can used for constraints." );
+        }
 
         DdlManager.getInstance().createForeignKey(
                 logicalTable,
