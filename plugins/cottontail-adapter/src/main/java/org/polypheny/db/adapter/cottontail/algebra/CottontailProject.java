@@ -28,6 +28,7 @@ import org.apache.calcite.linq4j.tree.NewExpression;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -83,6 +84,9 @@ public class CottontailProject extends Project implements CottontailAlg {
         if ( !this.arrayProject ) {
             context.visitChild( 0, getInput() );
         }
+        if ( context.table == null ) {
+            searchUnderlyingEntity( context );
+        }
 
         final List<AlgDataTypeField> fieldList = context.table.getTupleType().getFields();
         final List<String> physicalColumnNames = new ArrayList<>( fieldList.size() );
@@ -106,13 +110,28 @@ public class CottontailProject extends Project implements CottontailAlg {
     }
 
 
+    private void searchUnderlyingEntity( CottontailImplementContext context ) {
+        accept( new AlgShuttleImpl() {
+
+            @Override
+            public AlgNode visit( AlgNode other ) {
+                if ( other.unwrap( CottontailScan.class ).isPresent() ) {
+                    other.unwrap( CottontailScan.class ).get().implement( context );
+                }
+                return super.visit( other );
+            }
+
+        } );
+    }
+
+
     /**
      * Constructs a {@link ParameterExpression} that generates a map containing the projected fields and field aliases.
      *
      * @param builder The {@link BlockBuilder} instance.
      * @param namedProjects List of projection to alias mappings.
      * @param physicalColumnNames List of physical column names in the underlying store.
-     * @param context
+     * @param context The {@link CottontailImplementContext} instance.
      * @return {@link ParameterExpression}
      */
     public static ParameterExpression makeProjectionAndKnnBuilder( BlockBuilder builder, List<Pair<RexNode, String>> namedProjects, List<String> physicalColumnNames, CottontailImplementContext context ) {

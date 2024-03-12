@@ -25,7 +25,6 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.cottontail.CottontailConvention;
 import org.polypheny.db.adapter.cottontail.CottontailEntity;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailAlg.CottontailImplementContext;
 import org.polypheny.db.adapter.cottontail.enumberable.CottontailDeleteEnumerable;
@@ -98,7 +97,6 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
         cottontailContext.blockBuilder = list;
         cottontailContext.visitChild( 0, getInput() );
 
-        final CottontailConvention convention = (CottontailConvention) getInput().getConvention();
         final AlgDataType rowType = getTupleType();
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), rowType, pref.prefer( JavaTupleFormat.ARRAY ) );
         final Expression enumerable;
