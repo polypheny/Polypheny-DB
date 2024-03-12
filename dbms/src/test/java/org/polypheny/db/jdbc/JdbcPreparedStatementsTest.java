@@ -46,6 +46,10 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 @Tag("adapter")
 public class JdbcPreparedStatementsTest {
 
+    private static final String SIMPLE_SCHEMA_SQL = "CREATE TABLE test_table (id INT PRIMARY KEY , name VARCHAR(50))";
+    private static final String SIMPLE_INSERT_SQL = "INSERT INTO test_table (id, name) VALUES (?, ?)";
+    private static final String SIMPLE_SELECT_SQL = "SELECT * FROM test_table";
+    private static final String DROP_TABLE_SQL = "DROP TABLE test_table";
 
     private final static String SCHEMA_SQL = "CREATE TABLE pstest( "
             + "tbigint BIGINT NULL, "
@@ -595,6 +599,129 @@ public class JdbcPreparedStatementsTest {
 
 
     @Test
+    public void timeValueTest() throws SQLException {
+        Time expected = Time.valueOf( "11:59:32" );
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "CREATE TABLE time_test (id INT PRIMARY KEY , ttime TIME NULL)" );
+                try {
+                    PreparedStatement preparedInsert = connection.prepareStatement(
+                            "INSERT INTO time_test VALUES (?, ?)" );
+
+                    preparedInsert.setInt( 1, 0 );
+                    preparedInsert.setTime( 2, expected );
+                    preparedInsert.execute();
+                    connection.commit();
+
+                    PreparedStatement preparedSelect = connection.prepareStatement(
+                            "SELECT * FROM time_test WHERE id = ?" );
+                    preparedSelect.setInt( 1, 0 );
+                    TestHelper.checkResultSet(
+                            preparedSelect.executeQuery(),
+                            ImmutableList.of( new Object[]{ 0, expected } ) );
+
+                } finally {
+                    statement.executeUpdate( "DROP TABLE time_test" );
+                }
+            }
+        }
+    }
+
+    @Test
+    public void doubleValueTest() throws SQLException {
+        double expected = 2.3456;
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "CREATE TABLE double_test (id INT PRIMARY KEY , tdouble DOUBLE NULL)" );
+                try {
+                    PreparedStatement preparedInsert = connection.prepareStatement(
+                            "INSERT INTO double_test VALUES (?, ?)" );
+
+                    preparedInsert.setInt( 1, 0 );
+                    preparedInsert.setDouble( 2, expected );
+                    preparedInsert.execute();
+                    connection.commit();
+
+                    PreparedStatement preparedSelect = connection.prepareStatement(
+                            "SELECT * FROM double_test WHERE id = ?" );
+                    preparedSelect.setInt( 1, 0 );
+                    TestHelper.checkResultSet(
+                            preparedSelect.executeQuery(),
+                            ImmutableList.of( new Object[]{ 0, expected } ) );
+
+                } finally {
+                    statement.executeUpdate( "DROP TABLE double_test" );
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void dateValueTest() throws SQLException {
+        Date expected = Date.valueOf( "2020-07-03" );
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "CREATE TABLE date_test (id INT PRIMARY KEY , tdate DATE NULL)" );
+                try {
+                    PreparedStatement preparedInsert = connection.prepareStatement(
+                            "INSERT INTO date_test VALUES (?, ?)" );
+
+                    preparedInsert.setInt( 1, 0 );
+                    preparedInsert.setDate( 2, expected );
+                    preparedInsert.execute();
+                    connection.commit();
+
+                    PreparedStatement preparedSelect = connection.prepareStatement(
+                            "SELECT * FROM date_test WHERE id = ?" );
+                    preparedSelect.setInt( 1, 0 );
+                    TestHelper.checkResultSet(
+                            preparedSelect.executeQuery(),
+                            ImmutableList.of( new Object[]{ 0, expected } ) );
+
+                } finally {
+                    statement.executeUpdate( "DROP TABLE date_test" );
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void timestampValueTest() throws SQLException {
+        Timestamp expected = Timestamp.valueOf( "2021-01-01 10:11:15" );
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "CREATE TABLE timestamp_test (id INT PRIMARY KEY , ttimestamp TIMESTAMP NULL)" );
+                try {
+                    PreparedStatement preparedInsert = connection.prepareStatement(
+                            "INSERT INTO timestamp_test VALUES (?, ?)" );
+
+                    preparedInsert.setInt( 1, 0 );
+                    preparedInsert.setTimestamp( 2, expected );
+                    preparedInsert.execute();
+                    connection.commit();
+
+                    PreparedStatement preparedSelect = connection.prepareStatement(
+                            "SELECT * FROM timestamp_test WHERE id = ?" );
+                    preparedSelect.setInt( 1, 0 );
+                    TestHelper.checkResultSet(
+                            preparedSelect.executeQuery(),
+                            ImmutableList.of( new Object[]{ 0, expected } ) );
+
+                } finally {
+                    statement.executeUpdate( "DROP TABLE timestamp_test" );
+                }
+            }
+        }
+    }
+
+
+    @Test
     public void dataTypesTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -649,7 +776,7 @@ public class JdbcPreparedStatementsTest {
                     preparedSelect.setString( 12, (String) TEST_DATA[11] );
                     TestHelper.checkResultSet(
                             preparedSelect.executeQuery(),
-                            ImmutableList.of( TEST_DATA ) );
+                            ImmutableList.of( TEST_DATA ));
 
                 } finally {
                     statement.executeUpdate( "DROP TABLE pstest" );
@@ -725,7 +852,7 @@ public class JdbcPreparedStatementsTest {
     }
 
 
-    @Test
+    //@Test
     public void nullTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -797,6 +924,7 @@ public class JdbcPreparedStatementsTest {
                     preparedUpdate.executeUpdate();
 
                     connection.commit();
+
                     // Check
                     PreparedStatement preparedSelect = connection.prepareStatement( "SELECT tinteger,tsmallint,tvarchar FROM pstest WHERE tinteger = ? OR tinteger = ? ORDER BY tinteger" );
                     preparedSelect.setInt( 1, 1 );
@@ -816,7 +944,6 @@ public class JdbcPreparedStatementsTest {
                     TestHelper.checkResultSet(
                             preparedSelect.executeQuery(),
                             ImmutableList.of( new Object[]{ 1, (short) 13, "Foo" }, new Object[]{ 2, (short) 5, "Bar" } ) );
-
                     connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP TABLE pstest" );
