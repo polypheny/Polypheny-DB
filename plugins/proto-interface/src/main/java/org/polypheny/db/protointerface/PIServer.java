@@ -74,11 +74,15 @@ public class PIServer {
     }
 
 
-    void acceptConnection( SocketChannel s, Function<SocketChannel, Transport> createTransport, ClientManager clientManager ) {
+    void acceptConnection( SocketChannel s, String name, Function<SocketChannel, Transport> createTransport, ClientManager clientManager ) {
         try {
             PIService.acceptConnection( createTransport.apply( s ), clientManager );
         } catch ( GenericRuntimeException e ) {
             if ( e.getCause() instanceof EOFException ) {
+                return;
+            }
+            if ( e.getCause() instanceof IOException ) {
+                log.info( "accept {} connection: {}", name, e.getCause().getMessage() );
                 return;
             }
             throw e;
@@ -90,7 +94,7 @@ public class PIServer {
         while ( true ) {
             try {
                 SocketChannel s = server.accept();
-                Thread t = new Thread( () -> acceptConnection( s, createTransport, clientManager ), "ProtoInterface" + name + "ClientConnection" );
+                Thread t = new Thread( () -> acceptConnection( s, name, createTransport, clientManager ), "ProtoInterface" + name + "ClientConnection" );
                 t.start();
             } catch ( IOException e ) {
                 log.error( e.getMessage() );
