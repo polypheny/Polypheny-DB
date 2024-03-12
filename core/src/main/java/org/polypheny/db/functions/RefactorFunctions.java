@@ -83,7 +83,7 @@ public class RefactorFunctions {
     }
 
 
-    public static PolyNumber unwrap( PolyInterval interval ) {
+    public static PolyNumber unwrapInterval( PolyInterval interval ) {
         return PolyLong.of( interval.value );
     }
 

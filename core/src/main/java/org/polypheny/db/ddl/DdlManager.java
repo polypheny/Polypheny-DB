@@ -94,8 +94,9 @@ public abstract class DdlManager {
      * @param type the namespace type, RELATIONAL, DOCUMENT, etc.
      * @param ifNotExists whether to silently ignore if a namespace with this name does already exist
      * @param replace whether to replace an existing namespace with this name
+     * @param statement the query statement
      */
-    public abstract long createNamespace( String name, DataModel type, boolean ifNotExists, boolean replace );
+    public abstract long createNamespace( String name, DataModel type, boolean ifNotExists, boolean replace, Statement statement );
 
     /**
      * Adds a new adapter (data store or data source)
@@ -104,7 +105,7 @@ public abstract class DdlManager {
      * @param adapterName name of adapter, which is used to create the adapter
      * @param adapterType the specific {@link AdapterType} for the adapter to create
      * @param config configuration for the adapter
-     * @param mode
+     * @param mode the deploy mode
      */
     public abstract void createAdapter( String uniqueName, String adapterName, AdapterType adapterType, Map<String, String> config, DeployMode mode );
 
@@ -377,14 +378,6 @@ public abstract class DdlManager {
      * @param statement the used statement
      */
     public abstract void dropColumnPlacement( LogicalTable table, LogicalColumn column, DataStore<?> store, Statement statement );
-
-    /**
-     * Change the owner of a table
-     *
-     * @param table the table
-     * @param newOwnerName the name of the new owner
-     */
-    public abstract void alterTableOwner( LogicalTable table, String newOwnerName );
 
     /**
      * Rename a table (changing the logical name of the table)

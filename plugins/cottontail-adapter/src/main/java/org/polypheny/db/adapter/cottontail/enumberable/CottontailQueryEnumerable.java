@@ -157,7 +157,7 @@ public class CottontailQueryEnumerable extends AbstractEnumerable<PolyValue[]> {
                 case VARCHAR:
                     return PolyString.of( (String) data );
                 case NULL:
-                    return PolyNull.NULL; /* Pass through, no conversion needed. */
+                    return PolyNull.NULL;
                 case TINYINT:
                     return Linq4JFixer.getTinyIntData( data );
                 case SMALLINT:

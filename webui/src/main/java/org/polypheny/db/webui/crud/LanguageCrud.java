@@ -157,7 +157,7 @@ public class LanguageCrud {
             results.add( builder.apply( executedContext, request, executedContext.getStatement() ).build() );
         }
 
-        commitAndFinish( executedContexts, transaction.getQueryAnalyzer(), results, executedContexts.stream().map( ExecutedContext::getExecutionTime ).reduce( Long::sum ).orElseThrow() );
+        commitAndFinish( executedContexts, transaction.getQueryAnalyzer(), results, executedContexts.stream().map( ExecutedContext::getExecutionTime ).reduce( Long::sum ).orElse( -1L ) );
 
         return results;
     }

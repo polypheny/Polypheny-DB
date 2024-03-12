@@ -50,7 +50,7 @@ import org.polypheny.db.util.Pair;
 
 /**
  * Packaging information and algorithm to convert a {@link CqlQuery}
- * to relational algebra ({@link AlgNode}, {@link AlgRoot}, {@link RexNode})
+ * to algebra ({@link AlgNode}, {@link AlgRoot}, {@link RexNode})
  */
 @Slf4j
 public class Cql2AlgConverter {
@@ -69,7 +69,7 @@ public class Cql2AlgConverter {
 
     /**
      * Packaging of all algorithms involved in converting {@link CqlQuery}
-     * to relational algebra.
+     * to algebra.
      *
      * @param algBuilder {@link AlgBuilder}.
      * @param rexBuilder {@link RexBuilder}.
@@ -218,7 +218,7 @@ public class Cql2AlgConverter {
 
 
     /**
-     * Convert {@link Filter}s to relational algebra.
+     * Convert {@link Filter}s to algebra.
      *
      * @param algBuilder {@link AlgBuilder}.
      * @param rexBuilder {@link RexBuilder}.
@@ -297,7 +297,7 @@ public class Cql2AlgConverter {
 
 
     /**
-     * Convert sort specifications to relational algebra.
+     * Convert sort specifications to algebra.
      *
      * @param algBuilder {@link AlgBuilder}.
      * @param rexBuilder {@link RexBuilder}.

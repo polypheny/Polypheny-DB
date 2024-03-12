@@ -14,29 +14,38 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher.scope;
+package org.polypheny.db.cypher.admin;
 
 import lombok.Getter;
 import org.polypheny.db.cypher.CypherParameter;
 import org.polypheny.db.cypher.CypherSimpleEither;
-import org.polypheny.db.cypher.ScopeType;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.UnsupportedExecutableStatement;
+
 
 @Getter
-public class CypherDbScope extends CypherScope {
+public class CypherAlterNamespace extends CypherAdminCommand implements UnsupportedExecutableStatement {
 
-    private final CypherSimpleEither<String, CypherParameter> name;
-    private final boolean isDefault;
-    private final boolean isHome;
-    private final ScopeType type;
+    private final CypherSimpleEither<String, CypherParameter> databaseName;
+    private final boolean ifExists;
+    private final AccessType accessType;
 
 
-    public CypherDbScope( ParserPos pos, CypherSimpleEither<String, CypherParameter> name, boolean isDefault, boolean isHome, ScopeType type ) {
+    public CypherAlterNamespace(
+            ParserPos pos,
+            CypherSimpleEither<String, CypherParameter> databaseName,
+            boolean ifExists,
+            AccessType accessType ) {
         super( pos );
-        this.name = name;
-        this.isDefault = isDefault;
-        this.isHome = isHome;
-        this.type = type;
+        this.databaseName = databaseName;
+        this.ifExists = ifExists;
+        this.accessType = accessType;
+    }
+
+
+    @Override
+    public boolean isDdl() {
+        return true;
     }
 
 }

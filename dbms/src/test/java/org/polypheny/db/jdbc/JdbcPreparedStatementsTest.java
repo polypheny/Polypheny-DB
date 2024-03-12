@@ -333,8 +333,8 @@ public class JdbcPreparedStatementsTest {
                     preparedInsert.executeBatch();
                     connection.commit();
 
-                    PreparedStatement preparedSelect = connection.prepareStatement( ""
-                            + "SELECT * FROM pstest WHERE "
+                    PreparedStatement preparedSelect = connection.prepareStatement(
+                            "SELECT * FROM pstest WHERE "
                             + "tbigint = ? AND "
                             + "tboolean = ? AND "
                             + "tdate = ? AND "
@@ -416,7 +416,6 @@ public class JdbcPreparedStatementsTest {
 
 
     @Test
-    @Tag("cottontailExcluded")
     public void updateTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -474,7 +473,7 @@ public class JdbcPreparedStatementsTest {
 
 
     @Test
-    @Tag("cottontailExcluded")
+    @Tag("cottontailExcluded") // leads to BatchQuery is unimplemented
     public void batchUpdateTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

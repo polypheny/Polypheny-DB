@@ -23,27 +23,27 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 
 
 /**
- * Packaging column information together.
+ * Packaging field information together.
  */
 @Slf4j
 public class FieldIndex {
 
     public final LogicalColumn logicalColumn;
     public final String fullyQualifiedName;
-    public final String schemaName;
-    public final String tableName;
+    public final String namespaceName;
+    public final String entityName;
     public final String columnName;
 
 
     public FieldIndex(
             final LogicalColumn logicalColumn,
-            final String schemaName,
-            final String tableName,
+            final String namespaceName,
+            final String entityName,
             final String columnName ) {
         this.logicalColumn = logicalColumn;
-        this.fullyQualifiedName = schemaName + "." + tableName + "." + columnName;
-        this.schemaName = schemaName;
-        this.tableName = tableName;
+        this.fullyQualifiedName = namespaceName + "." + entityName + "." + columnName;
+        this.namespaceName = namespaceName;
+        this.entityName = entityName;
         this.columnName = columnName;
     }
 

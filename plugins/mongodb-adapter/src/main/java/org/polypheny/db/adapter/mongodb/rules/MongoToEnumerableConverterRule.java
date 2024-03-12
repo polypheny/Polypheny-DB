@@ -27,7 +27,7 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Rule to convert a relational expression from {@link MongoAlg#CONVENTION} to {@link EnumerableConvention}.
+ * Rule to convert an algebra expression from {@link MongoAlg#CONVENTION} to {@link EnumerableConvention}.
  */
 public class MongoToEnumerableConverterRule extends ConverterRule {
 
@@ -37,7 +37,7 @@ public class MongoToEnumerableConverterRule extends ConverterRule {
     /**
      * Creates a MongoToEnumerableConverterRule.
      *
-     * @param algBuilderFactory Builder for relational expressions
+     * @param algBuilderFactory Builder for algebra expressions
      */
     public MongoToEnumerableConverterRule( AlgBuilderFactory algBuilderFactory ) {
         super(

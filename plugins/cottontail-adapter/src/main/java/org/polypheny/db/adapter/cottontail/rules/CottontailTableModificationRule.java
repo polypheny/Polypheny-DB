@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.cottontail.rules;
 
 
 import java.util.Optional;
+import lombok.Getter;
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
 import org.polypheny.db.adapter.cottontail.CottontailEntity;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailTableModify;
@@ -29,6 +30,8 @@ import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
+import org.polypheny.db.rex.RexFieldAccess;
+import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.schema.types.ModifiableTable;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
@@ -56,11 +59,26 @@ public class CottontailTableModificationRule extends CottontailConverterRule {
             return false;
         }
 
+        if ( containsAccess( modify ) ) {
+            return false;
+        }
+
         if ( modify.isInsert() && modify.containsScan() ) {
             return false;
         }
 
         return modify.getOperation() != Modify.Operation.MERGE;
+    }
+
+
+    private boolean containsAccess( RelModify<?> modify ) {
+        if ( modify.getSourceExpressions() == null ) {
+            return false;
+        }
+
+        AccessFinder visitor = new AccessFinder();
+        modify.getSourceExpressions().forEach( rexNode -> rexNode.accept( visitor ) );
+        return visitor.containsAccess;
     }
 
 
@@ -90,5 +108,24 @@ public class CottontailTableModificationRule extends CottontailConverterRule {
         );
     }
 
+
+    @Getter
+    private static class AccessFinder extends RexVisitorImpl<Void> {
+
+        public boolean containsAccess = false;
+
+
+        public AccessFinder() {
+            super( true );
+        }
+
+
+        @Override
+        public Void visitFieldAccess( RexFieldAccess fieldAccess ) {
+            containsAccess = true;
+            return null;
+        }
+
+    }
 
 }

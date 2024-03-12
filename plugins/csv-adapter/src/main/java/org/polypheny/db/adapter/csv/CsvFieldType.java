@@ -36,33 +36,47 @@ package org.polypheny.db.adapter.csv;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.calcite.linq4j.tree.Primitive;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyBinary;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyFloat;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.temporal.PolyDate;
+import org.polypheny.db.type.entity.temporal.PolyTime;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 
 
 /**
- * Type of a field in a CSV file.
- *
- * Usually, and unless specified explicitly in the header row, a field is of type {@link #STRING}. But specifying the field type in the header row makes it easier to write SQL.
+ * Type of field in a CSV file.
+ * <p>
+ * Usually, and unless specified explicitly in the header row, a field is of type {@link #STRING}.
+ * But specifying the field type in the header row makes it easier to write SQL.
  */
 public enum CsvFieldType {
-    STRING( String.class, "string" ),
-    BOOLEAN( Primitive.BOOLEAN ),
-    BYTE( Primitive.BYTE ),
-    CHAR( Primitive.CHAR ),
-    SHORT( Primitive.SHORT ),
-    INT( Primitive.INT ),
-    LONG( Primitive.LONG ),
-    FLOAT( Primitive.FLOAT ),
-    DOUBLE( Primitive.DOUBLE ),
-    DATE( java.sql.Date.class, "date" ),
-    TIME( java.sql.Time.class, "time" ),
-    TIMESTAMP( java.sql.Timestamp.class, "timestamp" );
+    STRING( PolyString.class ),
+    BOOLEAN( PolyBoolean.class ),
+    BYTE( PolyBinary.class ),
+    CHAR( PolyString.class ),
+    SHORT( PolyInteger.class ),
+    INT( PolyInteger.class ),
+    LONG( PolyLong.class ),
+    FLOAT( PolyFloat.class ),
+    DOUBLE( PolyDouble.class ),
+    DATE( PolyDate.class ),
+    TIME( PolyTime.class ),
+    TIMESTAMP( PolyTimestamp.class );
 
-    private final Class clazz;
+    @NotNull
+    private final Class<? extends PolyValue> clazz;
+    @NotNull
     private final String simpleName;
 
     private static final Map<String, CsvFieldType> MAP = new HashMap<>();
@@ -75,42 +89,31 @@ public enum CsvFieldType {
     }
 
 
-    CsvFieldType( Primitive primitive ) {
-        this( primitive.boxClass, primitive.primitiveClass.getSimpleName() );
+    CsvFieldType( Class<? extends PolyValue> clazz ) {
+        this( clazz, clazz.getSimpleName().toLowerCase().replace( "poly", "" ) );
     }
 
 
-    CsvFieldType( Class clazz, String simpleName ) {
+    CsvFieldType( @NotNull Class<? extends PolyValue> clazz, @NotNull String simpleName ) {
         this.clazz = clazz;
         this.simpleName = simpleName;
     }
 
 
     public static CsvFieldType getCsvFieldType( PolyType type ) {
-        switch ( type ) {
-            case BOOLEAN:
-                return CsvFieldType.BOOLEAN;
-            case VARBINARY:
-                return CsvFieldType.BYTE;
-            case INTEGER:
-                return CsvFieldType.INT;
-            case BIGINT:
-                return CsvFieldType.LONG;
-            case REAL:
-                return CsvFieldType.FLOAT;
-            case DOUBLE:
-                return CsvFieldType.DOUBLE;
-            case VARCHAR:
-                return CsvFieldType.STRING;
-            case DATE:
-                return CsvFieldType.DATE;
-            case TIME:
-                return CsvFieldType.TIME;
-            case TIMESTAMP:
-                return CsvFieldType.TIMESTAMP;
-            default:
-                throw new GenericRuntimeException( "Unsupported datatype: " + type.name() );
-        }
+        return switch ( type ) {
+            case BOOLEAN -> CsvFieldType.BOOLEAN;
+            case VARBINARY -> CsvFieldType.BYTE;
+            case INTEGER -> CsvFieldType.INT;
+            case BIGINT -> CsvFieldType.LONG;
+            case REAL -> CsvFieldType.FLOAT;
+            case DOUBLE -> CsvFieldType.DOUBLE;
+            case VARCHAR -> CsvFieldType.STRING;
+            case DATE -> CsvFieldType.DATE;
+            case TIME -> CsvFieldType.TIME;
+            case TIMESTAMP -> CsvFieldType.TIMESTAMP;
+            default -> throw new GenericRuntimeException( "Unsupported datatype: " + type.name() );
+        };
     }
 
 

@@ -126,7 +126,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
     @Override
     public void updateNamespace( String name, long id ) {
         if ( adapterCatalog.getNamespace( id ) == null ) {
-            currentJdbcSchema = JdbcSchema.create( id, getDefaultPhysicalNamespaceName(), connectionFactory, dialect, this );
+            currentJdbcSchema = JdbcSchema.create( id, getDefaultPhysicalSchemaName(), connectionFactory, dialect, this );
             adapterCatalog.addNamespace( id, currentJdbcSchema );
         }
         putNamespace( currentJdbcSchema );
@@ -150,7 +150,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
     @Override
     public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocationWrapper ) {
         AllocationTable allocation = allocationWrapper.table;
-        String namespaceName = getDefaultPhysicalNamespaceName();
+        String namespaceName = getDefaultPhysicalSchemaName();
         String tableName = getPhysicalTableName( allocation.id );
 
         updateNamespace( logical.table.getNamespaceName(), logical.table.namespaceId );
@@ -340,9 +340,6 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
 
     @Override
     public void dropTable( Context context, long allocId ) {
-        // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
-        // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
-        // approach rather than using the default physical schema / table names is that this approach allows dropping linked tables.
         PhysicalTable table = adapterCatalog.fromAllocation( allocId );
         StringBuilder builder = new StringBuilder();
 
@@ -391,9 +388,6 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
 
     @Override
     public void truncate( Context context, long allocId ) {
-        // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
-        // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
-        // approach rather than using the default physical schema / table names is that this approach allows truncating linked tables.
         PhysicalTable physical = adapterCatalog.fromAllocation( allocId );
 
         StringBuilder builder = new StringBuilder();
@@ -479,7 +473,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
     }
 
 
-    public abstract String getDefaultPhysicalNamespaceName();
+    public abstract String getDefaultPhysicalSchemaName();
 
 
     @SuppressWarnings("unused")

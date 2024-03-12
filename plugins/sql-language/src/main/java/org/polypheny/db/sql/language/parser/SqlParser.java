@@ -17,7 +17,6 @@
 package org.polypheny.db.sql.language.parser;
 
 
-import java.io.StringReader;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.nodes.Node;
@@ -95,20 +94,6 @@ public class SqlParser implements Parser {
             }
             throw parser.normalizeException( ex );
         }
-    }
-
-
-    /**
-     * Parses a <code>SELECT</code> statement and reuses parser.
-     *
-     * @param query sql to parse
-     * @return A {@link SqlSelect} for a regular <code>SELECT</code> statement; a {@link SqlBinaryOperator} for a <code>UNION</code>, <code>INTERSECT</code>, or <code>EXCEPT</code>.
-     * @throws NodeParseException if there is a parse error
-     */
-    @Override
-    public Node parseQuery( String query ) throws NodeParseException {
-        parser.ReInit( new StringReader( query ) );
-        return parseQuery();
     }
 
 

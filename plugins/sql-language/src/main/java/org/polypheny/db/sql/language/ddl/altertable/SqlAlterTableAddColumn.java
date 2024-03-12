@@ -20,6 +20,8 @@ package org.polypheny.db.sql.language.ddl.altertable;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nullable;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -44,16 +46,21 @@ import org.polypheny.db.util.ImmutableNullableList;
 /**
  * Parse tree for {@code ALTER TABLE name ADD COLUMN name} statement.
  */
+@EqualsAndHashCode(callSuper = true)
 @Slf4j
+@Value
 public class SqlAlterTableAddColumn extends SqlAlterTable {
 
-    private final SqlIdentifier table;
-    private final SqlIdentifier column;
-    private final SqlDataTypeSpec type;
-    private final boolean nullable;
-    private final @Nullable SqlNode defaultValue; // Can be null
-    private final @Nullable SqlIdentifier beforeColumnName; // Can be null
-    private final @Nullable SqlIdentifier afterColumnName; // Can be null
+    SqlIdentifier table;
+    SqlIdentifier column;
+    SqlDataTypeSpec type;
+    boolean nullable;
+    @Nullable
+    SqlNode defaultValue;
+    @Nullable
+    SqlIdentifier beforeColumnName;
+    @Nullable
+    SqlIdentifier afterColumnName;
 
 
     public SqlAlterTableAddColumn(
@@ -62,9 +69,9 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
             SqlIdentifier column,
             SqlDataTypeSpec type,
             boolean nullable,
-            SqlNode defaultValue,
-            SqlIdentifier beforeColumnName,
-            SqlIdentifier afterColumnName ) {
+            @Nullable SqlNode defaultValue,
+            @Nullable SqlIdentifier beforeColumnName,
+            @Nullable SqlIdentifier afterColumnName ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.column = Objects.requireNonNull( column );
@@ -128,7 +135,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
             throw new GenericRuntimeException( "No FQDN allowed here: %s", column );
         }
 
-        // Make sure that all adapters are of type storeId (and not source)
+        // Make sure that all adapters are of type store (and not source)
         for ( AllocationEntity allocation : statement.getTransaction().getSnapshot().alloc().getFromLogical( logicalTable.id ) ) {
             getDataStoreInstance( allocation.adapterId );
         }

@@ -17,12 +17,14 @@
 package org.polypheny.db.cypher.admin;
 
 import java.util.List;
-import lombok.Getter;
+import java.util.concurrent.TimeUnit;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.cypher.CypherParameter;
 import org.polypheny.db.cypher.CypherSimpleEither;
+import org.polypheny.db.cypher.clause.CypherWaitClause;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.ExecutableStatement;
@@ -31,38 +33,60 @@ import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 
 
-@Getter
-public class CypherAlterDatabaseAlias extends CypherAdminCommand implements ExecutableStatement {
+public class CypherDropNamespace extends CypherAdminCommand implements ExecutableStatement {
 
-    private final String aliasName;
-    private final String targetName;
+    private final String databaseName;
     private final boolean ifExists;
+    private final boolean dumpData;
+    private final CypherWaitClause wait;
 
 
-    public CypherAlterDatabaseAlias(
+    public CypherDropNamespace(
             ParserPos pos,
-            CypherSimpleEither<String, CypherParameter> aliasName,
-            CypherSimpleEither<String, CypherParameter> targetName,
-            boolean ifExists ) {
+            CypherSimpleEither<String, CypherParameter> databaseName,
+            boolean ifExists,
+            boolean dumpData,
+            CypherWaitClause wait ) {
         super( pos );
-        this.aliasName = aliasName.getLeft() != null ? aliasName.getLeft() : aliasName.getRight().getName();
-        this.targetName = targetName.getLeft() != null ? targetName.getLeft() : targetName.getRight().getName();
+        this.databaseName = databaseName.getLeft() != null ? databaseName.getLeft() : databaseName.getRight().getName();
         this.ifExists = ifExists;
+        this.dumpData = dumpData;
+        this.wait = wait;
     }
 
 
     @Override
     public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
-        List<LogicalNamespace> graphs = statement.getTransaction().getSnapshot().getNamespaces( new Pattern( targetName ) );
+        if ( wait != null && wait.isWait() ) {
+            try {
+                Thread.sleep( TimeUnit.MILLISECONDS.convert( wait.getNanos(), TimeUnit.NANOSECONDS ) );
+            } catch ( InterruptedException e ) {
+                throw new UnsupportedOperationException( "While waiting to create the database the operation was interrupted." );
+            }
+        }
 
-        if ( graphs.size() != 1 ) {
+        List<LogicalNamespace> databases = statement.getTransaction().getSnapshot().getNamespaces( new Pattern( databaseName ) );
+
+        if ( databases.size() != 1 ) {
             if ( !ifExists ) {
                 throw new GenericRuntimeException( "Graph database does not exist and IF EXISTS was not specified." );
             }
             return;
         }
 
-        DdlManager.getInstance().replaceGraphAlias( graphs.get( 0 ).id, targetName, aliasName );
+        DdlManager.getInstance().dropGraph( databases.get( 0 ).id, ifExists, statement );
+    }
+
+
+    @Override
+    public boolean isDdl() {
+        return true;
+    }
+
+
+    @Override
+    public @Nullable String getEntity() {
+        return databaseName;
     }
 
 }

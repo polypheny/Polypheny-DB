@@ -109,7 +109,6 @@ public class ExcelNamespace extends Namespace {
                 case TRANSLATABLE -> new ExcelTranslatableTable( table, source, protoRowType, fieldTypes, fields, excelSource, this.sheet );
                 case SCANNABLE -> new ExcelScannableTable( table, source, protoRowType, fieldTypes, fields, excelSource, this.sheet );
                 case FILTERABLE -> new ExcelFilterableTable( table, source, protoRowType, fieldTypes, fields, excelSource, this.sheet );
-                default -> throw new AssertionError( "Unknown flavor " + this.flavor );
             };
         }
 

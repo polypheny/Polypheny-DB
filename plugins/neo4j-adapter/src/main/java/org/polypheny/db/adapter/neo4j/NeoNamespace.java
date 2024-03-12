@@ -17,7 +17,8 @@
 package org.polypheny.db.adapter.neo4j;
 
 import java.util.List;
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
@@ -29,17 +30,15 @@ import org.polypheny.db.catalog.impl.Expressible;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.schema.Namespace;
 
-
+@EqualsAndHashCode(callSuper = true)
+@Value
 public class NeoNamespace extends Namespace implements Expressible {
 
-    @Getter
-    private final long id;
-
-    public final Driver graph;
-    public final Neo4jStore store;
-    public final String physicalName;
-    public final Session session;
-    public final TransactionProvider transactionProvider;
+    public Driver graph;
+    public Neo4jStore store;
+    public String physicalName;
+    public Session session;
+    public TransactionProvider transactionProvider;
 
 
     /**
@@ -50,7 +49,6 @@ public class NeoNamespace extends Namespace implements Expressible {
      */
     public NeoNamespace( Driver db, TransactionProvider transactionProvider, Neo4jStore neo4jStore, long id ) {
         super( id, neo4jStore.getAdapterId() );
-        this.id = id;
         this.graph = db;
         this.store = neo4jStore;
         this.physicalName = Neo4jPlugin.getPhysicalNamespaceName( getId() );
@@ -78,7 +76,7 @@ public class NeoNamespace extends Namespace implements Expressible {
 
     @Override
     public Convention getConvention() {
-        return null;
+        return NeoConvention.INSTANCE;
     }
 
 }

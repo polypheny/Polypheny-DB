@@ -45,8 +45,6 @@ public interface Parser {
 
     Node parseQuery() throws NodeParseException;
 
-    Node parseQuery( String query ) throws NodeParseException;
-
     Node parseStmt() throws NodeParseException;
 
     default List<? extends Node> parseStmts() throws NodeParseException {
@@ -74,8 +72,6 @@ public interface Parser {
 
         Quoting quoting();
 
-        boolean caseSensitive();
-
         Conformance conformance();
 
         ParserFactory parserFactory();
@@ -92,14 +88,8 @@ public interface Parser {
         private Casing unquotedCasing = Lex.POLYPHENY.unquotedCasing;
         private Quoting quoting = Lex.POLYPHENY.quoting;
         private int identifierMaxLength = DEFAULT_IDENTIFIER_MAX_LENGTH;
-        private boolean caseSensitive = Lex.POLYPHENY.caseSensitive;
         private Conformance conformance = ConformanceEnum.LENIENT;
-        private ParserFactory parserFactory = null;
-
-
-        public ConfigBuilder( ParserFactory parserFactory ) {
-            this.parserFactory = parserFactory;
-        }
+        private ParserFactory parserFactory;
 
 
         private ConfigBuilder() {
@@ -139,12 +129,6 @@ public interface Parser {
         }
 
 
-        public ConfigBuilder setCaseSensitive( boolean caseSensitive ) {
-            this.caseSensitive = caseSensitive;
-            return this;
-        }
-
-
         public ConfigBuilder setIdentifierMaxLength( int identifierMaxLength ) {
             this.identifierMaxLength = identifierMaxLength;
             return this;
@@ -164,7 +148,6 @@ public interface Parser {
 
 
         public ConfigBuilder setLex( Lex lex ) {
-            setCaseSensitive( lex.caseSensitive );
             setUnquotedCasing( lex.unquotedCasing );
             setQuotedCasing( lex.quotedCasing );
             setQuoting( lex.quoting );
@@ -176,7 +159,7 @@ public interface Parser {
          * Builds a {@link ParserConfig}.
          */
         public ParserConfig build() {
-            return new ConfigImpl( identifierMaxLength, quotedCasing, unquotedCasing, quoting, caseSensitive, conformance, parserFactory );
+            return new ConfigImpl( identifierMaxLength, quotedCasing, unquotedCasing, quoting, conformance, parserFactory );
         }
 
     }
@@ -189,7 +172,6 @@ public interface Parser {
     class ConfigImpl implements ParserConfig {
 
         private final int identifierMaxLength;
-        private final boolean caseSensitive;
         private final Conformance conformance;
         private final Casing quotedCasing;
         private final Casing unquotedCasing;
@@ -197,9 +179,8 @@ public interface Parser {
         private final ParserFactory parserFactory;
 
 
-        private ConfigImpl( int identifierMaxLength, Casing quotedCasing, Casing unquotedCasing, Quoting quoting, boolean caseSensitive, Conformance conformance, ParserFactory parserFactory ) {
+        private ConfigImpl( int identifierMaxLength, Casing quotedCasing, Casing unquotedCasing, Quoting quoting, Conformance conformance, ParserFactory parserFactory ) {
             this.identifierMaxLength = identifierMaxLength;
-            this.caseSensitive = caseSensitive;
             this.conformance = Objects.requireNonNull( conformance );
             this.quotedCasing = Objects.requireNonNull( quotedCasing );
             this.unquotedCasing = Objects.requireNonNull( unquotedCasing );
@@ -229,12 +210,6 @@ public interface Parser {
         @Override
         public Quoting quoting() {
             return quoting;
-        }
-
-
-        @Override
-        public boolean caseSensitive() {
-            return caseSensitive;
         }
 
 

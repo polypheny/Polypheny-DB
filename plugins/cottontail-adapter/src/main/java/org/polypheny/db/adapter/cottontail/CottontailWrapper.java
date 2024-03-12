@@ -274,11 +274,7 @@ public class CottontailWrapper implements AutoCloseable {
         try {
             final TupleIterator response = this.client.update( message );
             final Long results = response.next().asLong( 0 );
-            if ( results != null ) {
-                return results;  /* Number of updates as returned by Cottontail DB. */
-            } else {
-                return -1L;
-            }
+            return Objects.requireNonNullElse( results, -1L );  /* Number of updates as returned by Cottontail DB. */
         } catch ( StatusRuntimeException e ) {
             if ( e.getStatus().getCode() == Status.INVALID_ARGUMENT.getCode() ) {
                 if ( log.isDebugEnabled() ) {

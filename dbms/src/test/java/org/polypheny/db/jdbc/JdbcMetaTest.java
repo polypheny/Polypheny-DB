@@ -30,6 +30,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
@@ -66,7 +68,6 @@ public class JdbcMetaTest {
                     statement.executeUpdate( "ALTER TABLE test.foo2 ADD INDEX i_foo2 ON (name, foobar) USING \"default\" ON STORE hsqldb" );
                 }
 
-                // statement.executeUpdate( "CREATE DOCUMENT SCHEMA doc" ); // todo There should be an alias to use the SQL default term SCHEMA instead of NAMESPACE
                 connection.commit();
             }
         }
@@ -81,13 +82,31 @@ public class JdbcMetaTest {
                 statement.executeUpdate( "ALTER TABLE test.foo2 DROP FOREIGN KEY fk_foo_2 " );
                 statement.executeUpdate( "DROP TABLE foo" );
                 statement.executeUpdate( "DROP SCHEMA test" ); // todo There should be an alias to use the SQL default term SCHEMA instead of NAMESPACE
-                //statement.executeUpdate( "DROP NAMESPACE doc" );
                 connection.commit();
             }
         }
     }
 
     // --------------- Tests ---------------
+
+
+    @SuppressWarnings("SqlSourceToSinkFlow")
+    @ParameterizedTest(name = "Namespace creation using keyword: {0}")
+    @ValueSource(strings = { "SCHEMA", "NAMESPACE" })
+    public void testNamespaceCreation( String name ) throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( String.format( "CREATE %s namespacetest", name ) );
+                statement.executeUpdate( String.format( "DROP %s namespacetest", name ) );
+                statement.executeUpdate( String.format( "CREATE GRAPH %s namespacetest", name ) );
+                statement.executeUpdate( String.format( "DROP %s namespacetest", name ) );
+                statement.executeUpdate( String.format( "CREATE DOCUMENT %s namespacetest", name ) );
+                statement.executeUpdate( String.format( "DROP %s namespacetest", name ) );
+                connection.commit();
+            }
+        }
+    }
 
 
     @Test

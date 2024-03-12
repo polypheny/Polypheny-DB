@@ -17,33 +17,27 @@
 package org.polypheny.db.cypher.admin;
 
 import lombok.Getter;
-import org.polypheny.db.cypher.CypherYield;
-import org.polypheny.db.cypher.clause.CypherReturnClause;
-import org.polypheny.db.cypher.clause.CypherWhere;
-import org.polypheny.db.cypher.scope.CypherDbScope;
+import org.polypheny.db.cypher.CypherParameter;
+import org.polypheny.db.cypher.CypherSimpleEither;
+import org.polypheny.db.cypher.clause.CypherWaitClause;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.UnsupportedExecutableStatement;
 
+
 @Getter
-public class CypherShowDatabase extends CypherWithGraph implements UnsupportedExecutableStatement {
+public class CypherStartNamespace extends CypherAdminCommand implements UnsupportedExecutableStatement {
 
-    private final CypherDbScope scope;
-    private final CypherYield yield;
-    private final CypherReturnClause returnClause;
-    private final CypherWhere where;
+    private final CypherSimpleEither<String, CypherParameter> databaseName;
+    private final CypherWaitClause wait;
 
 
-    public CypherShowDatabase(
+    public CypherStartNamespace(
             ParserPos pos,
-            CypherDbScope scope,
-            CypherYield yield,
-            CypherReturnClause returnClause,
-            CypherWhere where ) {
+            CypherSimpleEither<String, CypherParameter> databaseName,
+            CypherWaitClause wait ) {
         super( pos );
-        this.scope = scope;
-        this.yield = yield;
-        this.returnClause = returnClause;
-        this.where = where;
+        this.databaseName = databaseName;
+        this.wait = wait;
     }
 
 }

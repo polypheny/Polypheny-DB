@@ -52,7 +52,7 @@ import org.polypheny.db.util.Source;
 
 /**
  * Table based on a CSV file that can implement simple filtering.
- *
+ * <p>
  * It implements the {@link FilterableEntity} interface, so Polypheny-DB gets data by calling the {@link #scan(DataContext, List)} method.
  */
 public class CsvFilterableTable extends CsvTable implements FilterableEntity {

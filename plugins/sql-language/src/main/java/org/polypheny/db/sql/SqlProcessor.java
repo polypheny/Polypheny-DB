@@ -93,7 +93,6 @@ public class SqlProcessor extends Processor {
 
     static {
         SqlParser.ConfigBuilder configConfigBuilder = Parser.configBuilder();
-        configConfigBuilder.setCaseSensitive( false );
         configConfigBuilder.setUnquotedCasing( Casing.UNCHANGED );
         configConfigBuilder.setQuotedCasing( Casing.UNCHANGED );
         parserConfig = configConfigBuilder.build();

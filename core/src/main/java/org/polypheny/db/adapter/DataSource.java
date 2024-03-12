@@ -27,9 +27,9 @@ import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.type.PolyType;
 
+@Getter
 public abstract class DataSource<S extends AdapterCatalog> extends Adapter<S> implements ExtensionPoint {
 
-    @Getter
     private final boolean dataReadOnly;
 
 

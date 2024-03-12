@@ -56,7 +56,6 @@ public class MongoProject extends Project implements MongoAlg {
     public MongoProject( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
         super( cluster, traitSet, input, projects, adjustRowType( rowType, projects, input ) );
         assert getConvention() == CONVENTION;
-        //assert getConvention() == input.getConvention(); // TODO DL fix logicalFilter bug
     }
 
 

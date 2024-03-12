@@ -393,7 +393,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                     + validatedRowType.getFullTypeString()
                     + "\nconverted type:\n"
                     + convertedRowType.getFullTypeString()
-                    + "\nrel:\n"
+                    + "\nAlg:\n"
                     + AlgOptUtil.toString( result ) );
         }
     }

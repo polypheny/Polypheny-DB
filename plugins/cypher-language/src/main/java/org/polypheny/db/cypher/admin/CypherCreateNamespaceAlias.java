@@ -33,7 +33,7 @@ import org.polypheny.db.transaction.Statement;
 
 
 @Getter
-public class CypherCreateDatabaseAlias extends CypherAdminCommand implements ExecutableStatement {
+public class CypherCreateNamespaceAlias extends CypherAdminCommand implements ExecutableStatement {
 
     private final boolean replace;
     private final String aliasName;
@@ -41,7 +41,7 @@ public class CypherCreateDatabaseAlias extends CypherAdminCommand implements Exe
     private final boolean ifNotExists;
 
 
-    public CypherCreateDatabaseAlias(
+    public CypherCreateNamespaceAlias(
             ParserPos pos,
             boolean replace,
             CypherSimpleEither<String, CypherParameter> aliasName,

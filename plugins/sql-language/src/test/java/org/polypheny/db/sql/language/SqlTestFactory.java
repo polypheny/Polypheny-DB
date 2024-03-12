@@ -34,20 +34,18 @@ import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.sql.MockSqlOperatorTable;
-import org.polypheny.db.sql.language.advise.SqlAdvisor;
 import org.polypheny.db.sql.language.fun.OracleSqlOperatorTable;
 import org.polypheny.db.sql.language.parser.SqlAbstractParserImpl;
 import org.polypheny.db.sql.language.parser.SqlParser;
 import org.polypheny.db.sql.language.validate.SqlValidator;
 import org.polypheny.db.sql.language.validate.SqlValidatorUtil;
-import org.polypheny.db.sql.language.validate.SqlValidatorWithHints;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.SourceStringReader;
 
 
 /**
  * Default implementation of {@link SqlTestFactory}.
- *
+ * <p>
  * Suitable for most tests. If you want different behavior, you can extend; if you want a factory with different properties (e.g. SQL conformance level or identifier quoting), use {@link #with(String, Object)} to create a new factory.
  */
 public class SqlTestFactory {
@@ -93,10 +91,6 @@ public class SqlTestFactory {
     }
 
 
-    public ParserConfig getParserConfig() {
-        return parserConfig.get();
-    }
-
 
     public Parser createParser( String sql ) {
         ParserConfig config = parserConfig.get();
@@ -111,7 +105,6 @@ public class SqlTestFactory {
                 .setUnquotedCasing( (Casing) options.get( "unquotedCasing" ) )
                 .setQuotedCasing( (Casing) options.get( "quotedCasing" ) )
                 .setConformance( (Conformance) options.get( "conformance" ) )
-                .setCaseSensitive( (boolean) options.get( "caseSensitive" ) )
                 .build();
     }
 
@@ -119,15 +112,6 @@ public class SqlTestFactory {
     public SqlValidator getValidator() {
         final Conformance conformance = (Conformance) options.get( "conformance" );
         return validatorFactory.create( operatorTable.get(), typeFactory.get(), conformance );
-    }
-
-
-    public SqlAdvisor createAdvisor() {
-        SqlValidator validator = getValidator();
-        if ( validator instanceof SqlValidatorWithHints ) {
-            return new SqlAdvisor( (SqlValidatorWithHints) validator, parserConfig.get() );
-        }
-        throw new UnsupportedOperationException( "Validator should implement SqlValidatorWithHints, actual validator is " + validator );
     }
 
 
@@ -149,11 +133,6 @@ public class SqlTestFactory {
 
 
 
-    public SqlTestFactory withValidator( ValidatorFactory newValidatorFactory ) {
-        return new SqlTestFactory( options, newValidatorFactory );
-    }
-
-
     public final Object get( String name ) {
         return options.get( name );
     }
@@ -171,9 +150,6 @@ public class SqlTestFactory {
         }
         if ( conformance.allowExtendedTrim() ) {
             typeSystem = new DelegatingTypeSystem( typeSystem ) {
-                public boolean allowExtendedTrim() {
-                    return true;
-                }
             };
         }
         return new JavaTypeFactoryImpl( typeSystem );

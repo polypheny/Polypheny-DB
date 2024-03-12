@@ -136,7 +136,7 @@ public enum OperatorName {
 
     /**
      * {@code GROUPING(c1 [, c2, ...])} function.
-     *
+     * <p>
      * Occurs in similar places to an aggregate function ({@code SELECT}, {@code HAVING} clause, etc. of an aggregate query), but not technically an aggregate function.
      */
     GROUPING( Function.class ),
@@ -148,10 +148,10 @@ public enum OperatorName {
 
     /**
      * {@code GROUPING_ID} function is a synonym for {@code GROUPING}.
-     *
+     * <p>
      * Some history. The {@code GROUPING} function is in the SQL standard, and originally supported only one argument. {@code GROUPING_ID} is not standard (though supported in Oracle and SQL Server)
      * and supports one or more arguments.
-     *
+     * <p>
      * The SQL standard has changed to allow {@code GROUPING} to have multiple arguments. It is now equivalent to {@code GROUPING_ID}, so we made {@code GROUPING_ID} a synonym for {@code GROUPING}.
      */
     GROUPING_ID( Function.class ),
@@ -281,7 +281,7 @@ public enum OperatorName {
 
     /**
      * Infix arithmetic minus operator, '<code>-</code>'.
-     *
+     * <p>
      * Its precedence is less than the prefix {@link #UNARY_PLUS +} and {@link #UNARY_MINUS -} operators.
      */
     MINUS( Operator.class ),
@@ -313,7 +313,7 @@ public enum OperatorName {
 
     /**
      * Multiset {@code MEMBER OF}, which returns whether a element belongs to a multiset.
-     *
+     * <p>
      * For example, the following returns <code>false</code>:
      *
      * <blockquote>
@@ -324,7 +324,7 @@ public enum OperatorName {
 
     /**
      * Submultiset. Checks to see if an multiset is a sub-set of another multiset.
-     *
+     * <p>
      * For example, the following returns <code>false</code>:
      *
      * <blockquote>
@@ -400,14 +400,14 @@ public enum OperatorName {
 
     /**
      * Prefix arithmetic minus operator, '<code>-</code>'.
-     *
+     * <p>
      * Its precedence is greater than the infix '{@link #PLUS +}' and '{@link #MINUS -}' operators.
      */
     UNARY_MINUS( Operator.class ),
 
     /**
      * Prefix arithmetic plus operator, '<code>+</code>'.
-     *
+     * <p>
      * Its precedence is greater than the infix '{@link #PLUS +}' and '{@link #MINUS -}' operators.
      */
     UNARY_PLUS( Operator.class ),
@@ -690,7 +690,7 @@ public enum OperatorName {
 
     /**
      * The "table function derived table" operator, which a table-valued function into a relation, e.g. "<code>SELECT * FROM TABLE(ramp(5))</code>".
-     *
+     * <p>
      * This operator has function syntax (with one argument), whereas {@link #EXPLICIT_TABLE} is a prefix operator.
      */
     COLLECTION_TABLE( Operator.class ),
@@ -769,7 +769,7 @@ public enum OperatorName {
 
     /**
      * The <code>OVER</code> operator, which applies an aggregate functions to a {#@link SqlWindow window}.
-     *
+     * <p>
      * Operands are as follows:
      *
      * <ol>
@@ -801,7 +801,7 @@ public enum OperatorName {
 
     /**
      * The character substring function: <code>SUBSTRING(string FROM start [FOR length])</code>.
-     *
+     * <p>
      * If the length parameter is a constant, the length of the result is the minimum of the length of the input and that length. Otherwise it is the length of the input.
      */
     SUBSTRING( Function.class ),
@@ -815,7 +815,7 @@ public enum OperatorName {
 
     /**
      * The <code>TRANSLATE(<i>char_value</i> USING <i>translation_name</i>)</code> function alters the character set of a string value from one base character set to another.
-     *
+     * <p>
      * It is defined in the SQL standard. See also non-standard {#@link OracleOperatorTable#TRANSLATE3}.
      */
     TRANSLATE( Function.class ),
@@ -1044,17 +1044,17 @@ public enum OperatorName {
 
     /**
      * The SQL <code>CAST</code> operator.
-     *
+     * <p>
      * The SQL syntax is
      *
      * <blockquote><code>CAST(<i>expression</i> AS <i>type</i>)</code></blockquote>
      *
      * When the CAST operator is applies as a {@link Call}, it has two arguments: the expression and the type. The type must not include a constraint, so <code>CAST(x AS INTEGER NOT NULL)</code>,
      * for instance, is invalid.
-     *
+     * <p>
      * When the CAST operator is applied as a <code>RexCall</code>, the target type is simply stored as the return type, not an explicit operand. For example, the expression <code>CAST(1 + 2 AS DOUBLE)</code> will
      * become a call to <code>CAST</code> with the expression <code>1 + 2</code> as its only operand.
-     *
+     * <p>
      * The <code>RexCall</code> form can also have a type which contains a <code>NOT NULL</code> constraint. When this expression is implemented, if the value is NULL, an exception will be thrown.
      */
     CAST( Function.class ),
@@ -1132,10 +1132,10 @@ public enum OperatorName {
 
     /**
      * The item operator {@code [ ... ]}, used to access a given element of an array or map. For example, {@code myArray[3]} or {@code "myMap['foo']"}.
-     *
+     * <p>
      * The SQL standard calls the ARRAY variant a &lt;array element reference&gt;. Index is 1-based. The standard says to raise "data exception - array element error"
      * but we currently return null.
-     *
+     * <p>
      * MAP is not standard SQL.
      */
     ITEM( Operator.class ),
@@ -1152,21 +1152,21 @@ public enum OperatorName {
 
     /**
      * The internal "$SLICE" operator takes a multiset of records and returns a multiset of the first column of those records.
-     *
+     * <p>
      * It is introduced when multisets of scalar types are created, in order to keep types consistent. For example, <code>MULTISET [5]</code> has type <code>INTEGER MULTISET</code> but is translated to an expression of type
      * <code>RECORD(INTEGER EXPR$0) MULTISET</code> because in our internal representation of multisets, every element must be a record. Applying the "$SLICE" operator to this result converts the type back to an
      * <code>INTEGER MULTISET</code> multiset value.
-     *
+     * <p>
      * <code>$SLICE</code> is often translated away when the multiset type is converted back to scalar values.
      */
     SLICE( Operator.class ),
 
     /**
      * The internal "$ELEMENT_SLICE" operator returns the first field of the only element of a multiset.
-     *
+     * <p>
      * It is introduced when multisets of scalar types are created, in order to keep types consistent. For example, <code>ELEMENT(MULTISET [5])</code> is translated to <code>$ELEMENT_SLICE(MULTISET (VALUES ROW (5 EXPR$0))</code>
      * It is translated away when the multiset type is converted back to scalar values.
-     *
+     * <p>
      * NOTE: jhyde, 2006/1/9: Usages of this operator are commented out, but I'm not deleting the operator, because some multiset tests are disabled, and we may need this operator to get them working!
      */
     ELEMENT_SLICE( Operator.class ),
@@ -1178,7 +1178,7 @@ public enum OperatorName {
 
     /**
      * The internal {@code $STRUCT_ACCESS} operator is used to access a field of a record.
-     *
+     * <p>
      * In contrast with {@link #DOT} operator, it never appears in an {@link Node} tree and allows to access fields by position and not by name.
      */
     STRUCT_ACCESS( Operator.class ),
@@ -1210,7 +1210,7 @@ public enum OperatorName {
 
     /**
      * The <code>TABLESAMPLE</code> operator.
-     *
+     * <p>
      * Examples:
      *
      * <ul>
@@ -1270,35 +1270,35 @@ public enum OperatorName {
 
     /**
      * {@code |} operator to create alternate patterns within {@code MATCH_RECOGNIZE}.
-     *
+     * <p>
      * If {@code p1} and {@code p2} are patterns then {@code p1 | p2} is a pattern that matches {@code p1} or {@code p2}.
      */
     PATTERN_ALTER( BinaryOperator.class ),
 
     /**
      * Operator to concatenate patterns within {@code MATCH_RECOGNIZE}.
-     *
+     * <p>
      * If {@code p1} and {@code p2} are patterns then {@code p1 p2} is a pattern that matches {@code p1} followed by {@code p2}.
      */
     PATTERN_CONCAT( BinaryOperator.class ),
 
     /**
      * Operator to quantify patterns within {@code MATCH_RECOGNIZE}.
-     *
+     * <p>
      * If {@code p} is a pattern then {@code p{3, 5}} is a pattern that matches between 3 and 5 occurrences of {@code p}.
      */
     PATTERN_QUANTIFIER( Operator.class ),
 
     /**
      * {@code PERMUTE} operator to combine patterns within {@code MATCH_RECOGNIZE}.
-     *
+     * <p>
      * If {@code p1} and {@code p2} are patterns then {@code PERMUTE (p1, p2)} is a pattern that matches all permutations of {@code p1} and {@code p2}.
      */
     PATTERN_PERMUTE( Operator.class ),
 
     /**
      * {@code EXCLUDE} operator within {@code MATCH_RECOGNIZE}.
-     *
+     * <p>
      * If {@code p} is a pattern then {@code {- p -} }} is a pattern that excludes {@code p} from the output.
      */
     PATTERN_EXCLUDE( Operator.class ),

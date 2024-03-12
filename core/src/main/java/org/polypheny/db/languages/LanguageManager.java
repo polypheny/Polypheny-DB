@@ -97,6 +97,11 @@ public class LanguageManager {
         List<ParsedQueryContext> parsedQueries;
 
         try {
+            // handle empty query
+            if ( context.getQuery().trim().isEmpty() ) {
+                throw new GenericRuntimeException( String.format( "%s query is empty", context.getLanguage().serializedName() ) );
+            }
+
             parsedQueries = context.getLanguage().splitter().apply( context );
         } catch ( Throwable e ) {
             log.warn( "Error on preparing query: " + e.getMessage() );

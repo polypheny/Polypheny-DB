@@ -2484,12 +2484,21 @@ public class SqlLanguagePlugin extends PolyPlugin {
                     }
                 } );
 
+        /*
+         * Operator for array elements in different models.
+         */
         register(
                 OperatorName.CROSS_MODEL_ITEM,
                 new LangFunctionOperator( OperatorName.CROSS_MODEL_ITEM.name(), Kind.CROSS_MODEL_ITEM ) );
 
+        /*
+         * Operator for unwrapping an interval value to handle it as number.
+         */
         register( OperatorName.UNWRAP_INTERVAL, new LangFunctionOperator( OperatorName.UNWRAP_INTERVAL.name(), Kind.OTHER_FUNCTION ) );
 
+        /*
+         * Operator which transforms a value to JSON.
+         */
         register( OperatorName.TO_JSON, new LangFunctionOperator( OperatorName.TO_JSON.name(), Kind.OTHER ) );
 
         isInit = true;

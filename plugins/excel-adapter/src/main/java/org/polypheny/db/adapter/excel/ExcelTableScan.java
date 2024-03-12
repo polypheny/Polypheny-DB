@@ -78,7 +78,7 @@ public class ExcelTableScan extends RelScan<ExcelTable> implements EnumerableAlg
 
     @Override
     public void register( AlgPlanner planner ) {
-        //planner.addRule( ExcelProjectTableScanRule.INSTANCE );
+        // empty on purpose as there are only scans supported
     }
 
 

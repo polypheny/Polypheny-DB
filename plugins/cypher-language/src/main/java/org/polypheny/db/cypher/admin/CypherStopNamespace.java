@@ -25,13 +25,13 @@ import org.polypheny.db.nodes.UnsupportedExecutableStatement;
 
 
 @Getter
-public class CypherStopDatabase extends CypherAdminCommand implements UnsupportedExecutableStatement {
+public class CypherStopNamespace extends CypherAdminCommand implements UnsupportedExecutableStatement {
 
     private final CypherSimpleEither<String, CypherParameter> databaseName;
     private final CypherWaitClause wait;
 
 
-    public CypherStopDatabase(
+    public CypherStopNamespace(
             ParserPos pos,
             CypherSimpleEither<String, CypherParameter> databaseName,
             CypherWaitClause wait ) {

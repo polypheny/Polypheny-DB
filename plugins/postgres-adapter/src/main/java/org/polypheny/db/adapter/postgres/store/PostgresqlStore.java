@@ -357,7 +357,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
 
     @Override
-    public String getDefaultPhysicalNamespaceName() {
+    public String getDefaultPhysicalSchemaName() {
         return "public";
     }
 

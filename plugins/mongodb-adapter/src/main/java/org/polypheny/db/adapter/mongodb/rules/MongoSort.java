@@ -75,15 +75,6 @@ public class MongoSort extends Sort implements MongoAlg {
                 name = splits[splits.length - 1];
                 name = MongoRules.adjustName( name );
                 keys.add( name + ": " + direction( fieldCollation ) );
-                if ( false ) {
-                    // TODO: NULLS FIRST and NULLS LAST
-                    switch ( fieldCollation.nullDirection ) {
-                        case FIRST:
-                            break;
-                        case LAST:
-                            break;
-                    }
-                }
             }
             implementor.add( null, "{$sort: " + Util.toString( keys, "{", ", ", "}" ) + "}" );
         }

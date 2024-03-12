@@ -49,12 +49,6 @@ public class CypherParser implements Parser {
 
 
     @Override
-    public Node parseQuery( String query ) throws NodeParseException {
-        return null;
-    }
-
-
-    @Override
     public Node parseStmt() throws NodeParseException {
         return null;
     }

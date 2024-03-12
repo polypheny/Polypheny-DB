@@ -424,7 +424,7 @@ public enum BuiltInMethod {
     AGG_LAMBDA_FACTORY_ACC_SINGLE_GROUP_RESULT_SELECTOR( AggregateLambdaFactory.class, "singleGroupResultSelector", Function1.class ),
     RESULTSET_GETBYTES( ResultSet.class, "getBytes", int.class ),
     RESULTSET_GETBINARYSTREAM( ResultSet.class, "getBinaryStream", int.class ),
-    UNWRAP_INTERVAL( RefactorFunctions.class, "unwrap", PolyInterval.class ),
+    UNWRAP_INTERVAL( RefactorFunctions.class, "unwrapInterval", PolyInterval.class ),
     /// MQL BUILT-IN METHODS
     MQL_EQ( MqlFunctions.class, "docEq", PolyValue.class, PolyValue.class ),
     MQL_GT( MqlFunctions.class, "docGt", PolyValue.class, PolyValue.class ),

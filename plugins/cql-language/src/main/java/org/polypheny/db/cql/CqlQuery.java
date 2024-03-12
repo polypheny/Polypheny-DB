@@ -58,7 +58,7 @@ public record CqlQuery(
 
     @Override
     public QueryLanguage getLanguage() {
-        return QueryLanguage.from( "pig" );
+        return QueryLanguage.from( "cql" );
     }
 
 

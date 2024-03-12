@@ -175,7 +175,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public long createNamespace( String name, DataModel type, boolean ifNotExists, boolean replace ) {
+    public long createNamespace( String name, DataModel type, boolean ifNotExists, boolean replace, Statement statement ) {
         // Check if there is already a namespace with this name
         Optional<LogicalNamespace> optionalNamespace = catalog.getSnapshot().getNamespace( name );
         if ( optionalNamespace.isPresent() ) {
@@ -190,6 +190,10 @@ public class DdlManagerImpl extends DdlManager {
                 ? RuntimeConfig.RELATIONAL_NAMESPACE_DEFAULT_CASE_SENSITIVE.getBoolean() : type == DataModel.DOCUMENT
                 ? RuntimeConfig.DOCUMENT_NAMESPACE_DEFAULT_CASE_SENSITIVE.getBoolean() :
                 type == DataModel.GRAPH && RuntimeConfig.GRAPH_NAMESPACE_DEFAULT_CASE_SENSITIVE.getBoolean();
+
+        if ( type == DataModel.GRAPH ) {
+            return createGraph( name, true, null, false, false, caseSensitive, statement );
+        }
 
         return catalog.createNamespace( name, type, caseSensitive );
     }
@@ -1490,7 +1494,7 @@ public class DdlManagerImpl extends DdlManager {
         }
         for ( AllocationPartition partition : catalog.getSnapshot().alloc().getPartitionsFromLogical( table.id ) ) {
             AllocationEntity allocation = catalog.getSnapshot().alloc().getAlloc( optionalPlacement.get().id, partition.id ).orElseThrow();
-            // Drop Column on storeId
+            // Drop Column on store
             store.dropColumn( statement.getPrepareContext(), allocation.id, column.id );
         }
         // Drop column placement
@@ -1500,12 +1504,6 @@ public class DdlManagerImpl extends DdlManager {
 
         // Reset query plan cache, implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
-    }
-
-
-    @Override
-    public void alterTableOwner( LogicalTable table, String newOwnerName ) {
-        throw new UnsupportedOperationException();
     }
 
 

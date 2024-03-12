@@ -30,14 +30,12 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlNode;
-import org.polypheny.db.sql.language.SqlOperator;
 import org.polypheny.db.type.PolyType;
 
 
@@ -87,33 +85,6 @@ public class JethroDataSqlDialect extends SqlDialect {
             default:
                 break;
         }
-        return false;
-    }
-
-
-    @Override
-    public boolean supportsFunction( SqlOperator operator, AlgDataType type, List<AlgDataType> paramTypes ) {
-        switch ( operator.getKind() ) {
-            case IS_NOT_NULL:
-            case IS_NULL:
-            case AND:
-            case OR:
-            case NOT:
-            case BETWEEN:
-            case CASE:
-            case CAST:
-                return true;
-        }
-        final Set<JethroSupportedFunction> functions = info.supportedFunctions.get( operator.getName() );
-
-        if ( functions != null ) {
-            for ( JethroSupportedFunction f : functions ) {
-                if ( f.argumentsMatch( paramTypes ) ) {
-                    return true;
-                }
-            }
-        }
-        log.debug( "Unsupported function in jethro: {} with params {}", operator, paramTypes );
         return false;
     }
 

@@ -17,6 +17,8 @@
 package org.polypheny.db.cql.utils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.google.gson.JsonObject;
@@ -33,7 +35,6 @@ import kong.unirest.json.JSONArray;
 import kong.unirest.json.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.cql.utils.helper.CqlTestHelper;
@@ -53,11 +54,19 @@ public class CqlInterfaceTest extends CqlTestHelper {
 
 
     @Test
-    @Disabled
-    // todo rewrite in httpinterface test
     public void testRestCqlEmptyQueryReturnsException() {
-        JsonNode expectedJsonNode = new JsonNode( "{\"Exception\":\"CQL query is an empty string!\"}" );
-        cqlInterfaceTestHelper( "", expectedJsonNode, true );
+        String error = "CQL query is empty";
+        containsError( "", error );
+    }
+
+
+    private void containsError( String cqlQuery, String error ) {
+        HttpResponse<JsonNode> response = executeCQL( cqlQuery );
+        JSONObject object = response.getBody().getArray().getJSONObject( 0 );
+        assertTrue( object.has( "error" ) );
+        String res = object.getString( "error" );
+        assertFalse( res.isEmpty() );
+        assertTrue( res.equalsIgnoreCase( error ) );
     }
 
 
@@ -97,7 +106,6 @@ public class CqlInterfaceTest extends CqlTestHelper {
 
 
     @Test
-    @Disabled
     public void testRestCqlFiltersOnlyQueryWithNOTOperator() {
         JsonNode expectedJsonNode = new JsonNode( """
                 {"result":[
@@ -189,11 +197,9 @@ public class CqlInterfaceTest extends CqlTestHelper {
 
 
     @Test
-    @Disabled
-    // todo rewrite in httpinterface test
     public void testRestCqlFiltersOnlyQueryWithPROXOperator() {
-        JsonNode expectedJsonNode = new JsonNode( "{\"Exception\": \"'PROX' boolean operator not implemented.\"}" );
-        cqlInterfaceTestHelper( "test.dept.deptname = \"IT\" PROX test.dept.deptname = \"Human Resources\"", expectedJsonNode, true );
+        String error = "'PROX' boolean operator not implemented.";
+        containsError( "test.dept.deptname = \"IT\" PROX test.dept.deptname = \"Human Resources\"", error );
     }
 
 
@@ -489,7 +495,7 @@ public class CqlInterfaceTest extends CqlTestHelper {
         // same amount of results
         assertEquals( expectedResults.length(), actualResults.length() );
 
-        List<JSONArray> actuals = new ArrayList<>( actualResults.toList().stream().toList() );
+        List<JSONArray> actuals = new ArrayList<>( actualResults.toList() );
 
         for ( Object result : expectedResults ) {
             JSONObject object = (JSONObject) result;

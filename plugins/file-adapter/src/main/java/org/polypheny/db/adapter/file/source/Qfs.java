@@ -60,12 +60,13 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 
 
 /**
- * A data source that can Query a File System
+ * A data source that can query a file system
  */
 @Slf4j
 @AdapterProperties(
         name = "QFS",
-        description = "This data source maps a file system on the Polypheny-DB host system as a relational table and allows to query it.", usedModes = DeployMode.EMBEDDED,
+        description = "This data source maps a file system on the Polypheny-DB host system as a relational entity and allows to query it.",
+        usedModes = DeployMode.EMBEDDED,
         defaultMode = DeployMode.EMBEDDED)
 @AdapterSettingString(name = "rootDir", defaultValue = "")
 public class Qfs extends DataSource<RelAdapterCatalog> {

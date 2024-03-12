@@ -30,7 +30,7 @@ import org.polypheny.db.information.InformationResponse;
 
 
 /**
- * RESTful server for requesting data from the information manager. It is primarily used by the Polypheny-UI.
+ * Information service, which provides information about the system.
  */
 @Slf4j
 public class InformationService implements InformationObserver {

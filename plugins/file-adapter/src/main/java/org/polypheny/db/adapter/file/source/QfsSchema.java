@@ -102,7 +102,7 @@ public class QfsSchema extends Namespace implements FileSchema {
         return new AbstractEnumerable<>() {
             @Override
             public Enumerator<PolyValue[]> enumerator() {
-                return new QfsEnumerator( dataContext, path, columnIds, projectionMapping, condition );
+                return new QfsEnumerator( entity, dataContext, path, columnIds, projectionMapping, condition );
             }
         };
     }

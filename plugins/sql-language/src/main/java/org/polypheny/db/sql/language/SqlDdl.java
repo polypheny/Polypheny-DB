@@ -29,8 +29,8 @@ import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.ParserPos;
@@ -43,11 +43,6 @@ import org.polypheny.db.util.CoreUtil;
  * Base class for CREATE, DROP and other DDL statements.
  */
 public abstract class SqlDdl extends SqlCall {
-
-    /**
-     * Use this operator only if you don't have a better one.
-     */
-    protected static final SqlOperator DDL_OPERATOR = new SqlSpecialOperator( "DDL", Kind.OTHER_DDL );
 
     private final SqlOperator operator;
 
@@ -68,30 +63,41 @@ public abstract class SqlDdl extends SqlCall {
 
 
     @NotNull
-    protected Optional<LogicalTable> searchEntity( Context context, SqlIdentifier tableName ) {
+    protected Optional<? extends LogicalEntity> searchEntity( Context context, SqlIdentifier entityName ) {
         long namespaceId;
         String tableOldName;
-        if ( tableName.names.size() == 3 ) { // DatabaseName.NamespaceName.TableName
-            namespaceId = context.getSnapshot().getNamespace( tableName.names.get( 1 ) ).orElseThrow().id;
-            tableOldName = tableName.names.get( 2 );
-        } else if ( tableName.names.size() == 2 ) { // NamespaceName.TableName
-            namespaceId = context.getSnapshot().getNamespace( tableName.names.get( 0 ) ).orElseThrow().id;
-            tableOldName = tableName.names.get( 1 );
-        } else { // TableName
+        if ( entityName.names.size() == 2 ) { // NamespaceName.EntityName
+            namespaceId = context.getSnapshot().getNamespace( entityName.names.get( 0 ) ).orElseThrow().id;
+            tableOldName = entityName.names.get( 1 );
+        } else { // EntityName
             namespaceId = context.getSnapshot().getNamespace( context.getDefaultNamespaceName() ).orElseThrow().id;
-            tableOldName = tableName.names.get( 0 );
+            tableOldName = entityName.names.get( 0 );
         }
-        return context.getSnapshot().rel().getTable( namespaceId, tableOldName );
+        if ( context.getSnapshot().rel().getTable( namespaceId, tableOldName ).isPresent() ) {
+            return context.getSnapshot().rel().getTable( namespaceId, tableOldName );
+        } else if ( context.getSnapshot().doc().getCollection( namespaceId, tableOldName ).isPresent() ) {
+            return context.getSnapshot().doc().getCollection( namespaceId, tableOldName );
+        }
+        return context.getSnapshot().graph().getGraph( namespaceId );
+
     }
 
 
+    /**
+     * Returns the table with the given name and the correct data model, or throws if not found.
+     */
     @NotNull
     protected LogicalTable getTableFailOnEmpty( Context context, SqlIdentifier tableName ) {
-        Optional<LogicalTable> table = searchEntity( context, tableName );
+        Optional<? extends LogicalEntity> table = searchEntity( context, tableName );
         if ( table.isEmpty() ) {
-            throw new GenericRuntimeException( "Could not find table with name: " + String.join( ".", tableName.names ) );
+            throw new GenericRuntimeException( "Could not find relational entity with name: " + String.join( ".", tableName.names ) );
         }
-        return table.get();
+        if ( table.get().unwrap( LogicalTable.class ).isEmpty() ) {
+            throw new GenericRuntimeException( String.format( "Could not find a relational entity with name: %s,but an entity of type: %s",
+                    String.join( ".", tableName.names ),
+                    table.get().dataModel ) );
+        }
+        return table.get().unwrap( LogicalTable.class ).get();
     }
 
 
@@ -113,7 +119,7 @@ public abstract class SqlDdl extends SqlCall {
         if ( optionalAdapter.isEmpty() ) {
             throw CoreUtil.newContextException( storeName.getPos(), RESOURCE.unknownAdapter( storeName.getSimple() ) );
         }
-        // Make sure it is a data storeId instance
+        // Make sure it is a data store instance
         return getDataStore( optionalAdapter.get(), storeName.getPos() );
     }
 
@@ -121,7 +127,7 @@ public abstract class SqlDdl extends SqlCall {
     protected DataStore<?> getDataStoreInstance( long storeId ) {
         Optional<Adapter<?>> optionalAdapter = AdapterManager.getInstance().getAdapter( storeId );
         if ( optionalAdapter.isEmpty() ) {
-            throw new GenericRuntimeException( "Unknown storeId id: " + storeId );
+            throw new GenericRuntimeException( "Unknown store with id: " + storeId );
         }
         return getDataStore( optionalAdapter.get(), pos );
     }
@@ -129,7 +135,7 @@ public abstract class SqlDdl extends SqlCall {
 
     @NotNull
     private DataStore<?> getDataStore( Adapter<?> optionalAdapter, ParserPos pos ) {
-        // Make sure it is a data storeId instance
+        // Make sure it is a data store instance
         if ( optionalAdapter instanceof DataStore ) {
             return (DataStore<?>) optionalAdapter;
         } else if ( optionalAdapter instanceof DataSource ) {

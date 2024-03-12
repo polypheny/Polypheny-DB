@@ -17,7 +17,6 @@
 package org.polypheny.db.languages.mql.parser;
 
 import java.io.Reader;
-import java.io.StringReader;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -119,15 +118,6 @@ public class MqlParser implements Parser {
             }
             throw parser.normalizeException( ex );
         }
-    }
-
-
-    /**
-     * Parses a <code>SELECT</code> statement and reuses parser.
-     */
-    public MqlNode parseQuery( String query ) throws NodeParseException {
-        parser.ReInit( new StringReader( query ) );
-        return parseQuery();
     }
 
 

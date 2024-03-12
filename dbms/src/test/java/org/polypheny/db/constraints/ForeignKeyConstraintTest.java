@@ -391,7 +391,7 @@ public class ForeignKeyConstraintTest {
 
     @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
-    @Tag("cottontailExcluded") // only with indexes
+    @Tag("cottontailExcluded") // only with indexes, cannot find column during update
     public void testUpdateInNoConflict( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -437,7 +437,7 @@ public class ForeignKeyConstraintTest {
 
     @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
-    @Tag("cottontailExcluded") // only with indexes
+    @Tag("cottontailExcluded") // only with indexes, cannot find column during update
     public void testUpdateInConflict( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

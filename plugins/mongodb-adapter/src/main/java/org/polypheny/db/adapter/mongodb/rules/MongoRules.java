@@ -27,6 +27,8 @@ import org.polypheny.db.adapter.mongodb.MongoAlg;
 import org.polypheny.db.adapter.mongodb.MongoConvention;
 import org.polypheny.db.adapter.mongodb.MongoEntity;
 import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgFieldCollation.Direction;
+import org.polypheny.db.algebra.AlgFieldCollation.NullDirection;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.InvalidAlgException;
@@ -251,7 +253,16 @@ public class MongoRules {
 
 
         private MongoSortRule() {
-            super( Sort.class, r -> true, Convention.NONE, MongoAlg.CONVENTION, "MongoSortRule" );
+            super( Sort.class, MongoSortRule::supports, Convention.NONE, MongoAlg.CONVENTION, "MongoSortRule" );
+        }
+
+
+        public static boolean supports( Sort sort ) {
+            // null is always less in mongodb, so we leave that to Polypheny
+            return sort.collation.getFieldCollations().stream().noneMatch( c ->
+                    (c.direction == Direction.ASCENDING && c.nullDirection == NullDirection.FIRST)
+                            || (c.direction == Direction.DESCENDING && c.nullDirection == NullDirection.LAST) );
+
         }
 
 

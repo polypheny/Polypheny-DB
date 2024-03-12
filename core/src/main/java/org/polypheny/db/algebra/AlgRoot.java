@@ -68,8 +68,8 @@ import org.polypheny.db.util.mapping.Mappings;
  * Instead we represent this as
  *
  * <blockquote><code>
- * RelRoot: {
- * rel: Sort($1 DESC)
+ * AlgRoot: {
+ * Alg: Sort($1 DESC)
  * Project(name, empno)
  * Scan(EMP)
  * fields: [0]
@@ -86,8 +86,8 @@ import org.polypheny.db.util.mapping.Mappings;
  * The there are multiple uses of the {@code name} field. and there are multiple columns aliased as {@code n}. You can represent this as
  *
  * <blockquote><code>
- * RelRoot: {
- * rel: Project(name, empno)
+ * AlgRoot: {
+ * alg: Project(name, empno)
  * Scan(EMP)
  * fields: [(0, "n"), (0, "n2"), (1, "n")]
  * collation: []

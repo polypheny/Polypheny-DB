@@ -140,8 +140,8 @@ public class SqlDialect {
     String identifierEscapedQuote;
 
     @NonNull
-    protected
-    NullCollation nullCollation;
+    protected NullCollation nullCollation;
+
     @NonNull
     AlgDataTypeSystem dataTypeSystem;
 
@@ -415,33 +415,8 @@ public class SqlDialect {
     };
 
 
-    /**
-     * Converts a string literal back into a string. For example, <code>'can''t run'</code> becomes <code>can't run</code>.
-     */
-    public String unquoteStringLiteral( String val ) {
-        if ( (val != null)
-                && (val.charAt( 0 ) == '\'')
-                && (val.charAt( val.length() - 1 ) == '\'') ) {
-            if ( val.length() > 2 ) {
-                val = FakeUtil.replace( val, "''", "'" );
-                return val.substring( 1, val.length() - 1 );
-            } else {
-                // zero length string
-                return "";
-            }
-        }
-        return val;
-    }
-
-
     protected boolean allowsAs() {
         return true;
-    }
-
-
-    // -- behaviors --
-    protected boolean requiresAliasForFromItems() {
-        return false;
     }
 
 
@@ -534,18 +509,6 @@ public class SqlDialect {
      */
     public boolean supportsColumnNamesWithSchema() {
         return true;
-    }
-
-
-    /**
-     * Returns whether this dialect supports a given function or operator.
-     * It only applies to built-in scalar functions and operators, since user-defined functions and procedures should be read by JdbcSchema.
-     */
-    public boolean supportsFunction( SqlOperator operator, AlgDataType type, List<AlgDataType> paramTypes ) {
-        return switch ( operator.kind ) {
-            case AND, BETWEEN, CASE, CAST, CEIL, COALESCE, DIVIDE, EQUALS, FLOOR, GREATER_THAN, GREATER_THAN_OR_EQUAL, IN, IS_NULL, IS_NOT_NULL, LESS_THAN, LESS_THAN_OR_EQUAL, MINUS, MOD, NOT, NOT_IN, NOT_EQUALS, NVL, OR, PLUS, ROW, TIMES -> true;
-            default -> BUILT_IN_OPERATORS_LIST.contains( operator );
-        };
     }
 
 
@@ -819,13 +782,6 @@ public class SqlDialect {
      * A few utility functions copied from org.polypheny.db.util.Util. We have copied them because we wish to keep SqlDialect's dependencies to a minimum.
      */
     public static class FakeUtil {
-
-        public static Error newInternal( Throwable e, String s ) {
-            String message = "Internal error: \u0000" + s;
-            AssertionError ae = new AssertionError( message );
-            ae.initCause( e );
-            return ae;
-        }
 
 
         /**

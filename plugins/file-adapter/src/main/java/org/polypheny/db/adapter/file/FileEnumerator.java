@@ -59,7 +59,6 @@ import org.polypheny.db.type.entity.category.PolyBlob;
 public class FileEnumerator implements Enumerator<PolyValue[]> {
 
     private final Runnable updateFiles;
-    private final FileTranslatableEntity entity;
     PolyValue[] current;
     final Operation operation;
     final List<File> columnFolders = new ArrayList<>();
@@ -88,7 +87,7 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
      * @param rootPath The rootPath is required to know where the files to iterate are placed
      * @param partitionId The id of the partition
      * @param columnIds Ids of the columns that come from a tableScan. If there is no filter, the enumerator will only iterate over the columns that are specified by the projection
-     * @param entity DataTypes of the columns that are given by the {@code columnIds} array
+     * @param entity The entity that is target of the operation
      * @param projectionMapping Mapping on how to project a table. E.g. the array [3,2] means that the row [a,b,c,d,e] will be projected to [c,b].
      * In case of an UPDATE operation, the projectionMapping represents the indexes of the columns that will be updated, e.g. [2,3] means that b and c will be updated.
      * @param dataContext DataContext
@@ -105,8 +104,6 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
             final DataContext dataContext,
             final @Nullable Condition condition,
             final @Nullable List<List<PolyValue>> updates ) {
-
-        this.entity = entity;
 
         this.operation = operation;
         if ( operation == Operation.DELETE || operation == Operation.UPDATE ) {

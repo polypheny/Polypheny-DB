@@ -55,7 +55,7 @@ public class CottontailTableModify extends RelModify<CottontailEntity> implement
 
     /**
      * Creates a {@code Modify}.
-     *
+     * <p>
      * The UPDATE operation has format like this:
      * <blockquote>
      * <pre>UPDATE table SET iden1 = exp1, ident2 = exp2  WHERE condition</pre>
@@ -109,7 +109,6 @@ public class CottontailTableModify extends RelModify<CottontailEntity> implement
 
     @Override
     public void implement( CottontailImplementContext context ) {
-        context.table = this.cottontailTable;
         context.table = this.entity;
         context.schemaName = this.cottontailTable.getPhysicalSchemaName();
         context.tableName = this.cottontailTable.getPhysicalTableName();
@@ -118,10 +117,6 @@ public class CottontailTableModify extends RelModify<CottontailEntity> implement
         switch ( this.getOperation() ) {
             case INSERT:
                 context.queryType = QueryType.INSERT;
-//                context.cottontailTable = this.cottontailTable;
-//                context.schemaName = this.cottontailTable.getPhysicalSchemaName();
-//                context.tableName = this.cottontailTable.getPhysicalTableName();
-//                context.visitChild( 0, getInput() );
                 break;
             case UPDATE:
                 context.queryType = QueryType.UPDATE;
@@ -129,10 +124,6 @@ public class CottontailTableModify extends RelModify<CottontailEntity> implement
                 break;
             case DELETE:
                 context.queryType = QueryType.DELETE;
-//                context.cottontailTable = this.cottontailTable;
-//                context.schemaName = this.cottontailTable.getPhysicalSchemaName();
-//                context.tableName = this.cottontailTable.getPhysicalTableName();
-//                context.visitChild( 0, getInput() );
                 break;
             case MERGE:
                 throw new GenericRuntimeException( "Merge is not supported." );
@@ -159,7 +150,6 @@ public class CottontailTableModify extends RelModify<CottontailEntity> implement
         NewExpression valuesMapCreator_ = Expressions.new_( LinkedHashMap.class );
         inner.add( Expressions.declare( Modifier.FINAL, valuesMap_, valuesMapCreator_ ) );
 
-//        List<Pair<RexNode, String>> namedProjects = getNamedProjects();
 
         for ( int i = 0; i < getSourceExpressions().size(); i++ ) {
             RexNode rexNode = getSourceExpressions().get( i );

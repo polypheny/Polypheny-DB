@@ -19,7 +19,6 @@ package org.polypheny.db.sql.clause;
 import java.sql.SQLException;
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 
@@ -41,19 +40,11 @@ public class SimpleSqlTest {
 
 
     @Test
-    @Disabled
-    public void createTable() {
-        TestHelper.executeSql(
-                ( c, s ) -> s.executeUpdate( "CREATE TABLE TableA(ID INTEGER NOT NULL, NAME VARCHAR(20), AGE INTEGER, PRIMARY KEY (ID))" )
-        );
-    }
-
-
-    @Test
     public void dropTable() {
         TestHelper.executeSql(
                 ( c, s ) -> s.executeUpdate( "CREATE TABLE TableA(ID INTEGER NOT NULL, NAME VARCHAR(20), AGE INTEGER, PRIMARY KEY (ID))" ),
-                ( c, s ) -> s.executeUpdate( "DROP TABLE TableA" )
+                ( c, s ) -> s.executeUpdate( "DROP TABLE TableA" ),
+                ( c, s ) -> c.commit()
         );
     }
 

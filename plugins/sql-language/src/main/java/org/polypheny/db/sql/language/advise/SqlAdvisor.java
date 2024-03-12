@@ -17,38 +17,20 @@
 package org.polypheny.db.sql.language.advise;
 
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.Set;
-import java.util.TreeSet;
 import lombok.Getter;
-import org.apache.calcite.avatica.util.Casing;
-import org.polypheny.db.algebra.constant.MonikerType;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
-import org.polypheny.db.runtime.PolyphenyDbException;
-import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlNode;
-import org.polypheny.db.sql.language.SqlSelect;
-import org.polypheny.db.sql.language.SqlUtil;
 import org.polypheny.db.sql.language.parser.SqlAbstractParserImpl;
 import org.polypheny.db.sql.language.parser.SqlParser;
 import org.polypheny.db.sql.language.validate.SqlValidatorWithHints;
 import org.polypheny.db.util.Advisor;
-import org.polypheny.db.util.CoreUtil;
-import org.polypheny.db.util.Moniker;
-import org.polypheny.db.util.MonikerImpl;
 import org.polypheny.db.util.SourceStringReader;
-import org.polypheny.db.util.Util;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import org.slf4j.Logger;
 
@@ -59,20 +41,10 @@ import org.slf4j.Logger;
 public class SqlAdvisor implements Advisor {
 
     public static final Logger LOGGER = PolyphenyDbTrace.PARSER_LOGGER;
-    private static final String HINT_TOKEN = "_suggest_";
-    private static final String UPPER_HINT_TOKEN = HINT_TOKEN.toUpperCase( Locale.ROOT );
 
     // Flags indicating precision/scale combinations
     private final SqlValidatorWithHints validator;
     private final ParserConfig parserConfig;
-
-    // Cache for getPreferredCasing
-    private String prevWord;
-    private Casing prevPreferredCasing;
-
-    // Reserved words cache
-    private Set<String> reservedWordsSet;
-    private List<String> reservedWordsList;
 
 
     /**
@@ -84,242 +56,6 @@ public class SqlAdvisor implements Advisor {
     public SqlAdvisor( SqlValidatorWithHints validator, ParserConfig parserConfig ) {
         this.validator = validator;
         this.parserConfig = parserConfig;
-    }
-
-
-    private char quoteStart() {
-        return parserConfig.quoting().string.charAt( 0 );
-    }
-
-
-    private char quoteEnd() {
-        char quote = quoteStart();
-        return quote == '[' ? ']' : quote;
-    }
-
-
-    /**
-     * Returns casing which is preferred for replacement.
-     * For instance, {@code en => ename, EN => ENAME}.
-     * When input has mixed case, {@code Casing.UNCHANGED} is returned.
-     *
-     * @param word input word
-     * @return preferred casing when replacing input word
-     */
-    private Casing getPreferredCasing( String word ) {
-        if ( word.equals( prevWord ) ) {
-            return prevPreferredCasing;
-        }
-        boolean hasLower = false;
-        boolean hasUpper = false;
-        int i = 0;
-        while ( i < word.length() && !(hasLower && hasUpper) ) {
-            int codePoint = word.codePointAt( i );
-            hasLower |= Character.isLowerCase( codePoint );
-            hasUpper |= Character.isUpperCase( codePoint );
-            i += Character.charCount( codePoint );
-        }
-        Casing preferredCasing;
-        if ( hasUpper && !hasLower ) {
-            preferredCasing = Casing.TO_UPPER;
-        } else if ( !hasUpper && hasLower ) {
-            preferredCasing = Casing.TO_LOWER;
-        } else {
-            preferredCasing = Casing.UNCHANGED;
-        }
-        prevWord = word;
-        prevPreferredCasing = preferredCasing;
-        return preferredCasing;
-    }
-
-
-    public String getReplacement( Moniker hint, String word ) {
-        Casing preferredCasing = getPreferredCasing( word );
-        boolean quoted = !word.isEmpty() && word.charAt( 0 ) == quoteStart();
-        return getReplacement( hint, quoted, preferredCasing );
-    }
-
-
-    public String getReplacement( Moniker hint, boolean quoted, Casing preferredCasing ) {
-        String name = Util.last( hint.getFullyQualifiedNames() );
-        boolean isKeyword = hint.getType() == MonikerType.KEYWORD;
-        // If replacement has mixed case, we need to quote it (or not depending on quotedCasing/unquotedCasing
-        quoted &= !isKeyword;
-
-        if ( !quoted && !isKeyword && getReservedAndKeyWordsSet().contains( name ) ) {
-            quoted = true;
-        }
-
-        StringBuilder sb = new StringBuilder( name.length() + (quoted ? 2 : 0) );
-
-        if ( !isKeyword && !Util.isValidJavaIdentifier( name ) ) {
-            // needs quotes ==> quoted
-            quoted = true;
-        }
-        String idToAppend = name;
-
-        if ( !quoted ) {
-            // id ==preferredCasing==> preferredId ==unquotedCasing==> recasedId
-            // if recasedId matches id, then use preferredId
-            String preferredId = applyCasing( name, preferredCasing );
-            if ( isKeyword || matchesUnquoted( name, preferredId ) ) {
-                idToAppend = preferredId;
-            } else {
-                // Check if we can use unquoted identifier as is: for instance, unquotedCasing==UNCHANGED
-                quoted = !matchesUnquoted( name, idToAppend );
-            }
-        }
-        if ( quoted ) {
-            sb.append( quoteStart() );
-        }
-        sb.append( idToAppend );
-        if ( quoted ) {
-            sb.append( quoteEnd() );
-        }
-
-        return sb.toString();
-    }
-
-
-    private boolean matchesUnquoted( String name, String idToAppend ) {
-        String recasedId = applyCasing( idToAppend, parserConfig.unquotedCasing() );
-        return recasedId.regionMatches( !parserConfig.caseSensitive(), 0, name, 0, name.length() );
-    }
-
-
-    private String applyCasing( String value, Casing casing ) {
-        return CoreUtil.strip( value, null, null, null, casing );
-    }
-
-
-    /**
-     * Gets completion hints for a syntactically correct sql statement with dummy SqlIdentifier
-     *
-     * @param sql A syntactically correct sql statement for which to retrieve completion hints
-     * @param pos to indicate the line and column position in the query at which completion hints need to be retrieved. For example, "select a.ename, b.deptno from sales.emp a join sales.dept b "on a.deptno=b.deptno where empno=1"; setting pos to 'Line 1, Column 17' returns all the possible column names that can be selected
-     * from sales.dept table setting pos to 'Line 1, Column 31' returns all the possible table names in 'sales' schema
-     * @return A list of hints ({@link Moniker}) that can fill in at the indicated position
-     */
-    public List<Moniker> getCompletionHints( String sql, ParserPos pos ) {
-        // First try the statement they gave us. If this fails, just return
-        // the tokens which were expected at the failure point.
-        List<Moniker> hintList = new ArrayList<>();
-        SqlNode sqlNode = tryParse( sql, hintList );
-        if ( sqlNode == null ) {
-            return hintList;
-        }
-
-        // Now construct a statement which is bound to fail. (Character 7 BEL is not legal in any SQL statement.)
-        final int x = pos.getColumnNum() - 1;
-        sql = sql.substring( 0, x ) + " \07" + sql.substring( x );
-        tryParse( sql, hintList );
-
-        final Moniker star = new MonikerImpl( ImmutableList.of( "*" ), MonikerType.KEYWORD );
-        String hintToken = parserConfig.unquotedCasing() == Casing.TO_UPPER ? UPPER_HINT_TOKEN : HINT_TOKEN;
-        if ( hintList.contains( star ) && !isSelectListItem( sqlNode, pos, hintToken ) ) {
-            hintList.remove( star );
-        }
-
-        // Add the identifiers which are expected at the point of interest.
-        try {
-            validator.validateSql( sqlNode );
-        } catch ( Exception e ) {
-            // mask any exception that is thrown during the validation, i.e. try to continue even if the sql is invalid. we are doing a best effort here to try to come up with the requested completion hints
-            Util.swallow( e, LOGGER );
-        }
-        final List<Moniker> validatorHints = validator.lookupHints( sqlNode, pos );
-        hintList.addAll( validatorHints );
-        return hintList;
-    }
-
-
-    private static boolean isSelectListItem( SqlNode root, final ParserPos pos, String hintToken ) {
-        List<SqlNode> nodes = SqlUtil.getAncestry(
-                root,
-                input -> input instanceof SqlIdentifier && ((SqlIdentifier) input).names.contains( hintToken ),
-                input -> Objects.requireNonNull( input ).getPos().startsAt( pos ) );
-        assert nodes.get( 0 ) == root;
-        nodes = Lists.reverse( nodes );
-        return nodes.size() > 2
-                && nodes.get( 2 ) instanceof SqlSelect
-                && nodes.get( 1 ) == ((SqlSelect) nodes.get( 2 )).getSqlSelectList();
-    }
-
-
-    /**
-     * Tries to parse a SQL statement.
-     * <p>
-     * If succeeds, returns the parse tree node; if fails, populates the list of hints and returns null.
-     *
-     * @param sql SQL statement
-     * @param hintList List of hints suggesting allowable tokens at the point of failure
-     * @return Parse tree if succeeded, null if parse failed
-     */
-    private SqlNode tryParse( String sql, List<Moniker> hintList ) {
-        try {
-            return parseQuery( sql );
-        } catch ( NodeParseException e ) {
-            for ( String tokenName : e.getExpectedTokenNames() ) {
-                // Only add tokens which are keywords, like '"BY"'; ignore symbols such as '<Identifier>'.
-                if ( tokenName.startsWith( "\"" ) && tokenName.endsWith( "\"" ) ) {
-                    hintList.add(
-                            new MonikerImpl( tokenName.substring( 1, tokenName.length() - 1 ), MonikerType.KEYWORD ) );
-                }
-            }
-            return null;
-        } catch ( PolyphenyDbException e ) {
-            Util.swallow( e, null );
-            return null;
-        }
-    }
-
-
-    /**
-     * Gets the fully qualified name for a {@link SqlIdentifier} at a given position of a sql statement.
-     *
-     * @param sql A syntactically correct sql statement for which to retrieve a fully qualified SQL identifier name
-     * @param cursor to indicate the 0-based cursor position in the query that represents a SQL identifier for which its fully qualified name is to be returned.
-     * @return a {@link Moniker} that contains the fully qualified name of the specified SQL identifier, returns null if none is found or the SQL statement is invalid.
-     */
-    public Moniker getQualifiedName( String sql, int cursor ) {
-        SqlNode sqlNode;
-        try {
-            sqlNode = parseQuery( sql );
-            validator.validateSql( sqlNode );
-        } catch ( Exception e ) {
-            return null;
-        }
-        ParserPos pos = new ParserPos( 1, cursor + 1 );
-        try {
-            return validator.lookupQualifiedName( sqlNode, pos );
-        } catch ( PolyphenyDbContextException | AssertionError e ) {
-            return null;
-        }
-    }
-
-
-    /**
-     * Attempts to complete and validate a given partially completed sql statement, and returns whether it is valid.
-     *
-     * @param sql A partial or syntactically incorrect sql statement to validate
-     * @return whether SQL statement is valid
-     */
-    public boolean isValid( String sql ) {
-        SqlSimpleParser simpleParser = new SqlSimpleParser( HINT_TOKEN, parserConfig );
-        String simpleSql = simpleParser.simplifySql( sql );
-        SqlNode sqlNode;
-        try {
-            sqlNode = parseQuery( simpleSql );
-        } catch ( Exception e ) {
-            // if the sql can't be parsed we wont' be able to validate it
-            return false;
-        }
-        try {
-            validator.validateSql( sqlNode );
-        } catch ( Exception e ) {
-            return false;
-        }
-        return true;
     }
 
 
@@ -361,64 +97,6 @@ public class SqlAdvisor implements Advisor {
         return null;
     }
 
-
-    /**
-     * Turns a partially completed or syntactically incorrect sql statement into a simplified, valid one that can be passed into getCompletionHints()
-     *
-     * @param sql A partial or syntactically incorrect sql statement
-     * @param cursor to indicate column position in the query at which completion hints need to be retrieved.
-     * @return a completed, valid (and possibly simplified SQL statement
-     */
-    public String simplifySql( String sql, int cursor ) {
-        SqlSimpleParser parser = new SqlSimpleParser( HINT_TOKEN, parserConfig );
-        return parser.simplifySql( sql, cursor );
-    }
-
-
-    /**
-     * Return an array of SQL reserved and keywords
-     *
-     * @return an of SQL reserved and keywords
-     */
-    public List<String> getReservedAndKeyWords() {
-        ensureReservedAndKeyWords();
-        return reservedWordsList;
-    }
-
-
-    private Set<String> getReservedAndKeyWordsSet() {
-        ensureReservedAndKeyWords();
-        return reservedWordsSet;
-    }
-
-
-    private void ensureReservedAndKeyWords() {
-        if ( reservedWordsSet != null ) {
-            return;
-        }
-        Collection<String> c = SqlAbstractParserImpl.getSql92ReservedWords();
-        List<String> l = Arrays.asList( getParserMetadata().getJdbcKeywords().split( "," ) );
-        List<String> al = new ArrayList<>();
-        al.addAll( c );
-        al.addAll( l );
-        reservedWordsList = al;
-        reservedWordsSet = new TreeSet<>( String.CASE_INSENSITIVE_ORDER );
-        reservedWordsSet.addAll( reservedWordsList );
-    }
-
-
-    /**
-     * Returns the underlying Parser metadata.
-     * <p>
-     * To use a different parser (recognizing a different dialect of SQL), derived class should override.
-     *
-     * @return metadata
-     */
-    protected SqlAbstractParserImpl.Metadata getParserMetadata() {
-        SqlAbstractParserImpl parserImpl = (SqlAbstractParserImpl) parserConfig.parserFactory().getParser( new SourceStringReader( "" ) );
-        SqlParser parser = new SqlParser( parserImpl, parserConfig );
-        return parser.getMetadata();
-    }
 
 
     /**

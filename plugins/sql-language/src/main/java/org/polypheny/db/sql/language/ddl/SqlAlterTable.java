@@ -17,6 +17,9 @@
 package org.polypheny.db.sql.language.ddl;
 
 
+import lombok.EqualsAndHashCode;
+import lombok.Value;
+import lombok.experimental.NonFinal;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.sql.language.SqlAlter;
@@ -27,6 +30,9 @@ import org.polypheny.db.sql.language.SqlSpecialOperator;
 /**
  * Parse tree for {@code ALTER TABLE} statement.
  */
+@EqualsAndHashCode(callSuper = true)
+@Value
+@NonFinal
 public abstract class SqlAlterTable extends SqlAlter {
 
 

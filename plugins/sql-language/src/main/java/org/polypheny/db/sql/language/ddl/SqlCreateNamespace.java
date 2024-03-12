@@ -90,7 +90,7 @@ public class SqlCreateNamespace extends SqlCreate implements ExecutableStatement
 
     @Override
     public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
-        DdlManager.getInstance().createNamespace( name.getSimple(), type, ifNotExists, replace );
+        DdlManager.getInstance().createNamespace( name.getSimple(), type, ifNotExists, replace, statement );
     }
 
 }

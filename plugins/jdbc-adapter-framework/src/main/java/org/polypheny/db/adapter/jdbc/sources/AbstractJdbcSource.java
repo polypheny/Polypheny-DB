@@ -135,19 +135,9 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
     protected abstract String getConnectionUrl( final String dbHostname, final int dbPort, final String dbName );
 
 
-    /*@Override
-    public void createNewSchema( Snapshot snapshot, String name, long id ) {
-        currentJdbcSchema = JdbcSchema.create( id, snapshot, name, connectionFactory, dialect, this );
-    }*/
-
 
     @Override
     public void truncate( Context context, long allocId ) {
-        // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
-        // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
-        // approach rather than using the default physical schema / table names is that this approach allows truncating linked tables.
-        // String physicalTableName = context.getSnapshot().alloc().getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogTable.id ).get( 0 ).physicalTableName;
-        // String physicalSchemaName = context.getSnapshot().alloc().getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogTable.id ).get( 0 ).physicalSchemaName;
         PhysicalTable table = adapterCatalog.getTable( allocId );
         StringBuilder builder = new StringBuilder();
         builder.append( "TRUNCATE TABLE " )

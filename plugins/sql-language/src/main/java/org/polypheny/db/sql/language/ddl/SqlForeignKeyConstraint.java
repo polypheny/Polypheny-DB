@@ -25,23 +25,23 @@ import org.polypheny.db.sql.language.SqlNodeList;
 @Getter
 public class SqlForeignKeyConstraint extends SqlKeyConstraint {
 
-    private final SqlIdentifier referencedTable;
-    private final SqlIdentifier referencedColumn;
+    private final SqlIdentifier referencedEntity;
+    private final SqlIdentifier referencedField;
 
 
     /**
-     * Creates a SqlKeyConstraint.
+     * Creates a SqlForeignKeyConstraint.
      *
-     * @param pos
-     * @param name
-     * @param columnList
-     * @param referencedTable
-     * @param referencedColumn
+     * @param pos Parser position
+     * @param name Constraint name
+     * @param fields List of fields
+     * @param referencedEntity Entity referenced by the foreign key
+     * @param referencedField Field referenced by the foreign key
      */
-    SqlForeignKeyConstraint( ParserPos pos, SqlIdentifier name, SqlNodeList columnList, SqlIdentifier referencedTable, SqlIdentifier referencedColumn ) {
-        super( pos, name, columnList );
-        this.referencedTable = referencedTable;
-        this.referencedColumn = referencedColumn;
+    SqlForeignKeyConstraint( ParserPos pos, SqlIdentifier name, SqlNodeList fields, SqlIdentifier referencedEntity, SqlIdentifier referencedField ) {
+        super( pos, name, fields );
+        this.referencedEntity = referencedEntity;
+        this.referencedField = referencedField;
     }
 
 

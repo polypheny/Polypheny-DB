@@ -42,13 +42,7 @@ public class NeoLpgScan extends LpgScan<NeoGraph> implements NeoGraphAlg {
     public void implement( NeoGraphImplementor implementor ) {
         implementor.setGraph( entity );
 
-        // if ( rowType.getFields().size() == 1 ) {
-        // AlgDataTypeField field = rowType.getFields().get( 0 );
-        // if ( field.getType().getPolyType() == PolyType.GRAPH ) {
         implementor.setAll( true );
-        // }
-        //}
-
     }
 
 
