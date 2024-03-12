@@ -131,8 +131,6 @@ public class PostgresqlSource extends AbstractJdbcSource {
     @Override
     public void testConnection(){
 
-
-
         PolyXid randomXid = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.NODE ), PUID.randomPUID( Type.TRANSACTION ) );
         ConnectionHandler connectionHandler = connectionFactory.getConnectionHandler(randomXid);
 
