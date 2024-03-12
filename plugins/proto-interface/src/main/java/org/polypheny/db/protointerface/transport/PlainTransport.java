@@ -65,15 +65,13 @@ public class PlainTransport implements Transport {
 
 
     private void readEntireBuffer( ByteBuffer bb ) throws IOException {
-        synchronized ( con ) {
-            while ( bb.remaining() > 0 ) {
-                int i = con.read( bb );
-                if ( i == -1 ) {
-                    throw new EOFException();
-                }
+        while ( bb.remaining() > 0 ) {
+            int i = con.read( bb );
+            if ( i == -1 ) {
+                throw new EOFException();
             }
-            bb.rewind();
         }
+        bb.rewind();
     }
 
 
