@@ -126,9 +126,6 @@ public class MongoRules {
                 && ((RexLiteral) op1).getValue().isString() ) {
             return ((RexLiteral) op1).getValue().asString().value;
         }
-        /*if ( op0 instanceof RexInputRef && op1 instanceof RexDynamicParam ) {
-            return new BsonDynamic( (RexDynamicParam) op1 ).toJson();
-        }*/
 
         op0.getType().getPolyType();
         return null;
@@ -211,17 +208,6 @@ public class MongoRules {
 
 
     public static BsonValue translateDocValue( AlgDataType rowType, RexNameRef ref ) {
-        /*RexIndexRef parent = (RexIndexRef) call.getOperands().get( 0 );
-
-        if ( call.operands.get( 1 ).isA( Kind.DYNAMIC_PARAM ) ) {
-            return new BsonDynamic( (RexDynamicParam) call.operands.get( 1 ) ).setIsValue( true, prefix + rowType.getFieldNames().get( parent.getIndex() ) );
-        }
-        RexCall names = (RexCall) call.operands.get( 1 );
-
-        return new BsonString( prefix + names.operands
-                .stream()
-                .map( n -> ((RexLiteral) n).value.asString().value )
-                .collect( Collectors.joining( "." ) ) );*/
         return new BsonString( ref.getIndex()
                 .map( i -> rowType.getFieldNames().get( i ) + "." + ref.getName() )
                 .orElse( ref.getName() ) );
@@ -479,6 +465,9 @@ public class MongoRules {
                     || operator.getOperatorName() == OperatorName.EXTRACT
                     || operator.getOperatorName() == OperatorName.OVERLAY
                     || operator.getOperatorName() == OperatorName.COT
+                    || operator.getOperatorName() == OperatorName.TRIM
+                    || operator.getOperatorName() == OperatorName.INITCAP
+                    || operator.getOperatorName() == OperatorName.SUBSTRING
                     || operator.getOperatorName() == OperatorName.FLOOR
                     || operator.getOperatorName() == OperatorName.DISTANCE
                     || (operator.getOperatorName() == OperatorName.CAST && call.operands.get( 0 ).getType().getPolyType() == PolyType.DATE)
