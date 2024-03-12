@@ -22,6 +22,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.constant.FunctionCategory;
@@ -30,6 +31,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.protointerface.PIPlugin.ProtoInterface;
 import org.polypheny.db.protointerface.proto.ClientInfoProperties;
 import org.polypheny.db.protointerface.proto.ClientInfoPropertiesRequest;
 import org.polypheny.db.protointerface.proto.ClientInfoPropertiesResponse;
@@ -158,29 +160,80 @@ public class PIService {
     }
 
 
-    private void handleMessages() throws IOException {
+    private CompletableFuture<Request> waitForRequest() {
+        return CompletableFuture.supplyAsync( () -> {
+            try {
+                return readOneMessage();
+            } catch ( IOException e ) {
+                throw new PIServiceException( e );
+            }
+        } );
+    }
+
+
+    private void handleRequest( Request req, CompletableFuture<Response> f ) {
+        Response r;
+        try {
+            r = handleMessage( req );
+        } catch ( TransactionException | AuthenticationException | IOException e ) {
+            r = createErrorResponse( req.getId(), e.getMessage() );
+        }
+        try {
+            sendOneMessage( r );
+            f.complete( r );
+        } catch ( IOException e ) {
+            throw new GenericRuntimeException( e );
+        }
+    }
+
+
+    private void handleMessages() throws IOException, ExecutionException, InterruptedException {
         if ( !handleFirstMessage() ) {
             return;
         }
-        while ( true ) {
-            Request req = readOneMessage();
-            CompletableFuture<Response> resp = CompletableFuture.supplyAsync( () -> {
-                try {
-                    return handleMessage( req );
-                } catch ( TransactionException | AuthenticationException | IOException e ) {
-                    throw new PIServiceException( e );
+
+        LinkedList<Request> waiting = new LinkedList<>();
+        CompletableFuture<Request> request = waitForRequest();
+        CompletableFuture<Response> response = null;
+        Thread handle = null;
+        try {
+            while ( true ) {
+                CompletableFuture<?> next;
+                if ( !waiting.isEmpty() ) {
+                    response = new CompletableFuture<>();
+                    CompletableFuture<Response> finalResponse = response;
+                    handle = new Thread( () -> handleRequest( waiting.remove(), finalResponse ) );
+                    handle.setUncaughtExceptionHandler( ( t, e ) -> finalResponse.completeExceptionally( e ) );
+                    handle.start();
                 }
-            } );
-            Response r;
-            try {
-                r = resp.get();
-            } catch ( Throwable t ) {
-                log.error( t.getMessage() );
-                r = createErrorResponse( req.getId(), t.getMessage() );
+                if ( response == null ) {
+                    next = request;
+                } else {
+                    next = CompletableFuture.anyOf( request, response );
+                }
+
+                next.get();
+                if ( request.isDone() ) {
+                    waiting.add( request.get() );
+                    request = waitForRequest();
+                } else if ( response != null && response.isDone() ) {
+                    handle.join();
+                    handle = null;
+                    Response r = response.get();
+                    if ( r.getTypeCase() == Response.TypeCase.DISCONNECT_RESPONSE || r.getTypeCase() == Response.TypeCase.ERROR_RESPONSE ) {
+                        throw new EOFException();
+                    }
+                    response = null;
+                }
             }
-            sendOneMessage( r );
-            if ( r.getTypeCase() == Response.TypeCase.DISCONNECT_RESPONSE || r.getTypeCase() == Response.TypeCase.ERROR_RESPONSE ) {
-                return;
+        } catch ( ExecutionException e ) {
+            if ( e.getCause() instanceof PIServiceException p && p.getCause() instanceof EOFException eof ) {
+                throw eof;
+            }
+            throw e;
+        } finally {
+            if ( handle != null ) {
+                handle.interrupt();
             }
         }
     }
