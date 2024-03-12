@@ -62,10 +62,10 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.functions.TemporalFunctions;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.Static;
 
@@ -281,14 +281,18 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                 preparedStatement.setBoolean( i, value.asBoolean().value );
                 break;
             case DATE:
-                preparedStatement.setDate( i, value.asDate().asSqlDate() );
+                if ( connectionHandler.getDialect().handlesUtcIncorrectly() ) {
+                    preparedStatement.setDate( i, PolyDate.of( value.asDate().millisSinceEpoch ).asSqlDate( OFFSET ), Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) ) );
+                } else {
+                    preparedStatement.setDate( i, value.asDate().asSqlDate() );
+                }
                 break;
             case TIME:
                 preparedStatement.setTime( i, value.asTime().asSqlTime(), Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) ) );
                 break;
             case TIMESTAMP:
-                if ( !connectionHandler.getDialect().handlesUtcCorrectly() ) {
-                    preparedStatement.setTimestamp( i, PolyTimestamp.of( value.asTimestamp().millisSinceEpoch - 3 * TemporalFunctions.LOCAL_TZ.getRawOffset() ).asSqlTimestamp() );
+                if ( connectionHandler.getDialect().handlesUtcIncorrectly() ) {
+                    preparedStatement.setTimestamp( i, PolyTimestamp.of( value.asTimestamp().millisSinceEpoch + OFFSET ).asSqlTimestamp() );
                 } else {
                     preparedStatement.setTimestamp( i, value.asTimestamp().asSqlTimestamp(), Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) ) );
                 }

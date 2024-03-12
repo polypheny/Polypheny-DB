@@ -134,9 +134,6 @@ public abstract class PolyTemporal extends PolyNumber {
     }
 
 
-    public abstract PolyTemporal addLocal();
-
-
     @Override
     @NotNull
     public PolyNumber subtract( @NotNull PolyNumber b1 ) {

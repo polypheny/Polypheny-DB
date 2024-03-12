@@ -765,8 +765,11 @@ public class SqlDialect {
     }
 
 
-    public boolean handlesUtcCorrectly() {
-        return true;
+    /**
+     * Some databases handle UTC time incorrectly and shift the time by the timezone offset.
+     */
+    public boolean handlesUtcIncorrectly() {
+        return false;
     }
 
 

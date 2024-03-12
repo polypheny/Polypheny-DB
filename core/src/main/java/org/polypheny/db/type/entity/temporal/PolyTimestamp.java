@@ -196,9 +196,4 @@ public class PolyTimestamp extends PolyTemporal {
     }
 
 
-    @Override
-    public PolyTimestamp addLocal() {
-        return millisSinceEpoch == null ? this : PolyTimestamp.of( millisSinceEpoch + 3L * TimeZone.getDefault().getRawOffset() );
-    }
-
 }

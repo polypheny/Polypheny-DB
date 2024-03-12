@@ -103,6 +103,10 @@ public class PolyDate extends PolyTemporal {
     }
 
 
+    public java.sql.Date asSqlDate( long offset ) {
+        return new java.sql.Date( millisSinceEpoch + offset );
+    }
+
     public static PolyDate of( Date date ) {
         return new PolyDate( TemporalFunctions.dateToLong( date ) );
     }
@@ -196,10 +200,5 @@ public class PolyDate extends PolyTemporal {
         return PolySerializable.deserialize( serialize(), PolyDate.class );
     }
 
-
-    @Override
-    public PolyTemporal addLocal() {
-        return this; // no hour value
-    }
 
 }

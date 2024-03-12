@@ -41,7 +41,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Objects;
@@ -303,12 +302,10 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             SqlDialect dialect ) {
         final Primitive primitive = Primitive.ofBoxOr( PolyValue.ofPrimitive( physType.fieldClass( i ), rowType.getFields().get( i ).getType().getPolyType() ) );
         final AlgDataType fieldType = physType.getTupleType().getFields().get( i ).getType();
-        final List<Expression> dateTimeArgs = new ArrayList<>();
-        dateTimeArgs.add( Expressions.constant( i + 1 ) );
+
         PolyType polyType = fieldType.getPolyType();
         switch ( calendarPolicy ) {
-            case LOCAL:
-                dateTimeArgs.add( calendar_ );
+            case LOCAL, SHIFT:
                 break;
             case NULL:
                 // We don't specify a calendar at all, so we don't add an argument and instead use the version of
@@ -316,8 +313,6 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 break;
             case DIRECT:
                 polyType = PolyType.ANY;
-                break;
-            case SHIFT:
                 break;
         }
         final Expression source = switch ( polyType ) {
@@ -407,22 +402,11 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 break;
             case TIMESTAMP:
                 UnaryExpression timestamp = Expressions.convert_( source, Timestamp.class );
-                Expression temp = Expressions.call( PolyTimestamp.class, methodName, timestamp );
-                if ( !dialect.handlesUtcCorrectly() ) {
-                    // some stores do not adhere to Jdbc standard and return timestamps in local time even if using UTC calendar
-                    temp = Expressions.call( temp, "addLocal" );
-                }
-                poly = temp;
+                poly = Expressions.call( PolyTimestamp.class, methodName, timestamp );
                 break;
             case DATE:
                 Expression date = Expressions.convert_( source, Date.class );
-                if ( !dialect.handlesUtcCorrectly() ) {
-                    // some stores do not adhere to Jdbc standard and return dates in local time even if using UTC calendar
-                    date = Expressions.convert_( Expressions.call(
-                            TemporalFunctions.class, "dateToLongAddLocal", date ), Long.class );
-                }
                 poly = Expressions.call( PolyDate.class, methodName, date );
-
                 break;
             case DECIMAL:
                 poly = Expressions.call( PolyBigDecimal.class, methodName, Expressions.convert_( source, Number.class ), Expressions.constant( fieldType.getPrecision() ), Expressions.constant( fieldType.getScale() ) );

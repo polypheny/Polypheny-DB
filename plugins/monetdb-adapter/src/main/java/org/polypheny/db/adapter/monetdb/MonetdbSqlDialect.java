@@ -47,6 +47,7 @@ import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlLiteral;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -174,8 +175,8 @@ public class MonetdbSqlDialect extends SqlDialect {
 
 
     @Override
-    public boolean handlesUtcCorrectly() {
-        return false;
+    public boolean handlesUtcIncorrectly() {
+        return true;
     }
 
 
@@ -238,6 +239,10 @@ public class MonetdbSqlDialect extends SqlDialect {
                         && type.value.asSymbol().value instanceof TimeUnitRange ) {
                     supportsRex = false;
                 }
+
+            } else if ( call.getKind() == Kind.EXTRACT && call.getOperands().size() >= 2 // second is value to extract from
+                    && PolyType.DATETIME_TYPES.contains( call.getOperands().get( 1 ).getType().getPolyType() ) ) {
+                supportsRex = false;
             } else if ( call.getKind() == Kind.IS_NOT_TRUE || call.getKind() == Kind.IS_NOT_FALSE ) {
                 supportsRex = false;
             } else if ( call.getKind() == Kind.LIKE && call.getOperands().size() == 3 && call.getOperands().get( 2 ) instanceof RexDynamicParam ) {
@@ -245,6 +250,12 @@ public class MonetdbSqlDialect extends SqlDialect {
             } else if ( call.op.getOperatorName() == OperatorName.OVERLAY ) {
                 supportsRex = false;
             } else if ( call.op.getOperatorName() == OperatorName.ATAN2 ) {
+                supportsRex = false;
+            } else if ( call.op.getOperatorName() == OperatorName.TRIM ) {
+                supportsRex = false;
+            } else if ( call.op.getOperatorName() == OperatorName.SUBSTRING ) {
+                supportsRex = false;
+            } else if ( call.op.getOperatorName() == OperatorName.HOUR ) {
                 supportsRex = false;
             }
             return super.visitCall( call );
