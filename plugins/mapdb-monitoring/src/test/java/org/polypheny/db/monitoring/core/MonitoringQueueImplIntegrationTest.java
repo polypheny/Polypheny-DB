@@ -46,7 +46,7 @@ class MonitoringQueueImplIntegrationTest {
 
 
     @Test
-    public void queuedEventsAreProcessed() {
+    public void queuedEventsAreProcessed() throws InterruptedException {
         //  -- Arrange --
 
         // Initialize mock repository
@@ -66,11 +66,7 @@ class MonitoringQueueImplIntegrationTest {
         List<QueryEvent> events = createQueryEvent( 15 );
         events.forEach( sut::monitorEvent );
 
-        try {
-            Thread.sleep( 2000L );
-        } catch ( InterruptedException e ) {
-            log.error( "Caught exception test", e );
-        }
+        Thread.sleep( 5000L );
 
         // -- Assert --
 
@@ -80,11 +76,7 @@ class MonitoringQueueImplIntegrationTest {
             if ( result.size() == 15 ) {
                 break;
             }
-            try {
-                Thread.sleep( 1000L );
-            } catch ( InterruptedException e ) {
-                log.error( "Caught exception test", e );
-            }
+            Thread.sleep( 5000L );
         }
         assertEquals( 15, result.size() );
     }
