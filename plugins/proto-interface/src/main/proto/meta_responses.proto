@@ -117,7 +117,7 @@ message UserDefinedType {
   // The name of the user-defined data type.
   string type_name = 1;
   // A list of ValueMeta objects detailing the metadata associated with fields of this data type.
-  repeated ValueMeta value_metas= 2;
+  repeated ValueMeta value_metas = 2;
 }
 
 /*

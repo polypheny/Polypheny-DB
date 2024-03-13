@@ -1,3 +1,9 @@
+/*
+This file contains basic wrapper messages used for the communication between client and server.
+Examples for such messages are a response and a request wrapper that are used to wrap a specific response or request message.
+Further messages for error responses are included.
+ */
+
 syntax = "proto3";
 
 import "connection_requests.proto";
@@ -18,8 +24,12 @@ option java_outer_classname = "ProtoInterfaceProto";
 
 package polypheny.protointerface;
 
+/*
+Wrapper message wrapping a specific request message to be sent to the server.
+ */
 message Request {
-  uint64 id = 1; // Always > 0
+  // The id of the request.  Must be strictly greater than 0.
+  uint64 id = 1;
   oneof type {
     DbmsVersionRequest dbms_version_request = 2;
     LanguageRequest language_request = 3;
@@ -58,12 +68,21 @@ message Request {
   }
 }
 
+/*
+Response message sent to the client by the server in case of an error.
+ */
 message ErrorResponse {
+  // Human readable error message
   string message = 1;
 }
 
+/*
+Wrapper message wrapping a specific response message to be sent to the client.
+ */
 message Response {
-  uint64 id = 1; // Always > 0
+  // The id of the request this response is related to.
+  uint64 id = 1;
+  // If a request triggers a stream of responses from the server, this flag represents a response to be the end of the stream.
   bool last = 2;
   oneof type {
     ErrorResponse error_response = 256;
