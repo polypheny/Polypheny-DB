@@ -20,6 +20,7 @@ import java.sql.Timestamp;
 import java.util.List;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
@@ -102,7 +103,7 @@ public class MonitoringServiceImpl implements MonitoringService {
 
 
     @Override
-    public QueryPostCost getQueryPostCosts( String physicalQueryClass ) {
+    public QueryPostCost getQueryPostCosts( @NotNull String physicalQueryClass ) {
         return this.repository.getQueryPostCosts( physicalQueryClass );
     }
 

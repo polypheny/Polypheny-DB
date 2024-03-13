@@ -73,7 +73,19 @@ class MonitoringQueueImplIntegrationTest {
         }
 
         // -- Assert --
+
         List<QueryDataPointImpl> result = sut.getAllDataPoints( QueryDataPointImpl.class );
+        // As this test is not deterministic, we wait for the result to be filled
+        for ( int i = 0; i < 5; i++ ) {
+            if ( result.size() == 15 ) {
+                break;
+            }
+            try {
+                Thread.sleep( 1000L );
+            } catch ( InterruptedException e ) {
+                log.error( "Caught exception test", e );
+            }
+        }
         assertEquals( 15, result.size() );
     }
 
