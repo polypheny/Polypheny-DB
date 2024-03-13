@@ -50,9 +50,7 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
+import java.util.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -80,6 +78,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.jetty.websocket.api.Session;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.Adapter.AbstractAdapterSetting;
@@ -108,18 +107,8 @@ import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.NameGenerator;
+import org.polypheny.db.catalog.entity.*;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogConstraint;
-import org.polypheny.db.catalog.entity.CatalogForeignKey;
-import org.polypheny.db.catalog.entity.CatalogIndex;
-import org.polypheny.db.catalog.entity.CatalogMaterializedView;
-import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.entity.CatalogView;
-import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
@@ -373,6 +362,28 @@ public class Crud implements InformationObserver {
         return result;
     }
 
+    void getAdapterNames(final Context ctx)
+    {
+        List<CatalogAdapter> adapters = catalog.getAdapters();
+        ArrayList<String> result = new ArrayList<>();
+        for(CatalogAdapter adapter : adapters)
+        {
+           result.add(adapter.adapterName);
+
+        }
+        ctx.json(result);
+    }
+    void getQueryInterfaceNames(final Context ctx)
+    {
+        List<CatalogQueryInterface> queryInterfaces = catalog.getQueryInterfaces();
+        ArrayList<String> result = new ArrayList<>();
+        for(CatalogQueryInterface queryInterface : queryInterfaces)
+        {
+            result.add(queryInterface.name);
+
+        }
+        ctx.json(result);
+    }
 
     void getSchemaTree( final Context ctx ) {
         SchemaTreeRequest request = ctx.bodyAsClass( SchemaTreeRequest.class );
@@ -409,7 +420,19 @@ public class Crud implements InformationObserver {
                     if ( request.depth > 2 ) {
                         List<CatalogColumn> columns = catalog.getColumns( table.id );
                         for ( CatalogColumn column : columns ) {
-                            tableElement.addChild( new SidebarElement( schema.name + "." + table.name + "." + column.name, column.name, schema.namespaceType, request.routerLinkRoot, icon ).setCssClass( "sidebarColumn" ) );
+                            tableElement.addChild(new SidebarElement(schema.name + "." + table.name + "." + column.name, column.name, schema.namespaceType, request.routerLinkRoot, icon).setCssClass("sidebarColumn"));
+                            List<CatalogConstraint> constraints = catalog.getConstraints(table.id);
+                            List<CatalogIndex> Indexes = catalog.getIndexes(table.id,false);
+
+                            for (CatalogConstraint constraint : constraints)
+                            {
+                               tableElement.addChild(new SidebarElement(schema.name + "." + table.name +"." +constraint.name , constraint.name , schema.namespaceType , request.routerLinkRoot , icon)).setCssClass("sidebarConstrain");
+                            }
+                            for(CatalogIndex index : Indexes)
+                            {
+                                tableElement.addChild(new SidebarElement(schema.name + "." + table.name +"." +index.name , index.name , schema.namespaceType , request.routerLinkRoot , icon)).setCssClass("sidebarIndexes");
+                            }
+
                         }
                     }
 
