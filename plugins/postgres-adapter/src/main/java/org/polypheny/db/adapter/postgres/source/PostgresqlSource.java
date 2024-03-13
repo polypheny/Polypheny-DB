@@ -27,6 +27,7 @@ import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
 import org.polypheny.db.adapter.Adapter.AdapterSettingList;
 import org.polypheny.db.adapter.Adapter.AdapterSettingString;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.sources.AbstractJdbcSource;
 import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -35,6 +36,9 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.language.dialect.PostgresqlSqlDialect;
+import org.polypheny.db.transaction.PUID;
+import org.polypheny.db.transaction.PUID.Type;
+import org.polypheny.db.transaction.PolyXid;
 
 
 @Slf4j
@@ -122,6 +126,22 @@ public class PostgresqlSource extends AbstractJdbcSource {
     @Override
     protected boolean requiresSchema() {
         return true;
+    }
+
+    @Override
+    public void testConnection(){
+
+        PolyXid randomXid = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.NODE ), PUID.randomPUID( Type.TRANSACTION ) );
+        ConnectionHandler connectionHandler = connectionFactory.getConnectionHandler(randomXid);
+
+        // Execute an Postgres query
+        String sql = "SELECT 1";
+
+        try {
+            connectionHandler.executeQuery( sql );
+        } catch ( SQLException e ) {
+            throw new RuntimeException( e );
+        }
     }
 
 }

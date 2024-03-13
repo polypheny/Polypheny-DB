@@ -353,4 +353,30 @@ public class ExcelSource extends DataSource {
         }
     }
 
+
+    @Override
+    public void testConnection() {
+
+        File directory = new File(excelDir.getPath());
+        // Check if the directory exists
+        if (!directory.exists() ) {
+            shutdown();
+            throw new Error("The specified path is not a valid directory.");
+        }
+        File[] files = directory.listFiles();
+
+        int goodFile=0;
+        for(File file : files){
+            String fileName = file.getName();
+            if(fileName.endsWith( ".xlsx" ) || fileName.endsWith( ".xlsx.gz" ) || fileName.endsWith( ".xls" ) || fileName.endsWith( ".xls.gz" ))
+                goodFile++;
+        }
+        if(goodFile==0){
+            throw new RuntimeException("No Excel sheet found.");
+        }
+
+
+    }
+
+
 }

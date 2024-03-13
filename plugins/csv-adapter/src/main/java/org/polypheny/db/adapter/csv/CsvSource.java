@@ -345,4 +345,35 @@ public class CsvSource extends DataSource {
         }
     }
 
+
+    public void testConnection(){
+        File directory = new File(csvDir.getPath());
+
+        // Check if the directory exists
+        if (!directory.exists() ) {
+            throw new Error("The specified path is not a valid directory.");
+        }
+
+        // List all files in the directory
+        File[] files = directory.listFiles();
+        if(files == null)
+            throw new Error("THERE IS NO CSV FILE TO UPLOAD. ");
+
+        int badFiles = 0;
+        if (files != null) {
+            // Check each file if it has a .csv extension
+            for (File file : files) {
+                System.out.println(file.getName());
+                if (!file.isFile() || !file.getName().toLowerCase().endsWith(".csv"))
+                    badFiles++;
+
+            }
+        }
+
+        if(badFiles==files.length)
+            throw new Error("NO VALID CSV FILE FOUND. ");
+
+
+    }
+
 }

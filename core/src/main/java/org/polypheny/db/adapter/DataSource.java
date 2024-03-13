@@ -116,4 +116,7 @@ public abstract class DataSource extends Adapter implements ExtensionPoint {
         return AdapterType.SOURCE;
     }
 
+
+    public void testConnection(){}
+
 }

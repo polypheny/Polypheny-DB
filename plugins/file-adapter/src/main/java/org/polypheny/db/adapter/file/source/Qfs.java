@@ -32,8 +32,11 @@ import java.util.Map;
 import java.util.StringJoiner;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.linq4j.AbstractEnumerable;
+import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.Adapter.AdapterSettingString;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -300,6 +303,15 @@ public class Qfs extends DataSource {
             im.registerInformation( table );
             informationElements.add( table );
         }
+    }
+
+
+    @Override
+    public void testConnection(){
+
+        if(currentSchema.getConvention().getFileSchema().getRootDir()==null)
+            throw new RuntimeException("The specified QFS root dir does not exist!");
+
     }
 
 }
