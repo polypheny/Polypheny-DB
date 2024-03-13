@@ -87,7 +87,7 @@ public class PIServer {
 
     private void acceptConnection( SocketChannel s, String name, long connectionId, Function<SocketChannel, Transport> createTransport, ClientManager clientManager ) {
         try {
-            log.info( "accept {} connection with id {} from {}", name, connectionId, getRemoteAddressOrNone( s ) );
+            log.info( "accept {} connection with id {} from {}", name.toLowerCase(), connectionId, getRemoteAddressOrNone( s ) );
             PIService.acceptConnection( createTransport.apply( s ), connectionId, clientManager );
         } catch ( GenericRuntimeException e ) {
             if ( e.getCause() instanceof EOFException ) {
