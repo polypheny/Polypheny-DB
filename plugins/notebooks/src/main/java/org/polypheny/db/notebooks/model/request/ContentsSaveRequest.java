@@ -14,20 +14,17 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.util;
+package org.polypheny.db.notebooks.model.request;
 
-import java.security.SecureRandom;
-import java.util.Base64;
+import lombok.Getter;
 
-public final class PasswordGenerator {
+@Getter
+public class ContentsSaveRequest<T> {
 
-    private static final SecureRandom secureRandom = new SecureRandom();
-
-
-    public static String generatePassword() {
-        byte[] raw = new byte[32];
-        secureRandom.nextBytes( raw );
-        return Base64.getUrlEncoder().encodeToString( raw );
-    }
+    private T content;
+    private String format;
+    private String name;
+    private String path;
+    private String type;
 
 }

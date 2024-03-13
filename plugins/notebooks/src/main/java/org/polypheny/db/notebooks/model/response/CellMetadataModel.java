@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,20 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.docker.exceptions;
+package org.polypheny.db.notebooks.model.response;
 
-public class PortInUseRuntimeException extends DockerRuntimeException {
+import java.util.List;
+import java.util.Map;
+import lombok.Getter;
 
-    public PortInUseRuntimeException() {
-        super( "There is already a container running which exposes that port." );
-    }
+public class CellMetadataModel {
+
+    private Boolean collapsed, scrolled, deletable, editable;
+    private String format, name;
+    private List<String> tags;
+    private Map<String, Object> jupyter;
+    private Map<String, Object> execution;
+    @Getter
+    private PolyMetadataModel polypheny;
 
 }

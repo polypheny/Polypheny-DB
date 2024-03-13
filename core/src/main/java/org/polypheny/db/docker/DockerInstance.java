@@ -116,7 +116,7 @@ public final class DockerInstance {
         // seenUuids is used to lock out all the other DockerInstance instances
         synchronized ( seenUuids ) {
             for ( DockerInstance instance : DockerManager.getInstance().getDockerInstances().values() ) {
-                if ( instance != this && instance.dockerInstanceUuid.equals( dockerInstanceUuid ) ) {
+                if ( instance != this && dockerInstanceUuid.equals( instance.dockerInstanceUuid ) ) {
                     throw new RuntimeException( "The same docker instance cannot be added twice" );
                 }
             }
@@ -244,7 +244,11 @@ public final class DockerInstance {
                 uuids.remove( container.getContainerId() );
                 client.deleteContainer( container.getContainerId() );
             } catch ( IOException e ) {
-                log.error( "Failed to delete container with UUID " + container.getContainerId(), e );
+                if ( e.getMessage().startsWith( "No such container" ) ) {
+                    log.info( "Cannot delete container: No container with UUID " + container.getContainerId() );
+                } else {
+                    log.error( "Failed to delete container with UUID " + container.getContainerId(), e );
+                }
             }
         }
     }

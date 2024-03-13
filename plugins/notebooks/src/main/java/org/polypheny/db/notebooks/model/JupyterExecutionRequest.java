@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,17 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.docker.exceptions;
+package org.polypheny.db.notebooks.model;
 
-public class DockerNotRunningRuntimeException extends DockerRuntimeException {
+public class JupyterExecutionRequest {
 
-    public DockerNotRunningRuntimeException() {
-        super( "Docker is either not installed or not running at the moment." );
-    }
+    public String uuid; // a unique identifier for the request
+    public String type;
+
+    public String content;
+    public String language;
+    public String namespace;
+    public String variable; // variable to store the result in
+    public boolean expand; // whether to expand parameters indicated with ${}
 
 }

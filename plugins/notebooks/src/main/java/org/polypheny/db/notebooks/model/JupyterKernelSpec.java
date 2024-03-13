@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,20 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.docker.exceptions;
+package org.polypheny.db.notebooks.model;
+
+/**
+ * Represents a model of an available kernel specification in the jupyter server.
+ */
+public class JupyterKernelSpec {
+
+    public final String name, displayName, language;
 
 
-public class NameExistsRuntimeException extends DockerRuntimeException {
-
-    public NameExistsRuntimeException() {
-        super( "There already exists a container with this name." );
+    public JupyterKernelSpec( String name, String displayName, String language ) {
+        this.name = name;
+        this.displayName = displayName;
+        this.language = language;
     }
 
 }

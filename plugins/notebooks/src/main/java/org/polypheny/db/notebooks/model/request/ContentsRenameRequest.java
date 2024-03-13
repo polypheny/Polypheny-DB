@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.docker.exceptions;
+package org.polypheny.db.notebooks.model.request;
 
-public class DockerRuntimeException extends RuntimeException {
+import lombok.Getter;
 
-    public DockerRuntimeException( String message ) {
-        super( message );
-    }
+@Getter
+public class ContentsRenameRequest {
+
+    private String path;
 
 }

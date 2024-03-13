@@ -14,20 +14,31 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.util;
+package org.polypheny.db.notebooks.model;
 
-import java.security.SecureRandom;
-import java.util.Base64;
+import lombok.Getter;
+import lombok.Setter;
 
-public final class PasswordGenerator {
+/**
+ * Represents a model of an open session in the jupyter server.
+ */
+public class JupyterSession {
 
-    private static final SecureRandom secureRandom = new SecureRandom();
+    @Getter
+    @Setter
+    private JupyterKernel kernel;
+    @Getter
+    private final String sessionId;
+    @Getter
+    @Setter
+    private String name, path;
 
 
-    public static String generatePassword() {
-        byte[] raw = new byte[32];
-        secureRandom.nextBytes( raw );
-        return Base64.getUrlEncoder().encodeToString( raw );
+    public JupyterSession( String sessionId, String name, String path, JupyterKernel kernel ) {
+        this.sessionId = sessionId;
+        this.name = name;
+        this.path = path;
+        this.kernel = kernel;
     }
 
 }

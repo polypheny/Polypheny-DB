@@ -159,10 +159,14 @@ public class HttpServer implements Runnable {
             }
 
         };
+        long maxSizeMB = RuntimeConfig.UI_UPLOAD_SIZE_MB.getInteger();
+        long maxRequestSize = 1_000_000L * maxSizeMB;
+
         this.server = Javalin.create( config -> {
             config.jsonMapper( gsonMapper );
             config.enableCorsForAllOrigins();
             config.addStaticFiles( staticFileConfig -> staticFileConfig.directory = "webapp/" );
+            config.maxRequestSize = maxRequestSize;
         } ).start( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
 
         this.crud = new Crud(
@@ -195,9 +199,9 @@ public class HttpServer implements Runnable {
 
 
     private void attachExceptions( Javalin server ) {
-        server.exception( SocketException.class, ( e, ctx ) -> {
-            ctx.status( 400 ).result( "Error: Could not determine IP address." );
-        } );
+        server.exception( SocketException.class, ( e, ctx ) ->
+                ctx.status( 400 ).result( "Error: Could not determine IP address." )
+        );
 
         defaultException( IOException.class, server );
         defaultException( ServletException.class, server );
@@ -209,9 +213,9 @@ public class HttpServer implements Runnable {
 
 
     private void defaultException( Class<? extends Exception> exceptionClass, Javalin server ) {
-        server.exception( exceptionClass, ( e, ctx ) -> {
-            ctx.status( 400 ).json( new Result( e ) );
-        } );
+        server.exception( exceptionClass, ( e, ctx ) ->
+                ctx.status( 400 ).json( new Result( e ) )
+        );
     }
 
 
@@ -387,19 +391,27 @@ public class HttpServer implements Runnable {
 
 
     public void addSerializedRoute( String route, BiConsumer<Context, Crud> action, HandlerType type ) {
+        addSerializedRoute( route, r -> action.accept( r, crud ), type );
+    }
+
+
+    public void addSerializedRoute( String route, Consumer<Context> action, HandlerType type ) {
         log.info( "Added route: {}", route );
         switch ( type ) {
             case GET:
-                server.get( route, r -> action.accept( r, crud ) );
+                server.get( route, action::accept );
                 break;
             case POST:
-                server.post( route, r -> action.accept( r, crud ) );
+                server.post( route, action::accept );
                 break;
             case PUT:
-                server.put( route, r -> action.accept( r, crud ) );
+                server.put( route, action::accept );
                 break;
             case DELETE:
-                server.delete( route, r -> action.accept( r, crud ) );
+                server.delete( route, action::accept );
+                break;
+            case PATCH:
+                server.patch( route, action::accept );
                 break;
         }
     }
@@ -444,6 +456,11 @@ public class HttpServer implements Runnable {
     }
 
 
+    public void addWebsocket( String route, Consumer<WsConfig> handler ) {
+        server.ws( route, handler );
+    }
+
+
     /**
      * To avoid the CORS problem, when the ConfigServer receives requests from the Web UI.
      * See https://gist.github.com/saeidzebardast/e375b7d17be3e0f4dddf
@@ -484,7 +501,8 @@ public class HttpServer implements Runnable {
         POST,
         GET,
         PUT,
-        DELETE
+        DELETE,
+        PATCH
     }
 
 }
