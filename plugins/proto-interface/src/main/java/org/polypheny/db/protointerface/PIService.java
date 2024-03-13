@@ -113,19 +113,21 @@ public class PIService {
 
     private static final int majorApiVersion = 2;
     private static final int minorApiVersion = 0;
+    private final long connectionId;
     private final ClientManager clientManager;
     private final Transport con;
     private String uuid = null;
 
 
-    private PIService( Transport con, ClientManager clientManager ) {
+    private PIService( Transport con, long connectionId, ClientManager clientManager ) {
         this.con = con;
+        this.connectionId = connectionId;
         this.clientManager = clientManager;
     }
 
 
-    public static void acceptConnection( Transport con, ClientManager clientManager ) {
-        PIService service = new PIService( con, clientManager );
+    public static void acceptConnection( Transport con, long connectionId, ClientManager clientManager ) {
+        PIService service = new PIService( con, connectionId, clientManager );
         service.acceptLoop();
     }
 
@@ -202,7 +204,8 @@ public class PIService {
                 if ( !waiting.isEmpty() ) {
                     response = new CompletableFuture<>();
                     CompletableFuture<Response> finalResponse = response;
-                    handle = new Thread( () -> handleRequest( waiting.remove(), finalResponse ) );
+                    Request req = waiting.remove();
+                    handle = new Thread( () -> handleRequest( req, finalResponse ), String.format( "ProtoConnection%dRequest%dHandler", connectionId, req.getId() ) );
                     handle.setUncaughtExceptionHandler( ( t, e ) -> finalResponse.completeExceptionally( e ) );
                     handle.start();
                 }

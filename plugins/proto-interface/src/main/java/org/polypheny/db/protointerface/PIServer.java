@@ -26,6 +26,7 @@ import java.net.UnixDomainSocketAddress;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +42,7 @@ public class PIServer {
 
     private final List<ServerSocketChannel> servers = new ArrayList<>();
     private final int port = 20590; // TODO: configurable
+    private final static AtomicLong ID_COUNTER = new AtomicLong();
 
 
     public PIServer( ClientManager clientManager ) throws IOException {
@@ -74,9 +76,19 @@ public class PIServer {
     }
 
 
-    void acceptConnection( SocketChannel s, String name, Function<SocketChannel, Transport> createTransport, ClientManager clientManager ) {
+    private String getRemoteAddressOrNone( SocketChannel s ) {
         try {
-            PIService.acceptConnection( createTransport.apply( s ), clientManager );
+            return s.getRemoteAddress().toString();
+        } catch ( IOException ignore ) {
+            return "unknown";
+        }
+    }
+
+
+    private void acceptConnection( SocketChannel s, String name, long connectionId, Function<SocketChannel, Transport> createTransport, ClientManager clientManager ) {
+        try {
+            log.info( "accept {} connection with id {} from {}", name, connectionId, getRemoteAddressOrNone( s ) );
+            PIService.acceptConnection( createTransport.apply( s ), connectionId, clientManager );
         } catch ( GenericRuntimeException e ) {
             if ( e.getCause() instanceof EOFException ) {
                 return;
@@ -90,11 +102,12 @@ public class PIServer {
     }
 
 
-    void acceptLoop( ServerSocketChannel server, ClientManager clientManager, String name, Function<SocketChannel, Transport> createTransport ) {
+    private void acceptLoop( ServerSocketChannel server, ClientManager clientManager, String name, Function<SocketChannel, Transport> createTransport ) {
         while ( true ) {
             try {
                 SocketChannel s = server.accept();
-                Thread t = new Thread( () -> acceptConnection( s, name, createTransport, clientManager ), "ProtoInterface" + name + "ClientConnection" );
+                long connectionId = ID_COUNTER.getAndIncrement();
+                Thread t = new Thread( () -> acceptConnection( s, name, connectionId, createTransport, clientManager ), String.format( "ProtoInterface" + name + "ClientConnection%d", connectionId ) );
                 t.start();
             } catch ( IOException e ) {
                 log.error( e.getMessage() );
