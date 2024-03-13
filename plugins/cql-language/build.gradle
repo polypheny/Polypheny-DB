@@ -1,4 +1,4 @@
-import ca.coglinc.gradle.plugins.javacc.CompileJavaccTask
+import org.javacc.plugin.gradle.javacc.CompileJavaccTask
 
 group "org.polypheny"
 
@@ -12,7 +12,7 @@ configurations {
 
 buildscript {
     dependencies {
-        classpath group: "gradle.plugin.ca.coglinc2", name: "javacc-gradle-plugin", version: javacc_plugin_version
+        classpath group: "org.javacc.plugin", name: "javacc-gradle-plugin", version: javacc_plugin_version
     }
 }
 
