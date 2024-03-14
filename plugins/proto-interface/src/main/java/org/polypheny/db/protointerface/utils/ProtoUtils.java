@@ -18,6 +18,7 @@ package org.polypheny.db.protointerface.utils;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.protointerface.proto.ColumnMeta;
 import org.polypheny.db.protointerface.proto.DocumentFrame;
 import org.polypheny.db.protointerface.proto.Frame;
@@ -113,7 +114,7 @@ public class ProtoUtils {
 
 
     public static Frame buildGraphFrame() {
-        throw new RuntimeException( "Feature not implemented" );
+        throw new GenericRuntimeException( "Feature not implemented" );
     }
 
 }

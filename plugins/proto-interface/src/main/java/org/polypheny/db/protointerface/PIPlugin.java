@@ -26,6 +26,7 @@ import java.util.Map;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.Extension;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
@@ -89,7 +90,7 @@ public class PIPlugin extends PolyPlugin {
             this.port = Integer.parseInt( settings.get( "port" ) );
             if ( !Util.checkIfPortIsAvailable( port ) ) {
                 // Port is already in use
-                throw new RuntimeException( "Unable to start " + INTERFACE_NAME + " on port " + port + "! The port is already in use." );
+                throw new GenericRuntimeException( "Unable to start " + INTERFACE_NAME + " on port " + port + "! The port is already in use." );
             }
             this.requiresHeartbeat = Boolean.getBoolean( settings.get( "requires heartbeat" ) );
             this.heartbeatInterval = Long.parseLong( settings.get( "heartbeat interval" ) );
@@ -107,7 +108,7 @@ public class PIPlugin extends PolyPlugin {
             try {
                 protoInterfaceServer.shutdown();
             } catch ( IOException | InterruptedException e ) {
-                throw new RuntimeException( e );
+                throw new GenericRuntimeException( e );
             }
         }
 

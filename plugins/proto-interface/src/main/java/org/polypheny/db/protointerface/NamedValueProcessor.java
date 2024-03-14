@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.Getter;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.entity.PolyValue;
 
 public class NamedValueProcessor {
@@ -60,7 +61,7 @@ public class NamedValueProcessor {
         for ( String placeholder : replacements ) {
             PolyValue value = values.get( placeholder );
             if ( value == null ) {
-                throw new RuntimeException( "Missing named parameter: " + placeholder );
+                throw new GenericRuntimeException( "Missing named parameter: " + placeholder );
             }
             image.add( value );
         }
