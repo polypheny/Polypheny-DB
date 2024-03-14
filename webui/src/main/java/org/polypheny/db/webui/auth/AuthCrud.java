@@ -41,7 +41,7 @@ public class AuthCrud {
     public void register( RegisterRequest registerRequest, WsMessageContext context ) {
         String id = registerRequest.source;
         if ( id != null ) {
-            log.warn( "Partner " + id + " already registered" );
+            log.debug( "Partner " + id + " already registered" );
             if ( connections.containsKey( UUID.fromString( id ) ) ) {
                 connections.get( UUID.fromString( id ) ).addContext( context );
             } else {
@@ -53,7 +53,7 @@ public class AuthCrud {
         }
 
         PartnerConnection status = new PartnerConnection( context );
-        log.warn( "New partner with id " + status.id + " registered" );
+        log.debug( "New partner with id " + status.id + " registered" );
         connections.put( status.id, status );
         context.send( new RegisterRequest( status.id.toString() ) );
     }

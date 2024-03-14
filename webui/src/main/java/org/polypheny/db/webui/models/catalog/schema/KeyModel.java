@@ -16,6 +16,7 @@
 
 package org.polypheny.db.webui.models.catalog.schema;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
@@ -32,13 +33,22 @@ import org.polypheny.db.webui.models.catalog.IdEntity;
 @NonFinal
 public class KeyModel extends IdEntity {
 
+    @JsonProperty
     public long entityId;
+    @JsonProperty
     public long namespaceId;
+    @JsonProperty
     public List<Long> columnIds;
+    @JsonProperty
     public boolean isPrimary;
 
 
-    public KeyModel( @Nullable Long id, long entityId, long namespaceId, List<Long> columnIds, boolean isPrimary ) {
+    public KeyModel(
+            @JsonProperty("id") @Nullable Long id,
+            @JsonProperty("entityId") long entityId,
+            @JsonProperty("namespaceId") long namespaceId,
+            @JsonProperty("columnIds") List<Long> columnIds,
+            @JsonProperty("isPrimary") boolean isPrimary ) {
         super( id, null );
         this.entityId = entityId;
         this.namespaceId = namespaceId;

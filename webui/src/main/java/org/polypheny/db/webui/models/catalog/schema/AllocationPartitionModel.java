@@ -16,6 +16,7 @@
 
 package org.polypheny.db.webui.models.catalog.schema;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.jetbrains.annotations.Nullable;
@@ -27,11 +28,17 @@ import org.polypheny.db.webui.models.catalog.IdEntity;
 @Value
 public class AllocationPartitionModel extends IdEntity {
 
+    @JsonProperty
     public long logicalEntityId;
+    @JsonProperty
     public PartitionType partitionType;
 
 
-    public AllocationPartitionModel( @Nullable Long id, @Nullable String name, long logicalEntityId, PartitionType partitionType ) {
+    public AllocationPartitionModel(
+            @JsonProperty("id") @Nullable Long id,
+            @JsonProperty("name") @Nullable String name,
+            @JsonProperty("logicalEntityId") long logicalEntityId,
+            @JsonProperty("partitionType") PartitionType partitionType ) {
         super( id, name );
         this.logicalEntityId = logicalEntityId;
         this.partitionType = partitionType;

@@ -16,14 +16,25 @@
 
 package org.polypheny.db.webui.models.catalog.schema;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 
+@EqualsAndHashCode(callSuper = true)
+@Value
 public class GraphModel extends EntityModel {
 
-    public GraphModel( @Nullable Long id, @Nullable String name, Long namespaceId, boolean modifiable, DataModel dataModel, EntityType entityType ) {
+    public GraphModel(
+            @JsonProperty("id") @Nullable Long id,
+            @JsonProperty("name") @Nullable String name,
+            @JsonProperty("namespaceId") Long namespaceId,
+            @JsonProperty("modifiable") boolean modifiable,
+            @JsonProperty("dataModel") DataModel dataModel,
+            @JsonProperty("entityType") EntityType entityType ) {
         super( id, name, namespaceId, modifiable, dataModel, entityType );
     }
 

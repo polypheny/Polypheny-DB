@@ -16,6 +16,7 @@
 
 package org.polypheny.db.webui.models.catalog.schema;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
@@ -26,22 +27,33 @@ import org.polypheny.db.webui.models.catalog.IdEntity;
 @Value
 public class AllocationColumnModel extends IdEntity {
 
+    @JsonProperty
     public long namespaceId;
+
+    @JsonProperty
     public long placementId;
+
+    @JsonProperty
     public long logicalTableId;
+
+    @JsonProperty
     public PlacementType placementType;
+
+    @JsonProperty
     public int position;
+
+    @JsonProperty
     public long adapterId;
 
 
     public AllocationColumnModel(
-            long namespaceId,
-            long placementId,
-            long logicalTableId,
-            long columnId,
-            PlacementType placementType,
-            int position,
-            long adapterId ) {
+            @JsonProperty("namespaceId") long namespaceId,
+            @JsonProperty("placementId") long placementId,
+            @JsonProperty("logicalTableId") long logicalTableId,
+            @JsonProperty("columnId") long columnId,
+            @JsonProperty("placementType") PlacementType placementType,
+            @JsonProperty("position") int position,
+            @JsonProperty("adapterId") long adapterId ) {
         super( columnId, "" );
         this.namespaceId = namespaceId;
         this.placementId = placementId;

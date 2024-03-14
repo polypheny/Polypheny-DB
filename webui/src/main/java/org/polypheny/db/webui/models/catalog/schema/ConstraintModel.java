@@ -16,18 +16,30 @@
 
 package org.polypheny.db.webui.models.catalog.schema;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
 import org.polypheny.db.catalog.logistic.ConstraintType;
 import org.polypheny.db.webui.models.catalog.IdEntity;
 
+@EqualsAndHashCode(callSuper = true)
+@Value
 public class ConstraintModel extends IdEntity {
 
-    public final long keyId;
-    public final String type;
+    @JsonProperty
+    public long keyId;
+
+    @JsonProperty
+    public String type;
 
 
-    public ConstraintModel( @Nullable Long id, @Nullable String name, long keyId, ConstraintType type ) {
+    public ConstraintModel(
+            @JsonProperty("id") @Nullable Long id,
+            @JsonProperty("name") @Nullable String name,
+            @JsonProperty("keyId") long keyId,
+            @JsonProperty("type") ConstraintType type ) {
         super( id, name );
         this.keyId = keyId;
         this.type = type.name();
