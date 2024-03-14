@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,68 +16,84 @@
 
 package org.polypheny.db.webui.crud;
 
+import com.j256.simplemagic.ContentInfo;
+import com.j256.simplemagic.ContentInfoUtil;
 import io.javalin.http.Context;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.polypheny.db.PolyImplementation;
+import org.polypheny.db.ResultIterator;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
-import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.Catalog.Pattern;
-import org.polypheny.db.catalog.entity.CatalogCollection;
-import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
-import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
-import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.UnknownCollectionException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
-import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationObserver;
+import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.processing.ExtendedQueryParameters;
-import org.polypheny.db.processing.Processor;
-import org.polypheny.db.schema.graph.PolyGraph;
+import org.polypheny.db.processing.ImplementationContext;
+import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
+import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.graph.PolyGraph;
+import org.polypheny.db.type.entity.relational.PolyMap;
+import org.polypheny.db.util.PolyphenyHomeDirManager;
+import org.polypheny.db.util.RunMode;
 import org.polypheny.db.webui.Crud;
-import org.polypheny.db.webui.models.DbColumn;
-import org.polypheny.db.webui.models.Index;
-import org.polypheny.db.webui.models.Placement;
-import org.polypheny.db.webui.models.Placement.DocumentStore;
-import org.polypheny.db.webui.models.Result;
+import org.polypheny.db.webui.TemporalFileManager;
+import org.polypheny.db.webui.models.IndexModel;
+import org.polypheny.db.webui.models.PlacementModel;
+import org.polypheny.db.webui.models.PlacementModel.DocumentStore;
 import org.polypheny.db.webui.models.SortState;
-import org.polypheny.db.webui.models.requests.EditCollectionRequest;
+import org.polypheny.db.webui.models.catalog.FieldDefinition;
+import org.polypheny.db.webui.models.catalog.UiColumnDefinition;
+import org.polypheny.db.webui.models.catalog.UiColumnDefinition.UiColumnDefinitionBuilder;
 import org.polypheny.db.webui.models.requests.QueryRequest;
 import org.polypheny.db.webui.models.requests.UIRequest;
+import org.polypheny.db.webui.models.results.DocResult;
+import org.polypheny.db.webui.models.results.GraphResult;
+import org.polypheny.db.webui.models.results.GraphResult.GraphResultBuilder;
+import org.polypheny.db.webui.models.results.RelationalResult;
+import org.polypheny.db.webui.models.results.Result;
+import org.polypheny.db.webui.models.results.Result.ResultBuilder;
 
+@Getter
 @Slf4j
 public class LanguageCrud {
 
-    @Getter
-    private static Crud crud;
 
-    public final static Map<String, Consumer7<Session, QueryRequest, TransactionManager, Long, Long, Crud, List<Result>>> REGISTER = new HashMap<>();
+    public static Crud crud;
+
+    protected final static Map<QueryLanguage, TriFunction<ExecutedContext, UIRequest, Statement, ResultBuilder<?, ?, ?, ?>>> REGISTER = new HashMap<>();
 
 
     public LanguageCrud( Crud crud ) {
@@ -85,34 +101,86 @@ public class LanguageCrud {
     }
 
 
-    public static List<Result> anyQuery(
-            QueryLanguage language,
-            Session session,
-            QueryRequest request,
-            TransactionManager transactionManager,
-            long userId,
-            long databaseId,
-            InformationObserver observer ) {
-
-        return REGISTER.get( language.getSerializedName() ).apply( session, request, transactionManager, userId, databaseId, crud );
+    public static void addToResult( QueryLanguage queryLanguage, TriFunction<ExecutedContext, UIRequest, Statement, ResultBuilder<?, ?, ?, ?>> toResult ) {
+        REGISTER.put( queryLanguage, toResult );
     }
 
 
-    public static void commitAndFinish( Transaction transaction, InformationManager queryAnalyzer, List<Result> results, long executionTime ) {
+    public static TriFunction<ExecutedContext, UIRequest, Statement, ResultBuilder<?, ?, ?, ?>> getToResult( QueryLanguage queryLanguage ) {
+        return REGISTER.get( queryLanguage );
+    }
+
+
+    public static void deleteToResult( QueryLanguage language ) {
+        REGISTER.remove( language );
+    }
+
+
+    public static void anyQuery( Context ctx ) {
+        QueryRequest request = ctx.bodyAsClass( QueryRequest.class );
+        QueryLanguage language = QueryLanguage.from( request.language );
+
+        QueryContext context = QueryContext.builder()
+                .query( request.query )
+                .language( language )
+                .isAnalysed( request.analyze )
+                .usesCache( request.cache )
+                .origin( "Polypheny-UI" )
+                .namespaceId( getNamespaceIdOrDefault( request.namespace ) )
+                .batch( request.noLimit ? -1 : crud.getPageSize() )
+                .transactionManager( crud.getTransactionManager() ).build();
+        ctx.json( anyQueryResult( context, request ) );
+    }
+
+
+    public static long getNamespaceIdOrDefault( String namespace ) {
+        return namespace == null ? Catalog.defaultNamespaceId : Catalog.snapshot().getNamespace( namespace ).orElseThrow().id;
+    }
+
+
+    public static List<? extends Result<?, ?>> anyQueryResult( QueryContext context, UIRequest request ) {
+        Transaction transaction = context.getTransactionManager().startTransaction( context.getUserId(), Catalog.defaultNamespaceId, context.isAnalysed(), context.getOrigin() );
+        transaction.setUseCache( context.isUsesCache() );
+        attachAnalyzerIfSpecified( context, crud, transaction );
+
+        List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( context.addTransaction( transaction ), transaction.createStatement() );
+
+        List<Result<?, ?>> results = new ArrayList<>();
+        TriFunction<ExecutedContext, UIRequest, Statement, ResultBuilder<?, ?, ?, ?>> builder = REGISTER.get( context.getLanguage() );
+
+        for ( ExecutedContext executedContext : executedContexts ) {
+            if ( executedContext.getException().isPresent() ) {
+                log.warn( "Caught exception", executedContext.getException().get() );
+                return List.of( buildErrorResult( transaction, executedContext, executedContext.getException().get() ).build() );
+            }
+
+            results.add( builder.apply( executedContext, request, executedContext.getStatement() ).build() );
+        }
+
+        commitAndFinish( executedContexts, transaction.getQueryAnalyzer(), results, executedContexts.stream().map( ExecutedContext::getExecutionTime ).reduce( Long::sum ).orElse( -1L ) );
+
+        return results;
+    }
+
+
+    public static void commitAndFinish( List<ExecutedContext> executedContexts, InformationManager queryAnalyzer, List<Result<?, ?>> results, long executionTime ) {
         executionTime = System.nanoTime() - executionTime;
-        String commitStatus;
-        try {
-            transaction.commit();
-            commitStatus = "Committed";
-        } catch ( TransactionException e ) {
-            log.error( "Caught exception", e );
-            results.add( new Result( e ) );
+        String commitStatus = "Error on starting committing";
+        for ( Transaction transaction : executedContexts.stream().flatMap( c -> c.getQuery().getTransactions().stream() ).toList() ) {
+            // this has a lot of unnecessary no-op commits atm
             try {
-                transaction.rollback();
-                commitStatus = "Rolled back";
-            } catch ( TransactionException ex ) {
-                log.error( "Caught exception while rollback", e );
-                commitStatus = "Error while rolling back";
+                transaction.commit();
+                commitStatus = "Committed";
+            } catch ( TransactionException e ) {
+                log.error( "Caught exception", e );
+                results.add( RelationalResult.builder().error( e.getMessage() ).build() );
+                try {
+                    transaction.rollback();
+                    commitStatus = "Rolled back";
+                } catch ( TransactionException ex ) {
+                    log.error( "Caught exception while rollback", e );
+                    commitStatus = "Error while rolling back";
+                }
             }
         }
 
@@ -123,156 +191,251 @@ public class LanguageCrud {
 
 
     @Nullable
-    public static InformationManager attachAnalyzerIfSpecified( QueryRequest request, InformationObserver observer, Transaction transaction ) {
+    public static InformationManager attachAnalyzerIfSpecified( QueryContext context, InformationObserver observer, Transaction transaction ) {
         // This is not a nice solution. In case of a sql script with auto commit only the first statement is analyzed
         // and in case of auto commit of, the information is overwritten
         InformationManager queryAnalyzer = null;
-        if ( request.analyze ) {
+        if ( context.isAnalysed() ) {
             queryAnalyzer = transaction.getQueryAnalyzer().observe( observer );
         }
         return queryAnalyzer;
     }
 
 
-    public static PolyGraph getGraph( String databaseName, TransactionManager manager ) {
+    public static PolyGraph getGraph( String namespace, TransactionManager manager, Session session ) {
+        QueryLanguage language = QueryLanguage.from( "cypher" );
+        Transaction transaction = Crud.getTransaction( false, false, manager, Catalog.defaultUserId, Catalog.defaultNamespaceId, "getGraph" );
+        ImplementationContext context = LanguageManager.getINSTANCE().anyPrepareQuery(
+                QueryContext.builder()
+                        .query( "MATCH (*) RETURN *" )
+                        .language( language )
+                        .origin( transaction.getOrigin() )
+                        .namespaceId( getNamespaceIdOrDefault( namespace ) )
+                        .transactionManager( manager )
+                        .informationTarget( i -> i.setSession( session ) )
+                        .build(), transaction.createStatement() ).get( 0 );
 
-        Transaction transaction = Crud.getTransaction( false, false, manager, Catalog.defaultUserId, Catalog.defaultDatabaseId, "getGraph" );
-        Processor processor = transaction.getProcessor( QueryLanguage.from( "cypher" ) );
-        Statement statement = transaction.createStatement();
-
-        ExtendedQueryParameters parameters = new ExtendedQueryParameters( databaseName );
-        AlgRoot logicalRoot = processor.translate( statement, null, parameters );
-        PolyImplementation polyImplementation = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
-
-        List<List<Object>> res = polyImplementation.getRows( statement, 1 );
-
-        try {
-            statement.getTransaction().commit();
-        } catch ( TransactionException e ) {
-            throw new RuntimeException( "Error while committing graph retrieval query." );
+        if ( context.getException().isPresent() ) {
+            return new PolyGraph( PolyMap.of( new HashMap<>() ), PolyMap.of( new HashMap<>() ) );
         }
 
-        return (PolyGraph) res.get( 0 ).get( 0 );
+        ResultIterator iterator = context.execute( transaction.createStatement() ).getIterator();
+        List<List<PolyValue>> res = iterator.getNextBatch();
+
+        try {
+            iterator.close();
+            transaction.commit();
+        } catch ( Exception | TransactionException e ) {
+            throw new GenericRuntimeException( "Error while committing graph retrieval query." );
+        }
+
+        return res.get( 0 ).get( 0 ).asGraph();
     }
 
 
-    public static void printLog( Throwable t, QueryRequest request ) {
-        log.warn( "Failed during execution\nquery:" + request.query + "\nMsg:" + t.getMessage() );
-    }
-
-
-    public static void attachError( Transaction transaction, List<Result> results, String query, Throwable t ) {
+    public static ResultBuilder<?, ?, ?, ?> buildErrorResult( Transaction transaction, ExecutedContext context, Throwable t ) {
         //String msg = t.getMessage() == null ? "" : t.getMessage();
-        Result result = new Result( t ).setGeneratedQuery( query ).setXid( transaction.getXid().toString() );
+        ResultBuilder<?, ?, ?, ?> result = switch ( context.getQuery().getLanguage().dataModel() ) {
+            case RELATIONAL -> RelationalResult.builder().error( t == null ? null : t.getMessage() ).exception( t ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() );
+            case DOCUMENT -> DocResult.builder().error( t == null ? null : t.getMessage() ).exception( t ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() );
+            case GRAPH -> GraphResult.builder().error( t == null ? null : t.getMessage() ).exception( t ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() );
+        };
 
         if ( transaction.isActive() ) {
             try {
                 transaction.rollback();
             } catch ( TransactionException e ) {
-                throw new RuntimeException( "Error while rolling back the failed transaction." );
+                throw new GenericRuntimeException( "Error while rolling back the failed transaction." );
             }
         }
 
-        results.add( result );
+        return result;
     }
 
 
     @NotNull
-    public static Result getResult( QueryLanguage language, Statement statement, QueryRequest request, String query, PolyImplementation result, Transaction transaction, final boolean noLimit ) {
+    public static ResultBuilder<?, ?, ?, ?> getRelResult( ExecutedContext context, UIRequest request, Statement statement ) {
         Catalog catalog = Catalog.getInstance();
-
-        List<List<Object>> rows = result.getRows( statement, noLimit ? -1 : language == QueryLanguage.from( "cypher" ) ? RuntimeConfig.UI_NODE_AMOUNT.getInteger() : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
-
-        boolean hasMoreRows = result.hasMoreRows();
-
-        CatalogTable catalogTable = null;
-        if ( request.tableId != null ) {
-            String[] t = request.tableId.split( "\\." );
-            try {
-                catalogTable = Catalog.getInstance().getTable( statement.getPrepareContext().getDefaultSchemaName(), t[0], t[1] );
-            } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
-                log.error( "Caught exception", e );
+        ResultIterator iterator = context.getIterator();
+        List<List<PolyValue>> rows = new ArrayList<>();
+        try {
+            for ( int i = 0; i < request.currentPage; i++ ) {
+                rows = iterator.getNextBatch();
             }
+
+            iterator.close();
+        } catch ( Exception e ) {
+            return buildErrorResult( statement.getTransaction(), context, e );
         }
 
-        ArrayList<DbColumn> header = new ArrayList<>();
-        for ( AlgDataTypeField metaData : result.rowType.getFieldList() ) {
-            String columnName = metaData.getName();
+        boolean hasMoreRows = context.getIterator().hasMoreRows();
 
-            String filter = "";
-            if ( request.filter != null && request.filter.containsKey( columnName ) ) {
-                filter = request.filter.get( columnName );
-            }
+        LogicalTable table = null;
+        if ( request.entityId != null ) {
+            table = Catalog.snapshot().rel().getTable( request.entityId ).orElseThrow();
+        }
 
-            SortState sort;
-            if ( request.sortState != null && request.sortState.containsKey( columnName ) ) {
-                sort = request.sortState.get( columnName );
-            } else {
-                sort = new SortState();
-            }
+        List<UiColumnDefinition> header = new ArrayList<>();
+        for ( AlgDataTypeField field : context.getIterator().getImplementation().tupleType.getFields() ) {
+            String columnName = field.getName();
 
-            DbColumn dbCol = new DbColumn(
-                    metaData.getName(),
-                    metaData.getType().getFullTypeString(),
-                    metaData.getType().isNullable() == (ResultSetMetaData.columnNullable == 1),
-                    metaData.getType().getPrecision(),
-                    sort,
-                    filter );
+            String filter = getFilter( field, request.filter );
+
+            SortState sort = getSortState( field, request.sortState );
+
+            UiColumnDefinitionBuilder<?, ?> dbCol = UiColumnDefinition.builder()
+                    .name( field.getName() )
+                    .dataType( field.getType().getFullTypeString() )
+                    .nullable( field.getType().isNullable() == (ResultSetMetaData.columnNullable == 1) )
+                    .precision( field.getType().getPrecision() )
+                    .sort( sort )
+                    .filter( filter );
 
             // Get column default values
-            if ( catalogTable != null ) {
-                try {
-                    if ( catalog.checkIfExistsColumn( catalogTable.id, columnName ) ) {
-                        CatalogColumn catalogColumn = catalog.getColumn( catalogTable.id, columnName );
-                        if ( catalogColumn.defaultValue != null ) {
-                            dbCol.defaultValue = catalogColumn.defaultValue.value;
-                        }
+            if ( table != null ) {
+                Optional<LogicalColumn> optional = catalog.getSnapshot().rel().getColumn( table.id, columnName );
+                if ( optional.isPresent() ) {
+                    if ( optional.get().defaultValue != null ) {
+                        dbCol.defaultValue( optional.get().defaultValue.value.toJson() );
                     }
-                } catch ( UnknownColumnException e ) {
-                    log.error( "Caught exception", e );
                 }
             }
-            header.add( dbCol );
+            header.add( dbCol.build() );
         }
 
-        ArrayList<String[]> data = Crud.computeResultData( rows, header, statement.getTransaction() );
+        List<String[]> data = computeResultData( rows, header, statement.getTransaction() );
 
-        return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) )
-                .setNamespaceType( result.getNamespaceType() )
-                .setNamespaceName( request.database )
-                .setLanguage( language )
-                .setAffectedRows( data.size() )
-                .setHasMoreRows( hasMoreRows )
-                .setXid( transaction.getXid().toString() )
-                .setGeneratedQuery( query );
+        return RelationalResult
+                .builder()
+                .header( header.toArray( new UiColumnDefinition[0] ) )
+                .data( data.toArray( new String[0][] ) )
+                .dataModel( context.getIterator().getImplementation().getDataModel() )
+                .namespace( request.namespace )
+                .language( context.getQuery().getLanguage() )
+                .affectedTuples( data.size() )
+                .hasMore( hasMoreRows )
+                .xid( statement.getTransaction().getXid().toString() )
+                .query( context.getQuery().getQuery() );
     }
 
 
-    /**
-     * Creates a new document collection
-     */
-    public void createCollection( final Context ctx ) {
-        EditCollectionRequest request = ctx.bodyAsClass( EditCollectionRequest.class );
-        Transaction transaction = crud.getTransaction();
-
-        String query = String.format( "db.createCollection(%s)", request.collection );
-
-        Result result;
-        try {
-            anyQuery( QueryLanguage.from( "mongo" ), null, new QueryRequest( query, false, false, "CYPHER", request.database ), crud.getTransactionManager(), crud.getUserId(), crud.getDatabaseId(), null );
-
-            result = new Result( 1 ).setGeneratedQuery( query );
-            transaction.commit();
-        } catch ( TransactionException e ) {
-            log.error( "Caught exception while creating a table", e );
-            result = new Result( e ).setGeneratedQuery( query );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Could not rollback createCollection statement: {}", ex.getMessage(), ex );
+    public static List<String[]> computeResultData( final List<List<PolyValue>> rows, final List<UiColumnDefinition> header, final Transaction transaction ) {
+        List<String[]> data = new ArrayList<>();
+        for ( List<PolyValue> row : rows ) {
+            String[] temp = new String[row.size()];
+            int counter = 0;
+            for ( PolyValue o : row ) {
+                if ( o == null || o.isNull() ) {
+                    temp[counter] = null;
+                } else {
+                    String columnName = String.valueOf( header.get( counter ).name.hashCode() );
+                    File mmFolder = PolyphenyHomeDirManager.getInstance().registerNewFolder( "/tmp" );
+                    mmFolder.mkdirs();
+                    ContentInfoUtil util = new ContentInfoUtil();
+                    if ( List.of( PolyType.FILE.getName(), PolyType.VIDEO.getName(), PolyType.AUDIO.getName(), PolyType.IMAGE.getName() ).contains( header.get( counter ).dataType ) ) {
+                        ContentInfo info = util.findMatch( o.asBlob().value );
+                        String extension = "";
+                        if ( info != null && info.getFileExtensions() != null && info.getFileExtensions().length > 0 ) {
+                            extension = "." + info.getFileExtensions()[0];
+                        }
+                        File f = new File( mmFolder, columnName + "_" + UUID.randomUUID() + extension );
+                        try ( FileOutputStream fos = new FileOutputStream( f ) ) {
+                            fos.write( o.asBlob().value );
+                        } catch ( IOException e ) {
+                            throw new GenericRuntimeException( "Could not place file in mm folder", e );
+                        }
+                        temp[counter] = f.getName();
+                        TemporalFileManager.addFile( transaction.getXid().toString(), f );
+                    } else {
+                        temp[counter] = o.toJson();
+                    }
+                }
+                counter++;
             }
+            data.add( temp );
         }
-        ctx.json( result );
+        return data;
+    }
+
+
+    public static ResultBuilder<?, ?, ?, ?> getGraphResult( ExecutedContext context, UIRequest request, Statement statement ) {
+        ResultIterator iterator = context.getIterator();
+        List<PolyValue[]> data;
+        try {
+            data = iterator.getArrayRows();
+
+            iterator.close();
+
+            GraphResultBuilder<?, ?> builder = GraphResult.builder()
+                    .data( data.stream().map( r -> Arrays.stream( r ).map( LanguageCrud::toJson ).toArray( String[]::new ) ).toArray( String[][]::new ) )
+                    .header( context.getIterator().getImplementation().tupleType.getFields().stream().map( FieldDefinition::of ).toArray( FieldDefinition[]::new ) )
+                    .query( context.getQuery().getQuery() )
+                    .language( context.getQuery().getLanguage() )
+                    .dataModel( context.getIterator().getImplementation().getDataModel() )
+                    .affectedTuples( data.size() )
+                    .xid( statement.getTransaction().getXid().toString() )
+                    .namespace( request.namespace );
+
+            if ( Kind.DML.contains( context.getIterator().getImplementation().getKind() ) ) {
+                builder.affectedTuples( data.get( 0 )[0].asNumber().longValue() );
+            }
+            return builder;
+
+        } catch ( Exception e ) {
+            return buildErrorResult( statement.getTransaction(), context, e );
+        }
+    }
+
+
+    public static ResultBuilder<?, ?, ?, ?> getDocResult( ExecutedContext context, UIRequest request, Statement statement ) {
+        ResultIterator iterator = context.getIterator();
+        List<List<PolyValue>> data = new ArrayList<>();
+
+        try {
+            for ( int i = 0; i < request.currentPage; i++ ) {
+                data = iterator.getNextBatch();
+            }
+
+            iterator.close();
+
+            boolean hasMoreRows = context.getIterator().hasMoreRows();
+
+            return DocResult.builder()
+                    .header( context.getIterator().getImplementation().tupleType.getFields().stream().map( FieldDefinition::of ).toArray( FieldDefinition[]::new ) )
+                    .data( data.stream().map( d -> d.get( 0 ).toJson() ).toArray( String[]::new ) )
+                    .query( context.getQuery().getQuery() )
+                    .language( context.getQuery().getLanguage() )
+                    .hasMore( hasMoreRows )
+                    .affectedTuples( data.size() )
+                    .xid( statement.getTransaction().getXid().toString() )
+                    .dataModel( context.getIterator().getImplementation().getDataModel() )
+                    .namespace( request.namespace );
+        } catch ( Exception e ) {
+            return buildErrorResult( statement.getTransaction(), context, e );
+        }
+    }
+
+
+    private static String toJson( @Nullable PolyValue src ) {
+        return src == null
+                ? null
+                : Catalog.mode == RunMode.TEST ? src.toTypedJson() : src.toJson();
+    }
+
+
+    private static String getFilter( AlgDataTypeField field, Map<String, String> filter ) {
+        if ( filter != null && filter.containsKey( field.getName() ) ) {
+            return filter.get( field.getName() );
+        }
+        return "";
+    }
+
+
+    private static SortState getSortState( AlgDataTypeField field, Map<String, SortState> sortState ) {
+        if ( sortState != null && sortState.containsKey( field.getName() ) ) {
+            return sortState.get( field.getName() );
+        }
+        return new SortState();
     }
 
 
@@ -281,45 +444,42 @@ public class LanguageCrud {
      * as a query result
      */
     public void getDocumentDatabases( final Context ctx ) {
-        Map<String, String> names = Catalog.getInstance()
-                .getSchemas( Catalog.defaultDatabaseId, null )
+        Map<String, String> names = Catalog.getInstance().getSnapshot()
+                .getNamespaces( null )
                 .stream()
-                .collect( Collectors.toMap( CatalogSchema::getName, s -> s.namespaceType.name() ) );
+                .collect( Collectors.toMap( LogicalNamespace::getName, s -> s.dataModel.name() ) );
 
         String[][] data = names.entrySet().stream().map( n -> new String[]{ n.getKey(), n.getValue() } ).toArray( String[][]::new );
-        ctx.json( new Result( new DbColumn[]{ new DbColumn( "Database/Schema" ), new DbColumn( "Type" ) }, data ) );
+        ctx.json( RelationalResult
+                .builder()
+                .header( new UiColumnDefinition[]{ UiColumnDefinition.builder().name( "Database/Schema" ).build(), UiColumnDefinition.builder().name( "Type" ).build() } )
+                .data( data )
+                .build() );
     }
 
 
     public void getGraphPlacements( final Context ctx ) {
-        Index index = ctx.bodyAsClass( Index.class );
+        IndexModel index = ctx.bodyAsClass( IndexModel.class );
         ctx.json( getPlacements( index ) );
     }
 
 
-    private Placement getPlacements( final Index index ) {
+    private PlacementModel getPlacements( final IndexModel index ) {
         Catalog catalog = Catalog.getInstance();
-        String graphName = index.getSchema();
-        List<CatalogGraphDatabase> graphs = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( graphName ) );
-        if ( graphs.size() != 1 ) {
-            log.error( "The requested graph does not exist." );
-            return new Placement( new RuntimeException( "The requested graph does not exist." ) );
-        }
-        CatalogGraphDatabase graph = graphs.get( 0 );
+        LogicalGraph graph = Catalog.snapshot().graph().getGraph( index.namespaceId ).orElseThrow();
         EntityType type = EntityType.ENTITY;
-        Placement p = new Placement( false, List.of(), EntityType.ENTITY );
+        PlacementModel p = new PlacementModel( false, List.of(), EntityType.ENTITY );
         if ( type == EntityType.VIEW ) {
-
             return p;
         } else {
-            for ( int adapterId : graph.placements ) {
-                CatalogGraphPlacement placement = catalog.getGraphPlacement( graph.id, adapterId );
-                Adapter adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
-                p.addAdapter( new Placement.GraphStore(
+            List<AllocationPlacement> placements = catalog.getSnapshot().alloc().getPlacementsFromLogical( graph.id );
+            for ( AllocationPlacement placement : placements ) {
+                Adapter<?> adapter = AdapterManager.getInstance().getAdapter( placement.adapterId ).orElseThrow();
+                p.addAdapter( new PlacementModel.GraphStore(
                         adapter.getUniqueName(),
                         adapter.getUniqueName(),
-                        catalog.getGraphPlacements( adapterId ),
-                        adapter.getSupportedNamespaceTypes().contains( NamespaceType.GRAPH ) ) );
+                        catalog.getSnapshot().alloc().getFromLogical( placement.adapterId ),
+                        false ) );
             }
             return p;
         }
@@ -330,73 +490,44 @@ public class LanguageCrud {
     public void getFixedFields( Context context ) {
         Catalog catalog = Catalog.getInstance();
         UIRequest request = context.bodyAsClass( UIRequest.class );
-        Result result;
-        List<DbColumn> cols = new ArrayList<>();
+        RelationalResult result;
+        List<UiColumnDefinition> cols = new ArrayList<>();
 
-        result = new Result( cols.toArray( new DbColumn[0] ), null );
+        result = RelationalResult.builder().header( cols.toArray( new UiColumnDefinition[0] ) ).data( null ).build();
         context.json( result );
 
     }
 
 
     public void getCollectionPlacements( Context context ) {
-        Index index = context.bodyAsClass( Index.class );
-        String namespace = index.getSchema();
-        String collectionName = index.getTable();
+        IndexModel index = context.bodyAsClass( IndexModel.class );
         Catalog catalog = Catalog.getInstance();
-        long namespaceId;
-        try {
-            namespaceId = catalog.getSchema( Catalog.defaultDatabaseId, namespace ).id;
-        } catch ( UnknownSchemaException e ) {
-            context.json( new Placement( e ) );
-            return;
-        }
-        List<CatalogCollection> collections = catalog.getCollections( namespaceId, new Pattern( collectionName ) );
+        LogicalCollection collection = catalog.getSnapshot().doc().getCollection( index.entityId ).orElseThrow();
 
-        if ( collections.size() != 1 ) {
-            context.json( new Placement( new UnknownCollectionException( 0 ) ) );
-            return;
-        }
+        PlacementModel p = new PlacementModel( false, List.of(), EntityType.ENTITY );
 
-        CatalogCollection collection = catalog.getCollection( collections.get( 0 ).id );
+        List<AllocationEntity> allocs = catalog.getSnapshot().alloc().getFromLogical( collection.id );
 
-        Placement placement = new Placement( false, List.of(), EntityType.ENTITY );
-
-        for ( Integer adapterId : collection.placements ) {
-            Adapter adapter = AdapterManager.getInstance().getAdapter( adapterId );
-            List<CatalogCollectionPlacement> placements = catalog.getCollectionPlacementsByAdapter( adapterId );
-            placement.addAdapter( new DocumentStore( adapter.getUniqueName(), adapter.getUniqueName(), placements, adapter.getSupportedNamespaceTypes().contains( NamespaceType.DOCUMENT ) ) );
+        for ( AllocationEntity allocation : allocs ) {
+            Adapter<?> adapter = AdapterManager.getInstance().getAdapter( allocation.adapterId ).orElseThrow();
+            p.addAdapter( new DocumentStore(
+                    adapter.getUniqueName(),
+                    adapter.getUniqueName(),
+                    catalog.getSnapshot().alloc().getEntitiesOnAdapter( allocation.adapterId )
+                            .orElse( List.of() ),
+                    false ) );
         }
 
-        context.json( placement );
-    }
-
-
-    public void addLanguage(
-            String language,
-            Consumer7<Session,
-                    QueryRequest,
-                    TransactionManager,
-                    Long,
-                    Long,
-                    Crud,
-                    List<Result>> function ) {
-        REGISTER.put( language, function );
-    }
-
-
-    public void removeLanguage( String name ) {
-        REGISTER.remove( name );
+        context.json( p );
     }
 
 
     @FunctionalInterface
-    public interface Consumer7<One, Two, Three, Four, Five, Six, Seven> {
+    public interface TriFunction<First, Second, Third, Result> {
 
-        Seven apply( One one, Two two, Three three, Four four, Five five, Six six );
+        Result apply( First first, Second second, Third third );
 
     }
-
 
 }
 

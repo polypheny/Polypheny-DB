@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,8 +35,8 @@ package org.polypheny.db.algebra;
 
 
 import org.polypheny.db.algebra.core.Exchange;
-import org.polypheny.db.algebra.logical.relational.LogicalExchange;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.algebra.logical.relational.LogicalRelExchange;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.plan.AlgTraitSet;
 
@@ -74,13 +74,13 @@ public class AlgDistributionTraitDef extends AlgTraitDef<AlgDistribution> {
 
 
     @Override
-    public AlgNode convert( AlgOptPlanner planner, AlgNode alg, AlgDistribution toDistribution, boolean allowInfiniteCostConverters ) {
+    public AlgNode convert( AlgPlanner planner, AlgNode alg, AlgDistribution toDistribution, boolean allowInfiniteCostConverters ) {
         if ( toDistribution == AlgDistributions.ANY ) {
             return alg;
         }
 
         // Create a logical sort, then ask the planner to convert its remaining traits (e.g. convert it to an EnumerableSortRel if alg is enumerable convention)
-        final Exchange exchange = LogicalExchange.create( alg, toDistribution );
+        final Exchange exchange = LogicalRelExchange.create( alg, toDistribution );
         AlgNode newRel = planner.register( exchange, alg );
         final AlgTraitSet newTraitSet = alg.getTraitSet().replace( toDistribution );
         if ( !newRel.getTraitSet().equals( newTraitSet ) ) {
@@ -91,7 +91,7 @@ public class AlgDistributionTraitDef extends AlgTraitDef<AlgDistribution> {
 
 
     @Override
-    public boolean canConvert( AlgOptPlanner planner, AlgDistribution fromTrait, AlgDistribution toTrait ) {
+    public boolean canConvert( AlgPlanner planner, AlgDistribution fromTrait, AlgDistribution toTrait ) {
         return true;
     }
 

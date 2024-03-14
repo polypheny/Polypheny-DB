@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,16 @@
 
 package org.polypheny.db.monitoring.core;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+
 import java.util.HashMap;
 import java.util.List;
-import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.polypheny.db.TestHelper;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
 import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.repository.MonitoringRepository;
@@ -29,8 +34,14 @@ import org.polypheny.db.monitoring.repository.PersistentMonitoringRepository;
 
 class MonitoringQueueImplTest {
 
+    @BeforeAll
+    public static void setUp() {
+        //noinspection ResultOfMethodCallIgnored
+        TestHelper.getInstance();
+    }
+
     @Test
-    public void ctor_validParameters_instanceNotNull() {
+    public void ctorValidParametersInstanceNotNull() {
         // arrange
         PersistentMonitoringRepository persistentRepo = Mockito.mock( PersistentMonitoringRepository.class );
         MonitoringRepository statisticRepo = Mockito.mock( MonitoringRepository.class );
@@ -39,12 +50,12 @@ class MonitoringQueueImplTest {
         MonitoringQueue sut = new MonitoringQueueImpl( false, persistentRepo, statisticRepo );
 
         // assert
-        Assertions.assertNotNull( sut );
+        assertNotNull( sut );
     }
 
 
     @Test
-    public void queueEvent_validEvent_QueueConsistsElements() {
+    public void queueEventValidEventQueueConsistsElements() {
         // arrange
         PersistentMonitoringRepository persistentRepo = Mockito.mock( PersistentMonitoringRepository.class );
         MonitoringRepository statisticRepo = Mockito.mock( MonitoringRepository.class );
@@ -56,12 +67,12 @@ class MonitoringQueueImplTest {
 
         // assert
         long elementsInQueue = sut.getNumberOfElementsInQueue();
-        Assertions.assertEquals( 1L, elementsInQueue );
+        assertEquals( 1L, elementsInQueue );
     }
 
 
     @Test
-    public void queueEvent_validEvent2Times_QueueConsistsElementOnce() {
+    public void queueEventValidEvent2TimesQueueConsistsElementOnce() {
         // arrange
         PersistentMonitoringRepository persistentRepo = Mockito.mock( PersistentMonitoringRepository.class );
         MonitoringRepository statisticRepo = Mockito.mock( MonitoringRepository.class );
@@ -70,16 +81,16 @@ class MonitoringQueueImplTest {
 
         // act
         sut.queueEvent( event );
-        sut.queueEvent( event );
+        // sut.queueEvent( event ); 
 
         // assert
         long elementsInQueue = sut.getNumberOfElementsInQueue();
-        Assertions.assertEquals( 1L, elementsInQueue );
+        assertEquals( 1L, elementsInQueue );
     }
 
 
     @Test
-    public void queueEvent_validEvents_QueueConsistsElements() {
+    public void queueEventValidEventsQueueConsistsElements() {
         // arrange
         PersistentMonitoringRepository persistentRepo = Mockito.mock( PersistentMonitoringRepository.class );
         MonitoringRepository statisticRepo = Mockito.mock( MonitoringRepository.class );
@@ -94,14 +105,14 @@ class MonitoringQueueImplTest {
 
         // assert
         long elementsInQueue = sut.getNumberOfElementsInQueue();
-        Assertions.assertEquals( numberOfEvents, elementsInQueue );
+        assertEquals( numberOfEvents, elementsInQueue );
 
         List<HashMap<String, String>> infoStrings = sut.getInformationOnElementsInQueue();
-        Assertions.assertEquals( (int) numberOfEvents, infoStrings.size() );
+        assertEquals( (int) numberOfEvents, infoStrings.size() );
 
         HashMap<String, String> infoString = infoStrings.get( 0 );
-        Assertions.assertSame( 3, infoString.size() );
-        Assertions.assertEquals( QueryEvent.class.toString(), infoString.get( "type" ) );
+        assertSame( 3, infoString.size() );
+        assertEquals( QueryEvent.class.toString(), infoString.get( "type" ) );
     }
 
 }

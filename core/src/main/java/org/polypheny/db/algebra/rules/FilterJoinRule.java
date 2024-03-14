@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -189,8 +189,8 @@ public abstract class FilterJoinRule extends AlgOptRule {
         // create the new join node referencing the new children and containing its new join filters (if there are any)
         final ImmutableList<AlgDataType> fieldTypes =
                 ImmutableList.<AlgDataType>builder()
-                        .addAll( AlgOptUtil.getFieldTypeList( leftRel.getRowType() ) )
-                        .addAll( AlgOptUtil.getFieldTypeList( rightRel.getRowType() ) ).build();
+                        .addAll( AlgOptUtil.getFieldTypeList( leftRel.getTupleType() ) )
+                        .addAll( AlgOptUtil.getFieldTypeList( rightRel.getTupleType() ) ).build();
         final RexNode joinFilter = RexUtil.composeConjunction( rexBuilder, RexUtil.fixUp( rexBuilder, joinFilters, fieldTypes ) );
 
         // If nothing actually got pushed and there is nothing leftover, then this rule is a no-op
@@ -217,10 +217,10 @@ public abstract class FilterJoinRule extends AlgOptRule {
         algBuilder.push( newJoinRel );
 
         // Create a project on top of the join if some of the columns have become NOT NULL due to the join-type getting stricter.
-        algBuilder.convert( join.getRowType(), false );
+        algBuilder.convert( join.getTupleType(), false );
 
         // create a FilterRel on top of the join if needed
-        algBuilder.filter( RexUtil.fixUp( rexBuilder, aboveFilters, AlgOptUtil.getFieldTypeList( algBuilder.peek().getRowType() ) ) );
+        algBuilder.filter( RexUtil.fixUp( rexBuilder, aboveFilters, AlgOptUtil.getFieldTypeList( algBuilder.peek().getTupleType() ) ) );
 
         call.transformTo( algBuilder.build() );
     }

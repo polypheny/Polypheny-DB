@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,10 @@
 
 package org.polypheny.db.monitoring.core;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.sql.Timestamp;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
@@ -51,7 +51,7 @@ class MonitoringServiceImplTest {
         MonitoringService sut = new MonitoringServiceImpl( monitoringQueue, repository );
 
         // assert
-        Assertions.assertNotNull( sut );
+        assertNotNull( sut );
     }
 
 

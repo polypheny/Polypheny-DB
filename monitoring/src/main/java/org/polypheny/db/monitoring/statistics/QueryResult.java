@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,60 +16,32 @@
 
 package org.polypheny.db.monitoring.statistics;
 
+import lombok.Data;
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.type.PolyType;
+import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 
 
 /**
  * Boilerplate of a column to guide the handling and pattern of a column
  */
-@Slf4j
+@Getter
+@Data
 class QueryResult {
 
-    @Getter
-    private String schema;
-
-    @Getter
-    private String table;
-
-    @Getter
-    private String column;
-
-    @Getter
-    private final long schemaId;
-
-    @Getter
-    private final long tableId;
-
-    @Getter
-    private final Long columnId;
-
-    @Getter
-    private final PolyType type;
+    private final Entity entity;
+    private final LogicalColumn column;
 
 
-    QueryResult( long schemaId, long tableId, Long columnId, PolyType type ) {
-        this.schemaId = schemaId;
-        this.tableId = tableId;
-        this.columnId = columnId;
-        this.type = type;
-
-        Catalog catalog = Catalog.getInstance();
-        if ( catalog.checkIfExistsEntity( tableId ) ) {
-            this.schema = catalog.getSchema( schemaId ).name;
-            this.table = catalog.getTable( tableId ).name;
-            if ( columnId != null ) {
-                this.column = catalog.getColumn( columnId ).name;
-            }
-        }
+    QueryResult( Entity entity, LogicalColumn column ) {
+        this.entity = entity;
+        this.column = column;
     }
 
 
-    public static QueryResult fromCatalogColumn( CatalogColumn column ) {
-        return new QueryResult( column.schemaId, column.tableId, column.id, column.type );
+    public static QueryResult fromCatalogColumn( LogicalColumn column ) {
+        return new QueryResult( Catalog.getInstance().getSnapshot().rel().getTable( column.tableId ).orElseThrow(), column );
     }
 
 }

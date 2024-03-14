@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,22 +17,20 @@
 package org.polypheny.db.sql.language.ddl;
 
 
-import static org.polypheny.db.util.Static.RESOURCE;
-
+import java.util.Optional;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalView;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
-import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.runtime.PolyphenyDbContextException;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlOperator;
 import org.polypheny.db.sql.language.SqlSpecialOperator;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.util.CoreUtil;
 
 
 /**
@@ -52,31 +50,33 @@ public class SqlDropView extends SqlDropObject {
 
 
     @Override
-    public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        final CatalogTable catalogTable;
+    public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
+        final Optional<? extends LogicalEntity> entity = searchEntity( context, name );
 
-        try {
-            catalogTable = getCatalogTable( context, name );
-        } catch ( PolyphenyDbContextException e ) {
+        if ( entity.isEmpty() ) {
             if ( ifExists ) {
-                // It is ok that there is no database / schema / table with this name because "IF EXISTS" was specified
+                // It is ok that there is no view with this name because "IF EXISTS" was specified
                 return;
             } else {
-                throw e;
+                throw new GenericRuntimeException( "Could not find the specified view: %s", name );
             }
         }
 
-        if ( catalogTable.entityType != EntityType.VIEW ) {
-            throw new RuntimeException( "Not Possible to use DROP VIEW because " + catalogTable.name + " is not a View." );
+        Optional<LogicalView> optionalView = entity.get().unwrap( LogicalView.class );
+
+        if ( optionalView.isEmpty() ) {
+            throw new GenericRuntimeException( "Not possible to use DROP VIEW because " + name + " is not a view." );
         }
 
-        try {
-            DdlManager.getInstance().dropView( catalogTable, statement );
-        } catch ( DdlOnSourceException e ) {
-            throw CoreUtil.newContextException( name.getPos(), RESOURCE.ddlOnSourceTable() );
+        LogicalView view = optionalView.get();
+
+        if ( view.entityType != EntityType.VIEW ) {
+            throw new GenericRuntimeException( "Not possible to use DROP VIEW because " + view.name + " is not a view." );
         }
+
+        DdlManager.getInstance().dropView( view, statement );
+
 
     }
 
 }
-

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,19 +16,15 @@
 
 package org.polypheny.db.algebra.core.lpg;
 
-import org.polypheny.db.schema.graph.Graph;
-
+import org.polypheny.db.schema.trait.ModelTrait;
 
 /**
- * {@link org.polypheny.db.schema.ModelTrait#GRAPH} native node.
+ * {@link ModelTrait#GRAPH} native node.
  */
 public interface LpgAlg {
 
     NodeType getNodeType();
 
-    default Graph getGraph() {
-        return null;
-    }
 
     enum NodeType {
         MATCH,

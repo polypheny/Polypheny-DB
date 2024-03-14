@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,35 +19,33 @@ package org.polypheny.db.languages;
 import com.google.common.annotations.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import lombok.Getter;
-import org.eclipse.jetty.websocket.api.Session;
-import org.pf4j.Plugin;
-import org.pf4j.PluginWrapper;
-import org.polypheny.db.PolyImplementation;
-import org.polypheny.db.algebra.AlgRoot;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.information.InformationManager;
-import org.polypheny.db.languages.mql.Mql.Family;
-import org.polypheny.db.languages.mql.MqlCollectionStatement;
-import org.polypheny.db.languages.mql.MqlNode;
-import org.polypheny.db.languages.mql.MqlQueryParameters;
-import org.polypheny.db.languages.mql.MqlUseDatabase;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.languages.mql.MqlCreateCollection;
+import org.polypheny.db.languages.mql.MqlCreateView;
+import org.polypheny.db.mql.parser.MqlParserImpl;
 import org.polypheny.db.nodes.DeserializeFunctionOperator;
 import org.polypheny.db.nodes.LangFunctionOperator;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.plugins.PluginContext;
+import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.plugins.PolyPluginManager;
-import org.polypheny.db.processing.AutomaticDdlProcessor;
-import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.TransactionManager;
-import org.polypheny.db.webui.Crud;
+import org.polypheny.db.processing.QueryContext;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.crud.LanguageCrud;
-import org.polypheny.db.webui.models.Result;
-import org.polypheny.db.webui.models.requests.QueryRequest;
 
-public class MongoLanguagePlugin extends Plugin {
+@Slf4j
+public class MongoLanguagePlugin extends PolyPlugin {
 
     @Getter
     @VisibleForTesting
@@ -60,8 +58,8 @@ public class MongoLanguagePlugin extends Plugin {
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to be successfully loaded by manager.
      */
-    public MongoLanguagePlugin( PluginWrapper wrapper ) {
-        super( wrapper );
+    public MongoLanguagePlugin( PluginContext context ) {
+        super( context );
     }
 
 
@@ -78,105 +76,69 @@ public class MongoLanguagePlugin extends Plugin {
 
 
     public static void startup() {
-        PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.getCrud().languageCrud.addLanguage( "mongo", MongoLanguagePlugin::anyMongoQuery ) );
-        LanguageManager.getINSTANCE().addQueryLanguage( NamespaceType.DOCUMENT, "mongo", List.of( "mongo", "mql" ), org.polypheny.db.mql.parser.impl.MqlParserImpl.FACTORY, MqlProcessorImpl::new, null );
+        QueryLanguage language = new QueryLanguage(
+                DataModel.DOCUMENT,
+                "mongo",
+                List.of( "mongo", "mql" ),
+                MqlParserImpl.FACTORY,
+                MqlProcessor::new,
+                null,
+                MongoLanguagePlugin::anyQuerySplitter );
+        LanguageManager.getINSTANCE().addQueryLanguage( language );
 
+        PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.addToResult( language, LanguageCrud::getDocResult ) );
         if ( !isInit() ) {
             registerOperators();
         }
     }
 
 
-    public static List<Result> anyMongoQuery(
-            Session session,
-            QueryRequest request,
-            TransactionManager transactionManager,
-            long userId,
-            long databaseId,
-            Crud crud ) {
-        QueryLanguage language = QueryLanguage.from( "mongo" );
-
-        Transaction transaction = Crud.getTransaction( request.analyze, request.cache, transactionManager, userId, databaseId, "HTTP Interface MQL" );
-        AutomaticDdlProcessor mqlProcessor = (AutomaticDdlProcessor) transaction.getProcessor( language );
-
-        if ( request.analyze ) {
-            transaction.getQueryAnalyzer().setSession( session );
-        }
-
-        InformationManager queryAnalyzer = LanguageCrud.attachAnalyzerIfSpecified( request, crud, transaction );
-
-        List<Result> results = new ArrayList<>();
-
-        String[] mqls = request.query.trim().split( "\\n(?=(use|db.|show))" );
-
-        String database = request.database;
-        long executionTime = System.nanoTime();
-        boolean noLimit = false;
-
-        for ( String query : mqls ) {
-            try {
-                Statement statement = transaction.createStatement();
-                QueryParameters parameters = new MqlQueryParameters( query, database, NamespaceType.DOCUMENT );
-
-                if ( transaction.isAnalyze() ) {
-                    statement.getOverviewDuration().start( "Parsing" );
+    private static List<ParsedQueryContext> anyQuerySplitter( QueryContext context ) {
+        List<ParsedQueryContext> queries = new ArrayList<>( LanguageManager.toQueryNodes( context ) );
+        Snapshot snapshot = Catalog.snapshot();
+        List<Pair<Long, String>> toCreate = new ArrayList<>();
+        List<Pair<Long, String>> created = new ArrayList<>();
+        for ( ParsedQueryContext query : queries ) {
+            Node queryNode = query.getQueryNode().orElseThrow();
+            if ( queryNode.getEntity() == null ) {
+                continue;
+            }
+            Optional<LogicalEntity> collection = snapshot.getLogicalEntity( context.getNamespaceId(), queryNode.getEntity() );
+            if ( collection.isEmpty() && !created.contains( Pair.of( context.getNamespaceId(), queryNode.getEntity() ) ) ) {
+                if ( queryNode instanceof MqlCreateCollection || queryNode instanceof MqlCreateView ) {
+                    // entity was created during this query
+                    created.add( Pair.of( context.getNamespaceId(), queryNode.getEntity() ) );
+                } else if ( !queryNode.isA( Kind.DDL ) ) {
+                    // we have to create this query manually
+                    toCreate.add( 0, Pair.of( context.getNamespaceId(), queryNode.getEntity() ) );
                 }
-                MqlNode parsed = (MqlNode) mqlProcessor.parse( query ).get( 0 );
-                if ( transaction.isAnalyze() ) {
-                    statement.getOverviewDuration().stop( "Parsing" );
-                }
-
-                if ( parsed instanceof MqlUseDatabase ) {
-                    database = ((MqlUseDatabase) parsed).getDatabase();
-                    //continue;
-                }
-
-                if ( parsed instanceof MqlCollectionStatement && ((MqlCollectionStatement) parsed).getLimit() != null ) {
-                    noLimit = true;
-                }
-
-                if ( parsed.getFamily() == Family.DML && mqlProcessor.needsDdlGeneration( parsed, parameters ) ) {
-                    mqlProcessor.autoGenerateDDL( Crud.getTransaction( request.analyze, request.cache, transactionManager, userId, databaseId, "HTTP Interface MQL (auto)" ).createStatement(), parsed, parameters );
-                }
-
-                if ( parsed.getFamily() == Family.DDL ) {
-                    mqlProcessor.prepareDdl( statement, parsed, parameters );
-                    Result result = new Result( 1 ).setGeneratedQuery( query ).setXid( transaction.getXid().toString() );
-                    results.add( result );
-                } else {
-                    if ( transaction.isAnalyze() ) {
-                        statement.getOverviewDuration().start( "Translation" );
-                    }
-                    AlgRoot logicalRoot = mqlProcessor.translate( statement, parsed, parameters );
-                    if ( transaction.isAnalyze() ) {
-                        statement.getOverviewDuration().stop( "Translation" );
-                    }
-
-                    // Prepare
-                    PolyImplementation polyImplementation = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
-
-                    if ( transaction.isAnalyze() ) {
-                        statement.getOverviewDuration().start( "Execution" );
-                    }
-                    results.add( LanguageCrud.getResult( language, statement, request, query, polyImplementation, transaction, noLimit ).setNamespaceType( NamespaceType.DOCUMENT ) );
-                    if ( transaction.isAnalyze() ) {
-                        statement.getOverviewDuration().stop( "Execution" );
-                    }
-                }
-            } catch ( Throwable t ) {
-                LanguageCrud.attachError( transaction, results, query, t );
             }
         }
 
-        LanguageCrud.commitAndFinish( transaction, queryAnalyzer, results, executionTime );
+        List<List<ParsedQueryContext>> toCreateQueries = toCreate.stream().map( p ->
+                QueryContext.builder()
+                        .query( "db.createCollection(" + p.right + ")" )
+                        .namespaceId( p.left )
+                        .language( context.getLanguage() )
+                        .namespaceId( context.getNamespaceId() )
+                        .transactionManager( context.getTransactionManager() )
+                        .origin( context.getOrigin() )
+                        .informationTarget( context.getInformationTarget() )
+                        .build() ).map( LanguageManager::toQueryNodes ).toList();
 
-        return results;
+        for ( List<ParsedQueryContext> toCreateQuery : toCreateQueries ) {
+            for ( int i = toCreateQueries.size() - 1; i >= 0; i-- ) {
+                queries.add( 0, toCreateQuery.get( i ) );
+            }
+        }
+
+        return queries;
     }
 
 
     public static void registerOperators() {
         if ( isInit ) {
-            throw new RuntimeException( "Mql operators were already registered." );
+            throw new GenericRuntimeException( "Mql operators were already registered." );
         }
         register( OperatorName.MQL_EQUALS, new LangFunctionOperator( "MQL_EQUALS", Kind.EQUALS ) );
 
@@ -194,8 +156,6 @@ public class MongoLanguagePlugin extends Plugin {
 
         register( OperatorName.MQL_ITEM, new LangFunctionOperator( "MQL_ITEM", Kind.MQL_ITEM ) );
 
-        register( OperatorName.MQL_EXCLUDE, new LangFunctionOperator( "MQL_EXCLUDE", Kind.MQL_EXCLUDE ) );
-
         register( OperatorName.MQL_ADD_FIELDS, new LangFunctionOperator( "MQL_ADD_FIELDS", Kind.MQL_ADD_FIELDS ) );
 
         register( OperatorName.MQL_UPDATE_MIN, new LangFunctionOperator( "MQL_UPDATE_MIN", Kind.MIN ) );
@@ -208,7 +168,7 @@ public class MongoLanguagePlugin extends Plugin {
 
         register( OperatorName.MQL_UPDATE_REPLACE, new LangFunctionOperator( "MQL_UPDATE_REPLACE", Kind.MQL_UPDATE_REPLACE ) );
 
-        register( OperatorName.MQL_UPDATE_REMOVE, new LangFunctionOperator( "MQL_UPDATE_REMOVE", Kind.MQL_UPDATE_REMOVE ) );
+        register( OperatorName.MQL_REMOVE, new LangFunctionOperator( "MQL_UPDATE_REMOVE", Kind.MQL_UPDATE_REMOVE ) );
 
         register( OperatorName.MQL_UPDATE, new LangFunctionOperator( "MQL_UPDATE", Kind.MQL_UPDATE ) );
 
@@ -226,9 +186,23 @@ public class MongoLanguagePlugin extends Plugin {
 
         register( OperatorName.MQL_GTE, new LangFunctionOperator( "MQL_GTE", Kind.GREATER_THAN_OR_EQUAL ) );
 
-        register( OperatorName.MQL_JSONIFY, new LangFunctionOperator( "MQL_JSONIFY", Kind.MQL_JSONIFY ) );
+        register( OperatorName.MQL_NOT_UNSET, new LangFunctionOperator( "MQL_NOT_UNSET", Kind.OTHER ) );
+
+        register( OperatorName.MQL_MERGE, new LangFunctionOperator( OperatorName.MQL_MERGE.name(), Kind.OTHER ) );
+
+        register( OperatorName.MQL_REPLACE_ROOT, new LangFunctionOperator( OperatorName.MQL_REPLACE_ROOT.name(), Kind.OTHER ) );
+
+        register( OperatorName.MQL_PROJECT_INCLUDES, new LangFunctionOperator( OperatorName.MQL_PROJECT_INCLUDES.name(), Kind.OTHER ) );
 
         register( OperatorName.DESERIALIZE, new DeserializeFunctionOperator( "DESERIALIZE_DOC" ) );
+
+        register( OperatorName.EXTRACT_NAME, new LangFunctionOperator( "EXTRACT_NAME", Kind.EXTRACT ) );
+
+        register( OperatorName.REMOVE_NAMES, new LangFunctionOperator( "REMOVE_NAMES", Kind.EXTRACT ) );
+
+        register( OperatorName.PLUS, new LangFunctionOperator( OperatorName.PLUS.name(), Kind.PLUS ) );
+
+        register( OperatorName.MINUS, new LangFunctionOperator( OperatorName.MINUS.name(), Kind.MINUS ) );
 
         isInit = true;
     }

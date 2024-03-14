@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.expression.CypherExpression;
@@ -28,6 +29,7 @@ import org.polypheny.db.cypher.expression.CypherProperty;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -47,11 +49,11 @@ public class CypherSetProperty extends CypherSetItem {
     public void convertItem( CypherContext context ) {
         String nodeName = property.getSubjectName();
         AlgNode node = context.peek();
-        int index = node.getRowType().getFieldNames().indexOf( nodeName );
+        int index = node.getTupleType().getFieldNames().indexOf( nodeName );
         if ( index < 0 ) {
-            throw new RuntimeException( String.format( "Unknown variable with name %s", nodeName ) );
+            throw new GenericRuntimeException( String.format( "Unknown variable with name %s", nodeName ) );
         }
-        AlgDataTypeField field = node.getRowType().getFieldList().get( index );
+        AlgDataTypeField field = node.getTupleType().getFields().get( index );
 
         RexNode ref = context.getRexNode( nodeName );
         if ( ref == null ) {
@@ -66,7 +68,7 @@ public class CypherSetProperty extends CypherSetItem {
                         context.rexBuilder.makeLiteral( getProperty().getPropertyKey() ),
                         expression.getRex( context, RexType.PROJECT ).right ) );
 
-        context.add( Pair.of( nodeName, op ) );
+        context.add( Pair.of( PolyString.of( nodeName ), op ) );
 
     }
 

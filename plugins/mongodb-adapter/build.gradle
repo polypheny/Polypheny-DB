@@ -1,6 +1,5 @@
 group "org.polypheny"
 
-
 dependencies {
     compileOnly project(":core")
     compileOnly project(":plugins:sql-language")
@@ -8,11 +7,12 @@ dependencies {
 
     implementation group: "org.mongodb", name: "mongodb-driver-sync", version: mongodb_driver_sync_version  // Apache 2.0
 
+
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":core")
 
-    testImplementation group: "junit", name: "junit", version: junit_version
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: junit_jupiter_version
     testImplementation group: "com.google.guava", name: "guava", version: guava_version
 }
 
@@ -21,7 +21,6 @@ sourceSets {
     main {
         java {
             srcDirs = ["src/main/java"]
-            outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {
             srcDirs = ["src/main/resources"]
@@ -31,7 +30,7 @@ sourceSets {
     test {
         java {
             srcDirs = ["src/test/java"]
-            outputDir = file(project.buildDir.absolutePath + "/test-classes")
+            destinationDirectory.set(file(project.buildDir.absolutePath + "/test-classes"))
         }
         resources {
             srcDirs = ["src/test/resources"]
@@ -81,5 +80,3 @@ java {
 licensee {
     allow('Apache-2.0')
 }
-
-

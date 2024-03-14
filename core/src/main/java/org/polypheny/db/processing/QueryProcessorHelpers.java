@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package org.polypheny.db.processing;
 
-import java.lang.reflect.Type;
 import java.sql.DatabaseMetaData;
 import java.sql.Types;
 import java.util.ArrayList;
@@ -27,13 +26,17 @@ import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.algebra.core.common.Modify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.prepare.Prepare.PreparedResult;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.ExtraPolyTypes;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyDefaults;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Util;
 
 
@@ -42,12 +45,16 @@ import org.polypheny.db.util.Util;
  */
 public class QueryProcessorHelpers {
 
+
+    private static ArrayType arrayType;
+
+
     public static AlgDataType makeStruct( AlgDataTypeFactory typeFactory, AlgDataType type ) {
         if ( type.isStruct() ) {
             return type;
         }
         // TODO MV: This "null" might be wrong
-        return typeFactory.builder().add( "$0", null, type ).build();
+        return typeFactory.builder().add( null, "$0", null, type ).build();
     }
 
 
@@ -79,31 +86,26 @@ public class QueryProcessorHelpers {
     }
 
 
-    public static LogicalModify.Operation mapTableModOp( boolean isDml, Kind sqlKind ) {
+    public static LogicalRelModify.Operation mapTableModOp( boolean isDml, Kind sqlKind ) {
         if ( !isDml ) {
             return null;
         }
-        switch ( sqlKind ) {
-            case INSERT:
-                return LogicalModify.Operation.INSERT;
-            case DELETE:
-                return LogicalModify.Operation.DELETE;
-            case MERGE:
-                return LogicalModify.Operation.MERGE;
-            case UPDATE:
-                return LogicalModify.Operation.UPDATE;
-            default:
-                return null;
-        }
+        return switch ( sqlKind ) {
+            case INSERT -> Modify.Operation.INSERT;
+            case DELETE -> Modify.Operation.DELETE;
+            case MERGE -> Modify.Operation.MERGE;
+            case UPDATE -> Modify.Operation.UPDATE;
+            default -> null;
+        };
     }
 
 
     public static List<ColumnMetaData> getColumnMetaDataList( JavaTypeFactory typeFactory, AlgDataType x, AlgDataType jdbcType, List<List<String>> originList ) {
         final List<ColumnMetaData> columns = new ArrayList<>();
-        for ( Ord<AlgDataTypeField> pair : Ord.zip( jdbcType.getFieldList() ) ) {
+        for ( Ord<AlgDataTypeField> pair : Ord.zip( jdbcType.getFields() ) ) {
             final AlgDataTypeField field = pair.e;
             final AlgDataType type = field.getType();
-            final AlgDataType fieldType = x.isStruct() ? x.getFieldList().get( pair.i ).getType() : type;
+            final AlgDataType fieldType = x.isStruct() ? x.getFields().get( pair.i ).getType() : type;
             columns.add( QueryProcessorHelpers.metaData( typeFactory, columns.size(), field.getName(), type, fieldType, originList.get( pair.i ) ) );
         }
         return columns;
@@ -113,15 +115,27 @@ public class QueryProcessorHelpers {
     public static ColumnMetaData.AvaticaType avaticaType( JavaTypeFactory typeFactory, AlgDataType type, AlgDataType fieldType ) {
         final String typeName = type.getPolyType().getTypeName();
         if ( type.getComponentType() != null ) {
-            final ColumnMetaData.AvaticaType componentType = avaticaType( typeFactory, type.getComponentType(), null );
+            ColumnMetaData.AvaticaType componentType = avaticaType( typeFactory, type.getComponentType(), null );
+            arrayType = ((ArrayType) type);
+            if ( arrayType.getDimension() > 1 ) {
+                // we have to go deeper
+                componentType = avaticaType( typeFactory, new ArrayType( arrayType.getComponentType(), arrayType.isNullable(), arrayType.getCardinality(), arrayType.getDimension() - 1 ), type.getComponentType() );
+            }
+
             final ColumnMetaData.Rep rep = Rep.ARRAY;
             return ColumnMetaData.array( componentType, typeName, rep );
         } else {
             int typeOrdinal = QueryProcessorHelpers.getTypeOrdinal( type );
+
             switch ( typeOrdinal ) {
                 case Types.STRUCT:
+                    if ( type.getPolyType() == PolyType.DOCUMENT ) {
+                        final ColumnMetaData.Rep rep = ColumnMetaData.Rep.of( PolyDefaults.MAPPINGS.get( String.class ) );
+                        assert rep != null;
+                        return ColumnMetaData.scalar( PolyType.VARCHAR.getJdbcOrdinal(), typeName, rep );
+                    }
                     final List<ColumnMetaData> columns = new ArrayList<>();
-                    for ( AlgDataTypeField field : type.getFieldList() ) {
+                    for ( AlgDataTypeField field : type.getFields() ) {
                         columns.add( metaData( typeFactory, field.getIndex(), field.getName(), field.getType(), null, null ) );
                     }
                     return ColumnMetaData.struct( columns );
@@ -129,8 +143,8 @@ public class QueryProcessorHelpers {
                     typeOrdinal = Types.VARCHAR;
                     // Fall through
                 default:
-                    final Type clazz = typeFactory.getJavaClass( Util.first( fieldType, type ) );
-                    final ColumnMetaData.Rep rep = ColumnMetaData.Rep.of( clazz );
+                    //final Type clazz = typeFactory.getJavaClass( Util.first( fieldType, type ) );
+                    final ColumnMetaData.Rep rep = ColumnMetaData.Rep.of( PolyDefaults.MAPPINGS.get( PolyValue.classFrom( Util.first( fieldType, type ).getPolyType() ) ) );
                     assert rep != null;
                     return ColumnMetaData.scalar( typeOrdinal, typeName, rep );
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -159,7 +159,7 @@ public class ImmutableBitSet implements Iterable<Integer>, Serializable, Compara
      * @param bits Collection of bits to set
      * @return Bit set
      */
-    public static ImmutableBitSet of( ImmutableIntList bits ) {
+    public static ImmutableBitSet of( ImmutableList<Integer> bits ) {
         return builder().addAll( bits ).build();
     }
 
@@ -618,10 +618,10 @@ public class ImmutableBitSet implements Iterable<Integer>, Serializable, Compara
      * Creates a view onto this bit set as a list of integers.
      *
      * The {@code cardinality} and {@code get} methods are both O(n), but the iterator is efficient. The list is memory efficient, and the CPU cost
-     * breaks even (versus {@link #toList}) if you intend to scan it only once.
+     * breaks even (versus {@link #toList}) if you intend to relScan it only once.
      */
     public List<Integer> asList() {
-        return new AbstractList<Integer>() {
+        return new AbstractList<>() {
             @Override
             public Integer get( int index ) {
                 return nth( index );
@@ -978,7 +978,7 @@ public class ImmutableBitSet implements Iterable<Integer>, Serializable, Compara
 
         Closure( SortedMap<Integer, ImmutableBitSet> equivalence ) {
             this.equivalence = equivalence;
-            final ImmutableIntList keys = ImmutableIntList.copyOf( equivalence.keySet() );
+            final ImmutableList<Integer> keys = ImmutableList.copyOf( equivalence.keySet() );
             for ( int pos : keys ) {
                 computeClosure( pos );
             }
@@ -1142,8 +1142,7 @@ public class ImmutableBitSet implements Iterable<Integer>, Serializable, Compara
         /**
          * Sets all bits in a given list of {@code int}s.
          */
-        public Builder addAll( ImmutableIntList integers ) {
-            //noinspection ForLoopReplaceableByForEach
+        public Builder addAll( ImmutableList<Integer> integers ) {
             for ( int i = 0; i < integers.size(); i++ ) {
                 set( integers.get( i ) );
             }

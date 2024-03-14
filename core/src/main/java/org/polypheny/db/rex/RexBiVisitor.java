@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ package org.polypheny.db.rex;
  */
 public interface RexBiVisitor<R, P> {
 
-    R visitInputRef( RexInputRef inputRef, P arg );
+    R visitInputRef( RexIndexRef inputRef, P arg );
 
     R visitLocalRef( RexLocalRef localRef, P arg );
 
@@ -63,8 +63,13 @@ public interface RexBiVisitor<R, P> {
 
     R visitSubQuery( RexSubQuery subQuery, P arg );
 
-    R visitTableInputRef( RexTableInputRef ref, P arg );
+    R visitTableInputRef( RexTableIndexRef ref, P arg );
 
     R visitPatternFieldRef( RexPatternFieldRef ref, P arg );
+
+    R visitNameRef( RexNameRef ref, P arg );
+
+    R visitElementRef( RexElementRef rexElementRef, P arg );
+
 }
 

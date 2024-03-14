@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,25 +34,20 @@
 package org.polypheny.db.prepare;
 
 
-import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Blocks;
-import org.apache.calcite.linq4j.tree.ConstantExpression;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.FunctionExpression;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.NewExpression;
-import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
-import org.polypheny.db.algebra.logical.relational.LogicalScan;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
@@ -65,25 +60,16 @@ import org.polypheny.db.util.BuiltInMethod;
  */
 class LixToAlgTranslator {
 
-    final AlgOptCluster cluster;
+    final AlgCluster cluster;
     final JavaTypeFactory typeFactory;
 
 
-    LixToAlgTranslator( AlgOptCluster cluster ) {
+    LixToAlgTranslator( AlgCluster cluster ) {
         this.cluster = cluster;
         this.typeFactory = (JavaTypeFactory) cluster.getTypeFactory();
     }
 
 
-    ToAlgContext toAlgContext() {
-        return () -> cluster;
-    }
-
-
-    public <T> AlgNode translate( Queryable<T> queryable ) {
-        QueryableAlgBuilder<T> translatorQueryable = new QueryableAlgBuilder<>( this );
-        return translatorQueryable.toAlg( queryable );
-    }
 
 
     public AlgNode translate( Expression expression ) {
@@ -94,47 +80,28 @@ class LixToAlgTranslator {
                 throw new UnsupportedOperationException( "unknown method " + call.method );
             }
             AlgNode input;
-            switch ( method ) {
-                case SELECT:
+            return switch ( method ) {
+                case SELECT -> {
                     input = translate( call.targetExpression );
-                    return LogicalProject.create(
+                    yield LogicalRelProject.create(
                             input,
-                            toRex( input, (FunctionExpression) call.expressions.get( 0 ) ),
+                            toRex( input, (FunctionExpression<?>) call.expressions.get( 0 ) ),
                             (List<String>) null );
-
-                case WHERE:
+                }
+                case WHERE -> {
                     input = translate( call.targetExpression );
-                    return LogicalFilter.create(
+                    yield LogicalRelFilter.create(
                             input,
-                            toRex( (FunctionExpression) call.expressions.get( 0 ), input ) );
-
-                case AS_QUERYABLE:
-                    return LogicalScan.create(
-                            cluster,
-                            AlgOptTableImpl.create(
-                                    null,
-                                    typeFactory.createJavaType( Types.toClass( Types.getElementType( call.targetExpression.getType() ) ) ),
-                                    ImmutableList.of(),
-                                    call.targetExpression ) );
-
-                case SCHEMA_GET_TABLE:
-                    return LogicalScan.create(
-                            cluster,
-                            AlgOptTableImpl.create(
-                                    null,
-                                    typeFactory.createJavaType( (Class) ((ConstantExpression) call.expressions.get( 1 )).value ),
-                                    ImmutableList.of(),
-                                    call.targetExpression ) );
-
-                default:
-                    throw new UnsupportedOperationException( "unknown method " + call.method );
-            }
+                            toRex( (FunctionExpression<?>) call.expressions.get( 0 ), input ) );
+                }
+                default -> throw new UnsupportedOperationException( "unknown method " + call.method );
+            };
         }
         throw new UnsupportedOperationException( "unknown expression type " + expression.getNodeType() );
     }
 
 
-    private List<RexNode> toRex( AlgNode child, FunctionExpression expression ) {
+    private List<RexNode> toRex( AlgNode child, FunctionExpression<?> expression ) {
         RexBuilder rexBuilder = cluster.getRexBuilder();
         List<RexNode> list = Collections.singletonList( rexBuilder.makeRangeReference( child ) );
         PolyphenyDbPrepareImpl.ScalarTranslator translator =

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,14 @@
 
 package org.polypheny.db.adapter.cottontail.algebra;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
-import org.polypheny.db.adapter.cottontail.CottontailTable;
+import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.adapter.cottontail.CottontailEntity;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.plan.AlgOptTable;
 
 
 public interface CottontailAlg extends AlgNode {
@@ -49,8 +51,7 @@ public interface CottontailAlg extends AlgNode {
 
         public String tableName;
 
-        public AlgOptTable table;
-        public CottontailTable cottontailTable;
+        public CottontailEntity table;
 
         public Expression filterBuilder;
 
@@ -58,6 +59,19 @@ public interface CottontailAlg extends AlgNode {
         public Expression limitBuilder;
         public int offset = -1;
         public Expression offsetBuilder;
+
+        Map<String, Long> dynamicParams = new HashMap<>();
+
+
+        @NotNull
+        public String getPhysicalName( String name ) {
+            return table.getColumns().stream().filter( c -> c.logicalName.equals( name ) ).findFirst().map( f -> f.name ).orElse( name );
+        }
+
+
+        public void addDynamicParam( String name, long index ) {
+            dynamicParams.put( name, index );
+        }
 
 
         public enum QueryType {

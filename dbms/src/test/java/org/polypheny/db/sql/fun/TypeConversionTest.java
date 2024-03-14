@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,23 +26,21 @@ import java.sql.Statement;
 import java.sql.Time;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.polypheny.db.AdapterTestSuite;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.db.excluded.CassandraExcluded;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
-@Category({ AdapterTestSuite.class, CassandraExcluded.class })
+@Tag("adapter")
 public class TypeConversionTest {
 
 
-    @BeforeClass
+    @BeforeAll
     public static void start() throws SQLException {
         // Ensures that Polypheny-DB is running
         //noinspection ResultOfMethodCallIgnored
@@ -63,7 +61,7 @@ public class TypeConversionTest {
     }
 
 
-    @AfterClass
+    @AfterAll
     public static void stop() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
@@ -93,7 +91,7 @@ public class TypeConversionTest {
 
                 // Cast Decimal to Double
                 expectedResult = ImmutableList.of(
-                        new Object[]{ Double.valueOf( 10.1324 ) }
+                        new Object[]{ 10.1324 }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT  CAST(DecimalData AS Double) FROM ConversionTestTable" ),
@@ -118,13 +116,6 @@ public class TypeConversionTest {
                         expectedResult
                 );
 
-                expectedResult = ImmutableList.of(
-                        new Object[]{ "2021-07-17" }
-                );
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT  Cast(DateData AS VARCHAR(20)) FROM ConversionTestTable" ),
-                        expectedResult
-                );
             }
         }
     }

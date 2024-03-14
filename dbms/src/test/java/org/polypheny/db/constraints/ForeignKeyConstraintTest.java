@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,47 +23,31 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaClientRuntimeException;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.polypheny.db.AdapterTestSuite;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.db.excluded.CassandraExcluded;
-import org.polypheny.db.excluded.CottontailExcluded;
-import org.polypheny.db.excluded.FileExcluded;
-import org.polypheny.db.excluded.MonetdbExcluded;
-import org.polypheny.db.excluded.MongodbExcluded;
-import org.polypheny.db.excluded.Neo4jExcluded;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
-@RunWith(Parameterized.class)
-@Category({ AdapterTestSuite.class, CottontailExcluded.class, FileExcluded.class, CassandraExcluded.class, Neo4jExcluded.class, MonetdbExcluded.class })
+@Tag("adapter")
 public class ForeignKeyConstraintTest {
 
-    @Parameters(name = "Create Indexes: {0}")
-    public static Object[] data() {
-        return new Object[]{ false, true };
-    }
 
-
-    private static final String CREATE_TABLE_CONSTRAINT_TEST =
-            "CREATE TABLE IF NOT EXISTS constraint_test (" +
-                    "ctid INTEGER NOT NULL, " +
-                    "a INTEGER NOT NULL, " +
-                    "b INTEGER NOT NULL, " +
-                    "c INTEGER NOT NULL, " +
-                    "PRIMARY KEY (ctid), " +
-                    "CONSTRAINT u_ab UNIQUE (a, b)" +
-                    ")";
+    private static final String CREATE_TABLE_CONSTRAINT_TEST = """
+            CREATE TABLE IF NOT EXISTS constraint_test (
+                ctid INTEGER NOT NULL,\s
+                a INTEGER NOT NULL,\s
+                b INTEGER NOT NULL,\s
+                c INTEGER NOT NULL,\s
+                PRIMARY KEY (ctid),\s
+                CONSTRAINT u_ab UNIQUE (a, b)
+            )""";
 
     private static final String CREATE_TABLE_CONSTRAINT_TEST2 =
             "CREATE TABLE IF NOT EXISTS constraint_test2 (" +
@@ -86,25 +70,16 @@ public class ForeignKeyConstraintTest {
             "ALTER TABLE constraint_test2 ADD UNIQUE INDEX idx2_ct2id ON ctid",
             "ALTER TABLE constraint_test2 ADD INDEX idx2_ctid ON ctid",
     };
+    private static TestHelper helper;
 
 
-    private final boolean createIndexes;
-
-
-    public ForeignKeyConstraintTest( boolean createIndexes ) {
-        this.createIndexes = createIndexes;
-    }
-
-
-    @BeforeClass
+    @BeforeAll
     public static void start() throws SQLException {
         // Ensures that Polypheny-DB is running
-        //noinspection ResultOfMethodCallIgnored
-        TestHelper.getInstance();
+        helper = TestHelper.getInstance();
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                // Create schema
                 statement.executeUpdate( "ALTER CONFIG 'runtime/uniqueConstraintEnforcement' SET true" );
                 statement.executeUpdate( "ALTER CONFIG 'runtime/foreignKeyEnforcement' SET true" );
                 statement.executeUpdate( "ALTER CONFIG 'runtime/polystoreIndexesSimplify' SET true" );
@@ -113,12 +88,11 @@ public class ForeignKeyConstraintTest {
     }
 
 
-    @AfterClass
+    @AfterAll
     public static void shutdown() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                // Create schema
                 statement.executeUpdate( "ALTER CONFIG 'runtime/uniqueConstraintEnforcement' SET false" );
                 statement.executeUpdate( "ALTER CONFIG 'runtime/foreignKeyEnforcement' SET false" );
                 statement.executeUpdate( "ALTER CONFIG 'runtime/polystoreIndexesSimplify' SET false" );
@@ -127,8 +101,9 @@ public class ForeignKeyConstraintTest {
     }
 
 
-    @Test
-    public void testInsertNoConflict() throws SQLException {
+    @ParameterizedTest(name = "{index}. Create Index: {0}")
+    @ValueSource(booleans = { false, true })
+    public void testInsertNoConflict( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -136,7 +111,7 @@ public class ForeignKeyConstraintTest {
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST );
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST2 );
                 statement.executeUpdate( ALTER_TABLE_ADD_FK );
-                if ( createIndexes ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );
@@ -163,10 +138,9 @@ public class ForeignKeyConstraintTest {
     }
 
 
-    @Test
-    @Category(MongodbExcluded.class) // COUNT() on empty collection returns no result and not 0...
-    // https://jira.mongodb.org/browse/SERVER-54958
-    public void testInsertConflict() throws SQLException {
+    @ParameterizedTest(name = "{index}. Create Index: {0}")
+    @ValueSource(booleans = { false, true })
+    public void testInsertConflict( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -174,7 +148,7 @@ public class ForeignKeyConstraintTest {
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST );
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST2 );
                 statement.executeUpdate( ALTER_TABLE_ADD_FK );
-                if ( createIndexes ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );
@@ -187,7 +161,7 @@ public class ForeignKeyConstraintTest {
                     try {
                         statement.executeUpdate( "INSERT INTO constraint_test2 VALUES (3, 1), (4, 3)" );
                         connection.commit();
-                        Assert.fail( "Expected ConstraintViolationException was not thrown" );
+                        Assertions.fail( "Expected ConstraintViolationException was not thrown" );
                     } catch ( AvaticaClientRuntimeException e ) {
                         if ( !(e.getMessage().contains( "Remote driver error:" )
                                 && e.getMessage().contains( "Transaction violates foreign key constraint" )) ) {
@@ -211,9 +185,10 @@ public class ForeignKeyConstraintTest {
     }
 
 
-    @Test
-    @Ignore // todo dl enable as soon as such inserts work correctly
-    public void testInsertSelectNoConflict() throws SQLException {
+    @ParameterizedTest(name = "{index}. Create Index: {0}")
+    @ValueSource(booleans = { false, true })
+    //@Disabled // todo dl enable as soon as such inserts work correctly
+    public void testInsertSelectNoConflict( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -221,7 +196,7 @@ public class ForeignKeyConstraintTest {
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST );
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST2 );
                 statement.executeUpdate( ALTER_TABLE_ADD_FK );
-                if ( createIndexes ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );
@@ -254,9 +229,9 @@ public class ForeignKeyConstraintTest {
     }
 
 
-    @Test
-    @Ignore // todo dl enable as soon as such inserts work correctly
-    public void testInsertSelectConflict() throws SQLException {
+    @ParameterizedTest(name = "{index}. Create Index: {0}")
+    @ValueSource(booleans = { false, true })
+    public void testInsertSelectConflict( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -264,7 +239,7 @@ public class ForeignKeyConstraintTest {
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST );
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST2 );
                 statement.executeUpdate( ALTER_TABLE_ADD_FK );
-                if ( createIndexes ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );
@@ -276,8 +251,8 @@ public class ForeignKeyConstraintTest {
 
                     try {
                         statement.executeUpdate( "INSERT INTO constraint_test2 SELECT ctid + 10 AS ct2id, ctid * 2 AS ctid FROM constraint_test" );
-                        Assert.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( RuntimeException e ) {
+                        Assertions.fail( "Expected ConstraintViolationException was not thrown" );
+                    } catch ( Throwable e ) {
                         if ( !(e.getMessage().contains( "Remote driver error:" ) && e.getMessage().contains( "Transaction violates foreign key constraint" )) ) {
                             throw new RuntimeException( "Unexpected exception", e );
                         }
@@ -303,8 +278,9 @@ public class ForeignKeyConstraintTest {
     }
 
 
-    @Test
-    public void testUpdateOutNoConflict() throws SQLException {
+    @ParameterizedTest(name = "{index}. Create Index: {0}")
+    @ValueSource(booleans = { false, true })
+    public void testUpdateOutNoConflict( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -312,7 +288,7 @@ public class ForeignKeyConstraintTest {
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST );
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST2 );
                 statement.executeUpdate( ALTER_TABLE_ADD_FK );
-                if ( createIndexes ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );
@@ -347,8 +323,9 @@ public class ForeignKeyConstraintTest {
     }
 
 
-    @Test
-    public void testUpdateOutConflict() throws SQLException {
+    @ParameterizedTest(name = "{index}. Create Index: {0}")
+    @ValueSource(booleans = { false, true })
+    public void testUpdateOutConflict( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -356,7 +333,7 @@ public class ForeignKeyConstraintTest {
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST );
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST2 );
                 statement.executeUpdate( ALTER_TABLE_ADD_FK );
-                if ( createIndexes ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );
@@ -367,11 +344,22 @@ public class ForeignKeyConstraintTest {
                     statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 1, 1, 1), (2, 2, 2, 2), (3, 3, 3, 3)" );
                     statement.executeUpdate( "INSERT INTO constraint_test2 VALUES (3, 3), (1, 1)" );
                     connection.commit();
+
                     try {
                         statement.executeUpdate( "UPDATE constraint_test2 SET ctid = ctid + 2" );
+
+                        TestHelper.checkResultSet(
+                                statement.executeQuery( "SELECT * FROM constraint_test2 ORDER BY ct2id" ),
+                                ImmutableList.of(
+                                        new Object[]{ 1, 3 },
+                                        new Object[]{ 3, 5 }
+                                ),
+                                false
+                        );
+
                         connection.commit();
-                        Assert.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( AvaticaClientRuntimeException e ) {
+                        Assertions.fail( "Expected ConstraintViolationException was not thrown" );
+                    } catch ( RuntimeException e ) {
                         if ( !(e.getMessage().contains( "Remote driver error:" )
                                 && e.getMessage().contains( "Transaction violates foreign key constraint" )) ) {
                             throw new RuntimeException( "Unexpected exception", e );
@@ -401,8 +389,10 @@ public class ForeignKeyConstraintTest {
     }
 
 
-    @Test
-    public void testUpdateInNoConflict() throws SQLException {
+    @ParameterizedTest(name = "{index}. Create Index: {0}")
+    @ValueSource(booleans = { false, true })
+    @Tag("cottontailExcluded") // only with indexes, cannot find column during update
+    public void testUpdateInNoConflict( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -410,7 +400,7 @@ public class ForeignKeyConstraintTest {
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST );
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST2 );
                 statement.executeUpdate( ALTER_TABLE_ADD_FK );
-                if ( createIndexes ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );
@@ -445,8 +435,10 @@ public class ForeignKeyConstraintTest {
     }
 
 
-    @Test
-    public void testUpdateInConflict() throws SQLException {
+    @ParameterizedTest(name = "{index}. Create Index: {0}")
+    @ValueSource(booleans = { false, true })
+    @Tag("cottontailExcluded") // only with indexes, cannot find column during update
+    public void testUpdateInConflict( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -454,7 +446,7 @@ public class ForeignKeyConstraintTest {
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST );
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST2 );
                 statement.executeUpdate( ALTER_TABLE_ADD_FK );
-                if ( createIndexes ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );
@@ -468,7 +460,7 @@ public class ForeignKeyConstraintTest {
                     try {
                         statement.executeUpdate( "UPDATE constraint_test SET ctid = 4 WHERE ctid = 1" );
                         connection.commit();
-                        Assert.fail( "Expected ConstraintViolationException was not thrown" );
+                        Assertions.fail( "Expected ConstraintViolationException was not thrown" );
                     } catch ( AvaticaClientRuntimeException e ) {
                         if ( !(e.getMessage().contains( "Remote driver error:" )
                                 && e.getMessage().contains( "Transaction violates foreign key constraint" )) ) {
@@ -499,8 +491,9 @@ public class ForeignKeyConstraintTest {
     }
 
 
-    @Test
-    public void testDeleteNoConflict() throws SQLException {
+    @ParameterizedTest(name = "{index}. Create Index: {0}")
+    @ValueSource(booleans = { false, true })
+    public void testDeleteNoConflict( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -508,7 +501,7 @@ public class ForeignKeyConstraintTest {
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST );
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST2 );
                 statement.executeUpdate( ALTER_TABLE_ADD_FK );
-                if ( createIndexes ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );
@@ -542,8 +535,9 @@ public class ForeignKeyConstraintTest {
     }
 
 
-    @Test
-    public void testDeleteConflict() throws SQLException {
+    @ParameterizedTest(name = "{index}. Create Index: {0}")
+    @ValueSource(booleans = { false, true })
+    public void testDeleteConflict( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -551,7 +545,7 @@ public class ForeignKeyConstraintTest {
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST );
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST2 );
                 statement.executeUpdate( ALTER_TABLE_ADD_FK );
-                if ( createIndexes ) {
+                if ( useIndex && helper.storeSupportsIndex() ) {
                     // Add indexes
                     for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
                         statement.executeUpdate( s );
@@ -565,7 +559,7 @@ public class ForeignKeyConstraintTest {
                     try {
                         statement.executeUpdate( "DELETE FROM constraint_test WHERE ctid = 1" );
                         connection.commit();
-                        Assert.fail( "Expected ConstraintViolationException was not thrown" );
+                        Assertions.fail( "Expected ConstraintViolationException was not thrown" );
                     } catch ( AvaticaClientRuntimeException e ) {
                         if ( !(e.getMessage().contains( "Remote driver error:" )
                                 && e.getMessage().contains( "Transaction violates foreign key constraint" )) ) {

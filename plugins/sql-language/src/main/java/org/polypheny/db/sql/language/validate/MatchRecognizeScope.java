@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,10 +22,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.sql.language.SqlMatchRecognize;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.util.NameMatcher;
+import org.polypheny.db.util.NameMatchers;
 
 
 /**
@@ -47,7 +47,7 @@ public class MatchRecognizeScope extends ListScope {
     public MatchRecognizeScope( SqlValidatorScope parent, SqlMatchRecognize matchRecognize ) {
         super( parent );
         this.matchRecognize = matchRecognize;
-        patternVars = validator.getCatalogReader().nameMatcher().createSet();
+        patternVars = NameMatchers.withCaseSensitive( false ).createSet();
         patternVars.add( STAR );
     }
 
@@ -75,34 +75,24 @@ public class MatchRecognizeScope extends ListScope {
 
     @Override
     public Map<String, ScopeChild>
-    findQualifyingTableNames( String columnName, SqlNode ctx, NameMatcher nameMatcher ) {
+    findQualifyingEntityNames( String columnName, SqlNode ctx, NameMatcher nameMatcher ) {
         final Map<String, ScopeChild> map = new HashMap<>();
         for ( ScopeChild child : children ) {
-            final AlgDataType rowType = child.namespace.getRowType();
+            final AlgDataType rowType = child.namespace.getTupleType();
             if ( nameMatcher.field( rowType, columnName ) != null ) {
                 map.put( STAR, child );
             }
         }
-        switch ( map.size() ) {
-            case 0:
-                return parent.findQualifyingTableNames( columnName, ctx, nameMatcher );
-            default:
-                return map;
+        if ( map.isEmpty() ) {
+            return parent.findQualifyingEntityNames( columnName, ctx, nameMatcher );
         }
+        return map;
     }
 
 
     @Override
-    public void resolve( List<String> names, NameMatcher nameMatcher, boolean deep, Resolved resolved ) {
-        if ( patternVars.contains( names.get( 0 ) ) ) {
-            final Step path = new EmptyPath().plus( null, 0, null, StructKind.FULLY_QUALIFIED );
-            final ScopeChild child = children.get( 0 );
-            resolved.found( child.namespace, child.nullable, this, path, names );
-            if ( resolved.count() > 0 ) {
-                return;
-            }
-        }
-        super.resolve( names, nameMatcher, deep, resolved );
+    public void resolve( List<String> names, boolean deep, Resolved resolved ) {
+        super.resolve( names, deep, resolved );
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import java.io.InputStream;
 import java.util.Enumeration;
 import java.util.Properties;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.Collation;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.runtime.Resources;
 import org.polypheny.db.runtime.Resources.BooleanProp;
@@ -82,7 +83,7 @@ public interface SaffronProperties {
      * {@link Validator}.
      */
     @Resource("saffron.default.charset")
-    @Default("ISO-8859-1")
+    @Default("UTF-8")
     StringProp defaultCharset();
 
     /**
@@ -93,7 +94,7 @@ public interface SaffronProperties {
      * {@code org.polypheny.db.sql.SqlLiteral#SqlLiteral}
      */
     @Resource("saffron.default.nationalcharset")
-    @Default("ISO-8859-1")
+    @Default("UTF-8")
     StringProp defaultNationalCharset();
 
     /**
@@ -103,7 +104,7 @@ public interface SaffronProperties {
      * {@code org.polypheny.db.sql.SqlLiteral#SqlLiteral}
      */
     @Resource("saffron.default.collation.name")
-    @Default("ISO-8859-1$en_US")
+    @Default("UTF-8$en_US")
     StringProp defaultCollation();
 
     /**
@@ -152,7 +153,7 @@ public interface SaffronProperties {
                     properties.load( stream );
                 }
             } catch ( IOException e ) {
-                throw new RuntimeException( "while reading from saffron.properties file", e );
+                throw new GenericRuntimeException( "while reading from saffron.properties file", e );
             }
 
             // copy in all system properties which start with "saffron."

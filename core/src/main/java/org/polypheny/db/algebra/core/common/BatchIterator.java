@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
 public abstract class BatchIterator extends SingleAlg {
@@ -34,7 +34,7 @@ public abstract class BatchIterator extends SingleAlg {
 
     @Override
     protected AlgDataType deriveRowType() {
-        return getInput().getRowType();
+        return getInput().getTupleType();
     }
 
 
@@ -45,14 +45,14 @@ public abstract class BatchIterator extends SingleAlg {
      * @param traits The trait set
      * @param input Input relational expression
      */
-    protected BatchIterator( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input ) {
+    protected BatchIterator( AlgCluster cluster, AlgTraitSet traits, AlgNode input ) {
         super( cluster, traits, input );
     }
 
 
     @Override
     public String algCompareString() {
-        return "for[" + getInput().algCompareString() + "]";
+        return getClass().getSimpleName() + "$for[" + getInput().algCompareString() + "]&";
     }
 
 }

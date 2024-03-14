@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,34 +17,35 @@
 package org.polypheny.db.adapter.monetdb.sources;
 
 
-import com.google.common.collect.ImmutableMap;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
-import org.polypheny.db.adapter.Adapter.AdapterProperties;
-import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
-import org.polypheny.db.adapter.Adapter.AdapterSettingString;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.annotations.AdapterProperties;
+import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
+import org.polypheny.db.adapter.annotations.AdapterSettingString;
+import org.polypheny.db.adapter.jdbc.JdbcTable;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.adapter.jdbc.sources.AbstractJdbcSource;
-import org.polypheny.db.catalog.Adapter;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.schema.Schema;
-import org.polypheny.db.schema.Table;
+import org.polypheny.db.adapter.monetdb.MonetdbSqlDialect;
+import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
+import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.prepare.Context;
 import org.polypheny.db.sql.language.SqlDialect;
-import org.polypheny.db.sql.language.dialect.MonetdbSqlDialect;
 
 
 @Slf4j
 @AdapterProperties(
         name = "MonetDB",
-        description = "MonetDB is an open-source column-oriented database management system. It is based on an optimistic concurrency control.",
-        usedModes = DeployMode.REMOTE)
+        description = "MonetDB is an execute-source column-oriented database management system. It is based on an optimistic concurrency control.",
+        usedModes = DeployMode.REMOTE,
+        defaultMode = DeployMode.REMOTE)
 @AdapterSettingString(name = "hose", defaultValue = "localhost", description = "Hostname or IP address of the remote MonetDB instance.", position = 1)
 @AdapterSettingInteger(name = "port", defaultValue = 50000, description = "JDBC port number on the remote MonetDB instance.", position = 2)
 @AdapterSettingString(name = "database", defaultValue = "polypheny", description = "JDBC port number on the remote MonetDB instance.", position = 3)
@@ -54,21 +55,8 @@ import org.polypheny.db.sql.language.dialect.MonetdbSqlDialect;
 @AdapterSettingString(name = "table", defaultValue = "public.foo,public.bar", description = "Maximum number of concurrent JDBC connections.")
 public class MonetdbSource extends AbstractJdbcSource {
 
-    public MonetdbSource( int storeId, String uniqueName, final Map<String, String> settings ) {
+    public MonetdbSource( long storeId, String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, "nl.cwi.monetdb.jdbc.MonetDriver", MonetdbSqlDialect.DEFAULT, false );
-    }
-
-
-    public static void register() {
-        Map<String, String> settings = ImmutableMap.of(
-                "mode", "docker",
-                "instanceId", "0",
-                "password", "polypheny",
-                "maxConnections", "25",
-                "port", "5000"
-        );
-
-        Adapter.addAdapter( MonetdbSource.class, "MONETDB", settings );
     }
 
 
@@ -90,18 +78,6 @@ public class MonetdbSource extends AbstractJdbcSource {
         }
         dataSource.setDefaultAutoCommit( false );
         return new TransactionalConnectionFactory( dataSource, Integer.parseInt( settings.get( "maxConnections" ) ), dialect );
-    }
-
-
-    @Override
-    public Table createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
-        return currentJdbcSchema.createJdbcTable( catalogTable, columnPlacementsOnStore, partitionPlacement );
-    }
-
-
-    @Override
-    public Schema getCurrentSchema() {
-        return currentJdbcSchema;
     }
 
 
@@ -131,6 +107,25 @@ public class MonetdbSource extends AbstractJdbcSource {
     @Override
     protected boolean requiresSchema() {
         return true;
+    }
+
+
+    @Override
+    public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
+        PhysicalTable table = adapterCatalog.createTable(
+                logical.table.getNamespaceName(),
+                logical.table.name,
+                logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
+                logical.table,
+                logical.columns.stream().collect( Collectors.toMap( t -> t.id, t -> t ) ),
+                logical.pkIds,
+                allocation );
+
+        JdbcTable physical = currentJdbcSchema.createJdbcTable( table );
+
+        adapterCatalog.replacePhysical( physical );
+
+        return List.of( physical );
     }
 
 }

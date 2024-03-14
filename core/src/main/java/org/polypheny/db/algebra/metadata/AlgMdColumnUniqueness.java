@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,11 +50,11 @@ import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinInfo;
 import org.polypheny.db.algebra.core.Minus;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -62,7 +62,7 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.hep.HepAlgVertex;
 import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
@@ -71,11 +71,11 @@ import org.polypheny.db.util.Pair;
 
 
 /**
- * RelMdColumnUniqueness supplies a default implementation of {@link AlgMetadataQuery#areColumnsUnique} for the standard logical algebra.
+ * {@link AlgMdColumnUniqueness} supplies a default implementation of {@link AlgMetadataQuery#areColumnsUnique} for the standard logical algebra.
  */
 public class AlgMdColumnUniqueness implements MetadataHandler<BuiltInMetadata.ColumnUniqueness> {
 
-    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( BuiltInMethod.COLUMN_UNIQUENESS.method, new AlgMdColumnUniqueness() );
+    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( new AlgMdColumnUniqueness(), BuiltInMethod.COLUMN_UNIQUENESS.method );
 
 
     private AlgMdColumnUniqueness() {
@@ -88,8 +88,8 @@ public class AlgMdColumnUniqueness implements MetadataHandler<BuiltInMetadata.Co
     }
 
 
-    public Boolean areColumnsUnique( Scan alg, AlgMetadataQuery mq, ImmutableBitSet columns, boolean ignoreNulls ) {
-        return alg.getTable().isKey( columns );
+    public Boolean areColumnsUnique( RelScan<?> alg, AlgMetadataQuery mq, ImmutableBitSet columns, boolean ignoreNulls ) {
+        return alg.getEntity().isKey( columns );
     }
 
 
@@ -117,7 +117,7 @@ public class AlgMdColumnUniqueness implements MetadataHandler<BuiltInMetadata.Co
 
     public Boolean areColumnsUnique( SetOp alg, AlgMetadataQuery mq, ImmutableBitSet columns, boolean ignoreNulls ) {
         // If not ALL then the rows are distinct. Therefore the set of all columns is a key.
-        return !alg.all && columns.nextClearBit( 0 ) >= alg.getRowType().getFieldCount();
+        return !alg.all && columns.nextClearBit( 0 ) >= alg.getTupleType().getFieldCount();
     }
 
 
@@ -160,7 +160,7 @@ public class AlgMdColumnUniqueness implements MetadataHandler<BuiltInMetadata.Co
                 return mq.areColumnsUnique( alg.getLeft(), columns, ignoreNulls );
             case LEFT:
             case INNER:
-                final Pair<ImmutableBitSet, ImmutableBitSet> leftAndRightColumns = splitLeftAndRightColumns( alg.getLeft().getRowType().getFieldCount(), columns );
+                final Pair<ImmutableBitSet, ImmutableBitSet> leftAndRightColumns = splitLeftAndRightColumns( alg.getLeft().getTupleType().getFieldCount(), columns );
                 final ImmutableBitSet leftColumns = leftAndRightColumns.left;
                 final ImmutableBitSet rightColumns = leftAndRightColumns.right;
                 final AlgNode left = alg.getLeft();
@@ -193,8 +193,8 @@ public class AlgMdColumnUniqueness implements MetadataHandler<BuiltInMetadata.Co
         ImmutableBitSet.Builder childColumns = ImmutableBitSet.builder();
         for ( int bit : columns ) {
             RexNode projExpr = projExprs.get( bit );
-            if ( projExpr instanceof RexInputRef ) {
-                childColumns.set( ((RexInputRef) projExpr).getIndex() );
+            if ( projExpr instanceof RexIndexRef ) {
+                childColumns.set( ((RexIndexRef) projExpr).getIndex() );
             } else if ( projExpr instanceof RexCall && ignoreNulls ) {
                 // If the expression is a cast such that the types are the same except for the nullability, then if we're ignoring nulls, it doesn't matter whether the underlying column reference
                 // is nullable.  Check that the types are the same by making a nullable copy of both types and then comparing them.
@@ -203,19 +203,18 @@ public class AlgMdColumnUniqueness implements MetadataHandler<BuiltInMetadata.Co
                     continue;
                 }
                 RexNode castOperand = call.getOperands().get( 0 );
-                if ( !(castOperand instanceof RexInputRef) ) {
+                if ( !(castOperand instanceof RexIndexRef) ) {
                     continue;
                 }
                 AlgDataTypeFactory typeFactory = alg.getCluster().getTypeFactory();
                 AlgDataType castType = typeFactory.createTypeWithNullability( projExpr.getType(), true );
                 AlgDataType origType = typeFactory.createTypeWithNullability( castOperand.getType(), true );
                 if ( castType.equals( origType ) ) {
-                    childColumns.set( ((RexInputRef) castOperand).getIndex() );
+                    childColumns.set( ((RexIndexRef) castOperand).getIndex() );
                 }
-            } else {
-                // If the expression will not influence uniqueness of the projection, then skip it.
-                continue;
             }
+            // If the expression does not influence uniqueness of the projection, then skip it.
+            continue;
         }
 
         // If no columns can affect uniqueness, then return unknown
@@ -236,7 +235,7 @@ public class AlgMdColumnUniqueness implements MetadataHandler<BuiltInMetadata.Co
         final AlgNode right = alg.getRight();
 
         // Divide up the input column mask into column masks for the left and right sides of the join
-        final Pair<ImmutableBitSet, ImmutableBitSet> leftAndRightColumns = splitLeftAndRightColumns( alg.getLeft().getRowType().getFieldCount(), columns );
+        final Pair<ImmutableBitSet, ImmutableBitSet> leftAndRightColumns = splitLeftAndRightColumns( alg.getLeft().getTupleType().getFieldCount(), columns );
         final ImmutableBitSet leftColumns = leftAndRightColumns.left;
         final ImmutableBitSet rightColumns = leftAndRightColumns.right;
 
@@ -300,7 +299,7 @@ public class AlgMdColumnUniqueness implements MetadataHandler<BuiltInMetadata.Co
         for ( ImmutableList<RexLiteral> tuple : alg.tuples ) {
             for ( int column : columns ) {
                 final RexLiteral literal = tuple.get( column );
-                values.add( literal.isNull() ? NullSentinel.INSTANCE : literal.getValueAs( Comparable.class ) );
+                values.add( literal.isNull() ? NullSentinel.INSTANCE : literal.getValue() );
             }
             if ( !set.add( ImmutableList.copyOf( values ) ) ) {
                 return false;
@@ -327,7 +326,7 @@ public class AlgMdColumnUniqueness implements MetadataHandler<BuiltInMetadata.Co
             if ( alg2 instanceof Aggregate
                     || alg2 instanceof Filter
                     || alg2 instanceof Values
-                    || alg2 instanceof Scan
+                    || alg2 instanceof RelScan
                     || simplyProjects( alg2, columns ) ) {
                 try {
                     final Boolean unique = mq.areColumnsUnique( alg2, columns, ignoreNulls );
@@ -357,10 +356,10 @@ public class AlgMdColumnUniqueness implements MetadataHandler<BuiltInMetadata.Co
             if ( column >= projects.size() ) {
                 return false;
             }
-            if ( !(projects.get( column ) instanceof RexInputRef) ) {
+            if ( !(projects.get( column ) instanceof RexIndexRef) ) {
                 return false;
             }
-            final RexInputRef ref = (RexInputRef) projects.get( column );
+            final RexIndexRef ref = (RexIndexRef) projects.get( column );
             if ( ref.getIndex() != column ) {
                 return false;
             }

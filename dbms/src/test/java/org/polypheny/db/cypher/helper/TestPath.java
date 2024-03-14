@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,14 @@
 
 package org.polypheny.db.cypher.helper;
 
+
 import java.util.List;
+import lombok.SneakyThrows;
 import org.polypheny.db.cypher.CypherTestTemplate;
-import org.polypheny.db.schema.graph.GraphObject;
-import org.polypheny.db.schema.graph.GraphPropertyHolder;
-import org.polypheny.db.schema.graph.PolyPath;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.graph.GraphObject;
+import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
+import org.polypheny.db.type.entity.graph.PolyPath;
 
 public class TestPath implements TestObject {
 
@@ -38,9 +41,9 @@ public class TestPath implements TestObject {
 
 
     @Override
-    public boolean matches( Object other, boolean exclusive ) {
-        assert other instanceof PolyPath;
-        PolyPath path = (PolyPath) other;
+    public boolean matches( PolyValue other, boolean exclusive ) {
+        assert other.isPath();
+        PolyPath path = other.asPath();
         List<GraphPropertyHolder> elements = path.getPath();
 
         if ( elements.size() != objects.size() ) {
@@ -58,9 +61,10 @@ public class TestPath implements TestObject {
     }
 
 
+    @SneakyThrows
     @Override
-    public Object toPoly( String val ) {
-        return CypherTestTemplate.GSON.fromJson( val, CypherTestTemplate.Type.from( this ).getPolyClass() );
+    public PolyValue toPoly( String val ) {
+        return val == null ? null : PolyValue.fromTypedJson( val, CypherTestTemplate.Type.from( this ).getPolyClass() );
     }
 
 }

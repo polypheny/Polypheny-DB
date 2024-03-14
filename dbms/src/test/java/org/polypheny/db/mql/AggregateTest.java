@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,18 +21,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.polypheny.db.AdapterTestSuite;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper.MongoConnection;
-import org.polypheny.db.excluded.CassandraExcluded;
-import org.polypheny.db.excluded.CottontailExcluded;
-import org.polypheny.db.excluded.FileExcluded;
-import org.polypheny.db.excluded.MonetdbExcluded;
-import org.polypheny.db.webui.models.Result;
+import org.polypheny.db.webui.models.results.DocResult;
 
-
-@Category({ AdapterTestSuite.class, FileExcluded.class, CassandraExcluded.class })
+@Tag("adapter")
 public class AggregateTest extends MqlTestTemplate {
 
 
@@ -56,68 +51,73 @@ public class AggregateTest extends MqlTestTemplate {
             "{\"val\":\"31\",\"test\":[\"test\",3,51]}",
             "{\"test\":[13]}" );
 
+    private final List<String> DATA_3_5 = Arrays.asList(
+            "{\"val\":3,\"test\":[3,4.1]}",
+            "{\"val\":\"31\",\"test\":[\"test\",null,{ \"test\": 25 }]}",
+            "{\"test\":13}" );
+
 
     @Test
     public void projectTest() {
-        List<String[]> expected = Arrays.asList(
-                new String[]{ "1" },
-                new String[]{ "1.3" },
-                new String[]{ "test" } );
+        List<String> expected = Arrays.asList(
+                "{test: 1}",
+                "{test: 1.3}",
+                "{test: \"test\"}" );
         insertMany( DATA_0 );
 
-        Result result = aggregate( $project( "{\"test\":1}" ) );
+        DocResult result = aggregate( $project( "{\"test\":1}" ) );
 
-        MongoConnection.checkUnorderedResultSet( result, expected, true );
+        MongoConnection.checkDocResultSet( result, expected, true, true );
     }
 
 
     @Test
     public void projectMultipleTest() {
-        List<String[]> expected = Arrays.asList(
-                new String[]{ null, "1", "1" },
-                new String[]{ "{\"key\":\"val\"}", "1.3", "1.3" },
-                new String[]{ "13", "test", "test" } );
+        List<String> expected = MongoConnection.arrayToDoc( Arrays.asList(
+                        new Object[]{ 1, 1 }, // field key is not present, which is unset, not null
+                        new Object[]{ 1.3, 1.3, "{\"key\":\"val\"}" },
+                        new Object[]{ "test", "test", 13 } ),
+                "newName1", "test", "newName2" );
         insertMany( DATA_0 );
 
-        Result result = aggregate( $project( "{\"test\":1,\"key\":1}" ), $project( "{\"newName2\":\"$key\",\"newName1\":\"$test\",\"test\":1}" ) );
+        DocResult result = aggregate( $project( "{\"test\":1,\"key\":1}" ), $project( "{\"newName2\":\"$key\",\"newName1\":\"$test\",\"test\":1}" ) );
 
-        MongoConnection.checkUnorderedResultSet( result, expected, true );
+        MongoConnection.checkDocResultSet( result, expected, true, true );
     }
 
 
     @Test
     public void matchTest() {
-        List<String[]> expected = ImmutableList.of(
-                new String[]{ "{\"test\":\"test\",\"key\":13}" } );
+        List<String> expected = ImmutableList.of( "{\"test\":\"test\",\"key\":13}" );
         insertMany( DATA_0 );
 
-        Result result = aggregate( $match( "{\"test\":\"test\"}" ) );
+        DocResult result = aggregate( $match( "{\"test\":\"test\"}" ) );
 
-        MongoConnection.checkUnorderedResultSet( result, expected, true );
+        MongoConnection.checkDocResultSet( result, expected, true, true );
     }
 
 
     @Test
     public void matchMultipleTest() {
-        List<String[]> expected = ImmutableList.of(
-                new String[]{ "{\"test\":1}" } );
+        List<String> expected = ImmutableList.of( "{\"test\":1}" );
         insertMany( DATA_0 );
 
-        Result result = aggregate( $match( "{\"$or\":[{\"test\": 1}, {\"test\": 1.3}]}" ), $match( "{\"test\": 1}" ) );
+        DocResult result = aggregate( $match( "{\"$or\":[{\"test\": 1}, {\"test\": 1.3}]}" ), $match( "{\"test\": 1}" ) );
 
-        MongoConnection.checkUnorderedResultSet( result, expected, true );
+        MongoConnection.checkDocResultSet( result, expected, true, true );
     }
 
 
     @Test
     public void matchProjectTest() {
-        List<String[]> expected = ImmutableList.of(
-                new String[]{ "val", "1.3" } );
+        List<String> expected = ImmutableList.of(
+                document( kv( string( "key" ), document( kv( string( "key" ), string( "val" ) ) ) ), kv( "test", 1.3 ) )
+        );
         insertMany( DATA_0 );
 
-        Result result = aggregate( $match( "{\"test\": 1.3}" ), $project( "{\"key.key\":1, \"test\":1}" ) );
+        DocResult result = aggregate( $match( "{\"test\": 1.3}" ), $project( "{\"key.key\":1, \"test\":1}" ) );
 
-        MongoConnection.checkUnorderedResultSet( result, expected, true );
+        MongoConnection.checkDocResultSet( result, expected, true, true );
     }
 
     //$addFields
@@ -125,44 +125,45 @@ public class AggregateTest extends MqlTestTemplate {
 
     @Test
     public void addFieldsTest() {
-        List<String[]> expected = Arrays.asList(
-                new String[]{ "{\"test\":1,\"added\":52}" },
-                new String[]{ "{\"test\":1.3,\"key\":{\"key\":\"val\"},\"added\":52}" },
-                new String[]{ "{\"test\":\"test\",\"key\":13,\"added\":52}" } );
+        List<String> expected = Arrays.asList(
+                "{\"test\":1,\"added\":52}",
+                "{\"test\":1.3,\"key\":{\"key\":\"val\"},\"added\":52}",
+                "{\"test\":\"test\",\"key\":13,\"added\":52}" );
         insertMany( DATA_0 );
 
-        Result result = aggregate( $addFields( "{\"added\": 52}" ) );
+        DocResult result = aggregate( $addFields( "{\"added\": 52}" ) );
 
-        MongoConnection.checkUnorderedResultSet( result, expected, true );
+        MongoConnection.checkDocResultSet( result, expected, true, true );
     }
 
 
     @Test
     public void projectAddFieldsTest() {
-        List<String[]> expected = Arrays.asList(
-                new String[]{ "52", "1" },
-                new String[]{ "52", "1.3" },
-                new String[]{ "52", "test" } );
+        List<String> expected = MongoConnection.arrayToDoc( Arrays.asList(
+                        new Object[]{ 52, 1 },
+                        new Object[]{ 52, 1.3 },
+                        new Object[]{ 52, "test" } ),
+                "added", "test" );
         insertMany( DATA_0 );
 
-        Result result = aggregate( $project( "{\"test\":1}" ), $addFields( "{\"added\": 52}" ) );
+        DocResult result = aggregate( $project( "{\"test\":1}" ), $addFields( "{\"added\": 52}" ) );
 
-        MongoConnection.checkUnorderedResultSet( result, expected, true );
+        MongoConnection.checkDocResultSet( result, expected, true, true );
     }
 
     //$count
 
 
     @Test
-    @Category(MonetdbExcluded.class) // MonetClob instead of String
     public void countTest() {
-        List<String[]> expected = ImmutableList.of(
-                new String[]{ "3" } );
+        List<String> expected = MongoConnection.arrayToDoc( ImmutableList.of(
+                        new Object[]{ 3 } ),
+                "newName" );
         insertMany( DATA_0 );
 
-        Result result = aggregate( $count( "newName" ) );
+        DocResult result = aggregate( $count( "newName" ) );
 
-        MongoConnection.checkUnorderedResultSet( result, expected, true );
+        MongoConnection.checkDocResultSet( result, expected, false, true );
     }
 
     //$group
@@ -175,78 +176,82 @@ public class AggregateTest extends MqlTestTemplate {
 
         Result result = aggregate( $group( "{\"_id\": null, \"count\":{\"$avg\":\"$test\"}}" )  );
 
-        MongoConnection.checkResultSet( result, expected );
+        MongoConnection.checkDocResultSet( result, expected );
     }*/
 
 
     @Test
     public void groupFieldTest() {
-        List<String[]> expected = ImmutableList.of(
-                new String[]{ "1" },
-                new String[]{ "test" },
-                new String[]{ "1.3" } );
+        List<String> expected = MongoConnection.arrayToDoc( ImmutableList.of(
+                        new Object[]{ 1 },
+                        new Object[]{ "test" },
+                        new Object[]{ 1.3 } ),
+                "_id" );
         insertMany( DATA_0 );
 
-        Result result = aggregate( $group( "{\"_id\":\"$test\"}" ) );
+        DocResult result = aggregate( $group( "{\"_id\":\"$test\"}" ) );
 
-        MongoConnection.checkUnorderedResultSet( result, expected, false );
+        MongoConnection.checkDocResultSet( result, expected, false, true );
 
-        expected = ImmutableList.of(
-                new String[]{ null },
-                new String[]{ "13" },
-                new String[]{ "{\"key\":\"val\"}" } );
+        expected = MongoConnection.arrayToDoc( ImmutableList.of(
+                        new Object[]{ null },
+                        new Object[]{ 13 },
+                        new Object[]{ document( kv( string( "key" ), string( "val" ) ) ) } ),
+                "_id" );
 
         result = aggregate( $group( "{\"_id\":\"$key\"}" ) );
 
-        MongoConnection.checkUnorderedResultSet( result, expected, false );
+        MongoConnection.checkDocResultSet( result, expected, false, true );
     }
 
 
     @Test
     public void groupSubFieldTest() {
-        List<String[]> expected = ImmutableList.of(
-                new String[]{ null },
-                new String[]{ "val" } );
+        List<String> expected = MongoConnection.arrayToDoc( ImmutableList.of(
+                        new Object[]{ null },
+                        new Object[]{ "val" } ),
+                "_id" );
         insertMany( DATA_0 );
 
-        Result result = aggregate( $group( "{\"_id\":\"$key.key\"}" ) );
+        DocResult result = aggregate( $group( document( kv( string( "_id" ), string( "$key.key" ) ) ) ) );
 
-        MongoConnection.checkUnorderedResultSet( result, expected, false );
+        MongoConnection.checkDocResultSet( result, expected, false, true );
     }
 
 
     @Test
     public void groupAvgTest() {
-        List<String[]> expected = ImmutableList.of(
-                new String[]{ "val2", "5.0" },
-                new String[]{ "val1", "7.0" } );
+        List<String> expected = MongoConnection.arrayToDoc( List.of(
+                        new Object[]{ "val2", 5.0 },
+                        new Object[]{ "val1", 7.0 } ),
+                "_id", "avgValue" );
         insertMany( DATA_1 );
 
-        Result result = aggregate( $group( "{\"_id\":\"$test\", \"avgValue\": {\"$avg\":\"$key\"}}" ) );
+        DocResult result = aggregate( $group(
+                document( kv( string( "_id" ), string( "$test" ) ), kv( string( "avgValue" ), document( kv( string( "$avg" ), string( "$key" ) ) ) ) ) ) );
 
-        MongoConnection.checkUnorderedResultSet( result, expected, false );
+        MongoConnection.checkDocResultSet( result, expected, false, true );
     }
 
 
     //$limit
     @Test
-    @Category(CottontailExcluded.class)
     public void limitTest() {
-        List<String[]> expected = ImmutableList.of(
-                new String[]{ "{\"test\":\"val1\",\"key\":1}" } );
+        List<String> expected = ImmutableList.of(
+                "{\"test\":\"val1\",\"key\":1}" );
         insertMany( DATA_1 );
 
-        Result result = aggregate( $limit( 1 ) );
+        DocResult result = aggregate( $sort( document( kv( string( "key" ), 1 ) ) ), $limit( 1 ) );
 
-        MongoConnection.checkUnorderedResultSet( result, expected, true );
+        MongoConnection.checkDocResultSet( result, expected, true, true );
 
-        result = aggregate( $limit( 2 ) );
+        result = aggregate( $sort( document( kv( string( "key" ), 1 ) ) ), $limit( 2 ) );
 
         expected = ImmutableList.of(
-                new String[]{ "{\"test\":\"val1\",\"key\":1}" },
-                new String[]{ "{\"test\":\"val2\",\"key\":5}" } );
+                "{\"test\":\"val1\",\"key\":1}",
+                "{\"test\":\"val2\",\"key\":5}" );
 
-        MongoConnection.checkUnorderedResultSet( result, expected, true );
+        MongoConnection.checkDocResultSet( result, expected, true, true );
     }
 
     //$replaceRoot
@@ -254,16 +259,30 @@ public class AggregateTest extends MqlTestTemplate {
 
     @Test
     public void replaceRootTest() {
-        List<String[]> expected = ImmutableList.of(
-                new String[]{ "1" },
-                new String[]{ null },
-                new String[]{ "13" } );
+        // only doc allowed
+        List<String> expected = Arrays.asList(
+                document( kv( string( "key" ), 1 ) ),
+                document( kv( string( "key1" ), 5 ) ),
+                document( kv( string( "key" ), 13 ) ) );
 
         insertMany( DATA_2 );
 
-        Result result = aggregate( $replaceRoot( "$test.key" ) );
+        DocResult result = aggregate( $replaceRoot( "$test" ) );
 
-        MongoConnection.checkUnorderedResultSet( result, expected, false );
+        MongoConnection.checkDocResultSet( result, expected, false, true );
+    }
+
+
+    @Test
+    public void replaceRootNotDocTest() {
+        try {
+            insertMany( DATA_2 );
+
+            DocResult result = aggregate( $replaceRoot( "$test.key" ) );
+            Assertions.fail();
+        } catch ( Exception e ) {
+            // empty on purpose
+        }
     }
 
     //$replaceWith
@@ -271,16 +290,32 @@ public class AggregateTest extends MqlTestTemplate {
 
     @Test
     public void replaceWithTest() {
-        List<String[]> expected = ImmutableList.of(
-                new String[]{ "1" },
-                new String[]{ null },
-                new String[]{ "13" } );
+        List<String> expected = Arrays.asList(
+                document( kv( string( "key" ), 1 ) ),
+                document( kv( string( "key1" ), 5 ) ),
+                document( kv( string( "key" ), 13 ) ) );
 
         insertMany( DATA_2 );
 
-        Result result = aggregate( $replaceWith( "$test.key" ) );
+        DocResult result = aggregate( $replaceWith( "$test" ) );
 
-        MongoConnection.checkUnorderedResultSet( result, expected, false );
+        MongoConnection.checkDocResultSet( result, expected, false, true );
+    }
+
+
+    @Test
+    public void replaceWithNonDocTest() {
+
+        insertMany( DATA_2 );
+
+        try {
+            DocResult result = aggregate( $replaceWith( "$test.key" ) );
+
+            // this has to fail
+            Assertions.fail();
+        } catch ( Exception e ) {
+            // empty on purpose
+        }
     }
 
     //$set
@@ -288,41 +323,40 @@ public class AggregateTest extends MqlTestTemplate {
 
     @Test
     public void setTest() {
-        List<String[]> expected = ImmutableList.of(
-                new String[]{ "{\"test\":1,\"testing\":\"entry\"}" },
-                new String[]{ "{\"test\":1.3,\"key\":{\"key\":\"val\"},\"testing\":\"entry\"}" },
-                new String[]{ "{\"test\":\"test\",\"key\":13,\"testing\":\"entry\"}" } );
+        List<String> expected = ImmutableList.of(
+                "{\"test\":1,\"testing\":\"entry\"}",
+                "{\"test\":1.3,\"key\":{\"key\":\"val\"},\"testing\":\"entry\"}",
+                "{\"test\":\"test\",\"key\":13,\"testing\":\"entry\"}" );
 
         insertMany( DATA_0 );
 
-        Result result = aggregate( $set( "{\"testing\": \"entry\"}" ) );
+        DocResult result = aggregate( $set( "{\"testing\": \"entry\"}" ) );
 
-        MongoConnection.checkUnorderedResultSet( result, expected, true );
+        MongoConnection.checkDocResultSet( result, expected, true, true );
     }
 
     //$skip
 
 
     @Test
-    @Category(CottontailExcluded.class) // cottontail does not support skips/offset queries
-    // without a limit therefore this test cannot be performed correctly using this adapter
     public void skipTest() {
-        List<String[]> expected = ImmutableList.of(
-                new String[]{ "{\"test\":1.3,\"key\":{\"key\":\"val\"}}" },
-                new String[]{ "{\"test\":\"test\",\"key\":13}" } );
+        List<String> expected = ImmutableList.of(
+                "{\"test\":1.3,\"key\":{\"key\":\"val\"}}",
+                "{\"test\":\"test\",\"key\":13}" );
 
         insertMany( DATA_0 );
 
-        Result result = aggregate( $skip( 1 ) );
+        // we sort to assure correct order
+        DocResult result = aggregate( $sort( document( kv( string( "key" ), 1 ) ) ), $skip( 1 ) );
 
-        MongoConnection.checkUnorderedResultSet( result, expected, true );
+        MongoConnection.checkDocResultSet( result, expected, true, true );
 
         expected = ImmutableList.of(
-                new String[]{ "{\"test\":\"test\",\"key\":13}" } );
+                "{\"test\":\"test\",\"key\":13}" );
 
-        result = aggregate( $skip( 2 ) );
+        result = aggregate( $sort( document( kv( string( "key" ), 1 ) ) ), $skip( 2 ) );
 
-        MongoConnection.checkUnorderedResultSet( result, expected, true );
+        MongoConnection.checkDocResultSet( result, expected, true, true );
     }
 
     //$sort
@@ -330,21 +364,21 @@ public class AggregateTest extends MqlTestTemplate {
 
     @Test
     public void sortTest() {
-        List<String[]> expected = ImmutableList.of(
-                new String[]{ "{\"test\":\"val1\",\"key\":1}" },
-                new String[]{ "{\"test\":\"val2\",\"key\":5}" },
-                new String[]{ "{\"test\":\"val1\",\"key\":13}" } );
+        List<String> expected = ImmutableList.of(
+                "{\"test\":\"val1\",\"key\":1}",
+                "{\"test\":\"val2\",\"key\":5}",
+                "{\"test\":\"val1\",\"key\":13}" );
 
         insertMany( DATA_1 );
 
-        Result result = aggregate( $sort( "{\"key\":1}" ) );
+        DocResult result = aggregate( $sort( "{\"key\":1}" ) );
 
-        MongoConnection.checkUnorderedResultSet( result, expected, true );
+        MongoConnection.checkDocResultSet( result, expected, true, true );
 
         result = aggregate( $sort( "{\"key\":-1}" ) );
-        List<String[]> reversed = new ArrayList<>( expected );
+        List<String> reversed = new ArrayList<>( expected );
         Collections.reverse( reversed );
-        MongoConnection.checkUnorderedResultSet( result, reversed, true );
+        MongoConnection.checkDocResultSet( result, reversed, true, true );
     }
 
     //$unset
@@ -352,25 +386,25 @@ public class AggregateTest extends MqlTestTemplate {
 
     @Test
     public void unsetTest() {
-        List<String[]> expected = ImmutableList.of(
-                new String[]{ "{\"test\":\"val1\"}" },
-                new String[]{ "{\"test\":\"val2\"}" },
-                new String[]{ "{\"test\":\"val1\"}" } );
+        List<String> expected = ImmutableList.of(
+                "{\"test\":\"val1\"}",
+                "{\"test\":\"val2\"}",
+                "{\"test\":\"val1\"}" );
 
         insertMany( DATA_1 );
 
-        Result result = aggregate( $unset( "key" ) );
+        DocResult result = aggregate( $unset( "key" ) );
 
-        MongoConnection.checkUnorderedResultSet( result, expected, true );
+        MongoConnection.checkDocResultSet( result, expected, true, true );
 
         expected = ImmutableList.of(
-                new String[]{ "{}" },
-                new String[]{ "{}" },
-                new String[]{ "{}" } );
+                document(),
+                document(),
+                document() );
 
-        result = aggregate( $unset( Arrays.asList( "\"key\"", "\"test\"" ) ) );
+        result = aggregate( $unset( Arrays.asList( string( "key" ), string( "test" ) ) ) );
 
-        MongoConnection.checkUnorderedResultSet( result, expected, true );
+        MongoConnection.checkDocResultSet( result, expected, true, true );
     }
 
     //$unwind
@@ -378,19 +412,40 @@ public class AggregateTest extends MqlTestTemplate {
 
     @Test
     public void unwindTest() {
-        List<String[]> expected = ImmutableList.of(
-                new String[]{ "3" },
-                new String[]{ "2" },
-                new String[]{ "test" },
-                new String[]{ "3" },
-                new String[]{ "51" },
-                new String[]{ "13" } );
+        List<String> expected = MongoConnection.arrayToDoc( ImmutableList.of(
+                        new Object[]{ 3 },
+                        new Object[]{ 2 },
+                        new Object[]{ "test" },
+                        new Object[]{ 3 },
+                        new Object[]{ 51 },
+                        new Object[]{ 13 } ),
+                "test" );
 
         insertMany( DATA_3 );
 
-        Result result = aggregate( $project( "{\"test\":1}" ), $unwind( "$test" ) );
+        DocResult result = aggregate( $project( "{\"test\":1}" ), $unwind( "$test" ) );
 
-        MongoConnection.checkUnorderedResultSet( result, expected, true );
+        MongoConnection.checkDocResultSet( result, expected, true, true );
+
+    }
+
+
+    @Test
+    public void unwindTypesTest() {
+        List<String> expected = MongoConnection.arrayToDoc( ImmutableList.of(
+                        new Object[]{ 3 },
+                        new Object[]{ 4.1 },
+                        new Object[]{ "test" },
+                        new Object[]{ null },
+                        new Object[]{ document( kv( string( "test" ), 25 ) ) },
+                        new Object[]{ 13 } ),
+                "test" );
+
+        insertMany( DATA_3_5 );
+
+        DocResult result = aggregate( $project( "{\"test\":1}" ), $unwind( "$test" ) );
+
+        MongoConnection.checkDocResultSet( result, expected, true, true );
 
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package org.polypheny.db.util;
 
 import com.mongodb.client.gridfs.GridFSBucket;
-import java.io.InputStream;
 import java.io.PushbackInputStream;
 import java.math.BigDecimal;
 import java.sql.Date;
@@ -25,18 +24,21 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.calcite.avatica.util.ByteString;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.commons.lang3.NotImplementedException;
 import org.bson.BsonArray;
 import org.bson.BsonBoolean;
 import org.bson.BsonDecimal128;
@@ -52,15 +54,27 @@ import org.bson.Document;
 import org.bson.json.JsonWriterSettings;
 import org.bson.types.Decimal128;
 import org.bson.types.ObjectId;
+import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.runtime.PolyCollections.PolyList;
-import org.polypheny.db.runtime.PolyCollections.PolyMap;
+import org.polypheny.db.runtime.ComparableList;
+import org.polypheny.db.runtime.PolyCollections.FlatMap;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyNull;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
 
 
 public class BsonUtil {
@@ -172,58 +186,34 @@ public class BsonUtil {
      * @param bucket the bucket to retrieve distributed multimedia objects
      * @return the object in the corresponding BSON format
      */
-    public static BsonValue getAsBson( Object obj, PolyType type, GridFSBucket bucket ) {
+    public static BsonValue getAsBson( PolyValue obj, PolyType type, GridFSBucket bucket ) {
         if ( obj instanceof List ) {
             BsonArray array = new BsonArray();
-            ((List<?>) obj).forEach( el -> array.add( getAsBson( el, type, bucket ) ) );
+            obj.asList().forEach( (Consumer<? super PolyValue>) el -> array.add( getAsBson( el, type, bucket ) ) );
             return array;
         } else if ( obj == null ) {
             return new BsonNull();
         }
-        switch ( type ) {
-            case BIGINT:
-                return handleBigInt( obj );
-            case DECIMAL:
-                return handleDecimal( obj );
-            case TINYINT:
-                return handleTinyInt( obj );
-            case SMALLINT:
-                return handleSmallInt( obj );
-            case INTEGER:
-                return handleInteger( obj );
-            case FLOAT:
-            case REAL:
-                return new BsonDouble( Double.parseDouble( obj.toString() ) );
-            case DOUBLE:
-                return handleDouble( obj );
-            case DATE:
-                return handleDate( obj );
-            case TIME:
-                return handleTime( obj );
-            case TIMESTAMP:
-                return handleTimestamp( obj );
-            case BOOLEAN:
-                return new BsonBoolean( (Boolean) obj );
-            case BINARY:
-                return new BsonString( ((ByteString) obj).toBase64String() );
-            case AUDIO:
-            case IMAGE:
-            case VIDEO:
-            case FILE:
-                return handleMultimedia( bucket, (InputStream) obj );
-            case INTERVAL_MONTH:
-                return handleMonthInterval( obj );
-            case INTERVAL_DAY:
-                return handleDayInterval( obj );
-            case INTERVAL_YEAR:
-                return handleYearInterval( obj );
-            case JSON:
-                return handleDocument( obj );
-            case CHAR:
-            case VARCHAR:
-            default:
-                return new BsonString( obj.toString() );
-        }
+        return switch ( type ) {
+            case BIGINT -> handleBigInt( obj );
+            case DECIMAL -> handleDecimal( obj );
+            case TINYINT -> handleTinyInt( obj );
+            case SMALLINT -> handleSmallInt( obj );
+            case INTEGER -> handleInteger( obj );
+            case FLOAT, REAL -> new BsonDouble( Double.parseDouble( obj.toString() ) );
+            case DOUBLE -> handleDouble( obj );
+            case DATE -> handleDate( obj );
+            case TIME -> handleTime( obj );
+            case TIMESTAMP -> handleTimestamp( obj );
+            case BOOLEAN -> new BsonBoolean( obj.asBoolean().value );
+            case BINARY -> new BsonString( new ByteString( obj.asBinary().value ).toBase64String() );
+            case AUDIO, IMAGE, VIDEO, FILE -> handleMultimedia( bucket, obj );
+            case INTERVAL_MONTH -> handleMonthInterval( obj );
+            case INTERVAL_DAY -> handleDayInterval( obj );
+            case INTERVAL_YEAR -> handleYearInterval( obj );
+            case JSON -> handleDocument( obj );
+            default -> new BsonString( obj.toString() );
+        };
     }
 
 
@@ -235,16 +225,12 @@ public class BsonUtil {
      * @param bucket the bucket can be used to retrieve multimedia objects
      * @return the transformer method, which can be used to get the correct BsonValues
      */
-    public static Function<Object, BsonValue> getBsonTransformer( Queue<PolyType> types, GridFSBucket bucket ) {
-        Function<Object, BsonValue> function = getBsonTransformerPrimitive( types, bucket );
+    public static Function<PolyValue, BsonValue> getBsonTransformer( Queue<PolyType> types, GridFSBucket bucket ) {
+        Function<PolyValue, BsonValue> function = getBsonTransformerPrimitive( types, bucket );
         return ( o ) -> {
-            if ( o == null ) {
+            if ( o == null || o.isNull() ) {
                 return new BsonNull();
-            } /*else if ( o instanceof List ) {
-                BsonArray array = new BsonArray();
-                ((List<?>) o).forEach( el -> array.add( getAsBson( el, types, bucket ) ) );
-                return array;
-            } */ else {
+            } else {
                 return function.apply( o );
             }
         };
@@ -259,73 +245,46 @@ public class BsonUtil {
      * @param bucket the bucket can be used to retrieve multimedia objects
      * @return the transformer method, which can be used to get the correct BsonValues
      */
-    private static Function<Object, BsonValue> getBsonTransformerPrimitive( Queue<PolyType> types, GridFSBucket bucket ) {
-        switch ( Objects.requireNonNull( types.poll() ) ) {
-            case BIGINT:
-                return BsonUtil::handleBigInt;
-            case DECIMAL:
-                return BsonUtil::handleDecimal;
-            case TINYINT:
-                return BsonUtil::handleTinyInt;
-            case SMALLINT:
-                return BsonUtil::handleSmallInt;
-            case INTEGER:
-                return BsonUtil::handleInteger;
-            case FLOAT:
-            case REAL:
-                return BsonUtil::handleNonDouble;
-            case DOUBLE:
-                return BsonUtil::handleDouble;
-            case DATE:
-                return BsonUtil::handleDate;
-            case TIME:
-                return BsonUtil::handleTime;
-            case TIMESTAMP:
-                return BsonUtil::handleTimestamp;
-            case BOOLEAN:
-                return BsonUtil::handleBoolean;
-            case BINARY:
-                return BsonUtil::handleBinary;
-            case AUDIO:
-            case IMAGE:
-            case VIDEO:
-            case FILE:
-                return ( o ) -> handleMultimedia( bucket, (InputStream) o );
-            case INTERVAL_MONTH:
-                return BsonUtil::handleMonthInterval;
-            case INTERVAL_DAY:
-                return BsonUtil::handleDayInterval;
-            case INTERVAL_YEAR:
-                return BsonUtil::handleYearInterval;
-            case JSON:
-                return BsonUtil::handleDocument;
-            case ARRAY:
-                Function<Object, BsonValue> transformer = getBsonTransformer( types, bucket );
-                return ( o ) -> new BsonArray( ((List<Object>) o).stream().map( transformer ).collect( Collectors.toList() ) );
-            case DOCUMENT:
-                return o -> (BsonValue) o;
-            case CHAR:
-            case VARCHAR:
-            default:
-                return BsonUtil::handleString;
-        }
+    private static Function<PolyValue, BsonValue> getBsonTransformerPrimitive( Queue<PolyType> types, GridFSBucket bucket ) {
+        return switch ( Objects.requireNonNull( types.poll() ) ) {
+            case BIGINT -> BsonUtil::handleBigInt;
+            case DECIMAL -> BsonUtil::handleDecimal;
+            case TINYINT -> BsonUtil::handleTinyInt;
+            case SMALLINT -> BsonUtil::handleSmallInt;
+            case INTEGER -> BsonUtil::handleInteger;
+            case FLOAT, REAL -> BsonUtil::handleNonDouble;
+            case DOUBLE -> BsonUtil::handleDouble;
+            case DATE -> BsonUtil::handleDate;
+            case TIME -> BsonUtil::handleTime;
+            case TIMESTAMP -> BsonUtil::handleTimestamp;
+            case BOOLEAN -> BsonUtil::handleBoolean;
+            case BINARY -> BsonUtil::handleBinary;
+            case AUDIO, IMAGE, VIDEO, FILE -> ( o ) -> handleMultimedia( bucket, o );
+            case INTERVAL_MONTH -> BsonUtil::handleMonthInterval;
+            case INTERVAL_DAY -> BsonUtil::handleDayInterval;
+            case INTERVAL_YEAR -> BsonUtil::handleYearInterval;
+            case JSON -> BsonUtil::handleDocument;
+            case ARRAY -> {
+                Function<PolyValue, BsonValue> transformer = getBsonTransformer( types, bucket );
+                yield ( o ) -> new BsonArray( o.asList().stream().map( e -> transformer.apply( (PolyValue) e ) ).toList() );
+            }
+            case DOCUMENT -> o -> BsonDocument.parse( "{ k:" + (o.isString() ? o.asString().toQuotedJson() : o.toJson()) + "}" ).get( "k" );
+            default -> BsonUtil::handleString;
+        };
     }
 
 
-    private static BsonValue handleString( Object obj ) {
-        obj = getObjFromRex( obj, RexLiteral::getValue2 );
+    private static BsonValue handleString( PolyValue obj ) {
         return new BsonString( obj.toString() );
     }
 
 
-    private static BsonValue handleNonDouble( Object obj ) {
-        obj = getObjFromRex( obj, ( o ) -> getMongoComparable( PolyType.FLOAT, o ) );
+    private static BsonValue handleNonDouble( PolyValue obj ) {
         return new BsonDouble( Double.parseDouble( obj.toString() ) );
     }
 
 
     private static BsonValue handleBinary( Object obj ) {
-        obj = getObjFromRex( obj, ( o ) -> getMongoComparable( PolyType.BINARY, o ) );
         return new BsonString( ((ByteString) obj).toBase64String() );
     }
 
@@ -338,179 +297,81 @@ public class BsonUtil {
     }
 
 
-    private static BsonValue handleDocument( Object obj ) {
-        return BsonDocument.parse( (String) obj );
+    private static BsonValue handleDocument( PolyValue obj ) {
+        return BsonDocument.parse( obj.asDocument().toTypedJson() );
     }
 
 
-    private static BsonValue handleBoolean( Object obj ) {
-        obj = getObjFromRex( obj, RexLiteral::getValue2 );
-        return new BsonBoolean( (Boolean) obj );
+    private static BsonValue handleBoolean( PolyValue obj ) {
+        return new BsonBoolean( obj.asBoolean().value );
     }
 
 
-    private static BsonValue handleBigInt( Object obj ) {
-        obj = getObjFromRex( obj, ( o ) -> getMongoComparable( PolyType.BIGINT, o ) );
-
-        if ( obj instanceof Long ) {
-            return new BsonInt64( (Long) obj );
-        } else {
-            return new BsonInt64( (Integer) obj );
-        }
-
+    private static BsonValue handleBigInt( PolyValue obj ) {
+        return new BsonInt64( obj.asNumber().longValue() );
     }
 
 
-    private static BsonValue handleDouble( Object obj ) {
-        obj = getObjFromRex( obj, ( o ) -> getMongoComparable( PolyType.DOUBLE, o ) );
-
-        if ( obj instanceof Double ) {
-            return new BsonDouble( (Double) obj );
-        } else if ( obj instanceof BigDecimal ) {
-            return new BsonDouble( ((BigDecimal) obj).doubleValue() );
-        } else {
-            return new BsonDouble( (Integer) obj );
-        }
+    private static BsonValue handleDouble( PolyValue obj ) {
+        return new BsonDouble( obj.asNumber().DoubleValue() );
     }
 
 
-    private static BsonValue handleMultimedia( GridFSBucket bucket, InputStream o ) {
-        ObjectId id = bucket.uploadFromStream( "_", o );
+    private static BsonValue handleMultimedia( GridFSBucket bucket, PolyValue o ) {
+        ObjectId id = bucket.uploadFromStream( "_", o.asBlob().asBinaryStream() );
         return new BsonDocument()
                 .append( "_type", new BsonString( "s" ) )
                 .append( "_id", new BsonString( id.toString() ) );
     }
 
 
-    private static BsonValue handleYearInterval( Object obj ) {
-        obj = getObjFromRex( obj, ( o ) -> getMongoComparable( PolyType.INTERVAL_YEAR, o ) );
-        if ( obj instanceof BigDecimal ) {
-            return new BsonDecimal128( new Decimal128( ((BigDecimal) obj).multiply( BigDecimal.valueOf( 365 ) ) ) );
-        } else {
-            return new BsonDecimal128( new Decimal128( ((int) obj) * 24 * 60 * 60000L ) );
-        }
+    private static BsonValue handleYearInterval( PolyValue obj ) {
+        return new BsonDecimal128( new Decimal128( obj.asInterval().value ) );
     }
 
 
-    private static BsonValue handleMonthInterval( Object obj ) {
-        obj = getObjFromRex( obj, ( o ) -> getMongoComparable( PolyType.INTERVAL_MONTH, o ) );
-        if ( obj instanceof BigDecimal ) {
-            return new BsonDecimal128( new Decimal128( ((BigDecimal) obj).multiply( BigDecimal.valueOf( 30 ) ) ) );
-        } else {
-            return new BsonDecimal128( new Decimal128( ((Integer) obj) * 30L ) );
-        }
+    private static BsonValue handleMonthInterval( PolyValue obj ) {
+        return new BsonDecimal128( new Decimal128( obj.asInterval().value ) );
     }
 
 
-    private static BsonValue handleDayInterval( Object obj ) {
-        obj = getObjFromRex( obj, ( o ) -> getMongoComparable( PolyType.INTERVAL_DAY, o ) );
-        if ( obj instanceof BigDecimal ) {
-            return new BsonDecimal128( new Decimal128( ((BigDecimal) obj).multiply( BigDecimal.valueOf( 24 * 60 * 60000 ) ) ) );
-        } else {
-            return new BsonDecimal128( new Decimal128( ((int) obj) * 24 * 60 * 60000L ) );
-        }
+    private static BsonValue handleDayInterval( PolyValue obj ) {
+        return new BsonDecimal128( new Decimal128( obj.asInterval().value ) );
     }
 
 
-    private static BsonValue handleDecimal( Object obj ) {
-        obj = getObjFromRex( obj, ( o ) -> getMongoComparable( PolyType.DECIMAL, o ) );
-
-        if ( obj instanceof String ) {
-            return new BsonDecimal128( new Decimal128( new BigDecimal( (String) obj ) ) );
-        } else {
-            return new BsonDecimal128( new Decimal128( new BigDecimal( String.valueOf( obj ) ) ) );
-        }
+    private static BsonValue handleDecimal( PolyValue obj ) {
+        return new BsonDecimal128( new Decimal128( obj.asNumber().BigDecimalValue() ) );
     }
 
 
-    private static BsonValue handleTinyInt( Object obj ) {
-        obj = getObjFromRex( obj, ( o ) -> getMongoComparable( PolyType.TINYINT, o ) );
-        if ( obj instanceof Long ) {
-            return new BsonInt32( Math.toIntExact( (Long) obj ) );
-        } else if ( obj instanceof Byte ) {
-            return new BsonInt32( (Byte) obj );
-        } else {
-            return new BsonInt32( (Integer) obj );
-        }
+    private static BsonValue handleTinyInt( PolyValue obj ) {
+        return new BsonInt32( obj.asNumber().IntValue() );
     }
 
 
-    private static BsonValue handleSmallInt( Object obj ) {
-        obj = getObjFromRex( obj, ( o ) -> getMongoComparable( PolyType.SMALLINT, o ) );
-        if ( obj instanceof Long ) {
-            return new BsonInt32( Math.toIntExact( (Long) obj ) );
-        } else if ( obj instanceof Integer ) {
-            return new BsonInt32( (Integer) obj );
-        } else {
-            return new BsonInt32( (Short) obj );
-        }
+    private static BsonValue handleSmallInt( PolyValue obj ) {
+        return new BsonInt32( obj.asNumber().IntValue() );
     }
 
 
-    private static BsonValue handleDate( Object obj ) {
-        obj = getObjFromRex( obj, ( o ) -> getMongoComparable( PolyType.DATE, o ) );
-
-        if ( obj instanceof Integer ) {
-            return new BsonInt64( (Integer) obj );
-        } else if ( obj instanceof Date ) {
-            return new BsonInt64( ((Date) obj).toLocalDate().toEpochDay() );
-        } else if ( obj instanceof GregorianCalendar ) {
-            return new BsonInt64( ((GregorianCalendar) obj).toZonedDateTime().toLocalDate().toEpochDay() );
-        } else if ( obj instanceof DateString ) {
-            return new BsonInt64( ((DateString) obj).getDaysSinceEpoch() );
-        } else {
-            return new BsonInt64( new Date( ((Time) obj).getTime() ).toLocalDate().toEpochDay() );
-        }
+    private static BsonValue handleDate( PolyValue obj ) {
+        return new BsonInt64( obj.asTemporal().getMillisSinceEpoch() );
     }
 
 
-    private static BsonValue handleTime( Object obj ) {
-        obj = getObjFromRex( obj, ( o ) -> getMongoComparable( PolyType.TIME, o ) );
-        if ( obj instanceof Integer ) {
-            return new BsonInt64( ((Integer) obj) );
-        } else if ( obj instanceof GregorianCalendar ) {
-            return new BsonInt64( ((GregorianCalendar) obj).toZonedDateTime().toEpochSecond() );
-        } else if ( obj instanceof DateString ) {
-            return new BsonInt64( ((DateString) obj).toCalendar().getTime().getTime() );
-        } else if ( obj instanceof TimeString ) {
-            return new BsonInt64( ((TimeString) obj).getMillisOfDay() );
-        } else {
-            return new BsonInt64( ((Time) obj).toLocalTime().toNanoOfDay() / 1000000 );
-        }
+    private static BsonValue handleTime( PolyValue obj ) {
+        return new BsonInt64( obj.asTemporal().getMillisSinceEpoch() );
     }
 
 
-    private static BsonValue handleTimestamp( Object obj ) {
-        obj = getObjFromRex( obj, ( o ) -> getMongoComparable( PolyType.TIMESTAMP, o ) );
-
-        if ( obj instanceof Timestamp ) {
-            // timestamp do factor in the timezones, which means that 10:00 is 9:00 with
-            // a one-hour shift, as we lose this timezone information on retrieval
-            // we have to include it into the time itself
-            int offset = Calendar.getInstance().getTimeZone().getRawOffset();
-            return new BsonInt64( ((Timestamp) obj).getTime() + offset );
-        } else if ( obj instanceof Calendar ) {
-            return new BsonInt64( ((Calendar) obj).getTime().getTime() );
-        } else if ( obj instanceof TimestampString ) {
-            return new BsonInt64( ((TimestampString) obj).getMillisSinceEpoch() );
-        } else {
-            return new BsonInt64( (Long) obj );
-        }
+    private static BsonValue handleTimestamp( PolyValue obj ) {
+        return new BsonInt64( obj.asTemporal().getMillisSinceEpoch() );
     }
 
 
-    private static BsonValue handleInteger( Object obj ) {
-        obj = getObjFromRex( obj, ( o ) -> getMongoComparable( PolyType.INTEGER, o ) );
-
-        if ( obj instanceof Long ) {
-            return new BsonInt32( ((Long) obj).intValue() );
-        } else if ( obj instanceof Integer ) {
-            return new BsonInt32( (Integer) obj );
-        } else if ( obj instanceof String ) {
-            return new BsonInt32( Integer.parseInt( (String) obj ) );
-        } else {
-            throw new RuntimeException( "Object is not an appropriate type." );
-        }
+    private static BsonValue handleInteger( PolyValue obj ) {
+        return new BsonInt32( obj.asNumber().IntValue() );
     }
 
 
@@ -522,55 +383,7 @@ public class BsonUtil {
      * @return the transformed literal in BSON format
      */
     public static BsonValue getAsBson( RexLiteral literal, GridFSBucket bucket ) {
-        return getAsBson( BsonUtil.getMongoComparable( literal.getType().getPolyType(), literal ), literal.getType().getPolyType(), bucket );
-    }
-
-
-    /**
-     * Helper method which maps the RexLiteral to the provided type, which is MongoDB adapter conform.
-     *
-     * @param finalType the type which should be retrieved from the literal
-     * @param el the literal itself
-     * @return a MongoDB adapter compatible Comparable
-     */
-    public static Comparable<?> getMongoComparable( PolyType finalType, RexLiteral el ) {
-        if ( el.getValue() == null ) {
-            return null;
-        }
-
-        switch ( finalType ) {
-            case BOOLEAN:
-                return el.getValueAs( Boolean.class );
-            case TINYINT:
-                return el.getValueAs( Byte.class );
-            case SMALLINT:
-                return el.getValueAs( Short.class );
-            case INTEGER:
-            case DATE:
-            case TIME:
-                return el.getValueAs( Integer.class );
-            case BIGINT:
-            case TIMESTAMP:
-                return el.getValueAs( Long.class );
-            case DECIMAL:
-                return el.getValueAs( BigDecimal.class ).toString();
-            case FLOAT:
-            case REAL:
-                return el.getValueAs( Float.class );
-            case DOUBLE:
-                return el.getValueAs( Double.class );
-            case CHAR:
-            case VARCHAR:
-                return el.getValueAs( String.class );
-            case GEOMETRY:
-            case FILE:
-            case IMAGE:
-            case VIDEO:
-            case AUDIO:
-                return el.getValueAs( ByteString.class ).toBase64String();
-            default:
-                return el.getValue();
-        }
+        return getAsBson( literal.value, literal.getType().getPolyType(), bucket );
     }
 
 
@@ -588,7 +401,7 @@ public class BsonUtil {
                 array.add( getBsonArray( (RexCall) op, bucket ) );
             } else {
                 PolyType type = call.getType().getComponentType().getPolyType();
-                array.add( getAsBson( getMongoComparable( type, (RexLiteral) op ), type, bucket ) );
+                array.add( getAsBson( ((RexLiteral) op).value, type, bucket ) );
             }
         }
         return array;
@@ -602,44 +415,21 @@ public class BsonUtil {
      * @return the supported class
      */
     public static Class<?> getClassFromType( PolyType type ) {
-        switch ( type ) {
-            case BOOLEAN:
-                return Boolean.class;
-            case TINYINT:
-                return Short.class;
-            case SMALLINT:
-            case INTEGER:
-                return Integer.class;
-            case BIGINT:
-                return Long.class;
-            case DECIMAL:
-                return BigDecimal.class;
-            case FLOAT:
-            case REAL:
-                return Float.class;
-            case DOUBLE:
-                return Double.class;
-            case DATE:
-                return Date.class;
-            case TIME:
-            case TIME_WITH_LOCAL_TIME_ZONE:
-                return Time.class;
-            case TIMESTAMP:
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                return Timestamp.class;
-            case CHAR:
-            case VARCHAR:
-            case BINARY:
-            case VARBINARY:
-                return String.class;
-            case FILE:
-            case IMAGE:
-            case VIDEO:
-            case AUDIO:
-                return PushbackInputStream.class;
-            default:
-                throw new IllegalStateException( "Unexpected value: " + type );
-        }
+        return switch ( type ) {
+            case BOOLEAN -> Boolean.class;
+            case TINYINT -> Short.class;
+            case SMALLINT, INTEGER -> Integer.class;
+            case BIGINT -> Long.class;
+            case DECIMAL -> BigDecimal.class;
+            case FLOAT, REAL -> Float.class;
+            case DOUBLE -> Double.class;
+            case DATE -> Date.class;
+            case TIME, TIME_WITH_LOCAL_TIME_ZONE -> Time.class;
+            case TIMESTAMP, TIMESTAMP_WITH_LOCAL_TIME_ZONE -> Timestamp.class;
+            case CHAR, VARCHAR, BINARY, VARBINARY -> String.class;
+            case FILE, IMAGE, VIDEO, AUDIO -> PushbackInputStream.class;
+            default -> throw new IllegalStateException( "Unexpected value: " + type );
+        };
     }
 
 
@@ -687,40 +477,21 @@ public class BsonUtil {
 
     /**
      * Method to retrieve the type numbers according to the MongoDB specifications
-     * https://docs.mongodb.com/manual/reference/operator/query/type/
+     * <a href="https://docs.mongodb.com/manual/reference/operator/query/type/">...</a>
      *
      * @param type PolyType which is matched
      * @return the corresponding type number for MongoDB
      */
     public static int getTypeNumber( PolyType type ) {
-        switch ( type ) {
-            case BOOLEAN:
-                return 8;
-            case TINYINT:
-            case SMALLINT:
-            case INTEGER:
-                return 16;
-            case BIGINT:
-            case DATE:
-            case TIME:
-            case TIME_WITH_LOCAL_TIME_ZONE:
-            case TIMESTAMP:
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                return 18;
-            case DECIMAL:
-                return 19;
-            case FLOAT:
-            case REAL:
-            case DOUBLE:
-                return 1;
-            case CHAR:
-            case VARCHAR:
-            case BINARY:
-            case VARBINARY:
-                return 2;
-            default:
-                throw new IllegalStateException( "Unexpected value: " + type );
-        }
+        return switch ( type ) {
+            case BOOLEAN -> 8;
+            case TINYINT, SMALLINT, INTEGER -> 16;
+            case BIGINT, DATE, TIME, TIME_WITH_LOCAL_TIME_ZONE, TIMESTAMP, TIMESTAMP_WITH_LOCAL_TIME_ZONE -> 18;
+            case DECIMAL -> 19;
+            case FLOAT, REAL, DOUBLE -> 1;
+            case CHAR, VARCHAR, BINARY, VARBINARY -> 2;
+            default -> throw new IllegalStateException( "Unexpected value: " + type );
+        };
     }
 
 
@@ -731,7 +502,7 @@ public class BsonUtil {
     }
 
 
-    private static Comparable<?> getUnderlyingValue( BsonValue value ) {
+    private static <T extends Comparable<T>> Comparable<?> getUnderlyingValue( BsonValue value ) {
         switch ( value.getBsonType() ) {
             case NULL:
                 return null;
@@ -748,9 +519,9 @@ public class BsonUtil {
             case BOOLEAN:
                 return value.asBoolean().getValue();
             case ARRAY:
-                return value.asArray().stream().map( BsonUtil::getUnderlyingValue ).collect( Collectors.toCollection( PolyList::new ) );
+                return ComparableList.copyOf( value.asArray().stream().map( BsonUtil::getUnderlyingValue ).map( e -> (T) e ).collect( Collectors.toList() ).listIterator() );
             case DOCUMENT:
-                PolyMap<String, Comparable<?>> map = new PolyMap<>();
+                FlatMap<String, Comparable<?>> map = new FlatMap<>();
                 value.asDocument().forEach( ( key, val ) -> map.put( key, getUnderlyingValue( val ) ) );
                 return map;
             case DATE_TIME:
@@ -760,35 +531,21 @@ public class BsonUtil {
             case DECIMAL128:
                 return value.asDecimal128().decimal128Value().bigDecimalValue();
             default:
-                throw new RuntimeException( "The used Bson type is not supported." );
+                throw new GenericRuntimeException( "The used Bson type is not supported." );
         }
     }
 
 
     public static AlgDataType getTypeFromBson( BsonType type, AlgDataTypeFactory factory ) {
-        switch ( type ) {
-            case INT32:
-            case DECIMAL128:
-            case INT64:
-            case DOUBLE:
-                return factory.createPolyType( PolyType.DECIMAL );
-            case BINARY:
-                return factory.createPolyType( PolyType.BINARY );
-            case BOOLEAN:
-                return factory.createPolyType( PolyType.BOOLEAN );
-            case ARRAY:
-                return factory.createArrayType( factory.createPolyType( PolyType.ANY ), -1 );
-            case DOCUMENT:
-                return factory.createMapType( factory.createPolyType( PolyType.ANY ), factory.createPolyType( PolyType.ANY ) );
-            case DATE_TIME:
-            case TIMESTAMP:
-                return factory.createPolyType( PolyType.TIMESTAMP );
-            case NULL:
-            case SYMBOL:
-            case STRING:
-            default:
-                return factory.createPolyType( PolyType.ANY );
-        }
+        return switch ( type ) {
+            case INT32, DECIMAL128, INT64, DOUBLE -> factory.createPolyType( PolyType.DECIMAL );
+            case BINARY -> factory.createPolyType( PolyType.BINARY );
+            case BOOLEAN -> factory.createPolyType( PolyType.BOOLEAN );
+            case ARRAY -> factory.createArrayType( factory.createPolyType( PolyType.ANY ), -1 );
+            case DOCUMENT -> factory.createMapType( factory.createPolyType( PolyType.ANY ), factory.createPolyType( PolyType.ANY ) );
+            case DATE_TIME, TIMESTAMP -> factory.createPolyType( PolyType.TIMESTAMP );
+            default -> factory.createPolyType( PolyType.ANY );
+        };
     }
 
 
@@ -801,8 +558,8 @@ public class BsonUtil {
         Document doc = new Document();
 
         for ( Entry<RexLiteral, RexLiteral> entry : map.entrySet() ) {
-            assert entry.getKey().getTypeName() == PolyType.CHAR;
-            doc.put( entry.getKey().getValueAs( String.class ), getAsBson( entry.getValue(), null ) );
+            assert entry.getKey().getPolyType() == PolyType.CHAR;
+            doc.put( entry.getKey().value.asString().value, getAsBson( entry.getValue(), null ) );
         }
         return doc;
 
@@ -811,7 +568,7 @@ public class BsonUtil {
 
     public static Comparable<?> getAsObject( BsonValue value ) {
         switch ( value.getBsonType() ) {
-            case END_OF_DOCUMENT:
+            case END_OF_DOCUMENT, TIMESTAMP, MIN_KEY, MAX_KEY, UNDEFINED, OBJECT_ID, DATE_TIME, JAVASCRIPT_WITH_SCOPE, SYMBOL, JAVASCRIPT, DB_POINTER, REGULAR_EXPRESSION:
                 break;
             case DOUBLE:
                 return value.asDouble().decimal128Value();
@@ -823,41 +580,113 @@ public class BsonUtil {
                 return Arrays.toString( value.asArray().toArray() );
             case BINARY:
                 return value.asBinary().asUuid();
-            case UNDEFINED:
-                break;
-            case OBJECT_ID:
-                break;
             case BOOLEAN:
                 return value.asBoolean().getValue();
-            case DATE_TIME:
-                break;
             case NULL:
                 return null;
-            case REGULAR_EXPRESSION:
-                break;
-            case DB_POINTER:
-                break;
-            case JAVASCRIPT:
-                break;
-            case SYMBOL:
-                break;
-            case JAVASCRIPT_WITH_SCOPE:
-                break;
             case INT32:
                 return value.asInt32().getValue();
-            case TIMESTAMP:
-                break;
             case INT64:
                 return value.asInt64().getValue();
             case DECIMAL128:
                 return BigDecimal.valueOf( value.asDecimal128().doubleValue() );
-            case MIN_KEY:
-                break;
-            case MAX_KEY:
-                break;
 
         }
-        throw new RuntimeException( "BsonType cannot be transformed." );
+        throw new GenericRuntimeException( "BsonType cannot be transformed." );
+    }
+
+
+    public static Expression asExpression( BsonValue value ) {
+        switch ( value.getBsonType() ) {
+
+            case END_OF_DOCUMENT:
+            case REGULAR_EXPRESSION:
+            case DATE_TIME:
+            case OBJECT_ID:
+            case BINARY:
+            case UNDEFINED:
+            case DB_POINTER:
+            case JAVASCRIPT:
+            case SYMBOL:
+            case JAVASCRIPT_WITH_SCOPE:
+            case MIN_KEY:
+            case MAX_KEY:
+                break;
+            case DOUBLE:
+                return Expressions.constant( value.asDouble().getValue() );
+            case STRING:
+                return Expressions.constant( value.asString().getValue() );
+            case DOCUMENT:
+                List<Expression> literals = new ArrayList<>();
+                for ( Entry<String, BsonValue> doc : value.asDocument().entrySet() ) {
+                    Expression key = Expressions.constant( doc.getKey() );
+                    Expression val = asExpression( doc.getValue() );
+
+                    literals.add( Expressions.call( Pair.class, "of", key, val ) );
+                }
+                return Expressions.call( EnumUtils.class, "ofEntries", literals );
+
+            case ARRAY:
+                List<Expression> array = new ArrayList<>();
+
+                for ( BsonValue doc : value.asArray() ) {
+                    array.add( asExpression( doc ) );
+                }
+                return EnumUtils.expressionFlatList( array, Object.class );
+            case BOOLEAN:
+                return Expressions.constant( value.asBoolean().getValue() );
+            case NULL:
+                return Expressions.constant( null );
+            case INT32:
+                return Expressions.constant( value.asInt32().getValue() );
+            case TIMESTAMP:
+                return Expressions.constant( TimestampString.fromMillisSinceEpoch( value.asTimestamp().getValue() ) );
+            case INT64:
+                return Expressions.constant( value.asInt64().getValue() );
+            case DECIMAL128:
+                return Expressions.constant( value.asDecimal128().getValue().bigDecimalValue() );
+        }
+
+        throw new NotImplementedException();
+    }
+
+
+    public static PolyValue toPolyValue( BsonValue input ) {
+        switch ( input.getBsonType() ) {
+            case END_OF_DOCUMENT, MAX_KEY, MIN_KEY, TIMESTAMP, JAVASCRIPT_WITH_SCOPE, SYMBOL, JAVASCRIPT, DB_POINTER, REGULAR_EXPRESSION, DATE_TIME, OBJECT_ID, UNDEFINED, BINARY:
+                break;
+            case DOUBLE:
+                return PolyDouble.of( input.asDouble().getValue() );
+            case STRING:
+                return PolyString.of( input.asString().getValue() );
+            case DOCUMENT:
+                Map<PolyString, PolyValue> document = new HashMap<>();
+
+                for ( Entry<String, BsonValue> entry : input.asDocument().entrySet() ) {
+                    document.put( PolyString.of( entry.getKey() ), toPolyValue( entry.getValue() ) );
+                }
+
+                return new PolyDocument( document );
+            case ARRAY:
+                PolyList<PolyValue> list = new PolyList<>();
+
+                for ( BsonValue value : input.asArray() ) {
+
+                    list.add( toPolyValue( value ) );
+                }
+                return list;
+            case BOOLEAN:
+                return PolyBoolean.of( input.asBoolean().getValue() );
+            case NULL:
+                return PolyNull.NULL;
+            case INT32:
+                return PolyInteger.of( input.asInt32().intValue() );
+            case INT64:
+                return PolyLong.of( input.asInt64().getValue() );
+            case DECIMAL128:
+                return PolyBigDecimal.of( input.asDecimal128().getValue().bigDecimalValue() );
+        }
+        throw new org.apache.commons.lang3.NotImplementedException( "Not considered: " + input.getBsonType() );
     }
 
 }

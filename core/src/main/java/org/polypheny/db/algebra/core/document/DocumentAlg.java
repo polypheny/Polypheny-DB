@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,24 +16,18 @@
 
 package org.polypheny.db.algebra.core.document;
 
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.schema.trait.ModelTrait;
 
 
 /**
- * {@link org.polypheny.db.schema.ModelTrait#DOCUMENT} native node.
+ * {@link ModelTrait#DOCUMENT} native node.
  */
 public interface DocumentAlg {
 
     DocType getDocType();
 
-    default AlgOptTable getCollection() {
-        assert this instanceof AlgNode;
-        return ((AlgNode) this).getTable();
-    }
-
     enum DocType {
-        SCAN, FILTER, VALUES, PROJECT, AGGREGATE, SORT, MODIFY
+        SCAN, FILTER, VALUES, PROJECT, AGGREGATE, SORT, UNWIND, MODIFY
     }
 
 }

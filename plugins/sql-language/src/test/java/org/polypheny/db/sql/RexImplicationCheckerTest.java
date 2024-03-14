@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,13 @@
 package org.polypheny.db.sql;
 
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.hamcrest.core.Is;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -43,7 +43,7 @@ import org.polypheny.db.util.Util;
 /**
  * Unit tests for {@link RexImplicationChecker}.
  */
-public class RexImplicationCheckerTest {
+public class RexImplicationCheckerTest extends SqlLanguageDependent {
 
     // Simple Tests for Operators
     @Test
@@ -362,7 +362,7 @@ public class RexImplicationCheckerTest {
         final RexNode e = f.cast( f.intAlgDataType, f.literal( 2014 ) );
         assertThat(
                 f.simplify.simplifyPreservingType( e, RexUnknownAs.UNKNOWN, true ).toString(),
-                is( "CAST(2014):JavaType(class java.lang.Integer)" ) );
+                is( "CAST(2014):JavaType(class org.polypheny.db.type.entity.numerical.PolyInteger)" ) );
         assertThat(
                 f.simplify.simplifyPreservingType( e, RexUnknownAs.UNKNOWN, false ).toString(),
                 is( "2014" ) );

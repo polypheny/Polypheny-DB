@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,11 +48,12 @@ import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.ExplainLevel;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.TupleCount;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPredicateList;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.rex.RexTableInputRef.AlgTableRef;
+import org.polypheny.db.rex.RexTableIndexRef.AlgTableRef;
 import org.polypheny.db.util.ImmutableBitSet;
 
 
@@ -83,7 +84,7 @@ public class AlgMetadataQuery {
     /**
      * Set of active metadata queries, and cache of previous results.
      */
-    public final Map<List, Object> map = new HashMap<>();
+    public final Map<List<?>, Object> map = new HashMap<>();
 
     public final JaninoRelMetadataProvider metadataProvider;
 
@@ -108,7 +109,7 @@ public class AlgMetadataQuery {
     private BuiltInMetadata.Predicates.Handler predicatesHandler;
     private BuiltInMetadata.AllPredicates.Handler allPredicatesHandler;
     private BuiltInMetadata.NodeTypes.Handler nodeTypesHandler;
-    private BuiltInMetadata.RowCount.Handler rowCountHandler;
+    private TupleCount.Handler rowCountHandler;
     private BuiltInMetadata.Selectivity.Handler selectivityHandler;
     private BuiltInMetadata.Size.Handler sizeHandler;
     private BuiltInMetadata.UniqueKeys.Handler uniqueKeysHandler;
@@ -186,7 +187,7 @@ public class AlgMetadataQuery {
         this.predicatesHandler = initialHandler( BuiltInMetadata.Predicates.Handler.class );
         this.allPredicatesHandler = initialHandler( BuiltInMetadata.AllPredicates.Handler.class );
         this.nodeTypesHandler = initialHandler( BuiltInMetadata.NodeTypes.Handler.class );
-        this.rowCountHandler = initialHandler( BuiltInMetadata.RowCount.Handler.class );
+        this.rowCountHandler = initialHandler( TupleCount.Handler.class );
         this.selectivityHandler = initialHandler( BuiltInMetadata.Selectivity.Handler.class );
         this.sizeHandler = initialHandler( BuiltInMetadata.Size.Handler.class );
         this.uniqueKeysHandler = initialHandler( BuiltInMetadata.UniqueKeys.Handler.class );
@@ -219,18 +220,18 @@ public class AlgMetadataQuery {
 
 
     /**
-     * Returns the {@link BuiltInMetadata.RowCount#getRowCount()} statistic.
+     * Returns the {@link TupleCount#getTupleCount()} statistic.
      *
      * @param alg the relational expression
-     * @return estimated row count, or null if no algiable estimate can be determined
+     * @return estimated row count, or null if no reliable estimate can be determined
      */
-    public Double getRowCount( AlgNode alg ) {
+    public Double getTupleCount( AlgNode alg ) {
         for ( ; ; ) {
             try {
-                Double result = rowCountHandler.getRowCount( alg, this );
+                Double result = rowCountHandler.getTupleCount( alg, this );
                 return validateResult( result );
             } catch ( JaninoRelMetadataProvider.NoHandler e ) {
-                rowCountHandler = revise( e.algClass, BuiltInMetadata.RowCount.DEF );
+                rowCountHandler = revise( e.algClass, TupleCount.DEF );
             }
         }
     }
@@ -392,9 +393,9 @@ public class AlgMetadataQuery {
      * @param alg the AlgNode
      * @return the table, if the {@link AlgNode} is a simple table; otherwise null
      */
-    public AlgOptTable getTableOrigin( AlgNode alg ) {
+    public Entity getTableOrigin( AlgNode alg ) {
         // Determine the simple origin of the first column in the/ AlgNode. If it's simple, then that means that the underlying table is also simple, even if the column itself is derived.
-        if ( alg.getRowType().getFieldCount() == 0 ) {
+        if ( alg.getTupleType().getFieldCount() == 0 ) {
             return null;
         }
         final Set<AlgColumnOrigin> colOrigins = getColumnOrigins( alg, 0 );
@@ -461,7 +462,7 @@ public class AlgMetadataQuery {
      * @return true or false depending on whether the rows are unique, or null if not enough information is available to make that determination
      */
     public Boolean areRowsUnique( AlgNode alg ) {
-        final ImmutableBitSet columns = ImmutableBitSet.range( alg.getRowType().getFieldCount() );
+        final ImmutableBitSet columns = ImmutableBitSet.range( alg.getTupleType().getFieldCount() );
         return areColumnsUnique( alg, columns, false );
     }
 
@@ -592,7 +593,7 @@ public class AlgMetadataQuery {
     public List<Double> getAverageColumnSizesNotNull( AlgNode alg ) {
         final List<Double> averageColumnSizes = getAverageColumnSizes( alg );
         return averageColumnSizes == null
-                ? Collections.nCopies( alg.getRowType().getFieldCount(), null )
+                ? Collections.nCopies( alg.getTupleType().getFieldCount(), null )
                 : averageColumnSizes;
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,9 @@
 package org.polypheny.db.webui;
 
 
-import com.google.gson.Gson;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.ArrayList;
+import java.util.List;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -27,7 +28,6 @@ import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.util.Util;
 import org.polypheny.db.webui.models.SortDirection;
 import org.polypheny.db.webui.models.SortState;
 import org.polypheny.db.webui.models.UIAlgNode;
@@ -40,27 +40,7 @@ public class QueryPlanBuilder {
     }
 
 
-    private static AlgBuilder createRelBuilder( final Statement statement ) {
-        /*final SchemaPlus rootSchema = transaction.getSchema().plus();
-        FrameworkConfig config = Frameworks.newConfigBuilder()
-                .parserConfig( SqlParserConfig.DEFAULT )
-                .defaultSchema( rootSchema.getSubSchema( transaction.getDefaultSchema().name ) )
-                .traitDefs( (List<RelTraitDef>) null )
-                .programs( Programs.heuristicJoinOrder( Programs.RULE_SET, true, 2 ) )
-                .prepareContext( new ContextImpl(
-                        PolyphenyDbSchema.from( rootSchema ),
-                        new SlimDataContext() {
-                            @Override
-                            public JavaTypeFactory getTypeFactory() {
-                                return new JavaTypeFactoryImpl();
-                            }
-                        },
-                        "",
-                        0,
-                        0,
-                        transaction ) ).build();
-        return AlgBuilder.create( config );
-                         */
+    private static AlgBuilder createAlgBuilder( final Statement statement ) {
         return AlgBuilder.create( statement );
     }
 
@@ -72,16 +52,15 @@ public class QueryPlanBuilder {
      * @param statement transaction
      */
     public static AlgNode buildFromTree( final UIAlgNode topNode, final Statement statement ) {
-        AlgBuilder b = createRelBuilder( statement );
+        AlgBuilder b = createAlgBuilder( statement );
         buildStep( b, topNode );
         return b.build();
     }
 
 
-    public static AlgNode buildFromJsonRel( Statement statement, String json ) {
-        Gson gson = new Gson();
-        AlgBuilder b = createRelBuilder( statement );
-        return buildFromTree( gson.fromJson( json, UIAlgNode.class ), statement );
+    public static AlgNode buildFromJsonAlg( Statement statement, String json ) throws JsonProcessingException {
+        AlgBuilder b = createAlgBuilder( statement );
+        return buildFromTree( HttpServer.mapper.readValue( json, UIAlgNode.class ), statement );
     }
 
 
@@ -105,7 +84,7 @@ public class QueryPlanBuilder {
         }
         switch ( node.type ) {
             case "Scan":
-                return builder.scan( Util.tokenize( node.tableName, "." ) ).as( node.tableName );
+                return builder.relScan( node.tableName.split( "\\." ) ).as( node.tableName.split( "\\." )[1] );
             case "Join":
                 return builder.join( node.join, builder.call( getOperator( node.operator ), builder.field( node.inputCount, field1[0], field1[1] ), builder.field( node.inputCount, field2[0], field2[1] ) ) );
             case "Filter":
@@ -122,31 +101,20 @@ public class QueryPlanBuilder {
                     return builder.filter( builder.call( getOperator( node.operator ), builder.field( node.inputCount, field[0], field[1] ), builder.literal( node.filter ) ) );
                 }
             case "Project":
-                ArrayList<RexNode> fields = getFields( node.fields, node.inputCount, builder );
+                List<RexNode> fields = getFields( node.fields, node.inputCount, builder );
                 builder.project( fields );
                 return builder;
             case "Aggregate":
                 AlgBuilder.AggCall aggregation;
                 String[] aggFields = node.field.split( "\\." );
-                switch ( node.aggregation ) {
-                    case "SUM":
-                        aggregation = builder.sum( false, node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ) );
-                        break;
-                    case "COUNT":
-                        aggregation = builder.count( false, node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ) );
-                        break;
-                    case "AVG":
-                        aggregation = builder.avg( false, node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ) );
-                        break;
-                    case "MAX":
-                        aggregation = builder.max( node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ) );
-                        break;
-                    case "MIN":
-                        aggregation = builder.min( node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ) );
-                        break;
-                    default:
-                        throw new IllegalArgumentException( "unknown aggregate type" );
-                }
+                aggregation = switch ( node.aggregation ) {
+                    case "SUM" -> builder.sum( false, node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ) );
+                    case "COUNT" -> builder.count( false, node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ) );
+                    case "AVG" -> builder.avg( false, node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ) );
+                    case "MAX" -> builder.max( node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ) );
+                    case "MIN" -> builder.min( node.alias, builder.field( node.inputCount, aggFields[0], aggFields[1] ) );
+                    default -> throw new IllegalArgumentException( "unknown aggregate type" );
+                };
                 if ( node.groupBy == null || node.groupBy.equals( "" ) ) {
                     return builder.aggregate( builder.groupKey(), aggregation );
                 } else {
@@ -175,10 +143,10 @@ public class QueryPlanBuilder {
     }
 
 
-    private static ArrayList<RexNode> getFields( String[] fields, int inputCount, AlgBuilder builder ) {
-        ArrayList<RexNode> nodes = new ArrayList<>();
+    private static List<RexNode> getFields( String[] fields, int inputCount, AlgBuilder builder ) {
+        List<RexNode> nodes = new ArrayList<>();
         for ( String f : fields ) {
-            if ( f.equals( "" ) ) {
+            if ( f.isEmpty() ) {
                 continue;
             }
             String[] field = f.split( "\\." );
@@ -195,23 +163,15 @@ public class QueryPlanBuilder {
      * @return parsed operator as SqlOperator
      */
     private static Operator getOperator( final String operator ) {
-        switch ( operator ) {
-            case "=":
-                return OperatorRegistry.get( OperatorName.EQUALS );
-            case "!=":
-            case "<>":
-                return OperatorRegistry.get( OperatorName.NOT_EQUALS );
-            case "<":
-                return OperatorRegistry.get( OperatorName.LESS_THAN );
-            case "<=":
-                return OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL );
-            case ">":
-                return OperatorRegistry.get( OperatorName.GREATER_THAN );
-            case ">=":
-                return OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL );
-            default:
-                throw new IllegalArgumentException( "Operator '" + operator + "' is not supported." );
-        }
+        return switch ( operator ) {
+            case "=" -> OperatorRegistry.get( OperatorName.EQUALS );
+            case "!=", "<>" -> OperatorRegistry.get( OperatorName.NOT_EQUALS );
+            case "<" -> OperatorRegistry.get( OperatorName.LESS_THAN );
+            case "<=" -> OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL );
+            case ">" -> OperatorRegistry.get( OperatorName.GREATER_THAN );
+            case ">=" -> OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL );
+            default -> throw new IllegalArgumentException( "Operator '" + operator + "' is not supported." );
+        };
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,11 @@ package org.polypheny.db.algebra.core.relational;
 
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Modify;
-import org.polypheny.db.algebra.core.Modify.Operation;
-import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
-import org.polypheny.db.schema.ModifiableTable;
+import org.polypheny.db.algebra.core.common.Modify;
+import org.polypheny.db.algebra.core.common.Modify.Operation;
+import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.schema.types.ModifiableTable;
 
 
 /**
@@ -30,16 +30,12 @@ import org.polypheny.db.schema.ModifiableTable;
  */
 public interface RelationalTransformable {
 
-    default CatalogReader getCatalogReader() {
-        throw new UnsupportedOperationException();
-    }
+
+    List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<Entity> entities, Snapshot snapshot );
 
 
-    List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<AlgOptTable> entities, CatalogReader catalogReader );
-
-
-    static Modify getModify( AlgOptTable table, CatalogReader catalogReader, AlgNode alg, Operation operation ) {
-        return table.unwrap( ModifiableTable.class ).toModificationAlg( alg.getCluster(), table, catalogReader, alg, operation, null, null, true );
+    static Modify<?> getModify( Entity entity, AlgNode alg, Operation operation ) {
+        return entity.unwrap( ModifiableTable.class ).orElseThrow().toModificationTable( alg.getCluster(), alg.getTraitSet(), entity, alg, operation, null, null );
     }
 
 }

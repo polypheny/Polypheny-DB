@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,13 +20,16 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogPartition;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumnType;
+import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 
@@ -40,27 +43,33 @@ public class ListPartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public long getTargetPartitionId( CatalogTable catalogTable, String columnValue ) {
+    public long getTargetPartitionId( LogicalTable table, PartitionProperty property, String columnValue ) {
         long unboundPartitionId = -1;
         long selectedPartitionId = -1;
 
-        // Process all accumulated CatalogPartitions
-        for ( CatalogPartition catalogPartition : Catalog.getInstance().getPartitionsByTable( catalogTable.id ) ) {
-            if ( unboundPartitionId == -1 && catalogPartition.isUnbound ) {
-                unboundPartitionId = catalogPartition.id;
+        // Process all accumulated partitions
+
+        for ( long partitionId : property.partitionIds ) {
+            Optional<AllocationPartition> optionalPartition = Catalog.snapshot().alloc().getPartition( partitionId );
+            if ( optionalPartition.isEmpty() ) {
+                continue;
+            }
+            AllocationPartition partition = optionalPartition.get();
+            if ( partition.qualifiers.isEmpty() ) {
+                unboundPartitionId = partition.id;
                 break;
             }
 
-            for ( int i = 0; i < catalogPartition.partitionQualifiers.size(); i++ ) {
+            for ( int i = 0; i < partition.qualifiers.size(); i++ ) {
                 // Could be int
-                if ( catalogPartition.partitionQualifiers.get( i ).equals( columnValue ) ) {
+                if ( partition.qualifiers.get( i ).equals( columnValue ) ) {
                     if ( log.isDebugEnabled() ) {
                         log.debug( "Found column value: {} on partitionID {} with qualifiers: {}",
                                 columnValue,
-                                catalogPartition.id,
-                                catalogPartition.partitionQualifiers );
+                                partition.id,
+                                partition.qualifiers );
                     }
-                    selectedPartitionId = catalogPartition.id;
+                    selectedPartitionId = partition.id;
                     break;
                 }
             }
@@ -76,8 +85,8 @@ public class ListPartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public boolean validatePartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, CatalogColumn partitionColumn ) {
-        super.validatePartitionGroupSetup( partitionGroupQualifiers, numPartitionGroups, partitionGroupNames, partitionColumn );
+    public List<List<String>> validateAdjustPartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, LogicalColumn partitionColumn ) {
+        partitionGroupQualifiers = super.validateAdjustPartitionGroupSetup( partitionGroupQualifiers, numPartitionGroups, partitionGroupNames, partitionColumn );
 
         if ( partitionColumn.type.getFamily() == PolyTypeFamily.NUMERIC ) {
             for ( List<String> singlePartitionQualifiers : partitionGroupQualifiers ) {
@@ -85,23 +94,23 @@ public class ListPartitionManager extends AbstractPartitionManager {
                     try {
                         Integer.valueOf( qualifier );
                     } catch ( NumberFormatException e ) {
-                        throw new RuntimeException( "Specified partition value '" + qualifier + "' is not a number as expected according to the type of the partition column " + partitionColumn.name );
+                        throw new GenericRuntimeException( "Specified partition value '" + qualifier + "' is not a number as expected according to the type of the partition column " + partitionColumn.name );
                     }
                 }
             }
         }
 
         if ( partitionGroupQualifiers.isEmpty() ) {
-            throw new RuntimeException( "LIST Partitioning doesn't support  empty Partition Qualifiers: '" + partitionGroupQualifiers +
+            throw new GenericRuntimeException( "LIST Partitioning doesn't support  empty Partition Qualifiers: '" + partitionGroupQualifiers +
                     "'. USE (PARTITION name1 VALUES(value1)[(,PARTITION name1 VALUES(value1))*])" );
         }
 
         if ( partitionGroupQualifiers.size() + 1 != numPartitionGroups ) {
-            throw new RuntimeException( "Number of partitionQualifiers '" + partitionGroupQualifiers +
+            throw new GenericRuntimeException( "Number of partitionQualifiers '" + partitionGroupQualifiers +
                     "' + (mandatory 'Unbound' partition) is not equal to number of specified partitions '" + numPartitionGroups + "'" );
         }
 
-        return true;
+        return partitionGroupQualifiers;
     }
 
 

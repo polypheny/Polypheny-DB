@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ import org.polypheny.db.transaction.Statement;
 @Getter
 public abstract class StatementEvent extends BaseEvent {
 
-    protected String monitoringType;
+    protected MonitoringType monitoringType;
     protected AlgRoot routed;
     protected PolyImplementation result;
     protected Statement statement;
@@ -49,7 +49,7 @@ public abstract class StatementEvent extends BaseEvent {
     protected String description;
     protected List<String> fieldNames;
     protected long executionTime;
-    protected int rowCount;
+    protected long rowCount;
     protected boolean isAnalyze;
     protected boolean isSubQuery;
     protected boolean isCommitted;
@@ -58,12 +58,12 @@ public abstract class StatementEvent extends BaseEvent {
     protected LogicalQueryInformation logicalQueryInformation;
     protected String algCompareString;
     protected String physicalQueryClass;
-    protected final HashMap<Long, List<Object>> changedValues = new HashMap<>();
+    protected final HashMap<Long, List<?>> changedValues = new HashMap<>();
     protected Integer indexSize = null;
     // Only used for ddl events
     protected long tableId;
     // Only used for ddl events
-    protected long schemaId;
+    protected long namespaceId;
     // Only used for ddl events
     protected long columnId;
 

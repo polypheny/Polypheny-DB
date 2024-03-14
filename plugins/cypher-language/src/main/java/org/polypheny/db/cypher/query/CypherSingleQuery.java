@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,16 @@ package org.polypheny.db.cypher.query;
 
 import java.util.List;
 import lombok.Getter;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.cypher.clause.CypherClause;
 import org.polypheny.db.cypher.clause.CypherQuery;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.type.entity.PolyString;
 
 @Getter
 public class CypherSingleQuery extends CypherQuery implements ExecutableStatement {
@@ -36,6 +38,12 @@ public class CypherSingleQuery extends CypherQuery implements ExecutableStatemen
     public CypherSingleQuery( ParserPos pos, List<CypherClause> clauses ) {
         super( pos );
         this.clauses = clauses;
+    }
+
+
+    @Override
+    public boolean isFullScan() {
+        return clauses.stream().anyMatch( CypherNode::isFullScan );
     }
 
 
@@ -57,22 +65,28 @@ public class CypherSingleQuery extends CypherQuery implements ExecutableStatemen
 
 
     @Override
-    public boolean isDDL() {
-        if ( clauses.stream().allMatch( CypherNode::isDDL ) ) {
+    public boolean isDdl() {
+        if ( clauses.stream().allMatch( CypherNode::isDdl ) ) {
             return true;
         }
-        if ( clauses.stream().noneMatch( CypherNode::isDDL ) ) {
+        if ( clauses.stream().noneMatch( CypherNode::isDdl ) ) {
             return false;
         }
-        throw new RuntimeException( "The mixed query is not supported" );
+        throw new GenericRuntimeException( "The mixed query is not supported" );
     }
 
 
     @Override
-    public void execute( Context context, Statement statement, QueryParameters parameters ) {
+    public List<PolyString> getUnderlyingLabels() {
+        return clauses.stream().map( CypherNode::getUnderlyingLabels ).flatMap( List::stream ).collect( java.util.stream.Collectors.toList() );
+    }
+
+
+    @Override
+    public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
         for ( CypherClause clause : clauses ) {
-            if ( clause.isDDL() ) {
-                ((ExecutableStatement) clause).execute( context, statement, parameters );
+            if ( clause.isDdl() ) {
+                ((ExecutableStatement) clause).execute( context, statement, parsedQueryContext );
             }
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,31 +17,31 @@
 package org.polypheny.db.information;
 
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * Possible colors for an InformationGraph
  */
 public enum GraphColor {
 
-    @SerializedName("#F86C6B")
+    @JsonProperty("#F86C6B")
     PASTEL_RED,
-    @SerializedName("#20A8d8")
+    @JsonProperty("#20A8d8")
     BATTERY_CHARGED_BLUE,
-    @SerializedName("#FFC107")
+    @JsonProperty("#FFC107")
     MIKADO_YELLOW,
-    @SerializedName("#21576A")
+    @JsonProperty("#21576A")
     POLICE_BLUE,
-    @SerializedName("#814848")
+    @JsonProperty("#814848")
     TUSCAN_RED,
-    @SerializedName("#88BB9A")
+    @JsonProperty("#88BB9A")
     DARK_SEE_GREEN,
-    @SerializedName("#3A7C96")
+    @JsonProperty("#3A7C96")
     JELLY_BEAN_BLUE,
-    @SerializedName("#914661")
+    @JsonProperty("#914661")
     TWILIGHT_LAVENDER,
-    @SerializedName("#BFA0AB")
+    @JsonProperty("#BFA0AB")
     SILVER_PINK,
-    @SerializedName("#BAD80A")
-    LIME
+    @JsonProperty("#BAD80A")
+    LIME;
 }

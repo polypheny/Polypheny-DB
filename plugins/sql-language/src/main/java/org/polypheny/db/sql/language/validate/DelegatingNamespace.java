@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ package org.polypheny.db.sql.language.validate;
 import java.util.List;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.nodes.validate.ValidatorTable;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.util.Pair;
 
@@ -50,14 +50,14 @@ public abstract class DelegatingNamespace implements SqlValidatorNamespace {
 
 
     @Override
-    public ValidatorTable getTable() {
-        return namespace.getTable();
+    public Entity getEntity() {
+        return namespace.getEntity();
     }
 
 
     @Override
-    public AlgDataType getRowType() {
-        return namespace.getRowType();
+    public AlgDataType getTupleType() {
+        return namespace.getTupleType();
     }
 
 

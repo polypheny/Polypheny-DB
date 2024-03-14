@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,11 +44,11 @@ import org.polypheny.db.algebra.core.Exchange;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.RelTableFunctionScan;
 import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.core.TableFunctionScan;
-import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitor;
 import org.polypheny.db.rex.RexVisitorImpl;
@@ -60,7 +60,7 @@ import org.polypheny.db.util.BuiltInMethod;
  */
 public class AlgMdColumnOrigins implements MetadataHandler<BuiltInMetadata.ColumnOrigin> {
 
-    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( BuiltInMethod.COLUMN_ORIGIN.method, new AlgMdColumnOrigins() );
+    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( new AlgMdColumnOrigins(), BuiltInMethod.COLUMN_ORIGIN.method );
 
 
     private AlgMdColumnOrigins() {
@@ -102,7 +102,7 @@ public class AlgMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Colum
 
 
     public Set<AlgColumnOrigin> getColumnOrigins( Join alg, AlgMetadataQuery mq, int iOutputColumn ) {
-        int nLeftColumns = alg.getLeft().getRowType().getFieldList().size();
+        int nLeftColumns = alg.getLeft().getTupleType().getFields().size();
         Set<AlgColumnOrigin> set;
         boolean derived = false;
         if ( iOutputColumn < nLeftColumns ) {
@@ -141,9 +141,9 @@ public class AlgMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Colum
         final AlgNode input = alg.getInput();
         RexNode rexNode = alg.getProjects().get( iOutputColumn );
 
-        if ( rexNode instanceof RexInputRef ) {
+        if ( rexNode instanceof RexIndexRef ) {
             // Direct reference:  no derivation added.
-            RexInputRef inputRef = (RexInputRef) rexNode;
+            RexIndexRef inputRef = (RexIndexRef) rexNode;
             return mq.getColumnOrigins( input, inputRef.getIndex() );
         }
 
@@ -152,7 +152,7 @@ public class AlgMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Colum
         RexVisitor visitor =
                 new RexVisitorImpl<Void>( true ) {
                     @Override
-                    public Void visitInputRef( RexInputRef inputRef ) {
+                    public Void visitIndexRef( RexIndexRef inputRef ) {
                         Set<AlgColumnOrigin> inputSet = mq.getColumnOrigins( input, inputRef.getIndex() );
                         if ( inputSet != null ) {
                             set.addAll( inputSet );
@@ -181,7 +181,7 @@ public class AlgMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Colum
     }
 
 
-    public Set<AlgColumnOrigin> getColumnOrigins( TableFunctionScan alg, AlgMetadataQuery mq, int iOutputColumn ) {
+    public Set<AlgColumnOrigin> getColumnOrigins( RelTableFunctionScan alg, AlgMetadataQuery mq, int iOutputColumn ) {
         final Set<AlgColumnOrigin> set = new HashSet<>();
         Set<AlgColumnMapping> mappings = alg.getColumnMappings();
         if ( mappings == null ) {
@@ -222,19 +222,19 @@ public class AlgMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Colum
 
         final Set<AlgColumnOrigin> set = new HashSet<>();
 
-        AlgOptTable table = alg.getTable();
-        if ( table == null ) {
+        Entity entity = alg.getEntity();
+        if ( entity == null ) {
             // Somebody is making column values up out of thin air, like a VALUES clause, so we return an empty set.
             return set;
         }
 
         // Detect the case where a physical table expression is performing projection, and say we don't know instead of making any assumptions.
         // (Theoretically we could try to map the projection using column names.)  This detection assumes the table expression doesn't handle rename as well.
-        if ( table.getRowType() != alg.getRowType() ) {
+        if ( entity.getTupleType() != alg.getTupleType() ) {
             return null;
         }
 
-        set.add( new AlgColumnOrigin( table, iOutputColumn, false ) );
+        set.add( new AlgColumnOrigin( entity, iOutputColumn, false ) );
         return set;
     }
 

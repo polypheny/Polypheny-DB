@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,19 +40,26 @@ import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import org.polypheny.db.adapter.enumerable.EnumerableRules;
+import java.util.Optional;
 import org.polypheny.db.algebra.AlgDecorrelator;
 import org.polypheny.db.algebra.AlgFieldTrimmer;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Calc;
+import org.polypheny.db.algebra.enumerable.EnumerableRules;
+import org.polypheny.db.algebra.enumerable.common.EnumerableModifyToStreamerRule;
+import org.polypheny.db.algebra.enumerable.document.DocumentAggregateToAggregateRule;
+import org.polypheny.db.algebra.enumerable.document.DocumentFilterToCalcRule;
+import org.polypheny.db.algebra.enumerable.document.DocumentProjectToCalcRule;
+import org.polypheny.db.algebra.enumerable.document.DocumentSortToSortRule;
 import org.polypheny.db.algebra.metadata.AlgMetadataProvider;
 import org.polypheny.db.algebra.metadata.ChainedAlgMetadataProvider;
 import org.polypheny.db.algebra.metadata.DefaultAlgMetadataProvider;
 import org.polypheny.db.algebra.rules.AggregateExpandDistinctAggregatesRule;
 import org.polypheny.db.algebra.rules.AggregateReduceFunctionsRule;
+import org.polypheny.db.algebra.rules.AllocationToPhysicalModifyRule;
+import org.polypheny.db.algebra.rules.AllocationToPhysicalScanRule;
 import org.polypheny.db.algebra.rules.CalcMergeRule;
-import org.polypheny.db.algebra.rules.DocumentAggregateToAggregateRule;
 import org.polypheny.db.algebra.rules.FilterAggregateTransposeRule;
 import org.polypheny.db.algebra.rules.FilterCalcMergeRule;
 import org.polypheny.db.algebra.rules.FilterJoinRule;
@@ -77,9 +84,9 @@ import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.interpreter.NoneToBindableConverterRule;
 import org.polypheny.db.plan.AlgOptCostImpl;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.hep.HepMatchOrder;
 import org.polypheny.db.plan.hep.HepPlanner;
@@ -98,6 +105,10 @@ public class Programs {
                     EnumerableRules.ENUMERABLE_CALC_RULE,
                     EnumerableRules.ENUMERABLE_FILTER_TO_CALC_RULE,
                     EnumerableRules.ENUMERABLE_PROJECT_TO_CALC_RULE,
+                    DocumentProjectToCalcRule.INSTANCE,
+                    DocumentFilterToCalcRule.INSTANCE,
+                    DocumentAggregateToAggregateRule.INSTANCE,
+                    DocumentSortToSortRule.INSTANCE,
                     CalcMergeRule.INSTANCE,
                     FilterCalcMergeRule.INSTANCE,
                     ProjectCalcMergeRule.INSTANCE,
@@ -130,7 +141,9 @@ public class Programs {
                     EnumerableRules.ENUMERABLE_CONDITIONAL_EXECUTE_FALSE_RULE,
                     EnumerableRules.ENUMERABLE_STREAMER_RULE,
                     EnumerableRules.ENUMERABLE_CONTEXT_SWITCHER_RULE,
-                    EnumerableRules.ENUMERABLE_TABLE_MODIFY_TO_STREAMER_RULE,
+                    EnumerableModifyToStreamerRule.REL_INSTANCE,
+                    EnumerableModifyToStreamerRule.DOC_INSTANCE,
+                    EnumerableModifyToStreamerRule.GRAPH_INSTANCE,
                     EnumerableRules.ENUMERABLE_BATCH_ITERATOR_RULE,
                     EnumerableRules.ENUMERABLE_CONSTRAINT_ENFORCER_RULE,
                     EnumerableRules.ENUMERABLE_PROJECT_RULE,
@@ -142,15 +155,25 @@ public class Programs {
                     EnumerableRules.ENUMERABLE_MODIFY_COLLECT_RULE,
                     EnumerableRules.ENUMERABLE_INTERSECT_RULE,
                     EnumerableRules.ENUMERABLE_MINUS_RULE,
-                    EnumerableRules.ENUMERABLE_TABLE_MODIFICATION_RULE,
                     EnumerableRules.ENUMERABLE_VALUES_RULE,
+                    EnumerableRules.ENUMERABLE_DOCUMENT_VALUES_RULE,
                     EnumerableRules.ENUMERABLE_WINDOW_RULE,
                     EnumerableRules.ENUMERABLE_CALC_RULE,
                     EnumerableRules.ENUMERABLE_FILTER_TO_CALC_RULE,
                     EnumerableRules.ENUMERABLE_PROJECT_TO_CALC_RULE,
+                    DocumentProjectToCalcRule.INSTANCE,
+                    DocumentFilterToCalcRule.INSTANCE,
+                    DocumentAggregateToAggregateRule.INSTANCE,
+                    DocumentSortToSortRule.INSTANCE,
                     SemiJoinRules.PROJECT,
                     SemiJoinRules.JOIN,
                     ScanRule.INSTANCE,
+                    AllocationToPhysicalScanRule.REL_INSTANCE,
+                    AllocationToPhysicalScanRule.DOC_INSTANCE,
+                    AllocationToPhysicalScanRule.GRAPH_INSTANCE,
+                    AllocationToPhysicalModifyRule.REL_INSTANCE,
+                    AllocationToPhysicalModifyRule.DOC_INSTANCE,
+                    AllocationToPhysicalModifyRule.GRAPH_INSTANCE,
                     RuntimeConfig.JOIN_COMMUTE.getBoolean()
                             ? JoinAssociateRule.INSTANCE
                             : ProjectMergeRule.INSTANCE,
@@ -158,7 +181,6 @@ public class Programs {
                     FilterProjectTransposeRule.INSTANCE,
                     FilterJoinRule.FILTER_ON_JOIN,
                     AggregateExpandDistinctAggregatesRule.INSTANCE,
-                    DocumentAggregateToAggregateRule.INSTANCE,
                     AggregateReduceFunctionsRule.INSTANCE,
                     FilterAggregateTransposeRule.INSTANCE,
                     JoinCommuteRule.INSTANCE,
@@ -184,7 +206,7 @@ public class Programs {
      * Creates a list of programs based on an array of rule sets.
      */
     public static List<Program> listOf( RuleSet... ruleSets ) {
-        return Lists.transform( Arrays.asList( ruleSets ), Programs::of );
+        return Arrays.stream( ruleSets ).map( Programs::of ).toList();
     }
 
 
@@ -192,7 +214,7 @@ public class Programs {
      * Creates a list of programs based on a list of rule sets.
      */
     public static List<Program> listOf( List<RuleSet> ruleSets ) {
-        return Lists.transform( ruleSets, Programs::of );
+        return ruleSets.stream().map( Programs::of ).toList();
     }
 
 
@@ -335,17 +357,17 @@ public class Programs {
                 ( planner, alg, requiredOutputTraits ) -> {
                     planner.setRoot( alg );
 
-                    final AlgNode rootRel2 =
+                    final AlgNode rootAlg2 =
                             alg.getTraitSet().equals( requiredOutputTraits )
                                     ? alg
                                     : planner.changeTraits( alg, requiredOutputTraits );
-                    assert rootRel2 != null;
+                    assert rootAlg2 != null;
 
-                    planner.setRoot( rootRel2 );
-                    final AlgOptPlanner planner2 = planner.chooseDelegate();
-                    final AlgNode rootRel3 = planner2.findBestExp();
-                    assert rootRel3 != null : "could not implement exp";
-                    return rootRel3;
+                    planner.setRoot( rootAlg2 );
+                    final AlgPlanner planner2 = planner.chooseDelegate();
+                    final AlgNode rootAlg3 = planner2.findBestExp();
+                    assert rootAlg3 != null : "could not implement exp";
+                    return rootAlg3;
                 };
 
         return sequence(
@@ -373,7 +395,7 @@ public class Programs {
 
 
         @Override
-        public AlgNode run( AlgOptPlanner planner, AlgNode alg, AlgTraitSet requiredOutputTraits ) {
+        public AlgNode run( AlgPlanner planner, AlgNode alg, AlgTraitSet requiredOutputTraits ) {
             planner.clear();
             for ( AlgOptRule rule : ruleSet ) {
                 planner.addRule( rule );
@@ -403,7 +425,7 @@ public class Programs {
 
 
         @Override
-        public AlgNode run( AlgOptPlanner planner, AlgNode alg, AlgTraitSet requiredOutputTraits ) {
+        public AlgNode run( AlgPlanner planner, AlgNode alg, AlgTraitSet requiredOutputTraits ) {
             for ( Program program : programs ) {
                 alg = program.run( planner, alg, requiredOutputTraits );
             }
@@ -422,9 +444,9 @@ public class Programs {
     private static class DecorrelateProgram implements Program {
 
         @Override
-        public AlgNode run( AlgOptPlanner planner, AlgNode alg, AlgTraitSet requiredOutputTraits ) {
-            final PolyphenyDbConnectionConfig config = planner.getContext().unwrap( PolyphenyDbConnectionConfig.class );
-            if ( config != null && config.forceDecorrelate() ) {
+        public AlgNode run( AlgPlanner planner, AlgNode alg, AlgTraitSet requiredOutputTraits ) {
+            Optional<PolyphenyDbConnectionConfig> oConfig = planner.getContext().unwrap( PolyphenyDbConnectionConfig.class );
+            if ( oConfig.isPresent() && oConfig.get().forceDecorrelate() ) {
                 final AlgBuilder algBuilder = AlgFactories.LOGICAL_BUILDER.create( alg.getCluster(), null );
                 return AlgDecorrelator.decorrelateQuery( alg, algBuilder );
             }
@@ -440,7 +462,7 @@ public class Programs {
     private static class TrimFieldsProgram implements Program {
 
         @Override
-        public AlgNode run( AlgOptPlanner planner, AlgNode alg, AlgTraitSet requiredOutputTraits ) {
+        public AlgNode run( AlgPlanner planner, AlgNode alg, AlgTraitSet requiredOutputTraits ) {
             final AlgBuilder algBuilder = AlgFactories.LOGICAL_BUILDER.create( alg.getCluster(), null );
             return new AlgFieldTrimmer( null, algBuilder ).trim( alg );
         }

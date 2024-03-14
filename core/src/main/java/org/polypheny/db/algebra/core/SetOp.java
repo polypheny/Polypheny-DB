@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.Util;
@@ -65,7 +65,7 @@ public abstract class SetOp extends AbstractAlgNode {
     /**
      * Creates a SetOp.
      */
-    protected SetOp( AlgOptCluster cluster, AlgTraitSet traits, List<AlgNode> inputs, Kind kind, boolean all ) {
+    protected SetOp( AlgCluster cluster, AlgTraitSet traits, List<AlgNode> inputs, Kind kind, boolean all ) {
         super( cluster, traits );
         Preconditions.checkArgument(
                 kind == Kind.UNION
@@ -121,7 +121,7 @@ public abstract class SetOp extends AbstractAlgNode {
 
     @Override
     protected AlgDataType deriveRowType() {
-        final List<AlgDataType> inputRowTypes = Lists.transform( inputs, AlgNode::getRowType );
+        final List<AlgDataType> inputRowTypes = Lists.transform( inputs, AlgNode::getTupleType );
         final AlgDataType rowType = getCluster().getTypeFactory().leastRestrictive( inputRowTypes );
         if ( rowType == null ) {
             throw new IllegalArgumentException( "Cannot compute compatible row type for arguments to set op: " + Util.sepList( inputRowTypes, ", " ) );
@@ -137,9 +137,9 @@ public abstract class SetOp extends AbstractAlgNode {
      * @return Whether all the inputs of this set operator have the same row type as its output row
      */
     public boolean isHomogeneous( boolean compareNames ) {
-        AlgDataType unionType = getRowType();
+        AlgDataType unionType = getTupleType();
         for ( AlgNode input : getInputs() ) {
-            if ( !AlgOptUtil.areRowTypesEqual( input.getRowType(), unionType, compareNames ) ) {
+            if ( !AlgOptUtil.areRowTypesEqual( input.getTupleType(), unionType, compareNames ) ) {
                 return false;
             }
         }

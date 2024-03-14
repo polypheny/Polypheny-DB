@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.util.Util;
 
 
@@ -90,27 +91,24 @@ public class ChainedAlgMetadataProvider implements AlgMetadataProvider {
             }
             functions.add( function );
         }
-        switch ( functions.size() ) {
-            case 0:
-                return null;
-            case 1:
-                return functions.get( 0 );
-            default:
-                return ( alg, mq ) -> {
-                    final List<Metadata> metadataList = new ArrayList<>();
-                    for ( UnboundMetadata<M> function : functions ) {
-                        final Metadata metadata = function.bind( alg, mq );
-                        if ( metadata != null ) {
-                            metadataList.add( metadata );
-                        }
+        return switch ( functions.size() ) {
+            case 0 -> null;
+            case 1 -> functions.get( 0 );
+            default -> ( alg, mq ) -> {
+                final List<Metadata> metadataList = new ArrayList<>();
+                for ( UnboundMetadata<M> function : functions ) {
+                    final Metadata metadata = function.bind( alg, mq );
+                    if ( metadata != null ) {
+                        metadataList.add( metadata );
                     }
-                    return metadataClass.cast(
-                            Proxy.newProxyInstance(
-                                    metadataClass.getClassLoader(),
-                                    new Class[]{ metadataClass },
-                                    new ChainedInvocationHandler( metadataList ) ) );
-                };
-        }
+                }
+                return metadataClass.cast(
+                        Proxy.newProxyInstance(
+                                metadataClass.getClassLoader(),
+                                new Class[]{ metadataClass },
+                                new ChainedInvocationHandler( metadataList ) ) );
+            };
+        };
     }
 
 
@@ -135,12 +133,9 @@ public class ChainedAlgMetadataProvider implements AlgMetadataProvider {
     /**
      * Invocation handler that calls a list of {@link Metadata} objects, returning the first non-null value.
      */
-    private static class ChainedInvocationHandler implements InvocationHandler {
+    private record ChainedInvocationHandler(List<Metadata> metadataList) implements InvocationHandler {
 
-        private final List<Metadata> metadataList;
-
-
-        ChainedInvocationHandler( List<Metadata> metadataList ) {
+        private ChainedInvocationHandler( List<Metadata> metadataList ) {
             this.metadataList = ImmutableList.copyOf( metadataList );
         }
 
@@ -158,7 +153,7 @@ public class ChainedAlgMetadataProvider implements AlgMetadataProvider {
                         continue;
                     }
                     Util.throwIfUnchecked( e.getCause() );
-                    throw new RuntimeException( e.getCause() );
+                    throw new GenericRuntimeException( e.getCause() );
                 }
             }
             return null;

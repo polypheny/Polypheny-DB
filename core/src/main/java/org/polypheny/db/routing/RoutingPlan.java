@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,7 @@
 
 package org.polypheny.db.routing;
 
-import java.util.List;
-import java.util.Map;
-import org.polypheny.db.util.Pair;
+import org.polypheny.db.routing.ColumnDistribution.RoutedDistribution;
 
 
 /**
@@ -33,6 +31,6 @@ public interface RoutingPlan {
     Class<? extends Router> getRouter();
 
     // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
-    Map<Long, List<Pair<Integer, Long>>> getPhysicalPlacementsOfPartitions();
+    RoutedDistribution getRoutedDistribution();
 
 }

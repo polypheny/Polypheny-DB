@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,20 +17,23 @@
 package org.polypheny.db.algebra.logical.document;
 
 import java.util.List;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.document.DocumentFilter;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 
-
+@EqualsAndHashCode(callSuper = true)
+@Value
 public class LogicalDocumentFilter extends DocumentFilter {
 
     /**
      * Subclass of {@link DocumentFilter} not targeted at any particular engine or calling convention.
      */
-    public LogicalDocumentFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
+    public LogicalDocumentFilter( AlgCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
         super( cluster, traits, input, condition );
     }
 
@@ -55,6 +58,14 @@ public class LogicalDocumentFilter extends DocumentFilter {
     @Override
     protected AlgNode copy( AlgTraitSet traitSet, AlgNode input, RexNode condition ) {
         return new LogicalDocumentFilter( input.getCluster(), traitSet, input, condition );
+    }
+
+
+    @Override
+    public String toString() {
+        return "LogicalDocumentFilter{" +
+                "digest='" + digest + '\'' +
+                '}';
     }
 
 }

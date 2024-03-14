@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ package org.polypheny.db.interpreter;
 
 import com.google.common.collect.ImmutableList;
 import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -44,22 +45,22 @@ import org.polypheny.db.algebra.core.Filter;
 public class FilterNode extends AbstractSingleNode<Filter> {
 
     private final Scalar condition;
-    private final Context context;
+    private final Context<PolyValue> context;
 
 
     public FilterNode( Compiler compiler, Filter alg ) {
         super( compiler, alg );
-        this.condition = compiler.compile( ImmutableList.of( alg.getCondition() ), alg.getRowType() );
+        this.condition = compiler.compile( ImmutableList.of( alg.getCondition() ), alg.getTupleType() );
         this.context = compiler.createContext();
     }
 
 
     @Override
     public void run() throws InterruptedException {
-        Row row;
+        Row<PolyValue> row;
         while ( (row = source.receive()) != null ) {
             context.values = row.getValues();
-            Boolean b = (Boolean) condition.execute( context );
+            Boolean b = condition.execute( context ).asBoolean().value;
             if ( b != null && b ) {
                 sink.send( row );
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,8 +42,9 @@ import java.util.List;
 
 /**
  * Passes over a row-expression, calling a handler method for each node, appropriate to the type of the node.
- *
- * Like {@link RexVisitor}, this is an instance of the {@link org.polypheny.db.util.Glossary#VISITOR_PATTERN Visitor Pattern}. Use <code> RexShuttle</code> if you would like your methods to
+ * <p>
+ * Like {@link RexVisitor}, this is an instance of the {@link org.polypheny.db.util.Glossary#VISITOR_PATTERN Visitor Pattern}.
+ * Use <code> RexShuttle</code> if you would like your methods to
  * return a value.
  */
 public class RexShuttle implements RexVisitor<RexNode> {
@@ -103,7 +104,7 @@ public class RexShuttle implements RexVisitor<RexNode> {
 
 
     @Override
-    public RexNode visitTableInputRef( RexTableInputRef ref ) {
+    public RexNode visitTableInputRef( RexTableIndexRef ref ) {
         return ref;
     }
 
@@ -111,6 +112,18 @@ public class RexShuttle implements RexVisitor<RexNode> {
     @Override
     public RexNode visitPatternFieldRef( RexPatternFieldRef fieldRef ) {
         return fieldRef;
+    }
+
+
+    @Override
+    public RexNode visitNameRef( RexNameRef nameRef ) {
+        return nameRef;
+    }
+
+
+    @Override
+    public RexNode visitElementRef( RexElementRef rexElementRef ) {
+        return rexElementRef;
     }
 
 
@@ -220,7 +233,7 @@ public class RexShuttle implements RexVisitor<RexNode> {
 
 
     @Override
-    public RexNode visitInputRef( RexInputRef inputRef ) {
+    public RexNode visitIndexRef( RexIndexRef inputRef ) {
         return inputRef;
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,8 +36,9 @@ import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.runtime.PolyCollections.PolyList;
+import org.polypheny.db.runtime.ComparableList;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
 
 
@@ -62,18 +63,18 @@ public class CypherUnwind extends CypherClause {
 
 
     public void getUnwind( CypherContext context ) {
-        Pair<String, RexNode> namedNode;
+        Pair<PolyString, RexNode> namedNode;
         if ( expression.getType() == ExpressionType.LITERAL && ((CypherLiteral) expression).getLiteralType() == Literal.NULL ) {
             // special case, this is equal to empty list
             AlgDataType type = context.typeFactory.createArrayType( context.typeFactory.createPolyType( PolyType.ANY ), -1 );
-            AlgDataType rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( variable.getName(), 0, type ) ) );
+            AlgDataType rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( -1L, variable.getName(), 0, type ) ) );
 
-            RexLiteral emptyList = (RexLiteral) context.rexBuilder.makeLiteral( new PolyList<>(), type, false );
+            RexLiteral emptyList = (RexLiteral) context.rexBuilder.makeLiteral( ComparableList.of(), type, false );
 
             ImmutableList<ImmutableList<RexLiteral>> values = ImmutableList.of( ImmutableList.of( emptyList ) );
             context.add( LogicalLpgValues.create( context.cluster, context.cluster.traitSet(), rowType, values ) );
 
-            namedNode = Pair.of( variable.getName(), context.rexBuilder.makeInputRef( context.typeFactory.createPolyType( PolyType.ANY ), 0 ) );
+            namedNode = Pair.of( PolyString.of( variable.getName() ), context.rexBuilder.makeInputRef( context.typeFactory.createPolyType( PolyType.ANY ), 0 ) );
 
         } else if ( expression.getType() == ExpressionType.LITERAL ) {
             // is values
@@ -84,8 +85,8 @@ public class CypherUnwind extends CypherClause {
 
         AlgNode node = context.peek();
 
-        if ( node.getRowType().getFieldList().size() != 1 ) {
-            if ( !node.getRowType().getFieldNames().contains( namedNode.left ) ) {
+        if ( node.getTupleType().getFields().size() != 1 ) {
+            if ( !node.getTupleType().getFieldNames().contains( namedNode.left ) ) {
                 throw new UnsupportedOperationException();
             }
             node = new LogicalLpgProject(

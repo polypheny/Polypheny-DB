@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,12 @@ package org.polypheny.db.sql.language.ddl;
 
 
 import java.util.List;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.Value;
+import lombok.experimental.NonFinal;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.catalog.Catalog.ConstraintType;
+import org.polypheny.db.catalog.logistic.ConstraintType;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.Operator;
@@ -35,44 +38,49 @@ import org.polypheny.db.util.ImmutableNullableList;
 
 /**
  * Parse tree for {@code UNIQUE}, {@code PRIMARY KEY} constraints.
- *
+ * <p>
  * And {@code FOREIGN KEY}, when we support it.
  */
+@EqualsAndHashCode(callSuper = true)
+@Getter
+@Value
+@NonFinal
 public class SqlKeyConstraint extends SqlCall {
 
     public static final SqlSpecialOperator UNIQUE = new SqlSpecialOperator( "UNIQUE", Kind.UNIQUE );
 
     public static final SqlSpecialOperator PRIMARY = new SqlSpecialOperator( "PRIMARY KEY", Kind.PRIMARY_KEY );
 
-    @Getter
-    private final SqlIdentifier name;
-    @Getter
-    private final SqlNodeList columnList;
+    public static final SqlSpecialOperator FOREIGN = new SqlSpecialOperator( "FOREIGN KEY", Kind.FOREIGN_KEY );
+
+    SqlIdentifier name;
+
+    SqlNodeList fields;
 
 
     /**
      * Creates a SqlKeyConstraint.
      */
-    SqlKeyConstraint( ParserPos pos, SqlIdentifier name, SqlNodeList columnList ) {
+    SqlKeyConstraint( ParserPos pos, SqlIdentifier name, SqlNodeList fields ) {
         super( pos );
         this.name = name;
-        this.columnList = columnList;
+        this.fields = fields;
     }
 
 
     /**
      * Creates a UNIQUE constraint.
      */
-    public static SqlKeyConstraint unique( ParserPos pos, SqlIdentifier name, SqlNodeList columnList ) {
-        return new SqlKeyConstraint( pos, name, columnList );
+    public static SqlKeyConstraint unique( ParserPos pos, SqlIdentifier name, SqlNodeList fields ) {
+        return new SqlKeyConstraint( pos, name, fields );
     }
 
 
     /**
      * Creates a PRIMARY KEY constraint.
      */
-    public static SqlKeyConstraint primary( ParserPos pos, SqlIdentifier name, SqlNodeList columnList ) {
-        return new SqlKeyConstraint( pos, name, columnList ) {
+    public static SqlKeyConstraint primary( ParserPos pos, SqlIdentifier name, SqlNodeList fields ) {
+        return new SqlKeyConstraint( pos, name, fields ) {
             @Override
             public Operator getOperator() {
                 return PRIMARY;
@@ -85,6 +93,8 @@ public class SqlKeyConstraint extends SqlCall {
     public ConstraintType getConstraintType() {
         if ( getOperator().equals( PRIMARY ) ) {
             return ConstraintType.PRIMARY;
+        } else if ( getOperator().equals( FOREIGN ) ) {
+            return ConstraintType.FOREIGN;
         } else {
             return ConstraintType.UNIQUE;
         }
@@ -99,13 +109,13 @@ public class SqlKeyConstraint extends SqlCall {
 
     @Override
     public List<Node> getOperandList() {
-        return ImmutableNullableList.of( name, columnList );
+        return ImmutableNullableList.of( name, fields );
     }
 
 
     @Override
     public List<SqlNode> getSqlOperandList() {
-        return ImmutableNullableList.of( name, columnList );
+        return ImmutableNullableList.of( name, fields );
     }
 
 
@@ -116,7 +126,7 @@ public class SqlKeyConstraint extends SqlCall {
             name.unparse( writer, 0, 0 );
         }
         writer.keyword( getOperator().getName() ); // "UNIQUE" or "PRIMARY KEY"
-        columnList.unparse( writer, 1, 1 );
+        fields.unparse( writer, 1, 1 );
     }
 
 }

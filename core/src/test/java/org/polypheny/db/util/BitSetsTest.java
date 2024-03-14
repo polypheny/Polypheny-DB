@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,18 +35,21 @@ package org.polypheny.db.util;
 
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
+import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collections;
+import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.polypheny.db.runtime.ComparableList;
 
 
 /**
@@ -184,14 +187,14 @@ public class BitSetsTest {
 
 
     /**
-     * Tests the method {@link org.polypheny.db.util.BitSets#of(ImmutableIntList)}.
+     * Tests the method .
      */
     @Test
     public void testBitSetOfImmutableIntList() {
-        ImmutableIntList list = ImmutableIntList.of();
+        List<Integer> list = ImmutableList.of();
         assertThat( BitSets.of( list ), equalTo( new BitSet() ) );
 
-        list = ImmutableIntList.of( 2, 70, 5, 0 );
+        list = ComparableList.of( 2, 70, 5, 0 );
         assertThat( BitSets.of( list ), equalTo( BitSets.of( 0, 2, 5, 70 ) ) );
     }
 

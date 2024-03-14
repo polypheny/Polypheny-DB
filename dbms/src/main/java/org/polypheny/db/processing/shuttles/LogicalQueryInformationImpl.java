@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,54 +16,69 @@
 
 package org.polypheny.db.processing.shuttles;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSet.Builder;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.stream.Collectors;
-import lombok.Getter;
+import java.util.Set;
+import lombok.Value;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.routing.LogicalQueryInformation;
 
-
+@Value
 public class LogicalQueryInformationImpl implements LogicalQueryInformation {
 
-    @Getter
-    protected final Map<Long, String> availableColumns; // column id -> schemaName.tableName.ColumnName
-    protected final Map<Long, Long> availableColumnsWithTable; // columnId -> tableId
-    protected final Map<Integer, List<Long>> accessedPartitions; // scanId  -> partitionIds
-    protected final String queryId;
-    protected final Map<Long, String> usedColumns;
-
-    @Getter
-    protected final List<String> tables;
+    public String queryHash;
+    public ImmutableMap<Long, List<Long>> accessedPartitions; // scanId  -> partitionIds
+    public ImmutableMap<Long, String> availableColumns; // column id -> schemaName.tableName.ColumnName
+    public ImmutableMap<Long, Long> availableColumnsWithTable; // columnId -> tableId
+    public ImmutableMap<Long, String> usedColumns;
+    public ImmutableMap<DataModel, Set<Long>> scannedEntities;
+    public ImmutableMap<DataModel, Set<Long>> modifiedEntities;
+    public ImmutableSet<Long> allModifiedEntities;
+    public ImmutableSet<Long> allScannedEntities;
+    public ImmutableSet<Long> allEntities;
 
 
     public LogicalQueryInformationImpl(
-            String queryId,
-            Map<Integer, List<Long>> accessedPartitionMap, // scanId -> List of partitionIds
-            LinkedHashMap<Long, String> availableColumns,
-            HashMap<Long, Long> availableColumnsWithTable,
+            String queryHash,
+            Map<Long, List<Long>> accessedPartitions, // scanId -> List of partitionIds
+            Map<Long, String> availableColumns,
+            Map<Long, Long> availableColumnsWithTable,
             Map<Long, String> usedColumns,
-            List<String> tables ) {
-        this.queryId = queryId;
-        this.accessedPartitions = accessedPartitionMap;
-        this.availableColumns = availableColumns;
-        this.availableColumnsWithTable = availableColumnsWithTable;
-        this.usedColumns = usedColumns;
-        this.tables = tables;
+            Map<DataModel, Set<Long>> scannedEntities,
+            Map<DataModel, Set<Long>> modifiedEntities ) {
+        this.queryHash = queryHash;
+        this.accessedPartitions = ImmutableMap.copyOf( accessedPartitions );
+        this.availableColumns = ImmutableMap.copyOf( availableColumns );
+        this.availableColumnsWithTable = ImmutableMap.copyOf( availableColumnsWithTable );
+        this.usedColumns = ImmutableMap.copyOf( usedColumns );
+        this.scannedEntities = ImmutableMap.copyOf( scannedEntities );
+        this.modifiedEntities = ImmutableMap.copyOf( modifiedEntities );
+        this.allModifiedEntities = buildAllModifiedEntities();
+        this.allScannedEntities = buildAllScannedEntities();
+        this.allEntities = buildAllEntities();
     }
 
 
-    @Override
-    public Map<Integer, List<Long>> getAccessedPartitions() {
-        return this.accessedPartitions;
+    private ImmutableSet<Long> buildAllEntities() {
+        Builder<Long> set = ImmutableSet.builder();
+        allModifiedEntities.forEach( set::add );
+        allScannedEntities.forEach( set::add );
+        return set.build();
     }
 
 
-    @Override
-    public Map<Long, Long> getAvailableColumnsWithTable() {
-        return this.availableColumnsWithTable;
+    private ImmutableSet<Long> buildAllScannedEntities() {
+        return ImmutableSet.copyOf( scannedEntities.values().stream().flatMap( Collection::stream ).toList() );
+    }
+
+
+    private ImmutableSet<Long> buildAllModifiedEntities() {
+        return ImmutableSet.copyOf( modifiedEntities.values().stream().flatMap( Collection::stream ).toList() );
     }
 
 
@@ -71,9 +86,9 @@ public class LogicalQueryInformationImpl implements LogicalQueryInformation {
     public List<Long> getAllColumnsPerTable( Long tableId ) {
         final Map<Long, String> usedCols = this.availableColumns;
         return availableColumnsWithTable.entrySet().stream()
-                .filter( x -> x.getValue().equals( tableId ) && usedCols.keySet().contains( x.getKey() ) )
+                .filter( x -> x.getValue().equals( tableId ) && usedCols.containsKey( x.getKey() ) )
                 .map( Entry::getKey )
-                .collect( Collectors.toList() );
+                .toList();
     }
 
 
@@ -81,21 +96,9 @@ public class LogicalQueryInformationImpl implements LogicalQueryInformation {
     public List<Long> getUsedColumnsPerTable( Long tableId ) {
         Map<Long, String> usedCols = getUsedColumns();
         return availableColumnsWithTable.entrySet().stream()
-                .filter( x -> x.getValue().equals( tableId ) && usedCols.keySet().contains( x.getKey() ) )
+                .filter( x -> x.getValue().equals( tableId ) && usedCols.containsKey( x.getKey() ) )
                 .map( Entry::getKey )
-                .collect( Collectors.toList() );
-    }
-
-
-    @Override
-    public Map<Long, String> getUsedColumns() {
-        return this.usedColumns;
-    }
-
-
-    @Override
-    public String getQueryClass() {
-        return this.queryId;
+                .toList();
     }
 
 }

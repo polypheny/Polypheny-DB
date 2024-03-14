@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.bson.BsonString;
 import org.polypheny.db.adapter.mongodb.MongoPlugin.MongoStore;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 
 
 /**
@@ -30,13 +30,13 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 public class MongoTypeUtil {
 
 
-    public static BsonDocument getPhysicalProjections( List<String> logicalCols, CatalogTable catalogTable ) {
+    public static BsonDocument getPhysicalProjections( List<String> logicalCols, LogicalTable table ) {
         BsonDocument projections = new BsonDocument();
-        List<String> names = catalogTable.getColumnNames();
+        List<String> names = table.getColumnNames();
         for ( String logicalCol : logicalCols ) {
             int index = names.indexOf( logicalCol );
             if ( index != -1 ) {
-                projections.append( logicalCol, new BsonString( "$" + MongoStore.getPhysicalColumnName( logicalCol, catalogTable.fieldIds.get( index ) ) ) );
+                projections.append( logicalCol, new BsonString( "$" + MongoStore.getPhysicalColumnName( table.getColumnIds().get( index ) ) ) );
             } else {
                 projections.append( logicalCol, new BsonInt32( 1 ) );
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,11 +59,11 @@ public class SortNode extends AbstractSingleNode<Sort> {
         final int offset =
                 alg.offset == null
                         ? 0
-                        : ((RexLiteral) alg.offset).getValueAs( Integer.class );
+                        : ((RexLiteral) alg.offset).value.asInteger().value;
         final int fetch =
                 alg.fetch == null
                         ? -1
-                        : ((RexLiteral) alg.fetch).getValueAs( Integer.class );
+                        : ((RexLiteral) alg.fetch).value.asInteger().value;
         // In pure limit mode. No sort required.
         Row row;
         loop:

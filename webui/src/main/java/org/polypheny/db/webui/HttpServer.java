@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,14 @@
 package org.polypheny.db.webui;
 
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.TypeAdapter;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
-import io.javalin.plugin.json.JsonMapper;
+import io.javalin.plugin.json.JavalinJackson;
 import io.javalin.websocket.WsConfig;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -35,31 +35,17 @@ import java.nio.charset.Charset;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import javax.servlet.ServletException;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
-import org.polypheny.db.StatusService;
-import org.polypheny.db.adapter.Adapter.AbstractAdapterSetting;
-import org.polypheny.db.adapter.Adapter.AdapterSettingDeserializer;
-import org.polypheny.db.adapter.AdapterManager.AdapterInformation;
-import org.polypheny.db.adapter.DataSource;
-import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.StatusNotificationService;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.Authenticator;
-import org.polypheny.db.information.InformationDuration;
-import org.polypheny.db.information.InformationDuration.Duration;
-import org.polypheny.db.information.InformationGroup;
-import org.polypheny.db.information.InformationPage;
-import org.polypheny.db.information.InformationStacktrace;
-import org.polypheny.db.plugins.PolyPluginManager.PluginStatus;
 import org.polypheny.db.transaction.TransactionManager;
-import org.polypheny.db.type.PolyType;
-import org.polypheny.db.webui.models.Result;
+import org.polypheny.db.webui.ConfigService.Consumer3;
+import org.polypheny.db.webui.ConfigService.HandlerType;
+import org.polypheny.db.webui.crud.LanguageCrud;
+import org.polypheny.db.webui.models.results.RelationalResult;
 
 
 /**
@@ -71,111 +57,53 @@ public class HttpServer implements Runnable {
     private final TransactionManager transactionManager;
     private final Authenticator authenticator;
 
-    public static final Gson gson;
-    private final Gson gsonExpose = new GsonBuilder()
-            .excludeFieldsWithoutExposeAnnotation()
-            .enableComplexMapKeySerialization()
-            .setPrettyPrinting()
-            .create();
-
-    public static final TypeAdapter<Throwable> throwableTypeAdapter;
-
-
-    static {
-        throwableTypeAdapter = new TypeAdapter<>() {
-            @Override
-            public void write( JsonWriter out, Throwable value ) throws IOException {
-                if ( value == null ) {
-                    out.nullValue();
-                    return;
-                }
-                out.beginObject();
-                out.name( "message" );
-                out.value( value.getMessage() );
-                out.endObject();
-            }
-
-
-            @Override
-            public Throwable read( JsonReader in ) throws IOException {
-                return new Throwable( in.nextString() );
-            }
-        };
-        gson = new GsonBuilder()
-                .enableComplexMapKeySerialization()
-                .registerTypeHierarchyAdapter( DataSource.class, DataSource.getSerializer() )
-                .registerTypeHierarchyAdapter( DataStore.class, DataStore.getSerializer() )
-                .registerTypeHierarchyAdapter( Throwable.class, throwableTypeAdapter )
-                .registerTypeAdapter( PolyType.class, PolyType.getSerializer() )
-                .registerTypeAdapter( AdapterInformation.class, AdapterInformation.getSerializer() )
-                .registerTypeAdapter( AbstractAdapterSetting.class, new AdapterSettingDeserializer() )
-                .registerTypeAdapter( InformationDuration.class, InformationDuration.getSerializer() )
-                .registerTypeAdapter( Duration.class, Duration.getSerializer() )
-                .registerTypeAdapter( Result.class, Result.getSerializer() )
-                .registerTypeAdapter( InformationPage.class, InformationPage.getSerializer() )
-                .registerTypeAdapter( InformationGroup.class, InformationGroup.getSerializer() )
-                .registerTypeAdapter( InformationStacktrace.class, InformationStacktrace.getSerializer() )
-                .registerTypeAdapter( PluginStatus.class, PluginStatus.getSerializer() )
-                .create();
-    }
-
-
     private static HttpServer INSTANCE = null;
+    @Getter
+    private WebSocket webSocketHandler;
 
 
     public static HttpServer getInstance() {
         if ( INSTANCE == null ) {
-            throw new RuntimeException( "HttpServer is not yet created." );
+            throw new GenericRuntimeException( "HttpServer is not yet created." );
         }
         return INSTANCE;
     }
 
 
-    private Javalin server;
+    public static final ObjectMapper mapper = new ObjectMapper() {
+        {
+            setSerializationInclusion( JsonInclude.Include.NON_NULL );
+            configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false );
+            setVisibility( getSerializationConfig().getDefaultVisibilityChecker()
+                    .withIsGetterVisibility( Visibility.NONE )
+                    .withGetterVisibility( Visibility.NONE )
+                    .withSetterVisibility( Visibility.NONE ) );
+            configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false );
+            writerWithDefaultPrettyPrinter();
+        }
+    };
+
+    @Getter
+    private final Javalin server = Javalin.create( config -> {
+        config.jsonMapper( new JavalinJackson( mapper ) );
+        config.enableCorsForAllOrigins();
+        config.addStaticFiles( staticFileConfig -> staticFileConfig.directory = "webapp/" );
+    } ).start( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
     private Crud crud;
 
 
-    public HttpServer( final TransactionManager transactionManager, final Authenticator authenticator ) {
-        this.transactionManager = transactionManager;
+    public HttpServer( TransactionManager manager, final Authenticator authenticator ) {
+        this.transactionManager = manager;
         this.authenticator = authenticator;
     }
 
 
     @Override
     public void run() {
-        JsonMapper gsonMapper = new JsonMapper() {
+        this.crud = new Crud( this.transactionManager );
 
-            @NotNull
-            @Override
-            public <T> T fromJsonString( @NotNull String json, @NotNull Class<T> targetType ) {
-                return gson.fromJson( json, targetType );
-            }
-
-
-            @NotNull
-            @Override
-            public String toJsonString( @NotNull Object obj ) {
-                return gson.toJson( obj );
-            }
-
-        };
-        long maxSizeMB = RuntimeConfig.UI_UPLOAD_SIZE_MB.getInteger();
-        long maxRequestSize = 1_000_000L * maxSizeMB;
-
-        this.server = Javalin.create( config -> {
-            config.jsonMapper( gsonMapper );
-            config.enableCorsForAllOrigins();
-            config.addStaticFiles( staticFileConfig -> staticFileConfig.directory = "webapp/" );
-            config.maxRequestSize = maxRequestSize;
-        } ).start( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
-
-        this.crud = new Crud(
-                transactionManager,
-                Catalog.defaultUserId,
-                Catalog.defaultDatabaseId );
-
-        WebSocket webSocketHandler = new WebSocket( crud, gson );
-        webSockets( server, webSocketHandler );
+        this.webSocketHandler = new WebSocket( crud );
+        webSockets( server, this.webSocketHandler );
 
         // Get modified index.html
         server.get( "/", ctx -> {
@@ -188,60 +116,65 @@ public class HttpServer implements Runnable {
             }
         } );
 
+        attachRoutes( server, crud );
+
+        StatusNotificationService.printInfo(
+                String.format( "Polypheny-UI started and is listening on port %d.", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() ) );
+
         attachExceptions( server );
-
-        crudRoutes( server, crud );
-
-        StatusService.printInfo( String.format( "Polypheny-UI started and is listening on port %d.", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() ) );
-
         INSTANCE = this;
     }
 
 
+    public Consumer3<String, Consumer<Context>, HandlerType> getRouteRegisterer() {
+        return this::addSerializedRoute;
+    }
+
+
+    public BiConsumer<String, Consumer<WsConfig>> getWebSocketRegisterer() {
+        return this::addWebsocketRoute;
+    }
+
+
     private void attachExceptions( Javalin server ) {
-        server.exception( SocketException.class, ( e, ctx ) ->
-                ctx.status( 400 ).result( "Error: Could not determine IP address." )
-        );
+        server.exception( SocketException.class, ( e, ctx ) -> {
+            ctx.status( 400 ).result( "Error: Could not determine IP address." );
+        } );
 
         defaultException( IOException.class, server );
-        defaultException( ServletException.class, server );
-        defaultException( UnknownDatabaseException.class, server );
-        defaultException( UnknownSchemaException.class, server );
-        defaultException( UnknownTableException.class, server );
-        defaultException( UnknownColumnException.class, server );
     }
 
 
     private void defaultException( Class<? extends Exception> exceptionClass, Javalin server ) {
-        server.exception( exceptionClass, ( e, ctx ) ->
-                ctx.status( 400 ).json( new Result( e ) )
-        );
+        server.exception( exceptionClass, ( e, ctx ) -> {
+            ctx.status( 400 ).json( RelationalResult.builder().error( e.getMessage() ).build() );
+        } );
     }
 
 
     /**
-     * Defines the routes for this Server
+     * Defines the routes for this server
      */
-    private void crudRoutes( Javalin webuiServer, Crud crud ) {
-        webuiServer.post( "/getSchemaTree", crud::getSchemaTree );
+    private void attachRoutes( Javalin webuiServer, Crud crud ) {
+        attachCatalogMetaRoutes( webuiServer, crud );
 
-        webuiServer.get( "/getTypeSchemas", crud::getTypeSchemas );
+        attachPartnerRoutes( webuiServer, crud );
 
-        webuiServer.post( "/insertRow", crud::insertRow );
+        attachStatisticRoutes( webuiServer, crud );
 
-        webuiServer.post( "/deleteRow", crud::deleteRow );
+        attachPluginRoutes( webuiServer, crud );
 
-        webuiServer.post( "/updateRow", crud::updateRow );
+        attachDockerRoutes( webuiServer, crud );
+
+        webuiServer.post( "/anyQuery", LanguageCrud::anyQuery );
+
+        webuiServer.post( "/insertTuple", crud::insertTuple );
+
+        webuiServer.post( "/deleteTuple", crud::deleteTuple );
+
+        webuiServer.post( "/updateTuple", crud::updateTuple );
 
         webuiServer.post( "/batchUpdate", crud::batchUpdate );
-
-        webuiServer.post( "/allStatistics", ( ctx ) -> crud.statisticCrud.getStatistics( ctx, gsonExpose ) );
-
-        webuiServer.post( "/getTableStatistics", crud.statisticCrud::getTableStatistics );
-
-        webuiServer.post( "/getDashboardInformation", crud.statisticCrud::getDashboardInformation );
-
-        webuiServer.post( "/getDashboardDiagram", crud.statisticCrud::getDashboardDiagram );
 
         webuiServer.post( "/getColumns", crud::getColumns );
 
@@ -255,11 +188,11 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/updateMaterialized", crud::updateMaterialized );
 
-        webuiServer.post( "/addColumn", crud::addColumn );
+        webuiServer.post( "/createColumn", crud::addColumn );
 
         webuiServer.post( "/dropColumn", crud::dropColumn );
 
-        webuiServer.post( "/getTables", crud::getTables );
+        webuiServer.post( "/getEntities", crud::getEntities );
 
         webuiServer.post( "/renameTable", crud::renameTable );
 
@@ -267,17 +200,15 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/createTable", crud::createTable );
 
-        webuiServer.post( "/createCollection", crud.languageCrud::createCollection );
-
         webuiServer.get( "/getGeneratedNames", crud::getGeneratedNames );
 
         webuiServer.post( "/getConstraints", crud::getConstraints );
 
         webuiServer.post( "/dropConstraint", crud::dropConstraint );
 
-        webuiServer.post( "/addPrimaryKey", crud::addPrimaryKey );
+        webuiServer.post( "/createPrimaryKey", crud::addPrimaryKey );
 
-        webuiServer.post( "/addUniqueConstraint", crud::addUniqueConstraint );
+        webuiServer.post( "/createUniqueConstraint", crud::addUniqueConstraint );
 
         webuiServer.post( "/getIndexes", crud::getIndexes );
 
@@ -285,7 +216,7 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/getUml", crud::getUml );
 
-        webuiServer.post( "/addForeignKey", crud::addForeignKey );
+        webuiServer.post( "/createForeignKey", crud::addForeignKey );
 
         webuiServer.post( "/createIndex", crud::createIndex );
 
@@ -313,7 +244,7 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/getAnalyzerPage", crud::getAnalyzerPage );
 
-        webuiServer.post( "/schemaRequest", crud::schemaRequest );
+        webuiServer.post( "/namespaceRequest", crud::namespaceRequest );
 
         webuiServer.get( "/getTypeInfo", crud::getTypeInfo );
 
@@ -323,7 +254,7 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/getSources", crud::getSources );
 
-        webuiServer.post( "/getAvailableStoresForIndexes", ( ctx ) -> crud.getAvailableStoresForIndexes( ctx, gson ) );
+        webuiServer.post( "/getAvailableStoresForIndexes", crud::getAvailableStoresForIndexes );
 
         webuiServer.post( "/removeAdapter", crud::removeAdapter );
 
@@ -333,7 +264,7 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/getAvailableSources", crud::getAvailableSources );
 
-        webuiServer.post( "/addAdapter", ( ctx ) -> crud.addAdapter( ctx, gson ) );
+        webuiServer.post( "/createAdapter", crud::addAdapter );
 
         webuiServer.post( "/pathAccess", crud::startAccessRequest );
 
@@ -341,7 +272,7 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/getAvailableQueryInterfaces", crud::getAvailableQueryInterfaces );
 
-        webuiServer.post( "/addQueryInterface", crud::addQueryInterface );
+        webuiServer.post( "/createQueryInterface", crud::addQueryInterface );
 
         webuiServer.post( "/updateQueryInterfaceSettings", crud::updateQueryInterfaceSettings );
 
@@ -349,6 +280,14 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/getFile/{file}", crud::getFile );
 
+        webuiServer.get( "/getDocumentDatabases", crud.languageCrud::getDocumentDatabases );
+
+        webuiServer.get( "/product", ctx -> ctx.result( "Polypheny-DB" ) );
+
+    }
+
+
+    private static void attachDockerRoutes( Javalin webuiServer, Crud crud ) {
         webuiServer.post( "/addDockerInstance", crud::addDockerInstance );
 
         webuiServer.post( "/testDockerInstance/{dockerId}", crud::testDockerInstance );
@@ -376,17 +315,48 @@ public class HttpServer implements Runnable {
         webuiServer.get( "/getDockerSettings", crud::getDockerSettings );
 
         webuiServer.post( "/changeDockerSettings", crud::changeDockerSettings );
+    }
 
-        webuiServer.get( "/getDocumentDatabases", crud.languageCrud::getDocumentDatabases );
 
-        webuiServer.get( "/product", ctx -> ctx.result( "Polypheny-DB" ) );
-
+    private static void attachPluginRoutes( Javalin webuiServer, Crud crud ) {
         webuiServer.post( "/loadPlugins", crud::loadPlugins );
 
         webuiServer.post( "/unloadPlugin", crud::unloadPlugin );
 
         webuiServer.get( "/getAvailablePlugins", crud::getAvailablePlugins );
+    }
 
+
+    private static void attachStatisticRoutes( Javalin webuiServer, Crud crud ) {
+        webuiServer.post( "/allStatistics", crud.statisticCrud::getStatistics );
+
+        webuiServer.post( "/getTableStatistics", crud.statisticCrud::getTableStatistics );
+
+        webuiServer.post( "/getDashboardInformation", crud.statisticCrud::getDashboardInformation );
+
+        webuiServer.post( "/getDashboardDiagram", crud.statisticCrud::getDashboardDiagram );
+    }
+
+
+    private static void attachPartnerRoutes( Javalin webuiServer, Crud crud ) {
+        webuiServer.get( "/auth/deregister", crud.authCrud::deregister );
+    }
+
+
+    private static void attachCatalogMetaRoutes( Javalin webuiServer, Crud crud ) {
+        webuiServer.post( "/getSchemaTree", crud.catalogCrud::getSchemaTree );
+
+        webuiServer.post( "/getSnapshot", crud.catalogCrud::getSnapshot );
+
+        webuiServer.get( "/getTypeSchemas", crud.catalogCrud::getTypeNamespaces );
+
+        webuiServer.post( "/getNamespaces", crud.catalogCrud::getNamespaces );
+
+        webuiServer.get( "/getCurrentSnapshot", crud.catalogCrud::getCurrentSnapshot );
+
+        webuiServer.get( "/getAssetsDefinition", crud.catalogCrud::getAssetsDefinition );
+
+        webuiServer.get( "/getAlgebraNodes", crud.catalogCrud::getAlgebraNodes );
     }
 
 
@@ -396,7 +366,7 @@ public class HttpServer implements Runnable {
 
 
     public void addSerializedRoute( String route, Consumer<Context> action, HandlerType type ) {
-        log.info( "Added route: {}", route );
+        log.debug( "Added route: {}", route );
         switch ( type ) {
             case GET:
                 server.get( route, action::accept );
@@ -456,39 +426,8 @@ public class HttpServer implements Runnable {
     }
 
 
-    public void addWebsocket( String route, Consumer<WsConfig> handler ) {
+    public void addWebsocketRoute( String route, Consumer<WsConfig> handler ) {
         server.ws( route, handler );
-    }
-
-
-    /**
-     * To avoid the CORS problem, when the ConfigServer receives requests from the Web UI.
-     * See https://gist.github.com/saeidzebardast/e375b7d17be3e0f4dddf
-     */
-    private static void enableCORS( Javalin webuiServer ) {
-        //staticFiles.header("Access-Control-Allow-Origin", "*");
-
-        webuiServer.options( "/*", ctx -> {
-            String accessControlRequestHeaders = ctx.req.getHeader( "Access-Control-Request-Headers" );
-            if ( accessControlRequestHeaders != null ) {
-                ctx.res.setHeader( "Access-Control-Allow-Headers", accessControlRequestHeaders );
-            }
-
-            String accessControlRequestMethod = ctx.req.getHeader( "Access-Control-Request-Method" );
-            if ( accessControlRequestMethod != null ) {
-                ctx.res.setHeader( "Access-Control-Allow-Methods", accessControlRequestMethod );
-            }
-
-            ctx.result( "OK" );
-        } );
-
-        webuiServer.before( ctx -> {
-            //res.header("Access-Control-Allow-Origin", "*");
-            ctx.res.setHeader( "Access-Control-Allow-Origin", "*" );
-            ctx.res.setHeader( "Access-Control-Allow-Credentials", "true" );
-            ctx.res.setHeader( "Access-Control-Allow-Headers", "*" );
-            ctx.res.setContentType( "application/json" );
-        } );
     }
 
 
@@ -496,13 +435,5 @@ public class HttpServer implements Runnable {
         addRoute( route, ( ctx, crud ) -> null, Object.class, type );
     }
 
-
-    public enum HandlerType {
-        POST,
-        GET,
-        PUT,
-        DELETE,
-        PATCH
-    }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,31 +30,35 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.Getter;
+import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
-import org.polypheny.db.adapter.Adapter.AdapterProperties;
-import org.polypheny.db.adapter.Adapter.AdapterSettingDirectory;
-import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
-import org.polypheny.db.adapter.Adapter.AdapterSettingList;
-import org.polypheny.db.adapter.Adapter.AdapterSettingString;
 import org.polypheny.db.adapter.ConnectionMethod;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.RelationalScanDelegate;
+import org.polypheny.db.adapter.annotations.AdapterProperties;
+import org.polypheny.db.adapter.annotations.AdapterSettingDirectory;
+import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
+import org.polypheny.db.adapter.annotations.AdapterSettingList;
+import org.polypheny.db.adapter.annotations.AdapterSettingString;
 import org.polypheny.db.adapter.excel.ExcelTable.Flavor;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
+import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.schema.Schema;
-import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Source;
@@ -64,38 +68,44 @@ import org.polypheny.db.util.Sources;
 @AdapterProperties(
         name = "Excel",
         description = "An adapter for querying Excel files. The location of the directory containing the Excel files can be specified. Currently, this adapter only supports read operations.",
-        usedModes = DeployMode.EMBEDDED)
+        usedModes = DeployMode.EMBEDDED,
+        defaultMode = DeployMode.EMBEDDED)
 @AdapterSettingList(name = "method", options = { "upload", "link" }, defaultValue = "upload", description = "If the supplied file(s) should be uploaded or a link to the local filesystem is used (sufficient permissions are required).", position = 1)
-@AdapterSettingDirectory(subOf = "method_upload", name = "directory", description = "You can upload one or multiple .xlsx.", position = 1)
+@AdapterSettingDirectory(subOf = "method_upload", name = "directory", description = "You can upload one or multiple .xlsx.", position = 1, defaultValue = "")
 @AdapterSettingString(subOf = "method_link", defaultValue = ".", name = "directoryName", description = "You can select a path to a folder or specific .xls or .xlsx files.", position = 2)
 @AdapterSettingString(name = "sheetName", description = "default to read the first sheet", defaultValue = "", required = false)
 @AdapterSettingInteger(name = "maxStringLength", defaultValue = 255, position = 2,
         description = "Which length (number of characters including whitespace) should be used for the varchar columns. Make sure this is equal or larger than the longest string in any of the columns.")
-public class ExcelSource extends DataSource {
+public class ExcelSource extends DataSource<RelAdapterCatalog> {
 
+    @Delegate(excludes = Excludes.class)
+    private final RelationalScanDelegate delegate;
     private final ConnectionMethod connectionMethod;
     private URL excelDir;
-    private ExcelSchema currentSchema;
+    @Getter
+    private ExcelNamespace currentNamespace;
     private final int maxStringLength;
     private Map<String, List<ExportedColumn>> exportedColumnCache;
     public String sheetName;
 
 
-    public ExcelSource( int storeId, String uniqueName, Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, true );
+    public ExcelSource( long storeId, String uniqueName, Map<String, String> settings ) {
+        super( storeId, uniqueName, settings, true, new RelAdapterCatalog( storeId ) );
 
         this.connectionMethod = settings.containsKey( "method" ) ? ConnectionMethod.from( settings.get( "method" ) ) : ConnectionMethod.UPLOAD;
         // Validate maxStringLength setting
         maxStringLength = Integer.parseInt( settings.get( "maxStringLength" ) );
 
         if ( maxStringLength < 1 ) {
-            throw new RuntimeException( "Invalid value for maxStringLength: " + maxStringLength );
+            throw new GenericRuntimeException( "Invalid value for maxStringLength: " + maxStringLength );
         }
         this.sheetName = settings.get( "sheetName" );
 
         setExcelDir( settings );
         addInformationExportedColumns();
         enableInformationPage();
+
+        this.delegate = new RelationalScanDelegate( this, adapterCatalog );
     }
 
 
@@ -111,33 +121,39 @@ public class ExcelSource extends DataSource {
             try {
                 excelDir = new File( dir ).toURI().toURL();
             } catch ( MalformedURLException e ) {
-                throw new RuntimeException( e );
+                throw new GenericRuntimeException( e );
             }
         }
     }
 
 
     @Override
-    public void createNewSchema( SchemaPlus rootSchema, String name ) {
-        currentSchema = new ExcelSchema( excelDir, Flavor.SCANNABLE, this.sheetName );
+    public void updateNamespace( String name, long id ) {
+        currentNamespace = new ExcelNamespace( id, adapterId, excelDir, Flavor.SCANNABLE, this.sheetName );
     }
 
 
     @Override
-    public Table createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
-        return currentSchema.createExcelTable( catalogTable, columnPlacementsOnStore, this, partitionPlacement );
+    public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
+        PhysicalTable table = adapterCatalog.createTable(
+                logical.table.getNamespaceName(),
+                logical.table.name,
+                logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
+                logical.table,
+                logical.columns.stream().collect( Collectors.toMap( t -> t.id, t -> t ) ),
+                logical.pkIds, allocation );
+
+        ExcelTable physical = currentNamespace.createExcelTable( table, this );
+
+        adapterCatalog.replacePhysical( physical );
+
+        return List.of( physical );
     }
 
 
     @Override
-    public Schema getCurrentSchema() {
-        return currentSchema;
-    }
-
-
-    @Override
-    public void truncate( Context context, CatalogTable table ) {
-        throw new RuntimeException( "Excel adapter does not support truncate" );
+    public void truncate( Context context, long allocId ) {
+        throw new GenericRuntimeException( "Excel adapter does not support truncate" );
     }
 
 
@@ -185,12 +201,10 @@ public class ExcelSource extends DataSource {
         Map<String, List<ExportedColumn>> exportedColumnCache = new HashMap<>();
         Set<String> fileNames;
         if ( excelDir.getProtocol().equals( "jar" ) ) {
-            List<CatalogColumnPlacement> ccps = Catalog
-                    .getInstance()
-                    .getColumnPlacementsOnAdapter( getAdapterId() );
+            List<AllocationEntity> placements = Catalog.snapshot().alloc().getEntitiesOnAdapter( getAdapterId() ).orElse( List.of() );
             fileNames = new HashSet<>();
-            for ( CatalogColumnPlacement ccp : ccps ) {
-                fileNames.add( ccp.physicalSchemaName );
+            for ( AllocationEntity ccp : placements ) {
+                fileNames.add( ccp.getNamespaceName() );
             }
         } else if ( Sources.of( excelDir ).file().isFile() ) {
             // single files
@@ -296,7 +310,7 @@ public class ExcelSource extends DataSource {
                                     length = 0;
                                     break;
                                 default:
-                                    throw new RuntimeException( "Unknown type: " + typeStr.toLowerCase() );
+                                    throw new GenericRuntimeException( "Unknown type: " + typeStr.toLowerCase() );
                             }
 
                             list.add( new ExportedColumn(
@@ -316,13 +330,13 @@ public class ExcelSource extends DataSource {
 
                             position++;
                         } catch ( Exception e ) {
-                            throw new RuntimeException( e );
+                            throw new GenericRuntimeException( e );
                         }
                     }
                     break;
                 }
             } catch ( IOException e ) {
-                throw new RuntimeException( e );
+                throw new GenericRuntimeException( e );
             }
             exportedColumnCache.put( physicalTableName + "_" + currentSheetName, list );
         }
@@ -351,6 +365,16 @@ public class ExcelSource extends DataSource {
             }
             informationElements.add( table );
         }
+    }
+
+
+    @SuppressWarnings("unused")
+    private interface Excludes {
+
+        void refreshTable( long allocId );
+
+        void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation );
+
     }
 
 }

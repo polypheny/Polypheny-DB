@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,16 @@
 package org.polypheny.db.algebra.core.document;
 
 import com.google.common.collect.ImmutableList;
+import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 
@@ -31,18 +34,9 @@ import org.polypheny.db.rex.RexNode;
 public abstract class DocumentSort extends SingleAlg {
 
     public final AlgCollation collation;
-    protected final ImmutableList<RexNode> fieldExps;
+    public final ImmutableList<RexNode> fieldExps;
     public final RexNode offset;
     public final RexNode fetch;
-
-
-    /**
-     * Creates a {@link DocumentSort}.
-     * {@link org.polypheny.db.schema.ModelTrait#DOCUMENT} native node of a sort.
-     */
-    public DocumentSort( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, AlgCollation collation ) {
-        this( cluster, traits, child, collation, null, null );
-    }
 
 
     /**
@@ -55,20 +49,16 @@ public abstract class DocumentSort extends SingleAlg {
      * @param offset Expression for number of rows to discard before returning first row
      * @param fetch Expression for number of rows to fetch
      */
-    public DocumentSort( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, AlgCollation collation, RexNode offset, RexNode fetch ) {
-        super( cluster, traits, child );
+    public DocumentSort( AlgCluster cluster, AlgTraitSet traits, AlgNode child, AlgCollation collation, List<RexNode> targets, @Nullable RexNode offset, @Nullable RexNode fetch ) {
+        // we remove the collation from the trait set, as it is not a trait for documents
+        super( cluster, traits.replace( AlgCollations.EMPTY ), child );
         this.collation = collation;
         this.offset = offset;
         this.fetch = fetch;
 
-        assert traits.containsIfApplicable( collation ) : "traits=" + traits + ", collation=" + collation;
+        //assert traits.containsIfApplicable( collation ) : "traits=" + traits + ", collation=" + collation;
         assert !(fetch == null && offset == null && collation.getFieldCollations().isEmpty()) : "trivial sort";
-        ImmutableList.Builder<RexNode> builder = ImmutableList.builder();
-        for ( AlgFieldCollation field : collation.getFieldCollations() ) {
-            int index = field.getFieldIndex();
-            builder.add( cluster.getRexBuilder().makeInputRef( child, index ) );
-        }
-        fieldExps = builder.build();
+        fieldExps = ImmutableList.copyOf( targets );
     }
 
 

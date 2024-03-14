@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package org.polypheny.db.adapter.file.source;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,50 +26,35 @@ import lombok.Getter;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
-import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.Condition;
 import org.polypheny.db.adapter.file.FileAlg.FileImplementor.Operation;
 import org.polypheny.db.adapter.file.FileConvention;
 import org.polypheny.db.adapter.file.FileSchema;
-import org.polypheny.db.adapter.file.FileTranslatableTable;
+import org.polypheny.db.adapter.file.FileTranslatableEntity;
 import org.polypheny.db.adapter.file.Value;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgDataTypeImpl;
-import org.polypheny.db.algebra.type.AlgDataTypeSystem;
-import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.Schemas;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.impl.AbstractSchema;
-import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.PolyTypeFactoryImpl;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.schema.Namespace;
+import org.polypheny.db.type.entity.PolyValue;
 
 
-public class QfsSchema extends AbstractSchema implements FileSchema {
+public class QfsSchema extends Namespace implements FileSchema {
 
     @Getter
     private final String schemaName;
-    private final Map<String, FileTranslatableTable> tableMap = new HashMap<>();
+    private final Map<String, FileTranslatableEntity> tableMap = new HashMap<>();
     @Getter
     private final Qfs source;
     @Getter
     private final FileConvention convention;
 
 
-    public QfsSchema( SchemaPlus parentSchema, String schemaName, Qfs source ) {
-        super();
+    public QfsSchema( long id, long adapterId, String schemaName, Qfs source ) {
+        super( id, adapterId );
         this.schemaName = schemaName;
         this.source = source;
-        final Expression expression = Schemas.subSchemaExpression( parentSchema, schemaName, QfsSchema.class );
-        this.convention = new QfsConvention( schemaName, expression, this );
+        this.convention = new QfsConvention( schemaName, null, this );
     }
 
 
@@ -81,91 +65,44 @@ public class QfsSchema extends AbstractSchema implements FileSchema {
 
 
     @Override
-    public int getAdapterId() {
-        return source.getAdapterId();
+    public Qfs getAdapter() {
+        return null;
     }
 
 
-    @Override
-    protected Map<String, Table> getTableMap() {
-        return new HashMap<>( tableMap );
-    }
+    public FileTranslatableEntity createFileTable( PhysicalTable table ) {
 
-
-    public Table createFileTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
-        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
-        final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
-        ArrayList<Long> columnIds = new ArrayList<>();
-        ArrayList<PolyType> columnTypes = new ArrayList<>();
-        ArrayList<String> columnNames = new ArrayList<>();
-        columnPlacementsOnStore.sort( Comparator.comparingLong( p -> p.columnId ) );
-        for ( CatalogColumnPlacement p : columnPlacementsOnStore ) {
-            CatalogColumn catalogColumn;
-            catalogColumn = Catalog.getInstance().getColumn( p.columnId );
-            if ( p.adapterId == source.getAdapterId() ) {
-                columnIds.add( p.columnId );
-                if ( catalogColumn.collectionsType != null ) {
-                    columnTypes.add( PolyType.ARRAY );
-                } else {
-                    columnTypes.add( catalogColumn.type );
-                }
-                columnNames.add( catalogColumn.name );
-
-                if ( catalogColumn.type.allowsScale() && catalogColumn.length != null && catalogColumn.scale != null ) {
-                    fieldInfo.add( catalogColumn.name, p.physicalColumnName, catalogColumn.type, catalogColumn.length, catalogColumn.scale )
-                            .nullable( catalogColumn.nullable );
-                } else if ( catalogColumn.type.allowsPrec() && catalogColumn.length != null ) {
-                    fieldInfo.add( catalogColumn.name, p.physicalColumnName, catalogColumn.type, catalogColumn.length )
-                            .nullable( catalogColumn.nullable );
-                } else {
-                    fieldInfo.add( catalogColumn.name, p.physicalColumnName, catalogColumn.type )
-                            .nullable( catalogColumn.nullable );
-                }
-            }
-        }
-        AlgProtoDataType protoRowType = AlgDataTypeImpl.proto( fieldInfo.build() );
-        List<Long> pkIds;
-        if ( catalogTable.primaryKey != null ) {
-            CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey );
-            pkIds = primaryKey.columnIds;
-        } else {
-            pkIds = new ArrayList<>();
-        }
-        FileTranslatableTable table = new FileTranslatableTable(
+        List<Long> pkIds = new ArrayList<>();
+        FileTranslatableEntity file = new FileTranslatableEntity(
                 this,
-                catalogTable.name + "_" + partitionPlacement.partitionId,
-                catalogTable.id,
-                partitionPlacement.partitionId,
-                columnIds,
-                columnTypes,
-                columnNames,
-                pkIds,
-                protoRowType );
-        tableMap.put( catalogTable.name + "_" + partitionPlacement.partitionId, table );
-        return table;
+                table,
+                pkIds );
+        tableMap.put( table.name + "_" + table.allocationId, file );
+        return file;
     }
 
 
     /**
      * Called from generated code
      */
-    public static Enumerable<Object[]> execute(
+    @SuppressWarnings("unused")
+    public static Enumerable<PolyValue[]> execute(
             final Operation operation,
-            final Integer adapterId,
+            final Long adapterId,
             final Long partitionId,
             final DataContext dataContext,
             final String path,
             final Long[] columnIds,
-            final PolyType[] columnTypes,
+            final FileTranslatableEntity entity,
             final List<Long> pkIds,
-            final Integer[] projectionMapping,
+            final List<Value> projectionMapping,
             final Condition condition,
-            final Value[] updates ) {
-        dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getAdapter( adapterId ) );
-        return new AbstractEnumerable<Object[]>() {
+            final List<List<PolyValue>> updates ) {
+        dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getAdapter( adapterId ).orElseThrow() );
+        return new AbstractEnumerable<>() {
             @Override
-            public Enumerator<Object[]> enumerator() {
-                return new QfsEnumerator<>( dataContext, path, columnIds, projectionMapping, condition );
+            public Enumerator<PolyValue[]> enumerator() {
+                return new QfsEnumerator( entity, dataContext, path, columnIds, projectionMapping, condition );
             }
         };
     }

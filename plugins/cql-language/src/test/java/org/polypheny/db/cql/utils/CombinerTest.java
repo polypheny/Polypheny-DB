@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,20 +16,22 @@
 
 package org.polypheny.db.cql.utils;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.cql.BooleanGroup;
-import org.polypheny.db.cql.BooleanGroup.TableOpsBooleanOperator;
+import org.polypheny.db.cql.BooleanGroup.EntityOpsBooleanOperator;
 import org.polypheny.db.cql.Combiner;
 import org.polypheny.db.cql.Combiner.CombinerType;
 import org.polypheny.db.cql.Comparator;
+import org.polypheny.db.cql.EntityIndex;
 import org.polypheny.db.cql.Modifier;
-import org.polypheny.db.cql.TableIndex;
 import org.polypheny.db.cql.exception.InvalidModifierException;
 import org.polypheny.db.cql.exception.UnknownIndexException;
 import org.polypheny.db.cql.utils.helper.AlgBuildTestHelper;
@@ -37,14 +39,14 @@ import org.polypheny.db.cql.utils.helper.AlgBuildTestHelper;
 
 public class CombinerTest extends AlgBuildTestHelper {
 
-    private final TableIndex employee;
-    private final TableIndex dept;
+    private final EntityIndex employee;
+    private final EntityIndex dept;
 
 
     public CombinerTest() throws UnknownIndexException {
         super( AlgBuildLevel.TABLE_SCAN );
-        employee = TableIndex.createIndex( "APP", "test", "employee" );
-        dept = TableIndex.createIndex( "APP", "test", "dept" );
+        employee = EntityIndex.createIndex( "test", "employee" );
+        dept = EntityIndex.createIndex( "test", "dept" );
     }
 
 
@@ -150,13 +152,13 @@ public class CombinerTest extends AlgBuildTestHelper {
             modifiers.put( "on", new Modifier( "on", Comparator.EQUALS, onModifierValue ) );
         }
         Combiner combiner = Combiner.createCombiner(
-                new BooleanGroup<>( TableOpsBooleanOperator.AND, modifiers ),
+                new BooleanGroup<>( EntityOpsBooleanOperator.AND, modifiers ),
                 employee,
                 dept
         );
         algBuilder = combiner.combine( algBuilder, rexBuilder );
         AlgNode algNode = algBuilder.peek();
-        List<String> actualFieldNames = algNode.getRowType().getFieldNames();
+        List<String> actualFieldNames = algNode.getTupleType().getFieldNames();
         List<String> expectedFieldNames = new ArrayList<>();
         expectedFieldNames.add( "empno" );
         expectedFieldNames.add( "empname" );
@@ -168,9 +170,9 @@ public class CombinerTest extends AlgBuildTestHelper {
         expectedFieldNames.add( "deptno0" );
         expectedFieldNames.add( "deptname" );
 
-        Assert.assertEquals( CombinerType.JOIN_INNER, combiner.combinerType );
-        Assert.assertArrayEquals( expectedJoinOnColumns, combiner.joinOnColumns );
-        Assert.assertEquals( expectedFieldNames, actualFieldNames );
+        assertEquals( CombinerType.JOIN_INNER, combiner.combinerType );
+        assertArrayEquals( expectedJoinOnColumns, combiner.joinOnColumns );
+        assertEquals( expectedFieldNames, actualFieldNames );
     }
 
 
@@ -184,13 +186,13 @@ public class CombinerTest extends AlgBuildTestHelper {
             modifiers.put( "null", new Modifier( "null", Comparator.EQUALS, nullModifierValue ) );
         }
         Combiner combiner = Combiner.createCombiner(
-                new BooleanGroup<>( TableOpsBooleanOperator.OR, modifiers ),
+                new BooleanGroup<>( EntityOpsBooleanOperator.OR, modifiers ),
                 employee,
                 dept
         );
         algBuilder = combiner.combine( algBuilder, rexBuilder );
         AlgNode algNode = algBuilder.peek();
-        List<String> actualFieldNames = algNode.getRowType().getFieldNames();
+        List<String> actualFieldNames = algNode.getTupleType().getFieldNames();
         List<String> expectedFieldNames = new ArrayList<>();
         expectedFieldNames.add( "empno" );
         expectedFieldNames.add( "empname" );
@@ -202,9 +204,9 @@ public class CombinerTest extends AlgBuildTestHelper {
         expectedFieldNames.add( "deptno0" );
         expectedFieldNames.add( "deptname" );
 
-        Assert.assertEquals( expectedCombinerType, combiner.combinerType );
-        Assert.assertArrayEquals( expectedJoinOnColumns, combiner.joinOnColumns );
-        Assert.assertEquals( expectedFieldNames, actualFieldNames );
+        assertEquals( expectedCombinerType, combiner.combinerType );
+        assertArrayEquals( expectedJoinOnColumns, combiner.joinOnColumns );
+        assertEquals( expectedFieldNames, actualFieldNames );
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,7 @@ import java.util.Objects;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.JoinAlgType;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.config.RuntimeConfig;
@@ -69,7 +69,7 @@ import org.polypheny.db.util.mapping.Mappings;
 /**
  * Planner rule that finds an approximately optimal ordering for join operators using a heuristic algorithm.
  *
- * It is triggered by the pattern {@link LogicalProject} ({@link MultiJoin}).
+ * It is triggered by the pattern {@link LogicalRelProject} ({@link MultiJoin}).
  *
  * It is similar to {@link LoptOptimizeJoinRule}. {@code LoptOptimizeJoinRule} is only capable of producing left-deep joins; this rule is capable of producing bushy joins.
  *
@@ -110,9 +110,9 @@ public class MultiJoinOptimizeBushyRule extends AlgOptRule {
         int x = 0;
         for ( int i = 0; i < multiJoin.getNumJoinFactors(); i++ ) {
             final AlgNode alg = multiJoin.getJoinFactor( i );
-            double cost = mq.getRowCount( alg );
+            double cost = mq.getTupleCount( alg );
             vertexes.add( new LeafVertex( i, alg, cost, x ) );
-            x += alg.getRowType().getFieldCount();
+            x += alg.getTupleType().getFieldCount();
         }
         assert x == multiJoin.getNumTotalFields();
 
@@ -227,7 +227,7 @@ public class MultiJoinOptimizeBushyRule extends AlgOptRule {
                 LeafVertex leafVertex = (LeafVertex) vertex;
                 final Mappings.TargetMapping mapping =
                         Mappings.offsetSource(
-                                Mappings.createIdentity( leafVertex.alg.getRowType().getFieldCount() ),
+                                Mappings.createIdentity( leafVertex.alg.getTupleType().getFieldCount() ),
                                 leafVertex.fieldOffset,
                                 multiJoin.getNumTotalFields() );
                 algNodes.add( Pair.of( leafVertex.alg, mapping ) );
@@ -239,7 +239,7 @@ public class MultiJoinOptimizeBushyRule extends AlgOptRule {
                 final Pair<AlgNode, Mappings.TargetMapping> rightPair = algNodes.get( joinVertex.rightFactor );
                 AlgNode right = rightPair.left;
                 final Mappings.TargetMapping rightMapping = rightPair.right;
-                final Mappings.TargetMapping mapping = Mappings.merge( leftMapping, Mappings.offsetTarget( rightMapping, left.getRowType().getFieldCount() ) );
+                final Mappings.TargetMapping mapping = Mappings.merge( leftMapping, Mappings.offsetTarget( rightMapping, left.getTupleType().getFieldCount() ) );
                 if ( pw != null ) {
                     pw.println( "left: " + leftMapping );
                     pw.println( "right: " + rightMapping );

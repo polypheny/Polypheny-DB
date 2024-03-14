@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,25 +17,28 @@
 package org.polypheny.db.algebra.core.lpg;
 
 import lombok.Getter;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.schema.trait.ModelTrait;
 
 
 public abstract class LpgFilter extends SingleAlg implements LpgAlg {
 
     @Getter
+    @NotNull
     private final RexNode condition;
 
 
     /**
      * Creates a {@link LpgFilter}.
-     * {@link org.polypheny.db.schema.ModelTrait#GRAPH} native node of a filter.
+     * {@link ModelTrait#GRAPH} native node of a filter.
      */
-    protected LpgFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
+    protected LpgFilter( AlgCluster cluster, AlgTraitSet traits, AlgNode input, @NotNull RexNode condition ) {
         super( cluster, traits, input );
         this.condition = condition;
     }
@@ -43,7 +46,9 @@ public abstract class LpgFilter extends SingleAlg implements LpgAlg {
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + this.condition.hashCode() + "$" + getInput().algCompareString();
+        return getClass().getSimpleName() + "$"
+                + this.condition.hashCode() + "$"
+                + getInput().algCompareString() + "&";
     }
 
 

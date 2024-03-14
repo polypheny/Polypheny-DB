@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,16 +18,16 @@ package org.polypheny.db.routing.strategies;
 
 import java.util.List;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 
 
 /**
- * Interface to define, on which store(s) tables and columns are created.
+ * Interface to define, on which store(s) entities and fields are created.
  */
 public interface CreatePlacementStrategy {
 
-    List<DataStore> getDataStoresForNewColumn( CatalogColumn addedColumn );
+    List<DataStore<?>> getDataStoresForNewRelField( LogicalColumn addedField );
 
-    List<DataStore> getDataStoresForNewTable();
+    List<DataStore<?>> getDataStoresForNewEntity();
 
 }

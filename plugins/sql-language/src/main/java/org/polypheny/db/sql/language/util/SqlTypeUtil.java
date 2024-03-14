@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.NodeToAlgConverter.Config;
 import org.polypheny.db.languages.Parser;
@@ -45,10 +46,8 @@ import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.nodes.OperatorImpl;
 import org.polypheny.db.nodes.validate.Validator;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
-import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.schema.AggregateFunction;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.FunctionParameter;
@@ -111,7 +110,7 @@ public class SqlTypeUtil {
 
 
     /**
-     * Converts an instance of RelDataType to an instance of SqlDataTypeSpec.
+     * Converts an instance of AlgDataType to an instance of SqlDataTypeSpec.
      *
      * @param type type descriptor
      * @return corresponding parse representation
@@ -231,12 +230,12 @@ public class SqlTypeUtil {
     public NodeToAlgConverter createToRelConverter(
             QueryLanguage language,
             Validator validator,
-            CatalogReader catalogReader,
-            AlgOptCluster cluster,
+            Snapshot snapshot,
+            AlgCluster cluster,
             RexConvertletTable convertletTable,
             Config config ) {
         if ( language == QueryLanguage.from( "sql" ) ) {
-            return getSqlToRelConverter( (SqlValidator) validator, catalogReader, cluster, (SqlRexConvertletTable) convertletTable, config );
+            return getSqlToRelConverter( (SqlValidator) validator, snapshot, cluster, (SqlRexConvertletTable) convertletTable, config );
         }
 
         throw new UnsupportedLanguageOperation( language );
@@ -245,22 +244,22 @@ public class SqlTypeUtil {
 
     private SqlToAlgConverter getSqlToRelConverter(
             SqlValidator validator,
-            CatalogReader catalogReader,
-            AlgOptCluster cluster,
+            Snapshot snapshot,
+            AlgCluster cluster,
             SqlRexConvertletTable convertletTable,
             Config config ) {
-        return new SqlToAlgConverter( validator, catalogReader, cluster, convertletTable, config );
+        return new SqlToAlgConverter( validator, snapshot, cluster, convertletTable, config );
     }
 
 
     public Validator createPolyphenyValidator(
             QueryLanguage language,
             OperatorTable operatorTable,
-            PolyphenyDbCatalogReader catalogReader,
+            Snapshot snapshot,
             JavaTypeFactory typeFactory,
             Conformance conformance ) {
         if ( language == QueryLanguage.from( "sql" ) ) {
-            return new PolyphenyDbSqlValidator( operatorTable, catalogReader, typeFactory, conformance );
+            return new PolyphenyDbSqlValidator( operatorTable, snapshot, typeFactory, conformance );
         }
 
         throw new UnsupportedLanguageOperation( language );

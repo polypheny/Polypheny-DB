@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,38 +47,28 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
-import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.core.Scan;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
-import org.polypheny.db.algebra.operators.OperatorTable;
+import org.polypheny.db.algebra.core.relational.RelScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.nodes.Node;
-import org.polypheny.db.nodes.validate.Validator;
-import org.polypheny.db.nodes.validate.ValidatorCatalogReader;
 import org.polypheny.db.nodes.validate.ValidatorTable;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptPlanner;
-import org.polypheny.db.plan.AlgOptSchema;
-import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexExecutorImpl;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.runtime.Typed;
-import org.polypheny.db.schema.ColumnStrategy;
-import org.polypheny.db.schema.ExtensibleTable;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.graph.Graph;
+import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.Programs;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Holder;
 import org.polypheny.db.util.TryThreadLocal;
-import org.polypheny.db.util.trace.PolyphenyDbTimingTracer;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import org.slf4j.Logger;
 
@@ -86,22 +76,16 @@ import org.slf4j.Logger;
 /**
  * Abstract base for classes that implement the process of preparing and executing SQL expressions.
  */
-public abstract class Prepare {
+public abstract class Prepare<T> {
 
     protected static final Logger LOGGER = PolyphenyDbTrace.getStatementTracer();
 
     protected final Context context;
-    protected final CatalogReader catalogReader;
+    protected final Snapshot snapshot;
     /**
      * Convention via which results should be returned by execution.
      */
     protected final Convention resultConvention;
-    protected PolyphenyDbTimingTracer timingTracer;
-    protected List<List<String>> fieldOrigins;
-    protected AlgDataType parameterRowType;
-
-    // temporary. for testing.
-    public static final TryThreadLocal<Boolean> THREAD_TRIM = TryThreadLocal.of( false );
 
     /**
      * Temporary, until "Decorrelate sub-queries in Project and Join" is fixed.
@@ -112,20 +96,12 @@ public abstract class Prepare {
     public static final TryThreadLocal<Boolean> THREAD_EXPAND = TryThreadLocal.of( false );
 
 
-    public Prepare( Context context, CatalogReader catalogReader, Convention resultConvention ) {
+    public Prepare( Context context, Snapshot snapshot, Convention resultConvention ) {
         assert context != null;
         this.context = context;
-        this.catalogReader = catalogReader;
+        this.snapshot = snapshot;
         this.resultConvention = resultConvention;
     }
-
-
-    protected abstract PreparedResult createPreparedExplanation(
-            AlgDataType resultType,
-            AlgDataType parameterRowType,
-            AlgRoot root,
-            ExplainFormat format,
-            ExplainLevel detailLevel );
 
 
     /**
@@ -135,7 +111,7 @@ public abstract class Prepare {
      * @return an equivalent optimized relational expression
      */
     protected AlgRoot optimize( AlgRoot root ) {
-        final AlgOptPlanner planner = root.alg.getCluster().getPlanner();
+        final AlgPlanner planner = root.alg.getCluster().getPlanner();
 
         final DataContext dataContext = context.getDataContext();
         planner.setExecutor( new RexExecutorImpl( dataContext ) );
@@ -145,14 +121,12 @@ public abstract class Prepare {
         // Work around: Allow rules to be registered during planning process by briefly creating each kind of physical table
         // to let it register its rules.
         // The problem occurs when plans are created via AlgBuilder, not the usual process
-        // (SQL and SqlToRelConverter.Config.isConvertTableAccess = true).
         final AlgVisitor visitor = new AlgVisitor() {
             @Override
             public void visit( AlgNode node, int ordinal, AlgNode parent ) {
-                if ( node instanceof Scan ) {
-                    final AlgOptCluster cluster = node.getCluster();
-                    final ToAlgContext context = () -> cluster;
-                    final AlgNode r = node.getTable().toAlg( context, node.getTraitSet() );
+                if ( node instanceof RelScan ) {
+                    final AlgCluster cluster = node.getCluster();
+                    final AlgNode r = node.getEntity().unwrap( TranslatableEntity.class ).orElseThrow().toAlg( cluster, node.getTraitSet() );
                     planner.registerClass( r );
                 }
                 super.visit( node, ordinal, parent );
@@ -197,116 +171,26 @@ public abstract class Prepare {
      * @param root Root of the relational expression tree
      * @return an executable plan
      */
-    protected abstract PreparedResult implement( AlgRoot root );
+    protected abstract PreparedResult<T> implement( AlgRoot root );
 
-
-
-    protected LogicalModify.Operation mapTableModOp( boolean isDml, Kind Kind ) {
-        if ( !isDml ) {
-            return null;
-        }
-        switch ( Kind ) {
-            case INSERT:
-                return LogicalModify.Operation.INSERT;
-            case DELETE:
-                return LogicalModify.Operation.DELETE;
-            case MERGE:
-                return LogicalModify.Operation.MERGE;
-            case UPDATE:
-                return LogicalModify.Operation.UPDATE;
-            default:
-                return null;
-        }
-    }
-
-
-    /**
-     * Protected method to allow subclasses to override construction of SqlToRelConverter.
-     */
-    //protected abstract NodeToAlgConverter getSqlToRelConverter( Validator validator, CatalogReader catalogReader, NodeToAlgConverter.Config config );
-    public abstract AlgNode flattenTypes( AlgNode rootRel, boolean restructure );
 
     protected abstract AlgNode decorrelate( NodeToAlgConverter sqlToRelConverter, Node query, AlgNode rootRel );
 
 
-    protected abstract void init( Class runtimeContextClass );
-
-    protected abstract Validator getSqlValidator();
-
-
-    /**
-     * Interface by which validator and planner can read table metadata.
-     */
-    public interface CatalogReader extends AlgOptSchema, ValidatorCatalogReader, OperatorTable {
-
-        @Override
-        PreparingTable getTableForMember( List<String> names );
-
-        /**
-         * Returns a catalog reader the same as this one but with a possibly different schema path.
-         */
-        CatalogReader withSchemaPath( List<String> schemaPath );
-
-        @Override
-        PreparingTable getTable( List<String> names );
-
-        AlgOptTable getCollection( List<String> names );
-
-        Graph getGraph( String name );
-
-        ThreadLocal<CatalogReader> THREAD_LOCAL = new ThreadLocal<>();
-
-    }
+    protected abstract void init( Class<?> runtimeContextClass );
 
 
     /**
      * Definition of a table, for the purposes of the validator and planner.
      */
-    public interface PreparingTable extends AlgOptTable, ValidatorTable {
+    public interface PreparingEntity extends ValidatorTable {
 
     }
-
-
-    /**
-     * Abstract implementation of {@link PreparingTable}.
-     */
-    public abstract static class AbstractPreparingTable implements PreparingTable {
-
-        @Override
-        public final AlgOptTable extend( List<AlgDataTypeField> extendedFields ) {
-            final Table table = unwrap( Table.class );
-
-            // Get the set of extended columns that do not have the same name as a column in the base table.
-            final List<AlgDataTypeField> baseColumns = getRowType().getFieldList();
-            final List<AlgDataTypeField> dedupedFields = AlgOptUtil.deduplicateColumns( baseColumns, extendedFields );
-            final List<AlgDataTypeField> dedupedExtendedFields = dedupedFields.subList( baseColumns.size(), dedupedFields.size() );
-
-            if ( table instanceof ExtensibleTable ) {
-                final Table extendedTable = ((ExtensibleTable) table).extend( dedupedExtendedFields );
-                return extend( extendedTable );
-            }
-            throw new RuntimeException( "Cannot extend " + table );
-        }
-
-
-        /**
-         * Implementation-specific code to instantiate a new {@link AlgOptTable} based on a {@link Table} that has been extended.
-         */
-        protected abstract AlgOptTable extend( Table extendedTable );
-
-
-        @Override
-        public List<ColumnStrategy> getColumnStrategies() {
-            return AlgOptTableImpl.columnStrategies( AbstractPreparingTable.this );
-        }
-
-    }
-
 
     /**
      * PreparedExplanation is a PreparedResult for an EXPLAIN PLAN statement. It's always good to have an explanation prepared.
      */
-    public abstract static class PreparedExplain implements PreparedResult {
+    public abstract static class PreparedExplain implements PreparedResult<PolyValue> {
 
         private final AlgDataType rowType;
         private final AlgDataType parameterRowType;
@@ -352,12 +236,6 @@ public abstract class Prepare {
 
 
         @Override
-        public LogicalModify.Operation getTableModOp() {
-            return null;
-        }
-
-
-        @Override
         public List<List<String>> getFieldOrigins() {
             return Collections.singletonList( Collections.nCopies( 4, null ) );
         }
@@ -368,7 +246,7 @@ public abstract class Prepare {
     /**
      * Result of a call to {}.
      */
-    public interface PreparedResult {
+    public interface PreparedResult<T> {
 
         /**
          * Returns the code generated by preparation.
@@ -380,12 +258,6 @@ public abstract class Prepare {
          * containing the number of rows affected.
          */
         boolean isDml();
-
-        /**
-         * Returns the table modification operation corresponding to this statement if it is a table modification statement;
-         * otherwise null.
-         */
-        LogicalModify.Operation getTableModOp();
 
         /**
          * Returns a list describing, for each result field, the origin of the field as a 4-element list
@@ -404,7 +276,7 @@ public abstract class Prepare {
          * @param cursorFactory How to map values into a cursor
          * @return producer of rows resulting from execution
          */
-        Bindable getBindable( Meta.CursorFactory cursorFactory );
+        Bindable<T[]> getBindable( Meta.CursorFactory cursorFactory );
 
     }
 
@@ -412,13 +284,13 @@ public abstract class Prepare {
     /**
      * Abstract implementation of {@link PreparedResult}.
      */
-    public abstract static class PreparedResultImpl implements PreparedResult, Typed {
+    public abstract static class PreparedResultImpl<T> implements PreparedResult<T>, Typed {
 
-        protected final AlgNode rootRel;
+        protected final AlgNode rootAlg;
         protected final AlgDataType parameterRowType;
         protected final AlgDataType rowType;
         protected final boolean isDml;
-        protected final LogicalModify.Operation tableModOp;
+        protected final LogicalRelModify.Operation tableModOp;
         protected final List<List<String>> fieldOrigins;
         protected final List<AlgCollation> collations;
 
@@ -428,14 +300,14 @@ public abstract class Prepare {
                 AlgDataType parameterRowType,
                 List<List<String>> fieldOrigins,
                 List<AlgCollation> collations,
-                AlgNode rootRel,
-                LogicalModify.Operation tableModOp,
+                AlgNode rootAlg,
+                LogicalRelModify.Operation tableModOp,
                 boolean isDml ) {
             this.rowType = Objects.requireNonNull( rowType );
             this.parameterRowType = Objects.requireNonNull( parameterRowType );
             this.fieldOrigins = Objects.requireNonNull( fieldOrigins );
             this.collations = ImmutableList.copyOf( collations );
-            this.rootRel = Objects.requireNonNull( rootRel );
+            this.rootAlg = Objects.requireNonNull( rootAlg );
             this.tableModOp = tableModOp;
             this.isDml = isDml;
         }
@@ -444,12 +316,6 @@ public abstract class Prepare {
         @Override
         public boolean isDml() {
             return isDml;
-        }
-
-
-        @Override
-        public LogicalModify.Operation getTableModOp() {
-            return tableModOp;
         }
 
 
@@ -465,22 +331,8 @@ public abstract class Prepare {
         }
 
 
-        /**
-         * Returns the physical row type of this prepared statement. May not be identical to the row type returned by the
-         * validator; for example, the field names may have been made unique.
-         */
-        public AlgDataType getPhysicalRowType() {
-            return rowType;
-        }
-
-
         @Override
         public abstract Type getElementType();
-
-
-        public AlgNode getRootRel() {
-            return rootRel;
-        }
 
     }
 

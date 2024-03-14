@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,33 +18,34 @@ package org.polypheny.db.processing;
 
 import java.util.ArrayList;
 import java.util.List;
-import lombok.Getter;
-import lombok.Setter;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
+import lombok.experimental.NonFinal;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.QueryParameters;
 
 
-@Getter
+@EqualsAndHashCode(callSuper = true)
+@Value
 public class ExtendedQueryParameters extends QueryParameters {
 
-    List<String> nodeLabels = new ArrayList<>();
-    List<String> relationshipLabels = new ArrayList<>();
-    final String databaseName;
-    @Setter
-    Long databaseId;
-    final boolean fullGraph;
+    public List<String> nodeLabels = new ArrayList<>();
+    public List<String> relationshipLabels = new ArrayList<>();
+    @NonFinal
+    public String namespace;
+    public boolean fullGraph;
 
 
-    public ExtendedQueryParameters( String query, NamespaceType namespaceType, String databaseName ) {
-        super( query, namespaceType );
-        this.databaseName = databaseName;
+    public ExtendedQueryParameters( String query, DataModel dataModel, String namespace ) {
+        super( query, dataModel );
+        this.namespace = namespace;
         this.fullGraph = false;
     }
 
 
-    public ExtendedQueryParameters( String databaseName ) {
-        super( "*", NamespaceType.GRAPH );
-        this.databaseName = databaseName;
+    public ExtendedQueryParameters( String namespace ) {
+        super( "*", DataModel.GRAPH );
+        this.namespace = namespace;
         this.fullGraph = true;
     }
 

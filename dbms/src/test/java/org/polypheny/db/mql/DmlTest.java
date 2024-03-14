@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,30 +16,47 @@
 
 package org.polypheny.db.mql;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.polypheny.db.TestHelper.MongoConnection.toDoc;
 
 import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.polypheny.db.AdapterTestSuite;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper.MongoConnection;
-import org.polypheny.db.excluded.CassandraExcluded;
-import org.polypheny.db.excluded.FileExcluded;
-import org.polypheny.db.webui.models.Result;
+import org.polypheny.db.webui.models.results.DocResult;
 
 
 /**
  * Integration tests, which use the MongoQL-interface to observe
  * correctness of the MongoQL language and the document model
  */
-@Category({ AdapterTestSuite.class, CassandraExcluded.class })
+@Tag("adapter")
 public class DmlTest extends MqlTestTemplate {
+
+    @AfterEach
+    public void deleteAll() {
+        deleteMany( "{}" );
+    }
+
+
+    @Test
+    public void emptyTest() {
+        String name = "test";
+        execute( "db.createCollection(\"" + name + "\")" );
+
+        DocResult result = find( "{}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkDocResultSet(
+                        result,
+                        ImmutableList.of(), true, true ) );
+
+    }
 
 
     @Test
@@ -47,63 +64,61 @@ public class DmlTest extends MqlTestTemplate {
         String data = "{\"test\":4}";
         insert( data );
 
-        Result result = find( "{}", "{}" );
+        DocResult result = find( "{}", "{}" );
 
         assertTrue(
-                MongoConnection.checkResultSet(
+                MongoConnection.checkDocResultSet(
                         result,
-                        ImmutableList.of( new Object[]{ data } ), true ) );
+                        ImmutableList.of( data ), true,
+                        true ) );
 
     }
 
 
     @Test
-    @Category(FileExcluded.class)
     public void insertManyTest() {
         List<String> data = Arrays.asList( "{\"test\":1}", "{\"test\":2}", "{\"test\":3}" );
         insertMany( data );
 
-        Result result = find( "{}", "{}" );
+        DocResult result = find( "{}", "{}" );
 
         assertTrue(
-                MongoConnection.checkUnorderedResultSet(
+                MongoConnection.checkDocResultSet(
                         result,
-                        data.stream()
-                                .map( d -> new String[]{ d } )
-                                .collect( Collectors.toList() ), true ) );
+                        data,
+                        true,
+                        true ) );
     }
 
 
     @Test
-    @Category(FileExcluded.class)
     public void updateTest() {
-        List<String> data = Arrays.asList( "{\"test\":1}", "{\"test\":2}", "{\"test\":3}" );
+        List<String> data = List.of( "{\"test\":1}", "{\"test\":2}", "{\"test\":3}" );
         insertMany( data );
 
         update( "{\"test\": 3}", "{\"$set\":{\"test\": 5}}" );
 
-        Result result = find( "{}", "{}" );
+        DocResult result = find( "{}", "{}" );
 
-        List<String> updated = Arrays.asList( "{\"test\":1}", "{\"test\":2}", "{\"test\":5}" );
+        List<String> updated = List.of( "{\"test\":1}", "{\"test\":2}", "{\"test\":5}" );
 
         assertTrue(
-                MongoConnection.checkUnorderedResultSet(
+                MongoConnection.checkDocResultSet(
                         result,
-                        updated.stream()
-                                .map( d -> new String[]{ d } )
-                                .collect( Collectors.toList() ), true ) );
+                        updated,
+                        true,
+                        true ) );
     }
 
 
     @Test
-    @Category(FileExcluded.class)
     public void updateIdTest() {
         List<Object> data = Arrays.asList( 1, 2, 3 );
-        insertMany( data.stream().map( d -> toDoc( "test", d ) ).collect( Collectors.toList() ) );
+        insertMany( data.stream().map( d -> toDoc( "test", d ) ).toList() );
 
-        Result result = find( "{}", "{}" );
+        DocResult result = find( "{}", "{}" );
 
-        BsonDocument doc = BsonDocument.parse( result.getData()[0][0] );
+        BsonDocument doc = BsonDocument.parse( result.getData()[0] );
 
         BsonString id = doc.getString( "_id" );
         int content = doc.get( "test" ).asInt32().getValue();
@@ -113,7 +128,7 @@ public class DmlTest extends MqlTestTemplate {
         result = find( "{}", "{}" );
 
         assertTrue(
-                MongoConnection.checkUnorderedResultSet(
+                MongoConnection.checkDocResultSet(
                         result,
                         data.stream()
                                 .map( d -> {
@@ -123,14 +138,64 @@ public class DmlTest extends MqlTestTemplate {
                                     return d;
                                 } )
                                 .map( d -> toDoc( "test", d ) )
-                                .map( d -> new String[]{ d } )
-                                .collect( Collectors.toList() ), true ) );
+                                .toList(), true, true ) );
     }
 
 
     @Test
-    public void deleteTest() {
+    public void deleteSpecificTest() {
+        List<String> data = List.of( "{\"test\":1}", "{\"test\":2}", "{\"test\":3}" );
+        insertMany( data );
+        DocResult result = find( "{}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkDocResultSet(
+                        result,
+                        data,
+                        true,
+                        true ) );
+
+        deleteMany( "{\"test\":2}" );
+        data = List.of( "{\"test\":1}", "{\"test\":3}" );
+
+        result = find( "{}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkDocResultSet(
+                        result,
+                        data,
+                        true,
+                        true ) );
+
+
+    }
+
+
+    @Test
+    public void deleteAllTest() {
+        List<String> data = List.of( "{\"test\":1}", "{\"test\":2}", "{\"test\":3}" );
+        insertMany( data );
+        DocResult result = find( "{}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkDocResultSet(
+                        result,
+                        data,
+                        true,
+                        true ) );
+
         deleteMany( "{}" );
+
+        result = find( "{}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkDocResultSet(
+                        result,
+                        List.of(),
+                        true,
+                        true ) );
+
+
     }
 
 }

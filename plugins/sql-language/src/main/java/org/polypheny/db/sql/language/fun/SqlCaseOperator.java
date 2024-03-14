@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -204,7 +204,7 @@ public class SqlCaseOperator extends SqlOperator {
     private AlgDataType inferTypeFromValidator( SqlCallBinding callBinding ) {
         SqlCase caseCall = (SqlCase) callBinding.getCall();
         SqlNodeList thenList = caseCall.getThenOperands();
-        ArrayList<SqlNode> nullList = new ArrayList<>();
+        List<SqlNode> nullList = new ArrayList<>();
         List<AlgDataType> argTypes = new ArrayList<>();
         for ( SqlNode node : thenList.getSqlList() ) {
             argTypes.add( callBinding.getValidator().deriveType( callBinding.getScope(), node ) );

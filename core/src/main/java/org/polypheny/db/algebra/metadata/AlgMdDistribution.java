@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,12 +44,12 @@ import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.core.Exchange;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.plan.hep.HepAlgVertex;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
@@ -63,7 +63,7 @@ import org.polypheny.db.util.mapping.Mappings;
  */
 public class AlgMdDistribution implements MetadataHandler<BuiltInMetadata.Distribution> {
 
-    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( BuiltInMethod.DISTRIBUTION.method, new AlgMdDistribution() );
+    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( new AlgMdDistribution(), BuiltInMethod.DISTRIBUTION.method );
 
 
     private AlgMdDistribution() {
@@ -102,8 +102,8 @@ public class AlgMdDistribution implements MetadataHandler<BuiltInMetadata.Distri
     }
 
 
-    public AlgDistribution distribution( Scan scan, AlgMetadataQuery mq ) {
-        return table( scan.getTable() );
+    public AlgDistribution distribution( RelScan<?> scan, AlgMetadataQuery mq ) {
+        return table( scan.getEntity() );
     }
 
 
@@ -113,7 +113,7 @@ public class AlgMdDistribution implements MetadataHandler<BuiltInMetadata.Distri
 
 
     public AlgDistribution distribution( Values values, AlgMetadataQuery mq ) {
-        return values( values.getRowType(), values.getTuples() );
+        return values( values.getTupleType(), values.getTuples() );
     }
 
 
@@ -128,9 +128,9 @@ public class AlgMdDistribution implements MetadataHandler<BuiltInMetadata.Distri
 
 
     /**
-     * Helper method to determine a {@link Scan}'s distribution.
+     * Helper method to determine a {@link RelScan}'s distribution.
      */
-    public static AlgDistribution table( AlgOptTable table ) {
+    public static AlgDistribution table( Entity table ) {
         return table.getDistribution();
     }
 
@@ -172,7 +172,7 @@ public class AlgMdDistribution implements MetadataHandler<BuiltInMetadata.Distri
      */
     public static AlgDistribution project( AlgMetadataQuery mq, AlgNode input, List<? extends RexNode> projects ) {
         final AlgDistribution inputDistribution = mq.distribution( input );
-        final Mappings.TargetMapping mapping = Project.getPartialMapping( input.getRowType().getFieldCount(), projects );
+        final Mappings.TargetMapping mapping = Project.getPartialMapping( input.getTupleType().getFieldCount(), projects );
         return inputDistribution.apply( mapping );
     }
 

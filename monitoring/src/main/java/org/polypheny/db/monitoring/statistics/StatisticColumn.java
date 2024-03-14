@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,44 +23,22 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
 
 
 /**
  * Stores the available statistic data of a specific column
  */
-public abstract class StatisticColumn<T> {
 
-    @Expose
-    @Getter
-    private String schema;
+public abstract class StatisticColumn {
 
-    @Expose
-    @Getter
-    private String table;
 
-    @Expose
-    @Getter
-    private String column;
+    public final long columnId;
 
-    @Getter
-    private final long schemaId;
+    public final PolyType type;
 
-    @Getter
-    private final long tableId;
-
-    @Getter
-    private final long columnId;
-
-    @Expose
-    private final String qualifiedColumnName;
-
-    @Getter
-    private final PolyType type;
-
-    @Expose
-    private final StatisticType columnType;
 
     @Expose
     @Setter
@@ -70,61 +48,25 @@ public abstract class StatisticColumn<T> {
     @Expose
     @Getter
     @Setter
-    protected List<T> uniqueValues = new ArrayList<>();
+    protected List<PolyValue> uniqueValues = new ArrayList<>();
 
     @Expose
     @Getter
     @Setter
-    protected Integer count;
+    protected PolyInteger count;
 
 
-    public StatisticColumn( long schemaId, long tableId, long columnId, PolyType type, StatisticType columnType ) {
-        this.schemaId = schemaId;
-        this.tableId = tableId;
+    public StatisticColumn( long columnId, PolyType type ) {
         this.columnId = columnId;
         this.type = type;
-        this.columnType = columnType;
-
-        Catalog catalog = Catalog.getInstance();
-        if ( catalog.checkIfExistsEntity( tableId ) ) {
-            this.schema = catalog.getSchema( schemaId ).name;
-            this.table = catalog.getTable( tableId ).name;
-            this.column = catalog.getColumn( columnId ).name;
-        }
-        this.qualifiedColumnName = String.format( "%s.%s.%s", this.schema, this.table, this.column );
     }
 
 
-    public String getQualifiedColumnName() {
-        return this.schema + "." + this.table + "." + this.column;
-    }
+    public abstract void insert( PolyValue val );
 
-
-    public String getQualifiedTableName() {
-        return this.schema + "." + this.table;
-    }
-
-
-    public abstract void insert( T val );
-
-    public abstract void insert( List<T> values );
+    public abstract void insert( List<PolyValue> values );
 
     public abstract String toString();
-
-
-    public void updateColumnName( String columnName ) {
-        this.column = columnName;
-    }
-
-
-    public void updateTableName( String tableName ) {
-        this.table = tableName;
-    }
-
-
-    public void updateSchemaName( String schemaName ) {
-        this.schema = schemaName;
-    }
 
 
     public enum StatisticType {

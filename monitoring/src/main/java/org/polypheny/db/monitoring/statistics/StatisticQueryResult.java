@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.polypheny.db.monitoring.statistics;
 
 
 import lombok.Getter;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -29,7 +30,7 @@ public class StatisticQueryResult extends QueryResult {
      * All specified statistics for a column identified by their keys
      */
     @Getter
-    private Comparable<?>[] data;
+    private PolyValue[] data;
 
 
     /**
@@ -37,8 +38,8 @@ public class StatisticQueryResult extends QueryResult {
      *
      * @param data map consisting of different values to a given statistic
      */
-    public StatisticQueryResult( QueryResult queryResult, final Comparable<?>[] data ) {
-        super( queryResult.getSchemaId(), queryResult.getTableId(), queryResult.getColumnId(), queryResult.getType() );
+    public StatisticQueryResult( QueryResult queryResult, final PolyValue[] data ) {
+        super( queryResult.getEntity(), queryResult.getColumn() );
         this.data = data;
     }
 

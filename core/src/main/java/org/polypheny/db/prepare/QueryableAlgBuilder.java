@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,14 +61,13 @@ import org.apache.calcite.linq4j.function.Predicate1;
 import org.apache.calcite.linq4j.function.Predicate2;
 import org.apache.calcite.linq4j.tree.FunctionExpression;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
-import org.polypheny.db.algebra.logical.relational.LogicalScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.QueryableTable;
-import org.polypheny.db.schema.TranslatableTable;
-import org.polypheny.db.schema.impl.AbstractTableQueryable;
+import org.polypheny.db.schema.impl.AbstractEntityQueryable;
+import org.polypheny.db.schema.types.QueryableEntity;
+import org.polypheny.db.schema.types.TranslatableEntity;
 
 
 /**
@@ -103,22 +102,14 @@ class QueryableAlgBuilder<T> implements QueryableFactory<T> {
             ((QueryableDefaults.Replayable) queryable).replay( this );
             return alg;
         }
-        if ( queryable instanceof AbstractTableQueryable ) {
-            final AbstractTableQueryable tableQueryable = (AbstractTableQueryable) queryable;
-            final QueryableTable table = tableQueryable.table;
-            final PolyphenyDbSchema.TableEntry tableEntry =
-                    PolyphenyDbSchema
-                            .from( tableQueryable.schema )
-                            .add( tableQueryable.tableName, tableQueryable.table );
-            final AlgOptTableImpl algOptTable = AlgOptTableImpl.create(
-                    null,
-                    table.getRowType( translator.typeFactory ),
-                    tableEntry,
-                    null );
-            if ( table instanceof TranslatableTable ) {
-                return ((TranslatableTable) table).toAlg( translator.toAlgContext(), algOptTable, translator.cluster.traitSet() );
+        if ( queryable instanceof AbstractEntityQueryable ) {
+            final AbstractEntityQueryable tableQueryable = (AbstractEntityQueryable) queryable;
+            final QueryableEntity table = tableQueryable.entity.unwrap( QueryableEntity.class ).orElseThrow();
+
+            if ( table instanceof TranslatableEntity ) {
+                return ((TranslatableEntity) table).toAlg( translator.cluster, translator.cluster.traitSet() );
             } else {
-                return LogicalScan.create( translator.cluster, algOptTable );
+                return LogicalRelScan.create( translator.cluster, null );
             }
         }
         return translator.translate( queryable.getExpression() );
@@ -301,7 +292,19 @@ class QueryableAlgBuilder<T> implements QueryableFactory<T> {
 
 
     @Override
+    public Queryable<T> except( Queryable<T> source, Enumerable<T> enumerable, boolean all ) {
+        throw new UnsupportedOperationException();
+    }
+
+
+    @Override
     public Queryable<T> except( Queryable<T> source, Enumerable<T> enumerable, EqualityComparer<T> tEqualityComparer ) {
+        throw new UnsupportedOperationException();
+    }
+
+
+    @Override
+    public Queryable<T> except( Queryable<T> source, Enumerable<T> enumerable, EqualityComparer<T> comparer, boolean all ) {
         throw new UnsupportedOperationException();
     }
 
@@ -434,8 +437,20 @@ class QueryableAlgBuilder<T> implements QueryableFactory<T> {
 
 
     @Override
+    public Queryable<T> intersect( Queryable<T> source, Enumerable<T> enumerable, boolean all ) {
+        return null;
+    }
+
+
+    @Override
     public Queryable<T> intersect( Queryable<T> source, Enumerable<T> enumerable, EqualityComparer<T> tEqualityComparer ) {
         throw new UnsupportedOperationException();
+    }
+
+
+    @Override
+    public Queryable<T> intersect( Queryable<T> source, Enumerable<T> enumerable, EqualityComparer<T> comparer, boolean all ) {
+        return null;
     }
 
 
@@ -578,7 +593,7 @@ class QueryableAlgBuilder<T> implements QueryableFactory<T> {
     public <TResult> Queryable<TResult> select( Queryable<T> source, FunctionExpression<Function1<T, TResult>> selector ) {
         AlgNode child = toAlg( source );
         List<RexNode> nodes = translator.toRexList( selector, child );
-        setAlg( LogicalProject.create( child, nodes, (List<String>) null ) );
+        setAlg( LogicalRelProject.create( child, nodes, (List<String>) null ) );
         return null;
     }
 
@@ -807,7 +822,7 @@ class QueryableAlgBuilder<T> implements QueryableFactory<T> {
     public Queryable<T> where( Queryable<T> source, FunctionExpression<? extends Predicate1<T>> predicate ) {
         AlgNode child = toAlg( source );
         RexNode node = translator.toRex( predicate, child );
-        setAlg( LogicalFilter.create( child, node ) );
+        setAlg( LogicalRelFilter.create( child, node ) );
         return source;
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,6 +57,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -65,6 +66,7 @@ import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.convert.Converter;
 import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.enumerable.common.ModelSwitcherRule;
 import org.polypheny.db.algebra.metadata.AlgMetadataProvider;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.metadata.JaninoRelMetadataProvider;
@@ -72,7 +74,6 @@ import org.polypheny.db.algebra.rules.AggregateJoinTransposeRule;
 import org.polypheny.db.algebra.rules.AggregateProjectMergeRule;
 import org.polypheny.db.algebra.rules.AggregateRemoveRule;
 import org.polypheny.db.algebra.rules.CalcRemoveRule;
-import org.polypheny.db.algebra.rules.DocumentToEnumerableRule;
 import org.polypheny.db.algebra.rules.FilterJoinRule;
 import org.polypheny.db.algebra.rules.JoinAssociateRule;
 import org.polypheny.db.algebra.rules.JoinCommuteRule;
@@ -80,17 +81,17 @@ import org.polypheny.db.algebra.rules.LpgToEnumerableRule;
 import org.polypheny.db.algebra.rules.SemiJoinRules;
 import org.polypheny.db.algebra.rules.SortRemoveRule;
 import org.polypheny.db.algebra.rules.UnionToDistinctRule;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.plan.AbstractRelOptPlanner;
+import org.polypheny.db.plan.AbstractAlgPlanner;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptCostFactory;
 import org.polypheny.db.plan.AlgOptListener;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
-import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -98,6 +99,7 @@ import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.util.Litmus;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.SaffronProperties;
 import org.polypheny.db.util.Util;
 
@@ -106,7 +108,7 @@ import org.polypheny.db.util.Util;
  * VolcanoPlanner optimizes queries by transforming expressions selectively according to a dynamic programming algorithm.
  */
 @Slf4j
-public class VolcanoPlanner extends AbstractRelOptPlanner {
+public class VolcanoPlanner extends AbstractAlgPlanner {
 
     protected static final double COST_IMPROVEMENT = .5;
 
@@ -151,7 +153,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
      * Row type is part of the key for the rare occasion that similar expressions have different types, e.g. variants
      * of {@code Project(child=rel#1, a=null)} where a is a null INTEGER or a null VARCHAR(10).
      */
-    private final Map<String, AlgNode> mapDigestToRel = new HashMap<>();
+    private final Map<String, AlgNode> mapDigestToAlg = new HashMap<>();
 
     /**
      * Map each registered expression ({@link AlgNode}) to its equivalence set ({@link AlgSubset}).
@@ -160,13 +162,13 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
      * objects are identified by their digest, which involves the set that their child algebra expressions belong to.
      * If those children belong to the same set, we have to be careful, otherwise it gets incestuous.
      */
-    private final IdentityHashMap<AlgNode, AlgSubset> mapRel2Subset = new IdentityHashMap<>();
+    private final IdentityHashMap<AlgNode, AlgSubset> mapAlg2Subset = new IdentityHashMap<>();
 
     /**
      * The importance of algebra expressions.
      *
      * The map contains only RelNodes whose importance has been overridden using
-     * {@link AlgOptPlanner#setImportance(AlgNode, double)}. Other RelNodes are presumed to have 'normal' importance.
+     * {@link AlgPlanner#setImportance(AlgNode, double)}. Other RelNodes are presumed to have 'normal' importance.
      *
      * If a {@link AlgNode} has 0 importance, all {@link AlgOptRuleCall}s using it are ignored, and future
      * RelOptRuleCalls are not queued up.
@@ -174,17 +176,12 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     final Map<AlgNode, Double> algImportances = new HashMap<>();
 
     /**
-     * List of all schemas which have been registered.
-     */
-    private final Set<AlgOptSchema> registeredSchemas = new HashSet<>();
-
-    /**
      * Holds rule calls waiting to be fired.
      */
     final RuleQueue ruleQueue = new RuleQueue( this );
 
     /**
-     * Holds the currently registered RelTraitDefs.
+     * Holds the currently registered AlgTraitDefs.
      */
     private final List<AlgTraitDef<?>> traitDefs = new ArrayList<>();
 
@@ -196,7 +193,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     private int nextSetId = 0;
 
     /**
-     * Incremented every time a algebra expression is registered or two sets are merged.
+     * Incremented every time an algebra expression is registered or two sets are merged.
      * Tells us whether anything is going on.
      */
     private int registerCount;
@@ -216,9 +213,10 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     /**
      * Whether the planner can accept new rules.
      */
+    @Setter
     private boolean locked;
 
-    final Map<AlgNode, Provenance> provenanceMap = new HashMap<>();
+    final Map<AlgNode, Provenance> provenances = new HashMap<>();
 
     private final Deque<VolcanoRuleCall> ruleCallStack = new ArrayDeque<>();
 
@@ -244,7 +242,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
     /**
      * Creates a uninitialized <code>VolcanoPlanner</code>. To fully initialize it, the caller must register the
-     * desired set of algations, rules, and calling conventions.
+     * desired set of relations, rules, and calling conventions.
      */
     public VolcanoPlanner( Context externalContext ) {
         this( null, externalContext );
@@ -274,7 +272,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     // implement RelOptPlanner
     @Override
     public boolean isRegistered( AlgNode alg ) {
-        return mapRel2Subset.get( alg ) != null;
+        return mapAlg2Subset.get( alg ) != null;
     }
 
 
@@ -322,12 +320,15 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
     @Override
     public boolean addAlgTraitDef( AlgTraitDef<?> algTraitDef ) {
-        return !traitDefs.contains( algTraitDef ) && traitDefs.add( algTraitDef );
+        if ( traitDefs.contains( algTraitDef ) ) {
+            return false;
+        }
+        return traitDefs.add( algTraitDef );
     }
 
 
     @Override
-    public void clearRelTraitDefs() {
+    public void clearAlgTraitDefs() {
         traitDefs.clear();
     }
 
@@ -359,8 +360,8 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         }
         this.classOperands.clear();
         this.allSets.clear();
-        this.mapDigestToRel.clear();
-        this.mapRel2Subset.clear();
+        this.mapDigestToAlg.clear();
+        this.mapAlg2Subset.clear();
         this.algImportances.clear();
         this.ruleQueue.clear();
         this.ruleNames.clear();
@@ -370,6 +371,17 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     @Override
     public List<AlgOptRule> getRules() {
         return ImmutableList.copyOf( ruleSet );
+    }
+
+
+    @Override
+    public boolean addRule( AlgOptRule rule, VolcanoPlannerPhase phase ) {
+        if ( ruleSet.contains( rule ) ) {
+            // Rule already exists.
+            return false;
+        }
+        ruleQueue.addPhaseRuleMapping( phase, rule );
+        return addRule( rule );
     }
 
 
@@ -389,7 +401,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         if ( ruleNames.put( ruleName, rule.getClass() ) ) {
             Set<Class<?>> x = ruleNames.get( ruleName );
             if ( x.size() > 1 ) {
-                throw new RuntimeException( "Rule description '" + ruleName + "' is not unique; classes: " + x );
+                throw new GenericRuntimeException( "Rule description '" + ruleName + "' is not unique; classes: " + x );
             }
         }
 
@@ -406,8 +418,8 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         if ( rule instanceof ConverterRule ) {
             ConverterRule converterRule = (ConverterRule) rule;
 
-            final AlgTrait ruleTrait = converterRule.getInTrait();
-            final AlgTraitDef ruleTraitDef = ruleTrait.getTraitDef();
+            final AlgTrait<?> ruleTrait = converterRule.getInTrait();
+            final AlgTraitDef<?> ruleTraitDef = ruleTrait.getTraitDef();
             if ( traitDefs.contains( ruleTraitDef ) ) {
                 ruleTraitDef.registerConverterRule( this, converterRule );
             }
@@ -433,7 +445,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         // Remove trait mappings. (In particular, entries from conversion graph.)
         if ( rule instanceof ConverterRule ) {
             ConverterRule converterRule = (ConverterRule) rule;
-            final AlgTrait ruleTrait = converterRule.getInTrait();
+            final AlgTrait<?> ruleTrait = converterRule.getInTrait();
             final AlgTraitDef<?> ruleTraitDef = ruleTrait.getTraitDef();
             if ( traitDefs.contains( ruleTraitDef ) ) {
                 ruleTraitDef.deregisterConverterRule( this, converterRule );
@@ -473,20 +485,14 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     }
 
 
-    @Override
-    public AlgOptPlanner chooseDelegate() {
-        return this;
-    }
-
-
     /**
      * Finds the most efficient expression to implement the query given via
-     * {@link AlgOptPlanner#setRoot(AlgNode)}.
+     * {@link AlgPlanner#setRoot(AlgNode)}.
      *
      * The algorithm executes repeatedly in a series of phases. In each phase the exact rules that may be fired varies.
      * The mapping of phases to rule sets is maintained in the {@link #ruleQueue}.
      *
-     * In each phase, the planner sets the initial importance of the existing RelSubSets ({@link #setInitialImportance()}).
+     * In each phase, the planner sets the initial importance of the existing AlgSubSets ({@link #setInitialImportance()}).
      * The planner then iterates over the rule matches presented by the rule queue until:
      *
      * <ol>
@@ -497,7 +503,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
      * <li>For non-ambitious planners: When an implementable plan is found.</li>
      * </ol>
      *
-     * Furthermore, after every 10 iterations without an implementable plan, RelSubSets that contain only logical RelNodes
+     * Furthermore, after every 10 iterations without an implementable plan, AlgSubSets that contain only logical RelNodes
      * are given an importance boost via {@link #injectImportanceBoost()}. Once an implementable plan is found,
      * the artificially raised importance values are cleared (see {@link #clearImportanceBoost()}).
      *
@@ -593,7 +599,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
      * Ensures that the subset that is the root algebra expression contains converters to all other subsets
      * in its equivalence set.
      *
-     * Thus the planner tries to find cheap implementations of those other subsets, which can then be converted to the root.
+     * Thus, the planner tries to find cheap implementations of those other subsets, which can then be converted to the root.
      * This is the only place in the plan where explicit converters are required; elsewhere, a consumer will be asking for
      * the result in a particular convention, but the root has no consumers.
      */
@@ -605,7 +611,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
             }
         }
         for ( AlgSubset subset : root.set.subsets ) {
-            final ImmutableList<AlgTrait> difference = root.getTraitSet().difference( subset.getTraitSet() );
+            final ImmutableList<AlgTrait<?>> difference = root.getTraitSet().difference( subset.getTraitSet() );
             if ( difference.size() == 1 && subsets.add( subset ) ) {
                 register(
                         new AbstractConverter( subset.getCluster(), subset, difference.get( 0 ).getTraitDef(), root.getTraitSet() ),
@@ -657,7 +663,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
             return;
         }
         pw.println( node );
-        final Provenance o = provenanceMap.get( node );
+        final Provenance o = provenances.get( node );
         Spaces.append( pw, i * 2 + 2 );
         if ( o == Provenance.EMPTY ) {
             pw.println( "no parent" );
@@ -699,7 +705,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
                             }
 
                             if ( subset != root ) {
-                                Double importance = Math.pow( 0.9, (double) depth );
+                                Double importance = Math.pow( 0.9, depth );
                                 ruleQueue.updateImportance( subset, importance );
                             }
 
@@ -752,44 +758,42 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
 
     @Override
-    public AlgSubset register( AlgNode alg, AlgNode equivRel ) {
-        assert !isRegistered( alg ) : "pre: isRegistered(rel)";
+    public AlgSubset register( AlgNode alg, AlgNode equivAlg ) {
+        assert !isRegistered( alg ) : "pre: isRegistered(alg)";
         final AlgSet set;
-        if ( equivRel == null ) {
+        if ( equivAlg == null ) {
             set = null;
         } else {
             assert AlgOptUtil.equal(
                     "alg rowtype",
-                    alg.getRowType(),
-                    "equivRel rowtype",
-                    equivRel.getRowType(),
+                    alg.getTupleType(),
+                    "equivAlg rowtype",
+                    equivAlg.getTupleType(),
                     Litmus.THROW );
-            set = getSet( equivRel );
+            set = getSet( equivAlg );
         }
         final AlgSubset subset = registerImpl( alg, set );
 
         // Checking if tree is valid considerably slows down planning. Only doing it if logger level is debug or finer
-        if ( LOGGER.isDebugEnabled() ) {
-            assert isValid( Litmus.THROW );
-        }
+        assert !LOGGER.isDebugEnabled() || isValid( Litmus.THROW );
 
         return subset;
     }
 
 
     @Override
-    public AlgSubset ensureRegistered( AlgNode alg, AlgNode equivRel ) {
+    public AlgSubset ensureRegistered( AlgNode alg, AlgNode equivAlg ) {
         final AlgSubset subset = getSubset( alg );
         if ( subset != null ) {
-            if ( equivRel != null ) {
-                final AlgSubset equivSubset = getSubset( equivRel );
+            if ( equivAlg != null ) {
+                final AlgSubset equivSubset = getSubset( equivAlg );
                 if ( subset.set != equivSubset.set ) {
                     merge( equivSubset.set, subset.set );
                 }
             }
             return subset;
         } else {
-            return register( alg, equivRel );
+            return register( alg, equivAlg );
         }
     }
 
@@ -825,17 +829,16 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         addRule( LpgToEnumerableRule.AGGREGATE_TO_ENUMERABLE );
         addRule( LpgToEnumerableRule.VALUES_TO_ENUMERABLE );
 
-        // Document
-        addRule( DocumentToEnumerableRule.PROJECT_TO_ENUMERABLE );
-        addRule( DocumentToEnumerableRule.FILTER_TO_ENUMERABLE );
-        addRule( DocumentToEnumerableRule.AGGREGATE_TO_ENUMERABLE );
-        addRule( DocumentToEnumerableRule.SORT_TO_ENUMERABLE );
-
-        // Relational
+        addRule( ModelSwitcherRule.MODEL_SWITCHER_RULE_GRAPH_DOC );
+        addRule( ModelSwitcherRule.MODEL_SWITCHER_RULE_GRAPH_REL );
+        addRule( ModelSwitcherRule.MODEL_SWITCHER_RULE_REL_DOC );
+        addRule( ModelSwitcherRule.MODEL_SWITCHER_RULE_REL_GRAPH );
+        addRule( ModelSwitcherRule.MODEL_SWITCHER_RULE_DOC_REL );
+        addRule( ModelSwitcherRule.MODEL_SWITCHER_RULE_DOC_GRAPH );
     }
 
 
-    public void registerAbstractRelationalRules() {
+    public void registerAbstractAlgebraRules() {
         addRule( FilterJoinRule.FILTER_ON_JOIN );
         addRule( FilterJoinRule.JOIN );
         addRule( AbstractConverter.ExpandConversionRule.INSTANCE );
@@ -854,18 +857,6 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         addRule( SortRemoveRule.INSTANCE );
 
         // todo: rule which makes Project({OrdinalRef}) disappear
-    }
-
-
-    @Override
-    public void registerSchema( AlgOptSchema schema ) {
-        if ( registeredSchemas.add( schema ) ) {
-            try {
-                schema.registerRules( this );
-            } catch ( Exception e ) {
-                throw new AssertionError( "While registering schema " + schema, e );
-            }
-        }
     }
 
 
@@ -891,9 +882,9 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
 
     /**
-     * Returns the subset that a algebra expression belongs to.
+     * Returns the subset that an algebra expression belongs to.
      *
-     * @param alg Relational expression
+     * @param alg Algebraic expression
      * @return Subset it belongs to, or null if it is not registered
      */
     public AlgSubset getSubset( AlgNode alg ) {
@@ -901,7 +892,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         if ( alg instanceof AlgSubset ) {
             return (AlgSubset) alg;
         } else {
-            return mapRel2Subset.get( alg );
+            return mapAlg2Subset.get( alg );
         }
     }
 
@@ -940,7 +931,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         // will be left as is. Finally, any null entries in toTraits are ignored.
         AlgNode converted = alg;
         for ( int i = 0; (converted != null) && (i < toTraits.size()); i++ ) {
-            AlgTrait fromTrait = converted.getTraitSet().getTrait( i );
+            AlgTrait<?> fromTrait = converted.getTraitSet().getTrait( i );
             final AlgTraitDef traitDef = fromTrait.getTraitDef();
             AlgTrait toTrait = toTraits.getTrait( i );
 
@@ -973,9 +964,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         }
 
         // make sure final converted traitset subsumes what was required
-        if ( converted != null ) {
-            assert converted.getTraitSet().satisfies( toTraits );
-        }
+        assert converted == null || converted.getTraitSet().satisfies( toTraits );
 
         return converted;
     }
@@ -995,11 +984,11 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
             AlgNode alg,
             boolean allowInfiniteCostConverters,
             AlgTraitSet toTraits,
-            Expressions.FluentList<AlgTraitDef> usedTraits ) {
+            Expressions.FluentList<AlgTraitDef<?>> usedTraits ) {
         if ( true ) {
             return alg;
         }
-        for ( AlgTrait trait : alg.getTraitSet() ) {
+        for ( AlgTrait<?> trait : alg.getTraitSet() ) {
             if ( toTraits.contains( trait ) ) {
                 // We're already a match on this trait type.
                 continue;
@@ -1008,7 +997,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
             AlgNode alg2 = traitDef.convert( this, alg, toTraits.getTrait( traitDef ), allowInfiniteCostConverters );
 
             // if any of the used traits have been knocked out, we could be heading for a cycle.
-            for ( AlgTraitDef usedTrait : usedTraits ) {
+            for ( AlgTraitDef<?> usedTrait : usedTraits ) {
                 if ( !alg2.getTraitSet().contains( usedTrait ) ) {
                     continue;
                 }
@@ -1068,7 +1057,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         pw.println( "Sets:" );
         Ordering<AlgSet> ordering = Ordering.from( Comparator.comparingInt( o -> o.id ) );
         for ( AlgSet set : ordering.immutableSortedCopy( allSets ) ) {
-            pw.println( "Set#" + set.id + ", type: " + set.subsets.get( 0 ).getRowType() );
+            pw.println( "Set#" + set.id + ", type: " + set.subsets.get( 0 ).getTupleType() );
             int j = -1;
             for ( AlgSubset subset : set.subsets ) {
                 ++j;
@@ -1100,7 +1089,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
                         pw.print( ", importance=" + importance );
                     }
                     AlgMetadataQuery mq = alg.getCluster().getMetadataQuery();
-                    pw.print( ", rowcount=" + mq.getRowCount( alg ) );
+                    pw.print( ", rowcount=" + mq.getTupleCount( alg ) );
                     pw.println( ", cumulative cost=" + getCost( alg, mq ) );
                 }
             }
@@ -1112,36 +1101,36 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     /**
      * Re-computes the digest of a {@link AlgNode}.
      *
-     * Since a algebra expression's digest contains the identifiers of its children, this method needs to be called
+     * Since an algebra expression's digest contains the identifiers of its children, this method needs to be called
      * when the child has been renamed, for example if the child's set merges with another.
      *
-     * @param alg Relational expression
+     * @param alg Algebra expression
      */
     void rename( AlgNode alg ) {
         final String oldDigest = alg.getDigest();
         if ( fixUpInputs( alg ) ) {
-            final AlgNode removed = mapDigestToRel.remove( oldDigest );
+            final AlgNode removed = mapDigestToAlg.remove( oldDigest );
             assert removed == alg;
             final String newDigest = alg.recomputeDigest();
             LOGGER.trace( "Rename #{} from '{}' to '{}'", alg.getId(), oldDigest, newDigest );
-            final AlgNode equivRel = mapDigestToRel.put( newDigest, alg );
-            if ( equivRel != null ) {
-                assert equivRel != alg;
+            final AlgNode equivAlg = mapDigestToAlg.put( newDigest, alg );
+            if ( equivAlg != null ) {
+                assert equivAlg != alg;
 
                 // There's already an equivalent with the same name, and we just knocked it out. Put it back, and forget about 'rel'.
-                LOGGER.trace( "After renaming alg#{} it is now equivalent to alg#{}", alg.getId(), equivRel.getId() );
+                LOGGER.trace( "After renaming alg#{} it is now equivalent to alg#{}", alg.getId(), equivAlg.getId() );
 
                 assert AlgOptUtil.equal(
                         "alg rowtype",
-                        alg.getRowType(),
-                        "equivRel rowtype",
-                        equivRel.getRowType(),
+                        alg.getTupleType(),
+                        "equivAlg rowtype",
+                        equivAlg.getTupleType(),
                         Litmus.THROW );
 
-                mapDigestToRel.put( newDigest, equivRel );
+                mapDigestToAlg.put( newDigest, equivAlg );
 
-                AlgSubset equivRelSubset = getSubset( equivRel );
-                ruleQueue.recompute( equivRelSubset, true );
+                AlgSubset equivAlgSubset = getSubset( equivAlg );
+                ruleQueue.recompute( equivAlgSubset, true );
 
                 // Remove back-links from children.
                 for ( AlgNode input : alg.getInputs() ) {
@@ -1150,11 +1139,11 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
                 // Remove alg from its subset. (This may leave the subset empty, but if so, that will be dealt
                 // with when the sets get merged.)
-                final AlgSubset subset = mapRel2Subset.put( alg, equivRelSubset );
+                final AlgSubset subset = mapAlg2Subset.put( alg, equivAlgSubset );
                 assert subset != null;
                 boolean existed = subset.set.algs.remove( alg );
                 assert existed : "alg was not known to its set";
-                final AlgSubset equivSubset = getSubset( equivRel );
+                final AlgSubset equivSubset = getSubset( equivAlg );
                 if ( equivSubset != subset ) {
                     // The equivalent algebra expression is in a different subset, therefore the sets are equivalent.
                     assert equivSubset.getTraitSet().equals( subset.getTraitSet() );
@@ -1175,24 +1164,24 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     void reregister( AlgSet set, AlgNode alg ) {
         // Is there an equivalent algebra expression? (This might have just occurred because the algebra
         // expression's child was just found to be equivalent to another set.)
-        AlgNode equivRel = mapDigestToRel.get( alg.getDigest() );
+        AlgNode equivRel = mapDigestToAlg.get( alg.getDigest() );
         if ( equivRel != null && equivRel != alg ) {
             assert equivRel.getClass() == alg.getClass();
             assert equivRel.getTraitSet().equals( alg.getTraitSet() );
             assert AlgOptUtil.equal(
                     "alg rowtype",
-                    alg.getRowType(),
-                    "equivRel rowtype",
-                    equivRel.getRowType(),
+                    alg.getTupleType(),
+                    "equivAlg rowtype",
+                    equivRel.getTupleType(),
                     Litmus.THROW );
 
-            AlgSubset equivRelSubset = getSubset( equivRel );
-            ruleQueue.recompute( equivRelSubset, true );
+            AlgSubset equivAlgSubset = getSubset( equivRel );
+            ruleQueue.recompute( equivAlgSubset, true );
             return;
         }
 
         // Add the algebra expression into the correct set and subset.
-        AlgSubset subset2 = addRelToSet( alg, set );
+        AlgSubset subset2 = addAlgToSet( alg, set );
     }
 
 
@@ -1216,12 +1205,12 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
 
     /**
-     * Fires all rules matched by a algebra expression.
+     * Fires all rules matched by an algebra expression.
      *
-     * @param alg Relational expression which has just been created (or maybe from the queue)
+     * @param alg Algebra expression which has just been created (or maybe from the queue)
      * @param deferred If true, each time a rule matches, just add an entry to the queue.
      */
-    void fireRules( AlgNode alg, boolean deferred ) {
+    public void fireRules( AlgNode alg, boolean deferred ) {
         for ( AlgOptRuleOperand operand : classOperands.get( alg.getClass() ) ) {
             if ( operand.matches( alg ) ) {
                 final VolcanoRuleCall ruleCall;
@@ -1236,14 +1225,36 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     }
 
 
+    @Override
+    public void addRuleDuringRuntime( AlgOptRule rule ) {
+        if ( getRuleByDescription( rule.toString() ) != null || !addRule( rule ) ) {
+            return;
+        }
+        AlgOptRuleOperand operand = rule.getOperand();
+
+        List<Pair<AlgNode, AlgSet>> matches = new ArrayList<>();
+        for ( AlgSet set : allSets ) {
+            for ( AlgNode node : set.getAlgsFromAllSubsets() ) {
+                if ( operand.matches( node ) ) {
+                    matches.add( Pair.of( node, set ) );
+                }
+            }
+
+        }
+        for ( Pair<AlgNode, AlgSet> pair : matches ) {
+            fireRules( pair.left, true );
+        }
+
+    }
+
+
     private boolean fixUpInputs( AlgNode alg ) {
         List<AlgNode> inputs = alg.getInputs();
         int i = -1;
         int changeCount = 0;
         for ( AlgNode input : inputs ) {
             ++i;
-            if ( input instanceof AlgSubset ) {
-                final AlgSubset subset = (AlgSubset) input;
+            if ( input instanceof AlgSubset subset ) {
                 AlgSubset newSubset = canonize( subset );
                 if ( newSubset != subset ) {
                     alg.replaceInput( i, newSubset );
@@ -1349,10 +1360,10 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         final Convention convention = traits.getTrait( ConventionTraitDef.INSTANCE );
         assert convention != null;
         if ( !convention.getInterface().isInstance( alg ) && !(alg instanceof Converter) ) {
-            throw new AssertionError( "Relational expression " + alg + " has calling-convention " + convention + " but does not implement the required interface '" + convention.getInterface() + "' of that convention" );
+            throw new AssertionError( "Algebraic expression " + alg + " has calling-convention " + convention + " but does not implement the required interface '" + convention.getInterface() + "' of that convention" );
         }
         if ( traits.size() != traitDefs.size() ) {
-            throw new AssertionError( "Relational expression " + alg + " does not have the correct number of traits: " + traits.size() + " != " + traitDefs.size() );
+            throw new AssertionError( "Algebraic expression " + alg + " does not have the correct number of traits: " + traits.size() + " != " + traitDefs.size() );
         }
 
         // Ensure that its sub-expressions are registered.
@@ -1361,23 +1372,27 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         //log.warn( "size is: " + provenanceMap.size() );
         // Record its provenance. (Rule call may be null.)
         if ( ruleCallStack.isEmpty() ) {
-            //provenanceMap.put( alg, Provenance.EMPTY );
+            if ( LOGGER.isDebugEnabled() ) {
+                provenances.put( alg, Provenance.EMPTY );
+            }
         } else {
             final VolcanoRuleCall ruleCall = ruleCallStack.peek();
-            //provenanceMap.put( alg, new RuleProvenance( ruleCall.rule, ImmutableList.copyOf( ruleCall.algs ), ruleCall.id ) );
+            if ( LOGGER.isDebugEnabled() ) {
+                provenances.put( alg, new RuleProvenance( ruleCall.rule, ImmutableList.copyOf( ruleCall.algs ), ruleCall.id ) );
+            }
         }
 
         // If it is equivalent to an existing expression, return the set that the equivalent expression belongs to.
         String key = alg.getDigest();
-        AlgNode equivExp = mapDigestToRel.get( key );
+        AlgNode equivExp = mapDigestToAlg.get( key );
         if ( equivExp == null ) {
             // do nothing
         } else if ( equivExp == alg ) {
             return getSubset( alg );
         } else {
             assert AlgOptUtil.equal(
-                    "left", equivExp.getRowType(),
-                    "right", alg.getRowType(),
+                    "left", equivExp.getTupleType(),
+                    "right", alg.getTupleType(),
                     Litmus.THROW );
             AlgSet equivSet = getSet( equivExp );
             if ( equivSet != null ) {
@@ -1400,21 +1415,21 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
                 if ( fixUpInputs( alg ) ) {
                     alg.recomputeDigest();
                     key = alg.getDigest();
-                    AlgNode equivRel = mapDigestToRel.get( key );
-                    if ( (equivRel != alg) && (equivRel != null) ) {
+                    AlgNode equivAlg = mapDigestToAlg.get( key );
+                    if ( (equivAlg != alg) && (equivAlg != null) ) {
                         assert AlgOptUtil.equal(
                                 "alg rowtype",
-                                alg.getRowType(),
-                                "equivRel rowtype",
-                                equivRel.getRowType(),
+                                alg.getTupleType(),
+                                "equivAlg rowtype",
+                                equivAlg.getTupleType(),
                                 Litmus.THROW );
 
                         // Make sure this bad alg didn't get into the set in any way (fixupInputs will do this but it
                         // doesn't know if it should so it does it anyway)
-                        set.obliterateRelNode( alg );
+                        set.obliterateAlgNode( alg );
 
                         // There is already an equivalent expression. Use that one, and forget about this one.
-                        return getSubset( equivRel );
+                        return getSubset( equivAlg );
                     }
                 }
             } else {
@@ -1441,9 +1456,9 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
         registerCount++;
         final int subsetBeforeCount = set.subsets.size();
-        AlgSubset subset = addRelToSet( alg, set );
+        AlgSubset subset = addAlgToSet( alg, set );
 
-        final AlgNode xx = mapDigestToRel.put( key, alg );
+        final AlgNode xx = mapDigestToAlg.put( key, alg );
         assert xx == null || xx == alg : alg.getDigest();
 
         LOGGER.trace( "Register {} in {}", alg.getDescription(), subset.getDescription() );
@@ -1492,11 +1507,11 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     }
 
 
-    private AlgSubset addRelToSet( AlgNode alg, AlgSet set ) {
+    private AlgSubset addAlgToSet( AlgNode alg, AlgSet set ) {
         AlgSubset subset = set.add( alg );
-        mapRel2Subset.put( alg, subset );
+        mapAlg2Subset.put( alg, subset );
 
-        // While a tree of RelNodes is being registered, sometimes nodes' costs improve and the subset doesn't
+        // While a tree of AlgNodes is being registered, sometimes nodes' costs improve and the subset doesn't
         // hear about it. You can end up with a subset with a single alg of cost 99 which thinks its best cost is 100.
         // We think this happens because the back-links to parents are not established.
         // So, give the subset another change to figure out its cost.
@@ -1517,10 +1532,10 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     }
 
 
-    // implement RelOptPlanner
+    // implement AlgOptPlanner
     @Override
     public void addListener( AlgOptListener newListener ) {
-        // TODO jvs 6-Apr-2006:  new superclass AbstractRelOptPlanner now defines a multicast listener; just need to hook it in
+        // TODO jvs 6-Apr-2006:  new superclass AbstractAlgOptPlanner now defines a multicast listener; just need to hook it in
         if ( listener != null ) {
             throw Util.needToImplement( "multiple VolcanoPlanner listeners" );
         }
@@ -1537,7 +1552,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
     // implement RelOptPlanner
     @Override
-    public long getRelMetadataTimestamp( AlgNode alg ) {
+    public long getAlgMetadataTimestamp( AlgNode alg ) {
         AlgSubset subset = getSubset( alg );
         if ( subset == null ) {
             return 0;
@@ -1599,20 +1614,9 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     }
 
 
-    /**
-     * Sets whether this planner is locked. A locked planner does not accept new rules.
-     * {@link #addRule(AlgOptRule)} will do nothing and return false.
-     *
-     * @param locked Whether planner is locked
-     */
-    public void setLocked( boolean locked ) {
-        this.locked = locked;
-    }
-
-
-    public void ensureRegistered( AlgNode alg, AlgNode equivRel, VolcanoRuleCall ruleCall ) {
+    public void ensureRegistered( AlgNode alg, AlgNode equivAlg, VolcanoRuleCall ruleCall ) {
         ruleCallStack.push( ruleCall );
-        ensureRegistered( alg, equivRel );
+        ensureRegistered( alg, equivAlg );
         ruleCallStack.pop();
     }
 
@@ -1693,4 +1697,3 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     }
 
 }
-

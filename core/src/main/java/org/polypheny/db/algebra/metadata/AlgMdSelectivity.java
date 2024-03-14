@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,7 +58,7 @@ import org.polypheny.db.util.ImmutableBitSet;
  */
 public class AlgMdSelectivity implements MetadataHandler<BuiltInMetadata.Selectivity> {
 
-    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( BuiltInMethod.SELECTIVITY.method, new AlgMdSelectivity() );
+    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( new AlgMdSelectivity(), BuiltInMethod.SELECTIVITY.method );
 
 
     protected AlgMdSelectivity() {
@@ -78,16 +78,16 @@ public class AlgMdSelectivity implements MetadataHandler<BuiltInMetadata.Selecti
 
         double sumRows = 0.0;
         double sumSelectedRows = 0.0;
-        int[] adjustments = new int[alg.getRowType().getFieldCount()];
+        int[] adjustments = new int[alg.getTupleType().getFieldCount()];
         RexBuilder rexBuilder = alg.getCluster().getRexBuilder();
         for ( AlgNode input : alg.getInputs() ) {
-            Double nRows = mq.getRowCount( input );
+            Double nRows = mq.getTupleCount( input );
             if ( nRows == null ) {
                 return null;
             }
 
             // convert the predicate to reference the types of the union child
-            RexNode modifiedPred = predicate.accept( new AlgOptUtil.RexInputConverter( rexBuilder, null, input.getRowType().getFieldList(), adjustments ) );
+            RexNode modifiedPred = predicate.accept( new AlgOptUtil.RexInputConverter( rexBuilder, null, input.getTupleType().getFields(), adjustments ) );
             double sel = mq.getSelectivity( input, modifiedPred );
 
             sumRows += nRows;
@@ -154,7 +154,7 @@ public class AlgMdSelectivity implements MetadataHandler<BuiltInMetadata.Selecti
     public Double getSelectivity( Project alg, AlgMetadataQuery mq, RexNode predicate ) {
         final List<RexNode> notPushable = new ArrayList<>();
         final List<RexNode> pushable = new ArrayList<>();
-        AlgOptUtil.splitFilters( ImmutableBitSet.range( alg.getRowType().getFieldCount() ), predicate, pushable, notPushable );
+        AlgOptUtil.splitFilters( ImmutableBitSet.range( alg.getTupleType().getFieldCount() ), predicate, pushable, notPushable );
         final RexBuilder rexBuilder = alg.getCluster().getRexBuilder();
         RexNode childPred = RexUtil.composeConjunction( rexBuilder, pushable, true );
 

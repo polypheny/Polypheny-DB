@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,17 +17,16 @@
 package org.polypheny.db.adapter.neo4j.rules.relational;
 
 import java.util.List;
+import org.polypheny.db.adapter.neo4j.NeoEntity;
 import org.polypheny.db.adapter.neo4j.NeoRelationalImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoRelAlg;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Modify;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.algebra.core.relational.RelModify;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
 
-public class NeoModify extends Modify implements NeoRelAlg {
+public class NeoModify extends RelModify<NeoEntity> implements NeoRelAlg {
 
     /**
      * Creates a {@code Modify}.
@@ -37,25 +36,24 @@ public class NeoModify extends Modify implements NeoRelAlg {
      * <pre>UPDATE table SET iden1 = exp1, ident2 = exp2  WHERE condition</pre>
      * </blockquote>
      *
-     * @param cluster Cluster this relational expression belongs to
-     * @param traitSet Traits of this relational expression
+     * @param cluster Cluster this algebra expression belongs to
+     * @param traitSet Traits of this algebra expression
      * @param table Target table to modify
-     * @param catalogReader accessor to the table metadata.
      * @param input Sub-query or filter condition
      * @param operation Modify operation (INSERT, UPDATE, DELETE)
      * @param updateColumnList List of column identifiers to be updated (e.g. ident1, ident2); null if not UPDATE
      * @param sourceExpressionList List of value expressions to be set (e.g. exp1, exp2); null if not UPDATE
      * @param flattened Whether set flattens the input row type
      */
-    public NeoModify( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, CatalogReader catalogReader, AlgNode input, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
-        super( cluster, traitSet, table, catalogReader, input, operation, updateColumnList, sourceExpressionList, flattened );
+    public NeoModify( AlgCluster cluster, AlgTraitSet traitSet, NeoEntity table, AlgNode input, Operation operation, List<String> updateColumnList, List<? extends RexNode> sourceExpressionList, boolean flattened ) {
+        super( cluster, traitSet, table, input, operation, updateColumnList, sourceExpressionList, flattened );
     }
 
 
     @Override
     public void implement( NeoRelationalImplementor implementor ) {
-        assert getTable() != null;
-        implementor.setTable( getTable() );
+        assert getEntity() != null;
+        implementor.setEntity( entity );
         implementor.setDml( true );
 
         implementor.visitChild( 0, getInput() );
@@ -101,12 +99,11 @@ public class NeoModify extends Modify implements NeoRelAlg {
         return new NeoModify(
                 inputs.get( 0 ).getCluster(),
                 traitSet,
-                table,
-                catalogReader,
+                entity,
                 inputs.get( 0 ),
                 getOperation(),
-                getUpdateColumnList(),
-                getSourceExpressionList(),
+                getUpdateColumns(),
+                getSourceExpressions(),
                 isFlattened() );
     }
 

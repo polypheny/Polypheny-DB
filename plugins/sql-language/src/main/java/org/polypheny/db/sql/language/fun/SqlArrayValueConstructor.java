@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.nodes.ArrayValueConstructor;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.OperatorBinding;
@@ -107,26 +108,17 @@ public class SqlArrayValueConstructor extends SqlMultisetValueConstructor implem
         List<Object> list = new ArrayList<>( operands.size() );
         for ( SqlNode node : operands ) {
             if ( node instanceof SqlLiteral ) {
-                Object value;
-                switch ( ((SqlLiteral) node).getTypeName() ) {
-                    case CHAR:
-                    case VARCHAR:
-                        value = ((SqlLiteral) node).toValue();
-                        break;
-                    case BOOLEAN:
-                        value = ((SqlLiteral) node).booleanValue();
-                        break;
-                    case DECIMAL:
-                        value = ((SqlLiteral) node).bigDecimalValue();
-                        break;
-                    default:
-                        value = ((SqlLiteral) node).getValue();
-                }
+                Object value = switch ( ((SqlLiteral) node).getTypeName() ) {
+                    case CHAR, VARCHAR -> ((SqlLiteral) node).toValue();
+                    case BOOLEAN -> ((SqlLiteral) node).booleanValue();
+                    case DECIMAL -> ((SqlLiteral) node).bigDecimalValue();
+                    default -> ((SqlLiteral) node).getValue();
+                };
                 list.add( value );
             } else if ( node instanceof SqlCall ) {
                 list.add( createListForArrays( ((SqlCall) node).getSqlOperandList() ) );
             } else {
-                throw new RuntimeException( "Invalid array" );
+                throw new GenericRuntimeException( "Invalid array" );
             }
         }
         return list;

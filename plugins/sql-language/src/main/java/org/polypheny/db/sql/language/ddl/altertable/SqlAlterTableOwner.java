@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,24 +17,18 @@
 package org.polypheny.db.sql.language.ddl.altertable;
 
 
-import static org.polypheny.db.util.Static.RESOURCE;
-
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
-import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.ddl.SqlAlterTable;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -78,22 +72,8 @@ public class SqlAlterTableOwner extends SqlAlterTable {
 
 
     @Override
-    public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        CatalogTable catalogTable = getCatalogTable( context, table );
-
-        if ( catalogTable.entityType != EntityType.ENTITY ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
-        }
-
-        if ( owner.names.size() != 1 ) {
-            throw new RuntimeException( "No FQDN allowed here: " + owner.toString() );
-        }
-
-        try {
-            DdlManager.getInstance().alterTableOwner( catalogTable, owner.getSimple() );
-        } catch ( UnknownUserException e ) {
-            throw CoreUtil.newContextException( owner.getPos(), RESOURCE.userNotFound( owner.getSimple() ) );
-        }
+    public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
+        throw new GenericRuntimeException( "This operation is not supported" );
     }
 
 }

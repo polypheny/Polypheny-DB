@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package org.polypheny.db.sql.language.util;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+import lombok.Getter;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.operators.OperatorTable;
@@ -34,6 +34,7 @@ import org.polypheny.db.sql.language.SqlOperator;
  */
 public class ListSqlOperatorTable implements OperatorTable {
 
+    @Getter
     private final List<SqlOperator> operatorList;
 
 
@@ -75,12 +76,6 @@ public class ListSqlOperatorTable implements OperatorTable {
         } else {
             return FunctionCategory.SYSTEM;
         }
-    }
-
-
-    @Override
-    public List<Operator> getOperatorList() {
-        return operatorList.stream().map( o -> o ).collect( Collectors.toList() );
     }
 
 }

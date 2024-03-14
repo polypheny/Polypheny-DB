@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,24 +17,19 @@
 package org.polypheny.db.sql.language.ddl.altertable;
 
 
-import static org.polypheny.db.util.Static.RESOURCE;
-
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.ddl.DdlManager;
-import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.ddl.SqlAlterTable;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -82,16 +77,10 @@ public class SqlAlterTableRenameColumn extends SqlAlterTable {
 
 
     @Override
-    public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        CatalogTable catalogTable = getCatalogTable( context, table );
+    public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
+        LogicalTable logicalTable = getTableFailOnEmpty( context, table );
 
-        try {
-            DdlManager.getInstance().renameColumn( catalogTable, columnOldName.getSimple(), columnNewName.getSimple(), statement );
-        } catch ( ColumnAlreadyExistsException e ) {
-            throw CoreUtil.newContextException( columnNewName.getPos(), RESOURCE.columnExists( columnNewName.getSimple() ) );
-        } catch ( ColumnNotExistsException e ) {
-            throw CoreUtil.newContextException( columnOldName.getPos(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
-        }
+        DdlManager.getInstance().renameColumn( logicalTable, columnOldName.getSimple(), columnNewName.getSimple(), statement );
     }
 
 }

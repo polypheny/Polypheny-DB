@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,12 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import lombok.Getter;
-import org.bson.BsonValue;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataContext.ParameterValue;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
@@ -38,32 +38,39 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
 import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCorrelVariable;
 import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexElementRef;
 import org.polypheny.db.rex.RexFieldAccess;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexLocalRef;
+import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexOver;
 import org.polypheny.db.rex.RexPatternFieldRef;
 import org.polypheny.db.rex.RexRangeRef;
 import org.polypheny.db.rex.RexSubQuery;
-import org.polypheny.db.rex.RexTableInputRef;
+import org.polypheny.db.rex.RexTableIndexRef;
 import org.polypheny.db.rex.RexVisitor;
-import org.polypheny.db.schema.ModelTrait;
+import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.type.IntervalPolyType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.util.Pair;
 
+@Slf4j
 public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<RexNode> {
 
     private final AtomicInteger index;
@@ -72,6 +79,8 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
 
     @Getter
     private final Map<Integer, Map<Integer, List<ParameterValue>>> docs;
+
+    private final List<OperatorName> excluded = List.of( OperatorName.MQL_REGEX_MATCH, OperatorName.MQL_QUERY_VALUE );
 
     @Getter
     private final List<AlgDataType> types;
@@ -89,14 +98,14 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
 
 
     @Override
-    public AlgNode visit( LogicalFilter oFilter ) {
+    public AlgNode visit( LogicalRelFilter oFilter ) {
         if ( asymmetric ) {
             return oFilter;
         }
 
-        LogicalFilter filter = (LogicalFilter) super.visit( oFilter );
+        LogicalRelFilter filter = (LogicalRelFilter) super.visit( oFilter );
         RexNode condition = filter.getCondition();
-        return new LogicalFilter(
+        return new LogicalRelFilter(
                 filter.getCluster(),
                 filter.getTraitSet(),
                 filter.getInput(),
@@ -130,21 +139,21 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
 
 
     @Override
-    public AlgNode visit( LogicalProject oProject ) {
+    public AlgNode visit( LogicalRelProject oProject ) {
         if ( asymmetric ) {
             return oProject;
         }
-        LogicalProject project = (LogicalProject) super.visit( oProject );
+        LogicalRelProject project = (LogicalRelProject) super.visit( oProject );
         List<RexNode> newProjects = new ArrayList<>();
         for ( RexNode node : oProject.getProjects() ) {
             newProjects.add( node.accept( this ) );
         }
-        return new LogicalProject(
+        return new LogicalRelProject(
                 project.getCluster(),
                 project.getTraitSet(),
                 project.getInput(),
                 newProjects,
-                project.getRowType() );
+                project.getTupleType() );
     }
 
 
@@ -168,15 +177,16 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
     public AlgNode visit( LogicalDocumentProject oProject ) {
         LogicalDocumentProject project = (LogicalDocumentProject) super.visit( oProject );
         List<RexNode> newProjects = new ArrayList<>();
-        for ( RexNode node : oProject.projects ) {
+        for ( RexNode node : oProject.includes.values() ) {
             newProjects.add( node.accept( this ) );
         }
         return new LogicalDocumentProject(
                 project.getCluster(),
                 project.getTraitSet(),
                 project.getInput(),
-                newProjects,
-                project.getRowType() );
+                Pair.zip( new ArrayList<>( oProject.includes.keySet() ), newProjects ).stream().collect( Collectors.toMap( e -> e.left, e -> e.right ) ),
+                project.excludes
+        );
     }
 
 
@@ -237,26 +247,26 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
 
 
     @Override
-    public AlgNode visit( LogicalModify initial ) {
+    public AlgNode visit( LogicalRelModify initial ) {
         if ( asymmetric ) {
             return visitAsymmetricModify( initial );
         }
 
-        LogicalModify modify = (LogicalModify) super.visit( initial );
+        LogicalRelModify modify = (LogicalRelModify) super.visit( initial );
         List<RexNode> newSourceExpression = null;
-        if ( modify.getSourceExpressionList() != null ) {
+        if ( modify.getSourceExpressions() != null ) {
             newSourceExpression = new ArrayList<>();
-            for ( RexNode node : modify.getSourceExpressionList() ) {
+            for ( RexNode node : modify.getSourceExpressions() ) {
                 newSourceExpression.add( node.accept( this ) );
             }
         }
         AlgNode input = modify.getInput();
-        if ( input instanceof LogicalValues ) {
+        if ( input instanceof LogicalRelValues ) {
             List<RexNode> projects = new ArrayList<>();
             boolean firstRow = true;
             HashMap<Integer, Integer> idxMapping = new HashMap<>();
-            this.batchSize = ((LogicalValues) input).tuples.size();
-            for ( ImmutableList<RexLiteral> node : ((LogicalValues) input).getTuples() ) {
+            this.batchSize = ((LogicalRelValues) input).tuples.size();
+            for ( ImmutableList<RexLiteral> node : ((LogicalRelValues) input).getTuples() ) {
                 int i = 0;
                 for ( RexLiteral literal : node ) {
                     int idx;
@@ -266,63 +276,61 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                     } else {
                         idx = idxMapping.get( i );
                     }
-                    AlgDataType type = input.getRowType().getFieldList().get( i ).getValue();
+                    AlgDataType type = input.getTupleType().getFields().get( i ).getType();
                     if ( firstRow ) {
                         projects.add( new RexDynamicParam( type, idx ) );
                     }
                     if ( !values.containsKey( idx ) ) {
                         types.add( type );
-                        values.put( idx, new ArrayList<>( ((LogicalValues) input).getTuples().size() ) );
+                        values.put( idx, new ArrayList<>( ((LogicalRelValues) input).getTuples().size() ) );
                     }
-                    values.get( idx ).add( new ParameterValue( idx, type, literal.getValueForQueryParameterizer() ) );
+                    values.get( idx ).add( new ParameterValue( idx, type, literal.getValue() ) );
                     i++;
                 }
                 firstRow = false;
             }
-            LogicalValues logicalValues = LogicalValues.createOneRow( input.getCluster() );
-            input = new LogicalProject(
+            LogicalRelValues logicalRelValues = LogicalRelValues.createOneRow( input.getCluster() );
+            input = new LogicalRelProject(
                     input.getCluster(),
                     input.getTraitSet(),
-                    logicalValues,
+                    logicalRelValues,
                     projects,
-                    input.getRowType()
+                    input.getTupleType()
             );
         }
-        return new LogicalModify(
+        return new LogicalRelModify(
                 modify.getCluster(),
                 modify.getTraitSet(),
-                modify.getTable(),
-                modify.getCatalogReader(),
+                modify.getEntity(),
                 input,
                 modify.getOperation(),
-                modify.getUpdateColumnList(),
+                modify.getUpdateColumns(),
                 newSourceExpression,
-                modify.isFlattened() )
-                .isStreamed( modify.isStreamed() );
+                modify.isFlattened() );
 
     }
 
 
-    public AlgNode visitAsymmetricModify( LogicalModify initial ) {
-        LogicalModify modify = (LogicalModify) super.visit( initial );
+    public AlgNode visitAsymmetricModify( LogicalRelModify initial ) {
+        LogicalRelModify modify = (LogicalRelModify) super.visit( initial );
         List<RexNode> newSourceExpression = null;
-        if ( modify.getSourceExpressionList() != null ) {
+        if ( modify.getSourceExpressions() != null ) {
             newSourceExpression = new ArrayList<>();
-            for ( RexNode node : modify.getSourceExpressionList() ) {
+            for ( RexNode node : modify.getSourceExpressions() ) {
                 newSourceExpression.add( node.accept( this ) );
             }
         }
         AlgNode input = modify.getInput();
-        if ( input instanceof LogicalValues ) {
+        if ( input instanceof LogicalRelValues ) {
             List<RexNode> projects = new ArrayList<>();
             boolean firstRow = true;
-            HashMap<Integer, Integer> idxMapping = new HashMap<>();
-            this.batchSize = ((LogicalValues) input).tuples.size();
+            Map<Integer, Integer> idxMapping = new HashMap<>();
+            this.batchSize = ((LogicalRelValues) input).tuples.size();
 
             int entires = docs.size();
-            HashMap<Integer, List<ParameterValue>> doc = new HashMap<>();
+            Map<Integer, List<ParameterValue>> doc = new HashMap<>();
 
-            for ( ImmutableList<RexLiteral> node : ((LogicalValues) input).getTuples() ) {
+            for ( ImmutableList<RexLiteral> node : ((LogicalRelValues) input).getTuples() ) {
                 int i = 0;
                 for ( RexLiteral literal : node ) {
                     int idx;
@@ -332,15 +340,15 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                     } else {
                         idx = idxMapping.get( i );
                     }
-                    AlgDataType type = input.getRowType().getFieldList().get( i ).getValue();
+                    AlgDataType type = input.getTupleType().getFields().get( i ).getType();
                     if ( firstRow ) {
                         projects.add( new RexDynamicParam( type, idx ) );
                     }
                     if ( !doc.containsKey( idx ) ) {
                         types.add( type );
-                        doc.put( idx, new ArrayList<>( ((LogicalValues) input).getTuples().size() ) );
+                        doc.put( idx, new ArrayList<>( ((LogicalRelValues) input).getTuples().size() ) );
                     }
-                    doc.get( idx ).add( new ParameterValue( idx, type, literal.getValueForQueryParameterizer() ) );
+                    doc.get( idx ).add( new ParameterValue( idx, type, literal.getValue() ) );
                     i++;
                 }
                 firstRow = false;
@@ -348,46 +356,42 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
 
             docs.put( entires, doc );
 
-            LogicalValues logicalValues = LogicalValues.createOneRow( input.getCluster() );
-            input = new LogicalProject(
+            LogicalRelValues logicalRelValues = LogicalRelValues.createOneRow( input.getCluster() );
+            input = new LogicalRelProject(
                     input.getCluster(),
                     input.getTraitSet(),
-                    logicalValues,
+                    logicalRelValues,
                     projects,
-                    input.getRowType()
+                    input.getTupleType()
             );
         }
-        return new LogicalModify(
+        return new LogicalRelModify(
                 modify.getCluster(),
                 modify.getTraitSet(),
-                modify.getTable(),
-                modify.getCatalogReader(),
+                modify.getEntity(),
                 input,
                 modify.getOperation(),
-                modify.getUpdateColumnList(),
+                modify.getUpdateColumns(),
                 newSourceExpression,
-                modify.isFlattened() )
-                .isStreamed( modify.isStreamed() );
+                modify.isFlattened() );
     }
 
 
     @Override
     public AlgNode visit( LogicalDocumentModify initial ) {
-        LogicalDocumentModify modify = (LogicalDocumentModify) super.visit( initial );
-        List<RexNode> newSourceExpression = null;
-        if ( modify.getUpdates() != null ) {
-            newSourceExpression = new ArrayList<>();
-            for ( RexNode node : modify.getUpdates() ) {
-                newSourceExpression.add( node.accept( this ) );
-            }
+        LogicalDocumentModify modify = super.visit( initial ).unwrap( LogicalDocumentModify.class ).orElseThrow();
+        List<RexNode> newSourceExpression = new ArrayList<>();
+        for ( RexNode node : modify.getUpdates().values() ) {
+            newSourceExpression.add( node.accept( this ) );
         }
+
         AlgNode input = modify.getInput();
-        if ( input instanceof LogicalDocumentValues ) {
-            List<RexNode> projects = new ArrayList<>();
+        if ( input.unwrap( LogicalDocumentValues.class ).isPresent() ) {
+            Map<String, RexDynamicParam> projects = new HashMap<>();
             boolean firstRow = true;
-            HashMap<Integer, Integer> idxMapping = new HashMap<>();
-            this.batchSize = ((LogicalDocumentValues) input).documentTuples.size();
-            for ( BsonValue node : ((LogicalDocumentValues) input).documentTuples ) {
+            Map<Integer, Integer> idxMapping = new HashMap<>();
+            this.batchSize = ((LogicalDocumentValues) input).documents.size();
+            for ( PolyValue node : input.unwrap( LogicalDocumentValues.class ).orElseThrow().documents ) {
                 int i = 0;
                 int idx;
 
@@ -398,35 +402,29 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                     idx = idxMapping.get( i );
                 }
 
-                AlgDataType type = input.getRowType().getFieldList().get( i ).getValue();
+                AlgDataType type = input.getTupleType().getFields().get( i ).getType();
                 if ( firstRow ) {
-                    projects.add( new RexDynamicParam( type, idx ) );
+                    projects.put( null, new RexDynamicParam( type, idx ) );
                 }
                 if ( !values.containsKey( idx ) ) {
                     types.add( type );
-                    values.put( idx, new ArrayList<>( ((LogicalDocumentValues) input).documentTuples.size() ) );
+                    values.put( idx, new ArrayList<>( input.unwrap( LogicalDocumentValues.class ).orElseThrow().documents.size() ) );
                 }
                 values.get( idx ).add( new ParameterValue( idx, type, node ) );
 
                 firstRow = false;
             }
-            LogicalDocumentValues logicalValues = LogicalDocumentValues.createOneRow( input.getCluster() );
-            input = new LogicalDocumentProject(
-                    input.getCluster(),
-                    input.getTraitSet(),
-                    logicalValues,
-                    projects,
-                    input.getRowType()
-            );
+            input = LogicalDocumentValues.createDynamic( input.getCluster(), List.copyOf( projects.values() ) );
         }
         return new LogicalDocumentModify(
                 modify.getTraitSet(),
-                modify.getCollection(),
-                modify.getCatalogReader(),
+                modify.getEntity(),
                 input,
                 modify.operation,
-                modify.getKeys(),
-                newSourceExpression );
+                modify.getUpdates(),
+                modify.getRemoves(),
+                modify.getRenames()//newSourceExpression
+        );
 
     }
 
@@ -436,7 +434,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
 
 
     @Override
-    public RexNode visitInputRef( RexInputRef inputRef ) {
+    public RexNode visitIndexRef( RexIndexRef inputRef ) {
         return inputRef;
     }
 
@@ -453,7 +451,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
             return literal;
         }
         int i = index.getAndIncrement();
-        values.put( i, Collections.singletonList( new ParameterValue( i, literal.getType(), literal.getValueForQueryParameterizer() ) ) );
+        values.put( i, Collections.singletonList( new ParameterValue( i, literal.getType(), literal.getValue() ) ) );
         types.add( literal.getType() );
         return new RexDynamicParam( literal.getType(), i );
     }
@@ -461,18 +459,18 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
 
     @Override
     public RexNode visitCall( RexCall call ) {
-        if ( call.getKind().belongsTo( Kind.MQL_KIND ) && call.op.getOperatorName() != OperatorName.MQL_QUERY_VALUE ) {
+        if ( excluded.contains( call.op.getOperatorName() ) ) {
             return call;
         } else if ( call.op.getKind() == Kind.ARRAY_VALUE_CONSTRUCTOR ) {
             int i = index.getAndIncrement();
-            List<Object> list = createListForArrays( call.operands );
+            PolyList<PolyValue> list = createListForArrays( call.operands );
             values.put( i, Collections.singletonList( new ParameterValue( i, call.type, list ) ) );
             types.add( call.type );
             return new RexDynamicParam( call.type, i );
         } else {
-            List<RexNode> newOperands = new LinkedList<>();
+            List<RexNode> newOperands = new ArrayList<>();
             for ( RexNode operand : call.operands ) {
-                if ( operand instanceof RexLiteral && ((RexLiteral) operand).getTypeName() == PolyType.SYMBOL ) {
+                if ( operand instanceof RexLiteral && ((RexLiteral) operand).getPolyType() == PolyType.SYMBOL ) {
                     // Do not replace with dynamic param
                     newOperands.add( operand );
                 } else {
@@ -484,15 +482,15 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
     }
 
 
-    private List<Object> createListForArrays( List<RexNode> operands ) {
-        List<Object> list = new ArrayList<>( operands.size() );
+    private PolyList<PolyValue> createListForArrays( List<RexNode> operands ) {
+        PolyList<PolyValue> list = new PolyList<>();
         for ( RexNode node : operands ) {
             if ( node instanceof RexLiteral ) {
-                list.add( ((RexLiteral) node).getValueForQueryParameterizer() );
+                list.add( ((RexLiteral) node).getValue() );
             } else if ( node instanceof RexCall ) {
                 list.add( createListForArrays( ((RexCall) node).operands ) );
             } else {
-                throw new RuntimeException( "Invalid array" );
+                throw new GenericRuntimeException( "Invalid array" );
             }
         }
         return list;
@@ -501,7 +499,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
 
     @Override
     public RexNode visitOver( RexOver over ) {
-        List<RexNode> newOperands = new LinkedList<>();
+        List<RexNode> newOperands = new ArrayList<>();
         for ( RexNode operand : over.operands ) {
             newOperands.add( operand.accept( this ) );
         }
@@ -535,7 +533,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
 
     @Override
     public RexNode visitSubQuery( RexSubQuery subQuery ) {
-        List<RexNode> newOperands = new LinkedList<>();
+        List<RexNode> newOperands = new ArrayList<>();
         for ( RexNode operand : subQuery.operands ) {
             newOperands.add( operand.accept( this ) );
         }
@@ -544,7 +542,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
 
 
     @Override
-    public RexNode visitTableInputRef( RexTableInputRef fieldRef ) {
+    public RexNode visitTableInputRef( RexTableIndexRef fieldRef ) {
         return fieldRef;
     }
 
@@ -552,6 +550,18 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
     @Override
     public RexNode visitPatternFieldRef( RexPatternFieldRef fieldRef ) {
         return fieldRef;
+    }
+
+
+    @Override
+    public RexNode visitNameRef( RexNameRef nameRef ) {
+        return nameRef;
+    }
+
+
+    @Override
+    public RexNode visitElementRef( RexElementRef rexElementRef ) {
+        return rexElementRef;
     }
 
 }

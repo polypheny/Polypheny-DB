@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -130,8 +130,8 @@ public class SqlOverlapsOperator extends SqlBinaryOperator {
         final AlgDataType t0 = callBinding.getOperandType( 0 );
         final AlgDataType t1 = callBinding.getOperandType( 1 );
         if ( !PolyTypeUtil.isDatetime( t1 ) ) {
-            final AlgDataType t00 = t0.getFieldList().get( 0 ).getType();
-            final AlgDataType t10 = t1.getFieldList().get( 0 ).getType();
+            final AlgDataType t00 = t0.getFields().get( 0 ).getType();
+            final AlgDataType t10 = t1.getFields().get( 0 ).getType();
             if ( !PolyTypeUtil.sameNamedType( t00, t10 ) ) {
                 if ( throwOnFailure ) {
                     throw callBinding.newValidationSignatureError();

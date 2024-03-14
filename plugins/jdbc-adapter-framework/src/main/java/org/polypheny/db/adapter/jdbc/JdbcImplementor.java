@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,11 @@
 package org.polypheny.db.adapter.jdbc;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.function.Function;
+import lombok.Getter;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.jdbc.rel2sql.AlgToSqlConverter;
 import org.polypheny.db.algebra.AlgNode;
@@ -42,76 +47,42 @@ import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.util.Util;
 
-import java.util.List;
-
 
 /**
  * State for generating a SQL statement.
  */
+@Getter
 public class JdbcImplementor extends AlgToSqlConverter {
 
-    private final JdbcSchema schema;
+    private final ImmutableMap<Class<? extends AlgNode>, Function<AlgNode, Result>> handlers;
 
 
     public JdbcImplementor( SqlDialect dialect, JavaTypeFactory typeFactory, JdbcSchema schema ) {
         super( dialect );
         Util.discard( typeFactory );
-        this.schema = schema;
+
+        handlers = ImmutableMap.copyOf( new HashMap<>() {{
+            putAll( JdbcImplementor.super.getHandlers() );
+            put( JdbcScan.class, s -> accept( (JdbcScan) s ) );
+        }} );
     }
 
 
-    /**
-     * @see #dispatch
-     */
-    public Result visit( JdbcScan scan ) {
+    public Result accept( JdbcScan scan ) {
         return result( scan.jdbcTable.physicalTableName(), ImmutableList.of( Clause.FROM ), scan, null );
     }
 
 
     public Result implement( AlgNode node ) {
-        return dispatch( node );
+        return handle( node );
     }
 
 
     @Override
-    public SqlIdentifier getPhysicalTableName( List<String> tableNames ) {
-        JdbcTable table;
-        if ( tableNames.size() == 1 ) {
-            // only table name
-            // NOTICE MV: I think, this case should no longer happen because there should always be a schema in the form
-            //  <adapterUniqueName>_<logicalSchema>_<physicalSchema> be set.
-            // TODO MV: Consider removing this case
-            table = schema.getTableMap().get( tableNames.get( 0 ) );
-        } else if ( tableNames.size() == 2 ) {
-            // schema name and table name
-            table = schema.getTableMap().get( tableNames.get( 1 ) );
-        } else {
-            throw new RuntimeException( "Unexpected number of names: " + tableNames.size() );
-        }
-        if ( table == null ) {
-            throw new RuntimeException( "Unknown table: [ " + String.join( ", ", tableNames ) + " ] | Table Map : [ " + String.join( ", ", schema.getTableMap().keySet() ) );
-        }
-        return table.physicalTableName();
+    public SqlIdentifier getPhysicalTableName( JdbcTable physical ) {
+        return new SqlIdentifier( Arrays.asList( physical.namespaceName, physical.name ), ParserPos.ZERO );
     }
 
-
-    @Override
-    public SqlIdentifier getPhysicalColumnName( List<String> tableNames, String columnName ) {
-        if ( tableNames.size() == 1 ) {
-            // only column name
-            return schema.getTableMap().get( tableNames.get( 0 ) ).physicalColumnName( columnName );
-        } else if ( tableNames.size() == 2 ) {
-            // table name and column name
-            JdbcTable table = schema.getTableMap().get( tableNames.get( 1 ) );
-            if ( table.hasPhysicalColumnName( columnName ) ) {
-                return schema.getTableMap().get( tableNames.get( 1 ) ).physicalColumnName( columnName );
-            } else {
-                return new SqlIdentifier( "_" + columnName, ParserPos.ZERO );
-            }
-        } else {
-            throw new RuntimeException( "Unexpected number of names: " + tableNames.size() );
-        }
-    }
 
 }
 

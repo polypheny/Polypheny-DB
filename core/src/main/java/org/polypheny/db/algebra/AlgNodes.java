@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,7 +85,7 @@ public class AlgNodes {
         @Override
         public int compare( AlgNode o1, AlgNode o2 ) {
             // Compare on field count first. It is more stable than id (when rules are added to the set of active rules).
-            final int c = Utilities.compare( o1.getRowType().getFieldCount(), o2.getRowType().getFieldCount() );
+            final int c = Utilities.compare( o1.getTupleType().getFieldCount(), o2.getTupleType().getFieldCount() );
             if ( c != 0 ) {
                 return -c;
             }

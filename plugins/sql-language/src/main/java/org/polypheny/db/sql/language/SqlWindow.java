@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import org.polypheny.db.sql.language.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.language.validate.SqlValidatorScope;
 import org.polypheny.db.sql.language.validate.SqlValidatorUtil;
 import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.ControlFlowException;
 import org.polypheny.db.util.ImmutableNullableList;
@@ -703,10 +704,10 @@ public class SqlWindow extends SqlCall implements Window {
                 new SqlNodeList(
                         ImmutableList.of( new SqlIdentifier( columnName, ParserPos.ZERO ) ),
                         ParserPos.ZERO ),
-                SqlLiteral.createBoolean( true, ParserPos.ZERO ),
-                (SqlNode) SqlWindow.createCurrentRow( ParserPos.ZERO ),
-                (SqlNode) SqlWindow.createCurrentRow( ParserPos.ZERO ),
-                SqlLiteral.createBoolean( true, ParserPos.ZERO ),
+                SqlLiteral.createBoolean( PolyBoolean.of( true ), ParserPos.ZERO ),
+                SqlWindow.createCurrentRow( ParserPos.ZERO ),
+                SqlWindow.createCurrentRow( ParserPos.ZERO ),
+                SqlLiteral.createBoolean( PolyBoolean.of( true ), ParserPos.ZERO ),
                 ParserPos.ZERO );
     }
 
@@ -724,10 +725,11 @@ public class SqlWindow extends SqlCall implements Window {
                 new SqlNodeList(
                         ImmutableList.of( new SqlIdentifier( columnName, ParserPos.ZERO ) ),
                         ParserPos.ZERO ),
-                SqlLiteral.createBoolean( false, ParserPos.ZERO ),
-                (SqlNode) SqlWindow.createUnboundedPreceding( ParserPos.ZERO ),
+                SqlLiteral.createBoolean( PolyBoolean.of( false ), ParserPos.ZERO ),
+
+                SqlWindow.createUnboundedPreceding( ParserPos.ZERO ),
                 SqlWindow.createCurrentRow( ParserPos.ZERO ),
-                SqlLiteral.createBoolean( false, ParserPos.ZERO ),
+                SqlLiteral.createBoolean( PolyBoolean.of( false ), ParserPos.ZERO ),
                 ParserPos.ZERO );
     }
 

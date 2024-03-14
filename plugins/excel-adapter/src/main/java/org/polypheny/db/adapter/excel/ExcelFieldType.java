@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,32 +18,47 @@ package org.polypheny.db.adapter.excel;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.poi.ss.usermodel.Cell;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyBinary;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyFloat;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.temporal.PolyDate;
+import org.polypheny.db.type.entity.temporal.PolyTime;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 
 /**
- * Type of a field in a Excel file.
+ * Type of a field in an Excel file.
  * <p>
- * Usually, and unless specified explicitly in the header row, a field is of type {@link #STRING}. But specifying the field type in the header row makes it easier to write SQL.
+ * Usually, and unless specified explicitly in the header row, a field is of type {@link #STRING}.
+ * But specifying the field type in the header row makes it easier to write SQL.
  */
-enum ExcelFieldType {
-    STRING( String.class, "string" ),
-    BOOLEAN( Primitive.BOOLEAN ),
-    BYTE( Primitive.BYTE ),
-    CHAR( Primitive.CHAR ),
-    SHORT( Primitive.SHORT ),
-    INT( Primitive.INT ),
-    LONG( Primitive.LONG ),
-    FLOAT( Primitive.FLOAT ),
-    DOUBLE( Primitive.DOUBLE ),
-    DATE( java.sql.Date.class, "date" ),
-    TIME( java.sql.Time.class, "time" ),
-    TIMESTAMP( java.sql.Timestamp.class, "timestamp" );
+public enum ExcelFieldType {
+    STRING( PolyString.class ),
+    BOOLEAN( PolyBoolean.class ),
+    BYTE( PolyBinary.class ),
+    CHAR( PolyString.class ),
+    SHORT( PolyInteger.class ),
+    INT( PolyInteger.class ),
+    LONG( PolyLong.class ),
+    FLOAT( PolyFloat.class ),
+    DOUBLE( PolyDouble.class ),
+    DATE( PolyDate.class ),
+    TIME( PolyTime.class ),
+    TIMESTAMP( PolyTimestamp.class );
 
-    private final Class clazz;
+    @NotNull
+    private final Class<? extends PolyValue> clazz;
+    @NotNull
     private final String simpleName;
 
     private static final Map<String, ExcelFieldType> MAP = new HashMap<>();
@@ -56,42 +71,31 @@ enum ExcelFieldType {
     }
 
 
-    ExcelFieldType( Primitive primitive ) {
-        this( primitive.boxClass, primitive.primitiveClass.getSimpleName() );
+    ExcelFieldType( Class<? extends PolyValue> clazz ) {
+        this( clazz, clazz.getSimpleName().toLowerCase().replace( "poly", "" ) );
     }
 
 
-    ExcelFieldType( Class clazz, String simpleName ) {
+    ExcelFieldType( @NotNull Class<? extends PolyValue> clazz, @NotNull String simpleName ) {
         this.clazz = clazz;
         this.simpleName = simpleName;
     }
 
 
     public static ExcelFieldType getExcelFieldType( PolyType type ) {
-        switch ( type ) {
-            case BOOLEAN:
-                return ExcelFieldType.BOOLEAN;
-            case VARBINARY:
-                return ExcelFieldType.BYTE;
-            case INTEGER:
-                return ExcelFieldType.INT;
-            case BIGINT:
-                return ExcelFieldType.LONG;
-            case REAL:
-                return ExcelFieldType.FLOAT;
-            case DOUBLE:
-                return ExcelFieldType.DOUBLE;
-            case VARCHAR:
-                return ExcelFieldType.STRING;
-            case DATE:
-                return ExcelFieldType.DATE;
-            case TIME:
-                return ExcelFieldType.TIME;
-            case TIMESTAMP:
-                return ExcelFieldType.TIMESTAMP;
-            default:
-                throw new RuntimeException( "Unsupported datatype: " + type.name() );
-        }
+        return switch ( type ) {
+            case BOOLEAN -> ExcelFieldType.BOOLEAN;
+            case VARBINARY -> ExcelFieldType.BYTE;
+            case INTEGER -> ExcelFieldType.INT;
+            case BIGINT -> ExcelFieldType.LONG;
+            case REAL -> ExcelFieldType.FLOAT;
+            case DOUBLE -> ExcelFieldType.DOUBLE;
+            case VARCHAR -> ExcelFieldType.STRING;
+            case DATE -> ExcelFieldType.DATE;
+            case TIME -> ExcelFieldType.TIME;
+            case TIMESTAMP -> ExcelFieldType.TIMESTAMP;
+            default -> throw new GenericRuntimeException( "Unsupported datatype: " + type.name() );
+        };
     }
 
 
@@ -99,11 +103,6 @@ enum ExcelFieldType {
         AlgDataType javaType = typeFactory.createJavaType( clazz );
         AlgDataType sqlType = typeFactory.createPolyType( javaType.getPolyType() );
         return typeFactory.createTypeWithNullability( sqlType, true );
-    }
-
-
-    public static ExcelFieldType of( String typeString ) {
-        return MAP.get( typeString );
     }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,8 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 
 public class CottontailValuesRule extends CottontailConverterRule {
 
-    CottontailValuesRule( CottontailConvention out, AlgBuilderFactory algBuilderFactory ) {
-        super( Values.class, r -> true, Convention.NONE, out, algBuilderFactory, "CottontailValuesRule:" + out.getName() );
+    CottontailValuesRule( AlgBuilderFactory algBuilderFactory ) {
+        super( Values.class, r -> true, Convention.NONE, CottontailConvention.INSTANCE, algBuilderFactory, "CottontailValuesRule" );
     }
 
 
@@ -37,7 +37,7 @@ public class CottontailValuesRule extends CottontailConverterRule {
 
         return new CottontailValues(
                 values.getCluster(),
-                values.getRowType(),
+                values.getTupleType(),
                 values.getTuples(),
                 values.getTraitSet().replace( out ) );
     }

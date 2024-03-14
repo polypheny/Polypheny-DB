@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,18 +33,16 @@
 
 package org.polypheny.db.adapter.jdbc;
 
-import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.schema.ModelTrait;
+import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.tools.AlgBuilderFactory;
-
-import java.util.function.Predicate;
 
 
 /**
- * Rule to convert a relational expression from {@link JdbcConvention} to {@link EnumerableConvention}.
+ * Rule to convert an algebra expression from {@link JdbcConvention} to {@link EnumerableConvention}.
  */
 public class JdbcToEnumerableConverterRule extends ConverterRule {
 
@@ -54,11 +52,11 @@ public class JdbcToEnumerableConverterRule extends ConverterRule {
     public JdbcToEnumerableConverterRule( JdbcConvention out, AlgBuilderFactory algBuilderFactory ) {
         super(
                 AlgNode.class,
-                (Predicate<AlgNode>) r -> true,
+                r -> true,
                 out,
                 EnumerableConvention.INSTANCE,
                 algBuilderFactory,
-                "JdbcToEnumerableConverterRule:" + out );
+                JdbcToEnumerableConverterRule.class.getSimpleName() + ":" + out );
     }
 
 

@@ -13,7 +13,6 @@ dependencies {
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":plugins:sql-language", configuration: "tests")
-
 }
 
 
@@ -21,7 +20,6 @@ sourceSets {
     main {
         java {
             srcDirs = ["src/main/java"]
-            outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {
             srcDirs = ["src/main/resources"]
@@ -31,7 +29,7 @@ sourceSets {
     test {
         java {
             srcDirs = ["src/test/java"]
-            outputDir = file(project.buildDir.absolutePath + "/test-classes")
+            destinationDirectory.set(file(project.buildDir.absolutePath + "/test-classes"))
         }
         resources {
             srcDirs = ["src/test/resources"]
@@ -75,5 +73,5 @@ javadoc {
 }
 
 licensee {
-    allowDependency('org.hsqldb', 'hsqldb', '2.6.1') { because 'BSD 3-Clause' }
+    allowDependency('org.hsqldb', 'hsqldb', '2.7.2') { because 'BSD 3-Clause' }
 }

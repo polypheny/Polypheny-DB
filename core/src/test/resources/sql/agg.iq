@@ -18,7 +18,7 @@
 !use post
 !set outputformat mysql
 
-# count(*) returns number of rows in table
+# count(*) returns number of rows in entity
 select count(ename) as c from emp;
 +---+
 | C |
@@ -1450,9 +1450,9 @@ EnumerableAggregate(group=[{0}], CF=[COUNT() FILTER $1], C=[COUNT()])
   EnumerableCalc(expr#0..1=[{inputs}], expr#2=['CLERK':VARCHAR(9)], expr#3=[=($t0, $t2)], expr#4=[IS TRUE($t3)], DEPTNO=[$t1], $f1=[$t4])
     EnumerableUnion(all=[true])
       EnumerableCalc(expr#0..7=[{inputs}], expr#8=[20], expr#9=[<($t7, $t8)], JOB=[$t2], DEPTNO=[$t7], $condition=[$t9])
-        EnumerableScan(table=[[scott, EMP]])
+        EnumerableScan(entity=[[scott, EMP]])
       EnumerableCalc(expr#0..7=[{inputs}], expr#8=[20], expr#9=[>($t7, $t8)], JOB=[$t2], DEPTNO=[$t7], $condition=[$t9])
-        EnumerableScan(table=[[scott, EMP]])
+        EnumerableScan(entity=[[scott, EMP]])
 !plan
 
 # [CALCITE-751] Aggregate join transpose
@@ -1469,9 +1469,9 @@ from "scott".emp join "scott".dept using (deptno);
 EnumerableAggregate(group=[{}], EXPR$0=[COUNT()])
   EnumerableJoin(condition=[=($0, $2)], joinType=[inner])
     EnumerableCalc(expr#0..2=[{inputs}], DEPTNO=[$t0])
-      EnumerableScan(table=[[scott, DEPT]])
+      EnumerableScan(entity=[[scott, DEPT]])
     EnumerableCalc(expr#0..7=[{inputs}], EMPNO=[$t0], DEPTNO=[$t7])
-      EnumerableScan(table=[[scott, EMP]])
+      EnumerableScan(entity=[[scott, EMP]])
 !plan
 
 # Push sum: splits into sum * count
@@ -1488,9 +1488,9 @@ from "scott".emp join "scott".dept using (deptno);
 EnumerableAggregate(group=[{}], EXPR$0=[SUM($2)])
   EnumerableJoin(condition=[=($0, $3)], joinType=[inner])
     EnumerableCalc(expr#0..2=[{inputs}], DEPTNO=[$t0])
-      EnumerableScan(table=[[scott, DEPT]])
+      EnumerableScan(entity=[[scott, DEPT]])
     EnumerableCalc(expr#0..7=[{inputs}], EMPNO=[$t0], SAL=[$t5], DEPTNO=[$t7])
-      EnumerableScan(table=[[scott, EMP]])
+      EnumerableScan(entity=[[scott, EMP]])
 !plan
 
 # Push sum; no aggregate needed after join
@@ -1511,9 +1511,9 @@ EnumerableCalc(expr#0..2=[{inputs}], EXPR$0=[$t2])
   EnumerableAggregate(group=[{0, 3}], EXPR$0=[SUM($2)])
     EnumerableJoin(condition=[=($0, $3)], joinType=[inner])
       EnumerableCalc(expr#0..2=[{inputs}], DEPTNO=[$t0])
-        EnumerableScan(table=[[scott, DEPT]])
+        EnumerableScan(entity=[[scott, DEPT]])
       EnumerableCalc(expr#0..7=[{inputs}], EMPNO=[$t0], SAL=[$t5], DEPTNO=[$t7])
-        EnumerableScan(table=[[scott, EMP]])
+        EnumerableScan(entity=[[scott, EMP]])
 !plan
 
 # Push sum; group by only one of the join keys
@@ -1534,9 +1534,9 @@ EnumerableCalc(expr#0..1=[{inputs}], EXPR$0=[$t1])
   EnumerableAggregate(group=[{3}], EXPR$0=[SUM($2)])
     EnumerableJoin(condition=[=($0, $3)], joinType=[inner])
       EnumerableCalc(expr#0..2=[{inputs}], DEPTNO=[$t0])
-        EnumerableScan(table=[[scott, DEPT]])
+        EnumerableScan(entity=[[scott, DEPT]])
       EnumerableCalc(expr#0..7=[{inputs}], EMPNO=[$t0], SAL=[$t5], DEPTNO=[$t7])
-        EnumerableScan(table=[[scott, EMP]])
+        EnumerableScan(entity=[[scott, EMP]])
 !plan
 
 # Push min; Join-Aggregate is optimized to SemiJoin
@@ -1557,9 +1557,9 @@ EnumerableCalc(expr#0..1=[{inputs}], EXPR$0=[$t1])
   EnumerableAggregate(group=[{3}], EXPR$0=[MIN($2)])
     EnumerableJoin(condition=[=($0, $3)], joinType=[inner])
       EnumerableCalc(expr#0..2=[{inputs}], DEPTNO=[$t0])
-        EnumerableScan(table=[[scott, DEPT]])
+        EnumerableScan(entity=[[scott, DEPT]])
       EnumerableCalc(expr#0..7=[{inputs}], EMPNO=[$t0], SAL=[$t5], DEPTNO=[$t7])
-        EnumerableScan(table=[[scott, EMP]])
+        EnumerableScan(entity=[[scott, EMP]])
 !plan
 
 # Push sum and count
@@ -1576,9 +1576,9 @@ from "scott".emp join "scott".dept using (deptno);
 EnumerableAggregate(group=[{}], C=[COUNT()], S=[SUM($2)])
   EnumerableJoin(condition=[=($0, $3)], joinType=[inner])
     EnumerableCalc(expr#0..2=[{inputs}], DEPTNO=[$t0])
-      EnumerableScan(table=[[scott, DEPT]])
+      EnumerableScan(entity=[[scott, DEPT]])
     EnumerableCalc(expr#0..7=[{inputs}], EMPNO=[$t0], SAL=[$t5], DEPTNO=[$t7])
-      EnumerableScan(table=[[scott, EMP]])
+      EnumerableScan(entity=[[scott, EMP]])
 !plan
 
 # Push sum and count, group by join key
@@ -1599,9 +1599,9 @@ EnumerableCalc(expr#0..2=[{inputs}], C=[$t1], S=[$t2])
   EnumerableAggregate(group=[{3}], C=[COUNT()], S=[SUM($2)])
     EnumerableJoin(condition=[=($0, $3)], joinType=[inner])
       EnumerableCalc(expr#0..2=[{inputs}], DEPTNO=[$t0])
-        EnumerableScan(table=[[scott, DEPT]])
+        EnumerableScan(entity=[[scott, DEPT]])
       EnumerableCalc(expr#0..7=[{inputs}], EMPNO=[$t0], SAL=[$t5], DEPTNO=[$t7])
-        EnumerableScan(table=[[scott, EMP]])
+        EnumerableScan(entity=[[scott, EMP]])
 !plan
 
 # Push sum and count, group by join key plus another column
@@ -1627,9 +1627,9 @@ EnumerableCalc(expr#0..3=[{inputs}], C=[$t2], S=[$t3])
   EnumerableAggregate(group=[{0, 2}], C=[COUNT()], S=[SUM($3)])
     EnumerableJoin(condition=[=($0, $4)], joinType=[inner])
       EnumerableCalc(expr#0..2=[{inputs}], DEPTNO=[$t0])
-        EnumerableScan(table=[[scott, DEPT]])
+        EnumerableScan(entity=[[scott, DEPT]])
       EnumerableCalc(expr#0..7=[{inputs}], EMPNO=[$t0], JOB=[$t2], SAL=[$t5], DEPTNO=[$t7])
-        EnumerableScan(table=[[scott, EMP]])
+        EnumerableScan(entity=[[scott, EMP]])
 !plan
 
 # Push sum and count, group by non-join column
@@ -1651,9 +1651,9 @@ EnumerableCalc(expr#0..2=[{inputs}], C=[$t1], S=[$t2])
   EnumerableAggregate(group=[{2}], C=[COUNT()], S=[SUM($3)])
     EnumerableJoin(condition=[=($0, $4)], joinType=[inner])
       EnumerableCalc(expr#0..2=[{inputs}], DEPTNO=[$t0])
-        EnumerableScan(table=[[scott, DEPT]])
+        EnumerableScan(entity=[[scott, DEPT]])
       EnumerableCalc(expr#0..7=[{inputs}], EMPNO=[$t0], JOB=[$t2], SAL=[$t5], DEPTNO=[$t7])
-        EnumerableScan(table=[[scott, EMP]])
+        EnumerableScan(entity=[[scott, EMP]])
 !plan
 
 # Push count and sum, group by superset of join key
@@ -1679,9 +1679,9 @@ EnumerableCalc(expr#0..3=[{inputs}], C=[$t2], S=[$t3])
   EnumerableAggregate(group=[{0, 2}], C=[COUNT()], S=[SUM($3)])
     EnumerableJoin(condition=[=($0, $4)], joinType=[inner])
       EnumerableCalc(expr#0..2=[{inputs}], DEPTNO=[$t0])
-        EnumerableScan(table=[[scott, DEPT]])
+        EnumerableScan(entity=[[scott, DEPT]])
       EnumerableCalc(expr#0..7=[{inputs}], EMPNO=[$t0], JOB=[$t2], SAL=[$t5], DEPTNO=[$t7])
-        EnumerableScan(table=[[scott, EMP]])
+        EnumerableScan(entity=[[scott, EMP]])
 !plan
 
 # Push count and sum, group by a column being aggregated
@@ -1710,9 +1710,9 @@ EnumerableCalc(expr#0..2=[{inputs}], C=[$t1], S=[$t2])
   EnumerableAggregate(group=[{2}], C=[COUNT()], S=[SUM($2)])
     EnumerableJoin(condition=[=($0, $3)], joinType=[inner])
       EnumerableCalc(expr#0..2=[{inputs}], DEPTNO=[$t0])
-        EnumerableScan(table=[[scott, DEPT]])
+        EnumerableScan(entity=[[scott, DEPT]])
       EnumerableCalc(expr#0..7=[{inputs}], EMPNO=[$t0], SAL=[$t5], DEPTNO=[$t7])
-        EnumerableScan(table=[[scott, EMP]])
+        EnumerableScan(entity=[[scott, EMP]])
 !plan
 
 # Push sum, self-join, returning one row with a null value
@@ -1849,9 +1849,9 @@ using (deptno);
 EnumerableCalc(expr#0..2=[{inputs}], EMPNO=[$t1], DEPTNO=[$t0])
   EnumerableJoin(condition=[=($0, $2)], joinType=[inner])
     EnumerableCalc(expr#0..2=[{inputs}], DEPTNO=[$t0])
-      EnumerableScan(table=[[scott, DEPT]])
+      EnumerableScan(entity=[[scott, DEPT]])
     EnumerableCalc(expr#0..7=[{inputs}], EMPNO=[$t0], DEPTNO=[$t7])
-      EnumerableScan(table=[[scott, EMP]])
+      EnumerableScan(entity=[[scott, EMP]])
 !plan
 
 # [CALCITE-1016] "GROUP BY constant" on empty relation should return 0 rows
@@ -1897,7 +1897,7 @@ select count('1') from "scott".emp where false;
 
 !ok
 
-# As above, but on VALUES rather than table
+# As above, but on VALUES rather than entity
 # Should return 0 rows
 select '1' from (values (1, 2), (3, 4)) where false group by 1;
 +--------+
@@ -2006,7 +2006,7 @@ group by deptno, job;
 EnumerableCalc(expr#0..2=[{inputs}], JOB=[$t0], SUM_SAL=[$t2], DEPTNO=[$t1])
   EnumerableAggregate(group=[{2, 7}], SUM_SAL=[SUM($5)])
     EnumerableCalc(expr#0..7=[{inputs}], expr#8=[CAST($t7):INTEGER], expr#9=[10], expr#10=[=($t8, $t9)], proj#0..7=[{exprs}], $condition=[$t10])
-      EnumerableScan(table=[[scott, EMP]])
+      EnumerableScan(entity=[[scott, EMP]])
 !plan
 !}
 
@@ -2171,7 +2171,7 @@ EnumerableCalc(expr#0..3=[{inputs}], expr#4=[CAST($t1):BIGINT NOT NULL], EXPR$0=
   EnumerableAggregate(group=[{}], EXPR$0=[COUNT($0) FILTER $4], EXPR$1=[MIN($1) FILTER $5], EXPR$2=[MIN($2) FILTER $5], EXPR$3=[MIN($3) FILTER $5])
     EnumerableCalc(expr#0..4=[{inputs}], expr#5=[0], expr#6=[=($t4, $t5)], expr#7=[1], expr#8=[=($t4, $t7)], proj#0..3=[{exprs}], $g_0=[$t6], $g_1=[$t8])
       EnumerableAggregate(group=[{0}], groups=[[{0}, {}]], EXPR$1=[COUNT($5)], EXPR$2=[MIN($5)], EXPR$3=[MAX($5)], $g=[GROUPING($0)])
-        EnumerableScan(table=[[scott, EMP]])
+        EnumerableScan(entity=[[scott, EMP]])
 !plan
 
 # [CALCITE-1930] AggregateExpandDistinctAggregateRules should handle multiple aggregate calls with same input ref
@@ -2189,7 +2189,7 @@ EnumerableCalc(expr#0..3=[{inputs}], expr#4=[CAST($t1):BIGINT NOT NULL], EXPR$0=
   EnumerableAggregate(group=[{}], EXPR$0=[COUNT($0) FILTER $4], EXPR$1=[MIN($1) FILTER $5], EXPR$2=[MIN($2) FILTER $5], EXPR$3=[MIN($3) FILTER $5])
     EnumerableCalc(expr#0..4=[{inputs}], expr#5=[0], expr#6=[=($t4, $t5)], expr#7=[1], expr#8=[=($t4, $t7)], proj#0..3=[{exprs}], $g_0=[$t6], $g_1=[$t8])
       EnumerableAggregate(group=[{7}], groups=[[{7}, {}]], EXPR$1=[COUNT($2)], EXPR$2=[MIN($5)], EXPR$3=[MAX($5)], $g=[GROUPING($7)])
-        EnumerableScan(table=[[scott, EMP]])
+        EnumerableScan(entity=[[scott, EMP]])
 !plan
 
 # [CALCITE-1930] AggregateExpandDistinctAggregateRules should handle multiple aggregate calls with same input ref
@@ -2213,7 +2213,7 @@ EnumerableCalc(expr#0..4=[{inputs}], expr#5=[CAST($t2):BIGINT NOT NULL], proj#0.
   EnumerableAggregate(group=[{0}], EXPR$1=[COUNT($1) FILTER $5], EXPR$2=[MIN($2) FILTER $6], EXPR$3=[MIN($3) FILTER $6], EXPR$4=[MIN($4) FILTER $6])
     EnumerableCalc(expr#0..5=[{inputs}], expr#6=[0], expr#7=[=($t5, $t6)], expr#8=[1], expr#9=[=($t5, $t8)], proj#0..4=[{exprs}], $g_0=[$t7], $g_1=[$t9])
       EnumerableAggregate(group=[{3, 7}], groups=[[{3, 7}, {3}]], EXPR$2=[COUNT($2)], EXPR$3=[MIN($5)], EXPR$4=[MAX($5)], $g=[GROUPING($3, $7)])
-        EnumerableScan(table=[[scott, EMP]])
+        EnumerableScan(entity=[[scott, EMP]])
 !plan
 
 # [CALCITE-1930] AggregateExpandDistinctAggregateRules should handle multiple aggregate calls with same input ref
@@ -2236,7 +2236,7 @@ select MGR, count(distinct DEPTNO, JOB), MIN(SAL), MAX(SAL) from "scott".emp gro
 EnumerableAggregate(group=[{0}], EXPR$1=[COUNT($1, $2) FILTER $5], EXPR$2=[MIN($3) FILTER $6], EXPR$3=[MIN($4) FILTER $6])
   EnumerableCalc(expr#0..5=[{inputs}], expr#6=[0], expr#7=[=($t5, $t6)], expr#8=[3], expr#9=[=($t5, $t8)], MGR=[$t1], DEPTNO=[$t2], JOB=[$t0], EXPR$2=[$t3], EXPR$3=[$t4], $g_0=[$t7], $g_3=[$t9])
     EnumerableAggregate(group=[{2, 3, 7}], groups=[[{2, 3, 7}, {3}]], EXPR$2=[MIN($5)], EXPR$3=[MAX($5)], $g=[GROUPING($3, $7, $2)])
-      EnumerableScan(table=[[scott, EMP]])
+      EnumerableScan(entity=[[scott, EMP]])
 !plan
 
 # [CALCITE-2366] Add support for ANY_VALUE function
@@ -2252,7 +2252,7 @@ SELECT any_value(empno) as anyempno from "scott".emp;
 !ok
 
 EnumerableAggregate(group=[{}], ANYEMPNO=[ANY_VALUE($0)])
-  EnumerableScan(table=[[scott, EMP]])
+  EnumerableScan(entity=[[scott, EMP]])
 !plan
 
 # [CALCITE-2366] Add support for ANY_VALUE function
@@ -2280,7 +2280,7 @@ SELECT any_value(empno) as anyempno from "scott".emp group by sal;
 
 EnumerableCalc(expr#0..1=[{inputs}], ANYEMPNO=[$t1])
   EnumerableAggregate(group=[{5}], ANYEMPNO=[ANY_VALUE($0)])
-    EnumerableScan(table=[[scott, EMP]])
+    EnumerableScan(entity=[[scott, EMP]])
 !plan
 
 # [CALCITE-1776, CALCITE-2402] REGR_COUNT
@@ -2297,7 +2297,7 @@ from "scott".emp;
 !ok
 
 EnumerableAggregate(group=[{}], REGR_COUNT(COMM, SAL)=[REGR_COUNT($6, $5)], REGR_COUNT(EMPNO, SAL)=[REGR_COUNT($5)])
-  EnumerableScan(table=[[scott, EMP]])
+  EnumerableScan(entity=[[scott, EMP]])
 !plan
 
 # [CALCITE-1776, CALCITE-2402] REGR_SXX, REGR_SXY, REGR_SYY
@@ -2396,7 +2396,7 @@ group by deptno;
 
 !ok
 EnumerableAggregate(group=[{7}], EMPNOS=[COLLECT($0) WITHIN GROUP ([0])])
-  EnumerableScan(table=[[scott, EMP]])
+  EnumerableScan(entity=[[scott, EMP]])
 !plan
 
 select deptno, collect(empno) within group (order by empno desc) as empnos
@@ -2414,7 +2414,7 @@ group by deptno;
 
 !ok
 EnumerableAggregate(group=[{7}], EMPNOS=[COLLECT($0) WITHIN GROUP ([0 DESC])])
-  EnumerableScan(table=[[scott, EMP]])
+  EnumerableScan(entity=[[scott, EMP]])
 !plan
 
 select deptno, collect(empno) within group (order by empno desc)
@@ -2434,7 +2434,7 @@ group by deptno;
 !ok
 EnumerableAggregate(group=[{0}], EMPNOS=[COLLECT($1) WITHIN GROUP ([1 DESC]) FILTER $2])
   EnumerableCalc(expr#0..7=[{inputs}], expr#8=[7500], expr#9=[>($t0, $t8)], DEPTNO=[$t7], EMPNO=[$t0], $f2=[$t9])
-    EnumerableScan(table=[[scott, EMP]])
+    EnumerableScan(entity=[[scott, EMP]])
 !plan
 
 select deptno, collect(empno) within group (order by empno desc) as empnos1,
@@ -2453,7 +2453,7 @@ group by deptno;
 
 !ok
 EnumerableAggregate(group=[{7}], EMPNOS1=[COLLECT($0) WITHIN GROUP ([0 DESC])], EMPNOS2=[COLLECT($0) WITHIN GROUP ([0])])
-  EnumerableScan(table=[[scott, EMP]])
+  EnumerableScan(entity=[[scott, EMP]])
 !plan
 
 # Aggregate WITHIN GROUP with JOIN
@@ -2479,9 +2479,9 @@ EnumerableAggregate(group=[{0}], S=[COLLECT($1) WITHIN GROUP ([1 DESC])], S1=[CO
   EnumerableCalc(expr#0..3=[{inputs}], expr#4=[1], expr#5=[2000], expr#6=[>($t2, $t5)], expr#7=[IS TRUE($t6)], DEPTNO=[$t0], SAL=[$t2], $f2=[$t4], $f3=[$t7])
     EnumerableJoin(condition=[=($0, $3)], joinType=[inner])
       EnumerableCalc(expr#0..2=[{inputs}], DEPTNO=[$t0])
-        EnumerableScan(table=[[scott, DEPT]])
+        EnumerableScan(entity=[[scott, DEPT]])
       EnumerableCalc(expr#0..7=[{inputs}], EMPNO=[$t0], SAL=[$t5], DEPTNO=[$t7])
-        EnumerableScan(table=[[scott, EMP]])
+        EnumerableScan(entity=[[scott, EMP]])
 !plan
 
 select deptno, collect(empno + 1) within group (order by 1) as empnos
@@ -2500,7 +2500,7 @@ group by deptno;
 !ok
 EnumerableAggregate(group=[{0}], EMPNOS=[COLLECT($1) WITHIN GROUP ([2])])
   EnumerableCalc(expr#0..7=[{inputs}], expr#8=[1], expr#9=[+($t0, $t8)], DEPTNO=[$t7], $f1=[$t9], $f2=[$t8])
-    EnumerableScan(table=[[scott, EMP]])
+    EnumerableScan(entity=[[scott, EMP]])
 !plan
 
 # BIT_AND, BIT_OR aggregate functions

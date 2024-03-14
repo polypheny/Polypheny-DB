@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.Enumerator;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
@@ -39,16 +40,27 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.Pair;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyNull;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyFloat;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.temporal.PolyDate;
+import org.polypheny.db.type.entity.temporal.PolyTime;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.Source;
 
-class ExcelEnumerator<E> implements Enumerator<E> {
+class ExcelEnumerator implements Enumerator<PolyValue[]> {
 
     Iterator<Row> reader;
     private final AtomicBoolean cancelFlag;
-    private final RowConverter<E> rowConverter;
-    private E current;
+    private final RowConverter rowConverter;
+    private PolyValue[] current;
 
     private static final FastDateFormat TIME_FORMAT_DATE;
     private static final FastDateFormat TIME_FORMAT_TIME;
@@ -75,12 +87,11 @@ class ExcelEnumerator<E> implements Enumerator<E> {
 
 
     ExcelEnumerator( Source source, AtomicBoolean cancelFlag, List<ExcelFieldType> fieldTypes, int[] fields, String sheet ) {
-        //noinspection unchecked
-        this( source, cancelFlag, false, null, (RowConverter<E>) converter( fieldTypes, fields ), sheet );
+        this( source, cancelFlag, false, null, converter( fieldTypes, fields ), sheet );
     }
 
 
-    ExcelEnumerator( Source source, AtomicBoolean cancelFlag, boolean stream, String[] filterValues, RowConverter<E> rowConverter, String sheet ) {
+    ExcelEnumerator( Source source, AtomicBoolean cancelFlag, boolean stream, String[] filterValues, RowConverter rowConverter, String sheet ) {
         this.cancelFlag = cancelFlag;
         this.rowConverter = rowConverter;
         try {
@@ -91,18 +102,13 @@ class ExcelEnumerator<E> implements Enumerator<E> {
             }
             this.reader.next(); // skip header row
         } catch ( IOException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 
 
-    private static RowConverter<?> converter( List<ExcelFieldType> fieldTypes, int[] fields ) {
-        if ( fields.length == 1 ) {
-            final int field = fields[0];
-            return new SingleColumnRowConverter( fieldTypes.get( field ), field );
-        } else {
-            return new ArrayRowConverter( fieldTypes, fields );
-        }
+    private static RowConverter converter( List<ExcelFieldType> fieldTypes, int[] fields ) {
+        return new ArrayRowConverter( fieldTypes, fields );
     }
 
 
@@ -128,10 +134,12 @@ class ExcelEnumerator<E> implements Enumerator<E> {
     static AlgDataType deduceRowType( JavaTypeFactory typeFactory, Source source, List<ExcelFieldType> fieldTypes, Boolean stream ) {
         final List<AlgDataType> types = new ArrayList<>();
         final List<String> names = new ArrayList<>();
+        final List<Long> ids = new ArrayList<>();
 
         if ( stream ) {
             names.add( ROWTIME_COLUMN_NAME );
             types.add( typeFactory.createPolyType( PolyType.TIMESTAMP ) );
+            ids.add( null );
         }
         try {
             Iterator<Row> rows = openExcel( source, "" );
@@ -141,6 +149,7 @@ class ExcelEnumerator<E> implements Enumerator<E> {
                 while ( cellIterator.hasNext() ) {
                     Cell cell = cellIterator.next();
                     names.add( cell.getStringCellValue() );
+                    ids.add( null );
                 }
                 break;
             }
@@ -170,8 +179,9 @@ class ExcelEnumerator<E> implements Enumerator<E> {
         if ( names.isEmpty() ) {
             names.add( "line" );
             types.add( typeFactory.createPolyType( PolyType.VARCHAR ) );
+            ids.add( null );
         }
-        return typeFactory.createStructType( Pair.zip( names, types ) );
+        return typeFactory.createStructType( ids, types, names );
     }
 
 
@@ -181,10 +191,12 @@ class ExcelEnumerator<E> implements Enumerator<E> {
     static AlgDataType deduceRowType( JavaTypeFactory typeFactory, Source source, String sheetname, List<ExcelFieldType> fieldTypes, Boolean stream ) {
         final List<AlgDataType> types = new ArrayList<>();
         final List<String> names = new ArrayList<>();
+        final List<Long> ids = new ArrayList<>();
 
         if ( stream ) {
             names.add( ROWTIME_COLUMN_NAME );
             types.add( typeFactory.createPolyType( PolyType.TIMESTAMP ) );
+            ids.add( null );
         }
         try {
             Iterator<Row> rows = openExcel( source, sheetname );
@@ -194,6 +206,7 @@ class ExcelEnumerator<E> implements Enumerator<E> {
                 while ( cellIterator.hasNext() ) {
                     Cell cell = cellIterator.next();
                     names.add( cell.getStringCellValue() );
+                    ids.add( null );
                 }
                 break;
             }
@@ -224,7 +237,7 @@ class ExcelEnumerator<E> implements Enumerator<E> {
             names.add( "line" );
             types.add( typeFactory.createPolyType( PolyType.VARCHAR ) );
         }
-        return typeFactory.createStructType( Pair.zip( names, types ) );
+        return typeFactory.createStructType( ids, types, names );
     }
 
 
@@ -235,7 +248,7 @@ class ExcelEnumerator<E> implements Enumerator<E> {
 
         Workbook workbook = WorkbookFactory.create( fileIn );
         workbook.getNumberOfSheets();
-        if ( sheetname.equals( "" ) ) {
+        if ( sheetname.isEmpty() ) {
             sheet = workbook.getSheetAt( 0 );
         } else {
             sheet = workbook.getSheet( sheetname );
@@ -252,7 +265,7 @@ class ExcelEnumerator<E> implements Enumerator<E> {
 
 
     @Override
-    public E current() {
+    public PolyValue[] current() {
         return current;
     }
 
@@ -280,7 +293,7 @@ class ExcelEnumerator<E> implements Enumerator<E> {
                         try {
                             Thread.sleep( ExcelStreamReader.DEFAULT_MONITOR_DELAY );
                         } catch ( InterruptedException e ) {
-                            throw new RuntimeException( e );
+                            throw new GenericRuntimeException( e );
                         }
                         System.out.println( "Stream" );
                         continue;
@@ -292,7 +305,7 @@ class ExcelEnumerator<E> implements Enumerator<E> {
                 return true;
             }
         } catch ( Exception e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
 
     }
@@ -328,116 +341,83 @@ class ExcelEnumerator<E> implements Enumerator<E> {
 
     /**
      * Row converter.
-     *
-     * @param <E> element type
      */
-    abstract static class RowConverter<E> {
+    abstract static class RowConverter {
 
-        abstract E convertRow( Row rows );
+        abstract PolyValue[] convertRow( Row rows );
 
 
-        protected Object convert( ExcelFieldType fieldType, Cell cell ) {
+        protected PolyValue convert( ExcelFieldType fieldType, Cell cell ) {
             if ( fieldType == null ) {
-                return cell;
+                throw new NotImplementedException();
+                //return cell;
+            }
+            if ( cell == null ) {
+                return PolyNull.NULL;
             }
             try {
 
                 switch ( fieldType ) {
                     case BOOLEAN:
-                        if ( cell == null ) {
-                            return null;
-                        }
-                        return cell.getBooleanCellValue();
+                        return PolyBoolean.of( cell.getBooleanCellValue() );
                     case BYTE:
-                        if ( cell == null ) {
-                            return null;
-                        }
-                        return Byte.parseByte( cell.getStringCellValue() );
+                        return PolyInteger.of( Byte.parseByte( cell.getStringCellValue() ) );
                     case SHORT:
-                        if ( cell == null ) {
-                            return null;
-                        }
-                        return Short.parseShort( cell.getStringCellValue() );
+                        return PolyInteger.of( Short.parseShort( cell.getStringCellValue() ) );
                     case INT:
-                        if ( cell == null ) {
-                            return null;
-                        }
-                        return (Double.valueOf( cell.getNumericCellValue() ).intValue());
+                        return PolyInteger.of( cell.getNumericCellValue() );
                     case LONG:
-                        if ( cell == null ) {
-                            return null;
-                        }
-
                         if ( cell.getCellType() == CellType.STRING ) {
-                            return Long.parseLong( cell.getStringCellValue() );
-                        } else if ( cell.getCellType() == CellType.NUMERIC ) {
-                            return Long.toString( (long) cell.getNumericCellValue() );
+                            return PolyLong.of( Long.parseLong( cell.getStringCellValue() ) );
                         }
-                        return Long.parseLong( String.valueOf( cell.getNumericCellValue() ) );
+                        return PolyLong.of( cell.getNumericCellValue() );
                     case FLOAT:
-                        if ( cell == null ) {
-                            return null;
-                        }
                         if ( cell.getCellType() == CellType.STRING ) {
-                            return Float.parseFloat( cell.getStringCellValue() );
-                        } else if ( cell.getCellType() == CellType.NUMERIC ) {
-                            return Float.parseFloat( String.valueOf( cell.getNumericCellValue() ) );
+                            return PolyFloat.of( Float.parseFloat( cell.getStringCellValue() ) );
                         }
-                        return Float.parseFloat( String.valueOf( cell.getNumericCellValue() ) );
+                        return PolyFloat.of( cell.getNumericCellValue() );
                     case DOUBLE:
-                        if ( cell == null ) {
-                            return null;
-                        }
-                        return cell.getNumericCellValue();
+                        return PolyDouble.of( cell.getNumericCellValue() );
                     case DATE:
-                        if ( cell == null ) {
-                            return null;
-                        }
                         try {
                             //convert date from string to date
                             if ( cell.getCellType() == CellType.STRING ) {
                                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern( "dd.MM.yyyy", Locale.ENGLISH );
                                 LocalDate date2 = LocalDate.parse( cell.getStringCellValue(), formatter );
-                                return (int) (TimeUnit.DAYS.toMillis( date2.toEpochDay() ) / DateTimeUtils.MILLIS_PER_DAY);
-                            } else {
-                                Date date = cell.getDateCellValue();
-                                return (int) (date.getTime() / DateTimeUtils.MILLIS_PER_DAY);
+                                return PolyDate.of( (TimeUnit.DAYS.toMillis( date2.toEpochDay() ) / DateTimeUtils.MILLIS_PER_DAY) );
                             }
+                            Date date = cell.getDateCellValue();
+                            return PolyDate.of( (int) (date.getTime() / DateTimeUtils.MILLIS_PER_DAY) );
 
 
                         } catch ( Exception e ) {
-                            return null;
+                            throw new GenericRuntimeException( "Could not read the date field from the document." );
                         }
                     case TIME:
-                        if ( cell == null ) {
-                            return null;
-                        }
+
                         try {
                             Date date = TIME_FORMAT_TIME.parse( cell
                                     .getStringCellValue() );
-                            return (int) date.getTime();
+                            return PolyTime.of( date.getTime() );
 
 
                         } catch ( Exception e ) {
-                            return null;
+                            throw new GenericRuntimeException( "Could not read the time field from the document." );
                         }
                     case TIMESTAMP:
-                        if ( cell == null ) {
-                            return null;
-                        }
                         try {
                             Date date = TIME_FORMAT_TIMESTAMP.parse( cell
                                     .getStringCellValue() );
-                            return date.getTime();
+                            return PolyTimestamp.of( date.getTime() );
                         } catch ( Exception e ) {
-                            return null;
+                            throw new GenericRuntimeException( "Could not read the timestamp field from the document." );
                         }
                     case STRING:
                     default:
-                        return cell.getStringCellValue();
+                        return PolyString.of( cell.getStringCellValue() );
                 }
             } catch ( Exception e ) {
-                return cell.getStringCellValue();
+                throw new GenericRuntimeException( "Could not read %s from the document.", cell );
             }
         }
 
@@ -447,7 +427,7 @@ class ExcelEnumerator<E> implements Enumerator<E> {
     /**
      * Array row converter.
      */
-    static class ArrayRowConverter extends RowConverter<Object[]> {
+    static class ArrayRowConverter extends RowConverter {
 
         private final ExcelFieldType[] fieldTypes;
         private final int[] fields;
@@ -470,7 +450,7 @@ class ExcelEnumerator<E> implements Enumerator<E> {
 
 
         @Override
-        public Object[] convertRow( Row row ) {
+        public PolyValue[] convertRow( Row row ) {
             if ( stream ) {
                 return convertStreamRow( row );
             } else {
@@ -479,9 +459,9 @@ class ExcelEnumerator<E> implements Enumerator<E> {
         }
 
 
-        public Object[] convertNormalRow( Row row ) {
+        public PolyValue[] convertNormalRow( Row row ) {
             Iterator<Cell> cells = row.cellIterator();
-            final Object[] objects = new Object[fields.length];
+            final PolyValue[] objects = new PolyValue[fields.length];
             while ( cells.hasNext() ) {
                 Cell cell = cells.next();
                 int field = fields[cell.getColumnIndex()] - 1;
@@ -491,12 +471,9 @@ class ExcelEnumerator<E> implements Enumerator<E> {
         }
 
 
-        public Object[] convertStreamRow( Row row ) {
-            final Object[] objects = new Object[fields.length + 1];
-            objects[0] = System.currentTimeMillis();
-            for ( int i = 0; i < fields.length; i++ ) {
-                int field = fields[i];
-            }
+        public PolyValue[] convertStreamRow( Row row ) {
+            final PolyValue[] objects = new PolyValue[fields.length + 1];
+            objects[0] = PolyLong.of( System.currentTimeMillis() );
             return objects;
         }
 
@@ -519,8 +496,8 @@ class ExcelEnumerator<E> implements Enumerator<E> {
 
 
         @Override
-        public Object convertRow( Row row ) {
-            return convert( fieldType, row.getCell( fieldIndex ) );
+        public PolyValue[] convertRow( Row row ) {
+            return new PolyValue[]{ convert( fieldType, row.getCell( fieldIndex ) ) };
         }
 
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package org.polypheny.db.information;
 
 
-import com.google.gson.Gson;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.concurrent.ConcurrentHashMap;
@@ -248,8 +248,12 @@ public class InformationManager {
             counter++;
         }
         Arrays.sort( pages1, Comparator.comparing( InformationPage::getName ) );
-        Gson gson = new Gson();
-        return gson.toJson( pages1, InformationPage[].class );
+
+        try {
+            return Information.mapper.writeValueAsString( pages1 );
+        } catch ( JsonProcessingException e ) {
+            return null;
+        }
     }
 
 
@@ -314,6 +318,16 @@ public class InformationManager {
         for ( InformationObserver observer : this.observers ) {
             observer.observePageList( this.pages.values().toArray( new InformationPage[0] ), instanceId, session );
         }
+    }
+
+
+    public void attachStacktrace( Throwable e ) {
+        InformationPage exceptionPage = new InformationPage( "Stacktrace" ).fullWidth();
+        InformationGroup exceptionGroup = new InformationGroup( exceptionPage.getId(), "Stacktrace" );
+        InformationStacktrace exceptionElement = new InformationStacktrace( e, exceptionGroup );
+        this.addPage( exceptionPage );
+        this.addGroup( exceptionGroup );
+        this.registerInformation( exceptionElement );
     }
 
 }

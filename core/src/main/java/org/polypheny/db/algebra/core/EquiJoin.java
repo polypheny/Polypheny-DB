@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,13 +34,13 @@
 package org.polypheny.db.algebra.core;
 
 
+import com.google.common.collect.ImmutableList;
 import java.util.Objects;
 import java.util.Set;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.util.ImmutableIntList;
 
 
 /**
@@ -48,21 +48,21 @@ import org.polypheny.db.util.ImmutableIntList;
  */
 public abstract class EquiJoin extends Join {
 
-    public final ImmutableIntList leftKeys;
-    public final ImmutableIntList rightKeys;
+    public final ImmutableList<Integer> leftKeys;
+    public final ImmutableList<Integer> rightKeys;
 
 
     /**
      * Creates an EquiJoin.
      */
     public EquiJoin(
-            AlgOptCluster cluster,
+            AlgCluster cluster,
             AlgTraitSet traits,
             AlgNode left,
             AlgNode right,
             RexNode condition,
-            ImmutableIntList leftKeys,
-            ImmutableIntList rightKeys,
+            ImmutableList<Integer> leftKeys,
+            ImmutableList<Integer> rightKeys,
             Set<CorrelationId> variablesSet,
             JoinAlgType joinType ) {
         super( cluster, traits, left, right, condition, variablesSet, joinType );
@@ -71,12 +71,12 @@ public abstract class EquiJoin extends Join {
     }
 
 
-    public ImmutableIntList getLeftKeys() {
+    public ImmutableList<Integer> getLeftKeys() {
         return leftKeys;
     }
 
 
-    public ImmutableIntList getRightKeys() {
+    public ImmutableList<Integer> getRightKeys() {
         return rightKeys;
     }
 

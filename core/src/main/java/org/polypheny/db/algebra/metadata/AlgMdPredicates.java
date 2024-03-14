@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,14 +60,14 @@ import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Union;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptPredicateList;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.Strong;
@@ -76,7 +76,7 @@ import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexExecutor;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexPermuteInputsShuttle;
@@ -127,7 +127,7 @@ import org.polypheny.db.util.mapping.Mappings;
  */
 public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicates> {
 
-    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( BuiltInMethod.PREDICATES.method, new AlgMdPredicates() );
+    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( new AlgMdPredicates(), BuiltInMethod.PREDICATES.method );
 
     private static final List<RexNode> EMPTY_LIST = ImmutableList.of();
 
@@ -154,9 +154,9 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
 
 
     /**
-     * Infers predicates for a table scan.
+     * Infers predicates for a table relScan.
      */
-    public AlgOptPredicateList getPredicates( Scan table, AlgMetadataQuery mq ) {
+    public AlgOptPredicateList getPredicates( RelScan table, AlgMetadataQuery mq ) {
         return AlgOptPredicateList.EMPTY;
     }
 
@@ -184,11 +184,11 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
         final List<RexNode> projectPullUpPredicates = new ArrayList<>();
 
         ImmutableBitSet.Builder columnsMappedBuilder = ImmutableBitSet.builder();
-        Mapping m = Mappings.create( MappingType.PARTIAL_FUNCTION, input.getRowType().getFieldCount(), project.getRowType().getFieldCount() );
+        Mapping m = Mappings.create( MappingType.PARTIAL_FUNCTION, input.getTupleType().getFieldCount(), project.getTupleType().getFieldCount() );
 
         for ( Ord<RexNode> expr : Ord.zip( project.getProjects() ) ) {
-            if ( expr.e instanceof RexInputRef ) {
-                int sIdx = ((RexInputRef) expr.e).getIndex();
+            if ( expr.e instanceof RexIndexRef ) {
+                int sIdx = ((RexIndexRef) expr.e).getIndex();
                 m.set( sIdx, expr.i );
                 columnsMappedBuilder.set( sIdx );
                 // Project can also generate constants. We need to include them.
@@ -246,7 +246,7 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
         if ( columnsMapped.intersects( rCols ) ) {
             final List<RexNode> list = new ArrayList<>();
             for ( int c : columnsMapped.intersect( rCols ) ) {
-                if ( input.getRowType().getFieldList().get( c ).getType().isNullable() && Strong.isNull( r, ImmutableBitSet.of( c ) ) ) {
+                if ( input.getTupleType().getFields().get( c ).getType().isNullable() && Strong.isNull( r, ImmutableBitSet.of( c ) ) ) {
                     list.add( rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NOT_NULL ), rexBuilder.makeInputRef( input, c ) ) );
                 }
             }
@@ -280,7 +280,7 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
      * Infers predicates for a {@link org.polypheny.db.algebra.core.Join} (including {@link org.polypheny.db.algebra.core.SemiJoin}).
      */
     public AlgOptPredicateList getPredicates( Join join, AlgMetadataQuery mq ) {
-        AlgOptCluster cluster = join.getCluster();
+        AlgCluster cluster = join.getCluster();
         RexBuilder rexBuilder = cluster.getRexBuilder();
         final RexExecutor executor = Util.first( cluster.getPlanner().getExecutor(), RexUtil.EXECUTOR );
         final AlgNode left = join.getInput( 0 );
@@ -323,7 +323,7 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
             // (trivially - there are no rows!) but not on the output (there is one row).
             return AlgOptPredicateList.EMPTY;
         }
-        Mapping m = Mappings.create( MappingType.PARTIAL_FUNCTION, input.getRowType().getFieldCount(), agg.getRowType().getFieldCount() );
+        Mapping m = Mappings.create( MappingType.PARTIAL_FUNCTION, input.getTupleType().getFieldCount(), agg.getTupleType().getFieldCount() );
 
         int i = 0;
         for ( int j : groupKeys ) {
@@ -383,7 +383,7 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
         }
 
         final List<RexNode> predicates = new ArrayList<>( finalPredicates );
-        final AlgOptCluster cluster = union.getCluster();
+        final AlgCluster cluster = union.getCluster();
         final RexExecutor executor = Util.first( cluster.getPlanner().getExecutor(), RexUtil.EXECUTOR );
         RexNode disjunctivePredicate = new RexSimplify( rexBuilder, AlgOptPredicateList.EMPTY, executor ).simplifyOrs( finalResidualPredicates );
         if ( !disjunctivePredicate.isAlwaysTrue() ) {
@@ -475,8 +475,8 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
             this.joinRel = joinRel;
             this.isSemiJoin = isSemiJoin;
             this.simplify = simplify;
-            nFieldsLeft = joinRel.getLeft().getRowType().getFieldList().size();
-            nFieldsRight = joinRel.getRight().getRowType().getFieldList().size();
+            nFieldsLeft = joinRel.getLeft().getTupleType().getFields().size();
+            nFieldsRight = joinRel.getRight().getTupleType().getFields().size();
             nSysFields = joinRel.getSystemFieldList().size();
             leftFieldsBitSet = ImmutableBitSet.range( nSysFields, nSysFields + nFieldsLeft );
             rightFieldsBitSet = ImmutableBitSet.range( nSysFields + nFieldsLeft, nSysFields + nFieldsLeft + nFieldsRight );
@@ -813,8 +813,8 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
 
 
         private int pos( RexNode expr ) {
-            if ( expr instanceof RexInputRef ) {
-                return ((RexInputRef) expr).getIndex();
+            if ( expr instanceof RexIndexRef ) {
+                return ((RexIndexRef) expr).getIndex();
             }
             return -1;
         }

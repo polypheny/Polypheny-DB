@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,24 +23,20 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.polypheny.db.AdapterTestSuite;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.db.excluded.CassandraExcluded;
-import org.polypheny.db.excluded.FileExcluded;
-import org.polypheny.db.excluded.MonetdbExcluded;
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
-@Category({ AdapterTestSuite.class, CassandraExcluded.class, MonetdbExcluded.class })
+@Tag("adapter")
 public class LogExponentialFunctionsTest {
 
 
-    @BeforeClass
+    @BeforeAll
     public static void start() throws SQLException {
         // Ensures that Polypheny-DB is running
         //noinspection ResultOfMethodCallIgnored
@@ -94,7 +90,7 @@ public class LogExponentialFunctionsTest {
     }
 
 
-    @AfterClass
+    @AfterAll
     public static void stop() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
@@ -122,8 +118,8 @@ public class LogExponentialFunctionsTest {
             try ( Statement statement = connection.createStatement() ) {
                 // For Decimal
                 List<Object[]> expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Double.valueOf( 1.0986122886681098 ) },
-                        new Object[]{ 2, Double.valueOf( 1.3862943611198906 ) }
+                        new Object[]{ 1, 1.0986122886681098 },
+                        new Object[]{ 2, 1.3862943611198906 }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT ID, LN(Data) FROM TableDecimal where data > 0" ),
@@ -133,8 +129,8 @@ public class LogExponentialFunctionsTest {
 
                 // LOG10 FOR DECIMAL
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Double.valueOf( 0.47712125471966244 ) },
-                        new Object[]{ 2, Double.valueOf( 0.6020599913279624 ) }
+                        new Object[]{ 1, 0.47712125471966244 },
+                        new Object[]{ 2, 0.6020599913279624 }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT ID, LOG10(Data) FROM TableDecimal where data > 0" ),
@@ -144,8 +140,8 @@ public class LogExponentialFunctionsTest {
 
                 // For Double
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 0, Double.valueOf( 0.6931471805599453 ) },
-                        new Object[]{ 2, Double.valueOf( 1.3862943611198906 ) }
+                        new Object[]{ 0, 0.6931471805599453 },
+                        new Object[]{ 2, 1.3862943611198906 }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT ID, LN(Data) FROM TableDouble where data > 0" ),
@@ -155,8 +151,8 @@ public class LogExponentialFunctionsTest {
 
                 // LOG10 FOR DOUBLE
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 0, Double.valueOf( 0.3010299956639812 ) },
-                        new Object[]{ 2, Double.valueOf( 0.6020599913279624 ) }
+                        new Object[]{ 0, 0.3010299956639812 },
+                        new Object[]{ 2, 0.6020599913279624 }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT ID, LOG10(Data) FROM TableDouble where data > 0" ),
@@ -178,8 +174,8 @@ public class LogExponentialFunctionsTest {
 
                 // LOG10 FOR INTEGER
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 0, Double.valueOf( 0.3010299956639812 ) },
-                        new Object[]{ 1, Double.valueOf( 0.47712125471966244 ) }
+                        new Object[]{ 0, 0.3010299956639812 },
+                        new Object[]{ 1, 0.47712125471966244 }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT ID, LOG10(Data) FROM TableInteger where data > 0" ),
@@ -209,9 +205,9 @@ public class LogExponentialFunctionsTest {
 
                 // For Double
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 0, Double.valueOf( 7.389056 ) },
-                        new Object[]{ 1, Double.valueOf( 0.049787 ) },
-                        new Object[]{ 2, Double.valueOf( 54.59815 ) }
+                        new Object[]{ 0, 7.389056 },
+                        new Object[]{ 1, 0.049787 },
+                        new Object[]{ 2, 54.59815 }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT ID, ROUND(EXP(Data),6) FROM TableDouble" ),
@@ -221,9 +217,9 @@ public class LogExponentialFunctionsTest {
 
                 // For Integer
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 0, Double.valueOf( 7.38905609893065 ) },
-                        new Object[]{ 1, Double.valueOf( 20.085536923187668 ) },
-                        new Object[]{ 2, Double.valueOf( 0.01831563888873418 ) }
+                        new Object[]{ 0, 7.38905609893065 },
+                        new Object[]{ 1, 20.085536923187668 },
+                        new Object[]{ 2, 0.01831563888873418 }
 
                 );
                 TestHelper.checkResultSet(
@@ -237,15 +233,14 @@ public class LogExponentialFunctionsTest {
 
 
     @Test
-    @Category(FileExcluded.class)
     public void sqrtTest() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 // For Decimal
                 List<Object[]> expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Double.valueOf( 1.732050807568877193176604123436845839023590087890625 ) },
-                        new Object[]{ 2, Double.valueOf( 2.0 ) }
+                        new Object[]{ 1, 1.732050807568877193176604123436845839023590087890625 },
+                        new Object[]{ 2, 2.0 }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT ID, SQRT(Data) FROM TableDecimal where data > 0" ),
@@ -255,8 +250,8 @@ public class LogExponentialFunctionsTest {
 
                 // For Double
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 0, Double.valueOf( 1.4142135623730951 ) },
-                        new Object[]{ 2, Double.valueOf( 2.0 ) }
+                        new Object[]{ 0, 1.4142135623730951 },
+                        new Object[]{ 2, 2.0 }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT ID, SQRT(Data) FROM TableDouble where data > 0" ),
@@ -266,8 +261,8 @@ public class LogExponentialFunctionsTest {
 
                 // For Integer
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 0, Double.valueOf( 1.4142135623730951 ) },
-                        new Object[]{ 1, Double.valueOf( 1.732050807568877193176604123436845839023590087890625 ) }
+                        new Object[]{ 0, 1.4142135623730951 },
+                        new Object[]{ 1, 1.732050807568877193176604123436845839023590087890625 }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT ID, SQRT(Data) FROM TableInteger where data > 0" ),
@@ -277,8 +272,8 @@ public class LogExponentialFunctionsTest {
 
                 // For TinyInt
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Double.valueOf( 4.795831523312719 ) },
-                        new Object[]{ 2, Double.valueOf( 11.269427669584644 ) }
+                        new Object[]{ 1, 4.795831523312719 },
+                        new Object[]{ 2, 11.269427669584644 }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT ID, SQRT(Data) FROM TableTinyInt where data > 0" ),
@@ -288,8 +283,8 @@ public class LogExponentialFunctionsTest {
 
                 // For BigInt
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 0, Double.valueOf( 1114.1099586665582 ) },
-                        new Object[]{ 1, Double.valueOf( 1.0 ) }
+                        new Object[]{ 0, 1114.1099586665582 },
+                        new Object[]{ 1, 1.0 }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT ID, SQRT(Data) FROM TableBigInt where data > 0" ),
@@ -299,8 +294,8 @@ public class LogExponentialFunctionsTest {
 
                 // For SmallInt
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Double.valueOf( 1.732050807568877193176604123436845839023590087890625 ) },
-                        new Object[]{ 2, Double.valueOf( 181.01657382681842 ) }
+                        new Object[]{ 1, 1.732050807568877193176604123436845839023590087890625 },
+                        new Object[]{ 2, 181.01657382681842 }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT ID, SQRT(Data) FROM TableSmallInt where data > 0" ),
@@ -310,9 +305,9 @@ public class LogExponentialFunctionsTest {
 
                 // For Real
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 0, Double.valueOf( 1.0 ) },
-                        new Object[]{ 1, Double.valueOf( 1.7320508075688772 ) },
-                        new Object[]{ 2, Double.valueOf( 1.7320508075688772 ) }
+                        new Object[]{ 0, 1.0 },
+                        new Object[]{ 1, 1.7320508075688772 },
+                        new Object[]{ 2, 1.7320508075688772 }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT ID, SQRT(Data) FROM TableReal where data > 0" ),

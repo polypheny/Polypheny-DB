@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,13 +38,13 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.SemiJoinType;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.CorrelationId;
-import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.algebra.logical.relational.LogicalRelCorrelate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.tools.AlgBuilder;
@@ -55,7 +55,7 @@ import org.polypheny.db.util.Util;
 
 
 /**
- * Rule that converts a {@link LogicalJoin} into a {@link LogicalCorrelate}, which can then be implemented using nested loops.
+ * Rule that converts a {@link LogicalRelJoin} into a {@link LogicalRelCorrelate}, which can then be implemented using nested loops.
  *
  * For example,
  *
@@ -78,13 +78,13 @@ public class JoinToCorrelateRule extends AlgOptRule {
      * Creates a JoinToCorrelateRule.
      */
     public JoinToCorrelateRule( AlgBuilderFactory algBuilderFactory ) {
-        super( operand( LogicalJoin.class, any() ), algBuilderFactory, null );
+        super( operand( LogicalRelJoin.class, any() ), algBuilderFactory, null );
     }
 
 
     @Override
     public boolean matches( AlgOptRuleCall call ) {
-        LogicalJoin join = call.alg( 0 );
+        LogicalRelJoin join = call.alg( 0 );
         switch ( join.getJoinType() ) {
             case INNER:
             case LEFT:
@@ -101,21 +101,21 @@ public class JoinToCorrelateRule extends AlgOptRule {
     @Override
     public void onMatch( AlgOptRuleCall call ) {
         assert matches( call );
-        final LogicalJoin join = call.alg( 0 );
+        final LogicalRelJoin join = call.alg( 0 );
         AlgNode right = join.getRight();
         final AlgNode left = join.getLeft();
-        final int leftFieldCount = left.getRowType().getFieldCount();
-        final AlgOptCluster cluster = join.getCluster();
+        final int leftFieldCount = left.getTupleType().getFieldCount();
+        final AlgCluster cluster = join.getCluster();
         final RexBuilder rexBuilder = cluster.getRexBuilder();
         final AlgBuilder algBuilder = call.builder();
         final CorrelationId correlationId = cluster.createCorrel();
-        final RexNode corrVar = rexBuilder.makeCorrel( left.getRowType(), correlationId );
+        final RexNode corrVar = rexBuilder.makeCorrel( left.getTupleType(), correlationId );
         final Builder requiredColumns = ImmutableBitSet.builder();
 
         // Replace all references of left input with FieldAccess(corrVar, field)
         final RexNode joinCondition = join.getCondition().accept( new RexShuttle() {
             @Override
-            public RexNode visitInputRef( RexInputRef input ) {
+            public RexNode visitIndexRef( RexIndexRef input ) {
                 int field = input.getIndex();
                 if ( field >= leftFieldCount ) {
                     return rexBuilder.makeInputRef( input.getType(), input.getIndex() - leftFieldCount );
@@ -127,7 +127,7 @@ public class JoinToCorrelateRule extends AlgOptRule {
 
         algBuilder.push( right ).filter( joinCondition );
 
-        AlgNode newRel = LogicalCorrelate.create( left, algBuilder.build(), correlationId, requiredColumns.build(), SemiJoinType.of( join.getJoinType() ) );
+        AlgNode newRel = LogicalRelCorrelate.create( left, algBuilder.build(), correlationId, requiredColumns.build(), SemiJoinType.of( join.getJoinType() ) );
         call.transformTo( newRel );
     }
 

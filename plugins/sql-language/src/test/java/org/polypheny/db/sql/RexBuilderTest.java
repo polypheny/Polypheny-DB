@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,8 +33,12 @@
 
 package org.polypheny.db.sql;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.rex.RexBuilder;
@@ -42,13 +46,11 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import org.polypheny.db.type.entity.PolyBoolean;
 
 public class RexBuilderTest {
 
-    @BeforeClass
+    @BeforeAll
     public static void init() {
         if ( !SqlLanguagePlugin.isInit() ) {
             SqlLanguagePlugin.registerOperators();
@@ -64,7 +66,7 @@ public class RexBuilderTest {
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         RexBuilder builder = new RexBuilder( typeFactory );
 
-        RexNode node = new RexLiteral( Boolean.TRUE, typeFactory.createPolyType( PolyType.BOOLEAN ), PolyType.BOOLEAN );
+        RexNode node = new RexLiteral( PolyBoolean.TRUE, typeFactory.createPolyType( PolyType.BOOLEAN ), PolyType.BOOLEAN );
         RexNode ensuredNode = builder.ensureType( typeFactory.createPolyType( PolyType.INTEGER ), node, true );
 
         assertNotEquals( node, ensuredNode );

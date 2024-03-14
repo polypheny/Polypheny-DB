@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,35 +20,36 @@ package org.polypheny.db.adapter.file.algebra;
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Optional;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.file.FileConvention;
 import org.polypheny.db.adapter.file.FileSchema;
-import org.polypheny.db.adapter.file.FileTranslatableTable;
+import org.polypheny.db.adapter.file.FileTranslatableEntity;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.UnsupportedFromInsertShuttle;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Filter;
-import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
-import org.polypheny.db.nodes.Function;
-import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.algebra.core.relational.RelModify;
+import org.polypheny.db.algebra.enumerable.EnumerableConvention;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.util.UnsupportedRelFromInsertShuttle;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexUtil.FieldAccessFinder;
 import org.polypheny.db.rex.RexVisitorImpl;
-import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.document.DocumentRules;
+import org.polypheny.db.schema.types.ModifiableTable;
 import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.util.UnsupportedRexCallVisitor;
 
@@ -74,14 +75,28 @@ public class FileRules {
 
 
         public FileTableModificationRule( FileConvention out, AlgBuilderFactory algBuilderFactory ) {
-            super( Modify.class, FileTableModificationRule::supports, Convention.NONE, out, algBuilderFactory, "FileTableModificationRule:" + out.getName() );
+            super( RelModify.class, FileTableModificationRule::supports, Convention.NONE, out, algBuilderFactory, "FileTableModificationRule:" + out.getName() );
             this.convention = out;
         }
 
 
-        private static boolean supports( Modify node ) {
-            if ( node.getSourceExpressionList() != null ) {
-                return !UnsupportedRexCallVisitor.containsModelItem( node.getSourceExpressionList() );
+        private static boolean supports( RelModify<?> node ) {
+            if ( node.isInsert() && node.containsScan() ) {
+                // insert from select is not implemented
+                return false;
+            }
+            if ( node.getSourceExpressions() != null ) {
+                FieldAccessFinder fieldAccessFinder = new FieldAccessFinder();
+                for ( RexNode node1 : node.getSourceExpressions() ) {
+                    node1.accept( fieldAccessFinder );
+                    if ( !fieldAccessFinder.getFieldAccessList().isEmpty() ) {
+                        return false;
+                    }
+                }
+            }
+
+            if ( node.getSourceExpressions() != null ) {
+                return !UnsupportedRexCallVisitor.containsModelItem( node.getSourceExpressions() );
             }
             return true;
         }
@@ -89,17 +104,16 @@ public class FileRules {
 
         @Override
         public boolean matches( AlgOptRuleCall call ) {
-            final Modify modify = call.alg( 0 );
-            if ( modify.getTable().unwrap( FileTranslatableTable.class ) == null ) {
+            final RelModify<?> modify = call.alg( 0 );
+            if ( modify.getEntity() == null ) {
                 // todo insert from select is not correctly implemented
                 return false;
             }
 
-            if ( modify.isInsert() && UnsupportedFromInsertShuttle.contains( modify ) ) {
+            if ( modify.isInsert() && UnsupportedRelFromInsertShuttle.contains( modify ) ) {
                 return false;
             }
 
-            FileTranslatableTable table = modify.getTable().unwrap( FileTranslatableTable.class );
             convention.setModification( true );
             return true;
         }
@@ -107,23 +121,25 @@ public class FileRules {
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final Modify modify = (Modify) alg;
-            final ModifiableTable modifiableTable = modify.getTable().unwrap( ModifiableTable.class );
+            final RelModify<?> modify = (RelModify<?>) alg;
+            Optional<ModifiableTable> oModifiableTable = modify.getEntity().unwrap( ModifiableTable.class );
 
-            if ( modifiableTable == null ) {
-                log.warn( "Returning null during conversion" );
+            if ( oModifiableTable.isEmpty() ) {
                 return null;
             }
+            if ( modify.getEntity().unwrap( FileTranslatableEntity.class ).isEmpty() ) {
+                return null;
+            }
+
             final AlgTraitSet traitSet = modify.getTraitSet().replace( convention );
             return new FileTableModify(
                     modify.getCluster(),
                     traitSet,
-                    modify.getTable(),
-                    modify.getCatalogReader(),
+                    modify.getEntity().unwrap( FileTranslatableEntity.class ).get(),
                     AlgOptRule.convert( modify.getInput(), traitSet ),
                     modify.getOperation(),
-                    modify.getUpdateColumnList(),
-                    modify.getSourceExpressionList(),
+                    modify.getUpdateColumns(),
+                    modify.getSourceExpressions(),
                     modify.isFlattened()
             );
         }
@@ -159,9 +175,12 @@ public class FileRules {
 
 
         public FileProjectRule( FileConvention out, AlgBuilderFactory algBuilderFactory ) {
-            super( Project.class, p -> !functionInProject( p ) && !UnsupportedRexCallVisitor.containsModelItem( p.getProjects() ), Convention.NONE, out, algBuilderFactory, "FileProjectRule:" + out.getName() );
+            super( Project.class, p ->
+                    !functionInProject( p )
+                            && !UnsupportedRexCallVisitor.containsModelItem( p.getProjects() ), Convention.NONE, out, algBuilderFactory, "FileProjectRule:" + out.getName() );
             this.convention = out;
         }
+
 
 
         /**
@@ -172,11 +191,11 @@ public class FileRules {
          */
         @Override
         public boolean matches( AlgOptRuleCall call ) {
-            if ( call.alg( 0 ) instanceof LogicalProject && ((LogicalProject) call.alg( 0 )).getProjects().size() > 0 ) {
+            if ( call.alg( 0 ) instanceof LogicalRelProject && !((LogicalRelProject) call.alg( 0 )).getProjects().isEmpty() ) {
                 //RexInputRef occurs in a select query, RexLiteral/RexCall/RexDynamicParam occur in insert/update/delete queries
                 boolean isSelect = true;
-                for ( RexNode node : ((LogicalProject) call.alg( 0 )).getProjects() ) {
-                    if ( node instanceof RexInputRef ) {
+                for ( RexNode node : ((LogicalRelProject) call.alg( 0 )).getProjects() ) {
+                    if ( node instanceof RexIndexRef ) {
                         continue;
                     }
                     isSelect = false;
@@ -200,13 +219,13 @@ public class FileRules {
                     traitSet,
                     convert( project.getInput(), project.getInput().getTraitSet().replace( convention ) ),
                     project.getProjects(),
-                    project.getRowType()
+                    project.getTupleType()
             );
         }
 
 
         private static boolean functionInProject( Project project ) {
-            CheckingFunctionVisitor visitor = new CheckingFunctionVisitor();
+            CheckingFunctionVisitor visitor = new CheckingFunctionVisitor( project );
             for ( RexNode node : project.getChildExps() ) {
                 node.accept( visitor );
                 if ( visitor.containsFunction() ) {
@@ -235,7 +254,7 @@ public class FileRules {
             Values values = (Values) alg;
             return new FileValues(
                     values.getCluster(),
-                    values.getRowType(),
+                    values.getTupleType(),
                     values.getTuples(),
                     values.getTraitSet().replace( convention ) );
         }
@@ -268,7 +287,11 @@ public class FileRules {
         public AlgNode convert( AlgNode alg ) {
             final Union union = (Union) alg;
             final AlgTraitSet traitSet = union.getTraitSet().replace( convention );
-            return new FileUnion( union.getCluster(), traitSet, AlgOptRule.convertList( union.getInputs(), convention ), union.all );
+            return new FileUnion(
+                    union.getCluster(),
+                    traitSet,
+                    AlgOptRule.convertList( union.getInputs(), convention ),
+                    union.all );
         }
 
     }
@@ -291,7 +314,7 @@ public class FileRules {
          */
         @Override
         public boolean matches( AlgOptRuleCall call ) {
-            return call.alg( 0 ).getInput( 0 ).getConvention() == convention;
+            return true;//call.alg( 0 ).getInput( 0 ).getConvention() == convention;
         }
 
 
@@ -299,12 +322,16 @@ public class FileRules {
         public AlgNode convert( AlgNode alg ) {
             final Filter filter = (Filter) alg;
             final AlgTraitSet traitSet = filter.getTraitSet().replace( convention );
-            return new FileFilter( filter.getCluster(), traitSet, filter.getInput(), filter.getCondition() );
+            return new FileFilter(
+                    filter.getCluster(),
+                    traitSet,
+                    convert( filter.getInput(), filter.getInput().getTraitSet().replace( convention ) ),
+                    filter.getCondition() );
         }
 
 
         private static boolean functionInFilter( Filter filter ) {
-            CheckingFunctionVisitor visitor = new CheckingFunctionVisitor();
+            CheckingFunctionVisitor visitor = new CheckingFunctionVisitor( filter );
             for ( RexNode node : filter.getChildExps() ) {
                 node.accept( visitor );
                 if ( visitor.containsFunction() ) {
@@ -317,25 +344,28 @@ public class FileRules {
     }
 
 
+    @Getter
     private static class CheckingFunctionVisitor extends RexVisitorImpl<Void> {
 
-        @Getter
         @Accessors(fluent = true)
         private boolean containsFunction = false;
 
+        private boolean isProject;
 
-        CheckingFunctionVisitor() {
+
+        CheckingFunctionVisitor( AlgNode node ) {
             super( true );
+            isProject = node instanceof LogicalRelProject;
         }
 
 
         @Override
         public Void visitCall( RexCall call ) {
-            Operator operator = call.getOperator();
-            if ( operator instanceof Function ) {
-                containsFunction = true;
+            if ( !isProject && call.getKind() == Kind.EQUALS ) {
+                return super.visitCall( call );
             }
-            return super.visitCall( call );
+            containsFunction = true;
+            return null;
         }
 
     }

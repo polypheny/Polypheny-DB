@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,26 +18,35 @@ package org.polypheny.db.restapi;
 
 
 import java.util.Objects;
+import lombok.Getter;
+import lombok.Setter;
 import org.polypheny.db.algebra.fun.AggFunction;
-import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 
 
 public class RequestColumn {
 
-    private final CatalogColumn column;
+    @Getter
+    private final LogicalColumn column;
     private final int tableScanIndex;
+    @Setter
+    @Getter
     private int logicalIndex;
+    @Getter
     private final String fullyQualifiedName;
+    @Getter
     private final String alias;
+    @Getter
     private final AggFunction aggregate;
+    @Getter
     private final boolean explicit;
 
 
-    RequestColumn( CatalogColumn column, int tableScanIndex, int logicalIndex, String alias, AggFunction aggregate, boolean explicit ) {
+    RequestColumn( LogicalColumn column, int tableScanIndex, int logicalIndex, String alias, AggFunction aggregate, boolean explicit ) {
         this.column = Objects.requireNonNull( column );
         this.tableScanIndex = tableScanIndex;
         this.logicalIndex = logicalIndex;
-        this.fullyQualifiedName = column.getSchemaName() + "." + column.getTableName() + "." + column.name;
+        this.fullyQualifiedName = column.getNamespaceName() + "." + column.getTableName() + "." + column.name;
         if ( alias == null ) {
             this.alias = this.fullyQualifiedName;
         } else {
@@ -48,7 +57,7 @@ public class RequestColumn {
     }
 
 
-    RequestColumn( CatalogColumn column, int tableScanIndex, int logicalIndex, String alias, AggFunction aggregate ) {
+    RequestColumn( LogicalColumn column, int tableScanIndex, int logicalIndex, String alias, AggFunction aggregate ) {
         this( column, tableScanIndex, logicalIndex, alias, aggregate, true );
     }
 
@@ -65,41 +74,6 @@ public class RequestColumn {
 
     public int getScanIndex() {
         return tableScanIndex;
-    }
-
-
-    public int getLogicalIndex() {
-        return logicalIndex;
-    }
-
-
-    public String getFullyQualifiedName() {
-        return fullyQualifiedName;
-    }
-
-
-    public String getAlias() {
-        return alias;
-    }
-
-
-    public CatalogColumn getColumn() {
-        return column;
-    }
-
-
-    public AggFunction getAggregate() {
-        return aggregate;
-    }
-
-
-    public boolean isExplicit() {
-        return explicit;
-    }
-
-
-    public void setLogicalIndex( int logicalIndex ) {
-        this.logicalIndex = logicalIndex;
     }
 
     // The alias of a column in a request perfectly identifies it when it comes to uniqueness!

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,10 @@ package org.polypheny.db.sql.language;
 
 
 import java.util.List;
+import java.util.stream.Collectors;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.Bug;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Util;
@@ -33,7 +34,7 @@ import org.polypheny.db.util.Util;
  */
 public class SqlCharStringLiteral extends SqlAbstractStringLiteral {
 
-    protected SqlCharStringLiteral( NlsString val, ParserPos pos ) {
+    protected SqlCharStringLiteral( PolyString val, ParserPos pos ) {
         super( val, PolyType.CHAR, pos );
     }
 
@@ -42,7 +43,7 @@ public class SqlCharStringLiteral extends SqlAbstractStringLiteral {
      * @return the underlying NlsString
      */
     public NlsString getNlsString() {
-        return (NlsString) value;
+        return new NlsString( value.asString().value, Util.getDefaultCharset().name(), Collation.COERCIBLE );
     }
 
 
@@ -50,35 +51,26 @@ public class SqlCharStringLiteral extends SqlAbstractStringLiteral {
      * @return the collation
      */
     public Collation getCollation() {
-        return getNlsString().getCollation();
+        return Util.getDefaultCollation();
     }
 
 
     @Override
     public SqlCharStringLiteral clone( ParserPos pos ) {
-        return new SqlCharStringLiteral( (NlsString) value, pos );
+        return new SqlCharStringLiteral( (PolyString) value, pos );
     }
 
 
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
-        if ( false ) {
-            Util.discard( Bug.FRG78_FIXED );
-            String stringValue = ((NlsString) value).getValue();
-            writer.literal( writer.getDialect().quoteStringLiteral( stringValue ) );
-        }
-        assert value instanceof NlsString;
-        writer.literal( value.toString() );
+        assert value instanceof PolyString;
+        writer.literal( value.asString().toPrefixedString() );
     }
 
 
     @Override
     protected SqlAbstractStringLiteral concat1( List<SqlLiteral> literals ) {
-        return new SqlCharStringLiteral(
-                NlsString.concat(
-                        Util.transform(
-                                literals,
-                                literal -> ((SqlCharStringLiteral) literal).getNlsString() ) ),
+        return new SqlCharStringLiteral( PolyString.of( literals.stream().map( literal -> (literal.getPolyValue().asString().value) ).collect( Collectors.joining() ) ),
                 literals.get( 0 ).getPos() );
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,19 +46,22 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.constant.ExplainLevel;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexChecker;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Permutation;
@@ -68,9 +71,9 @@ import org.polypheny.db.util.mapping.Mappings;
 
 
 /**
- * Relational expression that computes a set of 'select expressions' from its input relational expression.
+ * Relational expression that computes a set of 'select expressions' from its input algebra expression.
  *
- * @see LogicalProject
+ * @see LogicalRelProject
  */
 public abstract class Project extends SingleAlg {
 
@@ -80,13 +83,13 @@ public abstract class Project extends SingleAlg {
     /**
      * Creates a Project.
      *
-     * @param cluster Cluster that this relational expression belongs to
-     * @param traits Traits of this relational expression
-     * @param input Input relational expression
+     * @param cluster Cluster that this algebra expression belongs to
+     * @param traits Traits of this algebra expression
+     * @param input Input algebra expression
      * @param projects List of expressions for the input columns
      * @param rowType Output row type
      */
-    protected Project( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
+    protected Project( AlgCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
         super( cluster, traits, input );
         assert rowType != null;
         this.exps = ImmutableList.copyOf( projects );
@@ -96,7 +99,7 @@ public abstract class Project extends SingleAlg {
 
 
     @Override
-    public final AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+    public final Project copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         return copy( traitSet, sole( inputs ), exps, rowType );
     }
 
@@ -146,19 +149,22 @@ public abstract class Project extends SingleAlg {
      * @return List of (expression, name) pairs
      */
     public final List<Pair<RexNode, String>> getNamedProjects() {
-        return Pair.zip( getProjects(), getRowType().getFieldNames() );
+        return Pair.zip( getProjects(), getTupleType().getFieldNames() );
     }
 
 
     @Override
     public boolean isValid( Litmus litmus, Context context ) {
+        if ( !traitSet.contains( ModelTrait.RELATIONAL ) ) {
+            return true; // for non-structured we have no guarantees
+        }
         if ( !super.isValid( litmus, context ) ) {
             return litmus.fail( null );
         }
-        if ( !RexUtil.compatibleTypes( exps, getRowType(), litmus ) ) {
+        if ( !RexUtil.compatibleTypes( exps, getTupleType(), litmus ) ) {
             return litmus.fail( "incompatible types" );
         }
-        RexChecker checker = new RexChecker( getInput().getRowType(), context, litmus );
+        RexChecker checker = new RexChecker( getInput().getTupleType(), context, litmus );
         for ( RexNode exp : exps ) {
             exp.accept( checker );
             if ( checker.getFailureCount() > 0 ) {
@@ -181,8 +187,8 @@ public abstract class Project extends SingleAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        double dRows = mq.getRowCount( getInput() );
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
+        double dRows = mq.getTupleCount( getInput() );
         double dCpu = dRows * exps.size();
         double dIo = 0;
         return planner.getCostFactory().makeCost( dRows, dCpu, dIo );
@@ -196,7 +202,7 @@ public abstract class Project extends SingleAlg {
             pw.item( "fields", rowType.getFieldNames() );
             pw.item( "exprs", exps );
         } else {
-            for ( Ord<AlgDataTypeField> field : Ord.zip( rowType.getFieldList() ) ) {
+            for ( Ord<AlgDataTypeField> field : Ord.zip( rowType.getFields() ) ) {
                 String fieldName = field.e.getName();
                 if ( fieldName == null ) {
                     fieldName = "field#" + field.i;
@@ -222,13 +228,13 @@ public abstract class Project extends SingleAlg {
      * @return Mapping, or null if this projection is not a mapping
      */
     public Mappings.TargetMapping getMapping() {
-        return getMapping( getInput().getRowType().getFieldCount(), exps );
+        return getMapping( getInput().getTupleType().getFieldCount(), exps );
     }
 
 
     /**
      * Returns a mapping of a set of project expressions.
-     *
+     * <p>
      * The mapping is an inverse surjection.
      * Every target has a source field, but a source field may appear as zero, one, or more target fields.
      * Thus you can safely call {@link org.polypheny.db.util.mapping.Mappings.TargetMapping#getTarget(int)}.
@@ -243,10 +249,10 @@ public abstract class Project extends SingleAlg {
         }
         Mappings.TargetMapping mapping = Mappings.create( MappingType.INVERSE_SURJECTION, inputFieldCount, projects.size() );
         for ( Ord<RexNode> exp : Ord.<RexNode>zip( projects ) ) {
-            if ( !(exp.e instanceof RexInputRef) ) {
+            if ( !(exp.e instanceof RexIndexRef) ) {
                 return null;
             }
-            mapping.set( ((RexInputRef) exp.e).getIndex(), exp.i );
+            mapping.set( ((RexIndexRef) exp.e).getIndex(), exp.i );
         }
         return mapping;
     }
@@ -254,7 +260,7 @@ public abstract class Project extends SingleAlg {
 
     /**
      * Returns a partial mapping of a set of project expressions.
-     *
+     * <p>
      * The mapping is an inverse function. Every target has a source field, but a source might have 0, 1 or more targets.
      * Project expressions that do not consist of a mapping are ignored.
      *
@@ -265,8 +271,8 @@ public abstract class Project extends SingleAlg {
     public static Mappings.TargetMapping getPartialMapping( int inputFieldCount, List<? extends RexNode> projects ) {
         Mappings.TargetMapping mapping = Mappings.create( MappingType.INVERSE_FUNCTION, inputFieldCount, projects.size() );
         for ( Ord<RexNode> exp : Ord.<RexNode>zip( projects ) ) {
-            if ( exp.e instanceof RexInputRef ) {
-                mapping.set( ((RexInputRef) exp.e).getIndex(), exp.i );
+            if ( exp.e instanceof RexIndexRef ) {
+                mapping.set( ((RexIndexRef) exp.e).getIndex(), exp.i );
             }
         }
         return mapping;
@@ -279,7 +285,7 @@ public abstract class Project extends SingleAlg {
      * @return Permutation, if this projection is merely a permutation of its input fields; otherwise null
      */
     public Permutation getPermutation() {
-        return getPermutation( getInput().getRowType().getFieldCount(), exps );
+        return getPermutation( getInput().getTupleType().getFieldCount(), exps );
     }
 
 
@@ -295,8 +301,8 @@ public abstract class Project extends SingleAlg {
         final Set<Integer> alreadyProjected = new HashSet<>( fieldCount );
         for ( int i = 0; i < fieldCount; ++i ) {
             final RexNode exp = projects.get( i );
-            if ( exp instanceof RexInputRef ) {
-                final int index = ((RexInputRef) exp).getIndex();
+            if ( exp instanceof RexIndexRef ) {
+                final int index = ((RexIndexRef) exp).getIndex();
                 if ( !alreadyProjected.add( index ) ) {
                     return null;
                 }
@@ -315,7 +321,7 @@ public abstract class Project extends SingleAlg {
      */
     public boolean isMapping() {
         for ( RexNode exp : exps ) {
-            if ( !(exp instanceof RexInputRef) ) {
+            if ( !(exp instanceof RexIndexRef) ) {
                 return false;
             }
         }
@@ -325,10 +331,22 @@ public abstract class Project extends SingleAlg {
 
     @Override
     public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" +
-                input.algCompareString() + "$" +
-                (exps != null ? exps.stream().map( Objects::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
-                rowType.toString() + "&";
+        String types = "";
+        if ( exps != null ) {
+            // use the real data types to exclude wrong cache usage:
+            // <FUNCTION_NAME>(?1:CHAR, ?2:INTEGER)
+            // - second usage of the same function will clip the string because unclear what is the size of CHAR
+            // should be <FUNCTION_NAME>(?1:CHAR(<LENGTH>), ?2:INTEGER)
+            types = "$" + exps.stream().filter( RexCall.class::isInstance )
+                    .flatMap( call -> ((RexCall) call).operands.stream() )
+                    .filter( RexDynamicParam.class::isInstance )
+                    .map( param -> param + "(" + param.getType().getFullTypeString() + ")" )
+                    .collect( Collectors.joining( "$" ) );
+        }
+        return this.getClass().getSimpleName() + "$" + input.algCompareString() + "$" +
+                (exps != null ? exps.stream().map( Objects::hashCode ).map( Objects::toString )
+                        .collect( Collectors.joining( "$" ) ) : "") + "$" +
+                rowType.toString() + types + "&";
     }
 
 }

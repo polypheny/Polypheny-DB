@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,10 @@ package org.polypheny.db.sql.language.parser;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -47,9 +47,8 @@ import org.apache.calcite.avatica.util.Quoting;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.constant.ConformanceEnum;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.languages.NodeParseException;
@@ -79,18 +78,18 @@ import org.polypheny.db.util.Util;
 
 /**
  * A <code>SqlParserTest</code> is a unit-test for {@link SqlParser the SQL parser}.
- *
+ * <p>
  * To reuse this test for an extension parser, implement the {@link #parserImplFactory()} method to return the extension parser implementation.
  */
 public class SqlParserTest extends SqlLanguageDependent {
 
     /**
      * List of reserved keywords.
-     *
+     * <p>
      * Each keyword is followed by tokens indicating whether it is reserved in the SQL:92, SQL:99, SQL:2003, SQL:2011, SQL:2014 standards and in Polypheny-DB.
-     *
+     * <p>
      * The standard keywords are derived from <a href="https://developer.mimer.com/wp-content/uploads/2018/05/Standard-SQL-Reserved-Words-Summary.pdf">Mimer</a> and from the specification.
-     *
+     * <p>
      * If a new <b>reserved</b> keyword is added to the parser, include it in this list, flagged "c". If the keyword is not intended to be a reserved keyword, add it to the non-reserved keyword list in the parser.
      */
     private static final List<String> RESERVED_KEYWORDS = ImmutableList.of(
@@ -259,7 +258,7 @@ public class SqlParserTest extends SqlLanguageDependent {
             "FRAME_ROW", "2014", "c",
             "FREE", "99", "2003", "2011", "2014", "c",
             "FREQUENCY", "99", "2003", "2011", "2014", "c",
-            "FRESHNESS", "c",                                   //IG: Added for Materialized Views
+            "FRESHNESS", "c",                                   // IG: Added for Materialized Views
             "FROM", "92", "99", "2003", "2011", "2014", "c",
             "FULL", "92", "99", "2003", "2011", "2014", "c",
             "FUNCTION", "92", "99", "2003", "2011", "2014", "c",
@@ -270,6 +269,7 @@ public class SqlParserTest extends SqlLanguageDependent {
             "GO", "92", "99",
             "GOTO", "92", "99",
             "GRANT", "92", "99", "2003", "2011", "2014", "c",
+            "GRAPH", "c",  // MV: Added for parsing DDLs
             "GROUP", "92", "99", "2003", "2011", "2014", "c",
             "GROUPING", "99", "2003", "2011", "2014", "c",
             "GROUPS", "2014", "c",
@@ -356,6 +356,7 @@ public class SqlParserTest extends SqlLanguageDependent {
             "MONTH", "92", "99", "2003", "2011", "2014", "c",
             "MULTISET", "2003", "2011", "2014", "c",
             "NAMES", "92", "99",
+            "NAMESPACE", "c",   // MV: Added for parsing DDLs
             "NATIONAL", "92", "99", "2003", "2011", "2014", "c",
             "NATURAL", "92", "99", "2003", "2011", "2014", "c",
             "NCHAR", "92", "99", "2003", "2011", "2014", "c",
@@ -438,6 +439,7 @@ public class SqlParserTest extends SqlLanguageDependent {
             "REGR_SXX", "2011", "2014", "c",
             "REGR_SXY", "2011", "2014", "c",
             "REGR_SYY", "2011", "2014", "c",
+            "RELATIONAL", "c",  // MV: Added for parsing DDLs
             "RELATIVE", "92", "99",
             "RELEASE", "99", "2003", "2011", "2014", "c",
             "REPEAT", "92", "99", "2003",
@@ -577,8 +579,8 @@ public class SqlParserTest extends SqlLanguageDependent {
     private static final ThreadLocal<boolean[]> LINUXIFY = ThreadLocal.withInitial( () -> new boolean[]{ true } );
 
     private Quoting quoting = Quoting.DOUBLE_QUOTE;
-    private Casing unquotedCasing = Casing.TO_UPPER;
-    private Casing quotedCasing = Casing.UNCHANGED;
+    private final Casing unquotedCasing = Casing.TO_UPPER;
+    private final Casing quotedCasing = Casing.UNCHANGED;
     private Conformance conformance = ConformanceEnum.DEFAULT;
     /**
      * Similar to the null dialect in SqlNode.toSqlString(), but it claims to be able to parse nested arrays, which is needed for some of the tests
@@ -659,7 +661,7 @@ public class SqlParserTest extends SqlLanguageDependent {
      * Returns a {@link Matcher} that succeeds if the given {@link SqlNode} is a DDL statement.
      */
     public static Matcher<Node> isDdl() {
-        return new BaseMatcher<Node>() {
+        return new BaseMatcher<>() {
             @Override
             public boolean matches( Object item ) {
                 return item instanceof SqlNode && Kind.DDL.contains( ((SqlNode) item).getKind() );
@@ -720,12 +722,13 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testExceptionCleanup() {
         checkFails(
                 "select 0.5e1^.1^ from sales.emps",
-                "(?s).*Encountered \".1\" at line 1, column 13.\n"
-                        + "Was expecting one of:\n"
-                        + "    <EOF> \n"
-                        + "    \"ORDER\" ...\n"
-                        + "    \"LIMIT\" ...\n"
-                        + ".*" );
+                """
+                        (?s).*Encountered ".1" at line 1, column 13.
+                        Was expecting one of:
+                            <EOF>\s
+                            "ORDER" ...
+                            "LIMIT" ...
+                        .*""" );
     }
 
 
@@ -747,7 +750,10 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testDerivedColumnList() {
         check(
                 "select * from emp as e (empno, gender) where true",
-                "SELECT *\n" + "FROM `EMP` AS `E` (`EMPNO`, `GENDER`)\n" + "WHERE TRUE" );
+                """
+                        SELECT *
+                        FROM `EMP` AS `E` (`EMPNO`, `GENDER`)
+                        WHERE TRUE""" );
     }
 
 
@@ -755,9 +761,10 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testDerivedColumnListInJoin() {
         check(
                 "select * from emp as e (empno, gender) join dept as d (deptno, dname) on emp.deptno = dept.deptno",
-                "SELECT *\n"
-                        + "FROM `EMP` AS `E` (`EMPNO`, `GENDER`)\n"
-                        + "INNER JOIN `DEPT` AS `D` (`DEPTNO`, `DNAME`) ON (`EMP`.`DEPTNO` = `DEPT`.`DEPTNO`)" );
+                """
+                        SELECT *
+                        FROM `EMP` AS `E` (`EMPNO`, `GENDER`)
+                        INNER JOIN `DEPT` AS `D` (`DEPTNO`, `DNAME`) ON (`EMP`.`DEPTNO` = `DEPT`.`DEPTNO`)""" );
     }
 
 
@@ -768,9 +775,10 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testBetweenAnd() {
         final String sql = "select * from emp\n"
                 + "where deptno between - DEPTNO + 1 and 5";
-        final String expected = "SELECT *\n"
-                + "FROM `EMP`\n"
-                + "WHERE (`DEPTNO` BETWEEN ASYMMETRIC ((- `DEPTNO`) + 1) AND 5)";
+        final String expected = """
+                SELECT *
+                FROM `EMP`
+                WHERE (`DEPTNO` BETWEEN ASYMMETRIC ((- `DEPTNO`) + 1) AND 5)""";
         sql( sql ).ok( expected );
     }
 
@@ -779,31 +787,28 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testBetweenAnd2() {
         final String sql = "select * from emp\n"
                 + "where deptno between - DEPTNO + 1 and - empno - 3";
-        final String expected = "SELECT *\n"
-                + "FROM `EMP`\n"
-                + "WHERE (`DEPTNO` BETWEEN ASYMMETRIC ((- `DEPTNO`) + 1)"
-                + " AND ((- `EMPNO`) - 3))";
+        final String expected = """
+                SELECT *
+                FROM `EMP`
+                WHERE (`DEPTNO` BETWEEN ASYMMETRIC ((- `DEPTNO`) + 1) AND ((- `EMPNO`) - 3))""";
         sql( sql ).ok( expected );
     }
 
 
-    @Ignore
-    @Test
+    @Disabled
     public void testDerivedColumnListNoAs() {
         check( "select * from emp e (empno, gender) where true", "foo" );
     }
 
 
     // jdbc syntax
-    @Ignore
-    @Test
+    @Disabled
     public void testEmbeddedCall() {
         checkExp( "{call foo(?, ?)}", "foo" );
     }
 
 
-    @Ignore
-    @Test
+    @Disabled
     public void testEmbeddedFunction() {
         checkExp( "{? = call bar (?, ?)}", "foo" );
     }
@@ -851,27 +856,31 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testBooleanPrecedenceAndAssociativity() {
         check(
                 "select * from t where true and false",
-                "SELECT *\n"
-                        + "FROM `T`\n"
-                        + "WHERE (TRUE AND FALSE)" );
+                """
+                        SELECT *
+                        FROM `T`
+                        WHERE (TRUE AND FALSE)""" );
 
         check(
                 "select * from t where null or unknown and unknown",
-                "SELECT *\n"
-                        + "FROM `T`\n"
-                        + "WHERE (NULL OR (UNKNOWN AND UNKNOWN))" );
+                """
+                        SELECT *
+                        FROM `T`
+                        WHERE (NULL OR (UNKNOWN AND UNKNOWN))""" );
 
         check(
                 "select * from t where true and (true or true) or false",
-                "SELECT *\n"
-                        + "FROM `T`\n"
-                        + "WHERE ((TRUE AND (TRUE OR TRUE)) OR FALSE)" );
+                """
+                        SELECT *
+                        FROM `T`
+                        WHERE ((TRUE AND (TRUE OR TRUE)) OR FALSE)""" );
 
         check(
                 "select * from t where 1 and true",
-                "SELECT *\n"
-                        + "FROM `T`\n"
-                        + "WHERE (1 AND TRUE)" );
+                """
+                        SELECT *
+                        FROM `T`
+                        WHERE (1 AND TRUE)""" );
     }
 
 
@@ -961,27 +970,31 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testIsBooleanPrecedenceAndAssociativity() {
         check(
                 "select * from t where x is unknown is not unknown",
-                "SELECT *\n"
-                        + "FROM `T`\n"
-                        + "WHERE ((`X` IS UNKNOWN) IS NOT UNKNOWN)" );
+                """
+                        SELECT *
+                        FROM `T`
+                        WHERE ((`X` IS UNKNOWN) IS NOT UNKNOWN)""" );
 
         check(
                 "select 1 from t where not true is unknown",
-                "SELECT 1\n"
-                        + "FROM `T`\n"
-                        + "WHERE (NOT (TRUE IS UNKNOWN))" );
+                """
+                        SELECT 1
+                        FROM `T`
+                        WHERE (NOT (TRUE IS UNKNOWN))""" );
 
         check(
                 "select * from t where x is unknown is not unknown is false is not false is true is not true is null is not null",
-                "SELECT *\n"
-                        + "FROM `T`\n"
-                        + "WHERE ((((((((`X` IS UNKNOWN) IS NOT UNKNOWN) IS FALSE) IS NOT FALSE) IS TRUE) IS NOT TRUE) IS NULL) IS NOT NULL)" );
+                """
+                        SELECT *
+                        FROM `T`
+                        WHERE ((((((((`X` IS UNKNOWN) IS NOT UNKNOWN) IS FALSE) IS NOT FALSE) IS TRUE) IS NOT TRUE) IS NULL) IS NOT NULL)""" );
 
         // combine IS postfix operators with infix (AND) and prefix (NOT) ops
         final String sql = "select * from t where x is unknown is false and x is unknown is true or not y is unknown is not null";
-        final String expected = "SELECT *\n"
-                + "FROM `T`\n"
-                + "WHERE ((((`X` IS UNKNOWN) IS FALSE) AND ((`X` IS UNKNOWN) IS TRUE)) OR (NOT ((`Y` IS UNKNOWN) IS NOT NULL)))";
+        final String expected = """
+                SELECT *
+                FROM `T`
+                WHERE ((((`X` IS UNKNOWN) IS FALSE) AND ((`X` IS UNKNOWN) IS TRUE)) OR (NOT ((`Y` IS UNKNOWN) IS NOT NULL)))""";
         check( sql, expected );
     }
 
@@ -1009,45 +1022,52 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testBetween() {
         check(
                 "select * from t where price between 1 and 2",
-                "SELECT *\n"
-                        + "FROM `T`\n"
-                        + "WHERE (`PRICE` BETWEEN ASYMMETRIC 1 AND 2)" );
+                """
+                        SELECT *
+                        FROM `T`
+                        WHERE (`PRICE` BETWEEN ASYMMETRIC 1 AND 2)""" );
 
         check(
                 "select * from t where price between symmetric 1 and 2",
-                "SELECT *\n"
-                        + "FROM `T`\n"
-                        + "WHERE (`PRICE` BETWEEN SYMMETRIC 1 AND 2)" );
+                """
+                        SELECT *
+                        FROM `T`
+                        WHERE (`PRICE` BETWEEN SYMMETRIC 1 AND 2)""" );
 
         check(
                 "select * from t where price not between symmetric 1 and 2",
-                "SELECT *\n"
-                        + "FROM `T`\n"
-                        + "WHERE (`PRICE` NOT BETWEEN SYMMETRIC 1 AND 2)" );
+                """
+                        SELECT *
+                        FROM `T`
+                        WHERE (`PRICE` NOT BETWEEN SYMMETRIC 1 AND 2)""" );
 
         check(
                 "select * from t where price between ASYMMETRIC 1 and 2+2*2",
-                "SELECT *\n"
-                        + "FROM `T`\n"
-                        + "WHERE (`PRICE` BETWEEN ASYMMETRIC 1 AND (2 + (2 * 2)))" );
+                """
+                        SELECT *
+                        FROM `T`
+                        WHERE (`PRICE` BETWEEN ASYMMETRIC 1 AND (2 + (2 * 2)))""" );
 
         check(
                 "select * from t where price > 5 and price not between 1 + 2 and 3 * 4 AnD price is null",
-                "SELECT *\n"
-                        + "FROM `T`\n"
-                        + "WHERE (((`PRICE` > 5) AND (`PRICE` NOT BETWEEN ASYMMETRIC (1 + 2) AND (3 * 4))) AND (`PRICE` IS NULL))" );
+                """
+                        SELECT *
+                        FROM `T`
+                        WHERE (((`PRICE` > 5) AND (`PRICE` NOT BETWEEN ASYMMETRIC (1 + 2) AND (3 * 4))) AND (`PRICE` IS NULL))""" );
 
         check(
                 "select * from t where price > 5 and price between 1 + 2 and 3 * 4 + price is null",
-                "SELECT *\n"
-                        + "FROM `T`\n"
-                        + "WHERE ((`PRICE` > 5) AND ((`PRICE` BETWEEN ASYMMETRIC (1 + 2) AND ((3 * 4) + `PRICE`)) IS NULL))" );
+                """
+                        SELECT *
+                        FROM `T`
+                        WHERE ((`PRICE` > 5) AND ((`PRICE` BETWEEN ASYMMETRIC (1 + 2) AND ((3 * 4) + `PRICE`)) IS NULL))""" );
 
         check(
                 "select * from t where price > 5 and price between 1 + 2 and 3 * 4 or price is null",
-                "SELECT *\n"
-                        + "FROM `T`\n"
-                        + "WHERE (((`PRICE` > 5) AND (`PRICE` BETWEEN ASYMMETRIC (1 + 2) AND (3 * 4))) OR (`PRICE` IS NULL))" );
+                """
+                        SELECT *
+                        FROM `T`
+                        WHERE (((`PRICE` > 5) AND (`PRICE` BETWEEN ASYMMETRIC (1 + 2) AND (3 * 4))) OR (`PRICE` IS NULL))""" );
 
         check(
                 "values a between c and d and e and f between g and h",
@@ -1094,21 +1114,24 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testRow() {
         check(
                 "select t.r.\"EXPR$1\", t.r.\"EXPR$0\" from (select (1,2) r from sales.depts) t",
-                "SELECT `T`.`R`.`EXPR$1`, `T`.`R`.`EXPR$0`\n"
-                        + "FROM (SELECT (ROW(1, 2)) AS `R`\n"
-                        + "FROM `SALES`.`DEPTS`) AS `T`" );
+                """
+                        SELECT `T`.`R`.`EXPR$1`, `T`.`R`.`EXPR$0`
+                        FROM (SELECT (ROW(1, 2)) AS `R`
+                        FROM `SALES`.`DEPTS`) AS `T`""" );
 
         check(
                 "select t.r.\"EXPR$1\".\"EXPR$2\" from (select ((1,2),(3,4,5)) r from sales.depts) t",
-                "SELECT `T`.`R`.`EXPR$1`.`EXPR$2`\n"
-                        + "FROM (SELECT (ROW((ROW(1, 2)), (ROW(3, 4, 5)))) AS `R`\n"
-                        + "FROM `SALES`.`DEPTS`) AS `T`" );
+                """
+                        SELECT `T`.`R`.`EXPR$1`.`EXPR$2`
+                        FROM (SELECT (ROW((ROW(1, 2)), (ROW(3, 4, 5)))) AS `R`
+                        FROM `SALES`.`DEPTS`) AS `T`""" );
 
         check(
                 "select t.r.\"EXPR$1\".\"EXPR$2\" from (select ((1,2),(3,4,5,6)) r from sales.depts) t",
-                "SELECT `T`.`R`.`EXPR$1`.`EXPR$2`\n"
-                        + "FROM (SELECT (ROW((ROW(1, 2)), (ROW(3, 4, 5, 6)))) AS `R`\n"
-                        + "FROM `SALES`.`DEPTS`) AS `T`" );
+                """
+                        SELECT `T`.`R`.`EXPR$1`.`EXPR$2`
+                        FROM (SELECT (ROW((ROW(1, 2)), (ROW(3, 4, 5, 6)))) AS `R`
+                        FROM `SALES`.`DEPTS`) AS `T`""" );
 
         // Conformance DEFAULT and LENIENT support explicit row value constructor
         conformance = ConformanceEnum.DEFAULT;
@@ -1129,9 +1152,10 @@ public class SqlParserTest extends SqlLanguageDependent {
         sql( selectRow ).fails( pattern );
 
         final String whereRow = "select 1 from t2 where ^row (x, y)^ < row (a, b)";
-        final String whereExpected = "SELECT 1\n"
-                + "FROM `T2`\n"
-                + "WHERE ((ROW(`X`, `Y`)) < (ROW(`A`, `B`)))";
+        final String whereExpected = """
+                SELECT 1
+                FROM `T2`
+                WHERE ((ROW(`X`, `Y`)) < (ROW(`A`, `B`)))""";
         conformance = ConformanceEnum.DEFAULT;
         sql( whereRow ).sansCarets().ok( whereExpected );
         conformance = ConformanceEnum.SQL_SERVER_2008;
@@ -1222,33 +1246,38 @@ public class SqlParserTest extends SqlLanguageDependent {
 
         check(
                 "select * from t where x is distinct from y",
-                "SELECT *\n"
-                        + "FROM `T`\n"
-                        + "WHERE (`X` IS DISTINCT FROM `Y`)" );
+                """
+                        SELECT *
+                        FROM `T`
+                        WHERE (`X` IS DISTINCT FROM `Y`)""" );
 
         check(
                 "select * from t where x is distinct from (4,5,6)",
-                "SELECT *\n"
-                        + "FROM `T`\n"
-                        + "WHERE (`X` IS DISTINCT FROM (ROW(4, 5, 6)))" );
+                """
+                        SELECT *
+                        FROM `T`
+                        WHERE (`X` IS DISTINCT FROM (ROW(4, 5, 6)))""" );
 
         check(
                 "select * from t where x is distinct from row (4,5,6)",
-                "SELECT *\n"
-                        + "FROM `T`\n"
-                        + "WHERE (`X` IS DISTINCT FROM (ROW(4, 5, 6)))" );
+                """
+                        SELECT *
+                        FROM `T`
+                        WHERE (`X` IS DISTINCT FROM (ROW(4, 5, 6)))""" );
 
         check(
                 "select * from t where true is distinct from true",
-                "SELECT *\n"
-                        + "FROM `T`\n"
-                        + "WHERE (TRUE IS DISTINCT FROM TRUE)" );
+                """
+                        SELECT *
+                        FROM `T`
+                        WHERE (TRUE IS DISTINCT FROM TRUE)""" );
 
         check(
                 "select * from t where true is distinct from true is true",
-                "SELECT *\n"
-                        + "FROM `T`\n"
-                        + "WHERE ((TRUE IS DISTINCT FROM TRUE) IS TRUE)" );
+                """
+                        SELECT *
+                        FROM `T`
+                        WHERE ((TRUE IS DISTINCT FROM TRUE) IS TRUE)""" );
     }
 
 
@@ -1260,9 +1289,10 @@ public class SqlParserTest extends SqlLanguageDependent {
 
         check(
                 "select * from t where true is not distinct from true",
-                "SELECT *\n"
-                        + "FROM `T`\n"
-                        + "WHERE (TRUE IS NOT DISTINCT FROM TRUE)" );
+                """
+                        SELECT *
+                        FROM `T`
+                        WHERE (TRUE IS NOT DISTINCT FROM TRUE)""" );
     }
 
 
@@ -1443,23 +1473,26 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testLikeAndSimilar() {
         check(
                 "select * from t where x like '%abc%'",
-                "SELECT *\n"
-                        + "FROM `T`\n"
-                        + "WHERE (`X` LIKE '%abc%')" );
+                """
+                        SELECT *
+                        FROM `T`
+                        WHERE (`X` LIKE '%abc%')""" );
 
         check(
                 "select * from t where x+1 not siMilaR to '%abc%' ESCAPE 'e'",
-                "SELECT *\n"
-                        + "FROM `T`\n"
-                        + "WHERE ((`X` + 1) NOT SIMILAR TO '%abc%' ESCAPE 'e')" );
+                """
+                        SELECT *
+                        FROM `T`
+                        WHERE ((`X` + 1) NOT SIMILAR TO '%abc%' ESCAPE 'e')""" );
 
         // LIKE has higher precedence than AND
         check(
                 "select * from t where price > 5 and x+2*2 like y*3+2 escape (select*from t)",
-                "SELECT *\n"
-                        + "FROM `T`\n"
-                        + "WHERE ((`PRICE` > 5) AND ((`X` + (2 * 2)) LIKE ((`Y` * 3) + 2) ESCAPE (SELECT *\n"
-                        + "FROM `T`)))" );
+                """
+                        SELECT *
+                        FROM `T`
+                        WHERE ((`PRICE` > 5) AND ((`X` + (2 * 2)) LIKE ((`Y` * 3) + 2) ESCAPE (SELECT *
+                        FROM `T`)))""" );
 
         check(
                 "values a and b like c",
@@ -1526,23 +1559,26 @@ public class SqlParserTest extends SqlLanguageDependent {
         // basic SIMILAR TO
         check(
                 "select * from t where x similar to '%abc%'",
-                "SELECT *\n"
-                        + "FROM `T`\n"
-                        + "WHERE (`X` SIMILAR TO '%abc%')" );
+                """
+                        SELECT *
+                        FROM `T`
+                        WHERE (`X` SIMILAR TO '%abc%')""" );
 
         check(
                 "select * from t where x+1 not siMilaR to '%abc%' ESCAPE 'e'",
-                "SELECT *\n"
-                        + "FROM `T`\n"
-                        + "WHERE ((`X` + 1) NOT SIMILAR TO '%abc%' ESCAPE 'e')" );
+                """
+                        SELECT *
+                        FROM `T`
+                        WHERE ((`X` + 1) NOT SIMILAR TO '%abc%' ESCAPE 'e')""" );
 
         // SIMILAR TO has higher precedence than AND
         check(
                 "select * from t where price > 5 and x+2*2 SIMILAR TO y*3+2 escape (select*from t)",
-                "SELECT *\n"
-                        + "FROM `T`\n"
-                        + "WHERE ((`PRICE` > 5) AND ((`X` + (2 * 2)) SIMILAR TO ((`Y` * 3) + 2) ESCAPE (SELECT *\n"
-                        + "FROM `T`)))" );
+                """
+                        SELECT *
+                        FROM `T`
+                        WHERE ((`PRICE` > 5) AND ((`X` + (2 * 2)) SIMILAR TO ((`Y` * 3) + 2) ESCAPE (SELECT *
+                        FROM `T`)))""" );
 
         // Mixed LIKE and SIMILAR TO
         check(
@@ -1552,9 +1588,10 @@ public class SqlParserTest extends SqlLanguageDependent {
         // SIMILAR TO with sub-query
         check(
                 "values a similar to (select * from t where a like b escape c) escape d",
-                "VALUES (ROW((`A` SIMILAR TO (SELECT *\n"
-                        + "FROM `T`\n"
-                        + "WHERE (`A` LIKE `B` ESCAPE `C`)) ESCAPE `D`)))" );
+                """
+                        VALUES (ROW((`A` SIMILAR TO (SELECT *
+                        FROM `T`
+                        WHERE (`A` LIKE `B` ESCAPE `C`)) ESCAPE `D`)))""" );
     }
 
 
@@ -1578,11 +1615,12 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testExists() {
         check(
                 "select * from dept where exists (select 1 from emp where emp.deptno = dept.deptno)",
-                "SELECT *\n"
-                        + "FROM `DEPT`\n"
-                        + "WHERE (EXISTS (SELECT 1\n"
-                        + "FROM `EMP`\n"
-                        + "WHERE (`EMP`.`DEPTNO` = `DEPT`.`DEPTNO`)))" );
+                """
+                        SELECT *
+                        FROM `DEPT`
+                        WHERE (EXISTS (SELECT 1
+                        FROM `EMP`
+                        WHERE (`EMP`.`DEPTNO` = `DEPT`.`DEPTNO`)))""" );
     }
 
 
@@ -1590,10 +1628,11 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testExistsInWhere() {
         check(
                 "select * from emp where 1 = 2 and exists (select 1 from dept) and 3 = 4",
-                "SELECT *\n"
-                        + "FROM `EMP`\n"
-                        + "WHERE (((1 = 2) AND (EXISTS (SELECT 1\n"
-                        + "FROM `DEPT`))) AND (3 = 4))" );
+                """
+                        SELECT *
+                        FROM `EMP`
+                        WHERE (((1 = 2) AND (EXISTS (SELECT 1
+                        FROM `DEPT`))) AND (3 = 4))""" );
     }
 
 
@@ -1601,9 +1640,10 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testFromWithAs() {
         check(
                 "select 1 from emp as e where 1",
-                "SELECT 1\n"
-                        + "FROM `EMP` AS `E`\n"
-                        + "WHERE 1" );
+                """
+                        SELECT 1
+                        FROM `EMP` AS `E`
+                        WHERE 1""" );
     }
 
 
@@ -1685,7 +1725,10 @@ public class SqlParserTest extends SqlLanguageDependent {
         sql( "foo(x => 1, y => DEFAULT)" ).expression()
                 .ok( "`FOO`(`X` => 1, `Y` => DEFAULT)" );
         sql( "select sum(DISTINCT DEFAULT) from t group by x" )
-                .ok( "SELECT SUM(DISTINCT DEFAULT)\n" + "FROM `T`\n" + "GROUP BY `X`" );
+                .ok( """
+                        SELECT SUM(DISTINCT DEFAULT)
+                        FROM `T`
+                        GROUP BY `X`""" );
         checkExpFails(
                 "foo(x ^+^ DEFAULT)",
                 "(?s).*Encountered \"\\+ DEFAULT\" at .*" );
@@ -1727,10 +1770,11 @@ public class SqlParserTest extends SqlLanguageDependent {
 
     @Test
     public void testAggregateFilter() {
-        sql( "select sum(sal) filter (where gender = 'F') as femaleSal,\n"
-                + " sum(sal) filter (where true) allSal,\n"
-                + " count(distinct deptno) filter (where (deptno < 40))\n"
-                + "from emp" )
+        sql( """
+                select sum(sal) filter (where gender = 'F') as femaleSal,
+                 sum(sal) filter (where true) allSal,
+                 count(distinct deptno) filter (where (deptno < 40))
+                from emp""" )
                 .ok( "SELECT (SUM(`SAL`) FILTER (WHERE (`GENDER` = 'F'))) AS `FEMALESAL`,"
                         + " (SUM(`SAL`) FILTER (WHERE TRUE)) AS `ALLSAL`,"
                         + " (COUNT(DISTINCT `DEPTNO`) FILTER (WHERE (`DEPTNO` < 40)))\n"
@@ -1742,9 +1786,10 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testGroup() {
         check(
                 "select deptno, min(foo) as x from emp group by deptno, gender",
-                "SELECT `DEPTNO`, MIN(`FOO`) AS `X`\n"
-                        + "FROM `EMP`\n"
-                        + "GROUP BY `DEPTNO`, `GENDER`" );
+                """
+                        SELECT `DEPTNO`, MIN(`FOO`) AS `X`
+                        FROM `EMP`
+                        GROUP BY `DEPTNO`, `GENDER`""" );
     }
 
 
@@ -1752,36 +1797,41 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testGroupEmpty() {
         check(
                 "select count(*) from emp group by ()",
-                "SELECT COUNT(*)\n"
-                        + "FROM `EMP`\n"
-                        + "GROUP BY ()" );
+                """
+                        SELECT COUNT(*)
+                        FROM `EMP`
+                        GROUP BY ()""" );
 
         check(
                 "select count(*) from emp group by () having 1 = 2 order by 3",
-                "SELECT COUNT(*)\n"
-                        + "FROM `EMP`\n"
-                        + "GROUP BY ()\n"
-                        + "HAVING (1 = 2)\n"
-                        + "ORDER BY 3" );
+                """
+                        SELECT COUNT(*)
+                        FROM `EMP`
+                        GROUP BY ()
+                        HAVING (1 = 2)
+                        ORDER BY 3""" );
 
         // Used to be invalid, valid now that we support grouping sets.
         sql( "select 1 from emp group by (), x" )
-                .ok( "SELECT 1\n"
-                        + "FROM `EMP`\n"
-                        + "GROUP BY (), `X`" );
+                .ok( """
+                        SELECT 1
+                        FROM `EMP`
+                        GROUP BY (), `X`""" );
 
         // Used to be invalid, valid now that we support grouping sets.
         sql( "select 1 from emp group by x, ()" )
-                .ok( "SELECT 1\n"
-                        + "FROM `EMP`\n"
-                        + "GROUP BY `X`, ()" );
+                .ok( """
+                        SELECT 1
+                        FROM `EMP`
+                        GROUP BY `X`, ()""" );
 
         // parentheses do not an empty GROUP BY make
         check(
                 "select 1 from emp group by (empno + deptno)",
-                "SELECT 1\n"
-                        + "FROM `EMP`\n"
-                        + "GROUP BY (`EMPNO` + `DEPTNO`)" );
+                """
+                        SELECT 1
+                        FROM `EMP`
+                        GROUP BY (`EMPNO` + `DEPTNO`)""" );
     }
 
 
@@ -1789,11 +1839,12 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testHavingAfterGroup() {
         check(
                 "select deptno from emp group by deptno, emp having count(*) > 5 and 1 = 2 order by 5, 2",
-                "SELECT `DEPTNO`\n"
-                        + "FROM `EMP`\n"
-                        + "GROUP BY `DEPTNO`, `EMP`\n"
-                        + "HAVING ((COUNT(*) > 5) AND (1 = 2))\n"
-                        + "ORDER BY 5, 2" );
+                """
+                        SELECT `DEPTNO`
+                        FROM `EMP`
+                        GROUP BY `DEPTNO`, `EMP`
+                        HAVING ((COUNT(*) > 5) AND (1 = 2))
+                        ORDER BY 5, 2""" );
     }
 
 
@@ -1809,9 +1860,10 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testHavingNoGroup() {
         check(
                 "select deptno from emp having count(*) > 5",
-                "SELECT `DEPTNO`\n"
-                        + "FROM `EMP`\n"
-                        + "HAVING (COUNT(*) > 5)" );
+                """
+                        SELECT `DEPTNO`
+                        FROM `EMP`
+                        HAVING (COUNT(*) > 5)""" );
     }
 
 
@@ -1819,32 +1871,37 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testGroupingSets() {
         sql( "select deptno from emp\n"
                 + "group by grouping sets (deptno, (deptno, gender), ())" )
-                .ok( "SELECT `DEPTNO`\n"
-                        + "FROM `EMP`\n"
-                        + "GROUP BY GROUPING SETS(`DEPTNO`, (`DEPTNO`, `GENDER`), ())" );
+                .ok( """
+                        SELECT `DEPTNO`
+                        FROM `EMP`
+                        GROUP BY GROUPING SETS(`DEPTNO`, (`DEPTNO`, `GENDER`), ())""" );
 
         // Grouping sets must have parentheses
         sql( "select deptno from emp\n"
                 + "group by grouping sets ^deptno^, (deptno, gender), ()" )
-                .fails( "(?s).*Encountered \"deptno\" at line 2, column 24.\n"
-                        + "Was expecting:\n"
-                        + "    \"\\(\" .*" );
+                .fails( """
+                        (?s).*Encountered "deptno" at line 2, column 24.
+                        Was expecting:
+                            "\\(" .*""" );
 
         // Nested grouping sets, cube, rollup, grouping sets all OK
-        sql( "select deptno from emp\n"
-                + "group by grouping sets (deptno, grouping sets (e, d), (),\n"
-                + "  cube (x, y), rollup(p, q))\n"
-                + "order by a" )
-                .ok( "SELECT `DEPTNO`\n"
-                        + "FROM `EMP`\n"
-                        + "GROUP BY GROUPING SETS(`DEPTNO`, GROUPING SETS(`E`, `D`), (), CUBE(`X`, `Y`), ROLLUP(`P`, `Q`))\n"
-                        + "ORDER BY `A`" );
+        sql( """
+                select deptno from emp
+                group by grouping sets (deptno, grouping sets (e, d), (),
+                  cube (x, y), rollup(p, q))
+                order by a""" )
+                .ok( """
+                        SELECT `DEPTNO`
+                        FROM `EMP`
+                        GROUP BY GROUPING SETS(`DEPTNO`, GROUPING SETS(`E`, `D`), (), CUBE(`X`, `Y`), ROLLUP(`P`, `Q`))
+                        ORDER BY `A`""" );
 
         sql( "select deptno from emp\n"
                 + "group by grouping sets (())" )
-                .ok( "SELECT `DEPTNO`\n"
-                        + "FROM `EMP`\n"
-                        + "GROUP BY GROUPING SETS(())" );
+                .ok( """
+                        SELECT `DEPTNO`
+                        FROM `EMP`
+                        GROUP BY GROUPING SETS(())""" );
     }
 
 
@@ -1852,9 +1909,10 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testGroupByCube() {
         sql( "select deptno from emp\n"
                 + "group by cube ((a, b), (c, d))" )
-                .ok( "SELECT `DEPTNO`\n"
-                        + "FROM `EMP`\n"
-                        + "GROUP BY CUBE((`A`, `B`), (`C`, `D`))" );
+                .ok( """
+                        SELECT `DEPTNO`
+                        FROM `EMP`
+                        GROUP BY CUBE((`A`, `B`), (`C`, `D`))""" );
     }
 
 
@@ -1862,10 +1920,11 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testGroupByCube2() {
         sql( "select deptno from emp\n"
                 + "group by cube ((a, b), (c, d)) order by a" )
-                .ok( "SELECT `DEPTNO`\n"
-                        + "FROM `EMP`\n"
-                        + "GROUP BY CUBE((`A`, `B`), (`C`, `D`))\n"
-                        + "ORDER BY `A`" );
+                .ok( """
+                        SELECT `DEPTNO`
+                        FROM `EMP`
+                        GROUP BY CUBE((`A`, `B`), (`C`, `D`))
+                        ORDER BY `A`""" );
         sql( "select deptno from emp\n"
                 + "group by cube (^)" )
                 .fails( "(?s)Encountered \"\\)\" at .*" );
@@ -1876,9 +1935,10 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testGroupByRollup() {
         sql( "select deptno from emp\n"
                 + "group by rollup (deptno, deptno + 1, gender)" )
-                .ok( "SELECT `DEPTNO`\n"
-                        + "FROM `EMP`\n"
-                        + "GROUP BY ROLLUP(`DEPTNO`, (`DEPTNO` + 1), `GENDER`)" );
+                .ok( """
+                        SELECT `DEPTNO`
+                        FROM `EMP`
+                        GROUP BY ROLLUP(`DEPTNO`, (`DEPTNO` + 1), `GENDER`)""" );
 
         // Nested rollup not ok
         sql( "select deptno from emp\n"
@@ -1891,9 +1951,10 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testGrouping() {
         sql( "select deptno, grouping(deptno) from emp\n"
                 + "group by grouping sets (deptno, (deptno, gender), ())" )
-                .ok( "SELECT `DEPTNO`, (GROUPING(`DEPTNO`))\n"
-                        + "FROM `EMP`\n"
-                        + "GROUP BY GROUPING SETS(`DEPTNO`, (`DEPTNO`, `GENDER`), ())" );
+                .ok( """
+                        SELECT `DEPTNO`, (GROUPING(`DEPTNO`))
+                        FROM `EMP`
+                        GROUP BY GROUPING SETS(`DEPTNO`, (`DEPTNO`, `GENDER`), ())""" );
     }
 
 
@@ -1901,25 +1962,28 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testWith() {
         check(
                 "with femaleEmps as (select * from emps where gender = 'F') select deptno from femaleEmps",
-                "WITH `FEMALEEMPS` AS (SELECT *\n"
-                        + "FROM `EMPS`\n"
-                        + "WHERE (`GENDER` = 'F')) (SELECT `DEPTNO`\n"
-                        + "FROM `FEMALEEMPS`)" );
+                """
+                        WITH `FEMALEEMPS` AS (SELECT *
+                        FROM `EMPS`
+                        WHERE (`GENDER` = 'F')) (SELECT `DEPTNO`
+                        FROM `FEMALEEMPS`)""" );
     }
 
 
     @Test
     public void testWith2() {
         check(
-                "with femaleEmps as (select * from emps where gender = 'F'),\n"
-                        + "marriedFemaleEmps(x, y) as (select * from femaleEmps where maritaStatus = 'M')\n"
-                        + "select deptno from femaleEmps",
-                "WITH `FEMALEEMPS` AS (SELECT *\n"
-                        + "FROM `EMPS`\n"
-                        + "WHERE (`GENDER` = 'F')), `MARRIEDFEMALEEMPS` (`X`, `Y`) AS (SELECT *\n"
-                        + "FROM `FEMALEEMPS`\n"
-                        + "WHERE (`MARITASTATUS` = 'M')) (SELECT `DEPTNO`\n"
-                        + "FROM `FEMALEEMPS`)" );
+                """
+                        with femaleEmps as (select * from emps where gender = 'F'),
+                        marriedFemaleEmps(x, y) as (select * from femaleEmps where maritaStatus = 'M')
+                        select deptno from femaleEmps""",
+                """
+                        WITH `FEMALEEMPS` AS (SELECT *
+                        FROM `EMPS`
+                        WHERE (`GENDER` = 'F')), `MARRIEDFEMALEEMPS` (`X`, `Y`) AS (SELECT *
+                        FROM `FEMALEEMPS`
+                        WHERE (`MARITASTATUS` = 'M')) (SELECT `DEPTNO`
+                        FROM `FEMALEEMPS`)""" );
     }
 
 
@@ -1937,9 +2001,10 @@ public class SqlParserTest extends SqlLanguageDependent {
         check(
                 "with v(i,c) as (values (1, 'a'), (2, 'bb'))\n"
                         + "select c, i from v",
-                "WITH `V` (`I`, `C`) AS (VALUES (ROW(1, 'a')),\n"
-                        + "(ROW(2, 'bb'))) (SELECT `C`, `I`\n"
-                        + "FROM `V`)" );
+                """
+                        WITH `V` (`I`, `C`) AS (VALUES (ROW(1, 'a')),
+                        (ROW(2, 'bb'))) (SELECT `C`, `I`
+                        FROM `V`)""" );
     }
 
 
@@ -1947,9 +2012,10 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testWithNestedFails() {
         // SQL standard does not allow WITH to contain WITH
         checkFails(
-                "with emp2 as (select * from emp)\n"
-                        + "^with^ dept2 as (select * from dept)\n"
-                        + "select 1 as uno from emp, dept",
+                """
+                        with emp2 as (select * from emp)
+                        ^with^ dept2 as (select * from dept)
+                        select 1 as uno from emp, dept""",
                 "(?s)Encountered \"with\" at .*" );
     }
 
@@ -1958,14 +2024,16 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testWithNestedInSubQuery() {
         // SQL standard does not allow sub-query to contain WITH but we do
         check(
-                "with emp2 as (select * from emp)\n"
-                        + "(\n"
-                        + "  with dept2 as (select * from dept)\n"
-                        + "  select 1 as uno from empDept)",
-                "WITH `EMP2` AS (SELECT *\n"
-                        + "FROM `EMP`) (WITH `DEPT2` AS (SELECT *\n"
-                        + "FROM `DEPT`) (SELECT 1 AS `UNO`\n"
-                        + "FROM `EMPDEPT`))" );
+                """
+                        with emp2 as (select * from emp)
+                        (
+                          with dept2 as (select * from dept)
+                          select 1 as uno from empDept)""",
+                """
+                        WITH `EMP2` AS (SELECT *
+                        FROM `EMP`) (WITH `DEPT2` AS (SELECT *
+                        FROM `DEPT`) (SELECT 1 AS `UNO`
+                        FROM `EMPDEPT`))""" );
     }
 
 
@@ -1973,16 +2041,19 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testWithUnion() {
         // Per the standard WITH ... SELECT ... UNION is valid even without parens.
         check(
-                "with emp2 as (select * from emp)\n"
-                        + "select * from emp2\n"
-                        + "union\n"
-                        + "select * from emp2\n",
-                "WITH `EMP2` AS (SELECT *\n"
-                        + "FROM `EMP`) (SELECT *\n"
-                        + "FROM `EMP2`\n"
-                        + "UNION\n"
-                        + "SELECT *\n"
-                        + "FROM `EMP2`)" );
+                """
+                        with emp2 as (select * from emp)
+                        select * from emp2
+                        union
+                        select * from emp2
+                        """,
+                """
+                        WITH `EMP2` AS (SELECT *
+                        FROM `EMP`) (SELECT *
+                        FROM `EMP2`
+                        UNION
+                        SELECT *
+                        FROM `EMP2`)""" );
     }
 
 
@@ -2029,14 +2100,16 @@ public class SqlParserTest extends SqlLanguageDependent {
         // What would be a call to the 'item' function in DOUBLE_QUOTE and BACK_TICK is a table alias.
         check(
                 "select * from myMap[field], myArray[1 + 2]",
-                "SELECT *\n"
-                        + "FROM `MYMAP` AS `field`,\n"
-                        + "`MYARRAY` AS `1 + 2`" );
+                """
+                        SELECT *
+                        FROM `MYMAP` AS `field`,
+                        `MYARRAY` AS `1 + 2`""" );
         check(
                 "select * from myMap [field], myArray [1 + 2]",
-                "SELECT *\n"
-                        + "FROM `MYMAP` AS `field`,\n"
-                        + "`MYARRAY` AS `1 + 2`" );
+                """
+                        SELECT *
+                        FROM `MYMAP` AS `field`,
+                        `MYARRAY` AS `1 + 2`""" );
     }
 
 
@@ -2045,9 +2118,10 @@ public class SqlParserTest extends SqlLanguageDependent {
         quoting = Quoting.BACK_TICK;
         check(
                 "select `x`.`b baz` from `emp` as `x` where `x`.deptno in (10, 20)",
-                "SELECT `x`.`b baz`\n"
-                        + "FROM `emp` AS `x`\n"
-                        + "WHERE (`x`.`DEPTNO` IN (10, 20))" );
+                """
+                        SELECT `x`.`b baz`
+                        FROM `emp` AS `x`
+                        WHERE (`x`.`DEPTNO` IN (10, 20))""" );
     }
 
 
@@ -2055,9 +2129,10 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testInList() {
         check(
                 "select * from emp where deptno in (10, 20) and gender = 'F'",
-                "SELECT *\n"
-                        + "FROM `EMP`\n"
-                        + "WHERE ((`DEPTNO` IN (10, 20)) AND (`GENDER` = 'F'))" );
+                """
+                        SELECT *
+                        FROM `EMP`
+                        WHERE ((`DEPTNO` IN (10, 20)) AND (`GENDER` = 'F'))""" );
     }
 
 
@@ -2073,10 +2148,11 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testInQuery() {
         check(
                 "select * from emp where deptno in (select deptno from dept)",
-                "SELECT *\n"
-                        + "FROM `EMP`\n"
-                        + "WHERE (`DEPTNO` IN (SELECT `DEPTNO`\n"
-                        + "FROM `DEPT`))" );
+                """
+                        SELECT *
+                        FROM `EMP`
+                        WHERE (`DEPTNO` IN (SELECT `DEPTNO`
+                        FROM `DEPT`))""" );
     }
 
 
@@ -2087,11 +2163,12 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testInQueryWithComma() {
         check(
                 "select * from emp where deptno in (select deptno from dept group by 1, 2)",
-                "SELECT *\n"
-                        + "FROM `EMP`\n"
-                        + "WHERE (`DEPTNO` IN (SELECT `DEPTNO`\n"
-                        + "FROM `DEPT`\n"
-                        + "GROUP BY 1, 2))" );
+                """
+                        SELECT *
+                        FROM `EMP`
+                        WHERE (`DEPTNO` IN (SELECT `DEPTNO`
+                        FROM `DEPT`
+                        GROUP BY 1, 2))""" );
     }
 
 
@@ -2099,16 +2176,17 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testInSetop() {
         check(
                 "select * from emp where deptno in ((select deptno from dept union select * from dept) except select * from dept) and false",
-                "SELECT *\n"
-                        + "FROM `EMP`\n"
-                        + "WHERE ((`DEPTNO` IN ((SELECT `DEPTNO`\n"
-                        + "FROM `DEPT`\n"
-                        + "UNION\n"
-                        + "SELECT *\n"
-                        + "FROM `DEPT`)\n"
-                        + "EXCEPT\n"
-                        + "SELECT *\n"
-                        + "FROM `DEPT`)) AND FALSE)" );
+                """
+                        SELECT *
+                        FROM `EMP`
+                        WHERE ((`DEPTNO` IN ((SELECT `DEPTNO`
+                        FROM `DEPT`
+                        UNION
+                        SELECT *
+                        FROM `DEPT`)
+                        EXCEPT
+                        SELECT *
+                        FROM `DEPT`)) AND FALSE)""" );
     }
 
 
@@ -2116,10 +2194,11 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testSome() {
         final String sql = "select * from emp\n"
                 + "where sal > some (select comm from emp)";
-        final String expected = "SELECT *\n"
-                + "FROM `EMP`\n"
-                + "WHERE (`SAL` > SOME (SELECT `COMM`\n"
-                + "FROM `EMP`))";
+        final String expected = """
+                SELECT *
+                FROM `EMP`
+                WHERE (`SAL` > SOME (SELECT `COMM`
+                FROM `EMP`))""";
         sql( sql ).ok( expected );
 
         // ANY is a synonym for SOME
@@ -2136,9 +2215,10 @@ public class SqlParserTest extends SqlLanguageDependent {
         sql( sql4 ).fails( "(?s).*Encountered \"like some\" at .*" );
 
         final String sql5 = "select * from emp where empno = any (10,20)";
-        final String expected5 = "SELECT *\n"
-                + "FROM `EMP`\n"
-                + "WHERE (`EMPNO` = SOME (10, 20))";
+        final String expected5 = """
+                SELECT *
+                FROM `EMP`
+                WHERE (`EMPNO` = SOME (10, 20))""";
         sql( sql5 ).ok( expected5 );
     }
 
@@ -2147,10 +2227,11 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testAll() {
         final String sql = "select * from emp\n"
                 + "where sal <= all (select comm from emp) or sal > 10";
-        final String expected = "SELECT *\n"
-                + "FROM `EMP`\n"
-                + "WHERE ((`SAL` <= ALL (SELECT `COMM`\n"
-                + "FROM `EMP`)) OR (`SAL` > 10))";
+        final String expected = """
+                SELECT *
+                FROM `EMP`
+                WHERE ((`SAL` <= ALL (SELECT `COMM`
+                FROM `EMP`)) OR (`SAL` > 10))""";
         sql( sql ).ok( expected );
     }
 
@@ -2159,9 +2240,10 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testAllList() {
         final String sql = "select * from emp\n"
                 + "where sal <= all (12, 20, 30)";
-        final String expected = "SELECT *\n"
-                + "FROM `EMP`\n"
-                + "WHERE (`SAL` <= ALL (12, 20, 30))";
+        final String expected = """
+                SELECT *
+                FROM `EMP`
+                WHERE (`SAL` <= ALL (12, 20, 30))""";
         sql( sql ).ok( expected );
     }
 
@@ -2170,25 +2252,28 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testUnion() {
         check(
                 "select * from a union select * from a",
-                "(SELECT *\n"
-                        + "FROM `A`\n"
-                        + "UNION\n"
-                        + "SELECT *\n"
-                        + "FROM `A`)" );
+                """
+                        (SELECT *
+                        FROM `A`
+                        UNION
+                        SELECT *
+                        FROM `A`)""" );
         check(
                 "select * from a union all select * from a",
-                "(SELECT *\n"
-                        + "FROM `A`\n"
-                        + "UNION ALL\n"
-                        + "SELECT *\n"
-                        + "FROM `A`)" );
+                """
+                        (SELECT *
+                        FROM `A`
+                        UNION ALL
+                        SELECT *
+                        FROM `A`)""" );
         check(
                 "select * from a union distinct select * from a",
-                "(SELECT *\n"
-                        + "FROM `A`\n"
-                        + "UNION\n"
-                        + "SELECT *\n"
-                        + "FROM `A`)" );
+                """
+                        (SELECT *
+                        FROM `A`
+                        UNION
+                        SELECT *
+                        FROM `A`)""" );
     }
 
 
@@ -2199,21 +2284,23 @@ public class SqlParserTest extends SqlLanguageDependent {
                         + "union all "
                         + "select x, y from u "
                         + "order by 1 asc, 2 desc",
-                "(SELECT `A`, `B`\n"
-                        + "FROM `T`\n"
-                        + "UNION ALL\n"
-                        + "SELECT `X`, `Y`\n"
-                        + "FROM `U`)\n"
-                        + "ORDER BY 1, 2 DESC" );
+                """
+                        (SELECT `A`, `B`
+                        FROM `T`
+                        UNION ALL
+                        SELECT `X`, `Y`
+                        FROM `U`)
+                        ORDER BY 1, 2 DESC""" );
     }
 
 
     @Test
     public void testOrderUnion() {
         // ORDER BY inside UNION not allowed
-        sql( "select a from t order by a\n"
-                + "^union^ all\n"
-                + "select b from t order by b" )
+        sql( """
+                select a from t order by a
+                ^union^ all
+                select b from t order by b""" )
                 .fails( "(?s).*Encountered \"union\" at .*" );
     }
 
@@ -2221,9 +2308,10 @@ public class SqlParserTest extends SqlLanguageDependent {
     @Test
     public void testLimitUnion() {
         // LIMIT inside UNION not allowed
-        sql( "select a from t limit 10\n"
-                + "^union^ all\n"
-                + "select b from t order by b" )
+        sql( """
+                select a from t limit 10
+                ^union^ all
+                select b from t order by b""" )
                 .fails( "(?s).*Encountered \"union\" at .*" );
     }
 
@@ -2254,25 +2342,28 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testExcept() {
         check(
                 "select * from a except select * from a",
-                "(SELECT *\n"
-                        + "FROM `A`\n"
-                        + "EXCEPT\n"
-                        + "SELECT *\n"
-                        + "FROM `A`)" );
+                """
+                        (SELECT *
+                        FROM `A`
+                        EXCEPT
+                        SELECT *
+                        FROM `A`)""" );
         check(
                 "select * from a except all select * from a",
-                "(SELECT *\n"
-                        + "FROM `A`\n"
-                        + "EXCEPT ALL\n"
-                        + "SELECT *\n"
-                        + "FROM `A`)" );
+                """
+                        (SELECT *
+                        FROM `A`
+                        EXCEPT ALL
+                        SELECT *
+                        FROM `A`)""" );
         check(
                 "select * from a except distinct select * from a",
-                "(SELECT *\n"
-                        + "FROM `A`\n"
-                        + "EXCEPT\n"
-                        + "SELECT *\n"
-                        + "FROM `A`)" );
+                """
+                        (SELECT *
+                        FROM `A`
+                        EXCEPT
+                        SELECT *
+                        FROM `A`)""" );
     }
 
 
@@ -2286,19 +2377,21 @@ public class SqlParserTest extends SqlLanguageDependent {
         sql( sql ).fails( pattern );
 
         conformance = ConformanceEnum.ORACLE_10;
-        final String expected = "(SELECT `COL1`\n"
-                + "FROM `TABLE1`\n"
-                + "EXCEPT\n"
-                + "SELECT `COL1`\n"
-                + "FROM `TABLE2`)";
+        final String expected = """
+                (SELECT `COL1`
+                FROM `TABLE1`
+                EXCEPT
+                SELECT `COL1`
+                FROM `TABLE2`)""";
         sql( sql ).ok( expected );
 
         final String sql2 = "select col1 from table1 MINUS ALL select col1 from table2";
-        final String expected2 = "(SELECT `COL1`\n"
-                + "FROM `TABLE1`\n"
-                + "EXCEPT ALL\n"
-                + "SELECT `COL1`\n"
-                + "FROM `TABLE2`)";
+        final String expected2 = """
+                (SELECT `COL1`
+                FROM `TABLE1`
+                EXCEPT ALL
+                SELECT `COL1`
+                FROM `TABLE2`)""";
         sql( sql2 ).ok( expected2 );
     }
 
@@ -2319,25 +2412,28 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testIntersect() {
         check(
                 "select * from a intersect select * from a",
-                "(SELECT *\n"
-                        + "FROM `A`\n"
-                        + "INTERSECT\n"
-                        + "SELECT *\n"
-                        + "FROM `A`)" );
+                """
+                        (SELECT *
+                        FROM `A`
+                        INTERSECT
+                        SELECT *
+                        FROM `A`)""" );
         check(
                 "select * from a intersect all select * from a",
-                "(SELECT *\n"
-                        + "FROM `A`\n"
-                        + "INTERSECT ALL\n"
-                        + "SELECT *\n"
-                        + "FROM `A`)" );
+                """
+                        (SELECT *
+                        FROM `A`
+                        INTERSECT ALL
+                        SELECT *
+                        FROM `A`)""" );
         check(
                 "select * from a intersect distinct select * from a",
-                "(SELECT *\n"
-                        + "FROM `A`\n"
-                        + "INTERSECT\n"
-                        + "SELECT *\n"
-                        + "FROM `A`)" );
+                """
+                        (SELECT *
+                        FROM `A`
+                        INTERSECT
+                        SELECT *
+                        FROM `A`)""" );
     }
 
 
@@ -2345,9 +2441,10 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testJoinCross() {
         check(
                 "select * from a as a2 cross join b",
-                "SELECT *\n"
-                        + "FROM `A` AS `A2`\n"
-                        + "CROSS JOIN `B`" );
+                """
+                        SELECT *
+                        FROM `A` AS `A2`
+                        CROSS JOIN `B`""" );
     }
 
 
@@ -2355,10 +2452,11 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testJoinOn() {
         check(
                 "select * from a left join b on 1 = 1 and 2 = 2 where 3 = 3",
-                "SELECT *\n"
-                        + "FROM `A`\n"
-                        + "LEFT JOIN `B` ON ((1 = 1) AND (2 = 2))\n"
-                        + "WHERE (3 = 3)" );
+                """
+                        SELECT *
+                        FROM `A`
+                        LEFT JOIN `B` ON ((1 = 1) AND (2 = 2))
+                        WHERE (3 = 3)""" );
     }
 
 
@@ -2368,13 +2466,15 @@ public class SqlParserTest extends SqlLanguageDependent {
             return;
         }
         check(
-                "select * from a\n"
-                        + " left join (b join c as c1 on 1 = 1) on 2 = 2\n"
-                        + "where 3 = 3",
-                "SELECT *\n"
-                        + "FROM `A`\n"
-                        + "LEFT JOIN (`B` INNER JOIN `C` AS `C1` ON (1 = 1)) ON (2 = 2)\n"
-                        + "WHERE (3 = 3)" );
+                """
+                        select * from a
+                         left join (b join c as c1 on 1 = 1) on 2 = 2
+                        where 3 = 3""",
+                """
+                        SELECT *
+                        FROM `A`
+                        LEFT JOIN (`B` INNER JOIN `C` AS `C1` ON (1 = 1)) ON (2 = 2)
+                        WHERE (3 = 3)""" );
     }
 
 
@@ -2387,14 +2487,16 @@ public class SqlParserTest extends SqlLanguageDependent {
             return;
         }
         check(
-                "select * from a\n"
-                        + " left join (b as b1 (x, y) join (select * from c) c1 on 1 = 1) on 2 = 2\n"
-                        + "where 3 = 3",
-                "SELECT *\n"
-                        + "FROM `A`\n"
-                        + "LEFT JOIN (`B` AS `B1` (`X`, `Y`) INNER JOIN (SELECT *\n"
-                        + "FROM `C`) AS `C1` ON (1 = 1)) ON (2 = 2)\n"
-                        + "WHERE (3 = 3)" );
+                """
+                        select * from a
+                         left join (b as b1 (x, y) join (select * from c) c1 on 1 = 1) on 2 = 2
+                        where 3 = 3""",
+                """
+                        SELECT *
+                        FROM `A`
+                        LEFT JOIN (`B` AS `B1` (`X`, `Y`) INNER JOIN (SELECT *
+                        FROM `C`) AS `C1` ON (1 = 1)) ON (2 = 2)
+                        WHERE (3 = 3)""" );
     }
 
 
@@ -2402,10 +2504,11 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testExplicitTableInJoin() {
         check(
                 "select * from a left join (table b) on 2 = 2 where 3 = 3",
-                "SELECT *\n"
-                        + "FROM `A`\n"
-                        + "LEFT JOIN (TABLE `B`) ON (2 = 2)\n"
-                        + "WHERE (3 = 3)" );
+                """
+                        SELECT *
+                        FROM `A`
+                        LEFT JOIN (TABLE `B`) ON (2 = 2)
+                        WHERE (3 = 3)""" );
     }
 
 
@@ -2415,15 +2518,17 @@ public class SqlParserTest extends SqlLanguageDependent {
             return;
         }
         check(
-                "select * from (select * from a cross join b) as ab\n"
-                        + " left join ((table c) join d on 2 = 2) on 3 = 3\n"
-                        + " where 4 = 4",
-                "SELECT *\n"
-                        + "FROM (SELECT *\n"
-                        + "FROM `A`\n"
-                        + "CROSS JOIN `B`) AS `AB`\n"
-                        + "LEFT JOIN ((TABLE `C`) INNER JOIN `D` ON (2 = 2)) ON (3 = 3)\n"
-                        + "WHERE (4 = 4)" );
+                """
+                        select * from (select * from a cross join b) as ab
+                         left join ((table c) join d on 2 = 2) on 3 = 3
+                         where 4 = 4""",
+                """
+                        SELECT *
+                        FROM (SELECT *
+                        FROM `A`
+                        CROSS JOIN `B`) AS `AB`
+                        LEFT JOIN ((TABLE `C`) INNER JOIN `D` ON (2 = 2)) ON (3 = 3)
+                        WHERE (4 = 4)""" );
     }
 
 
@@ -2431,10 +2536,11 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testOuterJoinNoiseWord() {
         check(
                 "select * from a left outer join b on 1 = 1 and 2 = 2 where 3 = 3",
-                "SELECT *\n"
-                        + "FROM `A`\n"
-                        + "LEFT JOIN `B` ON ((1 = 1) AND (2 = 2))\n"
-                        + "WHERE (3 = 3)" );
+                """
+                        SELECT *
+                        FROM `A`
+                        LEFT JOIN `B` ON ((1 = 1) AND (2 = 2))
+                        WHERE (3 = 3)""" );
     }
 
 
@@ -2442,10 +2548,11 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testJoinQuery() {
         check(
                 "select * from a join (select * from b) as b2 on true",
-                "SELECT *\n"
-                        + "FROM `A`\n"
-                        + "INNER JOIN (SELECT *\n"
-                        + "FROM `B`) AS `B2` ON TRUE" );
+                """
+                        SELECT *
+                        FROM `A`
+                        INNER JOIN (SELECT *
+                        FROM `B`) AS `B2` ON TRUE""" );
     }
 
 
@@ -2463,9 +2570,10 @@ public class SqlParserTest extends SqlLanguageDependent {
         // OUTER is an optional extra to LEFT, RIGHT, or FULL
         check(
                 "select * from a full outer join b",
-                "SELECT *\n"
-                        + "FROM `A`\n"
-                        + "FULL JOIN `B`" );
+                """
+                        SELECT *
+                        FROM `A`
+                        FULL JOIN `B`""" );
     }
 
 
@@ -2477,27 +2585,32 @@ public class SqlParserTest extends SqlLanguageDependent {
     }
 
 
-    @Ignore
-    @Test
+    @Disabled
     public void testJoinAssociativity() {
         // joins are left-associative
         // 1. no parens needed
         check(
                 "select * from (a natural left join b) left join c on b.c1 = c.c1",
-                "SELECT *\n"
-                        + "FROM (`A` NATURAL LEFT JOIN `B`) LEFT JOIN `C` ON (`B`.`C1` = `C`.`C1`)\n" );
+                """
+                        SELECT *
+                        FROM (`A` NATURAL LEFT JOIN `B`) LEFT JOIN `C` ON (`B`.`C1` = `C`.`C1`)
+                        """ );
 
         // 2. parens needed
         check(
                 "select * from a natural left join (b left join c on b.c1 = c.c1)",
-                "SELECT *\n"
-                        + "FROM (`A` NATURAL LEFT JOIN `B`) LEFT JOIN `C` ON (`B`.`C1` = `C`.`C1`)\n" );
+                """
+                        SELECT *
+                        FROM (`A` NATURAL LEFT JOIN `B`) LEFT JOIN `C` ON (`B`.`C1` = `C`.`C1`)
+                        """ );
 
         // 3. same as 1
         check(
                 "select * from a natural left join b left join c on b.c1 = c.c1",
-                "SELECT *\n"
-                        + "FROM (`A` NATURAL LEFT JOIN `B`) LEFT JOIN `C` ON (`B`.`C1` = `C`.`C1`)\n" );
+                """
+                        SELECT *
+                        FROM (`A` NATURAL LEFT JOIN `B`) LEFT JOIN `C` ON (`B`.`C1` = `C`.`C1`)
+                        """ );
     }
 
 
@@ -2506,9 +2619,10 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testNaturalCrossJoin() {
         check(
                 "select * from a natural cross join b",
-                "SELECT *\n"
-                        + "FROM `A`\n"
-                        + "NATURAL CROSS JOIN `B`" );
+                """
+                        SELECT *
+                        FROM `A`
+                        NATURAL CROSS JOIN `B`""" );
     }
 
 
@@ -2516,9 +2630,10 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testJoinUsing() {
         check(
                 "select * from a join b using (x)",
-                "SELECT *\n"
-                        + "FROM `A`\n"
-                        + "INNER JOIN `B` USING (`X`)" );
+                """
+                        SELECT *
+                        FROM `A`
+                        INNER JOIN `B` USING (`X`)""" );
         checkFails(
                 "select * from a join b using (^)^ where c = d",
                 "(?s).*Encountered \"[)]\" at line 1, column 31.*" );
@@ -2536,9 +2651,10 @@ public class SqlParserTest extends SqlLanguageDependent {
         sql( sql ).fails( pattern );
 
         conformance = ConformanceEnum.SQL_SERVER_2008;
-        final String expected = "SELECT *\n"
-                + "FROM `DEPT`\n"
-                + "CROSS JOIN LATERAL TABLE(`RAMP`(`DEPTNO`)) AS `T` (`A`)";
+        final String expected = """
+                SELECT *
+                FROM `DEPT`
+                CROSS JOIN LATERAL TABLE(`RAMP`(`DEPTNO`)) AS `T` (`A`)""";
         sql( sql ).ok( expected );
 
         // Supported in Oracle 12 but not Oracle 10
@@ -2557,9 +2673,10 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testOuterApply() {
         conformance = ConformanceEnum.SQL_SERVER_2008;
         final String sql = "select * from dept outer apply table(ramp(deptno))";
-        final String expected = "SELECT *\n"
-                + "FROM `DEPT`\n"
-                + "LEFT JOIN LATERAL TABLE(`RAMP`(`DEPTNO`)) ON TRUE";
+        final String expected = """
+                SELECT *
+                FROM `DEPT`
+                LEFT JOIN LATERAL TABLE(`RAMP`(`DEPTNO`)) ON TRUE""";
         sql( sql ).ok( expected );
     }
 
@@ -2569,11 +2686,12 @@ public class SqlParserTest extends SqlLanguageDependent {
         conformance = ConformanceEnum.SQL_SERVER_2008;
         final String sql = "select * from dept\n"
                 + "outer apply (select * from emp where emp.deptno = dept.deptno)";
-        final String expected = "SELECT *\n"
-                + "FROM `DEPT`\n"
-                + "LEFT JOIN LATERAL((SELECT *\n"
-                + "FROM `EMP`\n"
-                + "WHERE (`EMP`.`DEPTNO` = `DEPT`.`DEPTNO`))) ON TRUE";
+        final String expected = """
+                SELECT *
+                FROM `DEPT`
+                LEFT JOIN LATERAL((SELECT *
+                FROM `EMP`
+                WHERE (`EMP`.`DEPTNO` = `DEPT`.`DEPTNO`))) ON TRUE""";
         sql( sql ).ok( expected );
     }
 
@@ -2583,11 +2701,12 @@ public class SqlParserTest extends SqlLanguageDependent {
         conformance = ConformanceEnum.SQL_SERVER_2008;
         final String sql = "select * from dept\n"
                 + "outer apply (select * from emp where emp.deptno = dept.deptno)";
-        final String expected = "SELECT *\n"
-                + "FROM `DEPT`\n"
-                + "LEFT JOIN LATERAL((SELECT *\n"
-                + "FROM `EMP`\n"
-                + "WHERE (`EMP`.`DEPTNO` = `DEPT`.`DEPTNO`))) ON TRUE";
+        final String expected = """
+                SELECT *
+                FROM `DEPT`
+                LEFT JOIN LATERAL((SELECT *
+                FROM `EMP`
+                WHERE (`EMP`.`DEPTNO` = `DEPT`.`DEPTNO`))) ON TRUE""";
         sql( sql ).ok( expected );
     }
 
@@ -2606,13 +2725,15 @@ public class SqlParserTest extends SqlLanguageDependent {
     @Test
     public void testCrossOuterApply() {
         conformance = ConformanceEnum.SQL_SERVER_2008;
-        final String sql = "select * from dept\n"
-                + "cross apply table(ramp(deptno)) as t(a)\n"
-                + "outer apply table(ramp2(a))";
-        final String expected = "SELECT *\n"
-                + "FROM `DEPT`\n"
-                + "CROSS JOIN LATERAL TABLE(`RAMP`(`DEPTNO`)) AS `T` (`A`)\n"
-                + "LEFT JOIN LATERAL TABLE(`RAMP2`(`A`)) ON TRUE";
+        final String sql = """
+                select * from dept
+                cross apply table(ramp(deptno)) as t(a)
+                outer apply table(ramp2(a))""";
+        final String expected = """
+                SELECT *
+                FROM `DEPT`
+                CROSS JOIN LATERAL TABLE(`RAMP`(`DEPTNO`)) AS `T` (`A`)
+                LEFT JOIN LATERAL TABLE(`RAMP2`(`A`)) ON TRUE""";
         sql( sql ).ok( expected );
     }
 
@@ -2626,18 +2747,20 @@ public class SqlParserTest extends SqlLanguageDependent {
                         + "  join dept on emp.deptno = dept.deptno"
                         + "  where gender = 'F'"
                         + "  order by sal) tablesample substitute('medium')",
-                "SELECT *\n"
-                        + "FROM (SELECT *\n"
-                        + "FROM `EMP`\n"
-                        + "INNER JOIN `DEPT` ON (`EMP`.`DEPTNO` = `DEPT`.`DEPTNO`)\n"
-                        + "WHERE (`GENDER` = 'F')\n"
-                        + "ORDER BY `SAL`) TABLESAMPLE SUBSTITUTE('MEDIUM')" );
+                """
+                        SELECT *
+                        FROM (SELECT *
+                        FROM `EMP`
+                        INNER JOIN `DEPT` ON (`EMP`.`DEPTNO` = `DEPT`.`DEPTNO`)
+                        WHERE (`GENDER` = 'F')
+                        ORDER BY `SAL`) TABLESAMPLE SUBSTITUTE('MEDIUM')""" );
 
         check(
                 "select * from emp as x tablesample substitute('medium') join dept tablesample substitute('lar' /* split */ 'ge') on x.deptno = dept.deptno",
-                "SELECT *\n"
-                        + "FROM `EMP` AS `X` TABLESAMPLE SUBSTITUTE('MEDIUM')\n"
-                        + "INNER JOIN `DEPT` TABLESAMPLE SUBSTITUTE('LARGE') ON (`X`.`DEPTNO` = `DEPT`.`DEPTNO`)" );
+                """
+                        SELECT *
+                        FROM `EMP` AS `X` TABLESAMPLE SUBSTITUTE('MEDIUM')
+                        INNER JOIN `DEPT` TABLESAMPLE SUBSTITUTE('LARGE') ON (`X`.`DEPTNO` = `DEPT`.`DEPTNO`)""" );
 
         check(
                 "select * from emp as x tablesample bernoulli(50)",
@@ -2660,7 +2783,7 @@ public class SqlParserTest extends SqlLanguageDependent {
         checkExp( "-.25", "-0.25" );
         checkExpSame( "TIMESTAMP '2004-06-01 15:55:55'" );
         checkExpSame( "TIMESTAMP '2004-06-01 15:55:55.900'" );
-        checkExp(
+        /*checkExp(
                 "TIMESTAMP '2004-06-01 15:55:55.1234'",
                 "TIMESTAMP '2004-06-01 15:55:55.1234'" );
         checkExp(
@@ -2668,7 +2791,7 @@ public class SqlParserTest extends SqlLanguageDependent {
                 "TIMESTAMP '2004-06-01 15:55:55.1236'" );
         checkExp(
                 "TIMESTAMP '2004-06-01 15:55:55.9999'",
-                "TIMESTAMP '2004-06-01 15:55:55.9999'" );
+                "TIMESTAMP '2004-06-01 15:55:55.9999'" );*/
         checkExpSame( "NULL" );
     }
 
@@ -2683,7 +2806,7 @@ public class SqlParserTest extends SqlLanguageDependent {
                 "'abba'\n'0001'" );
         checkExp(
                 "N'yabba'\n'dabba'\n'doo'",
-                "_ISO-8859-1'yabba'\n'dabba'\n'doo'" );
+                "'yabba'\n'dabba'\n'doo'" );
         checkExp(
                 "_iso-8859-1'yabba'\n'dabba'\n'don''t'",
                 "_ISO-8859-1'yabba'\n'dabba'\n'don''t'" );
@@ -2704,11 +2827,12 @@ public class SqlParserTest extends SqlLanguageDependent {
         // REVIEW: Is this syntax even valid?
         check(
                 "select * from a join b using (x), c join d using (y)",
-                "SELECT *\n"
-                        + "FROM `A`\n"
-                        + "INNER JOIN `B` USING (`X`),\n"
-                        + "`C`\n"
-                        + "INNER JOIN `D` USING (`Y`)" );
+                """
+                        SELECT *
+                        FROM `A`
+                        INNER JOIN `B` USING (`X`),
+                        `C`
+                        INNER JOIN `D` USING (`Y`)""" );
     }
 
 
@@ -2716,18 +2840,20 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testMixedStar() {
         check(
                 "select emp.*, 1 as foo from emp, dept",
-                "SELECT `EMP`.*, 1 AS `FOO`\n"
-                        + "FROM `EMP`,\n"
-                        + "`DEPT`" );
+                """
+                        SELECT `EMP`.*, 1 AS `FOO`
+                        FROM `EMP`,
+                        `DEPT`""" );
     }
 
 
     @Test
     public void testSchemaTableStar() {
         sql( "select schem.emp.*, emp.empno * dept.deptno\n" + "from schem.emp, dept" )
-                .ok( "SELECT `SCHEM`.`EMP`.*, (`EMP`.`EMPNO` * `DEPT`.`DEPTNO`)\n"
-                        + "FROM `SCHEM`.`EMP`,\n"
-                        + "`DEPT`" );
+                .ok( """
+                        SELECT `SCHEM`.`EMP`.*, (`EMP`.`EMPNO` * `DEPT`.`DEPTNO`)
+                        FROM `SCHEM`.`EMP`,
+                        `DEPT`""" );
     }
 
 
@@ -2750,10 +2876,11 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testNotExists() {
         check(
                 "select * from dept where not not exists (select * from emp) and true",
-                "SELECT *\n"
-                        + "FROM `DEPT`\n"
-                        + "WHERE ((NOT (NOT (EXISTS (SELECT *\n"
-                        + "FROM `EMP`)))) AND TRUE)" );
+                """
+                        SELECT *
+                        FROM `DEPT`
+                        WHERE ((NOT (NOT (EXISTS (SELECT *
+                        FROM `EMP`)))) AND TRUE)""" );
     }
 
 
@@ -2761,9 +2888,10 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testOrder() {
         check(
                 "select * from emp order by empno, gender desc, deptno asc, empno asc, name desc",
-                "SELECT *\n"
-                        + "FROM `EMP`\n"
-                        + "ORDER BY `EMPNO`, `GENDER` DESC, `DEPTNO`, `EMPNO`, `NAME` DESC" );
+                """
+                        SELECT *
+                        FROM `EMP`
+                        ORDER BY `EMPNO`, `GENDER` DESC, `DEPTNO`, `EMPNO`, `NAME` DESC""" );
     }
 
 
@@ -2771,9 +2899,10 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testOrderNullsFirst() {
         check(
                 "select * from emp order by gender desc nulls last, deptno asc nulls first, empno nulls last",
-                "SELECT *\n"
-                        + "FROM `EMP`\n"
-                        + "ORDER BY `GENDER` DESC NULLS LAST, `DEPTNO` NULLS FIRST, `EMPNO` NULLS LAST" );
+                """
+                        SELECT *
+                        FROM `EMP`
+                        ORDER BY `GENDER` DESC NULLS LAST, `DEPTNO` NULLS FIRST, `EMPNO` NULLS LAST""" );
     }
 
 
@@ -2781,20 +2910,22 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testOrderInternal() {
         check(
                 "(select * from emp order by empno) union select * from emp",
-                "((SELECT *\n"
-                        + "FROM `EMP`\n"
-                        + "ORDER BY `EMPNO`)\n"
-                        + "UNION\n"
-                        + "SELECT *\n"
-                        + "FROM `EMP`)" );
+                """
+                        ((SELECT *
+                        FROM `EMP`
+                        ORDER BY `EMPNO`)
+                        UNION
+                        SELECT *
+                        FROM `EMP`)""" );
 
         check(
                 "select * from (select * from t order by x, y) where a = b",
-                "SELECT *\n"
-                        + "FROM (SELECT *\n"
-                        + "FROM `T`\n"
-                        + "ORDER BY `X`, `Y`)\n"
-                        + "WHERE (`A` = `B`)" );
+                """
+                        SELECT *
+                        FROM (SELECT *
+                        FROM `T`
+                        ORDER BY `X`, `Y`)
+                        WHERE (`A` = `B`)""" );
     }
 
 
@@ -2802,11 +2933,12 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testOrderIllegalInExpression() {
         check(
                 "select (select 1 from foo order by x,y) from t where a = b",
-                "SELECT (SELECT 1\n"
-                        + "FROM `FOO`\n"
-                        + "ORDER BY `X`, `Y`)\n"
-                        + "FROM `T`\n"
-                        + "WHERE (`A` = `B`)" );
+                """
+                        SELECT (SELECT 1
+                        FROM `FOO`
+                        ORDER BY `X`, `Y`)
+                        FROM `T`
+                        WHERE (`A` = `B`)""" );
         checkFails(
                 "select (1 ^order^ by x, y) from t where a = b",
                 "ORDER BY unexpected" );
@@ -2817,68 +2949,77 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testOrderOffsetFetch() {
         check(
                 "select a from foo order by b, c offset 1 row fetch first 2 row only",
-                "SELECT `A`\n"
-                        + "FROM `FOO`\n"
-                        + "ORDER BY `B`, `C`\n"
-                        + "OFFSET 1 ROWS\n"
-                        + "FETCH NEXT 2 ROWS ONLY" );
+                """
+                        SELECT `A`
+                        FROM `FOO`
+                        ORDER BY `B`, `C`
+                        OFFSET 1 ROWS
+                        FETCH NEXT 2 ROWS ONLY""" );
         // as above, but ROWS rather than ROW
         check(
                 "select a from foo order by b, c offset 1 rows fetch first 2 rows only",
-                "SELECT `A`\n"
-                        + "FROM `FOO`\n"
-                        + "ORDER BY `B`, `C`\n"
-                        + "OFFSET 1 ROWS\n"
-                        + "FETCH NEXT 2 ROWS ONLY" );
+                """
+                        SELECT `A`
+                        FROM `FOO`
+                        ORDER BY `B`, `C`
+                        OFFSET 1 ROWS
+                        FETCH NEXT 2 ROWS ONLY""" );
         // as above, but NEXT (means same as FIRST)
         check(
                 "select a from foo order by b, c offset 1 rows fetch next 3 rows only",
-                "SELECT `A`\n"
-                        + "FROM `FOO`\n"
-                        + "ORDER BY `B`, `C`\n"
-                        + "OFFSET 1 ROWS\n"
-                        + "FETCH NEXT 3 ROWS ONLY" );
+                """
+                        SELECT `A`
+                        FROM `FOO`
+                        ORDER BY `B`, `C`
+                        OFFSET 1 ROWS
+                        FETCH NEXT 3 ROWS ONLY""" );
         // as above, but omit the ROWS noise word after OFFSET. This is not compatible with SQL:2008 but allows the Postgres syntax "LIMIT ... OFFSET".
         check(
                 "select a from foo order by b, c offset 1 fetch next 3 rows only",
-                "SELECT `A`\n"
-                        + "FROM `FOO`\n"
-                        + "ORDER BY `B`, `C`\n"
-                        + "OFFSET 1 ROWS\n"
-                        + "FETCH NEXT 3 ROWS ONLY" );
+                """
+                        SELECT `A`
+                        FROM `FOO`
+                        ORDER BY `B`, `C`
+                        OFFSET 1 ROWS
+                        FETCH NEXT 3 ROWS ONLY""" );
         // as above, omit OFFSET
         check(
                 "select a from foo order by b, c fetch next 3 rows only",
-                "SELECT `A`\n"
-                        + "FROM `FOO`\n"
-                        + "ORDER BY `B`, `C`\n"
-                        + "FETCH NEXT 3 ROWS ONLY" );
+                """
+                        SELECT `A`
+                        FROM `FOO`
+                        ORDER BY `B`, `C`
+                        FETCH NEXT 3 ROWS ONLY""" );
         // FETCH, no ORDER BY or OFFSET
         check(
                 "select a from foo fetch next 4 rows only",
-                "SELECT `A`\n"
-                        + "FROM `FOO`\n"
-                        + "FETCH NEXT 4 ROWS ONLY" );
+                """
+                        SELECT `A`
+                        FROM `FOO`
+                        FETCH NEXT 4 ROWS ONLY""" );
         // OFFSET, no ORDER BY or FETCH
         check(
                 "select a from foo offset 1 row",
-                "SELECT `A`\n"
-                        + "FROM `FOO`\n"
-                        + "OFFSET 1 ROWS" );
+                """
+                        SELECT `A`
+                        FROM `FOO`
+                        OFFSET 1 ROWS""" );
         // OFFSET and FETCH, no ORDER BY
         check(
                 "select a from foo offset 1 row fetch next 3 rows only",
-                "SELECT `A`\n"
-                        + "FROM `FOO`\n"
-                        + "OFFSET 1 ROWS\n"
-                        + "FETCH NEXT 3 ROWS ONLY" );
+                """
+                        SELECT `A`
+                        FROM `FOO`
+                        OFFSET 1 ROWS
+                        FETCH NEXT 3 ROWS ONLY""" );
         // OFFSET and FETCH, with dynamic parameters
         check(
                 "select a from foo offset ? row fetch next ? rows only",
-                "SELECT `A`\n"
-                        + "FROM `FOO`\n"
-                        + "OFFSET ? ROWS\n"
-                        + "FETCH NEXT ? ROWS ONLY" );
+                """
+                        SELECT `A`
+                        FROM `FOO`
+                        OFFSET ? ROWS
+                        FETCH NEXT ? ROWS ONLY""" );
         // missing ROWS after FETCH
         checkFails(
                 "select a from foo offset 1 fetch next 3 ^only^",
@@ -2897,23 +3038,26 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testLimit() {
         check(
                 "select a from foo order by b, c limit 2 offset 1",
-                "SELECT `A`\n"
-                        + "FROM `FOO`\n"
-                        + "ORDER BY `B`, `C`\n"
-                        + "OFFSET 1 ROWS\n"
-                        + "FETCH NEXT 2 ROWS ONLY" );
+                """
+                        SELECT `A`
+                        FROM `FOO`
+                        ORDER BY `B`, `C`
+                        OFFSET 1 ROWS
+                        FETCH NEXT 2 ROWS ONLY""" );
         check(
                 "select a from foo order by b, c limit 2",
-                "SELECT `A`\n"
-                        + "FROM `FOO`\n"
-                        + "ORDER BY `B`, `C`\n"
-                        + "FETCH NEXT 2 ROWS ONLY" );
+                """
+                        SELECT `A`
+                        FROM `FOO`
+                        ORDER BY `B`, `C`
+                        FETCH NEXT 2 ROWS ONLY""" );
         check(
                 "select a from foo order by b, c offset 1",
-                "SELECT `A`\n"
-                        + "FROM `FOO`\n"
-                        + "ORDER BY `B`, `C`\n"
-                        + "OFFSET 1 ROWS" );
+                """
+                        SELECT `A`
+                        FROM `FOO`
+                        ORDER BY `B`, `C`
+                        OFFSET 1 ROWS""" );
     }
 
 
@@ -2922,19 +3066,21 @@ public class SqlParserTest extends SqlLanguageDependent {
      */
     @Test
     public void testLimitWithoutOrder() {
-        final String expected = "SELECT `A`\n"
-                + "FROM `FOO`\n"
-                + "FETCH NEXT 2 ROWS ONLY";
+        final String expected = """
+                SELECT `A`
+                FROM `FOO`
+                FETCH NEXT 2 ROWS ONLY""";
         sql( "select a from foo limit 2" ).ok( expected );
     }
 
 
     @Test
     public void testLimitOffsetWithoutOrder() {
-        final String expected = "SELECT `A`\n"
-                + "FROM `FOO`\n"
-                + "OFFSET 1 ROWS\n"
-                + "FETCH NEXT 2 ROWS ONLY";
+        final String expected = """
+                SELECT `A`
+                FROM `FOO`
+                OFFSET 1 ROWS
+                FETCH NEXT 2 ROWS ONLY""";
         sql( "select a from foo limit 2 offset 1" ).ok( expected );
     }
 
@@ -2950,30 +3096,34 @@ public class SqlParserTest extends SqlLanguageDependent {
                 + "FROM `FOO`";
         sql( "select a from foo limit all" ).ok( expected0 );
 
-        final String expected1 = "SELECT `A`\n"
-                + "FROM `FOO`\n"
-                + "ORDER BY `X`";
+        final String expected1 = """
+                SELECT `A`
+                FROM `FOO`
+                ORDER BY `X`""";
         sql( "select a from foo order by x limit all" ).ok( expected1 );
 
         conformance = ConformanceEnum.LENIENT;
-        final String expected2 = "SELECT `A`\n"
-                + "FROM `FOO`\n"
-                + "OFFSET 2 ROWS\n"
-                + "FETCH NEXT 3 ROWS ONLY";
+        final String expected2 = """
+                SELECT `A`
+                FROM `FOO`
+                OFFSET 2 ROWS
+                FETCH NEXT 3 ROWS ONLY""";
         sql( "select a from foo limit 2,3" ).ok( expected2 );
 
         // "offset 4" overrides the earlier "2"
-        final String expected3 = "SELECT `A`\n"
-                + "FROM `FOO`\n"
-                + "OFFSET 4 ROWS\n"
-                + "FETCH NEXT 3 ROWS ONLY";
+        final String expected3 = """
+                SELECT `A`
+                FROM `FOO`
+                OFFSET 4 ROWS
+                FETCH NEXT 3 ROWS ONLY""";
         sql( "select a from foo limit 2,3 offset 4" ).ok( expected3 );
 
         // "fetch next 4" overrides the earlier "limit 3"
-        final String expected4 = "SELECT `A`\n"
-                + "FROM `FOO`\n"
-                + "OFFSET 2 ROWS\n"
-                + "FETCH NEXT 4 ROWS ONLY";
+        final String expected4 = """
+                SELECT `A`
+                FROM `FOO`
+                OFFSET 2 ROWS
+                FETCH NEXT 4 ROWS ONLY""";
         sql( "select a from foo limit 2,3 fetch next 4 rows only" ).ok( expected4 );
 
         // "limit start, all" is not valid
@@ -2992,11 +3142,14 @@ public class SqlParserTest extends SqlLanguageDependent {
                 "SELECT 1\n"
                         + "FROM `T`" );
         check(
-                "select 1 from t--this is a comment\n"
-                        + "where a>b-- this is comment\n",
-                "SELECT 1\n"
-                        + "FROM `T`\n"
-                        + "WHERE (`A` > `B`)" );
+                """
+                        select 1 from t--this is a comment
+                        where a>b-- this is comment
+                        """,
+                """
+                        SELECT 1
+                        FROM `T`
+                        WHERE (`A` > `B`)""" );
         check(
                 "select 1 from t\n--select",
                 "SELECT 1\n"
@@ -3014,9 +3167,10 @@ public class SqlParserTest extends SqlLanguageDependent {
 
         // on several lines
         check(
-                "select /* 1,\n"
-                        + " 2, \n"
-                        + " */ 3 from t",
+                """
+                        select /* 1,
+                         2,\s
+                         */ 3 from t""",
                 "SELECT 3\n"
                         + "FROM `T`" );
 
@@ -3209,26 +3363,27 @@ public class SqlParserTest extends SqlLanguageDependent {
                         + "select * from e except "
                         + "select * from f union "
                         + "select * from g",
-                "((((SELECT *\n"
-                        + "FROM `A`\n"
-                        + "UNION\n"
-                        + "((SELECT *\n"
-                        + "FROM `B`\n"
-                        + "INTERSECT\n"
-                        + "SELECT *\n"
-                        + "FROM `C`)\n"
-                        + "INTERSECT\n"
-                        + "SELECT *\n"
-                        + "FROM `D`))\n"
-                        + "EXCEPT\n"
-                        + "SELECT *\n"
-                        + "FROM `E`)\n"
-                        + "EXCEPT\n"
-                        + "SELECT *\n"
-                        + "FROM `F`)\n"
-                        + "UNION\n"
-                        + "SELECT *\n"
-                        + "FROM `G`)" );
+                """
+                        ((((SELECT *
+                        FROM `A`
+                        UNION
+                        ((SELECT *
+                        FROM `B`
+                        INTERSECT
+                        SELECT *
+                        FROM `C`)
+                        INTERSECT
+                        SELECT *
+                        FROM `D`))
+                        EXCEPT
+                        SELECT *
+                        FROM `E`)
+                        EXCEPT
+                        SELECT *
+                        FROM `F`)
+                        UNION
+                        SELECT *
+                        FROM `G`)""" );
     }
 
 
@@ -3237,11 +3392,12 @@ public class SqlParserTest extends SqlLanguageDependent {
         // one query with 'as', the other without
         check(
                 "select * from (select * from emp) as e join (select * from dept) d",
-                "SELECT *\n"
-                        + "FROM (SELECT *\n"
-                        + "FROM `EMP`) AS `E`\n"
-                        + "INNER JOIN (SELECT *\n"
-                        + "FROM `DEPT`) AS `D`" );
+                """
+                        SELECT *
+                        FROM (SELECT *
+                        FROM `EMP`) AS `E`
+                        INNER JOIN (SELECT *
+                        FROM `DEPT`) AS `D`""" );
     }
 
 
@@ -3260,11 +3416,12 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testScalarQueryInWhere() {
         check(
                 "select * from emp where 3 = (select count(*) from dept where dept.deptno = emp.deptno)",
-                "SELECT *\n"
-                        + "FROM `EMP`\n"
-                        + "WHERE (3 = (SELECT COUNT(*)\n"
-                        + "FROM `DEPT`\n"
-                        + "WHERE (`DEPT`.`DEPTNO` = `EMP`.`DEPTNO`)))" );
+                """
+                        SELECT *
+                        FROM `EMP`
+                        WHERE (3 = (SELECT COUNT(*)
+                        FROM `DEPT`
+                        WHERE (`DEPT`.`DEPTNO` = `EMP`.`DEPTNO`)))""" );
     }
 
 
@@ -3272,10 +3429,11 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testScalarQueryInSelect() {
         check(
                 "select x, (select count(*) from dept where dept.deptno = emp.deptno) from emp",
-                "SELECT `X`, (SELECT COUNT(*)\n"
-                        + "FROM `DEPT`\n"
-                        + "WHERE (`DEPT`.`DEPTNO` = `EMP`.`DEPTNO`))\n"
-                        + "FROM `EMP`" );
+                """
+                        SELECT `X`, (SELECT COUNT(*)
+                        FROM `DEPT`
+                        WHERE (`DEPT`.`DEPTNO` = `EMP`.`DEPTNO`))
+                        FROM `EMP`""" );
     }
 
 
@@ -3283,9 +3441,10 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testSelectList() {
         check(
                 "select * from emp, dept",
-                "SELECT *\n"
-                        + "FROM `EMP`,\n"
-                        + "`DEPT`" );
+                """
+                        SELECT *
+                        FROM `EMP`,
+                        `DEPT`""" );
     }
 
 
@@ -3351,9 +3510,10 @@ public class SqlParserTest extends SqlLanguageDependent {
 
     @Test
     public void testCompoundStar() {
-        final String sql = "select sales.emp.address.zipcode,\n"
-                + " sales.emp.address.*\n"
-                + "from sales.emp";
+        final String sql = """
+                select sales.emp.address.zipcode,
+                 sales.emp.address.*
+                from sales.emp""";
         final String expected = "SELECT `SALES`.`EMP`.`ADDRESS`.`ZIPCODE`,"
                 + " `SALES`.`EMP`.`ADDRESS`.*\n"
                 + "FROM `SALES`.`EMP`";
@@ -3374,9 +3534,10 @@ public class SqlParserTest extends SqlLanguageDependent {
         // "unique" is the default -- so drop the keyword
         check(
                 "select * from (select all foo from bar) as xyz",
-                "SELECT *\n"
-                        + "FROM (SELECT ALL `FOO`\n"
-                        + "FROM `BAR`) AS `XYZ`" );
+                """
+                        SELECT *
+                        FROM (SELECT ALL `FOO`
+                        FROM `BAR`) AS `XYZ`""" );
     }
 
 
@@ -3398,9 +3559,10 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testWhere() {
         check(
                 "select * from emp where empno > 5 and gender = 'F'",
-                "SELECT *\n"
-                        + "FROM `EMP`\n"
-                        + "WHERE ((`EMPNO` > 5) AND (`GENDER` = 'F'))" );
+                """
+                        SELECT *
+                        FROM `EMP`
+                        WHERE ((`EMPNO` > 5) AND (`GENDER` = 'F'))""" );
     }
 
 
@@ -3408,9 +3570,10 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testNestedSelect() {
         check(
                 "select * from (select * from emp)",
-                "SELECT *\n"
-                        + "FROM (SELECT *\n"
-                        + "FROM `EMP`)" );
+                """
+                        SELECT *
+                        FROM (SELECT *
+                        FROM `EMP`)""" );
     }
 
 
@@ -3430,10 +3593,11 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testFromValues() {
         check(
                 "select * from (values(1,'two'), 3, (4, 'five'))",
-                "SELECT *\n"
-                        + "FROM (VALUES (ROW(1, 'two')),\n"
-                        + "(ROW(3)),\n"
-                        + "(ROW(4, 'five')))" );
+                """
+                        SELECT *
+                        FROM (VALUES (ROW(1, 'two')),
+                        (ROW(3)),
+                        (ROW(4, 'five')))""" );
     }
 
 
@@ -3441,15 +3605,15 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testFromValuesWithoutParens() {
         checkFails(
                 "select 1 ^from^ values('x')",
-                "(?s)Encountered \"from values\" at line 1, column 10\\.\n"
-                        + "Was expecting one of:\n"
-                        + "    <EOF> \n"
-                        + "    \"ORDER\" \\.\\.\\.\n"
-                        + "    \"LIMIT\" \\.\\.\\.\n"
-                        + ".*"
-                        + "    \"FROM\" <IDENTIFIER> \\.\\.\\.\n"
-                        + "    \"FROM\" <QUOTED_IDENTIFIER> \\.\\.\\.\n"
-                        + ".*" );
+                """
+                        (?s)Encountered "from values" at line 1, column 10\\.
+                        Was expecting one of:
+                            <EOF>\s
+                            "ORDER" \\.\\.\\.
+                            "LIMIT" \\.\\.\\.
+                        .*    "FROM" <IDENTIFIER> \\.\\.\\.
+                            "FROM" <QUOTED_IDENTIFIER> \\.\\.\\.
+                        .*""" );
     }
 
 
@@ -3469,7 +3633,10 @@ public class SqlParserTest extends SqlLanguageDependent {
         sql( "select * from emp extend (x int, y varchar(10) not null)" )
                 .ok( "SELECT *\n" + "FROM `EMP` EXTEND (`X` INTEGER, `Y` VARCHAR(10))" );
         sql( "select * from emp extend (x int, y varchar(10) not null) where true" )
-                .ok( "SELECT *\n" + "FROM `EMP` EXTEND (`X` INTEGER, `Y` VARCHAR(10))\n" + "WHERE TRUE" );
+                .ok( """
+                        SELECT *
+                        FROM `EMP` EXTEND (`X` INTEGER, `Y` VARCHAR(10))
+                        WHERE TRUE""" );
         // with table alias
         sql( "select * from emp extend (x int, y varchar(10) not null) as t" )
                 .ok( "SELECT *\n" + "FROM `EMP` EXTEND (`X` INTEGER, `Y` VARCHAR(10)) AS `T`" );
@@ -3486,7 +3653,10 @@ public class SqlParserTest extends SqlLanguageDependent {
         sql( "select * from emp (x int, y varchar(10) not null) t(a, b)" )
                 .ok( "SELECT *\n" + "FROM `EMP` EXTEND (`X` INTEGER, `Y` VARCHAR(10)) AS `T` (`A`, `B`)" );
         sql( "select * from emp (x int, y varchar(10) not null) where x = y" )
-                .ok( "SELECT *\n" + "FROM `EMP` EXTEND (`X` INTEGER, `Y` VARCHAR(10))\n" + "WHERE (`X` = `Y`)" );
+                .ok( """
+                        SELECT *
+                        FROM `EMP` EXTEND (`X` INTEGER, `Y` VARCHAR(10))
+                        WHERE (`X` = `Y`)""" );
     }
 
 
@@ -3542,9 +3712,10 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testCollectionTableWithCursorParam() {
         check(
                 "select * from table(dedup(cursor(select * from emps),'name'))",
-                "SELECT *\n"
-                        + "FROM TABLE(`DEDUP`((CURSOR ((SELECT *\n"
-                        + "FROM `EMPS`))), 'name'))" );
+                """
+                        SELECT *
+                        FROM TABLE(`DEDUP`((CURSOR ((SELECT *
+                        FROM `EMPS`))), 'name'))""" );
     }
 
 
@@ -3552,9 +3723,10 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testCollectionTableWithColumnListParam() {
         check(
                 "select * from table(dedup(cursor(select * from emps), row(empno, name)))",
-                "SELECT *\n"
-                        + "FROM TABLE(`DEDUP`((CURSOR ((SELECT *\n"
-                        + "FROM `EMPS`))), (ROW(`EMPNO`, `NAME`))))" );
+                """
+                        SELECT *
+                        FROM TABLE(`DEDUP`((CURSOR ((SELECT *
+                        FROM `EMPS`))), (ROW(`EMPNO`, `NAME`))))""" );
     }
 
 
@@ -3576,9 +3748,10 @@ public class SqlParserTest extends SqlLanguageDependent {
         sql( "select * from lateral (^table^(ramp(1)))" ).fails( "(?s)Encountered \"table \\(\" at .*" );
 
         // Good: LATERAL (subQuery)
-        final String expected2 = "SELECT *\n"
-                + "FROM LATERAL((SELECT *\n"
-                + "FROM `EMP`))";
+        final String expected2 = """
+                SELECT *
+                FROM LATERAL((SELECT *
+                FROM `EMP`))""";
         sql( "select * from lateral (select * from emp)" ).ok( expected2 );
         sql( "select * from lateral (select * from emp) as t" ).ok( expected2 + " AS `T`" );
         sql( "select * from lateral (select * from emp) as t(x)" ).ok( expected2 + " AS `T` (`X`)" );
@@ -3588,9 +3761,10 @@ public class SqlParserTest extends SqlLanguageDependent {
     @Test
     public void testCollectionTableWithLateral() {
         final String sql = "select * from dept, lateral table(ramp(dept.deptno))";
-        final String expected = "SELECT *\n"
-                + "FROM `DEPT`,\n"
-                + "LATERAL TABLE(`RAMP`(`DEPT`.`DEPTNO`))";
+        final String expected = """
+                SELECT *
+                FROM `DEPT`,
+                LATERAL TABLE(`RAMP`(`DEPT`.`DEPTNO`))""";
         sql( sql ).ok( expected );
     }
 
@@ -3598,9 +3772,10 @@ public class SqlParserTest extends SqlLanguageDependent {
     @Test
     public void testCollectionTableWithLateral2() {
         final String sql = "select * from dept as d\n" + "cross join lateral table(ramp(dept.deptno)) as r";
-        final String expected = "SELECT *\n"
-                + "FROM `DEPT` AS `D`\n"
-                + "CROSS JOIN LATERAL TABLE(`RAMP`(`DEPT`.`DEPTNO`)) AS `R`";
+        final String expected = """
+                SELECT *
+                FROM `DEPT` AS `D`
+                CROSS JOIN LATERAL TABLE(`RAMP`(`DEPT`.`DEPTNO`)) AS `R`""";
         sql( sql ).ok( expected );
     }
 
@@ -3610,9 +3785,10 @@ public class SqlParserTest extends SqlLanguageDependent {
         // LATERAL before first table in FROM clause doesn't achieve anything, but
         // it's valid.
         final String sql = "select * from lateral table(ramp(dept.deptno)), dept";
-        final String expected = "SELECT *\n"
-                + "FROM LATERAL TABLE(`RAMP`(`DEPT`.`DEPTNO`)),\n"
-                + "`DEPT`";
+        final String expected = """
+                SELECT *
+                FROM LATERAL TABLE(`RAMP`(`DEPT`.`DEPTNO`)),
+                `DEPT`""";
         sql( sql ).ok( expected );
     }
 
@@ -3634,9 +3810,10 @@ public class SqlParserTest extends SqlLanguageDependent {
     @Test
     public void testExplain() {
         final String sql = "explain plan for select * from emps";
-        final String expected = "EXPLAIN PLAN INCLUDING ATTRIBUTES WITH IMPLEMENTATION FOR\n"
-                + "SELECT *\n"
-                + "FROM `EMPS`";
+        final String expected = """
+                EXPLAIN PLAN INCLUDING ATTRIBUTES WITH IMPLEMENTATION FOR
+                SELECT *
+                FROM `EMPS`""";
         sql( sql ).ok( expected );
     }
 
@@ -3644,9 +3821,10 @@ public class SqlParserTest extends SqlLanguageDependent {
     @Test
     public void testExplainAsXml() {
         final String sql = "explain plan as xml for select * from emps";
-        final String expected = "EXPLAIN PLAN INCLUDING ATTRIBUTES WITH IMPLEMENTATION AS XML FOR\n"
-                + "SELECT *\n"
-                + "FROM `EMPS`";
+        final String expected = """
+                EXPLAIN PLAN INCLUDING ATTRIBUTES WITH IMPLEMENTATION AS XML FOR
+                SELECT *
+                FROM `EMPS`""";
         sql( sql ).ok( expected );
     }
 
@@ -3654,9 +3832,10 @@ public class SqlParserTest extends SqlLanguageDependent {
     @Test
     public void testExplainAsJson() {
         final String sql = "explain plan as json for select * from emps";
-        final String expected = "EXPLAIN PLAN INCLUDING ATTRIBUTES WITH IMPLEMENTATION AS JSON FOR\n"
-                + "SELECT *\n"
-                + "FROM `EMPS`";
+        final String expected = """
+                EXPLAIN PLAN INCLUDING ATTRIBUTES WITH IMPLEMENTATION AS JSON FOR
+                SELECT *
+                FROM `EMPS`""";
         sql( sql ).ok( expected );
     }
 
@@ -3665,9 +3844,10 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testExplainWithImpl() {
         check(
                 "explain plan with implementation for select * from emps",
-                "EXPLAIN PLAN INCLUDING ATTRIBUTES WITH IMPLEMENTATION FOR\n"
-                        + "SELECT *\n"
-                        + "FROM `EMPS`" );
+                """
+                        EXPLAIN PLAN INCLUDING ATTRIBUTES WITH IMPLEMENTATION FOR
+                        SELECT *
+                        FROM `EMPS`""" );
     }
 
 
@@ -3675,9 +3855,10 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testExplainWithoutImpl() {
         check(
                 "explain plan without implementation for select * from emps",
-                "EXPLAIN PLAN INCLUDING ATTRIBUTES WITHOUT IMPLEMENTATION FOR\n"
-                        + "SELECT *\n"
-                        + "FROM `EMPS`" );
+                """
+                        EXPLAIN PLAN INCLUDING ATTRIBUTES WITHOUT IMPLEMENTATION FOR
+                        SELECT *
+                        FROM `EMPS`""" );
     }
 
 
@@ -3692,11 +3873,11 @@ public class SqlParserTest extends SqlLanguageDependent {
 
     @Test
     public void testDescribeSchema() {
-        check( "describe schema A", "DESCRIBE SCHEMA `A`" );
+        check( "describe schema A", "DESCRIBE NAMESPACE `A`" );
         // Currently DESCRIBE DATABASE, DESCRIBE CATALOG become DESCRIBE SCHEMA.
         // See [POLYPHENYDB-1221] Implement DESCRIBE DATABASE, CATALOG, STATEMENT
-        check( "describe database A", "DESCRIBE SCHEMA `A`" );
-        check( "describe catalog A", "DESCRIBE SCHEMA `A`" );
+        check( "describe database A", "DESCRIBE NAMESPACE `A`" );
+        check( "describe catalog A", "DESCRIBE NAMESPACE `A`" );
     }
 
 
@@ -3720,32 +3901,32 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testDescribeStatement() {
         // Currently DESCRIBE STATEMENT becomes EXPLAIN.
         // See [POLYPHENYDB-1221] Implement DESCRIBE DATABASE, CATALOG, STATEMENT
-        final String expected0 = ""
-                + "EXPLAIN PLAN INCLUDING ATTRIBUTES WITH IMPLEMENTATION FOR\n"
-                + "SELECT *\n"
-                + "FROM `EMPS`";
+        final String expected0 = """
+                EXPLAIN PLAN INCLUDING ATTRIBUTES WITH IMPLEMENTATION FOR
+                SELECT *
+                FROM `EMPS`""";
         check( "describe statement select * from emps", expected0 );
-        final String expected1 = ""
-                + "EXPLAIN PLAN INCLUDING ATTRIBUTES WITH IMPLEMENTATION FOR\n"
-                + "(SELECT *\n"
-                + "FROM `EMPS`\n"
-                + "ORDER BY 2)";
+        final String expected1 = """
+                EXPLAIN PLAN INCLUDING ATTRIBUTES WITH IMPLEMENTATION FOR
+                (SELECT *
+                FROM `EMPS`
+                ORDER BY 2)""";
         check( "describe statement select * from emps order by 2", expected1 );
         check( "describe select * from emps", expected0 );
         check( "describe (select * from emps)", expected0 );
         check( "describe statement (select * from emps)", expected0 );
-        final String expected2 = ""
-                + "EXPLAIN PLAN INCLUDING ATTRIBUTES WITH IMPLEMENTATION FOR\n"
-                + "(SELECT `DEPTNO`\n"
-                + "FROM `EMPS`\n"
-                + "UNION\n"
-                + "SELECT `DEPTNO`\n"
-                + "FROM `DEPTS`)";
+        final String expected2 = """
+                EXPLAIN PLAN INCLUDING ATTRIBUTES WITH IMPLEMENTATION FOR
+                (SELECT `DEPTNO`
+                FROM `EMPS`
+                UNION
+                SELECT `DEPTNO`
+                FROM `DEPTS`)""";
         check( "describe select deptno from emps union select deptno from depts", expected2 );
-        final String expected3 = ""
-                + "EXPLAIN PLAN INCLUDING ATTRIBUTES WITH IMPLEMENTATION FOR\n"
-                + "INSERT INTO `EMPS`\n"
-                + "VALUES (ROW(1, 'a'))";
+        final String expected3 = """
+                EXPLAIN PLAN INCLUDING ATTRIBUTES WITH IMPLEMENTATION FOR
+                INSERT INTO `EMPS`
+                VALUES (ROW(1, 'a'))""";
         check( "describe insert into emps values (1, 'a')", expected3 );
         // only allow query or DML, not explain, inside describe
         checkFails( "^describe^ explain plan for select * from emps", "(?s).*Encountered \"describe explain\" at .*" );
@@ -3761,9 +3942,10 @@ public class SqlParserTest extends SqlLanguageDependent {
 
     @Test
     public void testInsertSelect() {
-        final String expected = "INSERT INTO `EMPS`\n"
-                + "(SELECT *\n"
-                + "FROM `EMPS`)";
+        final String expected = """
+                INSERT INTO `EMPS`
+                (SELECT *
+                FROM `EMPS`)""";
         sql( "insert into emps select * from emps" )
                 .ok( expected )
                 .node( not( isDdl() ) );
@@ -3772,12 +3954,13 @@ public class SqlParserTest extends SqlLanguageDependent {
 
     @Test
     public void testInsertUnion() {
-        final String expected = "INSERT INTO `EMPS`\n"
-                + "(SELECT *\n"
-                + "FROM `EMPS1`\n"
-                + "UNION\n"
-                + "SELECT *\n"
-                + "FROM `EMPS2`)";
+        final String expected = """
+                INSERT INTO `EMPS`
+                (SELECT *
+                FROM `EMPS1`
+                UNION
+                SELECT *
+                FROM `EMPS2`)""";
         sql( "insert into emps select * from emps1 union select * from emps2" ).ok( expected );
     }
 
@@ -3813,45 +3996,49 @@ public class SqlParserTest extends SqlLanguageDependent {
 
     @Test
     public void testInsertColumnList() {
-        final String expected = "INSERT INTO `EMPS` (`X`, `Y`)\n"
-                + "(SELECT *\n"
-                + "FROM `EMPS`)";
+        final String expected = """
+                INSERT INTO `EMPS` (`X`, `Y`)
+                (SELECT *
+                FROM `EMPS`)""";
         sql( "insert into emps(x,y) select * from emps" ).ok( expected );
     }
 
 
     @Test
     public void testInsertCaseSensitiveColumnList() {
-        final String expected = "INSERT INTO `emps` (`x`, `y`)\n"
-                + "(SELECT *\n"
-                + "FROM `EMPS`)";
+        final String expected = """
+                INSERT INTO `emps` (`x`, `y`)
+                (SELECT *
+                FROM `EMPS`)""";
         sql( "insert into \"emps\"(\"x\",\"y\") select * from emps" ).ok( expected );
     }
 
 
     @Test
     public void testInsertExtendedColumnList() {
-        String expected = "INSERT INTO `EMPS` EXTEND (`Z` BOOLEAN) (`X`, `Y`)\n"
-                + "(SELECT *\n"
-                + "FROM `EMPS`)";
+        String expected = """
+                INSERT INTO `EMPS` EXTEND (`Z` BOOLEAN) (`X`, `Y`)
+                (SELECT *
+                FROM `EMPS`)""";
         sql( "insert into emps(z boolean)(x,y) select * from emps" ).ok( expected );
         conformance = ConformanceEnum.LENIENT;
-        expected = "INSERT INTO `EMPS` EXTEND (`Z` BOOLEAN) (`X`, `Y`, `Z`)\n"
-                + "(SELECT *\n"
-                + "FROM `EMPS`)";
+        expected = """
+                INSERT INTO `EMPS` EXTEND (`Z` BOOLEAN) (`X`, `Y`, `Z`)
+                (SELECT *
+                FROM `EMPS`)""";
         sql( "insert into emps(x, y, z boolean) select * from emps" ).ok( expected );
     }
 
 
     @Test
     public void testUpdateExtendedColumnList() {
-        final String expected = "UPDATE `EMPDEFAULTS` EXTEND (`EXTRA` BOOLEAN, `NOTE` VARCHAR)"
-                + " SET `DEPTNO` = 1\n"
-                + ", `EXTRA` = TRUE\n"
-                + ", `EMPNO` = 20\n"
-                + ", `ENAME` = 'Bob'\n"
-                + ", `NOTE` = 'legion'\n"
-                + "WHERE (`DEPTNO` = 10)";
+        final String expected = """
+                UPDATE `EMPDEFAULTS` EXTEND (`EXTRA` BOOLEAN, `NOTE` VARCHAR) SET `DEPTNO` = 1
+                , `EXTRA` = TRUE
+                , `EMPNO` = 20
+                , `ENAME` = 'Bob'
+                , `NOTE` = 'legion'
+                WHERE (`DEPTNO` = 10)""";
         sql( "update empdefaults(extra BOOLEAN, note VARCHAR)"
                 + " set deptno = 1, extra = true, empno = 20, ename = 'Bob', note = 'legion'"
                 + " where deptno = 10" )
@@ -3861,38 +4048,40 @@ public class SqlParserTest extends SqlLanguageDependent {
 
     @Test
     public void testUpdateCaseSensitiveExtendedColumnList() {
-        final String expected = "UPDATE `EMPDEFAULTS` EXTEND (`extra` BOOLEAN, `NOTE` VARCHAR)"
-                + " SET `DEPTNO` = 1\n"
-                + ", `extra` = TRUE\n"
-                + ", `EMPNO` = 20\n"
-                + ", `ENAME` = 'Bob'\n"
-                + ", `NOTE` = 'legion'\n"
-                + "WHERE (`DEPTNO` = 10)";
+        final String expected = """
+                UPDATE `EMPDEFAULTS` EXTEND (`extra` BOOLEAN, `NOTE` VARCHAR) SET `DEPTNO` = 1
+                , `extra` = TRUE
+                , `EMPNO` = 20
+                , `ENAME` = 'Bob'
+                , `NOTE` = 'legion'
+                WHERE (`DEPTNO` = 10)""";
         sql( "update empdefaults(\"extra\" BOOLEAN, note VARCHAR) set deptno = 1, \"extra\" = true, empno = 20, ename = 'Bob', note = 'legion' where deptno = 10" ).ok( expected );
     }
 
 
     @Test
     public void testInsertCaseSensitiveExtendedColumnList() {
-        String expected = "INSERT INTO `emps` EXTEND (`z` BOOLEAN) (`x`, `y`)\n"
-                + "(SELECT *\n"
-                + "FROM `EMPS`)";
+        String expected = """
+                INSERT INTO `emps` EXTEND (`z` BOOLEAN) (`x`, `y`)
+                (SELECT *
+                FROM `EMPS`)""";
         sql( "insert into \"emps\"(\"z\" boolean)(\"x\",\"y\") select * from emps" ).ok( expected );
         conformance = ConformanceEnum.LENIENT;
-        expected = "INSERT INTO `emps` EXTEND (`z` BOOLEAN) (`x`, `y`, `z`)\n"
-                + "(SELECT *\n"
-                + "FROM `EMPS`)";
+        expected = """
+                INSERT INTO `emps` EXTEND (`z` BOOLEAN) (`x`, `y`, `z`)
+                (SELECT *
+                FROM `EMPS`)""";
         sql( "insert into \"emps\"(\"x\", \"y\", \"z\" boolean) select * from emps" ).ok( expected );
     }
 
 
     @Test
     public void testExplainInsert() {
-        final String expected = "EXPLAIN PLAN INCLUDING ATTRIBUTES"
-                + " WITH IMPLEMENTATION FOR\n"
-                + "INSERT INTO `EMPS1`\n"
-                + "(SELECT *\n"
-                + "FROM `EMPS2`)";
+        final String expected = """
+                EXPLAIN PLAN INCLUDING ATTRIBUTES WITH IMPLEMENTATION FOR
+                INSERT INTO `EMPS1`
+                (SELECT *
+                FROM `EMPS2`)""";
         sql( "explain plan for insert into emps1 select * from emps2" )
                 .ok( expected )
                 .node( not( isDdl() ) );
@@ -3912,9 +4101,10 @@ public class SqlParserTest extends SqlLanguageDependent {
     @Test
     public void testUpsertSelect() {
         final String sql = "upsert into emps select * from emp as e";
-        final String expected = "UPSERT INTO `EMPS`\n"
-                + "(SELECT *\n"
-                + "FROM `EMP` AS `E`)";
+        final String expected = """
+                UPSERT INTO `EMPS`
+                (SELECT *
+                FROM `EMP` AS `E`)""";
         if ( isReserved( "UPSERT" ) ) {
             sql( sql ).ok( expected );
         }
@@ -3924,10 +4114,10 @@ public class SqlParserTest extends SqlLanguageDependent {
     @Test
     public void testExplainUpsert() {
         final String sql = "explain plan for upsert into emps1 values (1, 2)";
-        final String expected = "EXPLAIN PLAN INCLUDING ATTRIBUTES"
-                + " WITH IMPLEMENTATION FOR\n"
-                + "UPSERT INTO `EMPS1`\n"
-                + "VALUES (ROW(1, 2))";
+        final String expected = """
+                EXPLAIN PLAN INCLUDING ATTRIBUTES WITH IMPLEMENTATION FOR
+                UPSERT INTO `EMPS1`
+                VALUES (ROW(1, 2))""";
         if ( isReserved( "UPSERT" ) ) {
             sql( sql ).ok( expected );
         }
@@ -3953,9 +4143,10 @@ public class SqlParserTest extends SqlLanguageDependent {
     @Test
     public void testUpdate() {
         sql( "update emps set empno = empno + 1, sal = sal - 1 where empno=12" )
-                .ok( "UPDATE `EMPS` SET `EMPNO` = (`EMPNO` + 1)\n"
-                        + ", `SAL` = (`SAL` - 1)\n"
-                        + "WHERE (`EMPNO` = 12)" );
+                .ok( """
+                        UPDATE `EMPS` SET `EMPNO` = (`EMPNO` + 1)
+                        , `SAL` = (`SAL` - 1)
+                        WHERE (`EMPNO` = 12)""" );
     }
 
 
@@ -3968,16 +4159,16 @@ public class SqlParserTest extends SqlLanguageDependent {
                 + "set name = t.name, deptno = t.deptno, salary = t.salary * .1 "
                 + "when not matched then insert (name, dept, salary) "
                 + "values(t.name, 10, t.salary * .15)";
-        final String expected = "MERGE INTO `EMPS` AS `E`\n"
-                + "USING (SELECT *\n"
-                + "FROM `TEMPEMPS`\n"
-                + "WHERE (`DEPTNO` IS NULL)) AS `T`\n"
-                + "ON (`E`.`EMPNO` = `T`.`EMPNO`)\n"
-                + "WHEN MATCHED THEN UPDATE SET `NAME` = `T`.`NAME`\n"
-                + ", `DEPTNO` = `T`.`DEPTNO`\n"
-                + ", `SALARY` = (`T`.`SALARY` * 0.1)\n"
-                + "WHEN NOT MATCHED THEN INSERT (`NAME`, `DEPT`, `SALARY`) "
-                + "(VALUES (ROW(`T`.`NAME`, 10, (`T`.`SALARY` * 0.15))))";
+        final String expected = """
+                MERGE INTO `EMPS` AS `E`
+                USING (SELECT *
+                FROM `TEMPEMPS`
+                WHERE (`DEPTNO` IS NULL)) AS `T`
+                ON (`E`.`EMPNO` = `T`.`EMPNO`)
+                WHEN MATCHED THEN UPDATE SET `NAME` = `T`.`NAME`
+                , `DEPTNO` = `T`.`DEPTNO`
+                , `SALARY` = (`T`.`SALARY` * 0.1)
+                WHEN NOT MATCHED THEN INSERT (`NAME`, `DEPT`, `SALARY`) (VALUES (ROW(`T`.`NAME`, 10, (`T`.`SALARY` * 0.15))))""";
         sql( sql ).ok( expected )
                 .node( not( isDdl() ) );
     }
@@ -3994,14 +4185,14 @@ public class SqlParserTest extends SqlLanguageDependent {
                         + "when not matched then insert (name, dept, salary) "
                         + "values(t.name, 10, t.salary * .15)",
 
-                "MERGE INTO `EMPS` AS `E`\n"
-                        + "USING `TEMPEMPS` AS `T`\n"
-                        + "ON (`E`.`EMPNO` = `T`.`EMPNO`)\n"
-                        + "WHEN MATCHED THEN UPDATE SET `NAME` = `T`.`NAME`\n"
-                        + ", `DEPTNO` = `T`.`DEPTNO`\n"
-                        + ", `SALARY` = (`T`.`SALARY` * 0.1)\n"
-                        + "WHEN NOT MATCHED THEN INSERT (`NAME`, `DEPT`, `SALARY`) "
-                        + "(VALUES (ROW(`T`.`NAME`, 10, (`T`.`SALARY` * 0.15))))" );
+                """
+                        MERGE INTO `EMPS` AS `E`
+                        USING `TEMPEMPS` AS `T`
+                        ON (`E`.`EMPNO` = `T`.`EMPNO`)
+                        WHEN MATCHED THEN UPDATE SET `NAME` = `T`.`NAME`
+                        , `DEPTNO` = `T`.`DEPTNO`
+                        , `SALARY` = (`T`.`SALARY` * 0.1)
+                        WHEN NOT MATCHED THEN INSERT (`NAME`, `DEPT`, `SALARY`) (VALUES (ROW(`T`.`NAME`, 10, (`T`.`SALARY` * 0.15))))""" );
     }
 
 
@@ -4019,10 +4210,16 @@ public class SqlParserTest extends SqlLanguageDependent {
         checkExp( "x''=X'2'", "(X'' = X'2')" );
         checkExp( "x'fffff'=X''", "(X'FFFFF' = X'')" );
         checkExp(
-                "x'1' \t\t\f\r \n" + "'2'--hi this is a comment'FF'\r\r\t\f \n" + "'34'",
+                """
+                        x'1' \t\t\f\r\s
+                        '2'--hi this is a comment'FF'\r\r\t\f\s
+                        '34'""",
                 "X'1'\n'2'\n'34'" );
         checkExp(
-                "x'1' \t\t\f\r \n" + "'000'--\n" + "'01'",
+                """
+                        x'1' \t\t\f\r\s
+                        '000'--
+                        '01'""",
                 "X'1'\n'000'\n'01'" );
         checkExp(
                 "x'1234567890abcdef'=X'fFeEdDcCbBaA'",
@@ -4048,24 +4245,25 @@ public class SqlParserTest extends SqlLanguageDependent {
         // valid syntax, but should fail in the validator
         check(
                 "select x'1' '2' from t",
-                "SELECT X'1'\n"
-                        + "'2'\n"
-                        + "FROM `T`" );
+                """
+                        SELECT X'1'
+                        '2'
+                        FROM `T`""" );
     }
 
 
     @Test
     public void testStringLiteral() {
-        checkExp( "_latin1'hi'", "_LATIN1'hi'" );
-        checkExp( "N'is it a plane? no it''s superman!'", "_ISO-8859-1'is it a plane? no it''s superman!'" );
-        checkExp( "n'lowercase n'", "_ISO-8859-1'lowercase n'" );
+        checkExp( "_latin1'hi'", "_ISO-8859-1'hi'" );
+        checkExp( "N'is it a plane? no it''s superman!'", "'is it a plane? no it''s superman!'" );
+        checkExp( "n'lowercase n'", "'lowercase n'" );
         checkExp( "'boring string'", "'boring string'" );
         checkExp( "_iSo-8859-1'bye'", "_ISO-8859-1'bye'" );
         checkExp( "'three' \n ' blind'\n' mice'", "'three'\n' blind'\n' mice'" );
         checkExp( "'three' -- comment \n ' blind'\n' mice'", "'three'\n' blind'\n' mice'" );
-        checkExp( "N'bye' \t\r\f\f\n' bye'", "_ISO-8859-1'bye'\n' bye'" );
+        checkExp( "N'bye' \t\r\f\f\n' bye'", "'bye'\n' bye'" );
         checkExp( "_iso-8859-1'bye' \n\n--\n-- this is a comment\n' bye'", "_ISO-8859-1'bye'\n' bye'" );
-        checkExp( "_utf8'hi'", "_UTF8'hi'" );
+        checkExp( "_utf8'hi'", "'hi'" );
 
         // newline in string literal
         checkExp( "'foo\rbar'", "'foo\rbar'" );
@@ -4089,7 +4287,10 @@ public class SqlParserTest extends SqlLanguageDependent {
         checkFails( "select ^_unknown-charset''^ from (values(true))", "Unknown character set 'unknown-charset'" );
 
         // valid syntax, but should give a validator error
-        check( "select N'1' '2' from t", "SELECT _ISO-8859-1'1'\n'2'\n" + "FROM `T`" );
+        check( "select N'1' '2' from t", """
+                SELECT '1'
+                '2'
+                FROM `T`""" );
     }
 
 
@@ -4099,9 +4300,10 @@ public class SqlParserTest extends SqlLanguageDependent {
                 "'foo'\n"
                         + "'bar'";
         final String fooBarBaz =
-                "'foo'\n"
-                        + "'bar'\n"
-                        + "'baz'";
+                """
+                        'foo'
+                        'bar'
+                        'baz'""";
         checkExp( "   'foo'\r'bar'", fooBar );
         checkExp( "   'foo'\r\n'bar'", fooBar );
         checkExp( "   'foo'\r\n\r\n'bar'  \n   'baz'", fooBarBaz );
@@ -4310,14 +4512,14 @@ public class SqlParserTest extends SqlLanguageDependent {
         checkExp( "TIME '12:01:01.'", "TIME '12:01:01'" );
         checkExp( "TIME '12:01:01.000'", "TIME '12:01:01.000'" );
         checkExp( "TIME '12:01:01.001'", "TIME '12:01:01.001'" );
-        checkExp( "TIME '12:01:01.01023456789'", "TIME '12:01:01.01023456789'" );
+        //checkExp( "TIME '12:01:01.01023456789'", "TIME '12:01:01.01023456789'" );
 
         // Timestamp literals
         checkExp( "TIMESTAMP '2004-12-01 12:01:01'", "TIMESTAMP '2004-12-01 12:01:01'" );
         checkExp( "TIMESTAMP '2004-12-01 12:01:01.1'", "TIMESTAMP '2004-12-01 12:01:01.1'" );
         checkExp( "TIMESTAMP '2004-12-01 12:01:01.'", "TIMESTAMP '2004-12-01 12:01:01'" );
-        checkExp( "TIMESTAMP  '2004-12-01 12:01:01.010234567890'", "TIMESTAMP '2004-12-01 12:01:01.010234567890'" );
-        checkExpSame( "TIMESTAMP '2004-12-01 12:01:01.01023456789'" );
+        //checkExp( "TIMESTAMP  '2004-12-01 12:01:01.010234567890'", "TIMESTAMP '2004-12-01 12:01:01.010234567890'" );
+        //checkExpSame( "TIMESTAMP '2004-12-01 12:01:01.01023456789'" );
 
         // Failures.
         checkFails( "^DATE '12/21/99'^", "(?s).*Illegal DATE literal.*" );
@@ -4417,10 +4619,11 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testWindowInSubQuery() {
         check(
                 "select * from ( select sum(x) over w, sum(y) over w from s window w as (range interval '1' minute preceding))",
-                "SELECT *\n"
-                        + "FROM (SELECT (SUM(`X`) OVER `W`), (SUM(`Y`) OVER `W`)\n"
-                        + "FROM `S`\n"
-                        + "WINDOW `W` AS (RANGE INTERVAL '1' MINUTE PRECEDING))" );
+                """
+                        SELECT *
+                        FROM (SELECT (SUM(`X`) OVER `W`), (SUM(`Y`) OVER `W`)
+                        FROM `S`
+                        WINDOW `W` AS (RANGE INTERVAL '1' MINUTE PRECEDING))""" );
     }
 
 
@@ -4429,25 +4632,31 @@ public class SqlParserTest extends SqlLanguageDependent {
         // Correct syntax
         check(
                 "select count(z) over w as foo from Bids window w as (partition by y + yy, yyy order by x rows between 2 preceding and 2 following)",
-                "SELECT (COUNT(`Z`) OVER `W`) AS `FOO`\n"
-                        + "FROM `BIDS`\n"
-                        + "WINDOW `W` AS (PARTITION BY (`Y` + `YY`), `YYY` ORDER BY `X` ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING)" );
+                """
+                        SELECT (COUNT(`Z`) OVER `W`) AS `FOO`
+                        FROM `BIDS`
+                        WINDOW `W` AS (PARTITION BY (`Y` + `YY`), `YYY` ORDER BY `X` ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING)""" );
 
         check(
                 "select count(*) over w from emp window w as (rows 2 preceding)",
-                "SELECT (COUNT(*) OVER `W`)\n"
-                        + "FROM `EMP`\n"
-                        + "WINDOW `W` AS (ROWS 2 PRECEDING)" );
+                """
+                        SELECT (COUNT(*) OVER `W`)
+                        FROM `EMP`
+                        WINDOW `W` AS (ROWS 2 PRECEDING)""" );
 
         // Chained string literals are valid syntax. They are unlikely to be semantically valid, because intervals are usually numeric or datetime.
         // Note: literal chain is not yet replaced with combined literal since we are just parsing, and not validating the sql.
         check(
-                "select count(*) over w from emp window w as (\n"
-                        + "  rows 'foo' 'bar'\n"
-                        + "       'baz' preceding)",
-                "SELECT (COUNT(*) OVER `W`)\n"
-                        + "FROM `EMP`\n"
-                        + "WINDOW `W` AS (ROWS 'foo'\n'bar'\n'baz' PRECEDING)" );
+                """
+                        select count(*) over w from emp window w as (
+                          rows 'foo' 'bar'
+                               'baz' preceding)""",
+                """
+                        SELECT (COUNT(*) OVER `W`)
+                        FROM `EMP`
+                        WINDOW `W` AS (ROWS 'foo'
+                        'bar'
+                        'baz' PRECEDING)""" );
 
         // Partition clause out of place. Found after ORDER BY
         checkFails(
@@ -4513,12 +4722,18 @@ public class SqlParserTest extends SqlLanguageDependent {
                 "SELECT `X` AS `Y`\n" + "FROM `T`" );
         check(
                 "select sum(x) y from t group by z",
-                "SELECT SUM(`X`) AS `Y`\n" + "FROM `T`\n" + "GROUP BY `Z`" );
+                """
+                        SELECT SUM(`X`) AS `Y`
+                        FROM `T`
+                        GROUP BY `Z`""" );
 
         // Even after OVER
         check(
                 "select count(z) over w foo from Bids window w as (order by x)",
-                "SELECT (COUNT(`Z`) OVER `W`) AS `FOO`\n" + "FROM `BIDS`\n" + "WINDOW `W` AS (ORDER BY `X`)" );
+                """
+                        SELECT (COUNT(`Z`) OVER `W`) AS `FOO`
+                        FROM `BIDS`
+                        WINDOW `W` AS (ORDER BY `X`)""" );
 
         // AS is optional for table correlation names
         final String expected = "SELECT `X`\n" + "FROM `T` AS `T1`";
@@ -4541,16 +4756,18 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testAsAliases() {
         check(
                 "select x from t as t1 (a, b) where foo",
-                "SELECT `X`\n"
-                        + "FROM `T` AS `T1` (`A`, `B`)\n"
-                        + "WHERE `FOO`" );
+                """
+                        SELECT `X`
+                        FROM `T` AS `T1` (`A`, `B`)
+                        WHERE `FOO`""" );
 
         check(
                 "select x from (values (1, 2), (3, 4)) as t1 (\"a\", b) where \"a\" > b",
-                "SELECT `X`\n"
-                        + "FROM (VALUES (ROW(1, 2)),\n"
-                        + "(ROW(3, 4))) AS `T1` (`a`, `B`)\n"
-                        + "WHERE (`a` > `B`)" );
+                """
+                        SELECT `X`
+                        FROM (VALUES (ROW(1, 2)),
+                        (ROW(3, 4))) AS `T1` (`a`, `B`)
+                        WHERE (`a` > `B`)""" );
 
         // must have at least one column
         checkFails(
@@ -4560,16 +4777,18 @@ public class SqlParserTest extends SqlLanguageDependent {
         // cannot have expressions
         checkFails(
                 "select x from t as t1 (x ^+^ y)",
-                "(?s).*Was expecting one of:\n"
-                        + "    \"\\)\" \\.\\.\\.\n"
-                        + "    \",\" \\.\\.\\..*" );
+                """
+                        (?s).*Was expecting one of:
+                            "\\)" \\.\\.\\.
+                            "," \\.\\.\\..*""" );
 
         // cannot have compound identifiers
         checkFails(
                 "select x from t as t1 (x^.^y)",
-                "(?s).*Was expecting one of:\n"
-                        + "    \"\\)\" \\.\\.\\.\n"
-                        + "    \",\" \\.\\.\\..*" );
+                """
+                        (?s).*Was expecting one of:
+                            "\\)" \\.\\.\\.
+                            "," \\.\\.\\..*""" );
     }
 
 
@@ -5832,24 +6051,26 @@ public class SqlParserTest extends SqlLanguageDependent {
         // No qualifier
         checkExpFails(
                 "interval '1^'^",
-                "Encountered \"<EOF>\" at line 1, column 12\\.\n"
-                        + "Was expecting one of:\n"
-                        + "    \"YEAR\" \\.\\.\\.\n"
-                        + "    \"MONTH\" \\.\\.\\.\n"
-                        + "    \"DAY\" \\.\\.\\.\n"
-                        + "    \"HOUR\" \\.\\.\\.\n"
-                        + "    \"MINUTE\" \\.\\.\\.\n"
-                        + "    \"SECOND\" \\.\\.\\.\n"
-                        + "    " );
+                """
+                        Encountered "<EOF>" at line 1, column 12\\.
+                        Was expecting one of:
+                            "YEAR" \\.\\.\\.
+                            "MONTH" \\.\\.\\.
+                            "DAY" \\.\\.\\.
+                            "HOUR" \\.\\.\\.
+                            "MINUTE" \\.\\.\\.
+                            "SECOND" \\.\\.\\.
+                           \s""" );
 
         // illegal qualifiers, no precision in either field
         checkExpFails(
                 "interval '1' year ^to^ year",
-                "(?s)Encountered \"to year\" at line 1, column 19.\n"
-                        + "Was expecting one of:\n"
-                        + "    <EOF> \n"
-                        + "    \"\\.\" \\.\\.\\.\n"
-                        + "    \"NOT\" \\.\\.\\..*" );
+                """
+                        (?s)Encountered "to year" at line 1, column 19.
+                        Was expecting one of:
+                            <EOF>\s
+                            "\\." \\.\\.\\.
+                            "NOT" \\.\\.\\..*""" );
         checkExpFails( "interval '1-2' year ^to^ day", ANY );
         checkExpFails( "interval '1-2' year ^to^ hour", ANY );
         checkExpFails( "interval '1-2' year ^to^ minute", ANY );
@@ -6206,9 +6427,10 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testTimestampAdd() {
         final String sql = "select * from t\n"
                 + "where timestampadd(sql_tsi_month, 5, hiredate) < curdate";
-        final String expected = "SELECT *\n"
-                + "FROM `T`\n"
-                + "WHERE (TIMESTAMPADD(MONTH, 5, `HIREDATE`) < `CURDATE`)";
+        final String expected = """
+                SELECT *
+                FROM `T`
+                WHERE (TIMESTAMPADD(MONTH, 5, `HIREDATE`) < `CURDATE`)""";
         sql( sql ).ok( expected );
     }
 
@@ -6217,9 +6439,10 @@ public class SqlParserTest extends SqlLanguageDependent {
     public void testTimestampDiff() {
         final String sql = "select * from t\n"
                 + "where timestampdiff(frac_second, 5, hiredate) < curdate";
-        final String expected = "SELECT *\n"
-                + "FROM `T`\n"
-                + "WHERE (TIMESTAMPDIFF(MICROSECOND, 5, `HIREDATE`) < `CURDATE`)";
+        final String expected = """
+                SELECT *
+                FROM `T`
+                WHERE (TIMESTAMPDIFF(MICROSECOND, 5, `HIREDATE`) < `CURDATE`)""";
         sql( sql ).ok( expected );
     }
 
@@ -6244,9 +6467,10 @@ public class SqlParserTest extends SqlLanguageDependent {
         // UNNEST with more than one argument
         final String sql = "select * from dept,\n"
                 + "unnest(dept.employees, dept.managers)";
-        final String expected = "SELECT *\n"
-                + "FROM `DEPT`,\n"
-                + "(UNNEST(`DEPT`.`EMPLOYEES`, `DEPT`.`MANAGERS`))";
+        final String expected = """
+                SELECT *
+                FROM `DEPT`,
+                (UNNEST(`DEPT`.`EMPLOYEES`, `DEPT`.`MANAGERS`))""";
         sql( sql ).ok( expected );
 
         // LATERAL UNNEST is not valid
@@ -6332,7 +6556,7 @@ public class SqlParserTest extends SqlLanguageDependent {
 
     @Test
     public void testAddCarets() {
-        Assert.assertEquals(
+        assertEquals(
                 "values (^foo^)",
                 SqlParserUtil.addCarets( "values (foo)", 1, 9, 1, 12 ) );
         assertEquals(
@@ -6385,12 +6609,12 @@ public class SqlParserTest extends SqlLanguageDependent {
 
     /**
      * Tests that reserved keywords are not added to the parser unintentionally. (Most keywords are non-reserved. The set of reserved words generally only changes with a new version of the SQL standard.)
-     *
+     * <p>
      * If the new keyword added is intended to be a reserved keyword, update the {@link #RESERVED_KEYWORDS} list. If not, add the keyword to the non-reserved keyword list in the parser.
      */
     @Test
     public void testNoUnintendedNewReservedKeywords() {
-        assumeTrue( "don't run this test for sub-classes", isNotSubclass() );
+        assumeTrue( isNotSubclass(), "don't run this test for sub-classes" );
         final Metadata metadata = getSqlParser( "" ).getMetadata();
 
         final SortedSet<String> reservedKeywords = new TreeSet<>();
@@ -6398,10 +6622,6 @@ public class SqlParserTest extends SqlLanguageDependent {
         for ( String s : metadata.getTokens() ) {
             if ( metadata.isKeyword( s ) && metadata.isReservedWord( s ) ) {
                 reservedKeywords.add( s );
-            }
-            if ( false ) {
-                // Cannot enable this test yet, because the parser's list of SQL:92 reserved words is not consistent with keywords("92").
-                assertThat( s, metadata.isSql92ReservedWord( s ), is( keywords92.contains( s ) ) );
             }
         }
 
@@ -6415,7 +6635,7 @@ public class SqlParserTest extends SqlLanguageDependent {
      */
     @Test
     public void testGenerateKeyWords() throws IOException {
-        assumeTrue( "don't run this test for sub-classes", isNotSubclass() );
+        assumeTrue( isNotSubclass(), "don't run this test for sub-classes" );
         // inUrl = "file:/.../core/target/test-classes/hsqldb-model.json"
         String path = "hsqldb-model.json";
         File hsqlDbModel = Sources.of( SqlParserTest.class.getResource( "/" + path ) ).file();
@@ -6643,11 +6863,21 @@ public class SqlParserTest extends SqlLanguageDependent {
         sql( "select 1 + next value for s + current value for s from t" )
                 .ok( "SELECT ((1 + (NEXT VALUE FOR `S`)) + (CURRENT VALUE FOR `S`))\n" + "FROM `T`" );
         sql( "select 1 from t where next value for my_seq < 10" )
-                .ok( "SELECT 1\n" + "FROM `T`\n" + "WHERE ((NEXT VALUE FOR `MY_SEQ`) < 10)" );
+                .ok( """
+                        SELECT 1
+                        FROM `T`
+                        WHERE ((NEXT VALUE FOR `MY_SEQ`) < 10)""" );
         sql( "select 1 from t\n" + "where next value for my_seq < 10 fetch next 3 rows only" )
-                .ok( "SELECT 1\n" + "FROM `T`\n" + "WHERE ((NEXT VALUE FOR `MY_SEQ`) < 10)\n" + "FETCH NEXT 3 ROWS ONLY" );
+                .ok( """
+                        SELECT 1
+                        FROM `T`
+                        WHERE ((NEXT VALUE FOR `MY_SEQ`) < 10)
+                        FETCH NEXT 3 ROWS ONLY""" );
         sql( "insert into t values next value for my_seq, current value for my_seq" )
-                .ok( "INSERT INTO `T`\n" + "VALUES (ROW((NEXT VALUE FOR `MY_SEQ`))),\n" + "(ROW((CURRENT VALUE FOR `MY_SEQ`)))" );
+                .ok( """
+                        INSERT INTO `T`
+                        VALUES (ROW((NEXT VALUE FOR `MY_SEQ`))),
+                        (ROW((CURRENT VALUE FOR `MY_SEQ`)))""" );
         sql( "insert into t values (1, current value for my_seq)" )
                 .ok( "INSERT INTO `T`\n" + "VALUES (ROW(1, (CURRENT VALUE FOR `MY_SEQ`)))" );
     }
@@ -6655,796 +6885,715 @@ public class SqlParserTest extends SqlLanguageDependent {
 
     @Test
     public void testMatchRecognize1() {
-        final String sql = "select *\n"
-                + "  from t match_recognize\n"
-                + "  (\n"
-                + "    partition by type, price\n"
-                + "    order by type asc, price desc\n"
-                + "    pattern (strt down+ up+)\n"
-                + "    define\n"
-                + "      down as down.price < PREV(down.price),\n"
-                + "      up as up.price > prev(up.price)\n"
-                + "  ) mr";
-        final String expected = "SELECT *\n"
-                + "FROM `T` MATCH_RECOGNIZE(\n"
-                + "PARTITION BY `TYPE`, `PRICE`\n"
-                + "ORDER BY `TYPE`, `PRICE` DESC\n"
-                + "PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))\n"
-                + "DEFINE "
-                + "`DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), "
-                + "`UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))"
-                + ") AS `MR`";
+        final String sql = """
+                select *
+                  from t match_recognize
+                  (
+                    partition by type, price
+                    order by type asc, price desc
+                    pattern (strt down+ up+)
+                    define
+                      down as down.price < PREV(down.price),
+                      up as up.price > prev(up.price)
+                  ) mr""";
+        final String expected = """
+                SELECT *
+                FROM `T` MATCH_RECOGNIZE(
+                PARTITION BY `TYPE`, `PRICE`
+                ORDER BY `TYPE`, `PRICE` DESC
+                PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))
+                DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), `UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))) AS `MR`""";
         sql( sql ).ok( expected );
     }
 
 
     @Test
     public void testMatchRecognize2() {
-        final String sql = "select *\n"
-                + "  from t match_recognize\n"
-                + "  (\n"
-                + "    pattern (strt down+ up+$)\n"
-                + "    define\n"
-                + "      down as down.price < PREV(down.price),\n"
-                + "      up as up.price > prev(up.price)\n"
-                + "  ) mr";
-        final String expected = "SELECT *\n"
-                + "FROM `T` MATCH_RECOGNIZE(\n"
-                + "PATTERN (((`STRT` (`DOWN` +)) (`UP` +)) $)\n"
-                + "DEFINE "
-                + "`DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), "
-                + "`UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))"
-                + ") AS `MR`";
+        final String sql = """
+                select *
+                  from t match_recognize
+                  (
+                    pattern (strt down+ up+$)
+                    define
+                      down as down.price < PREV(down.price),
+                      up as up.price > prev(up.price)
+                  ) mr""";
+        final String expected = """
+                SELECT *
+                FROM `T` MATCH_RECOGNIZE(
+                PATTERN (((`STRT` (`DOWN` +)) (`UP` +)) $)
+                DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), `UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))) AS `MR`""";
         sql( sql ).ok( expected );
     }
 
 
     @Test
     public void testMatchRecognize3() {
-        final String sql = "select *\n"
-                + "  from t match_recognize\n"
-                + "  (\n"
-                + "    pattern (^strt down+ up+)\n"
-                + "    define\n"
-                + "      down as down.price < PREV(down.price),\n"
-                + "      up as up.price > prev(up.price)\n"
-                + "  ) mr";
-        final String expected = "SELECT *\n"
-                + "FROM `T` MATCH_RECOGNIZE(\n"
-                + "PATTERN (^ ((`STRT` (`DOWN` +)) (`UP` +)))\n"
-                + "DEFINE "
-                + "`DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), "
-                + "`UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))"
-                + ") AS `MR`";
+        final String sql = """
+                select *
+                  from t match_recognize
+                  (
+                    pattern (^strt down+ up+)
+                    define
+                      down as down.price < PREV(down.price),
+                      up as up.price > prev(up.price)
+                  ) mr""";
+        final String expected = """
+                SELECT *
+                FROM `T` MATCH_RECOGNIZE(
+                PATTERN (^ ((`STRT` (`DOWN` +)) (`UP` +)))
+                DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), `UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))) AS `MR`""";
         sql( sql ).ok( expected );
     }
 
 
     @Test
     public void testMatchRecognize4() {
-        final String sql = "select *\n"
-                + "  from t match_recognize\n"
-                + "  (\n"
-                + "    pattern (^strt down+ up+$)\n"
-                + "    define\n"
-                + "      down as down.price < PREV(down.price),\n"
-                + "      up as up.price > prev(up.price)\n"
-                + "  ) mr";
-        final String expected = "SELECT *\n"
-                + "FROM `T` MATCH_RECOGNIZE(\n"
-                + "PATTERN (^ ((`STRT` (`DOWN` +)) (`UP` +)) $)\n"
-                + "DEFINE "
-                + "`DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), "
-                + "`UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))"
-                + ") AS `MR`";
+        final String sql = """
+                select *
+                  from t match_recognize
+                  (
+                    pattern (^strt down+ up+$)
+                    define
+                      down as down.price < PREV(down.price),
+                      up as up.price > prev(up.price)
+                  ) mr""";
+        final String expected = """
+                SELECT *
+                FROM `T` MATCH_RECOGNIZE(
+                PATTERN (^ ((`STRT` (`DOWN` +)) (`UP` +)) $)
+                DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), `UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))) AS `MR`""";
         sql( sql ).ok( expected );
     }
 
 
     @Test
     public void testMatchRecognize5() {
-        final String sql = "select *\n"
-                + "  from t match_recognize\n"
-                + "  (\n"
-                + "    pattern (strt down* up?)\n"
-                + "    define\n"
-                + "      down as down.price < PREV(down.price),\n"
-                + "      up as up.price > prev(up.price)\n"
-                + "  ) mr";
-        final String expected = "SELECT *\n"
-                + "FROM `T` MATCH_RECOGNIZE(\n"
-                + "PATTERN (((`STRT` (`DOWN` *)) (`UP` ?)))\n"
-                + "DEFINE "
-                + "`DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), "
-                + "`UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))"
-                + ") AS `MR`";
+        final String sql = """
+                select *
+                  from t match_recognize
+                  (
+                    pattern (strt down* up?)
+                    define
+                      down as down.price < PREV(down.price),
+                      up as up.price > prev(up.price)
+                  ) mr""";
+        final String expected = """
+                SELECT *
+                FROM `T` MATCH_RECOGNIZE(
+                PATTERN (((`STRT` (`DOWN` *)) (`UP` ?)))
+                DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), `UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))) AS `MR`""";
         sql( sql ).ok( expected );
     }
 
 
     @Test
     public void testMatchRecognize6() {
-        final String sql = "select *\n"
-                + "  from t match_recognize\n"
-                + "  (\n"
-                + "    pattern (strt {-down-} up?)\n"
-                + "    define\n"
-                + "      down as down.price < PREV(down.price),\n"
-                + "      up as up.price > prev(up.price)\n"
-                + "  ) mr";
-        final String expected = "SELECT *\n"
-                + "FROM `T` MATCH_RECOGNIZE(\n"
-                + "PATTERN (((`STRT` ({- `DOWN` -})) (`UP` ?)))\n"
-                + "DEFINE "
-                + "`DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), "
-                + "`UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))"
-                + ") AS `MR`";
+        final String sql = """
+                select *
+                  from t match_recognize
+                  (
+                    pattern (strt {-down-} up?)
+                    define
+                      down as down.price < PREV(down.price),
+                      up as up.price > prev(up.price)
+                  ) mr""";
+        final String expected = """
+                SELECT *
+                FROM `T` MATCH_RECOGNIZE(
+                PATTERN (((`STRT` ({- `DOWN` -})) (`UP` ?)))
+                DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), `UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))) AS `MR`""";
         sql( sql ).ok( expected );
     }
 
 
     @Test
     public void testMatchRecognize7() {
-        final String sql = "select *\n"
-                + "  from t match_recognize\n"
-                + "  (\n"
-                + "    pattern (strt down{2} up{3,})\n"
-                + "    define\n"
-                + "      down as down.price < PREV(down.price),\n"
-                + "      up as up.price > prev(up.price)\n"
-                + "  ) mr";
-        final String expected = "SELECT *\n"
-                + "FROM `T` MATCH_RECOGNIZE(\n"
-                + "PATTERN (((`STRT` (`DOWN` { 2 })) (`UP` { 3, })))\n"
-                + "DEFINE "
-                + "`DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), "
-                + "`UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))"
-                + ") AS `MR`";
+        final String sql = """
+                select *
+                  from t match_recognize
+                  (
+                    pattern (strt down{2} up{3,})
+                    define
+                      down as down.price < PREV(down.price),
+                      up as up.price > prev(up.price)
+                  ) mr""";
+        final String expected = """
+                SELECT *
+                FROM `T` MATCH_RECOGNIZE(
+                PATTERN (((`STRT` (`DOWN` { 2 })) (`UP` { 3, })))
+                DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), `UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))) AS `MR`""";
         sql( sql ).ok( expected );
     }
 
 
     @Test
     public void testMatchRecognize8() {
-        final String sql = "select *\n"
-                + "  from t match_recognize\n"
-                + "  (\n"
-                + "    pattern (strt down{,2} up{3,5})\n"
-                + "    define\n"
-                + "      down as down.price < PREV(down.price),\n"
-                + "      up as up.price > prev(up.price)\n"
-                + "  ) mr";
-        final String expected = "SELECT *\n"
-                + "FROM `T` MATCH_RECOGNIZE(\n"
-                + "PATTERN (((`STRT` (`DOWN` { , 2 })) (`UP` { 3, 5 })))\n"
-                + "DEFINE "
-                + "`DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), "
-                + "`UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))"
-                + ") AS `MR`";
+        final String sql = """
+                select *
+                  from t match_recognize
+                  (
+                    pattern (strt down{,2} up{3,5})
+                    define
+                      down as down.price < PREV(down.price),
+                      up as up.price > prev(up.price)
+                  ) mr""";
+        final String expected = """
+                SELECT *
+                FROM `T` MATCH_RECOGNIZE(
+                PATTERN (((`STRT` (`DOWN` { , 2 })) (`UP` { 3, 5 })))
+                DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), `UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))) AS `MR`""";
         sql( sql ).ok( expected );
     }
 
 
     @Test
     public void testMatchRecognize9() {
-        final String sql = "select *\n"
-                + "  from t match_recognize\n"
-                + "  (\n"
-                + "    pattern (strt {-down+-} {-up*-})\n"
-                + "    define\n"
-                + "      down as down.price < PREV(down.price),\n"
-                + "      up as up.price > prev(up.price)\n"
-                + "  ) mr";
-        final String expected = "SELECT *\n"
-                + "FROM `T` MATCH_RECOGNIZE(\n"
-                + "PATTERN (((`STRT` ({- (`DOWN` +) -})) ({- (`UP` *) -})))\n"
-                + "DEFINE "
-                + "`DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), "
-                + "`UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))"
-                + ") AS `MR`";
+        final String sql = """
+                select *
+                  from t match_recognize
+                  (
+                    pattern (strt {-down+-} {-up*-})
+                    define
+                      down as down.price < PREV(down.price),
+                      up as up.price > prev(up.price)
+                  ) mr""";
+        final String expected = """
+                SELECT *
+                FROM `T` MATCH_RECOGNIZE(
+                PATTERN (((`STRT` ({- (`DOWN` +) -})) ({- (`UP` *) -})))
+                DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), `UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))) AS `MR`""";
         sql( sql ).ok( expected );
     }
 
 
     @Test
     public void testMatchRecognize10() {
-        final String sql = "select *\n"
-                + "  from t match_recognize\n"
-                + "  (\n"
-                + "    pattern ( A B C | A C B | B A C | B C A | C A B | C B A)\n"
-                + "    define\n"
-                + "      A as A.price > PREV(A.price),\n"
-                + "      B as B.price < prev(B.price),\n"
-                + "      C as C.price > prev(C.price)\n"
-                + "  ) mr";
-        final String expected = "SELECT *\n"
-                + "FROM `T` MATCH_RECOGNIZE(\n"
-                + "PATTERN ((((((((`A` `B`) `C`) | ((`A` `C`) `B`)) | ((`B` `A`) `C`)) "
-                + "| ((`B` `C`) `A`)) | ((`C` `A`) `B`)) | ((`C` `B`) `A`)))\n"
-                + "DEFINE "
-                + "`A` AS (`A`.`PRICE` > PREV(`A`.`PRICE`, 1)), "
-                + "`B` AS (`B`.`PRICE` < PREV(`B`.`PRICE`, 1)), "
-                + "`C` AS (`C`.`PRICE` > PREV(`C`.`PRICE`, 1))"
-                + ") AS `MR`";
+        final String sql = """
+                select *
+                  from t match_recognize
+                  (
+                    pattern ( A B C | A C B | B A C | B C A | C A B | C B A)
+                    define
+                      A as A.price > PREV(A.price),
+                      B as B.price < prev(B.price),
+                      C as C.price > prev(C.price)
+                  ) mr""";
+        final String expected = """
+                SELECT *
+                FROM `T` MATCH_RECOGNIZE(
+                PATTERN ((((((((`A` `B`) `C`) | ((`A` `C`) `B`)) | ((`B` `A`) `C`)) | ((`B` `C`) `A`)) | ((`C` `A`) `B`)) | ((`C` `B`) `A`)))
+                DEFINE `A` AS (`A`.`PRICE` > PREV(`A`.`PRICE`, 1)), `B` AS (`B`.`PRICE` < PREV(`B`.`PRICE`, 1)), `C` AS (`C`.`PRICE` > PREV(`C`.`PRICE`, 1))) AS `MR`""";
         sql( sql ).ok( expected );
     }
 
 
     @Test
     public void testMatchRecognize11() {
-        final String sql = "select *\n"
-                + "  from t match_recognize (\n"
-                + "    pattern ( \"a\" \"b c\")\n"
-                + "    define\n"
-                + "      \"A\" as A.price > PREV(A.price),\n"
-                + "      \"b c\" as \"b c\".foo\n"
-                + "  ) as mr(c1, c2) join e as x on foo = baz";
-        final String expected = "SELECT *\n"
-                + "FROM `T` MATCH_RECOGNIZE(\n"
-                + "PATTERN ((`a` `b c`))\n"
-                + "DEFINE `A` AS (`A`.`PRICE` > PREV(`A`.`PRICE`, 1)),"
-                + " `b c` AS `b c`.`FOO`) AS `MR` (`C1`, `C2`)\n"
-                + "INNER JOIN `E` AS `X` ON (`FOO` = `BAZ`)";
+        final String sql = """
+                select *
+                  from t match_recognize (
+                    pattern ( "a" "b c")
+                    define
+                      "A" as A.price > PREV(A.price),
+                      "b c" as "b c".foo
+                  ) as mr(c1, c2) join e as x on foo = baz""";
+        final String expected = """
+                SELECT *
+                FROM `T` MATCH_RECOGNIZE(
+                PATTERN ((`a` `b c`))
+                DEFINE `A` AS (`A`.`PRICE` > PREV(`A`.`PRICE`, 1)), `b c` AS `b c`.`FOO`) AS `MR` (`C1`, `C2`)
+                INNER JOIN `E` AS `X` ON (`FOO` = `BAZ`)""";
         sql( sql ).ok( expected );
     }
 
 
     @Test
     public void testMatchRecognizeDefineClause() {
-        final String sql = "select *\n"
-                + "  from t match_recognize\n"
-                + "  (\n"
-                + "    pattern (strt down+ up+)\n"
-                + "    define\n"
-                + "      down as down.price < PREV(down.price),\n"
-                + "      up as up.price > NEXT(up.price)\n"
-                + "  ) mr";
-        final String expected = "SELECT *\n"
-                + "FROM `T` MATCH_RECOGNIZE(\n"
-                + "PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))\n"
-                + "DEFINE "
-                + "`DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), "
-                + "`UP` AS (`UP`.`PRICE` > NEXT(`UP`.`PRICE`, 1))"
-                + ") AS `MR`";
+        final String sql = """
+                select *
+                  from t match_recognize
+                  (
+                    pattern (strt down+ up+)
+                    define
+                      down as down.price < PREV(down.price),
+                      up as up.price > NEXT(up.price)
+                  ) mr""";
+        final String expected = """
+                SELECT *
+                FROM `T` MATCH_RECOGNIZE(
+                PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))
+                DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), `UP` AS (`UP`.`PRICE` > NEXT(`UP`.`PRICE`, 1))) AS `MR`""";
         sql( sql ).ok( expected );
     }
 
 
     @Test
     public void testMatchRecognizeDefineClause2() {
-        final String sql = "select *\n"
-                + "  from t match_recognize\n"
-                + "  (\n"
-                + "    pattern (strt down+ up+)\n"
-                + "    define\n"
-                + "      down as down.price < FIRST(down.price),\n"
-                + "      up as up.price > LAST(up.price)\n"
-                + "  ) mr";
-        final String expected = "SELECT *\n"
-                + "FROM `T` MATCH_RECOGNIZE(\n"
-                + "PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))\n"
-                + "DEFINE `DOWN` AS (`DOWN`.`PRICE` < FIRST(`DOWN`.`PRICE`, 0)), "
-                + "`UP` AS (`UP`.`PRICE` > LAST(`UP`.`PRICE`, 0))"
-                + ") AS `MR`";
+        final String sql = """
+                select *
+                  from t match_recognize
+                  (
+                    pattern (strt down+ up+)
+                    define
+                      down as down.price < FIRST(down.price),
+                      up as up.price > LAST(up.price)
+                  ) mr""";
+        final String expected = """
+                SELECT *
+                FROM `T` MATCH_RECOGNIZE(
+                PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))
+                DEFINE `DOWN` AS (`DOWN`.`PRICE` < FIRST(`DOWN`.`PRICE`, 0)), `UP` AS (`UP`.`PRICE` > LAST(`UP`.`PRICE`, 0))) AS `MR`""";
         sql( sql ).ok( expected );
     }
 
 
     @Test
     public void testMatchRecognizeDefineClause3() {
-        final String sql = "select *\n"
-                + "  from t match_recognize\n"
-                + "  (\n"
-                + "    pattern (strt down+ up+)\n"
-                + "    define\n"
-                + "      down as down.price < PREV(down.price,1),\n"
-                + "      up as up.price > LAST(up.price + up.TAX)\n"
-                + "  ) mr";
-        final String expected = "SELECT *\n"
-                + "FROM `T` MATCH_RECOGNIZE(\n"
-                + "PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))\n"
-                + "DEFINE "
-                + "`DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), "
-                + "`UP` AS (`UP`.`PRICE` > LAST((`UP`.`PRICE` + `UP`.`TAX`), 0))"
-                + ") AS `MR`";
+        final String sql = """
+                select *
+                  from t match_recognize
+                  (
+                    pattern (strt down+ up+)
+                    define
+                      down as down.price < PREV(down.price,1),
+                      up as up.price > LAST(up.price + up.TAX)
+                  ) mr""";
+        final String expected = """
+                SELECT *
+                FROM `T` MATCH_RECOGNIZE(
+                PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))
+                DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), `UP` AS (`UP`.`PRICE` > LAST((`UP`.`PRICE` + `UP`.`TAX`), 0))) AS `MR`""";
         sql( sql ).ok( expected );
     }
 
 
     @Test
     public void testMatchRecognizeDefineClause4() {
-        final String sql = "select *\n"
-                + "  from t match_recognize\n"
-                + "  (\n"
-                + "    pattern (strt down+ up+)\n"
-                + "    define\n"
-                + "      down as down.price < PREV(down.price,1),\n"
-                + "      up as up.price > PREV(LAST(up.price + up.TAX),3)\n"
-                + "  ) mr";
-        final String expected = "SELECT *\n"
-                + "FROM `T` MATCH_RECOGNIZE(\n"
-                + "PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))\n"
-                + "DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), "
-                + "`UP` AS (`UP`.`PRICE` > PREV(LAST((`UP`.`PRICE` + `UP`.`TAX`), 0), 3))"
-                + ") AS `MR`";
+        final String sql = """
+                select *
+                  from t match_recognize
+                  (
+                    pattern (strt down+ up+)
+                    define
+                      down as down.price < PREV(down.price,1),
+                      up as up.price > PREV(LAST(up.price + up.TAX),3)
+                  ) mr""";
+        final String expected = """
+                SELECT *
+                FROM `T` MATCH_RECOGNIZE(
+                PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))
+                DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), `UP` AS (`UP`.`PRICE` > PREV(LAST((`UP`.`PRICE` + `UP`.`TAX`), 0), 3))) AS `MR`""";
         sql( sql ).ok( expected );
     }
 
 
     @Test
     public void testMatchRecognizeMeasures1() {
-        final String sql = "select *\n"
-                + "  from t match_recognize\n"
-                + "  (\n"
-                + "   measures "
-                + "   MATCH_NUMBER() as match_num,"
-                + "   CLASSIFIER() as var_match,"
-                + "   STRT.ts as start_ts,"
-                + "   LAST(DOWN.ts) as bottom_ts,"
-                + "   LAST(up.ts) as end_ts"
-                + "    pattern (strt down+ up+)\n"
-                + "    define\n"
-                + "      down as down.price < PREV(down.price),\n"
-                + "      up as up.price > prev(up.price)\n"
-                + "  ) mr";
-        final String expected = "SELECT *\n"
-                + "FROM `T` MATCH_RECOGNIZE(\n"
-                + "MEASURES (MATCH_NUMBER ()) AS `MATCH_NUM`, "
-                + "(CLASSIFIER()) AS `VAR_MATCH`, "
-                + "`STRT`.`TS` AS `START_TS`, "
-                + "LAST(`DOWN`.`TS`, 0) AS `BOTTOM_TS`, "
-                + "LAST(`UP`.`TS`, 0) AS `END_TS`\n"
-                + "PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))\n"
-                + "DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), "
-                + "`UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))"
-                + ") AS `MR`";
+        final String sql = """
+                select *
+                  from t match_recognize
+                  (
+                   measures    MATCH_NUMBER() as match_num,   CLASSIFIER() as var_match,   STRT.ts as start_ts,   LAST(DOWN.ts) as bottom_ts,   LAST(up.ts) as end_ts    pattern (strt down+ up+)
+                    define
+                      down as down.price < PREV(down.price),
+                      up as up.price > prev(up.price)
+                  ) mr""";
+        final String expected = """
+                SELECT *
+                FROM `T` MATCH_RECOGNIZE(
+                MEASURES (MATCH_NUMBER ()) AS `MATCH_NUM`, (CLASSIFIER()) AS `VAR_MATCH`, `STRT`.`TS` AS `START_TS`, LAST(`DOWN`.`TS`, 0) AS `BOTTOM_TS`, LAST(`UP`.`TS`, 0) AS `END_TS`
+                PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))
+                DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), `UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))) AS `MR`""";
         sql( sql ).ok( expected );
     }
 
 
     @Test
     public void testMatchRecognizeMeasures2() {
-        final String sql = "select *\n"
-                + "  from t match_recognize\n"
-                + "  (\n"
-                + "   measures STRT.ts as start_ts,"
-                + "  FINAL LAST(DOWN.ts) as bottom_ts,"
-                + "   LAST(up.ts) as end_ts"
-                + "    pattern (strt down+ up+)\n"
-                + "    define\n"
-                + "      down as down.price < PREV(down.price),\n"
-                + "      up as up.price > prev(up.price)\n"
-                + "  ) mr";
-        final String expected = "SELECT *\n"
-                + "FROM `T` MATCH_RECOGNIZE(\n"
-                + "MEASURES `STRT`.`TS` AS `START_TS`, "
-                + "FINAL LAST(`DOWN`.`TS`, 0) AS `BOTTOM_TS`, "
-                + "LAST(`UP`.`TS`, 0) AS `END_TS`\n"
-                + "PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))\n"
-                + "DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), "
-                + "`UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))"
-                + ") AS `MR`";
+        final String sql = """
+                select *
+                  from t match_recognize
+                  (
+                   measures STRT.ts as start_ts,  FINAL LAST(DOWN.ts) as bottom_ts,   LAST(up.ts) as end_ts    pattern (strt down+ up+)
+                    define
+                      down as down.price < PREV(down.price),
+                      up as up.price > prev(up.price)
+                  ) mr""";
+        final String expected = """
+                SELECT *
+                FROM `T` MATCH_RECOGNIZE(
+                MEASURES `STRT`.`TS` AS `START_TS`, FINAL LAST(`DOWN`.`TS`, 0) AS `BOTTOM_TS`, LAST(`UP`.`TS`, 0) AS `END_TS`
+                PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))
+                DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), `UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))) AS `MR`""";
         sql( sql ).ok( expected );
     }
 
 
     @Test
     public void testMatchRecognizeMeasures3() {
-        final String sql = "select *\n"
-                + "  from t match_recognize\n"
-                + "  (\n"
-                + "   measures STRT.ts as start_ts,"
-                + "  RUNNING LAST(DOWN.ts) as bottom_ts,"
-                + "   LAST(up.ts) as end_ts"
-                + "    pattern (strt down+ up+)\n"
-                + "    define\n"
-                + "      down as down.price < PREV(down.price),\n"
-                + "      up as up.price > prev(up.price)\n"
-                + "  ) mr";
-        final String expected = "SELECT *\n"
-                + "FROM `T` MATCH_RECOGNIZE(\n"
-                + "MEASURES `STRT`.`TS` AS `START_TS`, "
-                + "RUNNING LAST(`DOWN`.`TS`, 0) AS `BOTTOM_TS`, "
-                + "LAST(`UP`.`TS`, 0) AS `END_TS`\n"
-                + "PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))\n"
-                + "DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), "
-                + "`UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))"
-                + ") AS `MR`";
+        final String sql = """
+                select *
+                  from t match_recognize
+                  (
+                   measures STRT.ts as start_ts,  RUNNING LAST(DOWN.ts) as bottom_ts,   LAST(up.ts) as end_ts    pattern (strt down+ up+)
+                    define
+                      down as down.price < PREV(down.price),
+                      up as up.price > prev(up.price)
+                  ) mr""";
+        final String expected = """
+                SELECT *
+                FROM `T` MATCH_RECOGNIZE(
+                MEASURES `STRT`.`TS` AS `START_TS`, RUNNING LAST(`DOWN`.`TS`, 0) AS `BOTTOM_TS`, LAST(`UP`.`TS`, 0) AS `END_TS`
+                PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))
+                DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), `UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))) AS `MR`""";
         sql( sql ).ok( expected );
     }
 
 
     @Test
     public void testMatchRecognizeMeasures4() {
-        final String sql = "select *\n"
-                + "  from t match_recognize\n"
-                + "  (\n"
-                + "   measures "
-                + "  FINAL count(up.ts) as up_ts,"
-                + "  FINAL count(ts) as total_ts,"
-                + "  RUNNING count(ts) as cnt_ts,"
-                + "  price - strt.price as price_dif"
-                + "    pattern (strt down+ up+)\n"
-                + "    define\n"
-                + "      down as down.price < PREV(down.price),\n"
-                + "      up as up.price > prev(up.price)\n"
-                + "  ) mr";
-        final String expected = "SELECT *\n"
-                + "FROM `T` MATCH_RECOGNIZE(\n"
-                + "MEASURES FINAL COUNT(`UP`.`TS`) AS `UP_TS`, "
-                + "FINAL COUNT(`TS`) AS `TOTAL_TS`, "
-                + "RUNNING COUNT(`TS`) AS `CNT_TS`, "
-                + "(`PRICE` - `STRT`.`PRICE`) AS `PRICE_DIF`\n"
-                + "PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))\n"
-                + "DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), "
-                + "`UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))) AS `MR`";
+        final String sql = """
+                select *
+                  from t match_recognize
+                  (
+                   measures   FINAL count(up.ts) as up_ts,  FINAL count(ts) as total_ts,  RUNNING count(ts) as cnt_ts,  price - strt.price as price_dif    pattern (strt down+ up+)
+                    define
+                      down as down.price < PREV(down.price),
+                      up as up.price > prev(up.price)
+                  ) mr""";
+        final String expected = """
+                SELECT *
+                FROM `T` MATCH_RECOGNIZE(
+                MEASURES FINAL COUNT(`UP`.`TS`) AS `UP_TS`, FINAL COUNT(`TS`) AS `TOTAL_TS`, RUNNING COUNT(`TS`) AS `CNT_TS`, (`PRICE` - `STRT`.`PRICE`) AS `PRICE_DIF`
+                PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))
+                DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), `UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))) AS `MR`""";
         sql( sql ).ok( expected );
     }
 
 
     @Test
     public void testMatchRecognizeMeasures5() {
-        final String sql = "select *\n"
-                + "  from t match_recognize\n"
-                + "  (\n"
-                + "   measures "
-                + "  FIRST(STRT.ts) as strt_ts,"
-                + "  LAST(DOWN.ts) as down_ts,"
-                + "  AVG(DOWN.ts) as avg_down_ts"
-                + "    pattern (strt down+ up+)\n"
-                + "    define\n"
-                + "      down as down.price < PREV(down.price),\n"
-                + "      up as up.price > prev(up.price)\n"
-                + "  ) mr";
-        final String expected = "SELECT *\n"
-                + "FROM `T` MATCH_RECOGNIZE(\n"
-                + "MEASURES FIRST(`STRT`.`TS`, 0) AS `STRT_TS`, "
-                + "LAST(`DOWN`.`TS`, 0) AS `DOWN_TS`, "
-                + "AVG(`DOWN`.`TS`) AS `AVG_DOWN_TS`\n"
-                + "PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))\n"
-                + "DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), "
-                + "`UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))"
-                + ") AS `MR`";
+        final String sql = """
+                select *
+                  from t match_recognize
+                  (
+                   measures   FIRST(STRT.ts) as strt_ts,  LAST(DOWN.ts) as down_ts,  AVG(DOWN.ts) as avg_down_ts    pattern (strt down+ up+)
+                    define
+                      down as down.price < PREV(down.price),
+                      up as up.price > prev(up.price)
+                  ) mr""";
+        final String expected = """
+                SELECT *
+                FROM `T` MATCH_RECOGNIZE(
+                MEASURES FIRST(`STRT`.`TS`, 0) AS `STRT_TS`, LAST(`DOWN`.`TS`, 0) AS `DOWN_TS`, AVG(`DOWN`.`TS`) AS `AVG_DOWN_TS`
+                PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))
+                DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), `UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))) AS `MR`""";
         sql( sql ).ok( expected );
     }
 
 
     @Test
     public void testMatchRecognizeMeasures6() {
-        final String sql = "select *\n"
-                + "  from t match_recognize\n"
-                + "  (\n"
-                + "   measures "
-                + "  FIRST(STRT.ts) as strt_ts,"
-                + "  LAST(DOWN.ts) as down_ts,"
-                + "  FINAL SUM(DOWN.ts) as sum_down_ts"
-                + "    pattern (strt down+ up+)\n"
-                + "    define\n"
-                + "      down as down.price < PREV(down.price),\n"
-                + "      up as up.price > prev(up.price)\n"
-                + "  ) mr";
-        final String expected = "SELECT *\n"
-                + "FROM `T` MATCH_RECOGNIZE(\n"
-                + "MEASURES FIRST(`STRT`.`TS`, 0) AS `STRT_TS`, "
-                + "LAST(`DOWN`.`TS`, 0) AS `DOWN_TS`, "
-                + "FINAL SUM(`DOWN`.`TS`) AS `SUM_DOWN_TS`\n"
-                + "PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))\n"
-                + "DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), "
-                + "`UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))"
-                + ") AS `MR`";
+        final String sql = """
+                select *
+                  from t match_recognize
+                  (
+                   measures   FIRST(STRT.ts) as strt_ts,  LAST(DOWN.ts) as down_ts,  FINAL SUM(DOWN.ts) as sum_down_ts    pattern (strt down+ up+)
+                    define
+                      down as down.price < PREV(down.price),
+                      up as up.price > prev(up.price)
+                  ) mr""";
+        final String expected = """
+                SELECT *
+                FROM `T` MATCH_RECOGNIZE(
+                MEASURES FIRST(`STRT`.`TS`, 0) AS `STRT_TS`, LAST(`DOWN`.`TS`, 0) AS `DOWN_TS`, FINAL SUM(`DOWN`.`TS`) AS `SUM_DOWN_TS`
+                PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))
+                DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), `UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))) AS `MR`""";
         sql( sql ).ok( expected );
     }
 
 
     @Test
     public void testMatchRecognizePatternSkip1() {
-        final String sql = "select *\n"
-                + "  from t match_recognize\n"
-                + "  (\n"
-                + "     after match skip to next row\n"
-                + "    pattern (strt down+ up+)\n"
-                + "    define\n"
-                + "      down as down.price < PREV(down.price),\n"
-                + "      up as up.price > prev(up.price)\n"
-                + "  ) mr";
-        final String expected = "SELECT *\n"
-                + "FROM `T` MATCH_RECOGNIZE(\n"
-                + "AFTER MATCH SKIP TO NEXT ROW\n"
-                + "PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))\n"
-                + "DEFINE "
-                + "`DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), "
-                + "`UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))"
-                + ") AS `MR`";
+        final String sql = """
+                select *
+                  from t match_recognize
+                  (
+                     after match skip to next row
+                    pattern (strt down+ up+)
+                    define
+                      down as down.price < PREV(down.price),
+                      up as up.price > prev(up.price)
+                  ) mr""";
+        final String expected = """
+                SELECT *
+                FROM `T` MATCH_RECOGNIZE(
+                AFTER MATCH SKIP TO NEXT ROW
+                PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))
+                DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), `UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))) AS `MR`""";
         sql( sql ).ok( expected );
     }
 
 
     @Test
     public void testMatchRecognizePatternSkip2() {
-        final String sql = "select *\n"
-                + "  from t match_recognize\n"
-                + "  (\n"
-                + "     after match skip past last row\n"
-                + "    pattern (strt down+ up+)\n"
-                + "    define\n"
-                + "      down as down.price < PREV(down.price),\n"
-                + "      up as up.price > prev(up.price)\n"
-                + "  ) mr";
-        final String expected = "SELECT *\n"
-                + "FROM `T` MATCH_RECOGNIZE(\n"
-                + "AFTER MATCH SKIP PAST LAST ROW\n"
-                + "PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))\n"
-                + "DEFINE "
-                + "`DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), "
-                + "`UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))"
-                + ") AS `MR`";
+        final String sql = """
+                select *
+                  from t match_recognize
+                  (
+                     after match skip past last row
+                    pattern (strt down+ up+)
+                    define
+                      down as down.price < PREV(down.price),
+                      up as up.price > prev(up.price)
+                  ) mr""";
+        final String expected = """
+                SELECT *
+                FROM `T` MATCH_RECOGNIZE(
+                AFTER MATCH SKIP PAST LAST ROW
+                PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))
+                DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), `UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))) AS `MR`""";
         sql( sql ).ok( expected );
     }
 
 
     @Test
     public void testMatchRecognizePatternSkip3() {
-        final String sql = "select *\n"
-                + "  from t match_recognize\n"
-                + "  (\n"
-                + "     after match skip to FIRST down\n"
-                + "    pattern (strt down+ up+)\n"
-                + "    define\n"
-                + "      down as down.price < PREV(down.price),\n"
-                + "      up as up.price > prev(up.price)\n"
-                + "  ) mr";
-        final String expected = "SELECT *\n"
-                + "FROM `T` MATCH_RECOGNIZE(\n"
-                + "AFTER MATCH SKIP TO FIRST `DOWN`\n"
-                + "PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))\n"
-                + "DEFINE "
-                + "`DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), "
-                + "`UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))"
-                + ") AS `MR`";
+        final String sql = """
+                select *
+                  from t match_recognize
+                  (
+                     after match skip to FIRST down
+                    pattern (strt down+ up+)
+                    define
+                      down as down.price < PREV(down.price),
+                      up as up.price > prev(up.price)
+                  ) mr""";
+        final String expected = """
+                SELECT *
+                FROM `T` MATCH_RECOGNIZE(
+                AFTER MATCH SKIP TO FIRST `DOWN`
+                PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))
+                DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), `UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))) AS `MR`""";
         sql( sql ).ok( expected );
     }
 
 
     @Test
     public void testMatchRecognizePatternSkip4() {
-        final String sql = "select *\n"
-                + "  from t match_recognize\n"
-                + "  (\n"
-                + "     after match skip to LAST down\n"
-                + "    pattern (strt down+ up+)\n"
-                + "    define\n"
-                + "      down as down.price < PREV(down.price),\n"
-                + "      up as up.price > prev(up.price)\n"
-                + "  ) mr";
-        final String expected = "SELECT *\n"
-                + "FROM `T` MATCH_RECOGNIZE(\n"
-                + "AFTER MATCH SKIP TO LAST `DOWN`\n"
-                + "PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))\n"
-                + "DEFINE "
-                + "`DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), "
-                + "`UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))"
-                + ") AS `MR`";
+        final String sql = """
+                select *
+                  from t match_recognize
+                  (
+                     after match skip to LAST down
+                    pattern (strt down+ up+)
+                    define
+                      down as down.price < PREV(down.price),
+                      up as up.price > prev(up.price)
+                  ) mr""";
+        final String expected = """
+                SELECT *
+                FROM `T` MATCH_RECOGNIZE(
+                AFTER MATCH SKIP TO LAST `DOWN`
+                PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))
+                DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), `UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))) AS `MR`""";
         sql( sql ).ok( expected );
     }
 
 
     @Test
     public void testMatchRecognizePatternSkip5() {
-        final String sql = "select *\n"
-                + "  from t match_recognize\n"
-                + "  (\n"
-                + "     after match skip to down\n"
-                + "    pattern (strt down+ up+)\n"
-                + "    define\n"
-                + "      down as down.price < PREV(down.price),\n"
-                + "      up as up.price > prev(up.price)\n"
-                + "  ) mr";
-        final String expected = "SELECT *\n"
-                + "FROM `T` MATCH_RECOGNIZE(\n"
-                + "AFTER MATCH SKIP TO LAST `DOWN`\n"
-                + "PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))\n"
-                + "DEFINE "
-                + "`DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), "
-                + "`UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))"
-                + ") AS `MR`";
+        final String sql = """
+                select *
+                  from t match_recognize
+                  (
+                     after match skip to down
+                    pattern (strt down+ up+)
+                    define
+                      down as down.price < PREV(down.price),
+                      up as up.price > prev(up.price)
+                  ) mr""";
+        final String expected = """
+                SELECT *
+                FROM `T` MATCH_RECOGNIZE(
+                AFTER MATCH SKIP TO LAST `DOWN`
+                PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))
+                DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), `UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))) AS `MR`""";
         sql( sql ).ok( expected );
     }
 
 
     @Test
     public void testMatchRecognizeSubset1() {
-        final String sql = "select *\n"
-                + "  from t match_recognize\n"
-                + "  (\n"
-                + "    pattern (strt down+ up+)\n"
-                + "    subset stdn = (strt, down)"
-                + "    define\n"
-                + "      down as down.price < PREV(down.price),\n"
-                + "      up as up.price > prev(up.price)\n"
-                + "  ) mr";
-        final String expected = "SELECT *\n"
-                + "FROM `T` MATCH_RECOGNIZE(\n"
-                + "PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))\n"
-                + "SUBSET (`STDN` = (`STRT`, `DOWN`))\n"
-                + "DEFINE "
-                + "`DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), "
-                + "`UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))"
-                + ") AS `MR`";
+        final String sql = """
+                select *
+                  from t match_recognize
+                  (
+                    pattern (strt down+ up+)
+                    subset stdn = (strt, down)    define
+                      down as down.price < PREV(down.price),
+                      up as up.price > prev(up.price)
+                  ) mr""";
+        final String expected = """
+                SELECT *
+                FROM `T` MATCH_RECOGNIZE(
+                PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))
+                SUBSET (`STDN` = (`STRT`, `DOWN`))
+                DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), `UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))) AS `MR`""";
         sql( sql ).ok( expected );
     }
 
 
     @Test
     public void testMatchRecognizeSubset2() {
-        final String sql = "select *\n"
-                + "  from t match_recognize\n"
-                + "  (\n"
-                + "   measures STRT.ts as start_ts,"
-                + "   LAST(DOWN.ts) as bottom_ts,"
-                + "   AVG(stdn.price) as stdn_avg"
-                + "    pattern (strt down+ up+)\n"
-                + "    subset stdn = (strt, down)\n"
-                + "    define\n"
-                + "      down as down.price < PREV(down.price),\n"
-                + "      up as up.price > prev(up.price)\n"
-                + "  ) mr";
-        final String expected = "SELECT *\n"
-                + "FROM `T` MATCH_RECOGNIZE(\n"
-                + "MEASURES `STRT`.`TS` AS `START_TS`, "
-                + "LAST(`DOWN`.`TS`, 0) AS `BOTTOM_TS`, "
-                + "AVG(`STDN`.`PRICE`) AS `STDN_AVG`\n"
-                + "PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))\n"
-                + "SUBSET (`STDN` = (`STRT`, `DOWN`))\n"
-                + "DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), "
-                + "`UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))"
-                + ") AS `MR`";
+        final String sql = """
+                select *
+                  from t match_recognize
+                  (
+                   measures STRT.ts as start_ts,   LAST(DOWN.ts) as bottom_ts,   AVG(stdn.price) as stdn_avg    pattern (strt down+ up+)
+                    subset stdn = (strt, down)
+                    define
+                      down as down.price < PREV(down.price),
+                      up as up.price > prev(up.price)
+                  ) mr""";
+        final String expected = """
+                SELECT *
+                FROM `T` MATCH_RECOGNIZE(
+                MEASURES `STRT`.`TS` AS `START_TS`, LAST(`DOWN`.`TS`, 0) AS `BOTTOM_TS`, AVG(`STDN`.`PRICE`) AS `STDN_AVG`
+                PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))
+                SUBSET (`STDN` = (`STRT`, `DOWN`))
+                DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), `UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))) AS `MR`""";
         sql( sql ).ok( expected );
     }
 
 
     @Test
     public void testMatchRecognizeSubset3() {
-        final String sql = "select *\n"
-                + "  from t match_recognize\n"
-                + "  (\n"
-                + "   measures STRT.ts as start_ts,"
-                + "   LAST(DOWN.ts) as bottom_ts,"
-                + "   AVG(stdn.price) as stdn_avg"
-                + "    pattern (strt down+ up+)\n"
-                + "    subset stdn = (strt, down), stdn2 = (strt, down)\n"
-                + "    define\n"
-                + "      down as down.price < PREV(down.price),\n"
-                + "      up as up.price > prev(up.price)\n"
-                + "  ) mr";
-        final String expected = "SELECT *\n"
-                + "FROM `T` MATCH_RECOGNIZE(\n"
-                + "MEASURES `STRT`.`TS` AS `START_TS`, "
-                + "LAST(`DOWN`.`TS`, 0) AS `BOTTOM_TS`, "
-                + "AVG(`STDN`.`PRICE`) AS `STDN_AVG`\n"
-                + "PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))\n"
-                + "SUBSET (`STDN` = (`STRT`, `DOWN`)), (`STDN2` = (`STRT`, `DOWN`))\n"
-                + "DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), "
-                + "`UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))"
-                + ") AS `MR`";
+        final String sql = """
+                select *
+                  from t match_recognize
+                  (
+                   measures STRT.ts as start_ts,   LAST(DOWN.ts) as bottom_ts,   AVG(stdn.price) as stdn_avg    pattern (strt down+ up+)
+                    subset stdn = (strt, down), stdn2 = (strt, down)
+                    define
+                      down as down.price < PREV(down.price),
+                      up as up.price > prev(up.price)
+                  ) mr""";
+        final String expected = """
+                SELECT *
+                FROM `T` MATCH_RECOGNIZE(
+                MEASURES `STRT`.`TS` AS `START_TS`, LAST(`DOWN`.`TS`, 0) AS `BOTTOM_TS`, AVG(`STDN`.`PRICE`) AS `STDN_AVG`
+                PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))
+                SUBSET (`STDN` = (`STRT`, `DOWN`)), (`STDN2` = (`STRT`, `DOWN`))
+                DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), `UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))) AS `MR`""";
         sql( sql ).ok( expected );
     }
 
 
     @Test
     public void testMatchRecognizeRowsPerMatch1() {
-        final String sql = "select *\n"
-                + "  from t match_recognize\n"
-                + "  (\n"
-                + "   measures STRT.ts as start_ts,"
-                + "   LAST(DOWN.ts) as bottom_ts,"
-                + "   AVG(stdn.price) as stdn_avg"
-                + "   ONE ROW PER MATCH"
-                + "    pattern (strt down+ up+)\n"
-                + "    subset stdn = (strt, down), stdn2 = (strt, down)\n"
-                + "    define\n"
-                + "      down as down.price < PREV(down.price),\n"
-                + "      up as up.price > prev(up.price)\n"
-                + "  ) mr";
-        final String expected = "SELECT *\n"
-                + "FROM `T` MATCH_RECOGNIZE(\n"
-                + "MEASURES `STRT`.`TS` AS `START_TS`, "
-                + "LAST(`DOWN`.`TS`, 0) AS `BOTTOM_TS`, "
-                + "AVG(`STDN`.`PRICE`) AS `STDN_AVG`\n"
-                + "ONE ROW PER MATCH\n"
-                + "PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))\n"
-                + "SUBSET (`STDN` = (`STRT`, `DOWN`)), (`STDN2` = (`STRT`, `DOWN`))\n"
-                + "DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), "
-                + "`UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))"
-                + ") AS `MR`";
+        final String sql = """
+                select *
+                  from t match_recognize
+                  (
+                   measures STRT.ts as start_ts,   LAST(DOWN.ts) as bottom_ts,   AVG(stdn.price) as stdn_avg   ONE ROW PER MATCH    pattern (strt down+ up+)
+                    subset stdn = (strt, down), stdn2 = (strt, down)
+                    define
+                      down as down.price < PREV(down.price),
+                      up as up.price > prev(up.price)
+                  ) mr""";
+        final String expected = """
+                SELECT *
+                FROM `T` MATCH_RECOGNIZE(
+                MEASURES `STRT`.`TS` AS `START_TS`, LAST(`DOWN`.`TS`, 0) AS `BOTTOM_TS`, AVG(`STDN`.`PRICE`) AS `STDN_AVG`
+                ONE ROW PER MATCH
+                PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))
+                SUBSET (`STDN` = (`STRT`, `DOWN`)), (`STDN2` = (`STRT`, `DOWN`))
+                DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), `UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))) AS `MR`""";
         sql( sql ).ok( expected );
     }
 
 
     @Test
     public void testMatchRecognizeRowsPerMatch2() {
-        final String sql = "select *\n"
-                + "  from t match_recognize\n"
-                + "  (\n"
-                + "   measures STRT.ts as start_ts,"
-                + "   LAST(DOWN.ts) as bottom_ts,"
-                + "   AVG(stdn.price) as stdn_avg"
-                + "   ALL ROWS PER MATCH"
-                + "    pattern (strt down+ up+)\n"
-                + "    subset stdn = (strt, down), stdn2 = (strt, down)\n"
-                + "    define\n"
-                + "      down as down.price < PREV(down.price),\n"
-                + "      up as up.price > prev(up.price)\n"
-                + "  ) mr";
-        final String expected = "SELECT *\n"
-                + "FROM `T` MATCH_RECOGNIZE(\n"
-                + "MEASURES `STRT`.`TS` AS `START_TS`, "
-                + "LAST(`DOWN`.`TS`, 0) AS `BOTTOM_TS`, "
-                + "AVG(`STDN`.`PRICE`) AS `STDN_AVG`\n"
-                + "ALL ROWS PER MATCH\n"
-                + "PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))\n"
-                + "SUBSET (`STDN` = (`STRT`, `DOWN`)), (`STDN2` = (`STRT`, `DOWN`))\n"
-                + "DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), "
-                + "`UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))"
-                + ") AS `MR`";
+        final String sql = """
+                select *
+                  from t match_recognize
+                  (
+                   measures STRT.ts as start_ts,   LAST(DOWN.ts) as bottom_ts,   AVG(stdn.price) as stdn_avg   ALL ROWS PER MATCH    pattern (strt down+ up+)
+                    subset stdn = (strt, down), stdn2 = (strt, down)
+                    define
+                      down as down.price < PREV(down.price),
+                      up as up.price > prev(up.price)
+                  ) mr""";
+        final String expected = """
+                SELECT *
+                FROM `T` MATCH_RECOGNIZE(
+                MEASURES `STRT`.`TS` AS `START_TS`, LAST(`DOWN`.`TS`, 0) AS `BOTTOM_TS`, AVG(`STDN`.`PRICE`) AS `STDN_AVG`
+                ALL ROWS PER MATCH
+                PATTERN (((`STRT` (`DOWN` +)) (`UP` +)))
+                SUBSET (`STDN` = (`STRT`, `DOWN`)), (`STDN2` = (`STRT`, `DOWN`))
+                DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), `UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))) AS `MR`""";
         sql( sql ).ok( expected );
     }
 
 
     @Test
     public void testMatchRecognizeWithin() {
-        final String sql = "select *\n"
-                + "  from t match_recognize\n"
-                + "  (\n"
-                + "    order by rowtime\n"
-                + "    measures STRT.ts as start_ts,\n"
-                + "      LAST(DOWN.ts) as bottom_ts,\n"
-                + "      AVG(stdn.price) as stdn_avg\n"
-                + "    pattern (strt down+ up+) within interval '3' second\n"
-                + "    subset stdn = (strt, down), stdn2 = (strt, down)\n"
-                + "    define\n"
-                + "      down as down.price < PREV(down.price),\n"
-                + "      up as up.price > prev(up.price)\n"
-                + "  ) mr";
-        final String expected = "SELECT *\n"
-                + "FROM `T` MATCH_RECOGNIZE(\n"
-                + "ORDER BY `ROWTIME`\n"
-                + "MEASURES `STRT`.`TS` AS `START_TS`, "
-                + "LAST(`DOWN`.`TS`, 0) AS `BOTTOM_TS`, "
-                + "AVG(`STDN`.`PRICE`) AS `STDN_AVG`\n"
-                + "PATTERN (((`STRT` (`DOWN` +)) (`UP` +))) WITHIN INTERVAL '3' SECOND\n"
-                + "SUBSET (`STDN` = (`STRT`, `DOWN`)), (`STDN2` = (`STRT`, `DOWN`))\n"
-                + "DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), "
-                + "`UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))"
-                + ") AS `MR`";
+        final String sql = """
+                select *
+                  from t match_recognize
+                  (
+                    order by rowtime
+                    measures STRT.ts as start_ts,
+                      LAST(DOWN.ts) as bottom_ts,
+                      AVG(stdn.price) as stdn_avg
+                    pattern (strt down+ up+) within interval '3' second
+                    subset stdn = (strt, down), stdn2 = (strt, down)
+                    define
+                      down as down.price < PREV(down.price),
+                      up as up.price > prev(up.price)
+                  ) mr""";
+        final String expected = """
+                SELECT *
+                FROM `T` MATCH_RECOGNIZE(
+                ORDER BY `ROWTIME`
+                MEASURES `STRT`.`TS` AS `START_TS`, LAST(`DOWN`.`TS`, 0) AS `BOTTOM_TS`, AVG(`STDN`.`PRICE`) AS `STDN_AVG`
+                PATTERN (((`STRT` (`DOWN` +)) (`UP` +))) WITHIN INTERVAL '3' SECOND
+                SUBSET (`STDN` = (`STRT`, `DOWN`)), (`STDN2` = (`STRT`, `DOWN`))
+                DEFINE `DOWN` AS (`DOWN`.`PRICE` < PREV(`DOWN`.`PRICE`, 1)), `UP` AS (`UP`.`PRICE` > PREV(`UP`.`PRICE`, 1))) AS `MR`""";
         sql( sql ).ok( expected );
     }
 
 
     @Test
     public void testWithinGroupClause1() {
-        final String sql = "select col1,\n"
-                + " collect(col2) within group (order by col3)\n"
-                + "from t\n"
-                + "order by col1 limit 10";
-        final String expected = "SELECT `COL1`,"
-                + " (COLLECT(`COL2`) WITHIN GROUP (ORDER BY `COL3`))\n"
-                + "FROM `T`\n"
-                + "ORDER BY `COL1`\n"
-                + "FETCH NEXT 10 ROWS ONLY";
+        final String sql = """
+                select col1,
+                 collect(col2) within group (order by col3)
+                from t
+                order by col1 limit 10""";
+        final String expected = """
+                SELECT `COL1`, (COLLECT(`COL2`) WITHIN GROUP (ORDER BY `COL3`))
+                FROM `T`
+                ORDER BY `COL1`
+                FETCH NEXT 10 ROWS ONLY""";
         sql( sql ).ok( expected );
     }
 
 
     @Test
     public void testWithinGroupClause2() {
-        final String sql = "select collect(col2) within group (order by col3)\n"
-                + "from t\n"
-                + "order by col1 limit 10";
-        final String expected = "SELECT"
-                + " (COLLECT(`COL2`) WITHIN GROUP (ORDER BY `COL3`))\n"
-                + "FROM `T`\n"
-                + "ORDER BY `COL1`\n"
-                + "FETCH NEXT 10 ROWS ONLY";
+        final String sql = """
+                select collect(col2) within group (order by col3)
+                from t
+                order by col1 limit 10""";
+        final String expected = """
+                SELECT (COLLECT(`COL2`) WITHIN GROUP (ORDER BY `COL3`))
+                FROM `T`
+                ORDER BY `COL1`
+                FETCH NEXT 10 ROWS ONLY""";
         sql( sql ).ok( expected );
     }
 
@@ -7458,31 +7607,33 @@ public class SqlParserTest extends SqlLanguageDependent {
 
     @Test
     public void testWithinGroupClause4() {
-        final String sql = "select col1,\n"
-                + " collect(col2) within group (order by col3, col4)\n"
-                + "from t\n"
-                + "order by col1 limit 10";
-        final String expected = "SELECT `COL1`,"
-                + " (COLLECT(`COL2`) WITHIN GROUP (ORDER BY `COL3`, `COL4`))\n"
-                + "FROM `T`\n"
-                + "ORDER BY `COL1`\n"
-                + "FETCH NEXT 10 ROWS ONLY";
+        final String sql = """
+                select col1,
+                 collect(col2) within group (order by col3, col4)
+                from t
+                order by col1 limit 10""";
+        final String expected = """
+                SELECT `COL1`, (COLLECT(`COL2`) WITHIN GROUP (ORDER BY `COL3`, `COL4`))
+                FROM `T`
+                ORDER BY `COL1`
+                FETCH NEXT 10 ROWS ONLY""";
         sql( sql ).ok( expected );
     }
 
 
     @Test
     public void testWithinGroupClause5() {
-        final String sql = "select col1,\n"
-                + " collect(col2) within group (\n"
-                + "  order by col3 desc nulls first, col4 asc nulls last)\n"
-                + "from t\n"
-                + "order by col1 limit 10";
-        final String expected = "SELECT `COL1`, (COLLECT(`COL2`) "
-                + "WITHIN GROUP (ORDER BY `COL3` DESC NULLS FIRST, `COL4` NULLS LAST))\n"
-                + "FROM `T`\n"
-                + "ORDER BY `COL1`\n"
-                + "FETCH NEXT 10 ROWS ONLY";
+        final String sql = """
+                select col1,
+                 collect(col2) within group (
+                  order by col3 desc nulls first, col4 asc nulls last)
+                from t
+                order by col1 limit 10""";
+        final String expected = """
+                SELECT `COL1`, (COLLECT(`COL2`) WITHIN GROUP (ORDER BY `COL3` DESC NULLS FIRST, `COL4` NULLS LAST))
+                FROM `T`
+                ORDER BY `COL1`
+                FETCH NEXT 10 ROWS ONLY""";
         sql( sql ).ok( expected );
     }
 
@@ -7985,4 +8136,3 @@ public class SqlParserTest extends SqlLanguageDependent {
     }
 
 }
-

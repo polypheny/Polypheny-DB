@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,24 +35,23 @@ package org.polypheny.db.plan.hep;
 
 
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 
 
 /**
  * HepAlgVertex wraps a real {@link AlgNode} as a vertex in a DAG representing the entire query expression.
  */
+@Getter
 public class HepAlgVertex extends AbstractAlgNode {
 
-    /**
-     * Wrapped alg currently chosen for implementation of expression.
-     */
     private AlgNode currentAlg;
 
 
@@ -84,21 +83,21 @@ public class HepAlgVertex extends AbstractAlgNode {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         // HepAlgMetadataProvider is supposed to intercept this and redirect to the real rels. But sometimes it doesn't.
         return planner.getCostFactory().makeTinyCost();
     }
 
 
     @Override
-    public double estimateRowCount( AlgMetadataQuery mq ) {
-        return mq.getRowCount( currentAlg );
+    public double estimateTupleCount( AlgMetadataQuery mq ) {
+        return mq.getTupleCount( currentAlg );
     }
 
 
     @Override
     protected AlgDataType deriveRowType() {
-        return currentAlg.getRowType();
+        return currentAlg.getTupleType();
     }
 
 
@@ -113,17 +112,10 @@ public class HepAlgVertex extends AbstractAlgNode {
      *
      * @param newRel new expression
      */
-    void replaceRel( AlgNode newRel ) {
+    void replaceAlg( AlgNode newRel ) {
         currentAlg = newRel;
     }
 
-
-    /**
-     * @return current implementation chosen for this vertex
-     */
-    public AlgNode getCurrentAlg() {
-        return currentAlg;
-    }
 
 }
 

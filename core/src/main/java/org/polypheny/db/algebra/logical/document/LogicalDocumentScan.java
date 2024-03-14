@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,37 +17,38 @@
 package org.polypheny.db.algebra.logical.document;
 
 import java.util.List;
+import lombok.experimental.SuperBuilder;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.document.DocumentScan;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
-import org.polypheny.db.algebra.logical.relational.LogicalScan;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
+import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptRule;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
-import org.polypheny.db.schema.ModelTrait;
+import org.polypheny.db.schema.trait.ModelTrait;
 
-
-public class LogicalDocumentScan extends DocumentScan implements RelationalTransformable {
+@SuperBuilder(toBuilder = true)
+public class LogicalDocumentScan extends DocumentScan<Entity> implements RelationalTransformable {
 
     /**
      * Subclass of {@link DocumentScan} not targeted at any particular engine or calling convention.
      */
-    public LogicalDocumentScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable document ) {
+    public LogicalDocumentScan( AlgCluster cluster, AlgTraitSet traitSet, Entity document ) {
         super( cluster, traitSet.replace( ModelTrait.DOCUMENT ), document );
     }
 
 
-    public static AlgNode create( AlgOptCluster cluster, AlgOptTable collection ) {
+    public static AlgNode create( AlgCluster cluster, Entity collection ) {
         return new LogicalDocumentScan( cluster, cluster.traitSet(), collection );
     }
 
 
     @Override
-    public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<AlgOptTable> entities, CatalogReader catalogReader ) {
-        return List.of( AlgOptRule.convert( LogicalScan.create( getCluster(), entities.get( 0 ) ), ModelTrait.RELATIONAL ) );
+    public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<Entity> entities, Snapshot snapshot ) {
+        return List.of( AlgOptRule.convert( LogicalRelScan.create( getCluster(), entities.get( 0 ) ), ModelTrait.RELATIONAL ) );
     }
 
 

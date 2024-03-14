@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,24 +23,15 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.adapter.index.IndexManager;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
-import org.polypheny.db.ddl.exception.AlterSourceException;
-import org.polypheny.db.ddl.exception.IndexExistsException;
-import org.polypheny.db.ddl.exception.MissingColumnPlacementException;
-import org.polypheny.db.ddl.exception.UnknownIndexMethodException;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlNodeList;
@@ -121,26 +112,26 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
 
 
     @Override
-    public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        CatalogTable catalogTable = getCatalogTable( context, table );
+    public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
+        LogicalTable logicalTable = getTableFailOnEmpty( context, table );
 
-        if ( catalogTable.entityType != EntityType.ENTITY && catalogTable.entityType != EntityType.MATERIALIZED_VIEW ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE ADD INDEX because " + catalogTable.name + " is not a table or materialized view." );
+        if ( logicalTable.entityType != EntityType.ENTITY && logicalTable.entityType != EntityType.MATERIALIZED_VIEW ) {
+            throw new GenericRuntimeException( "Not possible to use ALTER TABLE ADD INDEX because " + logicalTable.name + " is not a table or materialized view." );
         }
 
         String indexMethodName = indexMethod != null ? indexMethod.getSimple() : null;
 
         try {
-            if ( storeName != null && storeName.getSimple().equalsIgnoreCase( "POLYPHENY" ) ) {
-                DdlManager.getInstance().addPolyphenyIndex(
-                        catalogTable,
+            if ( storeName != null && storeName.getSimple().equalsIgnoreCase( IndexManager.POLYPHENY ) ) {
+                DdlManager.getInstance().createPolyphenyIndex(
+                        logicalTable,
                         indexMethodName,
                         columnList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
                         indexName.getSimple(),
                         unique,
                         statement );
             } else {
-                DataStore storeInstance = null;
+                DataStore<?> storeInstance = null;
                 if ( storeName != null ) {
                     storeInstance = getDataStoreInstance( storeName );
                     if ( storeInstance == null ) {
@@ -149,35 +140,17 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
                                 RESOURCE.unknownAdapter( storeName.getSimple() ) );
                     }
                 }
-                DdlManager.getInstance().addIndex(
-                        catalogTable,
+                DdlManager.getInstance().createIndex(
+                        logicalTable,
                         indexMethodName,
-                        columnList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
+                        columnList.getList().stream().map( Node::toString ).toList(),
                         indexName.getSimple(),
                         unique,
                         storeInstance,
                         statement );
             }
-        } catch ( UnknownColumnException e ) {
-            throw CoreUtil.newContextException( columnList.getPos(), RESOURCE.columnNotFound( e.getColumnName() ) );
-        } catch ( UnknownSchemaException e ) {
-            throw CoreUtil.newContextException( table.getPos(), RESOURCE.schemaNotFound( e.getSchemaName() ) );
-        } catch ( UnknownTableException e ) {
-            throw CoreUtil.newContextException( table.getPos(), RESOURCE.tableNotFound( e.getTableName() ) );
-        } catch ( UnknownIndexMethodException e ) {
-            throw CoreUtil.newContextException(
-                    indexMethod.getPos(),
-                    RESOURCE.unknownIndexMethod( indexMethod.getSimple() ) );
-        } catch ( AlterSourceException e ) {
-            throw CoreUtil.newContextException( table.getPos(), RESOURCE.ddlOnSourceTable() );
-        } catch ( IndexExistsException e ) {
-            throw CoreUtil.newContextException( indexName.getPos(), RESOURCE.indexExists( indexName.getSimple() ) );
-        } catch ( MissingColumnPlacementException e ) {
-            throw CoreUtil.newContextException(
-                    storeName.getPos(),
-                    RESOURCE.missingColumnPlacement( e.getColumnName() ) );
-        } catch ( GenericCatalogException | UnknownKeyException | UnknownUserException | UnknownDatabaseException | TransactionException e ) {
-            throw new RuntimeException( e );
+        } catch ( TransactionException e ) {
+            throw new GenericRuntimeException( e );
         }
     }
 

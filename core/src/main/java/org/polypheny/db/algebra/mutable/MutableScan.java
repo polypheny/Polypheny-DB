@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,15 +34,15 @@
 package org.polypheny.db.algebra.mutable;
 
 
-import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.core.relational.RelScan;
 
 
 /**
- * Mutable equivalent of {@link Scan}.
+ * Mutable equivalent of {@link RelScan}.
  */
 public class MutableScan extends MutableLeafAlg {
 
-    private MutableScan( Scan alg ) {
+    private MutableScan( RelScan<?> alg ) {
         super( MutableAlgType.TABLE_SCAN, alg );
     }
 
@@ -52,7 +52,7 @@ public class MutableScan extends MutableLeafAlg {
      *
      * @param scan The underlying Scan object
      */
-    public static MutableScan of( Scan scan ) {
+    public static MutableScan of( RelScan<?> scan ) {
         return new MutableScan( scan );
     }
 
@@ -73,13 +73,13 @@ public class MutableScan extends MutableLeafAlg {
 
     @Override
     public StringBuilder digest( StringBuilder buf ) {
-        return buf.append( "Scan(table: " ).append( alg.getTable().getQualifiedName() ).append( ")" );
+        return buf.append( "Scan(table: " ).append( alg.getEntity().name ).append( ")" );
     }
 
 
     @Override
     public MutableAlg clone() {
-        return MutableScan.of( (Scan) alg );
+        return MutableScan.of( (RelScan<?>) alg );
     }
 
 }

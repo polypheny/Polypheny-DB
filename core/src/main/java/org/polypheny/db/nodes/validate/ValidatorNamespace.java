@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.polypheny.db.nodes.validate;
 
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.logistic.DataModel;
 
 public interface ValidatorNamespace {
 
@@ -26,6 +27,16 @@ public interface ValidatorNamespace {
      *
      * @return Row type of this namespace, never null, always a struct
      */
-    AlgDataType getRowType();
+    AlgDataType getTupleType();
+
+
+    default DataModel getDataModel() {
+        return DataModel.RELATIONAL;
+    }
+
+    default ValidatorNamespace setDataModel( DataModel dataModel ) {
+        throw new UnsupportedOperationException( "This namespace does not support setting the data model." );
+    }
+
 
 }

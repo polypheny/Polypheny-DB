@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,15 @@
 package org.polypheny.db.http;
 
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonSyntaxException;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
-import io.javalin.plugin.json.JsonMapper;
+import io.javalin.plugin.json.JavalinJackson;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Arrays;
@@ -34,12 +38,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.pf4j.Extension;
-import org.pf4j.Plugin;
-import org.pf4j.PluginWrapper;
-import org.polypheny.db.StatusService;
+import org.polypheny.db.StatusNotificationService;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
@@ -49,27 +52,29 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.plugins.PluginContext;
+import org.polypheny.db.plugins.PolyPlugin;
+import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.webui.Crud;
-import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.crud.LanguageCrud;
-import org.polypheny.db.webui.models.Result;
 import org.polypheny.db.webui.models.requests.QueryRequest;
+import org.polypheny.db.webui.models.results.Result;
 
-public class HttpInterfacePlugin extends Plugin {
+public class HttpInterfacePlugin extends PolyPlugin {
 
     /**
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to be successfully loaded by manager.
      */
-    public HttpInterfacePlugin( PluginWrapper wrapper ) {
-        super( wrapper );
+    public HttpInterfacePlugin( PluginContext context ) {
+        super( context );
     }
 
 
     @Override
-    public void start() {
+    public void afterCatalogInit() {
         // Add HTTP interface
         Map<String, String> httpSettings = new HashMap<>();
         httpSettings.put( "port", "13137" );
@@ -111,13 +116,13 @@ public class HttpInterfacePlugin extends Plugin {
         private static Javalin server;
 
 
-        public HttpInterface( TransactionManager transactionManager, Authenticator authenticator, int ifaceId, String uniqueName, Map<String, String> settings ) {
+        public HttpInterface( TransactionManager transactionManager, Authenticator authenticator, long ifaceId, String uniqueName, Map<String, String> settings ) {
             super( transactionManager, authenticator, ifaceId, uniqueName, settings, true, false );
             this.uniqueName = uniqueName;
             this.port = Integer.parseInt( settings.get( "port" ) );
             if ( !Util.checkIfPortIsAvailable( port ) ) {
                 // Port is already in use
-                throw new RuntimeException( "Unable to start " + INTERFACE_NAME + " on port " + port + "! The port is already in use." );
+                throw new GenericRuntimeException( "Unable to start " + INTERFACE_NAME + " on port " + port + "! The port is already in use." );
             }
             // Add information page
             monitoringPage = new MonitoringPage();
@@ -126,24 +131,25 @@ public class HttpInterfacePlugin extends Plugin {
 
         @Override
         public void run() {
-            JsonMapper gsonMapper = new JsonMapper() {
-                @NotNull
-                @Override
-                public <T> T fromJsonString( @NotNull String json, @NotNull Class<T> targetType ) {
-                    return HttpServer.gson.fromJson( json, targetType );
-                }
+            /*server = Javalin.create( config -> {  // todo dl enable, when we removed avatica and can finally bump javalin
+                config.plugins.enableCors( cors -> cors.add( CorsPluginConfig::anyHost ) );
+                config.staticFiles.add( "webapp" );
+                config.jsonMapper( new JavalinJackson().updateMapper( mapper -> {
+                    mapper.setSerializationInclusion( JsonInclude.Include.NON_NULL );
+                } ) );
+            } ).start( port );*/
 
-
-                @NotNull
-                @Override
-                public String toJsonString( @NotNull Object obj ) {
-                    return HttpServer.gson.toJson( obj );
-                }
-
-            };
             server = Javalin.create( config -> {
-                config.jsonMapper( gsonMapper );
+                config.jsonMapper( new JavalinJackson( new ObjectMapper() {
+                    {
+                        setSerializationInclusion( JsonInclude.Include.NON_NULL );
+                        configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false );
+                        configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false );
+                        writerWithDefaultPrettyPrinter();
+                    }
+                } ) );
                 config.enableCorsForAllOrigins();
+                config.addStaticFiles( staticFileConfig -> staticFileConfig.directory = "webapp/" );
             } ).start( port );
             server.exception( Exception.class, ( e, ctx ) -> {
                 log.warn( "Caught exception in the HTTP interface", e );
@@ -155,16 +161,16 @@ public class HttpInterfacePlugin extends Plugin {
             } );
 
             server.routes( () -> {
-                StatusService.printInfo( String.format( "%s started and is listening on port %d.", INTERFACE_NAME, port ) );
+                StatusNotificationService.printInfo( String.format( "%s started and is listening on port %d.", INTERFACE_NAME, port ) );
             } );
 
-            LanguageCrud.REGISTER.forEach( ( key, value ) -> addRoute( QueryLanguage.from( key ) ) );
+            LanguageManager.getLanguages().forEach( this::addRoute );
         }
 
 
         public void addRoute( QueryLanguage language ) {
-            for ( String route : language.getOtherNames() ) {
-                log.info( "Added HTTP route: /{}", route );
+            for ( String route : language.otherNames() ) {
+                log.info( "Added HTTP Route: /{}", route );
                 server.post( route, ctx -> anyQuery( language, ctx ) );
             }
         }
@@ -174,15 +180,17 @@ public class HttpInterfacePlugin extends Plugin {
             QueryRequest query = ctx.bodyAsClass( QueryRequest.class );
             String sessionId = ctx.req.getSession().getId();
             Crud.cleanupOldSession( sessionXids, sessionId );
+            LogicalNamespace namespace = Catalog.snapshot().getNamespace( query.namespace ).orElse( null );
 
-            List<Result> results = LanguageCrud.anyQuery(
-                    language,
-                    null,
-                    query,
-                    transactionManager,
-                    Catalog.defaultUserId,
-                    Catalog.defaultDatabaseId,
-                    null );
+            List<? extends Result<?, ?>> results = LanguageCrud.anyQueryResult(
+                    QueryContext.builder()
+                            .query( query.query )
+                            .language( language )
+                            .userId( Catalog.defaultUserId )
+                            .origin( "Http Interface" )
+                            .transactionManager( transactionManager )
+                            .namespaceId( namespace == null ? Catalog.defaultNamespaceId : namespace.id )
+                            .build(), query );
             ctx.json( results.toArray( new Result[0] ) );
 
             if ( !statementCounters.containsKey( language ) ) {
@@ -190,7 +198,7 @@ public class HttpInterfacePlugin extends Plugin {
             }
             statementCounters.get( language ).incrementAndGet();
             // is empty from cleanupOldInfoAndFiles
-            sessionXids.put( sessionId, results.stream().map( Result::getXid ).filter( Objects::nonNull ).collect( Collectors.toSet() ) );
+            sessionXids.put( sessionId, results.stream().map( t -> t.xid ).filter( Objects::nonNull ).collect( Collectors.toSet() ) );
         }
 
 
@@ -265,7 +273,7 @@ public class HttpInterfacePlugin extends Plugin {
                 DecimalFormat df = new DecimalFormat( "0.0", symbols );
                 statementsTable.reset();
                 for ( Map.Entry<QueryLanguage, AtomicLong> entry : statementCounters.entrySet() ) {
-                    statementsTable.addRow( entry.getKey().getSerializedName(), df.format( total == 0 ? 0 : (entry.getValue().longValue() / total) * 100 ) + " %", entry.getValue().longValue() );
+                    statementsTable.addRow( entry.getKey().serializedName(), df.format( total == 0 ? 0 : (entry.getValue().longValue() / total) * 100 ) + " %", entry.getValue().longValue() );
                 }
             }
 

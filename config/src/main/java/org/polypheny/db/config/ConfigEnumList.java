@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -178,7 +178,7 @@ public class ConfigEnumList extends Config {
     @Override
     public boolean parseStringAndSetValue( String value ) {
         Gson gson = new Gson();
-        ArrayList<String> val = gson.fromJson( value, ArrayList.class );
+        List<String> val = gson.fromJson( value, List.class );
         List<Enum> toAdd = new ArrayList<>();
         for ( Enum e : enumValues ) {
             if ( val.contains( e.name() ) ) {

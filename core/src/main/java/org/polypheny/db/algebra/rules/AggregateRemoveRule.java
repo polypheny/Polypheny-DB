@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,11 +37,11 @@ package org.polypheny.db.algebra.rules;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.functions.Functions;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
-import org.polypheny.db.runtime.functions.Functions;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
@@ -52,7 +52,7 @@ import org.polypheny.db.tools.AlgBuilderFactory;
  */
 public class AggregateRemoveRule extends AlgOptRule {
 
-    public static final AggregateRemoveRule INSTANCE = new AggregateRemoveRule( LogicalAggregate.class, AlgFactories.LOGICAL_BUILDER );
+    public static final AggregateRemoveRule INSTANCE = new AggregateRemoveRule( LogicalRelAggregate.class, AlgFactories.LOGICAL_BUILDER );
 
 
     /**
@@ -74,7 +74,7 @@ public class AggregateRemoveRule extends AlgOptRule {
             return;
         }
         final AlgMetadataQuery mq = call.getMetadataQuery();
-        if ( !Functions.isTrue( mq.areColumnsUnique( input, aggregate.getGroupSet() ) ) ) {
+        if ( !Functions.isTrue( mq.areColumnsUnique( input, aggregate.getGroupSet() ) ).value ) {
             return;
         }
         // Distinct is "GROUP BY c1, c2" (where c1, c2 are a set of columns on which the input is unique, i.e. contain a key) and has no aggregate functions. It can be removed.
@@ -83,7 +83,7 @@ public class AggregateRemoveRule extends AlgOptRule {
         // If aggregate was projecting a subset of columns, add a project for the same effect.
         final AlgBuilder algBuilder = call.builder();
         algBuilder.push( newInput );
-        if ( newInput.getRowType().getFieldCount() > aggregate.getRowType().getFieldCount() ) {
+        if ( newInput.getTupleType().getFieldCount() > aggregate.getTupleType().getFieldCount() ) {
             algBuilder.project( algBuilder.fields( aggregate.getGroupSet().asList() ) );
         }
         call.transformTo( algBuilder.build() );

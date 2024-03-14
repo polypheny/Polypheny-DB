@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import lombok.Getter;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgFieldCollation;
@@ -68,7 +69,7 @@ import org.polypheny.db.util.Permutation;
  *
  * Programs are immutable. It may help to use a {@link RexProgramBuilder}, which has the same relationship to {@link RexProgram} as {@link StringBuilder} has to {@link String}.
  *
- * A program can contain aggregate functions. If it does, the arguments to each aggregate function must be an {@link RexInputRef}.
+ * A program can contain aggregate functions. If it does, the arguments to each aggregate function must be an {@link RexIndexRef}.
  *
  * @see RexProgramBuilder
  */
@@ -89,8 +90,22 @@ public class RexProgram {
      */
     private final RexLocalRef condition;
 
+    /**
+     * -- GETTER --
+     * Returns the type of the input row to the program.
+     *
+     * @return input row type
+     */
+    @Getter
     private final AlgDataType inputRowType;
 
+    /**
+     * -- GETTER --
+     * Returns the type of the output row from this program.
+     *
+     * @return output row type
+     */
+    @Getter
     private final AlgDataType outputRowType;
 
     /**
@@ -145,7 +160,7 @@ public class RexProgram {
      * Returns a list of project expressions and their field names.
      */
     public List<Pair<RexLocalRef, String>> getNamedProjects() {
-        return new AbstractList<Pair<RexLocalRef, String>>() {
+        return new AbstractList<>() {
             @Override
             public int size() {
                 return projects.size();
@@ -156,7 +171,7 @@ public class RexProgram {
             public Pair<RexLocalRef, String> get( int index ) {
                 return Pair.of(
                         projects.get( index ),
-                        outputRowType.getFieldList().get( index ).getName() );
+                        outputRowType.getFields().get( index ).getName() );
             }
         };
     }
@@ -237,12 +252,12 @@ public class RexProgram {
     /**
      * Collects the expressions in this program into a list of terms and values.
      *
-     * @param prefix Prefix for term names, usually the empty string, but useful if a relational expression contains more than one program
+     * @param prefix Prefix for term names, usually the empty string, but useful if an algebra expression contains more than one program
      * @param pw Plan writer
      */
     public AlgWriter collectExplainTerms( String prefix, AlgWriter pw, ExplainLevel level ) {
-        final List<AlgDataTypeField> inFields = inputRowType.getFieldList();
-        final List<AlgDataTypeField> outFields = outputRowType.getFieldList();
+        final List<AlgDataTypeField> inFields = inputRowType.getFields();
+        final List<AlgDataTypeField> outFields = outputRowType.getFields();
         assert outFields.size() == projects.size() : "outFields.length=" + outFields.size() + ", projects.length=" + projects.size();
         pw.item( prefix + "expr#0" + ((inFields.size() > 1) ? (".." + (inFields.size() - 1)) : ""), "{inputs}" );
         for ( int i = inFields.size(); i < exprs.size(); i++ ) {
@@ -317,28 +332,18 @@ public class RexProgram {
      * Creates a program that projects its input fields but with possibly different names for the output fields.
      */
     public static RexProgram createIdentity( AlgDataType rowType, AlgDataType outputRowType ) {
-        if ( rowType != outputRowType && !Pair.right( rowType.getFieldList() ).equals( Pair.right( outputRowType.getFieldList() ) ) ) {
+        if ( rowType != outputRowType && !rowType.getFieldNames().equals( outputRowType.getFieldNames() ) ) {
             throw new IllegalArgumentException( "field type mismatch: " + rowType + " vs. " + outputRowType );
         }
-        final List<AlgDataTypeField> fields = rowType.getFieldList();
+        final List<AlgDataTypeField> fields = rowType.getFields();
         final List<RexLocalRef> projectRefs = new ArrayList<>();
-        final List<RexInputRef> refs = new ArrayList<>();
+        final List<RexIndexRef> refs = new ArrayList<>();
         for ( int i = 0; i < fields.size(); i++ ) {
-            final RexInputRef ref = RexInputRef.of( i, fields );
+            final RexIndexRef ref = RexIndexRef.of( i, fields );
             refs.add( ref );
             projectRefs.add( new RexLocalRef( i, ref.getType() ) );
         }
         return new RexProgram( rowType, refs, projectRefs, null, outputRowType );
-    }
-
-
-    /**
-     * Returns the type of the input row to the program.
-     *
-     * @return input row type
-     */
-    public AlgDataType getInputRowType() {
-        return inputRowType;
     }
 
 
@@ -349,16 +354,6 @@ public class RexProgram {
      */
     public boolean containsAggs() {
         return RexOver.containsOver( this );
-    }
-
-
-    /**
-     * Returns the type of the output row from this program.
-     *
-     * @return output row type
-     */
-    public AlgDataType getOutputRowType() {
-        return outputRowType;
     }
 
 
@@ -395,7 +390,7 @@ public class RexProgram {
             // None of the other fields should be inputRefs.
             for ( int i = inputRowType.getFieldCount(); i < exprs.size(); i++ ) {
                 RexNode expr = exprs.get( i );
-                if ( expr instanceof RexInputRef ) {
+                if ( expr instanceof RexIndexRef ) {
                     return litmus.fail( null );
                 }
             }
@@ -447,7 +442,7 @@ public class RexProgram {
     public boolean isNull( RexNode expr ) {
         switch ( expr.getKind() ) {
             case LITERAL:
-                return ((RexLiteral) expr).getValue2() == null;
+                return ((RexLiteral) expr).getValue() == null;
             case LOCAL_REF:
                 RexLocalRef inputRef = (RexLocalRef) expr;
                 return isNull( exprs.get( inputRef.index ) );
@@ -550,7 +545,7 @@ public class RexProgram {
         for ( int i = 0; i < fieldCount; i++ ) {
             RexLocalRef project = projects.get( i );
             if ( project.index != i ) {
-                assert !fail : "program " + toString() + "' does not project identity for input row type '" + inputRowType + "', field #" + i;
+                assert !fail : "program " + this + "' does not project identity for input row type '" + inputRowType + "', field #" + i;
                 return false;
             }
         }
@@ -636,8 +631,8 @@ public class RexProgram {
             }
             if ( expr instanceof RexLocalRef ) {
                 index = ((RexLocalRef) expr).index;
-            } else if ( expr instanceof RexInputRef ) {
-                return ((RexInputRef) expr).index;
+            } else if ( expr instanceof RexIndexRef ) {
+                return ((RexIndexRef) expr).index;
             } else {
                 return -1;
             }
@@ -649,7 +644,7 @@ public class RexProgram {
      * Returns whether this program is a permutation of its inputs.
      */
     public boolean isPermutation() {
-        if ( projects.size() != inputRowType.getFieldList().size() ) {
+        if ( projects.size() != inputRowType.getFields().size() ) {
             return false;
         }
         for ( int i = 0; i < projects.size(); ++i ) {
@@ -666,7 +661,7 @@ public class RexProgram {
      */
     public Permutation getPermutation() {
         Permutation permutation = new Permutation( projects.size() );
-        if ( projects.size() != inputRowType.getFieldList().size() ) {
+        if ( projects.size() != inputRowType.getFields().size() ) {
             return null;
         }
         for ( int i = 0; i < projects.size(); ++i ) {
@@ -688,7 +683,7 @@ public class RexProgram {
     public Set<String> getCorrelVariableNames() {
         final Set<String> paramIdSet = new HashSet<>();
         RexUtil.apply(
-                new RexVisitorImpl<Void>( true ) {
+                new RexVisitorImpl<>( true ) {
                     @Override
                     public Void visitCorrelVariable( RexCorrelVariable correlVariable ) {
                         paramIdSet.add( correlVariable.getName() );
@@ -851,7 +846,7 @@ public class RexProgram {
 
 
         @Override
-        public RexNode visitInputRef( RexInputRef inputRef ) {
+        public RexNode visitIndexRef( RexIndexRef inputRef ) {
             return inputRef;
         }
 

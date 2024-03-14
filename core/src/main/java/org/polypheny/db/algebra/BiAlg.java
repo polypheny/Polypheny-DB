@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,10 +35,11 @@ package org.polypheny.db.algebra;
 
 
 import java.util.List;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import org.polypheny.db.plan.AlgOptCluster;
+import lombok.experimental.NonFinal;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.runtime.FlatLists;
 
 
 /**
@@ -46,14 +47,19 @@ import org.polypheny.db.runtime.FlatLists;
  *
  * It is not required that two-input relational expressions use this class as a base class. However, default implementations of methods make life easier.
  */
+@EqualsAndHashCode(callSuper = true)
 @Getter
+@NonFinal
 public abstract class BiAlg extends AbstractAlgNode {
 
+    @NonFinal
     protected AlgNode left;
+
+    @NonFinal
     protected AlgNode right;
 
 
-    public BiAlg( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode left, AlgNode right ) {
+    public BiAlg( AlgCluster cluster, AlgTraitSet traitSet, AlgNode left, AlgNode right ) {
         super( cluster, traitSet );
         this.left = left;
         this.right = right;
@@ -69,7 +75,7 @@ public abstract class BiAlg extends AbstractAlgNode {
 
     @Override
     public List<AlgNode> getInputs() {
-        return FlatLists.of( left, right );
+        return List.of( left, right );
     }
 
 
@@ -95,5 +101,6 @@ public abstract class BiAlg extends AbstractAlgNode {
                 .input( "left", left )
                 .input( "right", right );
     }
+
 
 }

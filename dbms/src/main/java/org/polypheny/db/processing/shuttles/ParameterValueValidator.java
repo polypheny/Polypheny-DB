@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,29 +17,17 @@
 package org.polypheny.db.processing.shuttles;
 
 
-import com.j256.simplemagic.ContentInfo;
-import com.j256.simplemagic.ContentInfoUtil;
-import com.j256.simplemagic.ContentType;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PushbackInputStream;
-import java.sql.Date;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.util.Arrays;
 import java.util.Map;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.FileInputHandle;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 public class ParameterValueValidator extends AlgShuttleImpl {
@@ -70,7 +58,7 @@ public class ParameterValueValidator extends AlgShuttleImpl {
 
 
     @Override
-    public AlgNode visit( LogicalProject project ) {
+    public AlgNode visit( LogicalRelProject project ) {
         ParameterValueValidator2 validator2 = new ParameterValueValidator2();
         validator2.apply( project.getChildExps() );
         return super.visit( project );
@@ -88,49 +76,49 @@ public class ParameterValueValidator extends AlgShuttleImpl {
             }
             PolyType polyType = dataContext.getParameterType( index ).getPolyType();
             //PolyType polyType = dynamicParam.getType().getPolyType();//is not always correct
-            Object o = null;
+            PolyValue o = null;
             boolean valid = true;
-            for ( Map<Long, Object> map : dataContext.getParameterValues() ) {
+            for ( Map<Long, PolyValue> map : dataContext.getParameterValues() ) {
                 o = map.get( index );
-                if ( o == null ) {
-                    break;
-                /*    if ( dynamicParam.getType().isNullable() ) {
+                if ( o == null || o.isNull() ) {
+                    if ( dynamicParam.getType().isNullable() ) {
                         break;
                     } else {
+                        valid = false;
                         throw new InvalidParameterValueException( "Null in not nullable column" );
                     }
-                 */
                 }
                 switch ( polyType.getFamily() ) {
                     //case ANY:
                     //break;
                     case CHARACTER:
-                        valid = o instanceof String || o instanceof Character || o instanceof Character[];
+                        valid = o.isString();
                         break;
                     case NUMERIC:
-                        valid = o instanceof Number;
+                        valid = o.isNumber();
                         break;
                     case DATE:
-                        valid = o instanceof Date || o instanceof Integer;
+                        valid = o.isDate();
                         break;
                     case TIME:
-                        valid = o instanceof Time || o instanceof Integer;
+                        valid = o.isTime();
                         break;
                     case TIMESTAMP:
-                        valid = o instanceof Timestamp || o instanceof Long;
+                        valid = o.isTimestamp();
                         break;
                     case BOOLEAN:
-                        valid = o instanceof Boolean;
+                        valid = o.isBoolean();
                         break;
                     case MULTIMEDIA:
-                        if ( polyType == PolyType.FILE || !RuntimeConfig.VALIDATE_MM_CONTENT_TYPE.getBoolean() ) {
-                            if ( o instanceof byte[] || o instanceof InputStream || o instanceof File || o instanceof FileInputHandle ) {
+                        return super.visitDynamicParam( dynamicParam );
+                        /*if ( polyType == PolyType.FILE || !RuntimeConfig.VALIDATE_MM_CONTENT_TYPE.getBoolean() ) {
+                            if ( o.isBlob() )//instanceof byte[] || o instanceof InputStream || o instanceof File || o instanceof FileInputHandle ) {
                                 return super.visitDynamicParam( dynamicParam );
                             } else {
                                 throw new InvalidParameterValueException( String.format( "Parameter value '%s' of type %s does not match the PolyType %s", o.toString(), o.getClass().getSimpleName(), polyType ) );
                             }
                         }
-                        ContentInfoUtil util = new ContentInfoUtil();
+                        /*ContentInfoUtil util = new ContentInfoUtil();
                         ContentInfo info;
                         if ( o instanceof byte[] ) {
                             info = util.findMatch( (byte[]) o );
@@ -180,9 +168,9 @@ public class ParameterValueValidator extends AlgShuttleImpl {
                             //break;
                         }
                         if ( !valid ) {
-                            throw new InvalidParameterValueException( String.format( "The %s file has the content type '%s' which is not valid for the %s PolyType", polyType.toString().toLowerCase(), info.getName(), polyType ) );
+                            throw new InvalidParameterValueException( String.format( "The %s file has the content type '%s' which is not valid for the %s PolyType", polyType.toString().toLowerCase(), polyType ) );
                         }
-                        break;
+                        break;*/
                 }
                 if ( !valid ) {
                     break;

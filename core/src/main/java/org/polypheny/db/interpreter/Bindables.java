@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,8 +43,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Enumerable;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.enumerable.AggImplementor;
-import org.polypheny.db.adapter.enumerable.RexImpTable;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
@@ -59,42 +57,43 @@ import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.Window;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
-import org.polypheny.db.algebra.logical.relational.LogicalScan;
-import org.polypheny.db.algebra.logical.relational.LogicalUnion;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.core.relational.RelScan;
+import org.polypheny.db.algebra.enumerable.AggImplementor;
+import org.polypheny.db.algebra.enumerable.RexImpTable;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.logical.relational.LogicalWindow;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.FilterableTable;
-import org.polypheny.db.schema.ProjectableFilterableTable;
-import org.polypheny.db.schema.ScannableTable;
-import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.types.FilterableEntity;
+import org.polypheny.db.schema.types.ProjectableFilterableEntity;
+import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.tools.AlgBuilderFactory;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.ImmutableBitSet;
-import org.polypheny.db.util.ImmutableIntList;
 
 
 /**
@@ -146,13 +145,13 @@ public class Bindables {
      *
      * Any bindable can be compiled; if its input is also bindable, it becomes part of the same compilation unit.
      */
-    private static Enumerable<Object[]> help( DataContext dataContext, BindableAlg alg ) {
+    private static Enumerable<PolyValue[]> help( DataContext dataContext, BindableAlg alg ) {
         return new Interpreter( dataContext, alg );
     }
 
 
     /**
-     * Rule that converts a {@link Scan} to bindable convention.
+     * Rule that converts a {@link RelScan} to bindable convention.
      */
     public static class BindableScanRule extends AlgOptRule {
 
@@ -162,16 +161,16 @@ public class Bindables {
          * @param algBuilderFactory Builder for relational expressions
          */
         public BindableScanRule( AlgBuilderFactory algBuilderFactory ) {
-            super( operand( LogicalScan.class, none() ), algBuilderFactory, null );
+            super( operand( LogicalRelScan.class, none() ), algBuilderFactory, null );
         }
 
 
         @Override
         public void onMatch( AlgOptRuleCall call ) {
-            final LogicalScan scan = call.alg( 0 );
-            final AlgOptTable table = scan.getTable();
+            final LogicalRelScan scan = call.alg( 0 );
+            final Entity table = scan.entity;
             if ( BindableScan.canHandle( table ) ) {
-                call.transformTo( BindableScan.create( scan.getCluster(), table ) );
+                call.transformTo( BindableScan.create( scan.getCluster(), scan.entity ) );
             }
         }
 
@@ -179,12 +178,12 @@ public class Bindables {
 
 
     /**
-     * Scan of a table that implements {@link ScannableTable} and therefore can be converted into an {@link Enumerable}.
+     * Scan of a table that implements {@link ScannableEntity} and therefore can be converted into an {@link Enumerable}.
      */
-    public static class BindableScan extends Scan implements BindableAlg {
+    public static class BindableScan extends RelScan<Entity> implements BindableAlg {
 
         public final ImmutableList<RexNode> filters;
-        public final ImmutableIntList projects;
+        public final ImmutableList<Integer> projects;
 
 
         /**
@@ -192,44 +191,38 @@ public class Bindables {
          *
          * Use {@link #create} unless you know what you are doing.
          */
-        BindableScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, ImmutableList<RexNode> filters, ImmutableIntList projects ) {
-            super( cluster, traitSet, table );
+        BindableScan( AlgCluster cluster, AlgTraitSet traitSet, Entity entity, ImmutableList<RexNode> filters, ImmutableList<Integer> projects ) {
+            super( cluster, traitSet, entity );
             this.filters = Objects.requireNonNull( filters );
             this.projects = Objects.requireNonNull( projects );
-            Preconditions.checkArgument( canHandle( table ) );
+            Preconditions.checkArgument( canHandle( entity ) );
         }
 
 
         /**
          * Creates a BindableScan.
          */
-        public static BindableScan create( AlgOptCluster cluster, AlgOptTable algOptTable ) {
-            return create( cluster, algOptTable, ImmutableList.of(), identity( algOptTable ) );
+        public static BindableScan create( AlgCluster cluster, Entity entity ) {
+            return create( cluster, entity, ImmutableList.of(), identity( entity ) );
         }
 
 
         /**
          * Creates a BindableScan.
          */
-        public static BindableScan create( AlgOptCluster cluster, AlgOptTable algOptTable, List<RexNode> filters, List<Integer> projects ) {
-            final Table table = algOptTable.unwrap( Table.class );
+        public static BindableScan create( AlgCluster cluster, Entity entity, List<RexNode> filters, List<Integer> projects ) {
             final AlgTraitSet traitSet =
                     cluster.traitSetOf( BindableConvention.INSTANCE )
-                            .replace( table.getSchemaType().getModelTrait() )
-                            .replaceIfs( AlgCollationTraitDef.INSTANCE, () -> {
-                                if ( table != null ) {
-                                    return table.getStatistic().getCollations();
-                                }
-                                return ImmutableList.of();
-                            } );
-            return new BindableScan( cluster, traitSet, algOptTable, ImmutableList.copyOf( filters ), ImmutableIntList.copyOf( projects ) );
+                            .replace( entity.dataModel.getModelTrait() )
+                            .replaceIfs( AlgCollationTraitDef.INSTANCE, entity::getCollations );
+            return new BindableScan( cluster, traitSet, entity, ImmutableList.copyOf( filters ), ImmutableList.copyOf( projects ) );
         }
 
 
         @Override
         public AlgDataType deriveRowType() {
             final AlgDataTypeFactory.Builder builder = getCluster().getTypeFactory().builder();
-            final List<AlgDataTypeField> fieldList = table.getRowType().getFieldList();
+            final List<AlgDataTypeField> fieldList = entity.getTupleType().getFields();
             for ( int project : projects ) {
                 builder.add( fieldList.get( project ) );
             }
@@ -238,8 +231,8 @@ public class Bindables {
 
 
         @Override
-        public Class<Object[]> getElementType() {
-            return Object[].class;
+        public Class<PolyValue[]> getElementType() {
+            return PolyValue[].class;
         }
 
 
@@ -252,39 +245,39 @@ public class Bindables {
 
 
         @Override
-        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
             // Cost factor for pushing filters
             double f = filters.isEmpty() ? 1d : 0.5d;
 
             // Cost factor for pushing fields
             // The "+ 2d" on top and bottom keeps the function fairly smooth.
-            double p = ((double) projects.size() + 2d) / ((double) table.getRowType().getFieldCount() + 2d);
+            double p = ((double) projects.size() + 2d) / ((double) entity.getTupleType().getFieldCount() + 2d);
 
-            // Multiply the cost by a factor that makes a scan more attractive if filters and projects are pushed to the table scan
+            // Multiply the cost by a factor that makes a relScan more attractive if filters and projects are pushed to the table relScan
             return super.computeSelfCost( planner, mq ).multiplyBy( f * p * 0.01d * 100.0d );  //TODO(s3lph): Temporary *100, otherwise foreign key enforcement breaks
         }
 
 
         @Override
         public String algCompareString() {
-            return "BindableScan$" +
-                    String.join( ".", table.getQualifiedName() ) +
+            return getClass().getSimpleName() + "$" +
+                    "." + entity.id +
                     (filters != null ? filters.stream().map( RexNode::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
                     (projects != null ? projects.toString() : "") + "&";
         }
 
 
-        public static boolean canHandle( AlgOptTable table ) {
-            return table.unwrap( ScannableTable.class ) != null
-                    || table.unwrap( FilterableTable.class ) != null
-                    || table.unwrap( ProjectableFilterableTable.class ) != null;
+        public static boolean canHandle( Entity entity ) {
+            return entity.unwrap( ScannableEntity.class ).isPresent()
+                    || entity.unwrap( FilterableEntity.class ).isPresent()
+                    || entity.unwrap( ProjectableFilterableEntity.class ).isPresent();
         }
 
 
         @Override
-        public Enumerable<Object[]> bind( DataContext dataContext ) {
+        public Enumerable<PolyValue[]> bind( DataContext dataContext ) {
             // TODO: filterable and projectable
-            return table.unwrap( ScannableTable.class ).scan( dataContext );
+            return entity.unwrap( ScannableEntity.class ).orElseThrow().scan( dataContext );
         }
 
 
@@ -316,13 +309,13 @@ public class Bindables {
          * @param algBuilderFactory Builder for relational expressions
          */
         public BindableFilterRule( AlgBuilderFactory algBuilderFactory ) {
-            super( LogicalFilter.class, (Predicate<LogicalFilter>) AlgOptUtil::containsMultisetOrWindowedAgg, Convention.NONE, BindableConvention.INSTANCE, algBuilderFactory, "BindableFilterRule" );
+            super( LogicalRelFilter.class, AlgOptUtil::containsMultisetOrWindowedAgg, Convention.NONE, BindableConvention.INSTANCE, algBuilderFactory, "BindableFilterRule" );
         }
 
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final LogicalFilter filter = (LogicalFilter) alg;
+            final LogicalRelFilter filter = (LogicalRelFilter) alg;
             return BindableFilter.create( convert( filter.getInput(), filter.getInput().getTraitSet().replace( BindableConvention.INSTANCE ) ), filter.getCondition() );
         }
 
@@ -334,7 +327,7 @@ public class Bindables {
      */
     public static class BindableFilter extends Filter implements BindableAlg {
 
-        public BindableFilter( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, RexNode condition ) {
+        public BindableFilter( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, RexNode condition ) {
             super( cluster, traitSet, input, condition );
             assert getConvention() instanceof BindableConvention;
         }
@@ -344,7 +337,7 @@ public class Bindables {
          * Creates a BindableFilter.
          */
         public static BindableFilter create( final AlgNode input, RexNode condition ) {
-            final AlgOptCluster cluster = input.getCluster();
+            final AlgCluster cluster = input.getCluster();
             final AlgMetadataQuery mq = cluster.getMetadataQuery();
             final AlgTraitSet traitSet = cluster.traitSetOf( BindableConvention.INSTANCE ).replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.filter( mq, input ) );
             return new BindableFilter( cluster, traitSet, input, condition );
@@ -358,13 +351,13 @@ public class Bindables {
 
 
         @Override
-        public Class<Object[]> getElementType() {
-            return Object[].class;
+        public Class<PolyValue[]> getElementType() {
+            return PolyValue[].class;
         }
 
 
         @Override
-        public Enumerable<Object[]> bind( DataContext dataContext ) {
+        public Enumerable<PolyValue[]> bind( DataContext dataContext ) {
             return help( dataContext, this );
         }
 
@@ -378,7 +371,7 @@ public class Bindables {
 
 
     /**
-     * Rule to convert a {@link LogicalProject} to a {@link BindableProject}.
+     * Rule to convert a {@link LogicalRelProject} to a {@link BindableProject}.
      */
     public static class BindableProjectRule extends ConverterRule {
 
@@ -388,19 +381,19 @@ public class Bindables {
          * @param algBuilderFactory Builder for relational expressions
          */
         public BindableProjectRule( AlgBuilderFactory algBuilderFactory ) {
-            super( LogicalProject.class, (Predicate<LogicalProject>) AlgOptUtil::containsMultisetOrWindowedAgg, Convention.NONE, BindableConvention.INSTANCE, algBuilderFactory, "BindableProjectRule" );
+            super( LogicalRelProject.class, (Predicate<LogicalRelProject>) AlgOptUtil::containsMultisetOrWindowedAgg, Convention.NONE, BindableConvention.INSTANCE, algBuilderFactory, "BindableProjectRule" );
         }
 
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final LogicalProject project = (LogicalProject) alg;
+            final LogicalRelProject project = (LogicalRelProject) alg;
             return new BindableProject(
                     alg.getCluster(),
                     alg.getTraitSet().replace( BindableConvention.INSTANCE ),
                     convert( project.getInput(), project.getInput().getTraitSet().replace( BindableConvention.INSTANCE ) ),
                     project.getProjects(),
-                    project.getRowType() );
+                    project.getTupleType() );
         }
 
     }
@@ -411,7 +404,7 @@ public class Bindables {
      */
     public static class BindableProject extends Project implements BindableAlg {
 
-        public BindableProject( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
+        public BindableProject( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
             super( cluster, traitSet, input, projects, rowType );
             assert getConvention() instanceof BindableConvention;
         }
@@ -424,13 +417,13 @@ public class Bindables {
 
 
         @Override
-        public Class<Object[]> getElementType() {
-            return Object[].class;
+        public Class<PolyValue[]> getElementType() {
+            return PolyValue[].class;
         }
 
 
         @Override
-        public Enumerable<Object[]> bind( DataContext dataContext ) {
+        public Enumerable<PolyValue[]> bind( DataContext dataContext ) {
             return help( dataContext, this );
         }
 
@@ -474,26 +467,26 @@ public class Bindables {
      */
     public static class BindableSort extends Sort implements BindableAlg {
 
-        public BindableSort( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, AlgCollation collation, RexNode offset, RexNode fetch ) {
-            super( cluster, traitSet, input, collation, offset, fetch );
+        public BindableSort( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, AlgCollation collation, RexNode offset, RexNode fetch ) {
+            super( cluster, traitSet, input, collation, null, offset, fetch );
             assert getConvention() instanceof BindableConvention;
         }
 
 
         @Override
-        public BindableSort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation, RexNode offset, RexNode fetch ) {
+        public BindableSort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation, ImmutableList<RexNode> nodes, RexNode offset, RexNode fetch ) {
             return new BindableSort( getCluster(), traitSet, newInput, newCollation, offset, fetch );
         }
 
 
         @Override
-        public Class<Object[]> getElementType() {
-            return Object[].class;
+        public Class<PolyValue[]> getElementType() {
+            return PolyValue[].class;
         }
 
 
         @Override
-        public Enumerable<Object[]> bind( DataContext dataContext ) {
+        public Enumerable<PolyValue[]> bind( DataContext dataContext ) {
             return help( dataContext, this );
         }
 
@@ -507,7 +500,7 @@ public class Bindables {
 
 
     /**
-     * Rule to convert a {@link LogicalJoin} to a {@link BindableJoin}.
+     * Rule to convert a {@link LogicalRelJoin} to a {@link BindableJoin}.
      */
     public static class BindableJoinRule extends ConverterRule {
 
@@ -517,13 +510,13 @@ public class Bindables {
          * @param algBuilderFactory Builder for relational expressions
          */
         public BindableJoinRule( AlgBuilderFactory algBuilderFactory ) {
-            super( LogicalJoin.class, (Predicate<AlgNode>) r -> true, Convention.NONE, BindableConvention.INSTANCE, algBuilderFactory, "BindableJoinRule" );
+            super( LogicalRelJoin.class, (Predicate<AlgNode>) r -> true, Convention.NONE, BindableConvention.INSTANCE, algBuilderFactory, "BindableJoinRule" );
         }
 
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final LogicalJoin join = (LogicalJoin) alg;
+            final LogicalRelJoin join = (LogicalRelJoin) alg;
             final BindableConvention out = BindableConvention.INSTANCE;
             final AlgTraitSet traitSet = join.getTraitSet().replace( out );
             return new BindableJoin(
@@ -547,7 +540,7 @@ public class Bindables {
         /**
          * Creates a BindableJoin.
          */
-        protected BindableJoin( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode left, AlgNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinAlgType joinType ) {
+        protected BindableJoin( AlgCluster cluster, AlgTraitSet traitSet, AlgNode left, AlgNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinAlgType joinType ) {
             super( cluster, traitSet, left, right, condition, variablesSet, joinType );
         }
 
@@ -559,13 +552,13 @@ public class Bindables {
 
 
         @Override
-        public Class<Object[]> getElementType() {
-            return Object[].class;
+        public Class<PolyValue[]> getElementType() {
+            return PolyValue[].class;
         }
 
 
         @Override
-        public Enumerable<Object[]> bind( DataContext dataContext ) {
+        public Enumerable<PolyValue[]> bind( DataContext dataContext ) {
             return help( dataContext, this );
         }
 
@@ -579,7 +572,7 @@ public class Bindables {
 
 
     /**
-     * Rule to convert an {@link LogicalUnion} to a {@link BindableUnion}.
+     * Rule to convert an {@link LogicalRelUnion} to a {@link BindableUnion}.
      */
     public static class BindableUnionRule extends ConverterRule {
 
@@ -589,13 +582,13 @@ public class Bindables {
          * @param algBuilderFactory Builder for relational expressions
          */
         public BindableUnionRule( AlgBuilderFactory algBuilderFactory ) {
-            super( LogicalUnion.class, (Predicate<AlgNode>) r -> true, Convention.NONE, BindableConvention.INSTANCE, algBuilderFactory, "BindableUnionRule" );
+            super( LogicalRelUnion.class, (Predicate<AlgNode>) r -> true, Convention.NONE, BindableConvention.INSTANCE, algBuilderFactory, "BindableUnionRule" );
         }
 
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final LogicalUnion union = (LogicalUnion) alg;
+            final LogicalRelUnion union = (LogicalRelUnion) alg;
             final BindableConvention out = BindableConvention.INSTANCE;
             final AlgTraitSet traitSet = union.getTraitSet().replace( out );
             return new BindableUnion( alg.getCluster(), traitSet, convertList( union.getInputs(), out ), union.all );
@@ -609,7 +602,7 @@ public class Bindables {
      */
     public static class BindableUnion extends Union implements BindableAlg {
 
-        public BindableUnion( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
+        public BindableUnion( AlgCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
             super( cluster, traitSet, inputs, all );
         }
 
@@ -621,13 +614,13 @@ public class Bindables {
 
 
         @Override
-        public Class<Object[]> getElementType() {
-            return Object[].class;
+        public Class<PolyValue[]> getElementType() {
+            return PolyValue[].class;
         }
 
 
         @Override
-        public Enumerable<Object[]> bind( DataContext dataContext ) {
+        public Enumerable<PolyValue[]> bind( DataContext dataContext ) {
             return help( dataContext, this );
         }
 
@@ -645,7 +638,7 @@ public class Bindables {
      */
     public static class BindableValues extends Values implements BindableAlg {
 
-        BindableValues( AlgOptCluster cluster, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, AlgTraitSet traitSet ) {
+        BindableValues( AlgCluster cluster, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, AlgTraitSet traitSet ) {
             super( cluster, rowType, tuples, traitSet );
         }
 
@@ -658,13 +651,13 @@ public class Bindables {
 
 
         @Override
-        public Class<Object[]> getElementType() {
-            return Object[].class;
+        public Class<PolyValue[]> getElementType() {
+            return PolyValue[].class;
         }
 
 
         @Override
-        public Enumerable<Object[]> bind( DataContext dataContext ) {
+        public Enumerable<PolyValue[]> bind( DataContext dataContext ) {
             return help( dataContext, this );
         }
 
@@ -688,14 +681,14 @@ public class Bindables {
          * @param algBuilderFactory Builder for relational expressions
          */
         public BindableValuesRule( AlgBuilderFactory algBuilderFactory ) {
-            super( LogicalValues.class, (Predicate<AlgNode>) r -> true, Convention.NONE, BindableConvention.INSTANCE, algBuilderFactory, "BindableValuesRule" );
+            super( LogicalRelValues.class, (Predicate<AlgNode>) r -> true, Convention.NONE, BindableConvention.INSTANCE, algBuilderFactory, "BindableValuesRule" );
         }
 
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            LogicalValues values = (LogicalValues) alg;
-            return new BindableValues( values.getCluster(), values.getRowType(), values.getTuples(), values.getTraitSet().replace( BindableConvention.INSTANCE ) );
+            LogicalRelValues values = (LogicalRelValues) alg;
+            return new BindableValues( values.getCluster(), values.getTupleType(), values.getTuples(), values.getTraitSet().replace( BindableConvention.INSTANCE ) );
         }
 
     }
@@ -706,7 +699,7 @@ public class Bindables {
      */
     public static class BindableAggregate extends Aggregate implements BindableAlg {
 
-        public BindableAggregate( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) throws InvalidAlgException {
+        public BindableAggregate( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) throws InvalidAlgException {
             super( cluster, traitSet, input, indicator, groupSet, groupSets, aggCalls );
             assert getConvention() instanceof BindableConvention;
 
@@ -734,13 +727,13 @@ public class Bindables {
 
 
         @Override
-        public Class<Object[]> getElementType() {
-            return Object[].class;
+        public Class<PolyValue[]> getElementType() {
+            return PolyValue[].class;
         }
 
 
         @Override
-        public Enumerable<Object[]> bind( DataContext dataContext ) {
+        public Enumerable<PolyValue[]> bind( DataContext dataContext ) {
             return help( dataContext, this );
         }
 
@@ -764,18 +757,18 @@ public class Bindables {
          * @param algBuilderFactory Builder for relational expressions
          */
         public BindableAggregateRule( AlgBuilderFactory algBuilderFactory ) {
-            super( LogicalAggregate.class, (Predicate<AlgNode>) r -> true, Convention.NONE, BindableConvention.INSTANCE, algBuilderFactory, "BindableAggregateRule" );
+            super( LogicalRelAggregate.class, (Predicate<AlgNode>) r -> true, Convention.NONE, BindableConvention.INSTANCE, algBuilderFactory, "BindableAggregateRule" );
         }
 
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final LogicalAggregate agg = (LogicalAggregate) alg;
+            final LogicalRelAggregate agg = (LogicalRelAggregate) alg;
             final AlgTraitSet traitSet = agg.getTraitSet().replace( BindableConvention.INSTANCE );
             try {
                 return new BindableAggregate( alg.getCluster(), traitSet, convert( agg.getInput(), traitSet ), agg.indicator, agg.getGroupSet(), agg.getGroupSets(), agg.getAggCallList() );
             } catch ( InvalidAlgException e ) {
-                AlgOptPlanner.LOGGER.debug( e.toString() );
+                AlgPlanner.LOGGER.debug( e.toString() );
                 return null;
             }
         }
@@ -791,7 +784,7 @@ public class Bindables {
         /**
          * Creates an BindableWindowRel.
          */
-        BindableWindow( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, List<RexLiteral> constants, AlgDataType rowType, List<Group> groups ) {
+        BindableWindow( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, List<RexLiteral> constants, AlgDataType rowType, List<Group> groups ) {
             super( cluster, traitSet, input, constants, rowType, groups );
         }
 
@@ -803,19 +796,19 @@ public class Bindables {
 
 
         @Override
-        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
             return super.computeSelfCost( planner, mq ).multiplyBy( BindableConvention.COST_MULTIPLIER );
         }
 
 
         @Override
-        public Class<Object[]> getElementType() {
-            return Object[].class;
+        public Class<PolyValue[]> getElementType() {
+            return PolyValue[].class;
         }
 
 
         @Override
-        public Enumerable<Object[]> bind( DataContext dataContext ) {
+        public Enumerable<PolyValue[]> bind( DataContext dataContext ) {
             return help( dataContext, this );
         }
 
@@ -849,7 +842,7 @@ public class Bindables {
             final AlgTraitSet traitSet = winAgg.getTraitSet().replace( BindableConvention.INSTANCE );
             final AlgNode input = winAgg.getInput();
             final AlgNode convertedInput = convert( input, input.getTraitSet().replace( BindableConvention.INSTANCE ) );
-            return new BindableWindow( alg.getCluster(), traitSet, convertedInput, winAgg.getConstants(), winAgg.getRowType(), winAgg.groups );
+            return new BindableWindow( alg.getCluster(), traitSet, convertedInput, winAgg.getConstants(), winAgg.getTupleType(), winAgg.groups );
         }
 
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package org.polypheny.db.mql.mql.dql;
 
 import java.util.Map;
 import org.bson.BsonValue;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.languages.mql.Mql.Type;
 import org.polypheny.db.languages.mql.MqlFind;

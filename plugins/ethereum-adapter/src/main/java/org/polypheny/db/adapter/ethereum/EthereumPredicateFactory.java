@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,13 +24,13 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.Pair;
 
 public class EthereumPredicateFactory {
 
-    static final List<Kind> REX_COMPARATORS = new ArrayList<Kind>() {{
+    static final List<Kind> REX_COMPARATORS = new ArrayList<>() {{
         this.add( Kind.EQUALS );
         this.add( Kind.LESS_THAN );
         this.add( Kind.LESS_THAN_OR_EQUAL );
@@ -53,7 +53,7 @@ public class EthereumPredicateFactory {
                 if ( !intermediateResult.left ) {
                     continue;
                 }
-                result &= intermediateResult.right;
+                result = intermediateResult.right;
                 if ( !result ) {
                     break;
                 }
@@ -74,8 +74,8 @@ public class EthereumPredicateFactory {
                 left = ((RexCall) left).operands.get( 0 );
             }
             final RexNode right = call.getOperands().get( 1 );
-            if ( left instanceof RexInputRef && right instanceof RexDynamicParam ) {
-                if ( !((RexInputRef) left).getName().equals( blockNumberField ) ) // $0 is the in
+            if ( left instanceof RexIndexRef && right instanceof RexDynamicParam ) {
+                if ( !((RexIndexRef) left).getName().equals( blockNumberField ) ) // $0 is the in
                 {
                     return new Pair<>( false, false );
                 }
@@ -84,11 +84,11 @@ public class EthereumPredicateFactory {
                 if ( filter.isA( Kind.EQUALS ) ) {
                     result = bigInteger.compareTo( value ) == 0;
                 } else if ( filter.isA( Kind.LESS_THAN ) ) {
-                    result = bigInteger.compareTo( value ) == -1;
+                    result = bigInteger.compareTo( value ) < 0;
                 } else if ( filter.isA( Kind.LESS_THAN_OR_EQUAL ) ) {
                     result = bigInteger.compareTo( value ) <= 0;
                 } else if ( filter.isA( Kind.GREATER_THAN ) ) {
-                    result = bigInteger.compareTo( value ) == 1;
+                    result = bigInteger.compareTo( value ) > 0;
                 } else if ( filter.isA( Kind.GREATER_THAN_OR_EQUAL ) ) {
                     result = bigInteger.compareTo( value ) >= 0;
                 }

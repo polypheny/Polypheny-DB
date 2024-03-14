@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,8 +36,8 @@ package org.polypheny.db.algebra;
 
 import java.util.List;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.ImmutableBitSet;
 
@@ -47,11 +47,11 @@ import org.polypheny.db.util.ImmutableBitSet;
  */
 public interface AlgInput {
 
-    AlgOptCluster getCluster();
+    AlgCluster getCluster();
 
     AlgTraitSet getTraitSet();
 
-    AlgOptTable getTable( String table );
+    Entity getEntity( String entity );
 
     /**
      * Returns the input relational expression. Throws if there is not precisely one input.
@@ -83,9 +83,7 @@ public interface AlgInput {
 
     List<Integer> getIntegerList( String tag );
 
-    List<List<Integer>> getIntegerListList( String tag );
-
-    AlgDataType getRowType( String tag );
+    AlgDataType getTupleType( String tag );
 
     AlgCollation getCollation();
 

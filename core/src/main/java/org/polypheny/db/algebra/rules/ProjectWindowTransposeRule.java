@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,15 +41,15 @@ import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Window.Group;
 import org.polypheny.db.algebra.core.Window.RexWinAggCall;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalWindow;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.tools.AlgBuilderFactory;
@@ -58,7 +58,7 @@ import org.polypheny.db.util.ImmutableBitSet;
 
 
 /**
- * Planner rule that pushes a {@link LogicalProject} past a {@link LogicalWindow}.
+ * Planner rule that pushes a {@link LogicalRelProject} past a {@link LogicalWindow}.
  */
 public class ProjectWindowTransposeRule extends AlgOptRule {
 
@@ -75,17 +75,17 @@ public class ProjectWindowTransposeRule extends AlgOptRule {
      */
     public ProjectWindowTransposeRule( AlgBuilderFactory algBuilderFactory ) {
         super(
-                operand( LogicalProject.class, operand( LogicalWindow.class, any() ) ),
+                operand( LogicalRelProject.class, operand( LogicalWindow.class, any() ) ),
                 algBuilderFactory, null );
     }
 
 
     @Override
     public void onMatch( AlgOptRuleCall call ) {
-        final LogicalProject project = call.alg( 0 );
+        final LogicalRelProject project = call.alg( 0 );
         final LogicalWindow window = call.alg( 1 );
-        final AlgOptCluster cluster = window.getCluster();
-        final List<AlgDataTypeField> rowTypeWindowInput = window.getInput().getRowType().getFieldList();
+        final AlgCluster cluster = window.getCluster();
+        final List<AlgDataTypeField> rowTypeWindowInput = window.getInput().getTupleType().getFields();
         final int windowInputColumn = rowTypeWindowInput.size();
 
         // Record the window input columns which are actually referred either in the LogicalProject above LogicalWindow or LogicalWindow itself
@@ -104,11 +104,11 @@ public class ProjectWindowTransposeRule extends AlgOptRule {
         // Keep only the fields which are referred
         for ( int index : BitSets.toIter( beReferred ) ) {
             final AlgDataTypeField algDataTypeField = rowTypeWindowInput.get( index );
-            exps.add( new RexInputRef( index, algDataTypeField.getType() ) );
+            exps.add( new RexIndexRef( index, algDataTypeField.getType() ) );
             builder.add( algDataTypeField );
         }
 
-        final LogicalProject projectBelowWindow = new LogicalProject( cluster, window.getTraitSet(), window.getInput(), exps, builder.build() );
+        final LogicalRelProject projectBelowWindow = new LogicalRelProject( cluster, window.getTraitSet(), window.getInput(), exps, builder.build() );
 
         // Create a new LogicalWindow with necessary inputs only
         final List<Group> groups = new ArrayList<>();
@@ -116,9 +116,9 @@ public class ProjectWindowTransposeRule extends AlgOptRule {
         // As the un-referred columns are trimmed by the LogicalProject, the indices specified in LogicalWindow would need to be adjusted
         final RexShuttle indexAdjustment = new RexShuttle() {
             @Override
-            public RexNode visitInputRef( RexInputRef inputRef ) {
+            public RexNode visitIndexRef( RexIndexRef inputRef ) {
                 final int newIndex = getAdjustedIndex( inputRef.getIndex(), beReferred, windowInputColumn );
-                return new RexInputRef( newIndex, inputRef.getType() );
+                return new RexIndexRef( newIndex, inputRef.getType() );
             }
 
 
@@ -145,7 +145,7 @@ public class ProjectWindowTransposeRule extends AlgOptRule {
 
         int aggCallIndex = windowInputColumn;
         final AlgDataTypeFactory.Builder outputBuilder = cluster.getTypeFactory().builder();
-        outputBuilder.addAll( projectBelowWindow.getRowType().getFieldList() );
+        outputBuilder.addAll( projectBelowWindow.getTupleType().getFields() );
         for ( Group group : window.groups ) {
             final ImmutableBitSet.Builder keys = ImmutableBitSet.builder();
             final List<AlgFieldCollation> orderKeys = new ArrayList<>();
@@ -166,7 +166,7 @@ public class ProjectWindowTransposeRule extends AlgOptRule {
             for ( RexWinAggCall rexWinAggCall : group.aggCalls ) {
                 aggCalls.add( (RexWinAggCall) rexWinAggCall.accept( indexAdjustment ) );
 
-                final AlgDataTypeField algDataTypeField = window.getRowType().getFieldList().get( aggCallIndex );
+                final AlgDataTypeField algDataTypeField = window.getTupleType().getFields().get( aggCallIndex );
                 outputBuilder.add( algDataTypeField );
                 ++aggCallIndex;
             }
@@ -182,11 +182,11 @@ public class ProjectWindowTransposeRule extends AlgOptRule {
             topProjExps.add( rexNode.accept( indexAdjustment ) );
         }
 
-        final LogicalProject newTopProj = project.copy(
+        final LogicalRelProject newTopProj = project.copy(
                 newLogicalWindow.getTraitSet(),
                 newLogicalWindow,
                 topProjExps,
-                project.getRowType() );
+                project.getTupleType() );
 
         if ( ProjectRemoveRule.isTrivial( newTopProj ) ) {
             call.transformTo( newLogicalWindow );
@@ -196,13 +196,13 @@ public class ProjectWindowTransposeRule extends AlgOptRule {
     }
 
 
-    private ImmutableBitSet findReference( final LogicalProject project, final LogicalWindow window ) {
-        final int windowInputColumn = window.getInput().getRowType().getFieldCount();
+    private ImmutableBitSet findReference( final LogicalRelProject project, final LogicalWindow window ) {
+        final int windowInputColumn = window.getInput().getTupleType().getFieldCount();
         final ImmutableBitSet.Builder beReferred = ImmutableBitSet.builder();
 
         final RexShuttle referenceFinder = new RexShuttle() {
             @Override
-            public RexNode visitInputRef( RexInputRef inputRef ) {
+            public RexNode visitIndexRef( RexIndexRef inputRef ) {
                 final int index = inputRef.getIndex();
                 if ( index < windowInputColumn ) {
                     beReferred.set( index );

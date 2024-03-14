@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package org.polypheny.db.sql.language.ddl;
 
 
-import com.google.gson.Gson;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -25,11 +25,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.sql.language.SqlAlter;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlOperator;
@@ -44,6 +45,8 @@ import org.polypheny.db.util.ImmutableNullableList;
  */
 @Slf4j
 public class SqlAlterInterfacesAdd extends SqlAlter {
+
+    public static final ObjectMapper mapper = new ObjectMapper();
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "ALTER INTERFACES ADD", Kind.OTHER_DDL );
 
@@ -86,14 +89,15 @@ public class SqlAlterInterfacesAdd extends SqlAlter {
 
 
     @Override
-    public void execute( Context context, Statement statement, QueryParameters parameters ) {
+    public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
         String uniqueNameStr = removeQuotationMarks( uniqueName.toString() );
         String clazzNameStr = removeQuotationMarks( clazzName.toString() );
-        Map<String, String> configMap = new Gson().fromJson( removeQuotationMarks( config.toString() ), Map.class );
+        Map<String, String> configMap = null;
         try {
+            configMap = mapper.readValue( removeQuotationMarks( config.toString() ), Map.class );
             QueryInterfaceManager.getInstance().addQueryInterface( Catalog.getInstance(), clazzNameStr, uniqueNameStr, configMap );
         } catch ( Exception e ) {
-            throw new RuntimeException( "Unable to deploy query interface", e );
+            throw new GenericRuntimeException( "Unable to deploy query interface", e );
         }
     }
 

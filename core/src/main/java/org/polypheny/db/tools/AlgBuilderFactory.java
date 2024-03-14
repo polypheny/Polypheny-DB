@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,9 +35,9 @@ package org.polypheny.db.tools;
 
 
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptRule;
-import org.polypheny.db.plan.AlgOptSchema;
 
 
 /**
@@ -56,7 +56,7 @@ public interface AlgBuilderFactory {
     /**
      * Creates a AlgBuilder.
      */
-    AlgBuilder create( AlgOptCluster cluster, AlgOptSchema schema );
+    AlgBuilder create( AlgCluster cluster, Snapshot snapshot );
 
 }
 

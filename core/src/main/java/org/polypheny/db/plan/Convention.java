@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,10 +41,10 @@ import org.polypheny.db.algebra.AlgNode;
 /**
  * Calling convention trait.
  */
-public interface Convention extends AlgTrait, Serializable {
+public interface Convention extends AlgTrait<ConventionTraitDef>, Serializable {
 
     /**
-     * Convention that for a relational expression that does not support any convention. It is not implementable, and has to be transformed to something else in order to be implemented.
+     * Convention that for an algebra expression that does not support any convention. It is not implementable, and has to be transformed to something else in order to be implemented.
      *
      * Relational expressions generally start off in this form.
      *
@@ -52,7 +52,7 @@ public interface Convention extends AlgTrait, Serializable {
      */
     Convention NONE = new Impl( "NONE", AlgNode.class );
 
-    Class getInterface();
+    Class<?> getInterface();
 
     String getName();
 
@@ -76,6 +76,11 @@ public interface Convention extends AlgTrait, Serializable {
      */
     boolean useAbstractConvertersForConversion( AlgTraitSet fromTraits, AlgTraitSet toTraits );
 
+    @Override
+    default ConventionTraitDef getTraitDef() {
+        return ConventionTraitDef.INSTANCE;
+    }
+
     /**
      * Default implementation.
      */
@@ -98,12 +103,12 @@ public interface Convention extends AlgTrait, Serializable {
 
 
         @Override
-        public void register( AlgOptPlanner planner ) {
+        public void register( AlgPlanner planner ) {
         }
 
 
         @Override
-        public boolean satisfies( AlgTrait trait ) {
+        public boolean satisfies( AlgTrait<?> trait ) {
             return this == trait;
         }
 
@@ -120,10 +125,6 @@ public interface Convention extends AlgTrait, Serializable {
         }
 
 
-        @Override
-        public AlgTraitDef getTraitDef() {
-            return ConventionTraitDef.INSTANCE;
-        }
 
 
         @Override

@@ -1,4 +1,4 @@
-# schema.iq - DDL on schemas
+# namespace.iq - DDL on schemas
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -18,14 +18,14 @@
 !use server
 !set outputformat mysql
 
-# Create a schema
-create schema s;
+# Create a namespace
+create namespace s;
 (0 rows modified)
 
 !update
 
-# Create a table and a view in the schema
-create table s.t (i int);
+# Create a entity and a view in the namespace
+create entity s.t (i int);
 (0 rows modified)
 
 !update
@@ -45,52 +45,52 @@ select count(*) as c from s.v;
 
 !ok
 
-# Try to create a schema that already exists
-create schema s;
+# Try to create a namespace that already exists
+create namespace s;
 Schema 'S' already exists
 !error
 
-create or replace schema s;
+create or replace namespace s;
 (0 rows modified)
 
 !update
 
-#create schema if exists s;
+#create namespace if exists s;
 #Encountered "exists" at line 1, column 18.
 #!error
 
-create schema if not exists s;
+create namespace if not exists s;
 (0 rows modified)
 
 !update
 
 # Bad library
-create foreign schema fs library 'com.example.BadSchemaFactory';
-Property 'com.example.BadSchemaFactory' not valid for plugin type org.polypheny.db.schema.SchemaFactory
+create foreign namespace fs library 'com.example.BadSchemaFactory';
+Property 'com.example.BadSchemaFactory' not valid for plugin type org.polypheny.db.namespace.SchemaFactory
 !error
 
 # Bad type
-create foreign schema fs type 'bad';
-Invalid schema type 'bad'; valid values: [MAP, JDBC, CUSTOM]
+create foreign namespace fs type 'bad';
+Invalid namespace type 'bad'; valid values: [MAP, JDBC, CUSTOM]
 !error
 
 # Can not specify both type and library
-create foreign schema fs
+create foreign namespace fs
   type 'jdbc'
   library 'org.polypheny.db.test.JdbcTest.MySchemaFactory';
 Encountered "library" at line 3, column 3.
 !error
 
-# Cannot specify type or library with non-foreign schema
-create schema fs type 'jdbc';
+# Cannot specify type or library with non-foreign namespace
+create namespace fs type 'jdbc';
 Encountered "type" at line 1, column 18.
 !error
 
-create schema fs library 'org.polypheny.db.test.JdbcTest.MySchemaFactory';
+create namespace fs library 'org.polypheny.db.test.JdbcTest.MySchemaFactory';
 Encountered "library" at line 1, column 18.
 !error
 
-create foreign schema fs;
+create foreign namespace fs;
 Encountered "<EOF>" at line 1, column 24.
 Was expecting one of:
     "TYPE" ...
@@ -98,8 +98,8 @@ Was expecting one of:
     "." ...
 !error
 
-# JDBC schema
-create foreign schema scott type 'jdbc' options (
+# JDBC namespace
+create foreign namespace scott type 'jdbc' options (
   "jdbcUrl" 'jdbc:hsqldb:res:scott',
   "jdbcSchema" 'SCOTT',
   "jdbcUser" 'SCOTT',
@@ -118,8 +118,8 @@ select count(*) as c from scott.dept;
 
 !ok
 
-# Drop schema, then make sure that a query can't find it
-drop schema if exists s;
+# Drop namespace, then make sure that a query can't find it
+drop namespace if exists s;
 (0 rows modified)
 
 !update
@@ -129,7 +129,7 @@ Object 'T' not found
 !error
 
 # Create again and objects are still gone
-create schema s;
+create namespace s;
 
 select * from s.t;
 Object 'T' not found
@@ -139,30 +139,30 @@ select * from s.v;
 Object 'V' not found
 !error
 
-# Try to drop schema that does not exist
-drop schema sss;
+# Try to drop namespace that does not exist
+drop namespace sss;
 Schema 'SSS' not found
 !error
 
-drop schema if exists sss;
+drop namespace if exists sss;
 (0 rows modified)
 
 !update
 
-drop foreign schema if exists sss;
+drop foreign namespace if exists sss;
 (0 rows modified)
 
 !update
 
-# Use 'if exists' to drop a foreign schema that does exist
-drop foreign schema if exists scott;
+# Use 'if exists' to drop a foreign namespace that does exist
+drop foreign namespace if exists scott;
 (0 rows modified)
 
 !update
 
-drop foreign schema if exists scott;
+drop foreign namespace if exists scott;
 (0 rows modified)
 
 !update
 
-# End schema.iq
+# End namespace.iq

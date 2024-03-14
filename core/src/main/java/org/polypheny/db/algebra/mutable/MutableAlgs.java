@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,29 +49,29 @@ import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Intersect;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Minus;
-import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.RelTableFunctionScan;
 import org.polypheny.db.algebra.core.Sample;
-import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.core.TableFunctionScan;
 import org.polypheny.db.algebra.core.Uncollect;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.Window;
+import org.polypheny.db.algebra.core.relational.RelModify;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalCalc;
-import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
-import org.polypheny.db.algebra.logical.relational.LogicalExchange;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
-import org.polypheny.db.algebra.logical.relational.LogicalSort;
-import org.polypheny.db.algebra.logical.relational.LogicalTableFunctionScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelCorrelate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelExchange;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
+import org.polypheny.db.algebra.logical.relational.LogicalRelTableFunctionScan;
 import org.polypheny.db.algebra.logical.relational.LogicalWindow;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.hep.HepAlgVertex;
 import org.polypheny.db.plan.volcano.AlgSubset;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.tools.AlgBuilder;
@@ -175,7 +175,7 @@ public abstract class MutableAlgs {
                     @Override
                     public RexNode get( int index ) {
                         final int pos = posList.get( index );
-                        return RexInputRef.of( pos, rowType );
+                        return RexIndexRef.of( pos, rowType );
                     }
                 } );
     }
@@ -225,13 +225,13 @@ public abstract class MutableAlgs {
                 return algBuilder.build();
             case SORT:
                 final MutableSort sort = (MutableSort) node;
-                return LogicalSort.create( fromMutable( sort.input, algBuilder ), sort.collation, sort.offset, sort.fetch );
+                return LogicalRelSort.create( fromMutable( sort.input, algBuilder ), sort.collation, sort.offset, sort.fetch );
             case CALC:
                 final MutableCalc calc = (MutableCalc) node;
                 return LogicalCalc.create( fromMutable( calc.input, algBuilder ), calc.program );
             case EXCHANGE:
                 final MutableExchange exchange = (MutableExchange) node;
-                return LogicalExchange.create( fromMutable( exchange.getInput(), algBuilder ), exchange.distribution );
+                return LogicalRelExchange.create( fromMutable( exchange.getInput(), algBuilder ), exchange.distribution );
             case COLLECT: {
                 final MutableCollect collect = (MutableCollect) node;
                 final AlgNode child = fromMutable( collect.getInput(), algBuilder );
@@ -249,9 +249,8 @@ public abstract class MutableAlgs {
             }
             case TABLE_MODIFY:
                 final MutableTableModify modify = (MutableTableModify) node;
-                return LogicalModify.create(
+                return LogicalRelModify.create(
                         modify.table,
-                        modify.catalogReader,
                         fromMutable( modify.getInput(), algBuilder ),
                         modify.operation,
                         modify.updateColumnList,
@@ -262,7 +261,7 @@ public abstract class MutableAlgs {
                 return new Sample( sample.cluster, fromMutable( sample.getInput(), algBuilder ), sample.params );
             case TABLE_FUNCTION_SCAN:
                 final MutableTableFunctionScan tableFunctionScan = (MutableTableFunctionScan) node;
-                return LogicalTableFunctionScan.create(
+                return LogicalRelTableFunctionScan.create(
                         tableFunctionScan.cluster,
                         fromMutables( tableFunctionScan.getInputs(), algBuilder ),
                         tableFunctionScan.rexCall,
@@ -283,7 +282,7 @@ public abstract class MutableAlgs {
                 return algBuilder.build();
             case CORRELATE:
                 final MutableCorrelate correlate = (MutableCorrelate) node;
-                return LogicalCorrelate.create(
+                return LogicalRelCorrelate.create(
                         fromMutable( correlate.getLeft(), algBuilder ),
                         fromMutable( correlate.getRight(), algBuilder ),
                         correlate.correlationId,
@@ -323,8 +322,8 @@ public abstract class MutableAlgs {
             return toMutable(
                     Util.first( ((AlgSubset) alg).getBest(), ((AlgSubset) alg).getOriginal() ) );
         }
-        if ( alg instanceof Scan ) {
-            return MutableScan.of( (Scan) alg );
+        if ( alg instanceof RelScan ) {
+            return MutableScan.of( (RelScan) alg );
         }
         if ( alg instanceof Values ) {
             return MutableValues.of( (Values) alg );
@@ -332,7 +331,7 @@ public abstract class MutableAlgs {
         if ( alg instanceof Project ) {
             final Project project = (Project) alg;
             final MutableAlg input = toMutable( project.getInput() );
-            return MutableProject.of( input, project.getProjects(), project.getRowType().getFieldNames() );
+            return MutableProject.of( input, project.getProjects(), project.getTupleType().getFieldNames() );
         }
         if ( alg instanceof Filter ) {
             final Filter filter = (Filter) alg;
@@ -362,29 +361,28 @@ public abstract class MutableAlgs {
         if ( alg instanceof Collect ) {
             final Collect collect = (Collect) alg;
             final MutableAlg input = toMutable( collect.getInput() );
-            return MutableCollect.of( collect.getRowType(), input, collect.getFieldName() );
+            return MutableCollect.of( collect.getTupleType(), input, collect.getFieldName() );
         }
         if ( alg instanceof Uncollect ) {
             final Uncollect uncollect = (Uncollect) alg;
             final MutableAlg input = toMutable( uncollect.getInput() );
-            return MutableUncollect.of( uncollect.getRowType(), input, uncollect.withOrdinality );
+            return MutableUncollect.of( uncollect.getTupleType(), input, uncollect.withOrdinality );
         }
         if ( alg instanceof Window ) {
             final Window window = (Window) alg;
             final MutableAlg input = toMutable( window.getInput() );
-            return MutableWindow.of( window.getRowType(), input, window.groups, window.getConstants() );
+            return MutableWindow.of( window.getTupleType(), input, window.groups, window.getConstants() );
         }
-        if ( alg instanceof Modify ) {
-            final Modify modify = (Modify) alg;
+        if ( alg instanceof RelModify ) {
+            final RelModify modify = (RelModify) alg;
             final MutableAlg input = toMutable( modify.getInput() );
             return MutableTableModify.of(
-                    modify.getRowType(),
+                    modify.getTupleType(),
                     input,
-                    modify.getTable(),
-                    modify.getCatalogReader(),
+                    modify.getEntity(),
                     modify.getOperation(),
-                    modify.getUpdateColumnList(),
-                    modify.getSourceExpressionList(),
+                    modify.getUpdateColumns(),
+                    modify.getSourceExpressions(),
                     modify.isFlattened() );
         }
         if ( alg instanceof Sample ) {
@@ -392,16 +390,16 @@ public abstract class MutableAlgs {
             final MutableAlg input = toMutable( sample.getInput() );
             return MutableSample.of( input, sample.getSamplingParameters() );
         }
-        if ( alg instanceof TableFunctionScan ) {
-            final TableFunctionScan tableFunctionScan = (TableFunctionScan) alg;
-            final List<MutableAlg> inputs = toMutables( tableFunctionScan.getInputs() );
+        if ( alg instanceof RelTableFunctionScan ) {
+            final RelTableFunctionScan relTableFunctionScan = (RelTableFunctionScan) alg;
+            final List<MutableAlg> inputs = toMutables( relTableFunctionScan.getInputs() );
             return MutableTableFunctionScan.of(
-                    tableFunctionScan.getCluster(),
-                    tableFunctionScan.getRowType(),
+                    relTableFunctionScan.getCluster(),
+                    relTableFunctionScan.getTupleType(),
                     inputs,
-                    tableFunctionScan.getCall(),
-                    tableFunctionScan.getElementType(),
-                    tableFunctionScan.getColumnMappings() );
+                    relTableFunctionScan.getCall(),
+                    relTableFunctionScan.getElementType(),
+                    relTableFunctionScan.getColumnMappings() );
         }
         // It is necessary that SemiJoin is placed in front of Join here, since SemiJoin is a sub-class of Join.
         if ( alg instanceof SemiJoin ) {
@@ -409,7 +407,7 @@ public abstract class MutableAlgs {
             final MutableAlg left = toMutable( semiJoin.getLeft() );
             final MutableAlg right = toMutable( semiJoin.getRight() );
             return MutableSemiJoin.of(
-                    semiJoin.getRowType(),
+                    semiJoin.getTupleType(),
                     left, right,
                     semiJoin.getCondition(),
                     semiJoin.getLeftKeys(),
@@ -420,7 +418,7 @@ public abstract class MutableAlgs {
             final MutableAlg left = toMutable( join.getLeft() );
             final MutableAlg right = toMutable( join.getRight() );
             return MutableJoin.of(
-                    join.getRowType(),
+                    join.getTupleType(),
                     left,
                     right,
                     join.getCondition(),
@@ -432,7 +430,7 @@ public abstract class MutableAlgs {
             final MutableAlg left = toMutable( correlate.getLeft() );
             final MutableAlg right = toMutable( correlate.getRight() );
             return MutableCorrelate.of(
-                    correlate.getRowType(),
+                    correlate.getTupleType(),
                     left,
                     right,
                     correlate.getCorrelationId(),
@@ -442,17 +440,17 @@ public abstract class MutableAlgs {
         if ( alg instanceof Union ) {
             final Union union = (Union) alg;
             final List<MutableAlg> inputs = toMutables( union.getInputs() );
-            return MutableUnion.of( union.getRowType(), inputs, union.all );
+            return MutableUnion.of( union.getTupleType(), inputs, union.all );
         }
         if ( alg instanceof Minus ) {
             final Minus minus = (Minus) alg;
             final List<MutableAlg> inputs = toMutables( minus.getInputs() );
-            return MutableMinus.of( minus.getRowType(), inputs, minus.all );
+            return MutableMinus.of( minus.getTupleType(), inputs, minus.all );
         }
         if ( alg instanceof Intersect ) {
             final Intersect intersect = (Intersect) alg;
             final List<MutableAlg> inputs = toMutables( intersect.getInputs() );
-            return MutableIntersect.of( intersect.getRowType(), inputs, intersect.all );
+            return MutableIntersect.of( intersect.getTupleType(), inputs, intersect.all );
         }
         throw new RuntimeException( "cannot translate " + alg + " to MutableRel" );
     }

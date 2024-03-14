@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package org.polypheny.db.iface;
 
 
-import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.entity.LogicalUser;
 
 
 /**
@@ -25,5 +25,5 @@ import org.polypheny.db.catalog.entity.CatalogUser;
  */
 public interface Authenticator {
 
-    CatalogUser authenticate( final String username, final String password ) throws AuthenticationException;
+    LogicalUser authenticate( final String username, final String password ) throws AuthenticationException;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,24 +33,17 @@
 
 package org.polypheny.db.adapter.csv;
 
-import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.schema.impl.AbstractTable;
-import org.polypheny.db.util.Source;
-
-import java.util.ArrayList;
 import java.util.List;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.util.Source;
 
 
 /**
  * Base class for table that reads CSV files.
  */
-public abstract class CsvTable extends AbstractTable {
+public abstract class CsvTable extends PhysicalTable {
 
     protected final Source source;
-    protected final AlgProtoDataType protoRowType;
     protected List<CsvFieldType> fieldTypes;
     protected final int[] fields;
     protected final CsvSource csvSource;
@@ -59,27 +52,21 @@ public abstract class CsvTable extends AbstractTable {
     /**
      * Creates a CsvTable.
      */
-    CsvTable( Source source, AlgProtoDataType protoRowType, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource, Long tableId ) {
+    CsvTable( long id, Source source, PhysicalTable table, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
+        super(
+                id,
+                table.allocationId,
+                table.logicalId,
+                table.name,
+                table.columns,
+                table.namespaceId,
+                table.namespaceName,
+                table.uniqueFieldIds,
+                table.adapterId );
         this.source = source;
-        this.protoRowType = protoRowType;
         this.fieldTypes = fieldTypes;
         this.fields = fields;
         this.csvSource = csvSource;
-        this.tableId = tableId;
-    }
-
-
-    @Override
-    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
-        if ( protoRowType != null ) {
-            return protoRowType.apply( typeFactory );
-        }
-        if ( fieldTypes == null ) {
-            fieldTypes = new ArrayList<>();
-            return CsvEnumerator.deduceRowType( (JavaTypeFactory) typeFactory, source, fieldTypes );
-        } else {
-            return CsvEnumerator.deduceRowType( (JavaTypeFactory) typeFactory, source, null );
-        }
     }
 
 
@@ -91,4 +78,3 @@ public abstract class CsvTable extends AbstractTable {
     }
 
 }
-

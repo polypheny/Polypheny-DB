@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,10 +39,10 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import org.apache.calcite.linq4j.function.SemiStrict;
 import org.apache.calcite.linq4j.function.Strict;
-import org.polypheny.db.adapter.enumerable.CallImplementor;
-import org.polypheny.db.adapter.enumerable.NullPolicy;
-import org.polypheny.db.adapter.enumerable.ReflectiveCallNotNullImplementor;
-import org.polypheny.db.adapter.enumerable.RexImpTable;
+import org.polypheny.db.algebra.enumerable.CallImplementor;
+import org.polypheny.db.algebra.enumerable.NullPolicy;
+import org.polypheny.db.algebra.enumerable.ReflectiveCallNotNullImplementor;
+import org.polypheny.db.algebra.enumerable.RexImpTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.nodes.OperatorBinding;

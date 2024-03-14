@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,17 +19,13 @@ package org.polypheny.db.transaction;
 
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogDatabase;
-import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.catalog.entity.LogicalUser;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
@@ -45,6 +41,8 @@ import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 public class TransactionManagerImpl implements TransactionManager {
 
     private final ConcurrentHashMap<PolyXid, Transaction> transactions = new ConcurrentHashMap<>();
+
+    private final AtomicLong totalTransactions = new AtomicLong( 0 );
 
 
     private TransactionManagerImpl() {
@@ -83,36 +81,42 @@ public class TransactionManagerImpl implements TransactionManager {
     }
 
 
-    @Override
-    public Transaction startTransaction( CatalogUser user, CatalogSchema defaultSchema, CatalogDatabase database, boolean analyze, String origin, MultimediaFlavor flavor ) {
+    private Transaction startTransaction( LogicalUser user, LogicalNamespace defaultNamespace, boolean analyze, String origin, MultimediaFlavor flavor ) {
         final NodeId nodeId = (NodeId) PUID.randomPUID( Type.NODE ); // TODO: get real node id -- configuration.get("nodeid")
         final UserId userId = (UserId) PUID.randomPUID( Type.USER ); // TODO: use real user id
         final ConnectionId connectionId = (ConnectionId) PUID.randomPUID( Type.CONNECTION ); // TODO
         PolyXid xid = generateNewTransactionId( nodeId, userId, connectionId );
-        transactions.put( xid, new TransactionImpl( xid, this, user, defaultSchema, database, analyze, origin, flavor ) );
+        transactions.put( xid, new TransactionImpl( xid, this, user, defaultNamespace, analyze, origin, flavor ) );
+        totalTransactions.incrementAndGet();
         return transactions.get( xid );
     }
 
 
     @Override
-    public Transaction startTransaction( CatalogUser user, CatalogSchema defaultSchema, CatalogDatabase database, boolean analyze, String origin ) {
-        return startTransaction( user, defaultSchema, database, analyze, origin, MultimediaFlavor.DEFAULT );
+    public Transaction startTransaction( long userId, long defaultNamespaceId, boolean analyze, String origin ) {
+        return startTransaction(
+                Catalog.snapshot().getUser( userId ).orElseThrow(),
+                Catalog.snapshot().getNamespace( defaultNamespaceId ).orElseThrow(),
+                analyze,
+                origin,
+                MultimediaFlavor.DEFAULT );
     }
 
 
     @Override
-    public Transaction startTransaction( long userId, long databaseId, boolean analyze, String origin, MultimediaFlavor flavor ) throws UnknownUserException, UnknownDatabaseException, UnknownSchemaException {
-        Catalog catalog = Catalog.getInstance();
-        CatalogUser catalogUser = catalog.getUser( (int) userId );
-        CatalogDatabase catalogDatabase = catalog.getDatabase( databaseId );
-        CatalogSchema catalogSchema = catalog.getSchema( catalogDatabase.id, catalogDatabase.defaultNamespaceName );
-        return startTransaction( catalogUser, catalogSchema, catalogDatabase, analyze, origin, flavor );
+    public Transaction startTransaction( long userId, long defaultNamespaceId, boolean analyze, String origin, MultimediaFlavor flavor ) {
+        return startTransaction( Catalog.snapshot().getUser( userId ).orElseThrow(), Catalog.snapshot().getNamespace( defaultNamespaceId ).orElseThrow(), analyze, origin, flavor );
     }
 
 
     @Override
-    public Transaction startTransaction( long userId, long databaseId, boolean analyze, String origin ) throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownSchemaException {
-        return startTransaction( userId, databaseId, analyze, origin, MultimediaFlavor.DEFAULT );
+    public Transaction startTransaction( long userId, boolean analyze, String origin ) {
+        return startTransaction(
+                Catalog.snapshot().getUser( userId ).orElseThrow(),
+                Catalog.snapshot().getNamespace( Catalog.defaultNamespaceId ).orElseThrow(),
+                analyze,
+                origin,
+                MultimediaFlavor.DEFAULT );
     }
 
 
@@ -136,5 +140,16 @@ public class TransactionManagerImpl implements TransactionManager {
         return Utils.generateGlobalTransactionIdentifier( nodeId, userId, connectionId, PUID.randomPUID( PUID.Type.TRANSACTION ) );
     }
 
+
+    @Override
+    public long getNumberOfActiveTransactions() {
+        return transactions.size();
+    }
+
+
+    @Override
+    public long getNumberOfTotalTransactions() {
+        return totalTransactions.get();
+    }
 
 }

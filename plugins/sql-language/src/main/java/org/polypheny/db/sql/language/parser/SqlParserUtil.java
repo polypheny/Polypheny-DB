@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
@@ -50,11 +51,11 @@ import org.polypheny.db.sql.language.SqlSpecialOperator;
 import org.polypheny.db.sql.language.SqlSpecialOperator.TokenSequence;
 import org.polypheny.db.sql.language.SqlTimeLiteral;
 import org.polypheny.db.sql.language.SqlTimestampLiteral;
+import org.polypheny.db.type.entity.temporal.PolyDate;
+import org.polypheny.db.type.entity.temporal.PolyTime;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.CoreUtil;
-import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.PrecedenceClimbingParser;
-import org.polypheny.db.util.TimeString;
-import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import org.slf4j.Logger;
@@ -78,8 +79,8 @@ public final class SqlParserUtil {
         if ( cal == null ) {
             throw CoreUtil.newContextException( pos, RESOURCE.illegalLiteral( "DATE", s, RESOURCE.badFormat( DateTimeUtils.DATE_FORMAT_STRING ).str() ) );
         }
-        final DateString d = DateString.fromCalendarFields( cal );
-        return SqlLiteral.createDate( d, pos );
+        //final DateString d = DateString.fromCalendarFields( cal );
+        return SqlLiteral.createDate( PolyDate.of( cal.getTime().getTime() ), pos );
     }
 
 
@@ -89,8 +90,8 @@ public final class SqlParserUtil {
         if ( pt == null ) {
             throw CoreUtil.newContextException( pos, RESOURCE.illegalLiteral( "TIME", s, RESOURCE.badFormat( DateTimeUtils.TIME_FORMAT_STRING ).str() ) );
         }
-        final TimeString t = TimeString.fromCalendarFields( pt.getCalendar() ).withFraction( pt.getFraction() );
-        return SqlLiteral.createTime( t, pt.getPrecision(), pos );
+        //final TimeString t = TimeString.fromCalendarFields( pt.getCalendar() ).withFraction( pt.getFraction() );
+        return SqlLiteral.createTime( PolyTime.of( pt.getCalendar().getTime().getTime() ), pt.getPrecision(), pos );
     }
 
 
@@ -100,8 +101,8 @@ public final class SqlParserUtil {
         if ( pt == null ) {
             throw CoreUtil.newContextException( pos, RESOURCE.illegalLiteral( "TIMESTAMP", s, RESOURCE.badFormat( DateTimeUtils.TIMESTAMP_FORMAT_STRING ).str() ) );
         }
-        final TimestampString ts = TimestampString.fromCalendarFields( pt.getCalendar() ).withFraction( pt.getFraction() );
-        return SqlLiteral.createTimestamp( ts, pt.getPrecision(), pos );
+        //final TimestampString ts = TimestampString.fromCalendarFields( pt.getCalendar() ).withFraction( pt.getFraction() );
+        return SqlLiteral.createTimestamp( PolyTimestamp.of( pt.getCalendar().getTime() ), pt.getPrecision(), pos );
     }
 
 
@@ -143,7 +144,7 @@ public final class SqlParserUtil {
             ret = intervalQualifier.evaluateIntervalLiteral( literal, intervalQualifier.getPos(), AlgDataTypeSystem.DEFAULT );
             assert ret != null;
         } catch ( PolyphenyDbContextException e ) {
-            throw new RuntimeException( "while parsing day-to-second interval " + literal, e );
+            throw new GenericRuntimeException( "while parsing day-to-second interval " + literal, e );
         }
         long l = 0;
         long[] conv = new long[5];
@@ -179,7 +180,7 @@ public final class SqlParserUtil {
             ret = intervalQualifier.evaluateIntervalLiteral( literal, intervalQualifier.getPos(), AlgDataTypeSystem.DEFAULT );
             assert ret != null;
         } catch ( PolyphenyDbContextException e ) {
-            throw new RuntimeException( "Error while parsing year-to-month interval " + literal, e );
+            throw new GenericRuntimeException( "Error while parsing year-to-month interval " + literal, e );
         }
 
         long l = 0;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,22 +17,16 @@
 package org.polypheny.db.sql.language.validate;
 
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.StructKind;
-import org.polypheny.db.nodes.validate.ValidatorTable;
-import org.polypheny.db.plan.AlgOptSchema;
-import org.polypheny.db.prepare.AlgOptTableImpl;
-import org.polypheny.db.prepare.Prepare;
-import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.Wrapper;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlDataTypeSpec;
 import org.polypheny.db.sql.language.SqlDynamicParam;
@@ -45,12 +39,11 @@ import org.polypheny.db.util.Moniker;
 import org.polypheny.db.util.NameMatcher;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Static;
-import org.polypheny.db.util.Util;
 
 
 /**
  * Deviant implementation of {@link SqlValidatorScope} for the top of the scope stack.
- *
+ * <p>
  * It is convenient, because we never need to check whether a scope's parent is null. (This scope knows not to ask about its parents, just like Adam.)
  */
 class EmptyScope implements SqlValidatorScope {
@@ -82,91 +75,38 @@ class EmptyScope implements SqlValidatorScope {
 
 
     @Override
-    public void resolve( List<String> names, NameMatcher nameMatcher, boolean deep, Resolved resolved ) {
+    public void resolve( List<String> names, boolean deep, Resolved resolved ) {
     }
 
 
     @Override
-    public SqlValidatorNamespace getTableNamespace( List<String> names ) {
-        ValidatorTable table = validator.catalogReader.getTable( names );
+    public SqlValidatorNamespace getEntityNamespace( List<String> names ) {
+        Entity table = validator.snapshot.rel().getTable( names.get( 0 ), names.get( 1 ) ).orElse( null );
         return table != null
-                ? new TableNamespace( validator, table )
+                ? new EntityNamespace( validator, table )
                 : null;
     }
 
 
     @Override
-    public void resolveTable( List<String> names, NameMatcher nameMatcher, Path path, Resolved resolved ) {
-        final List<Resolve> imperfectResolves = new ArrayList<>();
-        final List<Resolve> resolves = ((ResolvedImpl) resolved).resolves;
+    public void resolveEntity( List<String> names, Path path, Resolved resolved ) {
+        LogicalEntity entity;
+        if ( names.size() == 3 ) {
+            entity = validator.snapshot.rel().getTable( names.get( 1 ), names.get( 2 ) ).orElse( null );
+        } else if ( names.size() == 2 ) {
+            entity = validator.snapshot.rel().getTable( names.get( 0 ), names.get( 1 ) ).orElse( null );
+        } else if ( names.size() == 1 ) {
+            entity = validator.snapshot.rel().getTable( Catalog.defaultNamespaceId, names.get( 0 ) ).orElse( null );
+        } else {
+            throw new GenericRuntimeException( "Table is not known" );
+        }
 
-        // Look in the default schema, then default catalog, then root schema.
-        for ( List<String> schemaPath : validator.catalogReader.getSchemaPaths() ) {
-            resolve_( validator.catalogReader.getRootSchema(), names, schemaPath, nameMatcher, path, resolved );
-            for ( Resolve resolve : resolves ) {
-                if ( resolve.remainingNames.isEmpty() ) {
-                    // There is a full match. Return it as the only match.
-                    ((ResolvedImpl) resolved).clear();
-                    resolves.add( resolve );
-                    return;
-                }
-            }
-            imperfectResolves.addAll( resolves );
+        if ( entity != null ) {
+            resolved.found( new EntityNamespace( validator, entity ), false, null, Path.EMPTY, List.of() );
         }
-        // If there were no matches in the last round, restore those found in previous rounds
-        if ( resolves.isEmpty() ) {
-            resolves.addAll( imperfectResolves );
-        }
+
     }
 
-
-    // todo dl: refactor for 0.10
-    private void resolve_( final PolyphenyDbSchema rootSchema, List<String> names, List<String> schemaNames, NameMatcher nameMatcher, Path path, Resolved resolved ) {
-        final List<String> concat = ImmutableList.<String>builder().addAll( schemaNames ).addAll( names ).build();
-        PolyphenyDbSchema schema = rootSchema;
-        SqlValidatorNamespace namespace = null;
-        List<String> remainingNames = concat;
-        for ( String schemaName : concat ) {
-            if ( schema == rootSchema && nameMatcher.matches( schemaName, schema.getName() ) ) {
-                remainingNames = Util.skip( remainingNames );
-                continue;
-            }
-            final PolyphenyDbSchema subSchema = schema.getSubSchema( schemaName, nameMatcher.isCaseSensitive() );
-            if ( subSchema != null ) {
-                path = path.plus( null, -1, subSchema.getName(), StructKind.NONE );
-                remainingNames = Util.skip( remainingNames );
-                schema = subSchema;
-                namespace = new SchemaNamespace( validator, ImmutableList.copyOf( path.stepNames() ) );
-                continue;
-            }
-            PolyphenyDbSchema.TableEntry entry = schema.getTable( schemaName );
-            if ( entry == null ) {
-                entry = schema.getTableBasedOnNullaryFunction( schemaName, nameMatcher.isCaseSensitive() );
-            }
-            if ( entry != null ) {
-                path = path.plus( null, -1, entry.name, StructKind.NONE );
-                remainingNames = Util.skip( remainingNames );
-                final Table table = entry.getTable();
-                ValidatorTable table2 = null;
-                if ( table instanceof Wrapper ) {
-                    table2 = ((Wrapper) table).unwrap( Prepare.PreparingTable.class );
-                }
-                if ( table2 == null ) {
-                    final AlgOptSchema algOptSchema = validator.catalogReader.unwrap( AlgOptSchema.class );
-                    final AlgDataType rowType = table.getRowType( validator.typeFactory );
-                    table2 = AlgOptTableImpl.create( algOptSchema, rowType, entry, null );
-                }
-                namespace = new TableNamespace( validator, table2 );
-                resolved.found( namespace, false, null, path, remainingNames );
-                return;
-            }
-            // neither sub-schema nor table
-            if ( namespace != null && !remainingNames.equals( names ) ) {
-                resolved.found( namespace, false, null, path, remainingNames );
-            }
-            return;
-        }
-    }
 
 
     @Override
@@ -179,9 +119,6 @@ class EmptyScope implements SqlValidatorScope {
     public void findAllColumnNames( List<Moniker> result ) {
     }
 
-
-    public void findAllTableNames( List<Moniker> result ) {
-    }
 
 
     @Override
@@ -208,13 +145,13 @@ class EmptyScope implements SqlValidatorScope {
 
 
     @Override
-    public Pair<String, SqlValidatorNamespace> findQualifyingTableName( String columnName, SqlNode ctx ) {
-        throw validator.newValidationError( ctx, Static.RESOURCE.columnNotFound( columnName ) );
+    public Pair<String, SqlValidatorNamespace> findQualifyingEntityName( String columnName, SqlNode ctx ) {
+        throw validator.newValidationError( ctx, Static.RESOURCE.fieldNotFound( columnName ) );
     }
 
 
     @Override
-    public Map<String, ScopeChild> findQualifyingTableNames( String columnName, SqlNode ctx, NameMatcher nameMatcher ) {
+    public Map<String, ScopeChild> findQualifyingEntityNames( String columnName, SqlNode ctx, NameMatcher nameMatcher ) {
         return ImmutableMap.of();
     }
 

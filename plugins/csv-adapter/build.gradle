@@ -6,9 +6,9 @@ dependencies {
     compileOnly project(":dbms")
     compileOnly project(":plugins:sql-language")
 
-
-    implementation group: "net.sf.opencsv", name: "opencsv", version: opencsv_version  // Apache 2.0
+    implementation group: "com.opencsv", name: "opencsv", version: opencsv_version  // Apache 2.0
     implementation group: "commons-io", name: "commons-io", version: commons_io_version  // Apache 2.0
+
 
     // --- Test Compile ---
     testImplementation project(path: ":dbms", configuration: "test")
@@ -16,7 +16,7 @@ dependencies {
     testImplementation project(path: ":core")
     testImplementation project(path: ":plugins:sql-language")
 
-    testImplementation group: "junit", name: "junit", version: junit_version
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: junit_jupiter_version
     testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
 }
 
@@ -25,7 +25,6 @@ sourceSets {
     main {
         java {
             srcDirs = ["src/main/java"]
-            outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {
             srcDirs = ["src/main/resources"]
@@ -35,7 +34,7 @@ sourceSets {
     test {
         java {
             srcDirs = ["src/test/java"]
-            outputDir = file(project.buildDir.absolutePath + "/test-classes")
+            destinationDirectory.set(file(project.buildDir.absolutePath + "/test-classes"))
         }
         resources {
             srcDirs = ["src/test/resources"]
@@ -74,5 +73,3 @@ java {
 licensee {
     allow('Apache-2.0')
 }
-
-

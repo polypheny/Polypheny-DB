@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import static org.polypheny.db.adapter.neo4j.util.NeoStatements.as_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.distinct_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.edge_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.labels_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.list_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.literal_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.match_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.node_;
@@ -45,8 +46,13 @@ import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.lpg.LpgProject;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.GraphType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.type.PathType;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.util.Pair;
 
 
@@ -93,7 +99,7 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
 
 
     private void addRowCount( int size ) {
-        statements.add( return_( as_( literal_( size ), literal_( "ROWCOUNT" ) ) ) );
+        statements.add( return_( as_( literal_( PolyInteger.of( size ) ), literal_( PolyString.of( "ROWCOUNT" ) ) ) ) );
     }
 
 
@@ -120,6 +126,11 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
      * If the finial statement is not a valid end command for cypher, this adds an appropriate <code>RETURN</code> statement.
      */
     public void addReturnIfNecessary() {
+        if ( statements.isEmpty() && isAll ) {
+            statements.add( match_(
+                    node_( PolyString.of( "n" ), labels_( PolyString.of( this.graph.mappingLabel ) ) ),
+                    path_( node_( "" ), edge_( PolyString.of( "e" ), this.graph.mappingLabel, list_( List.of() ), EdgeDirection.NONE ), node_( "" ) ) ) );
+        }
         if ( statements.get( statements.size() - 1 ).type == StatementType.CREATE ) {
             addRowCount( 1 );
         }
@@ -138,7 +149,7 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
                 }
             } else {
                 // have to add
-                statements.add( return_( getFields( last.getRowType() ) ) );
+                statements.add( return_( getFields( last.getTupleType() ) ) );
             }
         }
     }
@@ -151,8 +162,12 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
      * @return the fields as a collection of {@link NeoStatement}
      */
     private List<NeoStatement> getFields( AlgDataType rowType ) {
+        if ( isAll && rowType instanceof GraphType ) {
+            return List.of( literal_( PolyString.of( "n" ) ), literal_( PolyString.of( "e" ) ) );
+        }
+
         List<NeoStatement> statements = new ArrayList<>();
-        for ( AlgDataTypeField field : rowType.getFieldList() ) {
+        for ( AlgDataTypeField field : rowType.getFields() ) {
             statements.add( getField( field ) );
         }
 
@@ -175,12 +190,12 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
             case PATH:
                 PathType type = (PathType) field.getType();
                 List<ElementStatement> path = new ArrayList<>();
-                for ( AlgDataTypeField pathPart : type.getFieldList() ) {
+                for ( AlgDataTypeField pathPart : type.getFields() ) {
                     path.add( (ElementStatement) getField( pathPart ) );
                 }
                 return path_( path );
         }
-        return literal_( field.getName() );
+        return literal_( PolyString.of( field.getName() ) );
     }
 
 
@@ -191,13 +206,13 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
      */
     public Pair<String, String> getAllQueries() {
         String nodes = String.join( "\n", List.of(
-                match_( node_( "n", labels_( graph.mappingLabel ) ) ).build(),
-                return_( distinct_( literal_( "n" ) ) ).build()
+                match_( node_( PolyString.of( "n" ), labels_( PolyString.of( graph.mappingLabel ) ) ) ).build(),
+                return_( distinct_( literal_( PolyString.of( "n" ) ) ) ).build()
         ) );
         String edges = String.join(
                 "\n",
-                match_( path_( node_( "n", labels_( graph.mappingLabel ) ), edge_( "r" ), node_( "m" ) ) ).build(),
-                return_( distinct_( literal_( "r" ) ) ).build() );
+                match_( path_( node_( PolyString.of( "n" ), labels_( PolyString.of( graph.mappingLabel ) ) ), edge_( "r" ), node_( "m" ) ) ).build(),
+                return_( distinct_( literal_( PolyString.of( "r" ) ) ) ).build() );
 
         return Pair.of( nodes, edges );
     }
@@ -243,7 +258,7 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
             i++;
         }
         if ( lastReturn == null ) {
-            throw new RuntimeException( "Could not find a RETURN to replace" );
+            throw new GenericRuntimeException( "Could not find a RETURN to replace" );
         }
         statements.set( lastReturn, return_ );
 

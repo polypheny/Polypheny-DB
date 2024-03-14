@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
 
@@ -53,17 +53,17 @@ public abstract class Intersect extends SetOp {
     /**
      * Creates an Intersect.
      */
-    public Intersect( AlgOptCluster cluster, AlgTraitSet traits, List<AlgNode> inputs, boolean all ) {
+    public Intersect( AlgCluster cluster, AlgTraitSet traits, List<AlgNode> inputs, boolean all ) {
         super( cluster, traits, inputs, Kind.INTERSECT, all );
     }
 
 
     @Override
-    public double estimateRowCount( AlgMetadataQuery mq ) {
+    public double estimateTupleCount( AlgMetadataQuery mq ) {
         // REVIEW jvs:  I just pulled this out of a hat.
         double dRows = Double.MAX_VALUE;
         for ( AlgNode input : inputs ) {
-            dRows = Math.min( dRows, mq.getRowCount( input ) );
+            dRows = Math.min( dRows, mq.getTupleCount( input ) );
         }
         dRows *= 0.25;
         return dRows;

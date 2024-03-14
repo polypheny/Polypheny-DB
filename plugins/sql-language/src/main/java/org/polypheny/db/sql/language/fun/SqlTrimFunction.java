@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ package org.polypheny.db.sql.language.fun;
 import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.fun.TrimFunction;
@@ -66,26 +67,21 @@ public class SqlTrimFunction extends SqlFunction implements TrimFunction {
     /**
      * Defines the enumerated values "LEADING", "TRAILING", "BOTH".
      */
-    public enum Flag {
-        BOTH( 1, 1 ), LEADING( 1, 0 ), TRAILING( 0, 1 );
+    @Getter
+    public enum Flag implements TrimFunction.TrimFlagHolder {
+        BOTH( 1, 1, TrimFunction.Flag.BOTH ),
+        LEADING( 1, 0, TrimFunction.Flag.LEADING ),
+        TRAILING( 0, 1, TrimFunction.Flag.TRAILING );
 
         private final int left;
         private final int right;
+        private final TrimFunction.Flag flag;
 
 
-        Flag( int left, int right ) {
+        Flag( int left, int right, TrimFunction.Flag flag ) {
             this.left = left;
             this.right = right;
-        }
-
-
-        public int getLeft() {
-            return left;
-        }
-
-
-        public int getRight() {
-            return right;
+            this.flag = flag;
         }
 
 
@@ -139,7 +135,7 @@ public class SqlTrimFunction extends SqlFunction implements TrimFunction {
                 };
                 break;
             case 3:
-                assert operands[0] instanceof SqlLiteral && ((SqlLiteral) operands[0]).getValue() instanceof Flag;
+                assert operands[0] instanceof SqlLiteral && ((SqlLiteral) operands[0]).value.asSymbol().value instanceof Flag;
                 if ( operands[1] == null ) {
                     operands[1] = SqlLiteral.createCharString( " ", pos );
                 }

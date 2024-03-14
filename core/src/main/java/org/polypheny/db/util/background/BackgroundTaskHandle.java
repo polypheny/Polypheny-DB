@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.util.background.BackgroundTask.TaskDelayType;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
@@ -66,7 +67,7 @@ class BackgroundTaskHandle implements Runnable {
         } else if ( schedulingType.getDelayType() == TaskDelayType.DELAYED ) {
             this.runner = exec.scheduleWithFixedDelay( this, 0, schedulingType.getMillis(), TimeUnit.MILLISECONDS );
         } else {
-            throw new RuntimeException( "Unknown TaskDelayType: " + schedulingType.getDelayType().name() );
+            throw new GenericRuntimeException( "Unknown TaskDelayType: " + schedulingType.getDelayType().name() );
         }
 
     }
@@ -96,6 +97,7 @@ class BackgroundTaskHandle implements Runnable {
                 maxExecTime = stopWatch.getTime();
             }
         } catch ( Exception e ) {
+
             log.error( "Caught exception in background task", e );
         }
     }

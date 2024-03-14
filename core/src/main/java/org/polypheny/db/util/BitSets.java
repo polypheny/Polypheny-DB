@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@
 package org.polypheny.db.util;
 
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMap;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -227,10 +228,10 @@ public final class BitSets {
      * @param bits Collection of bits to set
      * @return Bit set
      */
-    public static BitSet of( ImmutableIntList bits ) {
+    public static BitSet of( ImmutableList<Integer> bits ) {
         final BitSet bitSet = new BitSet();
-        for ( int i = 0, n = bits.size(); i < n; i++ ) {
-            bitSet.set( bits.getInt( i ) );
+        for ( Integer bit : bits ) {
+            bitSet.set( bit );
         }
         return bitSet;
     }
@@ -344,11 +345,11 @@ public final class BitSets {
 
 
     /**
-     * Populates a {@link BitSet} from an {@link ImmutableIntList}.
+     * Populates a {@link BitSet} from an .
      */
-    public static void populate( BitSet bitSet, ImmutableIntList list ) {
-        for ( int i = 0; i < list.size(); i++ ) {
-            bitSet.set( list.getInt( i ) );
+    public static void populate( BitSet bitSet, ImmutableList<Integer> list ) {
+        for ( Integer integer : list ) {
+            bitSet.set( integer );
         }
     }
 
@@ -367,7 +368,7 @@ public final class BitSets {
 
         Closure( SortedMap<Integer, BitSet> equivalence ) {
             this.equivalence = equivalence;
-            final ImmutableIntList keys = ImmutableIntList.copyOf( equivalence.keySet() );
+            final ImmutableList<Integer> keys = ImmutableList.copyOf( equivalence.keySet() );
             for ( int pos : keys ) {
                 computeClosure( pos );
             }

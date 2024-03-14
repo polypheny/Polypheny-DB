@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,14 @@
 
 package org.polypheny.db.cypher.set;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.expression.CypherExpression.ExpressionType;
@@ -30,8 +31,9 @@ import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -60,11 +62,11 @@ public class CypherSetVariable extends CypherSetItem {
     public void convertItem( CypherContext context ) {
         String nodeName = variable.getName();
         AlgNode node = context.peek();
-        int index = node.getRowType().getFieldNames().indexOf( nodeName );
+        int index = node.getTupleType().getFieldNames().indexOf( nodeName );
         if ( index < 0 ) {
-            throw new RuntimeException( String.format( "Unknown variable with name %s", nodeName ) );
+            throw new GenericRuntimeException( String.format( "Unknown variable with name %s", nodeName ) );
         }
-        AlgDataTypeField field = node.getRowType().getFieldList().get( index );
+        AlgDataTypeField field = node.getTupleType().getFields().get( index );
 
         RexNode ref = context.getRexNode( nodeName );
         if ( ref == null ) {
@@ -82,13 +84,13 @@ public class CypherSetVariable extends CypherSetItem {
                         ref,
                         context.rexBuilder.makeArray(
                                 context.typeFactory.createArrayType( context.typeFactory.createPolyType( PolyType.VARCHAR, 255 ), -1 ),
-                                ((PolyDictionary) value).keySet().stream().map( o -> context.rexBuilder.makeLiteral( o, context.typeFactory.createPolyType( PolyType.VARCHAR, 255 ), false ) ).collect( Collectors.toList() ) ),
+                                new ArrayList<>( ((PolyDictionary) value).keySet() ) ),
                         context.rexBuilder.makeArray(
                                 context.typeFactory.createArrayType( context.typeFactory.createPolyType( PolyType.ANY ), -1 ),
-                                ((PolyDictionary) value).values().stream().map( o -> context.rexBuilder.makeLiteral( o, context.typeFactory.createPolyType( PolyType.ANY ), false ) ).collect( Collectors.toList() ) ),
+                                new ArrayList<>( ((PolyDictionary) value).values() ) ),
                         context.rexBuilder.makeLiteral( !increment ) ) );
 
-        context.add( Pair.of( nodeName, op ) );
+        context.add( Pair.of( PolyString.of( nodeName ), op ) );
     }
 
 }

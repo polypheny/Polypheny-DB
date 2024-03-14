@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -67,7 +67,7 @@ public class Collect extends SingleAlg {
      * @param child Child relational expression
      * @param fieldName Name of the sole output field
      */
-    public Collect( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode child, String fieldName ) {
+    public Collect( AlgCluster cluster, AlgTraitSet traitSet, AlgNode child, String fieldName ) {
         super( cluster, traitSet, child );
         this.fieldName = fieldName;
     }
@@ -123,11 +123,11 @@ public class Collect extends SingleAlg {
      * @return output type of a collect relational expression
      */
     public static AlgDataType deriveCollectRowType( SingleAlg alg, String fieldName ) {
-        AlgDataType childType = alg.getInput().getRowType();
+        AlgDataType childType = alg.getInput().getTupleType();
         assert childType.isStruct();
         final AlgDataTypeFactory typeFactory = alg.getCluster().getTypeFactory();
         AlgDataType ret = PolyTypeUtil.createMultisetType( typeFactory, childType, false );
-        ret = typeFactory.builder().add( fieldName, null, ret ).build();
+        ret = typeFactory.builder().add( null, fieldName, null, ret ).build();
         return typeFactory.createTypeWithNullability( ret, false );
     }
 

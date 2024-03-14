@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,9 +40,9 @@ import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 import org.polypheny.db.plan.AlgMultipleTrait;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTrait;
-import org.polypheny.db.util.ImmutableIntList;
+import org.polypheny.db.runtime.ComparableList;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.mapping.Mapping;
 import org.polypheny.db.util.mapping.Mappings;
@@ -53,7 +53,7 @@ import org.polypheny.db.util.mapping.Mappings;
  */
 public class AlgDistributions {
 
-    private static final ImmutableIntList EMPTY = ImmutableIntList.of();
+    private static final ComparableList<Integer> EMPTY = ComparableList.of();
 
     /**
      * The singleton singleton distribution.
@@ -85,10 +85,10 @@ public class AlgDistributions {
     /**
      * Creates a hash distribution.
      */
-    public static AlgDistribution hash( Collection<? extends Number> numbers ) {
-        ImmutableIntList list = ImmutableIntList.copyOf( numbers );
+    public static AlgDistribution hash( Collection<Integer> numbers ) {
+        ComparableList<Integer> list = ComparableList.copyOf( numbers );
         if ( numbers.size() > 1 && !Ordering.natural().isOrdered( list ) ) {
-            list = ImmutableIntList.copyOf( Ordering.natural().sortedCopy( list ) );
+            list = ComparableList.copyOf( Ordering.natural().sortedCopy( list ) );
         }
         AlgDistributionImpl trait = new AlgDistributionImpl( AlgDistribution.Type.HASH_DISTRIBUTED, list );
         return AlgDistributionTraitDef.INSTANCE.canonize( trait );
@@ -98,8 +98,8 @@ public class AlgDistributions {
     /**
      * Creates a range distribution.
      */
-    public static AlgDistribution range( Collection<? extends Number> numbers ) {
-        ImmutableIntList list = ImmutableIntList.copyOf( numbers );
+    public static AlgDistribution range( Collection<Integer> numbers ) {
+        ComparableList<Integer> list = ComparableList.copyOf( numbers );
         AlgDistributionImpl trait = new AlgDistributionImpl( AlgDistribution.Type.RANGE_DISTRIBUTED, list );
         return AlgDistributionTraitDef.INSTANCE.canonize( trait );
     }
@@ -112,12 +112,12 @@ public class AlgDistributions {
 
         private static final Ordering<Iterable<Integer>> ORDERING = Ordering.<Integer>natural().lexicographical();
         private final Type type;
-        private final ImmutableIntList keys;
+        private final ComparableList<Integer> keys;
 
 
-        private AlgDistributionImpl( Type type, ImmutableIntList keys ) {
+        private AlgDistributionImpl( Type type, ComparableList<Integer> keys ) {
             this.type = Objects.requireNonNull( type );
-            this.keys = ImmutableIntList.copyOf( keys );
+            this.keys = ComparableList.copyOf( keys );
             assert type != Type.HASH_DISTRIBUTED || keys.size() < 2 || Ordering.natural().isOrdered( keys ) : "key columns of hash distribution must be in order";
             assert type == Type.HASH_DISTRIBUTED || type == Type.RANDOM_DISTRIBUTED || keys.isEmpty();
         }
@@ -173,12 +173,12 @@ public class AlgDistributions {
             if ( keys.isEmpty() ) {
                 return this;
             }
-            return getTraitDef().canonize( new AlgDistributionImpl( type, ImmutableIntList.copyOf( Mappings.apply( (Mapping) mapping, keys ) ) ) );
+            return getTraitDef().canonize( new AlgDistributionImpl( type, ComparableList.copyOf( Mappings.apply( (Mapping) mapping, keys ) ) ) );
         }
 
 
         @Override
-        public boolean satisfies( AlgTrait trait ) {
+        public boolean satisfies( AlgTrait<?> trait ) {
             if ( trait == this || trait == ANY ) {
                 return true;
             }
@@ -208,7 +208,7 @@ public class AlgDistributions {
 
 
         @Override
-        public void register( AlgOptPlanner planner ) {
+        public void register( AlgPlanner planner ) {
         }
 
 

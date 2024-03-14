@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,12 @@ import java.util.List;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.cottontail.CottontailWrapper;
+import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyValue;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.BatchInsertMessage;
 
 
-public class CottontailBatchInsertEnumerable extends AbstractEnumerable<Long> {
+public class CottontailBatchInsertEnumerable extends AbstractEnumerable<PolyValue[]> {
 
     private final List<BatchInsertMessage> inserts;
     private final CottontailWrapper wrapper;
@@ -36,17 +38,17 @@ public class CottontailBatchInsertEnumerable extends AbstractEnumerable<Long> {
 
 
     @Override
-    public Enumerator<Long> enumerator() {
+    public Enumerator<PolyValue[]> enumerator() {
         return new CottontailInsertResultEnumerator();
     }
 
 
-    private class CottontailInsertResultEnumerator implements Enumerator<Long> {
+    private class CottontailInsertResultEnumerator implements Enumerator<PolyValue[]> {
 
         /**
          * Result of the last BATCH INSERT that was performed.
          */
-        private long currentResult;
+        private PolyValue[] currentResult;
 
         /**
          * The pointer to the last {@link BatchInsertMessage} that was executed.
@@ -55,7 +57,7 @@ public class CottontailBatchInsertEnumerable extends AbstractEnumerable<Long> {
 
 
         @Override
-        public Long current() {
+        public PolyValue[] current() {
             return this.currentResult;
         }
 
@@ -65,14 +67,12 @@ public class CottontailBatchInsertEnumerable extends AbstractEnumerable<Long> {
             if ( this.pointer < CottontailBatchInsertEnumerable.this.inserts.size() ) {
                 final BatchInsertMessage insertMessage = CottontailBatchInsertEnumerable.this.inserts.get( this.pointer++ );
                 if ( CottontailBatchInsertEnumerable.this.wrapper.insert( insertMessage ) ) {
-                    this.currentResult = insertMessage.getInsertsCount();
-                } else {
-                    this.currentResult = -1;
+                    this.currentResult = new PolyValue[]{ PolyLong.of( insertMessage.getInsertsCount() ) };
+                    return true;
                 }
-                return !(this.currentResult == -1L);
-            } else {
-                return false;
+                this.currentResult = new PolyValue[]{ PolyLong.of( -1 ) };
             }
+            return false;
         }
 
 

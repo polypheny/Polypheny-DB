@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,34 +16,29 @@
 
 package org.polypheny.db.adapter.googlesheet;
 
-import java.util.HashMap;
-import java.util.Map;
-import org.pf4j.Plugin;
-import org.pf4j.PluginWrapper;
-import org.polypheny.db.catalog.Adapter;
+import org.polypheny.db.adapter.AdapterManager;
+import org.polypheny.db.plugins.PluginContext;
+import org.polypheny.db.plugins.PolyPlugin;
 
 
-public class GoogleSheetPlugin extends Plugin {
+public class GoogleSheetPlugin extends PolyPlugin {
+
+
+    public static final String ADAPTER_NAME = "GoogleSheets";
+
 
     /**
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to be successfully loaded by manager.
      */
-    public GoogleSheetPlugin( PluginWrapper wrapper ) {
-        super( wrapper );
+    public GoogleSheetPlugin( PluginContext context ) {
+        super( context );
     }
 
 
     @Override
-    public void start() {
-        Map<String, String> settings = new HashMap<>();
-        settings.put( "maxStringLength", "255" );
-        settings.put( "querySize", "1000" );
-        settings.put( "sheetsURL", "" );
-        settings.put( "mode", "remote" );
-        settings.put( "resetRefreshToken", "No" );
-
-        Adapter.addAdapter( GoogleSheetSource.class, "GOOGLESHEETS", settings );
+    public void afterCatalogInit() {
+        AdapterManager.addAdapterTemplate( GoogleSheetSource.class, ADAPTER_NAME, GoogleSheetSource::new );
     }
 
 }

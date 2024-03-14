@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import org.polypheny.db.cypher.cypher2alg.CypherSyntaxException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
 
 public abstract class CypherPattern extends CypherNode {
@@ -41,7 +42,7 @@ public abstract class CypherPattern extends CypherNode {
     }
 
 
-    public Pair<String, RexNode> getPatternMatch( CypherContext context ) {
+    public Pair<PolyString, RexNode> getPatternMatch( CypherContext context ) {
         throw new CypherSyntaxException( "Used pattern is not supported as graph filter." );
     }
 

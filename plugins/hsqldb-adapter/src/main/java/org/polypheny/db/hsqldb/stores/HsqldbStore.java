@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,31 +21,27 @@ import com.google.common.collect.ImmutableList;
 import java.io.File;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
-import org.polypheny.db.adapter.Adapter.AdapterProperties;
-import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
-import org.polypheny.db.adapter.Adapter.AdapterSettingList;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.annotations.AdapterProperties;
+import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
+import org.polypheny.db.adapter.annotations.AdapterSettingList;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.adapter.jdbc.stores.AbstractJdbcStore;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogIndex;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.logical.LogicalIndex;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.schema.Schema;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.sql.language.dialect.HsqldbSqlDialect;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PUID.Type;
 import org.polypheny.db.transaction.PolyXid;
@@ -59,7 +55,7 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
         name = "HSQLDB",
         description = "Java-based relational database system. It supports an in-memory and a persistent file based mode. Deploying a HSQLDB instance requires no additional dependencies to be installed or servers to be set up.",
         usedModes = DeployMode.EMBEDDED,
-        supportedNamespaceTypes = { NamespaceType.RELATIONAL })
+        defaultMode = DeployMode.EMBEDDED)
 @AdapterSettingList(name = "tableType", options = { "Memory", "Cached" }, position = 1, defaultValue = "Memory")
 @AdapterSettingInteger(name = "maxConnections", defaultValue = 25)
 @AdapterSettingList(name = "trxControlMode", options = { "locks", "mvlocks", "mvcc" }, defaultValue = "mvcc")
@@ -68,7 +64,7 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 public class HsqldbStore extends AbstractJdbcStore {
 
 
-    public HsqldbStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
+    public HsqldbStore( final long storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, HsqldbSqlDialect.DEFAULT, settings.get( "type" ).equals( "File" ) );
     }
 
@@ -77,7 +73,7 @@ public class HsqldbStore extends AbstractJdbcStore {
     protected ConnectionFactory deployEmbedded() {
         if ( RuntimeConfig.TWO_PC_MODE.getBoolean() ) {
             // TODO MV: implement
-            throw new RuntimeException( "2PC Mode is not implemented" );
+            throw new GenericRuntimeException( "2PC Mode is not implemented" );
         } else {
             BasicDataSource dataSource = new BasicDataSource();
             dataSource.setDriverClassName( "org.hsqldb.jdbcDriver" );
@@ -105,86 +101,71 @@ public class HsqldbStore extends AbstractJdbcStore {
 
 
     @Override
-    public Table createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
-        return currentJdbcSchema.createJdbcTable( catalogTable, columnPlacementsOnStore, partitionPlacement );
-    }
+    public String addIndex( Context context, LogicalIndex index, AllocationTable allocation ) {
+        PhysicalTable physical = adapterCatalog.fromAllocation( allocation.id );
 
+        String physicalIndexName = getPhysicalIndexName( physical.id, index.id );
 
-    @Override
-    public Schema getCurrentSchema() {
-        return currentJdbcSchema;
-    }
-
-
-    @Override
-    public void addIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds ) {
-        List<CatalogColumnPlacement> ccps = Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogIndex.key.tableId );
-        List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
-        partitionIds.forEach( id -> partitionPlacements.add( catalog.getPartitionPlacement( getAdapterId(), id ) ) );
-
-        String physicalIndexName = getPhysicalIndexName( catalogIndex.key.tableId, catalogIndex.id );
-        for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
-
-            StringBuilder builder = new StringBuilder();
-            builder.append( "CREATE " );
-            if ( catalogIndex.unique ) {
-                builder.append( "UNIQUE INDEX " );
-            } else {
-                builder.append( "INDEX " );
-            }
-
-            builder.append( dialect.quoteIdentifier( physicalIndexName + "_" + partitionPlacement.partitionId ) );
-            builder.append( " ON " )
-                    .append( dialect.quoteIdentifier( partitionPlacement.physicalSchemaName ) )
-                    .append( "." )
-                    .append( dialect.quoteIdentifier( partitionPlacement.physicalTableName ) );
-
-            builder.append( "(" );
-            boolean first = true;
-            for ( long columnId : catalogIndex.key.columnIds ) {
-                if ( !first ) {
-                    builder.append( ", " );
-                }
-                first = false;
-                builder.append( dialect.quoteIdentifier( getPhysicalColumnName( columnId ) ) ).append( " " );
-            }
-            builder.append( ")" );
-            executeUpdate( builder, context );
+        StringBuilder builder = new StringBuilder();
+        builder.append( "CREATE " );
+        if ( index.unique ) {
+            builder.append( "UNIQUE INDEX " );
+        } else {
+            builder.append( "INDEX " );
         }
-        Catalog.getInstance().setIndexPhysicalName( catalogIndex.id, physicalIndexName );
-    }
 
+        builder.append( dialect.quoteIdentifier( physicalIndexName ) );
+        builder.append( " ON " )
+                .append( dialect.quoteIdentifier( physical.namespaceName ) )
+                .append( "." )
+                .append( dialect.quoteIdentifier( physical.name ) );
 
-    @Override
-    public void dropIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds ) {
-        List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
-        partitionIds.forEach( id -> partitionPlacements.add( catalog.getPartitionPlacement( getAdapterId(), id ) ) );
-
-        for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
-            StringBuilder builder = new StringBuilder();
-            builder.append( "DROP INDEX " );
-            builder.append( dialect.quoteIdentifier( catalogIndex.physicalName + "_" + partitionPlacement.partitionId ) );
-            executeUpdate( builder, context );
+        builder.append( "(" );
+        boolean first = true;
+        for ( long columnId : index.key.fieldIds ) {
+            if ( !first ) {
+                builder.append( ", " );
+            }
+            first = false;
+            builder.append( dialect.quoteIdentifier( getPhysicalColumnName( columnId ) ) ).append( " " );
         }
+        builder.append( ")" );
+        executeUpdate( builder, context );
+        return physicalIndexName;
     }
 
 
     @Override
-    public List<AvailableIndexMethod> getAvailableIndexMethods() {
+    public void dropIndex( Context context, LogicalIndex index, long allocId ) {
+
+        PhysicalTable physical = adapterCatalog.fromAllocation( allocId );
+
+        String physicalIndexName = getPhysicalIndexName( physical.id, index.id );
+
+        StringBuilder builder = new StringBuilder();
+        builder.append( "DROP INDEX " );
+        builder.append( dialect.quoteIdentifier( physicalIndexName ) );
+        executeUpdate( builder, context );
+
+    }
+
+
+    @Override
+    public List<IndexMethodModel> getAvailableIndexMethods() {
         return ImmutableList.of(
-                new AvailableIndexMethod( "default", "Default" )
+                new IndexMethodModel( "default", "Default" )
         );
     }
 
 
     @Override
-    public AvailableIndexMethod getDefaultIndexMethod() {
+    public IndexMethodModel getDefaultIndexMethod() {
         return getAvailableIndexMethods().get( 0 );
     }
 
 
     @Override
-    public List<FunctionalIndexInfo> getFunctionalIndexes( CatalogTable catalogTable ) {
+    public List<FunctionalIndexInfo> getFunctionalIndexes( LogicalTable catalogTable ) {
         return ImmutableList.of();
     }
 
@@ -212,48 +193,39 @@ public class HsqldbStore extends AbstractJdbcStore {
         if ( type.getFamily() == PolyTypeFamily.MULTIMEDIA ) {
             return "BLOB(" + RuntimeConfig.UI_UPLOAD_SIZE_MB.getInteger() + "M)";
         }
-        switch ( type ) {
-            case BOOLEAN:
-                return "BOOLEAN";
-            case VARBINARY:
-                return "VARBINARY";
-            case TINYINT:
-                return "TINYINT";
-            case SMALLINT:
-                return "SMALLINT";
-            case INTEGER:
-                return "INT";
-            case BIGINT:
-                return "BIGINT";
-            case REAL:
-                return "REAL";
-            case DOUBLE:
-                return "FLOAT";
-            case DECIMAL:
-                return "DECIMAL";
-            case VARCHAR:
-                return "VARCHAR";
-            case DATE:
-                return "DATE";
-            case TIME:
-                return "TIME";
-            case TIMESTAMP:
-                return "TIMESTAMP";
-            case ARRAY:
-                return "LONGVARCHAR";
-            case JSON:
-            case NODE:
-            case EDGE:
-            case DOCUMENT:
-                return "LONGVARCHAR";
-        }
-        throw new RuntimeException( "Unknown type: " + type.name() );
+        return switch ( type ) {
+            case BOOLEAN -> "BOOLEAN";
+            case VARBINARY -> "VARBINARY";
+            case TINYINT -> "TINYINT";
+            case SMALLINT -> "SMALLINT";
+            case INTEGER -> "INT";
+            case BIGINT -> "BIGINT";
+            case REAL -> "REAL";
+            case DOUBLE -> "FLOAT";
+            case DECIMAL -> "DECIMAL";
+            case VARCHAR -> "VARCHAR";
+            case DATE -> "DATE";
+            case TIME -> "TIME";
+            case TIMESTAMP -> "TIMESTAMP";
+            case ARRAY -> "LONGVARCHAR";
+            case TEXT -> "VARCHAR(200000)"; // clob can sadly not be used as pk which puts arbitrary limit on the value
+            case JSON, NODE, EDGE, DOCUMENT -> "LONGVARCHAR";
+            default -> throw new GenericRuntimeException( "Unknown type: " + type.name() );
+        };
     }
 
 
     @Override
-    protected String getDefaultPhysicalSchemaName() {
+    public String getDefaultPhysicalSchemaName() {
         return "PUBLIC";
+    }
+
+
+    @Override
+    public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities ) {
+        PhysicalEntity table = entities.get( 0 );
+        updateNamespace( table.namespaceName, table.namespaceId );
+        adapterCatalog.addPhysical( alloc, currentJdbcSchema.createJdbcTable( table.unwrap( PhysicalTable.class ).orElseThrow() ) );
     }
 
 }

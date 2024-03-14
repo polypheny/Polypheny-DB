@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,14 +21,16 @@ import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PathType;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -50,26 +52,26 @@ public class CypherVariable extends CypherExpression {
 
 
     @Override
-    public Pair<String, RexNode> getRex( CypherContext context, RexType type ) {
+    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
         AlgNode node = context.peek();
 
-        int index = node.getRowType().getFieldNames().indexOf( name );
+        int index = node.getTupleType().getFieldNames().indexOf( name );
 
         if ( index >= 0 ) {
             // search r  -> RowType(r:Edge)
             return Pair.of(
-                    name,
-                    context.rexBuilder.makeInputRef( node.getRowType().getFieldList().get( index ).getType(), index ) );
+                    PolyString.of( name ),
+                    context.rexBuilder.makeInputRef( node.getTupleType().getFields().get( index ).getType(), index ) );
         }
 
-        for ( AlgDataTypeField field : node.getRowType().getFieldList() ) {
+        for ( AlgDataTypeField field : node.getTupleType().getFields() ) {
             if ( field.getType() instanceof PathType ) {
-                for ( AlgDataTypeField pathField : field.getType().getFieldList() ) {
+                for ( AlgDataTypeField pathField : field.getType().getFields() ) {
                     if ( pathField.getName().equals( name ) ) {
                         // search r -> RowType(Path(r:Edge, n:Node))
-                        RexInputRef pathRef = context.rexBuilder.makeInputRef( node.getRowType().getFieldList().get( field.getIndex() ).getType(), field.getIndex() );
+                        RexIndexRef pathRef = context.rexBuilder.makeInputRef( field.getType(), field.getIndex() );
                         return Pair.of(
-                                name,
+                                PolyString.of( name ),
                                 context.rexBuilder.makeCall(
                                         pathField.getType(),
                                         OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_EXTRACT_FROM_PATH ),
@@ -79,7 +81,7 @@ public class CypherVariable extends CypherExpression {
             }
         }
 
-        throw new RuntimeException( "The used variable is not known." );
+        throw new GenericRuntimeException( "The used variable is not known." );
     }
 
 

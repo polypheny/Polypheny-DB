@@ -698,7 +698,7 @@ PigNode exp10() :
   * precedence. */
 PigNode atom() :
 {
-  final PigNode e;
+  PigNode e = null;
   PigNode f;
   final List<PigNode> list;
   ImmutableList.Builder<PigNode> builder = null;

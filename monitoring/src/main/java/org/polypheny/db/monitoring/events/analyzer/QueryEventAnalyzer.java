@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package org.polypheny.db.monitoring.events.analyzer;
 
 import java.util.Collections;
 import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
@@ -29,10 +28,11 @@ import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
 public class QueryEventAnalyzer {
 
     public static QueryDataPointImpl analyze( QueryEvent queryEvent ) {
-        QueryDataPointImpl metric = QueryDataPointImpl
+
+        return QueryDataPointImpl
                 .builder()
                 .Id( queryEvent.getId() )
-                .tables( queryEvent.getLogicalQueryInformation().getTables() )
+                .tables( queryEvent.getLogicalQueryInformation().getAllScannedEntities() )
                 .fieldNames( queryEvent.getFieldNames() )
                 .executionTime( queryEvent.getExecutionTime() )
                 .rowCount( queryEvent.getRowCount() )
@@ -40,19 +40,13 @@ public class QueryEventAnalyzer {
                 .isCommitted( queryEvent.isCommitted() )
                 .recordedTimestamp( queryEvent.getRecordedTimestamp() )
                 .algCompareString( queryEvent.getAlgCompareString() )
-                .queryClass( queryEvent.getLogicalQueryInformation().getQueryClass() )
+                .queryClass( queryEvent.getLogicalQueryInformation().getQueryHash() )
                 .monitoringType( queryEvent.getMonitoringType() )
                 .physicalQueryClass( queryEvent.getPhysicalQueryClass() )
                 .availableColumnsWithTable( queryEvent.getLogicalQueryInformation().getAvailableColumnsWithTable() )
                 .indexSize( queryEvent.getIndexSize() )
+                .accessedPartitions( queryEvent.getAccessedPartitions() != null ? queryEvent.getAccessedPartitions().values().stream().flatMap( Set::stream ).toList() : Collections.emptyList() )
                 .build();
-        if ( queryEvent.getAccessedPartitions() != null ) {
-            metric.setAccessedPartitions( queryEvent.getAccessedPartitions().values().stream().flatMap( Set::stream ).collect( Collectors.toList() ) );
-        } else {
-            metric.setAccessedPartitions( Collections.emptyList() );
-        }
-
-        return metric;
     }
 
 }

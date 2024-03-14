@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,6 +49,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.polypheny.db.type.ArrayType;
@@ -82,7 +83,7 @@ public abstract class AlgDataTypeFactoryImpl implements AlgDataTypeFactory {
         final Key key = (Key) k;
         final ImmutableList.Builder<AlgDataTypeField> list = ImmutableList.builder();
         for ( int i = 0; i < key.names.size(); i++ ) {
-            list.add( new AlgDataTypeFieldImpl( key.names.get( i ), key.physicalNames.get( i ), i, key.types.get( i ) ) );
+            list.add( new AlgDataTypeFieldImpl( key.ids.get( i ), key.names.get( i ), key.physicalNames.get( i ), i, key.types.get( i ) ) );
         }
         return new AlgRecordType( key.kind, list.build() );
     }
@@ -151,66 +152,33 @@ public abstract class AlgDataTypeFactoryImpl implements AlgDataTypeFactory {
 
 
     @Override
-    public AlgDataType createStructType( final List<AlgDataType> typeList, final List<String> fieldNameList ) {
-        return createStructType( StructKind.FULLY_QUALIFIED, typeList, fieldNameList );
+    public AlgDataType createStructType( List<Long> ids, final List<AlgDataType> types, final List<String> fieldNames ) {
+        return createStructType( StructKind.FULLY_QUALIFIED, ids, types, fieldNames );
     }
 
 
     @Override
-    public AlgDataType createStructType( StructKind kind, final List<AlgDataType> typeList, final List<String> fieldNameList ) {
-        return createStructType( kind, typeList, fieldNameList, ImmutableList.copyOf( fieldNameList ) );
+    public AlgDataType createStructType( StructKind kind, final List<Long> ids, final List<AlgDataType> types, final List<String> fieldNames ) {
+        return createStructType( kind, ids, types, fieldNames, ImmutableList.copyOf( fieldNames ) );
     }
 
 
     @Override
-    public AlgDataType createStructType( StructKind kind, final List<AlgDataType> typeList, final List<String> fieldNameList, final List<String> physicalFieldNameList ) {
-        assert typeList.size() == fieldNameList.size();
-        assert typeList.size() == physicalFieldNameList.size();
-        return canonize( kind, fieldNameList, physicalFieldNameList, typeList );
+    public AlgDataType createStructType( StructKind kind, final List<Long> ids, final List<AlgDataType> types, final List<String> fieldNames, final List<String> physicalFieldNames ) {
+        assert types.size() == fieldNames.size();
+        assert types.size() == physicalFieldNames.size();
+        return canonize( kind, ids, fieldNames, physicalFieldNames, types );
     }
 
 
     @Override
-    public final AlgDataType createStructType( final List<? extends Map.Entry<String, AlgDataType>> fieldList ) {
+    public final AlgDataType createStructType( final List<? extends AlgDataTypeField> fields ) {
         return canonize(
                 StructKind.FULLY_QUALIFIED,
-                new AbstractList<>() {
-                    @Override
-                    public String get( int index ) {
-                        return fieldList.get( index ).getKey();
-                    }
-
-
-                    @Override
-                    public int size() {
-                        return fieldList.size();
-                    }
-                },
-                // TODO MV: Using the logical names here might be wrong
-                new AbstractList<>() {
-                    @Override
-                    public String get( int index ) {
-                        return fieldList.get( index ).getKey();
-                    }
-
-
-                    @Override
-                    public int size() {
-                        return fieldList.size();
-                    }
-                },
-                new AbstractList<>() {
-                    @Override
-                    public AlgDataType get( int index ) {
-                        return fieldList.get( index ).getValue();
-                    }
-
-
-                    @Override
-                    public int size() {
-                        return fieldList.size();
-                    }
-                } );
+                fields.stream().map( AlgDataTypeField::getId ).collect( Collectors.toList() ),
+                fields.stream().map( AlgDataTypeField::getName ).collect( Collectors.toList() ),
+                fields.stream().map( AlgDataTypeField::getPhysicalName ).collect( Collectors.toList() ),
+                fields.stream().map( AlgDataTypeField::getType ).collect( Collectors.toList() ) );
     }
 
 
@@ -235,7 +203,7 @@ public abstract class AlgDataTypeFactoryImpl implements AlgDataTypeFactory {
             if ( !type.isStruct() ) {
                 return null;
             }
-            if ( type.getFieldList().size() != fieldCount ) {
+            if ( type.getFields().size() != fieldCount ) {
                 return null;
             }
         }
@@ -246,13 +214,13 @@ public abstract class AlgDataTypeFactoryImpl implements AlgDataTypeFactory {
             // REVIEW jvs: Always use the field name from the first type?
             final int k = j;
             builder.add(
-                    type0.getFieldList().get( j ).getName(),
+                    null, type0.getFields().get( j ).getName(),
                     null,
                     leastRestrictive(
                             new AbstractList<>() {
                                 @Override
                                 public AlgDataType get( int index ) {
-                                    return types.get( index ).getFieldList().get( k ).getType();
+                                    return types.get( index ).getFields().get( k ).getType();
                                 }
 
 
@@ -294,23 +262,14 @@ public abstract class AlgDataTypeFactoryImpl implements AlgDataTypeFactory {
 
         return createStructType(
                 type.getStructKind(),
-                new AbstractList<>() {
-                    @Override
-                    public AlgDataType get( int index ) {
-                        AlgDataType fieldType = type.getFieldList().get( index ).getType();
-                        if ( ignoreNullable ) {
-                            return copyType( fieldType );
-                        } else {
-                            return createTypeWithNullability( fieldType, nullable );
-                        }
+                type.getFields().stream().map( AlgDataTypeField::getId ).collect( Collectors.toList() ),
+                type.getFields().stream().map( f -> {
+                    if ( ignoreNullable ) {
+                        return copyType( f.getType() );
+                    } else {
+                        return createTypeWithNullability( f.getType(), nullable );
                     }
-
-
-                    @Override
-                    public int size() {
-                        return type.getFieldCount();
-                    }
-                },
+                } ).collect( Collectors.toList() ),
                 type.getFieldNames(),
                 type.getPhysicalFieldNames() );
     }
@@ -374,7 +333,7 @@ public abstract class AlgDataTypeFactoryImpl implements AlgDataTypeFactory {
      * <p>
      * This approach allows us to use a cheap temporary key. A permanent key is more expensive, because it must be immutable and not hold references into other data structures.
      */
-    protected AlgDataType canonize( final StructKind kind, final List<String> names, final List<String> physicalNames, final List<AlgDataType> types ) {
+    protected AlgDataType canonize( final StructKind kind, final List<Long> ids, final List<String> names, final List<String> physicalNames, final List<AlgDataType> types ) {
         // skip canonize step for ArrayTypes, to not cache cardinality or dimension
         boolean skipCache = false;
         for ( AlgDataType t : types ) {
@@ -389,19 +348,19 @@ public abstract class AlgDataTypeFactoryImpl implements AlgDataTypeFactory {
         }
 
         if ( !skipCache ) {
-            final AlgDataType type = CACHE.getIfPresent( new Key( kind, names, physicalNames, types ) );
+            final AlgDataType type = CACHE.getIfPresent( new Key( kind, ids, names, physicalNames, types ) );
             if ( type != null ) {
                 return type;
             }
         }
 
         final ImmutableList<String> names2 = ImmutableList.copyOf( names );
-        final List<String> physicalNames2 = physicalNames;
         final ImmutableList<AlgDataType> types2 = ImmutableList.copyOf( types );
+        final List<Long> ids2 = new ArrayList<>( ids );
         if ( skipCache ) {
-            return keyToType( new Key( kind, names2, physicalNames2, types2 ) );
+            return keyToType( new Key( kind, ids2, names2, physicalNames, types2 ) );
         } else {
-            return CACHE.getUnchecked( new Key( kind, names2, physicalNames2, types2 ) );
+            return CACHE.getUnchecked( new Key( kind, ids2, names2, physicalNames, types2 ) );
         }
     }
 
@@ -442,10 +401,10 @@ public abstract class AlgDataTypeFactoryImpl implements AlgDataTypeFactory {
                 addFields( type1, fieldList );
             }
         } else {
-            List<AlgDataTypeField> fields = type.getFieldList();
+            List<AlgDataTypeField> fields = type.getFields();
             for ( AlgDataTypeField field : fields ) {
                 if ( field.getIndex() != fieldList.size() ) {
-                    field = new AlgDataTypeFieldImpl( field.getName(), fieldList.size(), field.getType() );
+                    field = new AlgDataTypeFieldImpl( field.getId(), field.getName(), fieldList.size(), field.getType() );
                 }
                 fieldList.add( field );
             }
@@ -464,7 +423,7 @@ public abstract class AlgDataTypeFactoryImpl implements AlgDataTypeFactory {
             if ( Modifier.isStatic( field.getModifiers() ) ) {
                 continue;
             }
-            list.add( new AlgDataTypeFieldImpl( field.getName(), list.size(), createJavaType( field.getType() ) ) );
+            list.add( new AlgDataTypeFieldImpl( null, field.getName(), list.size(), createJavaType( field.getType() ) ) );
         }
 
         if ( list.isEmpty() ) {
@@ -677,6 +636,18 @@ public abstract class AlgDataTypeFactoryImpl implements AlgDataTypeFactory {
             return Objects.requireNonNullElse( typeName, PolyType.OTHER );
         }
 
+
+        public AlgDataType getKeyType() {
+            // this is not a map type
+            return null;
+        }
+
+
+        public AlgDataType getValueType() {
+            // this is not a map type
+            return null;
+        }
+
     }
 
 
@@ -689,10 +660,12 @@ public abstract class AlgDataTypeFactoryImpl implements AlgDataTypeFactory {
         private final List<String> names;
         private final List<String> physicalNames;
         private final List<AlgDataType> types;
+        private final List<Long> ids;
 
 
-        Key( StructKind kind, List<String> names, List<String> physicalNames, List<AlgDataType> types ) {
+        Key( StructKind kind, List<Long> ids, List<String> names, List<String> physicalNames, List<AlgDataType> types ) {
             this.kind = kind;
+            this.ids = ids;
             this.names = names;
             this.physicalNames = physicalNames;
             this.types = types;
@@ -708,11 +681,12 @@ public abstract class AlgDataTypeFactoryImpl implements AlgDataTypeFactory {
         @Override
         public boolean equals( Object obj ) {
             return obj == this
-                    || obj instanceof Key
+                    || (obj instanceof Key
+                    && ids.equals( ((Key) obj).ids )
                     && kind == ((Key) obj).kind
                     && names.equals( ((Key) obj).names )
                     && physicalNames.equals( ((Key) obj).physicalNames )
-                    && types.equals( ((Key) obj).types );
+                    && types.equals( ((Key) obj).types ));
         }
 
     }

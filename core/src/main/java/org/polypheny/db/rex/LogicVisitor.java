@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -143,7 +143,7 @@ public class LogicVisitor implements RexBiVisitor<Logic, Logic> {
 
 
     @Override
-    public Logic visitInputRef( RexInputRef inputRef, Logic arg ) {
+    public Logic visitInputRef( RexIndexRef inputRef, Logic arg ) {
         return end( inputRef, arg );
     }
 
@@ -202,7 +202,7 @@ public class LogicVisitor implements RexBiVisitor<Logic, Logic> {
 
 
     @Override
-    public Logic visitTableInputRef( RexTableInputRef ref, Logic arg ) {
+    public Logic visitTableInputRef( RexTableIndexRef ref, Logic arg ) {
         return end( ref, arg );
     }
 
@@ -210,6 +210,18 @@ public class LogicVisitor implements RexBiVisitor<Logic, Logic> {
     @Override
     public Logic visitPatternFieldRef( RexPatternFieldRef ref, Logic arg ) {
         return end( ref, arg );
+    }
+
+
+    @Override
+    public Logic visitNameRef( RexNameRef ref, Logic arg ) {
+        return end( ref, arg );
+    }
+
+
+    @Override
+    public Logic visitElementRef( RexElementRef rexElementRef, Logic arg ) {
+        return end( rexElementRef, arg );
     }
 
 }

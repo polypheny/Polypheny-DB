@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,11 +22,12 @@ import lombok.Getter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -36,7 +37,7 @@ public class WhereClauseVisitor extends RexShuttle {
 
     private final Statement statement;
     @Getter
-    private final List<Object> values = new ArrayList<>();
+    private final List<PolyValue> values = new ArrayList<>();
     private final long partitionColumnIndex;
     @Getter
     protected boolean valueIdentified = false;
@@ -57,11 +58,11 @@ public class WhereClauseVisitor extends RexShuttle {
 
         if ( call.operands.size() == 2 ) {
             if ( call.op.getKind() == Kind.EQUALS ) {
-                Object value;
-                if ( call.operands.get( 0 ) instanceof RexInputRef ) {
-                    if ( ((RexInputRef) call.operands.get( 0 )).getIndex() == partitionColumnIndex ) {
+                PolyValue value;
+                if ( call.operands.get( 0 ) instanceof RexIndexRef ) {
+                    if ( ((RexIndexRef) call.operands.get( 0 )).getIndex() == partitionColumnIndex ) {
                         if ( call.operands.get( 1 ) instanceof RexLiteral ) {
-                            value = ((RexLiteral) call.operands.get( 1 )).getValueForQueryParameterizer();
+                            value = ((RexLiteral) call.operands.get( 1 )).value;
                             values.add( value );
                             valueIdentified = true;
                         } else if ( call.operands.get( 1 ) instanceof RexDynamicParam ) {
@@ -71,10 +72,10 @@ public class WhereClauseVisitor extends RexShuttle {
                             valueIdentified = true;
                         }
                     }
-                } else if ( call.operands.get( 1 ) instanceof RexInputRef ) {
-                    if ( ((RexInputRef) call.operands.get( 1 )).getIndex() == partitionColumnIndex ) {
+                } else if ( call.operands.get( 1 ) instanceof RexIndexRef ) {
+                    if ( ((RexIndexRef) call.operands.get( 1 )).getIndex() == partitionColumnIndex ) {
                         if ( call.operands.get( 0 ) instanceof RexLiteral ) {
-                            value = ((RexLiteral) call.operands.get( 0 )).getValueForQueryParameterizer();
+                            value = ((RexLiteral) call.operands.get( 0 )).getValue();
                             values.add( value );
                             valueIdentified = true;
                         } else if ( call.operands.get( 0 ) instanceof RexDynamicParam ) {

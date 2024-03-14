@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,49 +36,60 @@ package org.polypheny.db.adapter.mongodb;
 
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.gridfs.GridFSBucket;
-import com.mongodb.client.gridfs.GridFSDownloadStream;
-import org.apache.calcite.avatica.util.DateTimeUtils;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.function.Function;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.function.Function1;
-import org.apache.calcite.linq4j.tree.Primitive;
+import org.apache.commons.lang3.NotImplementedException;
+import org.bson.BsonDocument;
+import org.bson.BsonType;
+import org.bson.BsonValue;
 import org.bson.Document;
-import org.bson.types.Decimal128;
-import org.bson.types.ObjectId;
-import org.polypheny.db.runtime.functions.Functions;
-
-import java.io.PushbackInputStream;
-import java.math.BigDecimal;
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.stream.Collectors;
+import org.polypheny.db.adapter.mongodb.util.MongoTupleType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyBinary;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyNull;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.temporal.PolyDate;
+import org.polypheny.db.type.entity.temporal.PolyTime;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
+import org.polypheny.db.util.BsonUtil;
 
 
 /**
  * Enumerator that reads from a MongoDB collection.
  */
-class MongoEnumerator implements Enumerator<Object> {
+class MongoEnumerator implements Enumerator<PolyValue[]> {
 
-    protected final Iterator<Document> cursor;
-    protected final Function1<Document, Object> getter;
+    protected final Iterator<PolyValue[]> cursor;
     protected final GridFSBucket bucket;
-    protected Object current;
+    protected PolyValue[] current;
 
 
     /**
      * Creates a MongoEnumerator.
      *
      * @param cursor Mongo iterator (usually a {@link com.mongodb.ServerCursor})
-     * @param getter Converts an object into a list of fields
      */
-    MongoEnumerator( Iterator<Document> cursor, Function1<Document, Object> getter, GridFSBucket bucket ) {
+    MongoEnumerator( Iterator<PolyValue[]> cursor, GridFSBucket bucket ) {
         this.cursor = cursor;
-        this.getter = getter;
         this.bucket = bucket;
     }
 
 
     @Override
-    public Object current() {
+    public PolyValue[] current() {
         return current;
     }
 
@@ -87,56 +98,14 @@ class MongoEnumerator implements Enumerator<Object> {
     public boolean moveNext() {
         try {
             if ( cursor.hasNext() ) {
-                Document map = cursor.next();
-                current = getter.apply( map );
-
-                current = handleTransforms( current );
-
+                current = cursor.next();
                 return true;
             } else {
                 current = null;
                 return false;
             }
         } catch ( Exception e ) {
-            throw new RuntimeException( e );
-        }
-    }
-
-
-    protected Object handleTransforms( Object current ) {
-        if ( current == null ) {
-            return null;
-        }
-        if ( current.getClass().isArray() ) {
-            List<Object> temp = new ArrayList<>();
-            for ( Object el : (Object[]) current ) {
-                temp.add( handleTransforms( el ) );
-            }
-            return temp.toArray();
-        } else {
-            if ( current instanceof List ) {
-                return ((List<?>) current).stream().map( this::handleTransforms ).collect( Collectors.toList() );
-            } else if ( current instanceof Document ) {
-                return handleDocument( (Document) current );
-            }
-        }
-        return current;
-    }
-
-
-    // s -> stream
-    private Object handleDocument( Document el ) {
-        if ( el.containsKey( "_type" ) ) {
-            String type = el.getString( "_type" );
-            if ( type.equals( "s" ) ) {
-                // if we have inserted a document and have distributed chunks which we have to fetch
-                ObjectId objectId = new ObjectId( (String) ((Document) current).get( "_id" ) );
-                GridFSDownloadStream stream = bucket.openDownloadStream( objectId );
-                return new PushbackInputStream( stream );
-            }
-            throw new RuntimeException( "The document type was not recognized" );
-        } else {
-            return el.toJson();
+            throw new GenericRuntimeException( e );
         }
     }
 
@@ -150,129 +119,121 @@ class MongoEnumerator implements Enumerator<Object> {
     @Override
     public void close() {
         if ( cursor instanceof MongoCursor ) {
-            ((MongoCursor) cursor).close();
+            ((MongoCursor<?>) cursor).close();
         }
         // AggregationOutput implements Iterator but not DBCursor. There is no available close() method -- apparently there is no open resource.
     }
 
 
-    static Function1<Document, Map> mapGetter() {
-        return a0 -> (Map) a0;
+    static <E> Function1<Document, E> mapGetter() {
+        return a0 -> (E) a0;
     }
+
 
 
     /**
-     * This method is needed to translate the special types back to their initial ones in Arrays,
-     * for example Float is not available in MongoDB and has to be stored as Double,
-     * This needs to be fixed when retrieving the arrays.
-     * Additionally, for array we cannot be sure how the value is stored, as we lose this information on insert
+     *
      */
-    static List<Object> arrayGetter( List<Object> objects, Class<?> arrayFieldClass ) {
-        if ( arrayFieldClass == Float.class || arrayFieldClass == float.class ) {
-            if ( objects.size() > 1 ) {
-                if ( objects.get( 0 ) instanceof Double ) {
-                    return objects.stream().map( o -> ((Double) o).floatValue() ).collect( Collectors.toList() );
-                } else if ( objects.get( 0 ) instanceof Decimal128 ) {
-                    return objects.stream().map( obj -> ((Decimal128) obj).floatValue() ).collect( Collectors.toList() );
-                }
-            }
-            return objects;
-        } else if ( arrayFieldClass == BigDecimal.class ) {
-            return objects.stream().map( obj -> ((Decimal128) obj).bigDecimalValue() ).collect( Collectors.toList() );
-        } else if ( arrayFieldClass == double.class ) {
-            if ( objects.size() > 1 ) {
-                if ( objects.get( 0 ) instanceof Decimal128 ) {
-                    return objects.stream().map( o -> ((Decimal128) o).doubleValue() ).collect( Collectors.toList() );
-                }
-            }
-            return objects;
-        } else if ( arrayFieldClass == long.class ) {
-            if ( objects.size() > 1 ) {
-                if ( objects.get( 0 ) instanceof Integer ) {
-                    return objects.stream().map( o -> Long.valueOf( (Integer) o ) ).collect( Collectors.toList() );
-                }
-            }
-            return objects;
-        } else {
-            return objects;
+    static Function1<Document, PolyValue[]> listGetter( final MongoTupleType type ) {
+        List<Function<BsonValue, PolyValue>> trans = new ArrayList<>();
+        for ( MongoTupleType sub : type.subs ) {
+            String adjustedName = sub.name.startsWith( "$f" ) ? "_" + sub.name.substring( 2 ) : sub.name;
+            trans.add( o -> convert( o.asDocument().get( adjustedName ), sub ) );
         }
-    }
+        if ( type.type == PolyType.DOCUMENT ) {
+            trans.add( o -> convert( o, type ) );
+        }
 
+        return e -> {
+            BsonDocument doc = e.toBsonDocument();
 
-    static Function1<Document, Object> singletonGetter( final String fieldName, final Class<?> fieldClass, Class<?> arrayFieldClass ) {
-        return a0 -> {
-            Object obj = convert( a0.get( fieldName ), fieldClass );
-            if ( fieldClass == List.class ) {
-                return arrayGetter( (List) obj, arrayFieldClass );
-            }
-            return obj;
+            return trans.stream().map( t -> t.apply( doc ) ).toArray( PolyValue[]::new );
         };
     }
 
 
-    /**
-     * @param fields List of fields to project; or null to return map
-     * @param arrayFields
-     */
-    static Function1<Document, Object[]> listGetter( final List<Entry<String, Class>> fields, List<Entry<String, Class>> arrayFields ) {
-        return a0 -> {
-            Object[] objects = new Object[fields.size()];
-            for ( int i = 0; i < fields.size(); i++ ) {
-                final Map.Entry<String, Class> field = fields.get( i );
-                final String name = field.getKey();
-                if ( name.equals( "_data" ) ) {
-                    objects[i] = Functions.jsonize( a0.get( name ) );
+    static Function1<Document, PolyValue[]> getter( MongoTupleType tupleType ) {
+        return tupleType == null
+                ? mapGetter()
+                : listGetter( tupleType );
+    }
+
+
+    private static PolyValue convert( BsonValue o, MongoTupleType type ) {
+        if ( o == null || o.isNull() ) {
+            return new PolyNull();
+        }
+
+        return switch ( type.type ) {
+            case BIGINT -> PolyLong.of( o.asNumber().longValue() );
+            case INTEGER, SMALLINT, TINYINT -> {
+                if ( o.isNumber() ) {
+                    yield PolyInteger.of( o.asNumber().intValue() );
+                } else if ( o.isDecimal128() ) {
+                    // mongodb handles -0 separately to 0
+                    yield PolyInteger.of( o.asDecimal128().decimal128Value().doubleValue() );
                 } else {
-                    objects[i] = convert( a0.get( name ), field.getValue() );
-                }
-
-                if ( field.getValue() == List.class ) {
-                    objects[i] = arrayGetter( (List) objects[i], arrayFields.get( i ).getValue() );
+                    throw new NotImplementedException();
                 }
             }
-            return objects;
+            case BOOLEAN -> PolyBoolean.of( o.asBoolean().getValue() );
+            case TEXT, CHAR, VARCHAR -> PolyString.of( o.asString().getValue() );
+            case DECIMAL -> {
+                if ( o.isNumber() ) {
+                    yield PolyBigDecimal.of( o.asNumber().doubleValue() );
+                } else if ( o.isDecimal128() ) {
+                    yield PolyBigDecimal.of( o.asDecimal128().decimal128Value().bigDecimalValue() );
+                } else {
+                    throw new NotImplementedException();
+                }
+            }
+            case FLOAT, REAL, DOUBLE -> {
+                if ( o.isNumber() ) {
+                    yield PolyDouble.of( o.asNumber().doubleValue() );
+                } else if ( o.isDecimal128() ) {
+                    yield PolyDouble.of( o.asDecimal128().decimal128Value().bigDecimalValue().doubleValue() );
+                } else {
+                    throw new NotImplementedException();
+                }
+            }
+            case BINARY -> PolyBinary.of( o.asBinary().getData() );
+            case TIMESTAMP -> PolyTimestamp.of( o.asNumber().longValue() );
+            case TIME -> PolyTime.of( o.asNumber().longValue() );
+            case DATE -> PolyDate.of( o.asNumber().longValue() );
+            case DOCUMENT -> polyDocumentFromBson( o.asDocument() );
+            case ARRAY -> BsonUtil.toPolyValue( o.asArray() );
+            default -> throw new NotImplementedException();
         };
+
     }
 
 
-    static Function1<Document, Object> getter( List<Entry<String, Class>> fields, List<Entry<String, Class>> arrayFields ) {
-        //noinspection unchecked
-        return fields == null
-                ? (Function1) mapGetter()
-                : fields.size() == 1
-                        ? singletonGetter( fields.get( 0 ).getKey(), fields.get( 0 ).getValue(), arrayFields.get( 0 ).getValue() )
-                        : (Function1) listGetter( fields, arrayFields );
+    private static PolyDocument polyDocumentFromBson( BsonDocument document ) {
+        PolyDocument doc = new PolyDocument();
+        for ( String key : document.keySet() ) {
+            doc.put( PolyString.of( key ), convert( document.get( key ), document.get( key ).getBsonType() ) );
+        }
+        return doc;
     }
 
 
-    private static Object convert( Object o, Class clazz ) {
-        if ( o == null ) {
-            return null;
-        }
-        Primitive primitive = Primitive.of( clazz );
-        if ( primitive != null ) {
-            clazz = primitive.boxClass;
-        } else {
-            primitive = Primitive.ofBox( clazz );
-        }
-        if ( clazz.isInstance( o ) ) {
-            return o;
-        }
-        if ( o instanceof Date && primitive != null ) {
-            o = ((Date) o).getTime() / DateTimeUtils.MILLIS_PER_DAY;
-        }
-        if ( o instanceof Number && primitive != null ) {
-            return primitive.number( (Number) o );
-        }
-        if ( clazz == BigDecimal.class ) {
-            if ( o instanceof Decimal128 ) {
-                return ((Decimal128) o).bigDecimalValue();
-            } else {
-                return BigDecimal.valueOf( (Double) o );
-            }
-        }
-
-        return o;
+    private static PolyValue convert( BsonValue value, BsonType bsonType ) {
+        return switch ( bsonType ) {
+            case DOUBLE -> PolyDouble.of( value.asDouble().getValue() );
+            case STRING -> PolyString.of( value.asString().getValue() );
+            case DOCUMENT -> polyDocumentFromBson( value.asDocument() );
+            case ARRAY -> PolyList.of( value.asArray().getValues().stream().map( v -> convert( v, v.getBsonType() ) ).toArray( PolyValue[]::new ) );
+            case BINARY -> PolyBinary.of( value.asBinary().getData() );
+            case OBJECT_ID -> PolyString.of( value.asObjectId().getValue().toHexString() );
+            case BOOLEAN -> PolyBoolean.of( value.asBoolean().getValue() );
+            case DATE_TIME -> PolyTimestamp.of( value.asDateTime().getValue() );
+            case NULL -> PolyNull.NULL;
+            case INT32 -> PolyInteger.of( value.asInt32().getValue() );
+            case TIMESTAMP -> PolyTimestamp.of( value.asTimestamp().getValue() );
+            case INT64 -> PolyLong.of( value.asInt64().getValue() );
+            case DECIMAL128 -> PolyBigDecimal.of( value.asDecimal128().decimal128Value().bigDecimalValue() );
+            default -> throw new NotImplementedException();
+        };
     }
 
 

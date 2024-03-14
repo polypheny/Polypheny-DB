@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,13 +48,13 @@ import org.polypheny.db.algebra.core.Calc;
 import org.polypheny.db.algebra.logical.relational.LogicalCalc;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexFieldAccess;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNode;
@@ -87,13 +87,13 @@ import org.slf4j.Logger;
  */
 public abstract class CalcAlgSplitter {
 
-    private static final Logger RULE_LOGGER = AlgOptPlanner.LOGGER;
+    private static final Logger RULE_LOGGER = AlgPlanner.LOGGER;
 
     protected final RexProgram program;
     private final AlgDataTypeFactory typeFactory;
 
     private final AlgType[] algTypes;
-    private final AlgOptCluster cluster;
+    private final AlgCluster cluster;
     private final AlgTraitSet traits;
     private final AlgNode child;
     protected final AlgBuilder algBuilder;
@@ -207,7 +207,7 @@ public abstract class CalcAlgSplitter {
                     createProgramForLevel(
                             level,
                             levelCount,
-                            alg.getRowType(),
+                            alg.getTupleType(),
                             exprs,
                             exprLevels,
                             inputExprOrdinals,
@@ -267,7 +267,7 @@ public abstract class CalcAlgSplitter {
             final boolean condition = i == conditionOrdinal;
 
             if ( i < inputFieldCount ) {
-                assert expr instanceof RexInputRef;
+                assert expr instanceof RexIndexRef;
                 exprLevels[i] = -1;
                 continue;
             }
@@ -328,7 +328,7 @@ public abstract class CalcAlgSplitter {
                         }
                     }
 
-                    // None of the reltypes still active for this level could implement expr. But maybe we could succeed with a new level, with all options open?
+                    // None of the reltypes still active for this level could implement expr. But maybe we could succeed with a new level, with all options execute?
                     if ( count( algTypesPossibleForTopLevel ) >= algTypes.length ) {
                         // Cannot implement for any type.
                         throw new AssertionError( "cannot implement " + expr );
@@ -465,7 +465,7 @@ public abstract class CalcAlgSplitter {
         // First populate the inputs. They were computed at some previous level and are used here.
         for ( int i = 0; i < inputExprOrdinals.length; i++ ) {
             final int inputExprOrdinal = inputExprOrdinals[i];
-            exprs.add( new RexInputRef( i, allExprs[inputExprOrdinal].getType() ) );
+            exprs.add( new RexIndexRef( i, allExprs[inputExprOrdinal].getType() ) );
             exprInverseOrdinals[inputExprOrdinal] = j;
             ++j;
         }
@@ -513,9 +513,9 @@ public abstract class CalcAlgSplitter {
 
 
     private String deriveFieldName( RexNode expr, int ordinal ) {
-        if ( expr instanceof RexInputRef ) {
-            int inputIndex = ((RexInputRef) expr).getIndex();
-            String fieldName = child.getRowType().getFieldList().get( inputIndex ).getName();
+        if ( expr instanceof RexIndexRef ) {
+            int inputIndex = ((RexIndexRef) expr).getIndex();
+            String fieldName = child.getTupleType().getFields().get( inputIndex ).getName();
             // Don't inherit field names like '$3' from child: that's confusing.
             if ( !fieldName.startsWith( "$" ) || fieldName.startsWith( "$EXPR" ) ) {
                 return fieldName;
@@ -668,7 +668,7 @@ public abstract class CalcAlgSplitter {
         }
 
 
-        protected AlgNode makeRel( AlgOptCluster cluster, AlgTraitSet traitSet, AlgBuilder algBuilder, AlgNode input, RexProgram program ) {
+        protected AlgNode makeRel( AlgCluster cluster, AlgTraitSet traitSet, AlgBuilder algBuilder, AlgNode input, RexProgram program ) {
             return LogicalCalc.create( input, program );
         }
 
@@ -799,7 +799,7 @@ public abstract class CalcAlgSplitter {
 
 
         @Override
-        public RexNode visitInputRef( RexInputRef input ) {
+        public RexNode visitIndexRef( RexIndexRef input ) {
             final int index = exprInverseOrdinals[input.getIndex()];
             assert index >= 0;
             return new RexLocalRef( index, input.getType() );

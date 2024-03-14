@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.category.PolyTemporal;
 import org.polypheny.db.util.TimestampString;
 
 
@@ -44,7 +45,7 @@ public abstract class SqlAbstractDateTimeLiteral extends SqlLiteral {
     /**
      * Constructs a datetime literal.
      */
-    protected SqlAbstractDateTimeLiteral( Object d, boolean tz, PolyType typeName, int precision, ParserPos pos ) {
+    protected SqlAbstractDateTimeLiteral( PolyTemporal d, boolean tz, PolyType typeName, int precision, ParserPos pos ) {
         super( d, typeName, pos );
         this.hasTimeZone = tz;
         this.precision = precision;
@@ -55,7 +56,7 @@ public abstract class SqlAbstractDateTimeLiteral extends SqlLiteral {
      * Converts this literal to a {@link TimestampString}.
      */
     protected TimestampString getTimestamp() {
-        return (TimestampString) value;
+        return TimestampString.fromMillisSinceEpoch( value.asTemporal().getMillisSinceEpoch() );
     }
 
 

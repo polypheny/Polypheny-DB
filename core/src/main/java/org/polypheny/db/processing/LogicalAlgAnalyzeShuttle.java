@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,11 +25,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
-import org.polypheny.db.algebra.core.Scan;
-import org.polypheny.db.algebra.core.lpg.LpgAlg;
+import org.polypheny.db.algebra.core.common.Modify;
+import org.polypheny.db.algebra.core.common.Scan;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
@@ -38,7 +40,6 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentSort;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentTransformer;
-import org.polypheny.db.algebra.logical.lpg.LogicalGraph;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgAggregate;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
@@ -48,57 +49,58 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgSort;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgTransformer;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnwind;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
-import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
-import org.polypheny.db.algebra.logical.relational.LogicalExchange;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
-import org.polypheny.db.algebra.logical.relational.LogicalMatch;
-import org.polypheny.db.algebra.logical.relational.LogicalMinus;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
-import org.polypheny.db.algebra.logical.relational.LogicalScan;
-import org.polypheny.db.algebra.logical.relational.LogicalSort;
-import org.polypheny.db.algebra.logical.relational.LogicalUnion;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelCorrelate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelExchange;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelIntersect;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelMatch;
+import org.polypheny.db.algebra.logical.relational.LogicalRelMinus;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
+import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.prepare.AlgOptTableImpl;
-import org.polypheny.db.schema.LogicalTable;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.graph.Graph;
+import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.transaction.Statement;
 
 
 /**
  * Universal routing alg shuttle class to extract partition and column information from AlgNode.
  */
+@EqualsAndHashCode(callSuper = true)
+@Slf4j
+@Value
 public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
-    protected final LogicalAlgAnalyzeRexShuttle rexShuttle;
-    @Getter
-    //protected final Map<Integer, List<String>> filterMap = new HashMap<>(); // logical scanId (ScanId) -> List partitionsValue
-    protected final Map<Integer, Set<String>> partitionValueFilterPerScan = new HashMap<>(); // logical scanId (ScanId) -> (logical tableId -> List partitionsValue)
-    @Getter
-    protected final HashSet<String> hashBasis = new HashSet<>();
-    @Getter
-    protected final LinkedHashMap<Long, String> availableColumns = new LinkedHashMap<>(); // column id -> schemaName.tableName.ColumnName
-    protected final HashMap<Long, Long> availableColumnsWithTable = new HashMap<>(); // columnId -> tableId
-    @Getter
-    protected final List<String> entities = new ArrayList<>();
-    private final Statement statement;
+    public LogicalAlgAnalyzeRexShuttle rexShuttle;
 
-    @Getter
-    protected HashMap<Long, List<Object>> ordered;
+    public Map<Long, Set<String>> partitionValueFilterPerScan = new HashMap<>(); // logical scanId (ScanId) -> (logical tableId -> List partitionsValue)
 
-    @Getter
-    public int rowCount;
+    public Set<String> hashBasis = new HashSet<>();
+
+    public Map<Long, String> availableColumns = new LinkedHashMap<>(); // column id -> schemaName.tableName.ColumnName
+
+    public Map<Long, Long> availableColumnsWithTable = new HashMap<>(); // columnId -> tableId
+
+    public Map<DataModel, Set<Long>> modifiedEntities = new HashMap<>();
+
+    public Map<DataModel, Set<Long>> scannedEntities = new HashMap<>();
+
+    public List<Long> entityIds = new ArrayList<>();
+
+    public Statement statement;
 
 
     public LogicalAlgAnalyzeShuttle( Statement statement ) {
-        this.statement = statement;
         this.rexShuttle = new LogicalAlgAnalyzeRexShuttle();
+        this.statement = statement;
     }
 
 
@@ -140,9 +142,25 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     }
 
 
+    private void addScannedEntity( DataModel type, long entityId ) {
+        if ( !scannedEntities.containsKey( type ) ) {
+            scannedEntities.put( type, new HashSet<>() );
+        }
+        scannedEntities.get( type ).add( entityId );
+    }
+
+
+    private void addModifiedEntity( DataModel type, long entityId ) {
+        if ( !modifiedEntities.containsKey( type ) ) {
+            modifiedEntities.put( type, new HashSet<>() );
+        }
+        modifiedEntities.get( type ).add( entityId );
+    }
+
+
     @Override
-    public AlgNode visit( LogicalAggregate aggregate ) {
-        hashBasis.add( "LogicalAggregate#" + aggregate.getAggCallList() );
+    public AlgNode visit( LogicalRelAggregate aggregate ) {
+        hashBasis.add( LogicalRelAggregate.class.getSimpleName() + "#" + aggregate.getAggCallList() );
         return visitChild( aggregate, 0, aggregate.getInput() );
     }
 
@@ -150,13 +168,18 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     @Override
     public AlgNode visit( LogicalLpgModify modify ) {
         hashBasis.add( modify.getClass().getSimpleName() );
+
+        addModifiedEntity( modify.getEntity().dataModel, getLogicalId( modify ) );
+
         return super.visit( modify );
     }
 
 
     @Override
     public AlgNode visit( LogicalLpgScan scan ) {
-        hashBasis.add( scan.getClass().getSimpleName() + "#" + scan.getGraph().getId() );
+        hashBasis.add( scan.getClass().getSimpleName() + "#" + scan.entity.id );
+
+        addScannedEntity( scan.getEntity().dataModel, scan.entity.id );
 
         return super.visit( scan );
     }
@@ -168,7 +191,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
         super.visit( filter );
         filter.accept( this.rexShuttle );
 
-        getPartitioningInfo( filter );
+        //getPartitioningInfo( filter );
 
         return filter;
     }
@@ -193,7 +216,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalLpgAggregate aggregate ) {
-        hashBasis.add( aggregate.getClass().getSimpleName() + "#" + aggregate.getAggCallList() );
+        hashBasis.add( aggregate.getClass().getSimpleName() + "#" + aggregate.aggCalls );
         return visitChild( aggregate, 0, aggregate.getInput() );
     }
 
@@ -221,7 +244,9 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalDocumentModify modify ) {
-        hashBasis.add( "LogicalDocumentModify" );
+        hashBasis.add( LogicalDocumentModify.class.getSimpleName() );
+
+        addModifiedEntity( modify.getEntity().dataModel, getLogicalId( modify ) );
 
         return super.visit( modify );
     }
@@ -229,18 +254,18 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalDocumentAggregate aggregate ) {
-        hashBasis.add( "LogicalDocumentAggregate#" + aggregate.aggCalls );
+        hashBasis.add( LogicalDocumentAggregate.class.getSimpleName() + "#" + aggregate.aggCalls );
         return visitChild( aggregate, 0, aggregate.getInput() );
     }
 
 
     @Override
     public AlgNode visit( LogicalDocumentFilter filter ) {
-        hashBasis.add( "LogicalDocumentFilter" );
+        hashBasis.add( LogicalDocumentFilter.class.getSimpleName() );
         super.visit( filter );
         filter.accept( this.rexShuttle );
 
-        getPartitioningInfo( filter );
+        //getPartitioningInfo( filter );
 
         return filter;
     }
@@ -248,7 +273,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalDocumentProject project ) {
-        hashBasis.add( "LogicalDocumentProject#" + project.projects.size() );
+        hashBasis.add( LogicalDocumentProject.class.getSimpleName() + "#" + project.includes.size() + "$" + project.excludes.size() );
         super.visit( project );
         project.accept( this.rexShuttle );
         return project;
@@ -257,52 +282,71 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalDocumentScan scan ) {
-        hashBasis.add( "LogicalDocumentScan#" + scan.getCollection().getTable().getTableId() );
+        hashBasis.add( LogicalDocumentScan.class.getSimpleName() + "#" + scan.entity.id );
+
+        addScannedEntity( scan.entity.dataModel, getLogicalId( scan ) );
+
         return super.visit( scan );
     }
 
 
     @Override
     public AlgNode visit( LogicalDocumentSort sort ) {
-        hashBasis.add( "LogicalDocumentSort" );
+        hashBasis.add( LogicalDocumentSort.class.getSimpleName() );
         return visitChildren( sort );
     }
 
 
     @Override
     public AlgNode visit( LogicalDocumentTransformer transformer ) {
-        hashBasis.add( "LogicalDocumentTransformer#" + transformer.inModelTrait.getDataModel().name() + "#" + transformer.outModelTrait.getDataModel().name() );
+        hashBasis.add( LogicalDocumentTransformer.class.getSimpleName() + "#" + transformer.inModelTrait.dataModel().name() + "#" + transformer.outModelTrait.dataModel().name() );
         return visitChildren( transformer );
     }
 
 
     @Override
     public AlgNode visit( LogicalConstraintEnforcer enforcer ) {
-        hashBasis.add( "LogicalConstraintEnforcer#" + enforcer.algCompareString() );
+        hashBasis.add( LogicalConstraintEnforcer.class.getSimpleName() + "#" + enforcer.algCompareString() );
         return super.visit( enforcer );
     }
 
 
     @Override
-    public AlgNode visit( LogicalMatch match ) {
-        hashBasis.add( "LogicalMatch#" + match.getTable().getQualifiedName() );
+    public AlgNode visit( LogicalRelMatch match ) {
+        hashBasis.add( LogicalRelMatch.class.getSimpleName() + "#" + match.getEntity().id );
         return visitChild( match, 0, match.getInput() );
     }
 
 
     @Override
-    public AlgNode visit( Scan scan ) {
-        hashBasis.add( "Scan#" + scan.getTable().getQualifiedName() );
-        // get available columns for every table scan
+    public AlgNode visit( LogicalRelScan scan ) {
+        if ( scan.getEntity() == null ) {
+            throw new RuntimeException();
+        }
+        hashBasis.add( "Scan#" + scan.getEntity().id );
+
+        addScannedEntity( scan.getEntity().dataModel, getLogicalId( scan ) );
+
+        // get available columns for every table relScan
         this.getAvailableColumns( scan );
 
         return super.visit( scan );
     }
 
 
+    private static long getLogicalId( Scan<?> scan ) {
+        return scan.entity.isLogical() ? scan.entity.id : scan.entity.unwrap( AllocationEntity.class ).orElseThrow().getLogicalId();
+    }
+
+
+    private static long getLogicalId( Modify<?> modify ) {
+        return modify.entity.isLogical() ? modify.entity.id : modify.entity.unwrap( AllocationEntity.class ).orElseThrow().getLogicalId();
+    }
+
+
     @Override
-    public AlgNode visit( LogicalFilter filter ) {
-        hashBasis.add( "LogicalFilter" );
+    public AlgNode visit( LogicalRelFilter filter ) {
+        hashBasis.add( LogicalRelFilter.class.getSimpleName() );
         super.visit( filter );
         filter.accept( this.rexShuttle );
 
@@ -313,8 +357,8 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     @Override
-    public AlgNode visit( LogicalProject project ) {
-        hashBasis.add( "LogicalProject#" + project.getProjects().size() );
+    public AlgNode visit( LogicalRelProject project ) {
+        hashBasis.add( LogicalRelProject.class.getSimpleName() + "#" + project.getProjects().size() );
         super.visit( project );
         project.accept( this.rexShuttle );
         return project;
@@ -322,16 +366,16 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     @Override
-    public AlgNode visit( LogicalCorrelate correlate ) {
-        hashBasis.add( "LogicalCorrelate" );
+    public AlgNode visit( LogicalRelCorrelate correlate ) {
+        hashBasis.add( LogicalRelCorrelate.class.getSimpleName() );
         return visitChildren( correlate );
     }
 
 
     @Override
-    public AlgNode visit( LogicalJoin join ) {
-        if ( join.getLeft() instanceof LogicalScan && join.getRight() instanceof LogicalScan ) {
-            hashBasis.add( "LogicalJoin#" + join.getLeft().getTable().getQualifiedName() + "#" + join.getRight().getTable().getQualifiedName() );
+    public AlgNode visit( LogicalRelJoin join ) {
+        if ( join.getLeft() instanceof LogicalRelScan && join.getRight() instanceof LogicalRelScan ) {
+            hashBasis.add( LogicalRelJoin.class + "#" + join.getLeft().getEntity().id + "#" + join.getRight().getEntity().id );
         }
 
         super.visit( join );
@@ -341,8 +385,8 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     @Override
-    public AlgNode visit( LogicalUnion union ) {
-        hashBasis.add( "LogicalUnion" );
+    public AlgNode visit( LogicalRelUnion union ) {
+        hashBasis.add( LogicalRelUnion.class.getSimpleName() );
         super.visit( union );
         union.accept( this.rexShuttle );
         return union;
@@ -350,8 +394,8 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     @Override
-    public AlgNode visit( LogicalIntersect intersect ) {
-        hashBasis.add( "LogicalIntersect" );
+    public AlgNode visit( LogicalRelIntersect intersect ) {
+        hashBasis.add( LogicalRelIntersect.class.getSimpleName() );
         super.visit( intersect );
         intersect.accept( this.rexShuttle );
         return intersect;
@@ -359,29 +403,32 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     @Override
-    public AlgNode visit( LogicalMinus minus ) {
-        hashBasis.add( "LogicalMinus" );
+    public AlgNode visit( LogicalRelMinus minus ) {
+        hashBasis.add( LogicalRelMinus.class.getSimpleName() );
         return visitChildren( minus );
     }
 
 
     @Override
-    public AlgNode visit( LogicalSort sort ) {
-        hashBasis.add( "LogicalSort" );
+    public AlgNode visit( LogicalRelSort sort ) {
+        hashBasis.add( LogicalRelSort.class.getSimpleName() );
         return visitChildren( sort );
     }
 
 
     @Override
-    public AlgNode visit( LogicalExchange exchange ) {
-        hashBasis.add( "LogicalExchange#" + exchange.distribution.getType().shortName );
+    public AlgNode visit( LogicalRelExchange exchange ) {
+        hashBasis.add( LogicalRelExchange.class.getSimpleName() + "#" + exchange.distribution.getType().shortName );
         return visitChildren( exchange );
     }
 
 
     @Override
-    public AlgNode visit( LogicalModify modify ) {
-        hashBasis.add( "LogicalModify" );
+    public AlgNode visit( LogicalRelModify modify ) {
+        hashBasis.add( LogicalRelModify.class.getSimpleName() );
+
+        addModifiedEntity( modify.getEntity().dataModel, getLogicalId( modify ) );
+
         // e.g. inserts only have underlying values and need to attach the table correctly
         this.getAvailableColumns( modify );
         return visitChildren( modify );
@@ -396,42 +443,41 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     private void getAvailableColumns( AlgNode scan ) {
-        this.entities.addAll( scan.getTable().getQualifiedName() );
-        final Table table = scan.getTable().getTable();
-        LogicalTable logicalTable = (table instanceof LogicalTable) ? (LogicalTable) table : null;
-        if ( logicalTable != null ) {
-            final List<Long> ids = logicalTable.getColumnIds();
-            final List<String> names = logicalTable.getLogicalColumnNames();
-            final String baseName = logicalTable.getLogicalSchemaName() + "." + logicalTable.getLogicalTableName() + ".";
 
-            for ( int i = 0; i < ids.size(); i++ ) {
-                this.availableColumns.putIfAbsent( ids.get( i ), baseName + names.get( i ) );
-                this.availableColumnsWithTable.putIfAbsent( ids.get( i ), logicalTable.getTableId() );
+        if ( scan.getEntity().unwrap( LogicalTable.class ).isPresent() ) {
+            final LogicalTable table = scan.getEntity().unwrap( LogicalTable.class ).get();
+            final List<LogicalColumn> columns = Catalog.getInstance().getSnapshot().rel().getColumns( table.id );
+            final List<String> names = columns.stream().map( c -> c.name ).toList();
+            final String baseName = Catalog.getInstance().getSnapshot().getNamespace( table.namespaceId ) + "." + table.name + ".";
+
+            for ( int i = 0; i < columns.size(); i++ ) {
+                this.availableColumns.putIfAbsent( columns.get( i ).id, baseName + names.get( i ) );
+                this.availableColumnsWithTable.putIfAbsent( columns.get( i ).id, table.id );
             }
         }
     }
 
 
-    private void getPartitioningInfo( LogicalFilter filter ) {
-        AlgOptTableImpl table = (AlgOptTableImpl) filter.getInput().getTable();
-        if ( table == null ) {
+    private void getPartitioningInfo( LogicalRelFilter filter ) {
+        Entity table = filter.getInput().getEntity();
+        if ( table == null || table.unwrap( LogicalTable.class ).isEmpty() ) {
             return;
         }
 
-        final Table logicalTable = table.getTable();
-        if ( !(logicalTable instanceof LogicalTable) ) {
-            return;
-        }
-        CatalogTable catalogTable = Catalog.getInstance().getTable( logicalTable.getTableId() );
+        handleIfPartitioned( filter, table.unwrap( LogicalTable.class ).orElseThrow() );
+    }
 
+
+    private void handleIfPartitioned( AlgNode node, Entity logicalEntity ) {
         // Only if table is partitioned
-        if ( catalogTable.partitionProperty.isPartitioned ) {
+        if ( Catalog.snapshot().alloc().getPlacementsFromLogical( logicalEntity.id ).size() > 1
+                || Catalog.snapshot().alloc().getPartitionsFromLogical( logicalEntity.id ).size() > 1 ) {
             WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(
-                    statement,
-                    catalogTable.fieldIds.indexOf( catalogTable.partitionProperty.partitionColumnId ) );
-            filter.accept( whereClauseVisitor );
+                    this.statement,
+                    Catalog.snapshot().rel().getColumns( logicalEntity.id ).stream().map( c -> c.id ).toList().indexOf( Catalog.snapshot().alloc().getPartitionProperty( logicalEntity.id ).orElseThrow().partitionColumnId ) );
+            node.accept( whereClauseVisitor );
 
-            int scanId = filter.getInput().getId();
+            long scanId = node.getInput( 0 ).getEntity().id;
 
             if ( !partitionValueFilterPerScan.containsKey( scanId ) ) {
                 partitionValueFilterPerScan.put( scanId, new HashSet<>() );
@@ -449,53 +495,23 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     private void getPartitioningInfo( LogicalDocumentFilter filter ) {
-        AlgOptTableImpl table = (AlgOptTableImpl) filter.getInput().getTable();
-        if ( table == null ) {
+        Entity entity = filter.getInput().getEntity();
+        if ( entity == null ) {
             return;
         }
 
-        final Table logicalTable = table.getTable();
-        if ( !(logicalTable instanceof LogicalTable) ) {
-            return;
-        }
-        CatalogTable catalogTable = Catalog.getInstance().getTable( logicalTable.getTableId() );
-
-        // Only if table is partitioned
-        if ( catalogTable.partitionProperty.isPartitioned ) {
-            WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(
-                    statement,
-                    catalogTable.fieldIds.indexOf( catalogTable.partitionProperty.partitionColumnId ) );
-            filter.accept( whereClauseVisitor );
-
-            int scanId = filter.getInput().getId();
-
-            if ( !partitionValueFilterPerScan.containsKey( scanId ) ) {
-                partitionValueFilterPerScan.put( scanId, new HashSet<>() );
-            }
-
-            if ( whereClauseVisitor.valueIdentified ) {
-                if ( !whereClauseVisitor.getValues().isEmpty() && !whereClauseVisitor.isUnsupportedFilter() ) {
-                    partitionValueFilterPerScan.get( scanId ).addAll( whereClauseVisitor.getValues().stream()
-                            .map( Object::toString )
-                            .collect( Collectors.toSet() ) );
-                }
-            }
-        }
+        handleIfPartitioned( filter, entity );
     }
 
 
     private void getPartitioningInfo( LogicalLpgFilter filter ) {
-        Graph graph = ((LpgAlg) filter.getInput()).getGraph();
-        if ( graph == null ) {
+        Entity entity = filter.getInput().getEntity();
+        if ( entity == null ) {
             return;
         }
 
-        if ( !(graph instanceof LogicalGraph) ) {
-            return;
-        }
-        CatalogGraphDatabase catalogEntity = Catalog.getInstance().getGraph( graph.getId() );
+        handleIfPartitioned( filter, entity );
 
-        // Only if table is partitioned
     }
 
 }

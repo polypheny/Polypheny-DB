@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,8 +29,7 @@ import org.apache.calcite.avatica.remote.Service;
 @Slf4j
 public class DbmsService implements Service {
 
-    private LocalService delegate;
-    private RpcMetadataResponse rpcMetaData;
+    private final LocalService delegate;
 
 
     public DbmsService( DbmsMeta meta, MetricsSystem metrics ) {
@@ -268,7 +267,6 @@ public class DbmsService implements Service {
         if ( log.isTraceEnabled() ) {
             log.trace( "setRpcMetadata( RpcMetadataResponse {} )", metadata );
         }
-        this.rpcMetaData = metadata;
         delegate.setRpcMetadata( metadata );
     }
 

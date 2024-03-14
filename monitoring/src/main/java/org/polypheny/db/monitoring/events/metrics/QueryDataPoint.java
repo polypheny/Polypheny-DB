@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.polypheny.db.monitoring.events.metrics;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -23,37 +24,31 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.Value;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 
 
-@Getter
-@Setter
 @Builder
-@NoArgsConstructor(access = AccessLevel.PUBLIC)
-@AllArgsConstructor(access = AccessLevel.MODULE)
+@Value
 public class QueryDataPoint implements MonitoringDataPoint, Serializable {
 
+    @Serial
     private static final long serialVersionUID = 9063080671064507812L;
 
-    private final List<String> tables = new ArrayList<>();
-    private final HashMap<String, Object> dataElements = new HashMap<>();
-    private UUID Id;
-    private Timestamp recordedTimestamp;
-    private String monitoringType;
-    private String description;
-    private long executionTime;
-    private boolean isSubQuery;
-    protected boolean isCommitted;
-    private int rowCount;
-    private List<String> fieldNames;
-    protected Integer indexSize;
-    protected final Map<Long, Long> availableColumnsWithTable = new HashMap<>();
+    List<String> tables = new ArrayList<>();
+    HashMap<String, Object> dataElements = new HashMap<>();
+    UUID Id;
+    Timestamp recordedTimestamp;
+    String monitoringType;
+    String description;
+    long executionTime;
+    boolean isSubQuery;
+    boolean isCommitted;
+    int rowCount;
+    List<String> fieldNames;
+    Integer indexSize;
+    Map<Long, Long> availableColumnsWithTable = new HashMap<>();
 
 
     @Override

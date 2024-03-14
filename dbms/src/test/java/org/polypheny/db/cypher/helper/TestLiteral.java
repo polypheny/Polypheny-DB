@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.polypheny.db.cypher.helper;
 
 import javax.annotation.Nullable;
+import org.polypheny.db.type.entity.PolyValue;
 
 public class TestLiteral implements TestObject {
 
@@ -29,21 +30,21 @@ public class TestLiteral implements TestObject {
 
 
     @Override
-    public boolean matches( Object other, boolean exclusive ) {
-        if ( value == null && other == null ) {
+    public boolean matches( PolyValue other, boolean exclusive ) {
+        if ( value == null && (other == null || other.isNull()) ) {
             return true;
         }
-        if ( value == null || other == null ) {
+        if ( value == null || (other == null || other.isNull()) ) {
             return false;
         }
 
-        return value.equals( other );
+        return value.equals( other.toJson() );
     }
 
 
     @Override
-    public Object toPoly( String val ) {
-        return val;
+    public PolyValue toPoly( String val ) {
+        return val == null ? null : PolyValue.fromTypedJson( val, PolyValue.class );
     }
 
 

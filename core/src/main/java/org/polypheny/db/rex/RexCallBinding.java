@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,6 +49,8 @@ import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.nodes.validate.ValidatorException;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources.ExInst;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.CoreUtil;
 
 
@@ -82,12 +84,12 @@ public class RexCallBinding extends OperatorBinding {
 
 
     @Override
-    public <T> T getOperandLiteralValue( int ordinal, Class<T> clazz ) {
+    public PolyValue getOperandLiteralValue( int ordinal, PolyType type ) {
         final RexNode node = operands.get( ordinal );
         if ( node instanceof RexLiteral ) {
-            return ((RexLiteral) node).getValueAs( clazz );
+            return ((RexLiteral) node).value;
         }
-        return clazz.cast( RexLiteral.value( node ) );
+        return RexLiteral.value( node );
     }
 
 
@@ -95,14 +97,14 @@ public class RexCallBinding extends OperatorBinding {
     public Monotonicity getOperandMonotonicity( int ordinal ) {
         RexNode operand = operands.get( ordinal );
 
-        if ( operand instanceof RexInputRef ) {
+        if ( operand instanceof RexIndexRef ) {
             for ( AlgCollation ic : inputCollations ) {
                 if ( ic.getFieldCollations().isEmpty() ) {
                     continue;
                 }
 
                 for ( AlgFieldCollation rfc : ic.getFieldCollations() ) {
-                    if ( rfc.getFieldIndex() == ((RexInputRef) operand).getIndex() ) {
+                    if ( rfc.getFieldIndex() == ((RexIndexRef) operand).getIndex() ) {
                         return rfc.direction.monotonicity();
                         // TODO: Is it possible to have more than one RelFieldCollation for a RexInputRef?
                     }

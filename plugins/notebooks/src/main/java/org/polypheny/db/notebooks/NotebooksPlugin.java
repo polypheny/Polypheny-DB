@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,14 +21,12 @@ import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.pf4j.Extension;
-import org.pf4j.Plugin;
-import org.pf4j.PluginWrapper;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.ConfigString;
@@ -36,16 +34,16 @@ import org.polypheny.db.docker.DockerContainer;
 import org.polypheny.db.docker.DockerContainer.HostAndPort;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
-import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.notebooks.model.JupyterSessionManager;
-import org.polypheny.db.processing.TransactionExtension;
+import org.polypheny.db.plugins.PluginContext;
+import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.webui.ConfigService.HandlerType;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.HttpServer;
-import org.polypheny.db.webui.HttpServer.HandlerType;
 
 @Slf4j
-public class NotebooksPlugin extends Plugin {
+public class NotebooksPlugin extends PolyPlugin {
 
     private final static String CONFIG_CONTAINER_KEY = "notebooks/jupyter_container_id";
     private final static String CONFIG_TOKEN_KEY = "notebooks/jupyter_token";
@@ -63,8 +61,8 @@ public class NotebooksPlugin extends Plugin {
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to be successfully loaded by manager.
      */
-    public NotebooksPlugin( PluginWrapper wrapper ) {
-        super( wrapper );
+    public NotebooksPlugin( PluginContext context ) {
+        super( context );
         Config tokenConfig = new ConfigString( CONFIG_TOKEN_KEY, "" );
         ConfigManager.getInstance().registerConfig( tokenConfig );
         Config containerIdConfig = new ConfigString( CONFIG_CONTAINER_KEY, "" );
@@ -73,8 +71,10 @@ public class NotebooksPlugin extends Plugin {
 
 
     @Override
-    public void start() {
-        TransactionExtension.REGISTER.add( new NotebooksStarter( this ) );
+    public void afterTransactionInit( TransactionManager manager ) {
+        JupyterSessionManager.getInstance().setTransactionManager( manager );
+        registerEndpoints();
+        checkContainer();
         log.info( "Notebooks plugin was started!" );
         pluginLoaded = true;
     }
@@ -106,8 +106,8 @@ public class NotebooksPlugin extends Plugin {
 
 
     private void createContainerRequest( Context ctx ) {
-        int dockerId = Integer.parseInt( ctx.queryParam( "dockerInstance" ) );
-        DockerInstance dockerInstance = DockerManager.getInstance().getInstanceById( dockerId ).get();
+        int dockerId = Integer.parseInt( Objects.requireNonNull( ctx.queryParam( "dockerInstance" ) ) );
+        DockerInstance dockerInstance = DockerManager.getInstance().getInstanceById( dockerId ).orElseThrow();
         if ( createContainer( dockerInstance ) ) {
             ctx.status( 200 );
         } else {
@@ -122,7 +122,7 @@ public class NotebooksPlugin extends Plugin {
 
 
     private void getDockerInstances( Context ctx ) {
-        List<Map<String, Object>> result = DockerManager.getInstance().getDockerInstances().values().stream().filter( DockerInstance::isConnected ).map( DockerInstance::getMap ).collect( Collectors.toList() );
+        List<Map<String, Object>> result = DockerManager.getInstance().getDockerInstances().values().stream().filter( DockerInstance::isConnected ).map( DockerInstance::getMap ).toList();
         ctx.status( 200 ).json( result );
     }
 
@@ -148,7 +148,7 @@ public class NotebooksPlugin extends Plugin {
 
                 if ( !this.container.waitTillStarted( this::testConnection, 20000 ) ) {
                     this.container.destroy();
-                    throw new RuntimeException( "Failed to start Jupyter Server container" );
+                    throw new GenericRuntimeException( "Failed to start Jupyter Server container" );
                 }
                 ConfigManager.getInstance().getConfig( CONFIG_CONTAINER_KEY ).setString( this.container.getContainerId() );
                 log.info( "Jupyter Server container has been deployed" );
@@ -166,7 +166,7 @@ public class NotebooksPlugin extends Plugin {
 
     public void onContainerRunning() {
         HostAndPort hostAndPort = container.connectToContainer( JUPYTER_PORT );
-        proxy = new JupyterProxy( new JupyterClient( token, hostAndPort.getHost(), hostAndPort.getPort() ) );
+        proxy = new JupyterProxy( new JupyterClient( token, hostAndPort.host(), hostAndPort.port() ) );
     }
 
 
@@ -190,7 +190,7 @@ public class NotebooksPlugin extends Plugin {
         log.info( "Restarting Jupyter container..." );
         if ( createContainer( dockerInstance ) ) {
             HostAndPort hostAndPort = container.connectToContainer( JUPYTER_PORT );
-            proxy.setClient( new JupyterClient( token, hostAndPort.getHost(), hostAndPort.getPort() ) );
+            proxy.setClient( new JupyterClient( token, hostAndPort.host(), hostAndPort.port() ) );
             ctx.status( 200 ).json( "restart ok" );
         } else {
             container = null;
@@ -201,9 +201,9 @@ public class NotebooksPlugin extends Plugin {
 
     public void pluginStatus( Context ctx, Crud crud ) {
         if ( pluginLoaded ) {
-            ctx.status( 200 ).json( "plugin is loaded correctly" );
+            ctx.status( 200 );
         } else {
-            ctx.status( 500 ).json( "plugin is not loaded correctly" );
+            ctx.status( 500 );
         }
     }
 
@@ -237,49 +237,49 @@ public class NotebooksPlugin extends Plugin {
      */
     private void registerEndpoints() {
         HttpServer server = HttpServer.getInstance();
-        final String REST_PATH = "/notebooks";
+        final String PATH = "/notebooks";
 
-        server.addWebsocket( REST_PATH + "/webSocket/{kernelId}", new JupyterWebSocket() );
+        server.addWebsocketRoute( PATH + "/webSocket/{kernelId}", new JupyterWebSocket() );
 
-        server.addSerializedRoute( REST_PATH + "/contents/<path>", fs::contents, HandlerType.GET );
-        server.addSerializedRoute( REST_PATH + "/sessions", proxyOrEmpty( proxy -> proxy::sessions ), HandlerType.GET );
-        server.addSerializedRoute( REST_PATH + "/sessions/{sessionId}", proxyOrError( proxy -> proxy::session ), HandlerType.GET );
-        server.addSerializedRoute( REST_PATH + "/kernels", proxyOrEmpty( proxy -> proxy::kernels ), HandlerType.GET );
-        server.addSerializedRoute( REST_PATH + "/kernelspecs", ctx -> {
+        server.addSerializedRoute( PATH + "/contents/<path>", fs::contents, HandlerType.GET );
+        server.addSerializedRoute( PATH + "/sessions", proxyOrEmpty( proxy -> proxy::sessions ), HandlerType.GET );
+        server.addSerializedRoute( PATH + "/sessions/{sessionId}", proxyOrError( proxy -> proxy::session ), HandlerType.GET );
+        server.addSerializedRoute( PATH + "/kernels", proxyOrEmpty( proxy -> proxy::kernels ), HandlerType.GET );
+        server.addSerializedRoute( PATH + "/kernelspecs", ctx -> {
             if ( proxy != null ) {
                 proxy.kernelspecs( ctx );
             } else {
                 ctx.status( 200 ).json( Map.of( "default", "", "kernelspecs", Map.of() ) );
             }
         }, HandlerType.GET );
-        server.addSerializedRoute( REST_PATH + "/file/<path>", fs::file, HandlerType.GET );
-        server.addSerializedRoute( REST_PATH + "/plugin/status", this::pluginStatus, HandlerType.GET );
-        server.addSerializedRoute( REST_PATH + "/status", ctx -> {
+        server.addSerializedRoute( PATH + "/file/<path>", fs::file, HandlerType.GET );
+        server.addSerializedRoute( PATH + "/plugin/status", this::pluginStatus, HandlerType.GET );
+        server.addSerializedRoute( PATH + "/status", ctx -> {
             if ( proxy != null ) {
                 proxy.connectionStatus( ctx );
             } else {
                 ctx.status( 200 ).result( "null" );
             }
         }, HandlerType.GET );
-        server.addSerializedRoute( REST_PATH + "/export/<path>", fs::export, HandlerType.GET );
-        server.addSerializedRoute( REST_PATH + "/connections", proxyOrEmpty( proxy -> proxy::openConnections ), HandlerType.GET );
-        server.addSerializedRoute( REST_PATH + "/container/getDockerInstances", this::getDockerInstances, HandlerType.GET );
+        server.addSerializedRoute( PATH + "/export/<path>", fs::export, HandlerType.GET );
+        server.addSerializedRoute( PATH + "/connections", proxyOrEmpty( proxy -> proxy::openConnections ), HandlerType.GET );
+        server.addSerializedRoute( PATH + "/container/getDockerInstances", this::getDockerInstances, HandlerType.GET );
 
-        server.addSerializedRoute( REST_PATH + "/contents/<parentPath>", fs::createFile, HandlerType.POST );
-        server.addSerializedRoute( REST_PATH + "/sessions", proxyOrError( proxy -> proxy::createSession ), HandlerType.POST );
-        server.addSerializedRoute( REST_PATH + "/kernels/{kernelId}/interrupt", proxyOrError( proxy -> proxy::interruptKernel ), HandlerType.POST );
-        server.addSerializedRoute( REST_PATH + "/kernels/{kernelId}/restart", proxyOrError( proxy -> proxy::restartKernel ), HandlerType.POST );
-        server.addSerializedRoute( REST_PATH + "/container/restart", this::restartContainer, HandlerType.POST );
-        server.addSerializedRoute( REST_PATH + "/container/create", this::createContainerRequest, HandlerType.POST );
-        server.addSerializedRoute( REST_PATH + "/container/destroy", this::destroyContainerRequest, HandlerType.POST );
+        server.addSerializedRoute( PATH + "/contents/<parentPath>", fs::createFile, HandlerType.POST );
+        server.addSerializedRoute( PATH + "/sessions", proxyOrError( proxy -> proxy::createSession ), HandlerType.POST );
+        server.addSerializedRoute( PATH + "/kernels/{kernelId}/interrupt", proxyOrError( proxy -> proxy::interruptKernel ), HandlerType.POST );
+        server.addSerializedRoute( PATH + "/kernels/{kernelId}/restart", proxyOrError( proxy -> proxy::restartKernel ), HandlerType.POST );
+        server.addSerializedRoute( PATH + "/container/restart", this::restartContainer, HandlerType.POST );
+        server.addSerializedRoute( PATH + "/container/create", this::createContainerRequest, HandlerType.POST );
+        server.addSerializedRoute( PATH + "/container/destroy", this::destroyContainerRequest, HandlerType.POST );
 
-        server.addSerializedRoute( REST_PATH + "/contents/<filePath>", fs::moveFile, HandlerType.PATCH );
-        server.addSerializedRoute( REST_PATH + "/sessions/{sessionId}", proxyOrError( proxy -> proxy::patchSession ), HandlerType.PATCH );
+        server.addSerializedRoute( PATH + "/contents/<filePath>", fs::moveFile, HandlerType.PATCH );
+        server.addSerializedRoute( PATH + "/sessions/{sessionId}", proxyOrError( proxy -> proxy::patchSession ), HandlerType.PATCH );
 
-        server.addSerializedRoute( REST_PATH + "/contents/<filePath>", fs::uploadFile, HandlerType.PUT );
+        server.addSerializedRoute( PATH + "/contents/<filePath>", fs::uploadFile, HandlerType.PUT );
 
-        server.addSerializedRoute( REST_PATH + "/contents/<filePath>", fs::deleteFile, HandlerType.DELETE );
-        server.addSerializedRoute( REST_PATH + "/sessions/{sessionId}", proxyOrError( proxy -> proxy::deleteSession ), HandlerType.DELETE );
+        server.addSerializedRoute( PATH + "/contents/<filePath>", fs::deleteFile, HandlerType.DELETE );
+        server.addSerializedRoute( PATH + "/sessions/{sessionId}", proxyOrError( proxy -> proxy::deleteSession ), HandlerType.DELETE );
     }
 
 
@@ -293,7 +293,7 @@ public class NotebooksPlugin extends Plugin {
             return false;
         }
         HostAndPort hostAndPort = container.connectToContainer( JUPYTER_PORT );
-        JupyterClient client = new JupyterClient( token, hostAndPort.getHost(), hostAndPort.getPort() );
+        JupyterClient client = new JupyterClient( token, hostAndPort.host(), hostAndPort.port() );
         return client.testConnection();
     }
 
@@ -312,27 +312,6 @@ public class NotebooksPlugin extends Plugin {
             token.append( String.format( "%02x", i ) );
         }
         return token.toString();
-    }
-
-
-    @Extension
-    public static class NotebooksStarter implements TransactionExtension {
-
-        private final NotebooksPlugin plugin;
-
-
-        public NotebooksStarter( NotebooksPlugin plugin ) {
-            this.plugin = plugin;
-        }
-
-
-        @Override
-        public void initExtension( TransactionManager manager, Authenticator authenticator ) {
-            JupyterSessionManager.getInstance().setTransactionManager( manager );
-            plugin.registerEndpoints();
-            plugin.checkContainer();
-        }
-
     }
 
 }

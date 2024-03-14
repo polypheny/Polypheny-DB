@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,6 @@ package org.polypheny.db.algebra.rules;
 
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -51,7 +50,7 @@ import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
@@ -62,9 +61,9 @@ import org.polypheny.db.util.mapping.Mappings.TargetMapping;
 
 /**
  * Planner rule that recognizes a {@link Aggregate} on top of a {@link Project} and if possible aggregate through the project or removes the project.
- *
+ * <p>
  * This is only possible when the grouping expressions and arguments to the aggregate functions are field references (i.e. not expressions).
- *
+ * <p>
  * In some cases, this rule has the effect of trimming: the aggregate will use fewer columns than the project did.
  */
 public class AggregateProjectMergeRule extends AlgOptRule {
@@ -90,8 +89,7 @@ public class AggregateProjectMergeRule extends AlgOptRule {
 
     public static AlgNode apply( AlgOptRuleCall call, Aggregate aggregate, Project project ) {
         // Find all fields which we need to be straightforward field projections.
-        final Set<Integer> interestingFields = new TreeSet<>();
-        interestingFields.addAll( aggregate.getGroupSet().asList() );
+        final Set<Integer> interestingFields = new TreeSet<>( aggregate.getGroupSet().asList() );
         for ( AggregateCall aggregateCall : aggregate.getAggCallList() ) {
             interestingFields.addAll( aggregateCall.getArgList() );
             if ( aggregateCall.filterArg >= 0 ) {
@@ -104,10 +102,10 @@ public class AggregateProjectMergeRule extends AlgOptRule {
         final Map<Integer, Integer> map = new HashMap<>();
         for ( int source : interestingFields ) {
             final RexNode rex = project.getProjects().get( source );
-            if ( !(rex instanceof RexInputRef) ) {
+            if ( rex.unwrap( RexIndexRef.class ).isEmpty() ) {
                 return null;
             }
-            map.put( source, ((RexInputRef) rex).getIndex() );
+            map.put( source, rex.unwrap( RexIndexRef.class ).get().getIndex() );
         }
 
         final ImmutableBitSet newGroupSet = aggregate.getGroupSet().permute( map );
@@ -117,8 +115,8 @@ public class AggregateProjectMergeRule extends AlgOptRule {
         }
 
         final ImmutableList.Builder<AggregateCall> aggCalls = ImmutableList.builder();
-        final int sourceCount = aggregate.getInput().getRowType().getFieldCount();
-        final int targetCount = project.getInput().getRowType().getFieldCount();
+        final int sourceCount = aggregate.getInput().getTupleType().getFieldCount();
+        final int targetCount = project.getInput().getTupleType().getFieldCount();
         final TargetMapping targetMapping = Mappings.target( map, sourceCount, targetCount );
         for ( AggregateCall aggregateCall : aggregate.getAggCallList() ) {
             aggCalls.add( aggregateCall.transform( targetMapping ) );
@@ -129,7 +127,7 @@ public class AggregateProjectMergeRule extends AlgOptRule {
         // Add a project if the group set is not in the same order or contains duplicates.
         final AlgBuilder algBuilder = call.builder();
         algBuilder.push( newAggregate );
-        final List<Integer> newKeys = Lists.transform( aggregate.getGroupSet().asList(), map::get );
+        final List<Integer> newKeys = aggregate.getGroupSet().asList().stream().map( map::get ).toList();
         if ( !newKeys.equals( newGroupSet.asList() ) ) {
             final List<Integer> posList = new ArrayList<>();
             for ( int newKey : newKeys ) {
@@ -140,7 +138,7 @@ public class AggregateProjectMergeRule extends AlgOptRule {
                     posList.add( aggregate.getGroupCount() + newGroupSet.indexOf( newKey ) );
                 }
             }
-            for ( int i = newAggregate.getGroupCount() + newAggregate.getIndicatorCount(); i < newAggregate.getRowType().getFieldCount(); i++ ) {
+            for ( int i = newAggregate.getGroupCount() + newAggregate.getIndicatorCount(); i < newAggregate.getTupleType().getFieldCount(); i++ ) {
                 posList.add( i );
             }
             algBuilder.project( algBuilder.fields( posList ) );

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@
 package org.polypheny.db.algebra.rules;
 
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import java.util.ArrayList;
@@ -51,17 +52,19 @@ import org.polypheny.db.algebra.metadata.AlgColumnOrigin;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.util.ImmutableBitSet;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Util;
 
 
@@ -179,7 +182,7 @@ public class LoptSemiJoinOptimizer {
                 return -1;
         }
         List<RexNode> operands = ((RexCall) joinFilter).getOperands();
-        if ( !(operands.get( 0 ) instanceof RexInputRef) || !(operands.get( 1 ) instanceof RexInputRef) ) {
+        if ( !(operands.get( 0 ) instanceof RexIndexRef) || !(operands.get( 1 ) instanceof RexIndexRef) ) {
             return -1;
         }
 
@@ -225,9 +228,9 @@ public class LoptSemiJoinOptimizer {
                         factIdx,
                         dimIdx );
 
-        AlgNode factRel = multiJoin.getJoinFactor( factIdx );
+        AlgNode factAlg = multiJoin.getJoinFactor( factIdx );
         AlgNode dimRel = multiJoin.getJoinFactor( dimIdx );
-        final JoinInfo joinInfo = JoinInfo.of( factRel, dimRel, semiJoinCondition );
+        final JoinInfo joinInfo = JoinInfo.of( factAlg, dimRel, semiJoinCondition );
         assert joinInfo.leftKeys.size() > 0;
 
         // mutable copies
@@ -236,14 +239,14 @@ public class LoptSemiJoinOptimizer {
 
         // Make sure all the fact table keys originate from the same table and are simple column references
         final List<Integer> actualLeftKeys = new ArrayList<>();
-        LcsTable factTable = validateKeys( factRel, leftKeys, rightKeys, actualLeftKeys );
+        LcsEntity factTable = validateKeys( factAlg, leftKeys, rightKeys, actualLeftKeys );
         if ( factTable == null ) {
             return null;
         }
 
         // Find the best index
         final List<Integer> bestKeyOrder = new ArrayList<>();
-        LcsScan tmpFactRel = (LcsScan) factTable.toAlg( factRel::getCluster, factRel.getTraitSet() );
+        LcsScan tmpFactRel = (LcsScan) factTable.unwrap( TranslatableEntity.class ).orElseThrow().toAlg( factAlg.getCluster(), factAlg.getTraitSet() );
 
         LcsIndexOptimizer indexOptimizer = new LcsIndexOptimizer( tmpFactRel );
         FemLocalIndex bestIndex =
@@ -278,11 +281,11 @@ public class LoptSemiJoinOptimizer {
                             semiJoinCondition );
         }
         return SemiJoin.create(
-                factRel,
+                factAlg,
                 dimRel,
                 semiJoinCondition,
-                ImmutableIntList.copyOf( truncatedLeftKeys ),
-                ImmutableIntList.copyOf( truncatedRightKeys ) );
+                ImmutableList.copyOf( truncatedLeftKeys ),
+                ImmutableList.copyOf( truncatedRightKeys ) );
     }
 
 
@@ -337,9 +340,9 @@ public class LoptSemiJoinOptimizer {
      * @param actualLeftKeys the remaining valid fact table semijoin keys
      * @return the underlying fact table if the semijoin keys are valid; otherwise null
      */
-    private LcsTable validateKeys( AlgNode factRel, List<Integer> leftKeys, List<Integer> rightKeys, List<Integer> actualLeftKeys ) {
+    private LcsEntity validateKeys( AlgNode factRel, List<Integer> leftKeys, List<Integer> rightKeys, List<Integer> actualLeftKeys ) {
         int keyIdx = 0;
-        AlgOptTable theTable = null;
+        Entity theTable = null;
         ListIterator<Integer> keyIter = leftKeys.listIterator();
         while ( keyIter.hasNext() ) {
             boolean removeKey = false;
@@ -349,9 +352,9 @@ public class LoptSemiJoinOptimizer {
             if ( (colOrigin == null) || LucidDbSpecialOperators.isLcsRidColumnId( colOrigin.getOriginColumnOrdinal() ) ) {
                 removeKey = true;
             } else {
-                AlgOptTable table = colOrigin.getOriginTable();
+                Entity table = colOrigin.getOriginTable();
                 if ( theTable == null ) {
-                    if ( !(table instanceof LcsTable) ) {
+                    if ( !(table instanceof LcsEntity) ) {
                         // not a column store table
                         removeKey = true;
                     } else {
@@ -375,7 +378,7 @@ public class LoptSemiJoinOptimizer {
         if ( actualLeftKeys.isEmpty() ) {
             return null;
         } else {
-            return (LcsTable) theTable;
+            return (LcsEntity) theTable;
         }
     }
 
@@ -409,15 +412,15 @@ public class LoptSemiJoinOptimizer {
         // Determine which side of the equality filter references the join operand we're interested in; then, check if it is contained in our key list
         assert call.getOperator().getOperatorName() == OperatorName.EQUALS;
         List<RexNode> operands = call.getOperands();
-        assert operands.get( 0 ) instanceof RexInputRef;
-        assert operands.get( 1 ) instanceof RexInputRef;
-        int idx = ((RexInputRef) operands.get( 0 )).getIndex();
+        assert operands.get( 0 ) instanceof RexIndexRef;
+        assert operands.get( 1 ) instanceof RexIndexRef;
+        int idx = ((RexIndexRef) operands.get( 0 )).getIndex();
         if ( idx < nFields ) {
             if ( !keys.contains( idx ) ) {
                 return null;
             }
         } else {
-            idx = ((RexInputRef) operands.get( 1 )).getIndex();
+            idx = ((RexIndexRef) operands.get( 1 )).getIndex();
             if ( !keys.contains( idx ) ) {
                 return null;
             }
@@ -527,8 +530,8 @@ public class LoptSemiJoinOptimizer {
             savings *= 2.0;
         }
 
-        // Compute the cost of doing an extra scan on the dimension table, including the distinct sort on top of the scan; if the dimension columns are already unique, no need to add on the dup removal cost.
-        final Double dimSortCost = mq.getRowCount( dimRel );
+        // Compute the cost of doing an extra relScan on the dimension table, including the distinct sort on top of the relScan; if the dimension columns are already unique, no need to add on the dup removal cost.
+        final Double dimSortCost = mq.getTupleCount( dimRel );
         final Double dupRemCost = uniq ? 0 : dimSortCost;
         final AlgOptCost dimCost = mq.getCumulativeCost( dimRel );
         if ( (dimSortCost == null) || (dupRemCost == null) || (dimCost == null) ) {
@@ -663,7 +666,11 @@ public class LoptSemiJoinOptimizer {
     /**
      * Dummy class to allow code to compile.
      */
-    private abstract static class LcsTable implements AlgOptTable {
+    private abstract static class LcsEntity extends Entity {
+
+        protected LcsEntity() {
+            super( -1, "lcs", -1, EntityType.ENTITY, DataModel.RELATIONAL, false );
+        }
 
     }
 
@@ -671,7 +678,7 @@ public class LoptSemiJoinOptimizer {
     /**
      * Dummy class to allow code to compile.
      */
-    private static class LcsScan {
+    static class LcsScan {
 
     }
 

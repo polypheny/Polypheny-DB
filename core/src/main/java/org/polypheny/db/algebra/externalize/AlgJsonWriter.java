@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,7 +88,7 @@ public class AlgJsonWriter implements AlgWriter {
             put( map, value.left, replaceWithFieldNames( alg, value.right ) );
         }
 
-        put( map, "rowcount", mq.getRowCount( alg ) );
+        put( map, "rowcount", mq.getTupleCount( alg ) );
         put( map, "rows cost", mq.getCumulativeCost( alg ).getRows() );
         put( map, "cpu cost", mq.getCumulativeCost( alg ).getCpu() );
         put( map, "io cost", mq.getCumulativeCost( alg ).getIo() );
@@ -115,14 +115,14 @@ public class AlgJsonWriter implements AlgWriter {
         if ( str.contains( "$" ) ) {
             int offset = 0;
             for ( AlgNode input : alg.getInputs() ) {
-                for ( AlgDataTypeField field : input.getRowType().getFieldList() ) {
+                for ( AlgDataTypeField field : input.getTupleType().getFields() ) {
                     String searchStr = "$" + (offset + field.getIndex());
                     int position = str.indexOf( searchStr );
                     if ( position >= 0 && (str.length() >= position + searchStr.length()) ) {
                         str = str.replace( searchStr, field.getName() );
                     }
                 }
-                offset = input.getRowType().getFieldList().size();
+                offset = input.getTupleType().getFields().size();
             }
         }
         return str;

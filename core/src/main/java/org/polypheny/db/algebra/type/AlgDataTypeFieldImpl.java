@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,31 +35,41 @@ package org.polypheny.db.algebra.type;
 
 
 import java.io.Serializable;
+import lombok.Getter;
+import lombok.Value;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.Triple;
 
 
 /**
  * Default implementation of {@link AlgDataTypeField}.
  */
-public class AlgDataTypeFieldImpl implements AlgDataTypeField, Serializable {
+@Value
+@Getter
+public class AlgDataTypeFieldImpl extends Triple<String, Long, AlgDataType> implements AlgDataTypeField, Serializable {
 
-    private final AlgDataType type;
-    private final String name;
-    private final String physicalName;
-    private final int index;
+    AlgDataType type;
+    String name;
+    String physicalName;
+    int index;
+    Long id;
 
 
     /**
      * Creates a RelDataTypeFieldImpl.
      */
-    public AlgDataTypeFieldImpl( String name, int index, AlgDataType type ) {
-        this( name, null, index, type );
+    public AlgDataTypeFieldImpl( Long id, String name, int index, AlgDataType type ) {
+        this( id, name, null, index, type );
     }
 
 
-    public AlgDataTypeFieldImpl( String name, String physicalName, int index, AlgDataType type ) {
+    public AlgDataTypeFieldImpl( Long id, String name, String physicalName, int index, AlgDataType type ) {
+        super( name, id, type );
         assert name != null;
         assert type != null;
+        this.id = id;
         this.name = name;
         this.index = index;
         this.type = type;
@@ -78,62 +88,12 @@ public class AlgDataTypeFieldImpl implements AlgDataTypeField, Serializable {
         if ( this == obj ) {
             return true;
         }
-        if ( !(obj instanceof AlgDataTypeFieldImpl) ) {
+        if ( !(obj instanceof AlgDataTypeFieldImpl that) ) {
             return false;
         }
-        AlgDataTypeFieldImpl that = (AlgDataTypeFieldImpl) obj;
         return this.index == that.index
                 && this.name.equals( that.name )
                 && this.type.equals( that.type );
-    }
-
-
-    // implement RelDataTypeField
-    @Override
-    public String getName() {
-        return name;
-    }
-
-
-    // implement RelDataTypeField
-    @Override
-    public String getPhysicalName() {
-        return physicalName;
-    }
-
-
-    // implement RelDataTypeField
-    @Override
-    public int getIndex() {
-        return index;
-    }
-
-
-    // implement RelDataTypeField
-    @Override
-    public AlgDataType getType() {
-        return type;
-    }
-
-
-    // implement Map.Entry
-    @Override
-    public final String getKey() {
-        return getName();
-    }
-
-
-    // implement Map.Entry
-    @Override
-    public final AlgDataType getValue() {
-        return getType();
-    }
-
-
-    // implement Map.Entry
-    @Override
-    public AlgDataType setValue( AlgDataType value ) {
-        throw new UnsupportedOperationException();
     }
 
 
@@ -146,6 +106,12 @@ public class AlgDataTypeFieldImpl implements AlgDataTypeField, Serializable {
     @Override
     public boolean isDynamicStar() {
         return type.getPolyType() == PolyType.DYNAMIC_STAR;
+    }
+
+
+    @Override
+    public Expression asExpression() {
+        return Expressions.new_( AlgDataTypeField.class, Expressions.constant( id ), Expressions.constant( name ), Expressions.constant( physicalName ), Expressions.constant( index ), type.asExpression() );
     }
 
 }

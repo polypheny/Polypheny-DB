@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,7 +94,7 @@ public class SortRemoveConstantKeysRule extends AlgOptRule {
             return;
         }
 
-        final Sort result = sort.copy( sort.getTraitSet(), input, AlgCollations.of( collationsList ) );
+        final Sort result = sort.copy( sort.getTraitSet(), input, AlgCollations.of( collationsList ), null, null, null );
         call.transformTo( result );
         call.getPlanner().setImportance( sort, 0.0 );
     }

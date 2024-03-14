@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,45 +17,50 @@
 package org.polypheny.db.sql.language.ddl.altertable;
 
 
-import static org.polypheny.db.util.Static.RESOURCE;
-
 import java.util.List;
 import java.util.Objects;
+import javax.annotation.Nullable;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
-import org.polypheny.db.ddl.exception.ColumnNotExistsException;
-import org.polypheny.db.ddl.exception.NotNullAndDefaultValueException;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.sql.language.SqlDataTypeSpec;
 import org.polypheny.db.sql.language.SqlIdentifier;
+import org.polypheny.db.sql.language.SqlLiteral;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.ddl.SqlAlterTable;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
 /**
  * Parse tree for {@code ALTER TABLE name ADD COLUMN name} statement.
  */
+@EqualsAndHashCode(callSuper = true)
 @Slf4j
+@Value
 public class SqlAlterTableAddColumn extends SqlAlterTable {
 
-    private final SqlIdentifier table;
-    private final SqlIdentifier column;
-    private final SqlDataTypeSpec type;
-    private final boolean nullable;
-    private final SqlNode defaultValue; // Can be null
-    private final SqlIdentifier beforeColumnName; // Can be null
-    private final SqlIdentifier afterColumnName; // Can be null
+    SqlIdentifier table;
+    SqlIdentifier column;
+    SqlDataTypeSpec type;
+    boolean nullable;
+    @Nullable
+    SqlNode defaultValue;
+    @Nullable
+    SqlIdentifier beforeColumnName;
+    @Nullable
+    SqlIdentifier afterColumnName;
 
 
     public SqlAlterTableAddColumn(
@@ -64,9 +69,9 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
             SqlIdentifier column,
             SqlDataTypeSpec type,
             boolean nullable,
-            SqlNode defaultValue,
-            SqlIdentifier beforeColumnName,
-            SqlIdentifier afterColumnName ) {
+            @Nullable SqlNode defaultValue,
+            @Nullable SqlIdentifier beforeColumnName,
+            @Nullable SqlIdentifier afterColumnName ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.column = Objects.requireNonNull( column );
@@ -119,41 +124,31 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
 
 
     @Override
-    public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        CatalogTable catalogTable = getCatalogTable( context, table );
+    public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
+        LogicalTable logicalTable = getTableFailOnEmpty( context, table );
 
-        if ( catalogTable.entityType != EntityType.ENTITY ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
+        if ( logicalTable.entityType != EntityType.ENTITY ) {
+            throw new GenericRuntimeException( "Not possible to use ALTER TABLE because %s is not a table.", logicalTable.name );
         }
 
         if ( column.names.size() != 1 ) {
-            throw new RuntimeException( "No FQDN allowed here: " + column.toString() );
+            throw new GenericRuntimeException( "No FQDN allowed here: %s", column );
         }
 
         // Make sure that all adapters are of type store (and not source)
-        for ( int storeId : catalogTable.dataPlacements ) {
-            getDataStoreInstance( storeId );
+        for ( AllocationEntity allocation : statement.getTransaction().getSnapshot().alloc().getFromLogical( logicalTable.id ) ) {
+            getDataStoreInstance( allocation.adapterId );
         }
 
-        String defaultValue = this.defaultValue == null ? null : this.defaultValue.toString();
-
-        try {
-            DdlManager.getInstance().addColumn(
-                    column.getSimple(),
-                    catalogTable,
-                    beforeColumnName == null ? null : beforeColumnName.getSimple(),
-                    afterColumnName == null ? null : afterColumnName.getSimple(),
-                    ColumnTypeInformation.fromDataTypeSpec( type ),
-                    nullable,
-                    defaultValue,
-                    statement );
-        } catch ( NotNullAndDefaultValueException e ) {
-            throw CoreUtil.newContextException( column.getPos(), RESOURCE.notNullAndNoDefaultValue( column.getSimple() ) );
-        } catch ( ColumnAlreadyExistsException e ) {
-            throw CoreUtil.newContextException( column.getPos(), RESOURCE.columnExists( column.getSimple() ) );
-        } catch ( ColumnNotExistsException e ) {
-            throw CoreUtil.newContextException( table.getPos(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
-        }
+        DdlManager.getInstance().createColumn(
+                column.getSimple(),
+                logicalTable,
+                beforeColumnName == null ? null : beforeColumnName.getSimple(),
+                afterColumnName == null ? null : afterColumnName.getSimple(),
+                ColumnTypeInformation.fromDataTypeSpec( type ),
+                nullable,
+                defaultValue == null ? null : SqlLiteral.toPoly( defaultValue ),
+                statement );
     }
 
 }

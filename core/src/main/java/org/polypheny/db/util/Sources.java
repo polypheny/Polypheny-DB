@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,6 +49,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.Objects;
 import java.util.zip.GZIPInputStream;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 
 
 /**
@@ -84,7 +85,7 @@ public abstract class Sources implements Serializable {
         try {
             return of( new URL( url ) );
         } catch ( MalformedURLException | IllegalArgumentException e ) {
-            throw new RuntimeException( "Malformed URL: '" + url + "'", e );
+            throw new GenericRuntimeException( "Malformed URL: '" + url + "'", e );
         }
     }
 

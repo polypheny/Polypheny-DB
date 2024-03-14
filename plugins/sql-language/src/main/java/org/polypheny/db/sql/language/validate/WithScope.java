@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,11 @@ import java.util.List;
 import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWithItem;
-import org.polypheny.db.util.NameMatcher;
 
 
 /**
  * Scope providing the objects that are available after evaluating an item in a WITH clause.
- *
+ * <p>
  * For example, in
  *
  * <blockquote>{@code WITH t1 AS (q1) t2 AS (q2) q3}</blockquote>
@@ -55,35 +54,36 @@ class WithScope extends ListScope {
 
 
     @Override
-    public SqlValidatorNamespace getTableNamespace( List<String> names ) {
+    public SqlValidatorNamespace getEntityNamespace( List<String> names ) {
         if ( names.size() == 1 && names.get( 0 ).equals( withItem.name.getSimple() ) ) {
             return validator.getSqlNamespace( withItem );
         }
-        return super.getTableNamespace( names );
+        return super.getEntityNamespace( names );
     }
 
 
     @Override
-    public void resolveTable( List<String> names, NameMatcher nameMatcher, Path path, Resolved resolved ) {
+    public void resolveEntity( List<String> names, Path path, Resolved resolved ) {
+
         if ( names.size() == 1 && names.equals( withItem.name.names ) ) {
             final SqlValidatorNamespace ns = validator.getSqlNamespace( withItem );
-            final Step path2 = path.plus( ns.getRowType(), 0, names.get( 0 ), StructKind.FULLY_QUALIFIED );
+            final Step path2 = path.plus( ns.getTupleType(), 0, names.get( 0 ), StructKind.FULLY_QUALIFIED );
             resolved.found( ns, false, null, path2, null );
             return;
         }
-        super.resolveTable( names, nameMatcher, path, resolved );
+        super.resolveEntity( names, path, resolved );
     }
 
 
     @Override
-    public void resolve( List<String> names, NameMatcher nameMatcher, boolean deep, Resolved resolved ) {
+    public void resolve( List<String> names, boolean deep, Resolved resolved ) {
         if ( names.size() == 1 && names.equals( withItem.name.names ) ) {
             final SqlValidatorNamespace ns = validator.getSqlNamespace( withItem );
-            final Step path = Path.EMPTY.plus( ns.getRowType(), 0, names.get( 0 ), StructKind.FULLY_QUALIFIED );
+            final Step path = Path.EMPTY.plus( ns.getTupleType(), 0, names.get( 0 ), StructKind.FULLY_QUALIFIED );
             resolved.found( ns, false, null, path, null );
             return;
         }
-        super.resolve( names, nameMatcher, deep, resolved );
+        super.resolve( names, deep, resolved );
     }
 
 }

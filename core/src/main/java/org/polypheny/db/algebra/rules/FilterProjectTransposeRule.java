@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,7 +96,7 @@ public class FilterProjectTransposeRule extends AlgOptRule {
      */
     public <F extends Filter, P extends Project> FilterProjectTransposeRule( Class<F> filterClass, Predicate<? super F> filterPredicate, Class<P> projectClass, Predicate<? super P> projectPredicate, boolean copyFilter, boolean copyProject, AlgBuilderFactory algBuilderFactory ) {
         this(
-                operandJ( filterClass, null, filterPredicate, operandJ( projectClass, null, projectPredicate, any() ) ),
+                operand( filterClass, null, filterPredicate, operand( projectClass, null, projectPredicate, any() ) ),
                 copyFilter, copyProject, algBuilderFactory );
     }
 
@@ -133,9 +133,9 @@ public class FilterProjectTransposeRule extends AlgOptRule {
 
         AlgNode newProjRel =
                 copyProject
-                        ? project.copy( project.getTraitSet(), newFilterRel, project.getProjects(), project.getRowType() )
+                        ? project.copy( project.getTraitSet(), newFilterRel, project.getProjects(), project.getTupleType() )
                         : algBuilder.push( newFilterRel )
-                                .project( project.getProjects(), project.getRowType().getFieldNames() )
+                                .project( project.getProjects(), project.getTupleType().getFieldNames() )
                                 .build();
 
         call.transformTo( newProjRel );

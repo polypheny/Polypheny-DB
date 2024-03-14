@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,8 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -73,27 +75,16 @@ public class CypherExpression extends CypherNode {
     }
 
 
-    public Pair<String, RexNode> getRex( CypherContext context, RexType type ) {
-        OperatorName operatorName;
-        switch ( this.type ) {
-            case PATTERN:
-                // EveryPathPattern
-                //return pattern.getPatternMatch( context );
-            case ALL:
-                operatorName = OperatorName.CYPHER_ALL_MATCH;
-                break;
-            case ANY:
-                operatorName = OperatorName.CYPHER_ANY_MATCH;
-                break;
-            case NONE:
-                operatorName = OperatorName.CYPHER_NONE_MATCH;
-                break;
-            case SINGLE:
-                operatorName = OperatorName.CYPHER_SINGLE_MATCH;
-                break;
-            default:
-                throw new UnsupportedOperationException();
-        }
+    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
+        OperatorName operatorName = switch ( this.type ) {
+            // EveryPathPattern
+            //return pattern.getPatternMatch( context );
+            case PATTERN, ALL -> OperatorName.CYPHER_ALL_MATCH;
+            case ANY -> OperatorName.CYPHER_ANY_MATCH;
+            case NONE -> OperatorName.CYPHER_NONE_MATCH;
+            case SINGLE -> OperatorName.CYPHER_SINGLE_MATCH;
+            default -> throw new UnsupportedOperationException();
+        };
 
         //  ANY ( Variable IN Expression(list) Where? )
         //  MATCH p = (a)-[*1..3]->(b)
@@ -105,7 +96,7 @@ public class CypherExpression extends CypherNode {
 
         String var = variable.getName();
 
-        return Pair.of( var, new RexCall(
+        return Pair.of( PolyString.of( var ), new RexCall(
                 context.booleanType,
                 OperatorRegistry.get( operatorName ),
                 List.of( context.rexBuilder.makeInputRef( context.graphType, 0 ), where.getRex( context, type ).right ) ) );
@@ -117,12 +108,12 @@ public class CypherExpression extends CypherNode {
     }
 
 
-    public Pair<String, RexNode> getValues( CypherContext context, String name ) {
-        Pair<String, RexNode> namedNode = getRex( context, RexType.PROJECT );
+    public Pair<PolyString, RexNode> getValues( CypherContext context, String name ) {
+        Pair<PolyString, RexNode> namedNode = getRex( context, RexType.PROJECT );
         if ( namedNode.right.isA( Kind.LITERAL ) ) {
             ImmutableList<ImmutableList<RexLiteral>> values = ImmutableList.of( ImmutableList.of( (RexLiteral) namedNode.right ) );
 
-            AlgRecordType rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( name, 0, namedNode.right.getType() ) ) );
+            AlgRecordType rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( -1L, name, 0, namedNode.right.getType() ) ) );
             LogicalLpgValues node = LogicalLpgValues.create( context.cluster, context.cluster.traitSet(), rowType, values );
 
             context.add( node );
@@ -139,7 +130,7 @@ public class CypherExpression extends CypherNode {
     }
 
 
-    public Comparable<?> getComparable() {
+    public PolyValue getComparable() {
         throw new UnsupportedOperationException();
     }
 

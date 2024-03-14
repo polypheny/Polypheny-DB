@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,6 @@ import java.util.Iterator;
  * For instance:
  *
  * <ul>
- * <li>If a target has more than one source, then the method {@link #getSource(int)} will throw {@link Mappings.TooManyElementsException}.</li>
  * <li>If a source has no targets, then the method {@link #getTarget} will throw {@link Mappings.NoElementException}.</li>
  * </ul>
  */

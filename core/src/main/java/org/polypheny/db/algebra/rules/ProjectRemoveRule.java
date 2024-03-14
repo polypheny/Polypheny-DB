@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,7 +66,7 @@ public class ProjectRemoveRule extends AlgOptRule {
      */
     public ProjectRemoveRule( AlgBuilderFactory algBuilderFactory ) {
         // Create a specialized operand to detect non-matches early. This keeps the rule queue short.
-        super( operandJ( Project.class, null, ProjectRemoveRule::isTrivial, any() ), algBuilderFactory, null );
+        super( operand( Project.class, null, ProjectRemoveRule::isTrivial, any() ), algBuilderFactory, null );
     }
 
 
@@ -82,7 +82,7 @@ public class ProjectRemoveRule extends AlgOptRule {
                     childProject.getTraitSet(),
                     childProject.getInput(),
                     childProject.getProjects(),
-                    project.getRowType() );
+                    project.getTupleType() );
         }
         AlgNode child = call.getPlanner().register( stripped, project );
         call.transformTo( child );
@@ -98,7 +98,7 @@ public class ProjectRemoveRule extends AlgOptRule {
 
 
     public static boolean isTrivial( Project project ) {
-        return RexUtil.isIdentity( project.getProjects(), project.getInput().getRowType() );
+        return RexUtil.isIdentity( project.getProjects(), project.getInput().getTupleType() );
     }
 
 }

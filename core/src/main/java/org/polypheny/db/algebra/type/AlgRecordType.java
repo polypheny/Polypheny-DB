@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@
 package org.polypheny.db.algebra.type;
 
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
@@ -74,8 +75,8 @@ public class AlgRecordType extends AlgDataTypeImpl implements Serializable {
 
 
     @Override
-    public boolean isNullable() {
-        return false;
+    public AlgDataType asRelational() {
+        return this;
     }
 
 
@@ -107,7 +108,7 @@ public class AlgRecordType extends AlgDataTypeImpl implements Serializable {
                 break;
         }
         sb.append( "(" );
-        for ( Ord<AlgDataTypeField> ord : Ord.zip( fieldList ) ) {
+        for ( Ord<AlgDataTypeField> ord : Ord.zip( fields ) ) {
             if ( ord.i > 0 ) {
                 sb.append( ", " );
             }
@@ -130,8 +131,14 @@ public class AlgRecordType extends AlgDataTypeImpl implements Serializable {
      * This implementation converts this RelRecordType into a SerializableRelRecordType, whose <code>readResolve</code>
      * method converts it back to a RelRecordType during deserialization.
      */
+    @Serial
     private Object writeReplace() {
-        return new SerializableAlgRecordType( fieldList );
+        return new SerializableAlgRecordType( fields );
+    }
+
+
+    public boolean isPrepared() {
+        return fields.size() == 1 && fields.get( 0 ).getName().equals( "ZERO" ) && fields.get( 0 ).getType().getPolyType() == PolyType.INTEGER;
     }
 
 
@@ -139,19 +146,13 @@ public class AlgRecordType extends AlgDataTypeImpl implements Serializable {
      * Skinny object which has the same information content as a {@link AlgRecordType} but skips redundant stuff like
      * digest and the immutable list.
      */
-    private static class SerializableAlgRecordType implements Serializable {
-
-        private List<AlgDataTypeField> fields;
-
-
-        private SerializableAlgRecordType( List<AlgDataTypeField> fields ) {
-            this.fields = fields;
-        }
+    private record SerializableAlgRecordType(List<AlgDataTypeField> fields) implements Serializable {
 
 
         /**
          * Per {@link Serializable} API. See {@link AlgRecordType#writeReplace()}.
          */
+        @Serial
         private Object readResolve() {
             return new AlgRecordType( fields );
         }

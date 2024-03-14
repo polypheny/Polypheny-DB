@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,7 @@
 
 package org.polypheny.db.cypher.pattern;
 
-import com.google.common.collect.ImmutableList;
 import java.util.List;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import org.polypheny.db.cypher.CypherPathLength;
@@ -26,9 +24,11 @@ import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
-import org.polypheny.db.schema.graph.PolyEdge;
-import org.polypheny.db.schema.graph.PolyEdge.EdgeDirection;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.graph.PolyDictionary;
+import org.polypheny.db.type.entity.graph.PolyEdge;
+import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -59,7 +59,7 @@ public class CypherRelPattern extends CypherPattern {
 
 
     public List<String> getLabels() {
-        return relTypes.stream().map( StringPos::getImage ).collect( Collectors.toList() );
+        return relTypes.stream().map( StringPos::getImage ).toList();
     }
 
 
@@ -69,22 +69,22 @@ public class CypherRelPattern extends CypherPattern {
     }
 
 
-    public Pair<String, PolyEdge> getPolyEdge( String leftId, String rightId ) {
+    public Pair<PolyString, PolyEdge> getPolyEdge( PolyString leftId, PolyString rightId ) {
         PolyDictionary properties = this.properties != null ? (PolyDictionary) this.properties.getComparable() : new PolyDictionary();
         EdgeDirection direction = left == right ? EdgeDirection.NONE : right ? EdgeDirection.LEFT_TO_RIGHT : EdgeDirection.RIGHT_TO_LEFT;
-        List<String> labels = relTypes.stream().map( StringPos::getImage ).collect( Collectors.toList() );
+        List<PolyString> labels = relTypes.stream().map( StringPos::getImage ).map( PolyString::of ).toList();
 
         String name = null;
         if ( variable != null ) {
             name = variable.getName();
         }
 
-        PolyEdge edge = new PolyEdge( properties, ImmutableList.copyOf( labels ), leftId, rightId, direction, name );
+        PolyEdge edge = new PolyEdge( properties, PolyList.copyOf( labels ), leftId, rightId, direction, PolyString.of( name ) );
         if ( pathLength != null ) {
             edge.fromTo( Pair.of( Integer.parseInt( pathLength.getFrom() ), Integer.parseInt( pathLength.getTo() ) ) );
         }
 
-        return Pair.of( name, edge );
+        return Pair.of( PolyString.of( name ), edge );
     }
 
 }

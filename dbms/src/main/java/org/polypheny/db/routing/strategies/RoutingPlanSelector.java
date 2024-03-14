@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,9 @@ package org.polypheny.db.routing.strategies;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptUtil;
@@ -73,7 +73,7 @@ public class RoutingPlanSelector {
         List<Double> effectiveCosts = IntStream.rangeClosed( 0, n - 1 )
                 .mapToDouble( i -> (preCosts.get( i ) * ratioPre) + (postCosts.get( i ) * ratioPost) )
                 .boxed()
-                .collect( Collectors.toList() );
+                .toList();
 
         // Get plan in regard to the active strategy
         if ( RoutingManager.PLAN_SELECTION_STRATEGY.getEnum() == RouterPlanSelectionStrategy.BEST ) {
@@ -85,7 +85,7 @@ public class RoutingPlanSelector {
         }
 
         if ( result == null ) {
-            throw new RuntimeException( "Plan selection strategy not found, result still null." );
+            throw new GenericRuntimeException( "Plan selection strategy not found, result still null." );
         }
 
         if ( statement.getTransaction().isAnalyze() ) {
@@ -158,7 +158,7 @@ public class RoutingPlanSelector {
     private Pair<List<Double>, List<Double>> calculateIcarusPostCosts( List<? extends RoutingPlan> proposedRoutingPlans ) {
         final List<Long> postCosts = proposedRoutingPlans.stream()
                 .map( plan -> MonitoringServiceProvider.getInstance().getQueryPostCosts( plan.getPhysicalQueryClass() ).getExecutionTime() )
-                .collect( Collectors.toList() );
+                .toList();
 
         // Check null values in icarus special case
         final boolean checkNullValues = RoutingManager.PRE_COST_POST_COST_RATIO.getDouble() >= 1;
@@ -169,7 +169,7 @@ public class RoutingPlanSelector {
             } else {
                 return (double) value;
             }
-        } ).collect( Collectors.toList() );
+        } ).toList();
 
         // Normalize values
         List<Double> normalized = calculateProbabilities( icarusCosts );
@@ -185,7 +185,7 @@ public class RoutingPlanSelector {
 
         // Calculate probabilities
         double hundredPercent = input.stream().mapToDouble( Double::doubleValue ).sum();
-        return input.stream().map( cost -> cost / hundredPercent ).collect( Collectors.toList() );
+        return input.stream().map( cost -> cost / hundredPercent ).toList();
     }
 
 
@@ -194,7 +194,7 @@ public class RoutingPlanSelector {
         final List<Double> inverseProbabilityPart = percentage.stream()
                 .map( value -> 1.0 / value )
                 .map( value -> Double.isInfinite( value ) ? 0.0 : value )
-                .collect( Collectors.toList() );
+                .toList();
 
         final double totalInverseProbability = inverseProbabilityPart.stream()
                 .mapToDouble( Double::doubleValue )
@@ -203,12 +203,12 @@ public class RoutingPlanSelector {
         // Normalize again
         return inverseProbabilityPart.stream()
                 .map( value -> (value / totalInverseProbability) * 100.0 )
-                .collect( Collectors.toList() );
+                .toList();
     }
 
 
     private List<Double> normalizeApproximatedCosts( List<AlgOptCost> approximatedCosts ) {
-        final List<Double> costs = approximatedCosts.stream().map( AlgOptCost::getCosts ).collect( Collectors.toList() );
+        final List<Double> costs = approximatedCosts.stream().map( AlgOptCost::getCosts ).toList();
         return calculateProbabilities( costs );
     }
 
@@ -229,7 +229,7 @@ public class RoutingPlanSelector {
         Double usedMin = Math.abs( min - max ) <= AlgOptUtil.EPSILON ? 0.0 : min;
         return costs.stream()
                 .map( c -> (c - usedMin) / (max - usedMin) )
-                .collect( Collectors.toList() );
+                .toList();
     }
 
 }

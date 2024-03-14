@@ -9,6 +9,7 @@ dependencies {
     // JDBC Driver
     implementation group: "monetdb", name: "monetdb-jdbc-new", version: monetdb_version
 
+
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":plugins:sql-language", configuration: "tests")
@@ -20,7 +21,6 @@ sourceSets {
     main {
         java {
             srcDirs = ["src/main/java"]
-            outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {
             srcDirs = ["src/main/resources"]
@@ -30,7 +30,7 @@ sourceSets {
     test {
         java {
             srcDirs = ["src/test/java"]
-            outputDir = file(project.buildDir.absolutePath + "/test-classes")
+            destinationDirectory.set(file(project.buildDir.absolutePath + "/test-classes"))
         }
         resources {
             srcDirs = ["src/test/resources"]
@@ -76,6 +76,3 @@ javadoc {
 licensee {
     allow('MPL-2.0')
 }
-
-
-

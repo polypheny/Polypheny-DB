@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -95,6 +95,18 @@ public abstract class AbstractPolyType extends AlgDataTypeImpl implements Clonea
             return list;
         }
         return super.getPrecedenceList();
+    }
+
+
+    public AlgDataType getKeyType() {
+        // this is not a map type
+        return null;
+    }
+
+
+    public AlgDataType getValueType() {
+        // this is not a map type
+        return null;
     }
 
 }

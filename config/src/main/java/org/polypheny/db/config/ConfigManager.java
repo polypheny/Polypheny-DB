@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -205,7 +205,7 @@ public class ConfigManager {
                     myList.add( v );
                 }
             }
-            if ( myMap.size() > 0 ) {
+            if ( !myMap.isEmpty() ) {
                 modifiedConfig = configFile.withValue( configKey, ConfigValueFactory.fromAnyRef( myMap ) );
             } else {
                 modifiedConfig = configFile.withValue( configKey, ConfigValueFactory.fromAnyRef( myList ) );
@@ -266,7 +266,7 @@ public class ConfigManager {
     public static void setApplicationConfFile( File customConfFile ) {
         PolyphenyHomeDirManager homeDirManager = PolyphenyHomeDirManager.getInstance();
         // If specified custom File is equal to the system default. Omit further processing and return to default
-        if ( !customConfFile.equals( homeDirManager.getFileIfExists( DEFAULT_CONFIGURATION_DIRECTORY_NAME + "/" + DEFAULT_CONFIGURATION_FILE_NAME ) ) ) {
+        if ( !customConfFile.equals( homeDirManager.getHomeFile( DEFAULT_CONFIGURATION_DIRECTORY_NAME + "/" + DEFAULT_CONFIGURATION_FILE_NAME ) ) ) {
             if ( customConfFile.exists() && homeDirManager.isAccessible( customConfFile ) ) {
                 applicationConfFile = customConfFile.getAbsoluteFile();
 
@@ -383,7 +383,7 @@ public class ConfigManager {
     public String getWebUiPageList() {
         //todo recursion with parentPage field
         // Angular wants: { id, name, icon, children[] }
-        ArrayList<PageListItem> out = new ArrayList<>();
+        List<PageListItem> out = new ArrayList<>();
         for ( WebUiPage p : uiPages.values() ) {
             out.add( new PageListItem( p.getId(), p.getTitle(), p.getIcon(), p.getLabel() ) );
         }

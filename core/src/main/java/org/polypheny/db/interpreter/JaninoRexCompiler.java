@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,12 +53,12 @@ import org.codehaus.commons.compiler.CompilerFactoryFactory;
 import org.codehaus.commons.compiler.IClassBodyEvaluator;
 import org.codehaus.commons.compiler.ICompilerFactory;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.enumerable.JavaRowFormat;
-import org.polypheny.db.adapter.enumerable.PhysTypeImpl;
-import org.polypheny.db.adapter.enumerable.RexToLixTranslator;
-import org.polypheny.db.adapter.enumerable.RexToLixTranslator.InputGetter;
-import org.polypheny.db.adapter.enumerable.RexToLixTranslator.InputGetterImpl;
 import org.polypheny.db.algebra.constant.ConformanceEnum;
+import org.polypheny.db.algebra.enumerable.JavaTupleFormat;
+import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
+import org.polypheny.db.algebra.enumerable.RexToLixTranslator;
+import org.polypheny.db.algebra.enumerable.RexToLixTranslator.InputGetter;
+import org.polypheny.db.algebra.enumerable.RexToLixTranslator.InputGetterImpl;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationCode;
@@ -108,7 +108,7 @@ public class JaninoRexCompiler implements Interpreter.ScalarCompiler {
                         ImmutableList.of(
                                 Pair.of(
                                         Expressions.field( context_, BuiltInMethod.CONTEXT_VALUES.field ),
-                                        PhysTypeImpl.of( javaTypeFactory, inputRowType, JavaRowFormat.ARRAY, false ) ) ) );
+                                        PhysTypeImpl.of( javaTypeFactory, inputRowType, JavaTupleFormat.ARRAY, false ) ) ) );
         final Function1<String, InputGetter> correlates = a0 -> {
             throw new UnsupportedOperationException();
         };
@@ -126,7 +126,7 @@ public class JaninoRexCompiler implements Interpreter.ScalarCompiler {
 
 
     /**
-     * Given a method that implements {@link Scalar#execute(Context, Object[])}, adds a bridge method that implements {@link Scalar#execute(Context)}, and compiles.
+     * Given a method that implements {@link Scalar#execute(Context, org.polypheny.db.type.entity.PolyValue[])}, adds a bridge method that implements {@link Scalar#execute(Context)}, and compiles.
      */
     static Scalar baz( ParameterExpression context_, ParameterExpression outputValues_, BlockStatement block, DataContext dataContext ) {
         final List<MemberDeclaration> declarations = new ArrayList<>();

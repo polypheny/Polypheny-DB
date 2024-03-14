@@ -2,7 +2,9 @@ group "org.polypheny"
 
 
 dependencies {
-    implementation group: "io.javalin", name: "javalin", version: javalin_version  // Apache 2.0
+    implementation(group: "io.javalin", name: "javalin", version: javalin_version) {
+        exclude group: 'org.eclipse.jetty', module: 'jetty-server'
+    }// Apache 2.0
 
     implementation group: "com.google.code.gson", name: "gson", version: gson_version  // Apache 2.0
 
@@ -19,7 +21,7 @@ dependencies {
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
-    testImplementation group: "junit", name: "junit", version: junit_version
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: junit_jupiter_version
 }
 
 
@@ -27,7 +29,6 @@ sourceSets {
     main {
         java {
             srcDirs = ["src/main/java"]
-            outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {
             srcDirs = ["src/main/resources"]
@@ -37,7 +38,7 @@ sourceSets {
     test {
         java {
             srcDirs = ["src/test/java"]
-            outputDir = file(project.buildDir.absolutePath + "/test-classes")
+            destinationDirectory.set(file(project.buildDir.absolutePath + "/test-classes"))
         }
         resources {
             srcDirs = ["src/test/resources"]

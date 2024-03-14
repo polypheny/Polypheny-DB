@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,13 +38,13 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -56,7 +56,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import org.hamcrest.CoreMatchers;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 
 /**
@@ -86,9 +86,9 @@ public class DirectedGraphTest {
         assertEquals( "[A, B, C, D]", shortestPath( g, "A", "D" ).toString() );
         g.addEdge( "B", "D" );
         assertEquals( "[A, B, D]", shortestPath( g, "A", "D" ).toString() );
-        assertNull( "There is no path from A to E", shortestPath( g, "A", "E" ) );
+        assertNull( shortestPath( g, "A", "E" ), "There is no path from A to E" );
         assertEquals( "[]", shortestPath( g, "D", "D" ).toString() );
-        assertNull( "Node X is not in the graph", shortestPath( g, "X", "A" ) );
+        assertNull( shortestPath( g, "X", "A" ), "Node X is not in the graph" );
         assertEquals( "[[A, B, C, D], [A, B, D]]", paths( g, "A", "D" ).toString() );
     }
 
@@ -377,9 +377,9 @@ public class DirectedGraphTest {
         assertEquals( "[A, B, C, D]", shortestPath( g, "A", "D" ).toString() );
         g.addEdge( "B", "D", 1 );
         assertEquals( "[A, B, D]", shortestPath( g, "A", "D" ).toString() );
-        assertNull( "There is no path from A to E", shortestPath( g, "A", "E" ) );
+        assertNull( shortestPath( g, "A", "E" ), "There is no path from A to E" );
         assertEquals( "[]", shortestPath( g, "D", "D" ).toString() );
-        assertNull( "Node X is not in the graph", shortestPath( g, "X", "A" ) );
+        assertNull( shortestPath( g, "X", "A" ), "Node X is not in the graph" );
         assertEquals( "[[A, B, C, D], [A, B, D]]", paths( g, "A", "D" ).toString() );
         assertThat( g.addVertex( "B" ), is( false ) );
 
@@ -419,6 +419,7 @@ public class DirectedGraphTest {
                     && ((DefaultAttributedEdge) obj).target.equals( target )
                     && ((DefaultAttributedEdge) obj).list.equals( list );
         }
+
     }
 
 
@@ -437,6 +438,8 @@ public class DirectedGraphTest {
         public DefaultEdge createEdge( String v0, String v1 ) {
             throw new UnsupportedOperationException();
         }
+
     }
+
 }
 

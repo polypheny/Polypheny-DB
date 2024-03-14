@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,9 +43,9 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.Util;
 
@@ -68,7 +68,7 @@ public abstract class Exchange extends SingleAlg {
      * @param input Input relational expression
      * @param distribution Distribution specification
      */
-    protected Exchange( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, AlgDistribution distribution ) {
+    protected Exchange( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, AlgDistribution distribution ) {
         super( cluster, traitSet, input );
         this.distribution = Objects.requireNonNull( distribution );
 
@@ -95,10 +95,10 @@ public abstract class Exchange extends SingleAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         // Higher cost if rows are wider discourages pushing a project through an exchange.
-        double rowCount = mq.getRowCount( this );
-        double bytesPerRow = getRowType().getFieldCount() * 4;
+        double rowCount = mq.getTupleCount( this );
+        double bytesPerRow = getTupleType().getFieldCount() * 4;
         return planner.getCostFactory().makeCost( Util.nLogN( rowCount ) * bytesPerRow, rowCount, 0 );
     }
 

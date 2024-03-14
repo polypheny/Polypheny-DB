@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,7 +97,7 @@ public class ProjectMergeRule extends AlgOptRule {
                 }
                 final Permutation product = topPermutation.product( bottomPermutation );
                 algBuilder.push( bottomProject.getInput() );
-                algBuilder.project( algBuilder.fields( product ), topProject.getRowType().getFieldNames() );
+                algBuilder.project( algBuilder.fields( product ), topProject.getTupleType().getFieldNames() );
                 call.transformTo( algBuilder.build() );
                 return;
             }
@@ -105,15 +105,15 @@ public class ProjectMergeRule extends AlgOptRule {
 
         // If we're not in force mode and the two projects reference identical inputs, then return and let ProjectRemoveRule replace the projects.
         if ( !force ) {
-            if ( RexUtil.isIdentity( topProject.getProjects(), topProject.getInput().getRowType() ) ) {
+            if ( RexUtil.isIdentity( topProject.getProjects(), topProject.getInput().getTupleType() ) ) {
                 return;
             }
         }
 
         final List<RexNode> newProjects = AlgOptUtil.pushPastProject( topProject.getProjects(), bottomProject );
         final AlgNode input = bottomProject.getInput();
-        if ( RexUtil.isIdentity( newProjects, input.getRowType() ) ) {
-            if ( force || input.getRowType().getFieldNames().equals( topProject.getRowType().getFieldNames() ) ) {
+        if ( RexUtil.isIdentity( newProjects, input.getTupleType() ) ) {
+            if ( force || input.getTupleType().getFieldNames().equals( topProject.getTupleType().getFieldNames() ) ) {
                 call.transformTo( input );
                 return;
             }
@@ -121,7 +121,7 @@ public class ProjectMergeRule extends AlgOptRule {
 
         // replace the two projects with a combined projection
         algBuilder.push( bottomProject.getInput() );
-        algBuilder.project( newProjects, topProject.getRowType().getFieldNames() );
+        algBuilder.project( newProjects, topProject.getTupleType().getFieldNames() );
         call.transformTo( algBuilder.build() );
     }
 

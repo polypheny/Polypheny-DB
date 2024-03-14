@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,20 +26,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicBoolean;
-import lombok.Data;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Advisor;
 
 
 /**
- * Runtime context allowing access to the tables in a database.
+ * Runtime context giving access to various data and runtime specific information of the database.
  */
+
 public interface DataContext {
 
     ParameterExpression ROOT = Expressions.parameter( Modifier.FINAL, DataContext.class, "root" );
@@ -47,9 +48,9 @@ public interface DataContext {
     ParameterExpression INITIAL_ROOT = Expressions.parameter( Modifier.FINAL, DataContext.class, "initialRoot" );
 
     /**
-     * Returns a sub-schema with a given name, or null.
+     * Returns the current Snapshot associated with the DataContext.
      */
-    SchemaPlus getRootSchema();
+    Snapshot getSnapshot();
 
     /**
      * Returns the type factory.
@@ -63,7 +64,7 @@ public interface DataContext {
 
     /**
      * Returns a context variable.
-     *
+     * <p>
      * Supported variables include: "currentTimestamp", "localTimestamp".
      *
      * @param name Name of variable
@@ -76,13 +77,13 @@ public interface DataContext {
     Statement getStatement();
 
 
-    void addParameterValues( long index, AlgDataType type, List<Object> data );
+    void addParameterValues( long index, AlgDataType type, List<PolyValue> data );
 
     AlgDataType getParameterType( long index );
 
-    List<Map<Long, Object>> getParameterValues();
+    List<Map<Long, PolyValue>> getParameterValues();
 
-    void setParameterValues( List<Map<Long, Object>> values );
+    void setParameterValues( List<Map<Long, PolyValue>> values );
 
     Map<Long, AlgDataType> getParameterTypes();
 
@@ -92,10 +93,7 @@ public interface DataContext {
         throw new UnsupportedOperationException();
     }
 
-    default Object getParameterValue( long index ) {
-        if ( getParameterValues().size() != 1 ) {
-            throw new RuntimeException( "Illegal number of parameter sets" );
-        }
+    default PolyValue getParameterValue( long index ) {
         return getParameterValues().get( 0 ).get( index );
     }
 
@@ -119,12 +117,8 @@ public interface DataContext {
         throw new UnsupportedOperationException();
     }
 
-    @Data
-    class ParameterValue {
 
-        private final long index;
-        private final AlgDataType type;
-        private final Object value;
+    record ParameterValue(long index, AlgDataType type, PolyValue value) {
 
     }
 
@@ -158,9 +152,9 @@ public interface DataContext {
         TIMEOUT( "timeout", Long.class ),
 
         /**
-         * Advisor that suggests completion hints for SQL statements.
+         * Advisor that suggests completion hints for language statements.
          */
-        SQL_ADVISOR( "sqlAdvisor", Advisor.class ),
+        ADVISOR( "advisor", Advisor.class ),
 
         /**
          * Writer to the standard error (stderr).
@@ -183,10 +177,10 @@ public interface DataContext {
         TIME_ZONE( "timeZone", TimeZone.class );
 
         public final String camelName;
-        public final Class clazz;
+        public final Class<?> clazz;
 
 
-        Variable( String camelName, Class clazz ) {
+        Variable( String camelName, Class<?> clazz ) {
             this.camelName = camelName;
             this.clazz = clazz;
             assert camelName.equals( CaseFormat.UPPER_UNDERSCORE.to( CaseFormat.LOWER_CAMEL, name() ) );
@@ -209,7 +203,7 @@ public interface DataContext {
     class SlimDataContext implements DataContext, Serializable {
 
         @Override
-        public SchemaPlus getRootSchema() {
+        public Snapshot getSnapshot() {
             return null;
         }
 
@@ -245,7 +239,7 @@ public interface DataContext {
 
 
         @Override
-        public void addParameterValues( long index, AlgDataType type, List<Object> data ) {
+        public void addParameterValues( long index, AlgDataType type, List<PolyValue> data ) {
 
         }
 
@@ -257,13 +251,13 @@ public interface DataContext {
 
 
         @Override
-        public List<Map<Long, Object>> getParameterValues() {
+        public List<Map<Long, PolyValue>> getParameterValues() {
             return null;
         }
 
 
         @Override
-        public void setParameterValues( List<Map<Long, Object>> values ) {
+        public void setParameterValues( List<Map<Long, PolyValue>> values ) {
 
         }
 

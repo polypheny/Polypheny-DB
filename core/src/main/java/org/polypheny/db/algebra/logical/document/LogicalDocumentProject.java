@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,20 +16,16 @@
 
 package org.polypheny.db.algebra.logical.document;
 
-import java.util.ArrayList;
 import java.util.List;
-import org.polypheny.db.algebra.AlgCollationTraitDef;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.document.DocumentProject;
-import org.polypheny.db.algebra.metadata.AlgMdCollation;
-import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.util.ValidatorUtil;
+import org.polypheny.db.util.Pair;
 
 
 public class LogicalDocumentProject extends DocumentProject {
@@ -37,23 +33,26 @@ public class LogicalDocumentProject extends DocumentProject {
     /**
      * Subclass of {@link DocumentProject} not targeted at any particular engine or calling convention.
      */
-    public LogicalDocumentProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
-        super( cluster, traits, input, new ArrayList<>( projects ), rowType );
+    public LogicalDocumentProject( AlgCluster cluster, AlgTraitSet traits, AlgNode input, Map<String, ? extends RexNode> includes, List<String> excludes ) {
+        super( cluster, traits, input, includes, excludes );
     }
 
 
-    public static LogicalDocumentProject create( AlgNode node, List<? extends RexNode> ids, List<String> fieldNames ) {
-        assert ids.size() == fieldNames.size() : "Ids and field names need to be the same size";
-        final AlgMetadataQuery mq = node.getCluster().getMetadataQuery();
-        final AlgDataType rowType = RexUtil.createStructType( node.getCluster().getTypeFactory(), ids, fieldNames, ValidatorUtil.F_SUGGESTER );
-        AlgTraitSet traitSet = node.getCluster().traitSet().replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.project( mq, node, ids ) );
-        return new LogicalDocumentProject( node.getCluster(), traitSet, node, ids, rowType );
+    public static LogicalDocumentProject create( AlgNode node, Map<String, RexNode> includes, List<String> excludes ) {
+        // final AlgMetadataQuery mq = node.getCluster().getMetadataQuery();
+        // AlgTraitSet traitSet = node.getCluster().traitSet().replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.project( mq, node, ids ) );
+        return new LogicalDocumentProject( node.getCluster(), node.getTraitSet(), node, includes, excludes );
+    }
+
+
+    public static LogicalDocumentProject create( AlgNode node, List<RexNode> includes, List<String> includesName ) {
+        return create( node, Pair.zip( includesName, includes ).stream().collect( Collectors.toMap( e -> e.left, e -> e.right ) ), List.of() );
     }
 
 
     @Override
-    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalDocumentProject( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), projects, rowType );
+    public LogicalDocumentProject copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+        return new LogicalDocumentProject( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), includes, excludes );
     }
 
 

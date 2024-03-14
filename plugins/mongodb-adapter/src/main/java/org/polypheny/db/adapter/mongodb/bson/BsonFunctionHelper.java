@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,11 +22,11 @@ import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.polypheny.db.adapter.mongodb.MongoAlg.Implementor;
-import org.polypheny.db.adapter.mongodb.MongoRowType;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BsonUtil;
@@ -74,10 +74,10 @@ public class BsonFunctionHelper extends BsonDocument {
             + "        return result;}";
 
 
-    public static BsonDocument getFunction( RexCall call, MongoRowType rowType, Implementor implementor ) {
+    public static BsonDocument getFunction( RexCall call, AlgDataType rowType, Implementor implementor ) {
         String function;
         if ( call.operands.size() == 3 && call.operands.get( 2 ) instanceof RexLiteral ) {
-            Object funcName = ((RexLiteral) call.operands.get( 2 )).getValue3();
+            Object funcName = ((RexLiteral) call.operands.get( 2 )).getValue();
             function = getUsedFunction( funcName );
 
             return new BsonDocument().append(
@@ -127,7 +127,7 @@ public class BsonFunctionHelper extends BsonDocument {
     }
 
 
-    private static BsonArray getArgsArray( ImmutableList<RexNode> operands, MongoRowType rowType, Implementor implementor ) {
+    private static BsonArray getArgsArray( ImmutableList<RexNode> operands, AlgDataType rowType, Implementor implementor ) {
         BsonArray array = new BsonArray();
         if ( operands.size() == 3 ) {
             array.add( getVal( operands.get( 0 ), rowType, implementor ) );
@@ -138,10 +138,10 @@ public class BsonFunctionHelper extends BsonDocument {
     }
 
 
-    private static BsonValue getVal( RexNode rexNode, MongoRowType rowType, Implementor implementor ) {
+    private static BsonValue getVal( RexNode rexNode, AlgDataType rowType, Implementor implementor ) {
         if ( rexNode.isA( Kind.INPUT_REF ) ) {
-            RexInputRef rex = (RexInputRef) rexNode;
-            return new BsonString( "$" + rowType.getPhysicalName( rowType.getFieldNames().get( rex.getIndex() ), implementor ) );
+            RexIndexRef rex = (RexIndexRef) rexNode;
+            return new BsonString( "$" + rowType.getFields().get( rex.getIndex() ).getPhysicalName() );
         } else if ( rexNode.isA( Kind.ARRAY_VALUE_CONSTRUCTOR ) ) {
             RexCall rex = (RexCall) rexNode;
             return BsonUtil.getBsonArray( rex, implementor.getBucket() );

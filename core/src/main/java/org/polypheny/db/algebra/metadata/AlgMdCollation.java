@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,11 +47,6 @@ import java.util.Objects;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import org.apache.calcite.linq4j.Ord;
-import org.polypheny.db.adapter.enumerable.EnumerableCorrelate;
-import org.polypheny.db.adapter.enumerable.EnumerableJoin;
-import org.polypheny.db.adapter.enumerable.EnumerableMergeJoin;
-import org.polypheny.db.adapter.enumerable.EnumerableSemiJoin;
-import org.polypheny.db.adapter.enumerable.EnumerableThetaJoin;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgCollations;
@@ -66,24 +61,28 @@ import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Minus;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.SortExchange;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.Window;
+import org.polypheny.db.algebra.core.relational.RelScan;
+import org.polypheny.db.algebra.enumerable.EnumerableCorrelate;
+import org.polypheny.db.algebra.enumerable.EnumerableJoin;
+import org.polypheny.db.algebra.enumerable.EnumerableMergeJoin;
+import org.polypheny.db.algebra.enumerable.EnumerableSemiJoin;
+import org.polypheny.db.algebra.enumerable.EnumerableThetaJoin;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.plan.hep.HepAlgVertex;
 import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCallBinding;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.util.BuiltInMethod;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
@@ -93,7 +92,7 @@ import org.polypheny.db.util.Util;
  */
 public class AlgMdCollation implements MetadataHandler<BuiltInMetadata.Collation> {
 
-    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( BuiltInMethod.COLLATIONS.method, new AlgMdCollation() );
+    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( new AlgMdCollation(), BuiltInMethod.COLLATIONS.method );
 
 
     private AlgMdCollation() {
@@ -135,8 +134,8 @@ public class AlgMdCollation implements MetadataHandler<BuiltInMetadata.Collation
     }
 
 
-    public ImmutableList<AlgCollation> collations( Scan scan, AlgMetadataQuery mq ) {
-        return ImmutableList.copyOf( table( scan.getTable() ) );
+    public ImmutableList<AlgCollation> collations( RelScan<?> scan, AlgMetadataQuery mq ) {
+        return ImmutableList.copyOf( table( scan.entity ) );
     }
 
 
@@ -187,7 +186,7 @@ public class AlgMdCollation implements MetadataHandler<BuiltInMetadata.Collation
 
 
     public ImmutableList<AlgCollation> collations( Values values, AlgMetadataQuery mq ) {
-        return ImmutableList.copyOf( values( mq, values.getRowType(), values.getTuples() ) );
+        return ImmutableList.copyOf( values( mq, values.getTupleType(), values.getTuples() ) );
     }
 
 
@@ -202,10 +201,10 @@ public class AlgMdCollation implements MetadataHandler<BuiltInMetadata.Collation
 
 
     /**
-     * Helper method to determine a {@link Scan}'s collation.
+     * Helper method to determine a {@link RelScan}'s collation.
      */
-    public static List<AlgCollation> table( AlgOptTable table ) {
-        return table.getCollationList();
+    public static List<AlgCollation> table( Entity table ) {
+        return table.getCollations();
     }
 
 
@@ -253,8 +252,8 @@ public class AlgMdCollation implements MetadataHandler<BuiltInMetadata.Collation
         final Multimap<Integer, Integer> targets = LinkedListMultimap.create();
         final Map<Integer, Monotonicity> targetsWithMonotonicity = new HashMap<>();
         for ( Ord<RexNode> project : Ord.<RexNode>zip( projects ) ) {
-            if ( project.e instanceof RexInputRef ) {
-                targets.put( ((RexInputRef) project.e).getIndex(), project.i );
+            if ( project.e instanceof RexIndexRef ) {
+                targets.put( ((RexIndexRef) project.e).getIndex(), project.i );
             } else if ( project.e instanceof RexCall ) {
                 final RexCall call = (RexCall) project.e;
                 final RexCallBinding binding = RexCallBinding.create( input.getCluster().getTypeFactory(), call, inputCollations );
@@ -364,20 +363,20 @@ public class AlgMdCollation implements MetadataHandler<BuiltInMetadata.Collation
         final int x = fieldCollation.getFieldIndex();
         switch ( fieldCollation.direction ) {
             case ASCENDING:
-                return new Ordering<List<RexLiteral>>() {
+                return new Ordering<>() {
                     @Override
                     public int compare( List<RexLiteral> o1, List<RexLiteral> o2 ) {
-                        final Comparable c1 = o1.get( x ).getValueAs( Comparable.class );
-                        final Comparable c2 = o2.get( x ).getValueAs( Comparable.class );
+                        final Comparable<?> c1 = o1.get( x ).getValue();
+                        final Comparable<?> c2 = o2.get( x ).getValue();
                         return AlgFieldCollation.compare( c1, c2, nullComparison );
                     }
                 };
             default:
-                return new Ordering<List<RexLiteral>>() {
+                return new Ordering<>() {
                     @Override
                     public int compare( List<RexLiteral> o1, List<RexLiteral> o2 ) {
-                        final Comparable c1 = o1.get( x ).getValueAs( Comparable.class );
-                        final Comparable c2 = o2.get( x ).getValueAs( Comparable.class );
+                        final Comparable<?> c1 = o1.get( x ).getValue();
+                        final Comparable<?> c2 = o2.get( x ).getValue();
                         return AlgFieldCollation.compare( c2, c1, -nullComparison );
                     }
                 };
@@ -390,7 +389,7 @@ public class AlgMdCollation implements MetadataHandler<BuiltInMetadata.Collation
      *
      * If the inputs are sorted on other keys <em>in addition to</em> the join key, the result preserves those collations too.
      */
-    public static List<AlgCollation> mergeJoin( AlgMetadataQuery mq, AlgNode left, AlgNode right, ImmutableIntList leftKeys, ImmutableIntList rightKeys ) {
+    public static List<AlgCollation> mergeJoin( AlgMetadataQuery mq, AlgNode left, AlgNode right, ImmutableList<Integer> leftKeys, ImmutableList<Integer> rightKeys ) {
         final ImmutableList.Builder<AlgCollation> builder = ImmutableList.builder();
 
         final ImmutableList<AlgCollation> leftCollations = mq.collations( left );
@@ -399,7 +398,7 @@ public class AlgMdCollation implements MetadataHandler<BuiltInMetadata.Collation
 
         final ImmutableList<AlgCollation> rightCollations = mq.collations( right );
         assert AlgCollations.contains( rightCollations, rightKeys ) : "cannot merge join: right input is not sorted on right keys";
-        final int leftFieldCount = left.getRowType().getFieldCount();
+        final int leftFieldCount = left.getTupleType().getFieldCount();
         for ( AlgCollation collation : rightCollations ) {
             builder.add( AlgCollations.shift( collation, leftFieldCount ) );
         }

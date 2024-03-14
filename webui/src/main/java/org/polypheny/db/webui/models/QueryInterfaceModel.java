@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.polypheny.db.webui.models;
 
 import java.util.Map;
 import lombok.AllArgsConstructor;
+import lombok.Value;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterface.QueryInterfaceSetting;
 
@@ -27,15 +28,16 @@ import org.polypheny.db.iface.QueryInterface.QueryInterfaceSetting;
  * A model for a {@link org.polypheny.db.iface.QueryInterface}
  * needed for gson
  */
+@Value
 @AllArgsConstructor
 public class QueryInterfaceModel {
 
-    public final String uniqueName;
+    public String uniqueName;
     public boolean supportsDdl;
     public boolean supportsDml;
-    public final String interfaceType;
-    public final Map<String, String> currentSettings;
-    public final QueryInterfaceSetting[] availableSettings;
+    public String interfaceType;
+    public Map<String, String> currentSettings;
+    public QueryInterfaceSetting[] availableSettings;
 
     public QueryInterfaceModel ( final QueryInterface i ) {
         this.uniqueName = i.getUniqueName();

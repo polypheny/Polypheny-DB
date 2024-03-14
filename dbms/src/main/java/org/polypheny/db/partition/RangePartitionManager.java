@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,15 +20,16 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogPartition;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumnType;
+import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 
@@ -42,26 +43,26 @@ public class RangePartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public long getTargetPartitionId( CatalogTable catalogTable, String columnValue ) {
+    public long getTargetPartitionId( LogicalTable table, PartitionProperty property, String columnValue ) {
         long unboundPartitionId = -1;
         long selectedPartitionId = -1;
 
         // Process all accumulated CatalogPartitions
-        for ( CatalogPartition catalogPartition : Catalog.getInstance().getPartitionsByTable( catalogTable.id ) ) {
-            if ( unboundPartitionId == -1 && catalogPartition.isUnbound ) {
-                unboundPartitionId = catalogPartition.id;
+        for ( AllocationPartition partition : Catalog.snapshot().alloc().getPartitionsFromLogical( table.id ) ) {
+            if ( partition.isUnbound ) {
+                unboundPartitionId = partition.id;
                 break;
             }
 
-            if ( isValueInRange( columnValue, catalogPartition ) ) {
+            if ( isValueInRange( columnValue, partition ) ) {
                 if ( log.isDebugEnabled() ) {
                     log.debug( "Found column value: {} on partitionID {} in range: [{} - {}]",
                             columnValue,
-                            catalogPartition.id,
-                            catalogPartition.partitionQualifiers.get( 0 ),
-                            catalogPartition.partitionQualifiers.get( 1 ) );
+                            partition.id,
+                            partition.qualifiers.get( 0 ),
+                            partition.qualifiers.get( 1 ) );
                 }
-                selectedPartitionId = catalogPartition.id;
+                selectedPartitionId = partition.id;
                 break;
             }
         }
@@ -76,35 +77,35 @@ public class RangePartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public boolean validatePartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, CatalogColumn partitionColumn ) {
-        super.validatePartitionGroupSetup( partitionGroupQualifiers, numPartitionGroups, partitionGroupNames, partitionColumn );
+    public List<List<String>> validateAdjustPartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, LogicalColumn partitionColumn ) {
+        partitionGroupQualifiers = new ArrayList<>( super.validateAdjustPartitionGroupSetup( partitionGroupQualifiers, numPartitionGroups, partitionGroupNames, partitionColumn ) );
 
         if ( partitionColumn.type.getFamily() != PolyTypeFamily.NUMERIC ) {
-            throw new RuntimeException( "You cannot specify RANGE partitioning for a non-numeric type. Detected ExpressionType: " + partitionColumn.type + " for column: '" + partitionColumn.name + "'" );
+            throw new GenericRuntimeException( "You cannot specify RANGE partitioning for a non-numeric type. Detected ExpressionType: " + partitionColumn.type + " for column: '" + partitionColumn.name + "'" );
         }
 
         for ( List<String> partitionQualifiers : partitionGroupQualifiers ) {
             for ( String partitionQualifier : partitionQualifiers ) {
                 if ( partitionQualifier.isEmpty() ) {
-                    throw new RuntimeException( "RANGE Partitioning doesn't support  empty Partition Qualifiers: '" + partitionGroupQualifiers + "'. USE (PARTITION name1 VALUES(value1)[(,PARTITION name1 VALUES(value1))*])" );
+                    throw new GenericRuntimeException( "RANGE Partitioning doesn't support  empty Partition Qualifiers: '" + partitionGroupQualifiers + "'. USE (PARTITION name1 VALUES(value1)[(,PARTITION name1 VALUES(value1))*])" );
                 }
 
                 if ( !(partitionQualifier.chars().allMatch( Character::isDigit )) ) {
-                    throw new RuntimeException( "RANGE Partitioning doesn't support non-integer partition qualifiers: '" + partitionQualifier + "'" );
+                    throw new GenericRuntimeException( "RANGE Partitioning doesn't support non-integer partition qualifiers: '" + partitionQualifier + "'" );
                 }
 
-                if ( partitionQualifiers.size() > 2 || partitionQualifiers.size() <= 1 ) {
-                    throw new RuntimeException( "RANGE Partitioning doesn't support anything other than two qualifiers per partition. Use (PARTITION name1 VALUES(lowerValue, upperValue)\n Error Token: '" + partitionQualifiers + "' " );
+                if ( partitionQualifiers.size() != 2 ) {
+                    throw new GenericRuntimeException( "RANGE Partitioning doesn't support anything other than two qualifiers per partition. Use (PARTITION name1 VALUES(lowerValue, upperValue)\n Error Token: '" + partitionQualifiers + "' " );
                 }
             }
         }
 
         if ( partitionGroupQualifiers.size() + 1 != numPartitionGroups ) {
-            throw new RuntimeException( "Number of partitionQualifiers '" + partitionGroupQualifiers + "' + (mandatory 'Unbound' partition) is not equal to number of specified partitions '" + numPartitionGroups + "'" );
+            throw new GenericRuntimeException( "Number of partitionQualifiers '" + partitionGroupQualifiers + "' + (mandatory 'Unbound' partition) is not equal to number of specified partitions '" + numPartitionGroups + "'" );
         }
 
         if ( partitionGroupQualifiers.isEmpty() ) {
-            throw new RuntimeException( "Partition Qualifiers are empty '" + partitionGroupQualifiers + "'" );
+            throw new GenericRuntimeException( "Partition Qualifiers are empty '" + partitionGroupQualifiers + "'" );
         }
 
         // Check if range is overlapping
@@ -120,10 +121,10 @@ public class RangePartitionManager extends AbstractPartitionManager {
                 lowerBound = temp;
 
                 // Rearrange List values lower < upper
-                partitionGroupQualifiers.set( i, Stream.of( partitionGroupQualifiers.get( i ).get( 1 ), partitionGroupQualifiers.get( i ).get( 0 ) ).collect( Collectors.toList() ) );
+                partitionGroupQualifiers.set( i, Stream.of( partitionGroupQualifiers.get( i ).get( 1 ), partitionGroupQualifiers.get( i ).get( 0 ) ).toList() );
 
             } else if ( upperBound == lowerBound ) {
-                throw new RuntimeException( "No Range specified. Lower and upper bound are equal:" + lowerBound + " = " + upperBound );
+                throw new GenericRuntimeException( "No Range specified. Lower and upper bound are equal:" + lowerBound + " = " + upperBound );
             }
 
             for ( int k = i; k < partitionGroupQualifiers.size() - 1; k++ ) {
@@ -136,23 +137,23 @@ public class RangePartitionManager extends AbstractPartitionManager {
                     contestingLowerBound = temp;
 
                     List<String> list = Stream.of( partitionGroupQualifiers.get( k + 1 ).get( 1 ), partitionGroupQualifiers.get( k + 1 ).get( 0 ) )
-                            .collect( Collectors.toList() );
+                            .toList();
                     partitionGroupQualifiers.set( k + 1, list );
 
                 } else if ( contestingUpperBound == contestingLowerBound ) {
-                    throw new RuntimeException( "No Range specified. Lower and upper bound are equal:" + contestingLowerBound + " = " + contestingUpperBound );
+                    throw new GenericRuntimeException( "No Range specified. Lower and upper bound are equal:" + contestingLowerBound + " = " + contestingUpperBound );
                 }
 
                 // Check if they are overlapping
                 if ( lowerBound <= contestingUpperBound && upperBound >= contestingLowerBound ) {
-                    throw new RuntimeException( "Several ranges are overlapping: [" + lowerBound + " - " + upperBound + "] and [" + contestingLowerBound + " - " + contestingUpperBound + "] You need to specify distinct ranges." );
+                    throw new GenericRuntimeException( "Several ranges are overlapping: [" + lowerBound + " - " + upperBound + "] and [" + contestingLowerBound + " - " + contestingUpperBound + "] You need to specify distinct ranges." );
                 }
 
             }
 
         }
 
-        return true;
+        return partitionGroupQualifiers;
     }
 
 
@@ -225,7 +226,7 @@ public class RangePartitionManager extends AbstractPartitionManager {
 
         rowsAfter.add( unboundRow );
 
-        PartitionFunctionInfo uiObject = PartitionFunctionInfo.builder()
+        return PartitionFunctionInfo.builder()
                 .functionTitle( FUNCTION_TITLE )
                 .description( "Partitions data based on a defined numeric range. A partition is therefore responsible for all values residing in that range. "
                         + "INFO: Note that this partition function provides an 'UNBOUND' partition capturing all values that are not covered by one of the specified ranges." )
@@ -236,8 +237,6 @@ public class RangePartitionManager extends AbstractPartitionManager {
                 .rowsAfter( rowsAfter )
                 .headings( new ArrayList<>( Arrays.asList( "Partition Name", "MIN", "MAX" ) ) )
                 .build();
-
-        return uiObject;
     }
 
 
@@ -253,9 +252,9 @@ public class RangePartitionManager extends AbstractPartitionManager {
     }
 
 
-    private boolean isValueInRange( String columnValue, CatalogPartition catalogPartition ) {
-        int lowerBound = Integer.parseInt( catalogPartition.partitionQualifiers.get( 0 ) );
-        int upperBound = Integer.parseInt( catalogPartition.partitionQualifiers.get( 1 ) );
+    private boolean isValueInRange( String columnValue, AllocationPartition partition ) {
+        int lowerBound = Integer.parseInt( partition.qualifiers.get( 0 ) );
+        int upperBound = Integer.parseInt( partition.qualifiers.get( 1 ) );
 
         double numericValue = Double.parseDouble( columnValue );
 

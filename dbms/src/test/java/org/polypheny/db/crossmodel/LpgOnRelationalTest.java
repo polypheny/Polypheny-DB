@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,9 @@ import static java.lang.String.format;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.cypher.CypherTestTemplate;
 import org.polypheny.db.cypher.CypherTestTemplate.Row;
@@ -48,7 +48,7 @@ public class LpgOnRelationalTest extends CrossModelTestTemplate {
     );
 
 
-    @BeforeClass
+    @BeforeAll
     public static void init() {
         //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
@@ -56,7 +56,7 @@ public class LpgOnRelationalTest extends CrossModelTestTemplate {
     }
 
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() {
         destroyStructure();
     }
@@ -64,7 +64,7 @@ public class LpgOnRelationalTest extends CrossModelTestTemplate {
 
     private static void initStructure() {
         executeStatements( ( s, c ) -> {
-            s.executeUpdate( format( "CREATE SCHEMA %s", SCHEMA_NAME ) );
+            s.executeUpdate( format( "CREATE NAMESPACE %s", SCHEMA_NAME ) );
             s.executeUpdate( format( "CREATE TABLE %s( id INTEGER NOT NULL, name VARCHAR(39), foo INTEGER, PRIMARY KEY (id))", FULL_TABLE_NAME ) );
 
             for ( Object[] row : DATA ) {

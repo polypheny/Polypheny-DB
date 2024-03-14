@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,26 +39,24 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer.EnforcementInformation;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogDatabase;
-import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
-import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
+import org.polypheny.db.catalog.entity.LogicalUser;
+import org.polypheny.db.catalog.entity.logical.LogicalKey.EnforcementTime;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
-import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.ConstraintEnforceAttacher;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.DataMigratorImpl;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryProcessor;
-import org.polypheny.db.schema.PolySchemaBuilder;
-import org.polypheny.db.schema.PolyphenyDbSchema;
+import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.view.MaterializedViewManager;
 
 
@@ -77,11 +75,9 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     private final AtomicBoolean cancelFlag = new AtomicBoolean();
 
     @Getter
-    private final CatalogUser user;
+    private final LogicalUser user;
     @Getter
-    private final CatalogSchema defaultSchema;
-    @Getter
-    private final CatalogDatabase database;
+    private final LogicalNamespace defaultNamespace;
 
     private final TransactionManagerImpl transactionManager;
 
@@ -100,10 +96,10 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     private final List<String> changedTables = new ArrayList<>();
 
     @Getter
-    private final Set<CatalogTable> catalogTables = new TreeSet<>();
+    private final Set<LogicalTable> logicalTables = new TreeSet<>();
 
     @Getter
-    private final List<Adapter> involvedAdapters = new CopyOnWriteArrayList<>();
+    private final List<Adapter<?>> involvedAdapters = new CopyOnWriteArrayList<>();
 
     private final Set<Lock> lockList = new HashSet<>();
     private boolean useCache = true;
@@ -119,9 +115,8 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     TransactionImpl(
             PolyXid xid,
             TransactionManagerImpl transactionManager,
-            CatalogUser user,
-            CatalogSchema defaultSchema,
-            CatalogDatabase database,
+            LogicalUser user,
+            LogicalNamespace defaultNamespace,
             boolean analyze,
             String origin,
             MultimediaFlavor flavor ) {
@@ -129,8 +124,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         this.xid = xid;
         this.transactionManager = transactionManager;
         this.user = user;
-        this.defaultSchema = defaultSchema;
-        this.database = database;
+        this.defaultNamespace = defaultNamespace;
         this.analyze = analyze;
         this.origin = origin;
         this.flavor = flavor;
@@ -138,8 +132,8 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
 
     @Override
-    public PolyphenyDbSchema getSchema() {
-        return PolySchemaBuilder.getInstance().getCurrent();
+    public Snapshot getSnapshot() {
+        return Catalog.getInstance().getSnapshot();
     }
 
 
@@ -150,7 +144,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
 
     @Override
-    public void registerInvolvedAdapter( Adapter adapter ) {
+    public void registerInvolvedAdapter( Adapter<?> adapter ) {
         if ( !involvedAdapters.contains( adapter ) ) {
             involvedAdapters.add( adapter );
         }
@@ -166,30 +160,30 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         // Prepare to commit changes on all involved adapters and the catalog
         boolean okToCommit = true;
         if ( RuntimeConfig.TWO_PC_MODE.getBoolean() ) {
-            for ( Adapter adapter : involvedAdapters ) {
+            for ( Adapter<?> adapter : involvedAdapters ) {
                 okToCommit &= adapter.prepare( xid );
             }
         }
 
-        if ( !catalogTables.isEmpty() ) {
+        if ( !logicalTables.isEmpty() ) {
             Statement statement = createStatement();
             QueryProcessor processor = statement.getQueryProcessor();
             List<EnforcementInformation> infos = ConstraintEnforceAttacher
-                    .getConstraintAlg( catalogTables, statement, EnforcementTime.ON_COMMIT );
+                    .getConstraintAlg( logicalTables, statement, EnforcementTime.ON_COMMIT );
             List<PolyImplementation> results = infos
                     .stream()
-                    .map( s -> processor.prepareQuery( AlgRoot.of( s.getControl(), Kind.SELECT ), s.getControl().getCluster().getTypeFactory().builder().build(), false, true, false ) ).collect( Collectors.toList() );
-            List<List<List<Object>>> rows = results.stream().map( r -> r.getRows( statement, -1 ) ).filter( r -> r.size() != 0 ).collect( Collectors.toList() );
-            if ( rows.size() != 0 ) {
-                Integer index = (Integer) rows.get( 0 ).get( 0 ).get( 1 );
+                    .map( s -> processor.prepareQuery( AlgRoot.of( s.control(), Kind.SELECT ), s.control().getCluster().getTypeFactory().builder().build(), false, true, false ) ).toList();
+            List<List<?>> rows = results.stream().map( r -> r.execute( statement, -1 ).getAllRowsAndClose() ).filter( r -> !r.isEmpty() ).collect( Collectors.toList() );
+            if ( !rows.isEmpty() ) {
+                int index = ((List<PolyNumber>) rows.get( 0 ).get( 0 )).get( 1 ).intValue();
                 rollback();
-                throw new TransactionException( infos.get( 0 ).getErrorMessages().get( index ) + "\nThere are violated constraints, the transaction was rolled back!" );
+                throw new TransactionException( infos.get( 0 ).errorMessages().get( index ) + "\nThere are violated constraints, the transaction was rolled back!" );
             }
         }
 
         if ( okToCommit ) {
             // Commit changes
-            for ( Adapter adapter : involvedAdapters ) {
+            for ( Adapter<?> adapter : involvedAdapters ) {
                 adapter.commit( xid );
             }
 
@@ -207,6 +201,9 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             rollback();
             throw new TransactionException( "Unable to prepare all involved entities for commit. Changes have been rolled back." );
         }
+
+        Catalog.getInstance().commit();
+
         // Free resources hold by statements
         statements.forEach( Statement::close );
 
@@ -217,11 +214,8 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
         // Handover information about commit to Materialized Manager
         MaterializedViewManager.getInstance().updateCommittedXid( xid );
-        try {
-            Catalog.getInstance().commit();
-        } catch ( NoTablePrimaryKeyException e ) {
-            throw new RuntimeException( e );
-        }
+
+
     }
 
 
@@ -233,7 +227,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         }
         try {
             //  Rollback changes to the adapters
-            for ( Adapter adapter : involvedAdapters ) {
+            for ( Adapter<?> adapter : involvedAdapters ) {
                 adapter.rollback( xid );
             }
             IndexManager.getInstance().rollback( this.xid );
@@ -263,20 +257,11 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
 
     @Override
-    public PolyphenyDbCatalogReader getCatalogReader() {
-        return new PolyphenyDbCatalogReader(
-                PolyphenyDbSchema.from( getSchema().plus() ),
-                PolyphenyDbSchema.from( getSchema().plus() ).path( null ),
-                getTypeFactory() );
-    }
-
-
-    @Override
     public Processor getProcessor( QueryLanguage language ) {
         // note dl, while caching the processors works in most cases,
         // it can lead to validator bleed when using multiple simultaneous insert for example
         // caching therefore is not possible atm
-        return language.getProcessorSupplier().get();
+        return language.processorSupplier().get();
     }
 
 
@@ -385,7 +370,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
                 break;
 
             case NO_ACCESS:
-                throw new RuntimeException( "Not possible to reset the access mode to NO_ACCESS" );
+                throw new GenericRuntimeException( "Not possible to reset the access mode to NO_ACCESS" );
         }
 
         // If nothing else has matched so far. It's safe to simply use the input

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,10 +22,10 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.schema.impl.AbstractTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.util.Source;
 
-public class ExcelTable extends AbstractTable {
+public class ExcelTable extends PhysicalTable {
 
     protected final Source source;
     protected final AlgProtoDataType protoRowType;
@@ -38,34 +38,31 @@ public class ExcelTable extends AbstractTable {
     /**
      * Creates a ExcelTable.
      */
-    ExcelTable( Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId ) {
+    ExcelTable( PhysicalTable table, Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, String sheet ) {
+        super( table.id,
+                table.allocationId,
+                table.logicalId,
+                table.name,
+                table.columns,
+                table.namespaceId,
+                table.namespaceName,
+                table.uniqueFieldIds,
+                table.adapterId );
         this.source = source;
         this.protoRowType = protoRowType;
         this.fieldTypes = fieldTypes;
         this.fields = fields;
         this.excelSource = excelSource;
-        this.tableId = tableId;
-        this.sheet = "";
-    }
-
-
-    ExcelTable( Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId, String sheet ) {
-        this.source = source;
-        this.protoRowType = protoRowType;
-        this.fieldTypes = fieldTypes;
-        this.fields = fields;
-        this.excelSource = excelSource;
-        this.tableId = tableId;
         this.sheet = sheet;
     }
 
 
     @Override
-    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
+    public AlgDataType getTupleType( AlgDataTypeFactory typeFactory ) {
         if ( protoRowType != null ) {
             return protoRowType.apply( typeFactory );
         }
-        if ( this.sheet.equals( "" ) ) {
+        if ( this.sheet.isEmpty() ) {
             if ( fieldTypes == null ) {
                 fieldTypes = new ArrayList<>();
                 return ExcelEnumerator.deduceRowType( (JavaTypeFactory) typeFactory, source, fieldTypes );

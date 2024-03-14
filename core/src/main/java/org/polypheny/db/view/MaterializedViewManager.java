@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,19 +17,22 @@
 package org.polypheny.db.view;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import lombok.Getter;
+import lombok.NonNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgShuttleImpl;
-import org.polypheny.db.algebra.core.Modify.Operation;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogMaterializedView;
+import org.polypheny.db.algebra.core.common.Modify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
-import org.polypheny.db.schema.LogicalTable;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalMaterializedView;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Transaction;
 
@@ -41,10 +44,12 @@ public abstract class MaterializedViewManager {
     public boolean isCreatingMaterialized = false;
     public boolean isUpdatingMaterialized = false;
 
+    public static final String materializedPk = "mat_id";
+
 
     public static MaterializedViewManager setAndGetInstance( MaterializedViewManager transaction ) {
         if ( INSTANCE != null ) {
-            throw new RuntimeException( "Overwriting the MaterializedViewManager is not permitted." );
+            throw new GenericRuntimeException( "Overwriting the MaterializedViewManager is not permitted." );
         }
         INSTANCE = transaction;
         return INSTANCE;
@@ -53,51 +58,50 @@ public abstract class MaterializedViewManager {
 
     public static MaterializedViewManager getInstance() {
         if ( INSTANCE == null ) {
-            throw new RuntimeException( "MaterializedViewManager was not set correctly on Polypheny-DB start-up" );
+            throw new GenericRuntimeException( "MaterializedViewManager was not set correctly on Polypheny-DB start-up" );
         }
         return INSTANCE;
     }
 
 
-    public abstract void deleteMaterializedViewFromInfo( Long tableId );
+    public abstract void deleteMaterializedViewFromInfo( long tableId );
 
     public abstract void addData(
             Transaction transaction,
-            List<DataStore> stores,
-            Map<Integer, List<CatalogColumn>> addedColumns,
-            AlgRoot algRoot,
-            CatalogMaterializedView materializedView );
+            @Nullable List<DataStore<?>> stores,
+            @NonNull AlgRoot algRoot,
+            @NonNull LogicalMaterializedView materializedView );
 
-    public abstract void addTables( Transaction transaction, List<String> names );
+    public abstract void notifyModifiedEntities( Transaction transaction, Collection<Long> ids );
 
-    public abstract void updateData( Transaction transaction, Long viewId );
+    public abstract void updateData( Transaction transaction, long viewId );
 
     public abstract void updateCommittedXid( PolyXid xid );
 
-    public abstract void updateMaterializedTime( Long materializedId );
+    public abstract void updateMaterializedTime( long materializedId );
 
-    public abstract void addMaterializedInfo( Long materializedId, MaterializedCriteria matViewCriteria );
+    public abstract void addMaterializedInfo( long materializedId, MaterializedCriteria matViewCriteria );
 
 
     /**
-     * to trek updates on tables for materialized views with update freshness
+     * to track updates on entities for materialized views with update freshness
      */
-    public static class TableUpdateVisitor extends AlgShuttleImpl {
+    @Getter
+    public static class EntityUpdateVisitor extends AlgShuttleImpl {
 
-        @Getter
-        private final List<String> names = new ArrayList<>();
+        private final List<Long> ids = new ArrayList<>();
 
 
         @Override
-        public AlgNode visit( LogicalModify modify ) {
-            if ( modify.getOperation() != Operation.MERGE ) {
-                if ( (modify.getTable().getTable() instanceof LogicalTable) ) {
-                    List<String> qualifiedName = modify.getTable().getQualifiedName();
-                    if ( qualifiedName.size() < 2 ) {
-                        names.add( ((LogicalTable) modify.getTable().getTable()).getLogicalSchemaName() );
-                        names.add( ((LogicalTable) modify.getTable().getTable()).getLogicalTableName() );
+        public AlgNode visit( LogicalRelModify modify ) {
+            if ( modify.getOperation() != Modify.Operation.MERGE ) {
+                if ( modify.getEntity() != null ) {
+                    if ( modify.getEntity().unwrap( PhysicalEntity.class ).isPresent() ) {
+                        ids.add( modify.getEntity().unwrap( PhysicalEntity.class ).get().id );
+                    } else if ( modify.getEntity().unwrap( AllocationEntity.class ).isPresent() ) {
+                        ids.add( modify.getEntity().unwrap( AllocationEntity.class ).get().getLogicalId() );
                     } else {
-                        names.addAll( qualifiedName );
+                        ids.add( modify.getEntity().id );
                     }
                 }
             }

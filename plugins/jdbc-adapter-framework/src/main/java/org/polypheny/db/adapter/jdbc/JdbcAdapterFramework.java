@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,17 @@
 
 package org.polypheny.db.adapter.jdbc;
 
-import org.pf4j.Plugin;
-import org.pf4j.PluginWrapper;
+import org.polypheny.db.plugins.PluginContext;
+import org.polypheny.db.plugins.PolyPlugin;
 
-public class JdbcAdapterFramework extends Plugin {
+public class JdbcAdapterFramework extends PolyPlugin {
 
     /**
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to be successfully loaded by manager.
      */
-    public JdbcAdapterFramework( PluginWrapper wrapper ) {
-        super( wrapper );
+    public JdbcAdapterFramework( PluginContext context ) {
+        super( context );
     }
 
 

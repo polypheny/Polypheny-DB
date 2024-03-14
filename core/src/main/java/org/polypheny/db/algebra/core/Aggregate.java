@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,12 +42,13 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.fun.AggFunction;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.rules.AggregateExpandDistinctAggregatesRule;
 import org.polypheny.db.algebra.rules.AggregateProjectPullUpConstantsRule;
@@ -59,10 +60,10 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Function;
 import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.nodes.validate.ValidatorException;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources;
@@ -77,10 +78,10 @@ import org.polypheny.db.util.Util;
 
 /**
  * Relational operator that eliminates duplicates and computes totals.
- *
+ * <p>
  * It corresponds to the {@code GROUP BY} operator in a SQL query statement, together with the aggregate functions in
  * the {@code SELECT} clause.
- *
+ * <p>
  * Rules:
  *
  * <ul>
@@ -101,24 +102,28 @@ public abstract class Aggregate extends SingleAlg {
 
     /**
      * Whether there are indicator fields.
-     *
+     * <p>
      * We strongly discourage the use indicator fields, because they cause the output row type of GROUPING SETS queries to be different from regular GROUP BY queries,
      * and recommend that you set this field to {@code false}.
      */
     public final boolean indicator;
     protected final List<AggregateCall> aggCalls;
+
+    @Getter
     protected final ImmutableBitSet groupSet;
+
+    @Getter
     public final ImmutableList<ImmutableBitSet> groupSets;
 
 
     /**
      * Creates an Aggregate.
-     *
+     * <p>
      * All members of {@code groupSets} must be sub-sets of {@code groupSet}. For a simple {@code GROUP BY}, {@code groupSets} is a singleton list containing {@code groupSet}.
-     *
+     * <p>
      * If {@code GROUP BY} is not specified, or equivalently if {@code GROUP BY ()} is specified, {@code groupSet} will be the empty set, and {@code groupSets}
      * will have one element, that empty set.
-     *
+     * <p>
      * If {@code CUBE}, {@code ROLLUP} or {@code GROUPING SETS} are specified, {@code groupSets} will have additional elements, but they must each be a subset of {@code groupSet},
      * and they must be sorted by inclusion: {@code (0, 1, 2), (1), (0, 2), (0), ()}.
      *
@@ -130,7 +135,7 @@ public abstract class Aggregate extends SingleAlg {
      * @param groupSets List of all grouping sets; null for just {@code groupSet}
      * @param aggCalls Collection of calls to aggregate functions
      */
-    protected Aggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
+    protected Aggregate( AlgCluster cluster, AlgTraitSet traits, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
         super( cluster, traits, child );
         this.indicator = indicator; // true is allowed, but discouraged
         this.aggCalls = ImmutableList.copyOf( aggCalls );
@@ -144,7 +149,7 @@ public abstract class Aggregate extends SingleAlg {
                 assert groupSet.contains( set );
             }
         }
-        assert groupSet.length() <= child.getRowType().getFieldCount();
+        assert groupSet.length() <= child.getTupleType().getFieldCount();
         for ( AggregateCall aggCall : aggCalls ) {
             assert typeMatchesInferred( aggCall, Litmus.THROW );
             Preconditions.checkArgument( aggCall.filterArg < 0 || isPredicate( child, aggCall.filterArg ), "filter must be BOOLEAN NOT NULL" );
@@ -163,7 +168,7 @@ public abstract class Aggregate extends SingleAlg {
 
 
     private boolean isPredicate( AlgNode input, int index ) {
-        final AlgDataType type = input.getRowType().getFieldList().get( index ).getType();
+        final AlgDataType type = input.getTupleType().getFields().get( index ).getType();
         return type.getPolyType() == PolyType.BOOLEAN && !type.isNullable();
     }
 
@@ -206,14 +211,14 @@ public abstract class Aggregate extends SingleAlg {
      */
     public List<Pair<AggregateCall, String>> getNamedAggCalls() {
         final int offset = getGroupCount() + getIndicatorCount();
-        return Pair.zip( aggCalls, Util.skip( getRowType().getFieldNames(), offset ) );
+        return Pair.zip( aggCalls, Util.skip( getTupleType().getFieldNames(), offset ) );
     }
 
 
     /**
      * Returns the number of grouping fields.
      * These grouping fields are the leading fields in both the input and output records.
-     *
+     * <p>
      * NOTE: The {@link #getGroupSet()} data structure allows for the grouping fields to not be on the leading edge. New code should, if possible, assume that grouping fields are
      * in arbitrary positions in the input relational expression.
      *
@@ -226,35 +231,15 @@ public abstract class Aggregate extends SingleAlg {
 
     /**
      * Returns the number of indicator fields.
-     *
+     * <p>
      * This is the same as {@link #getGroupCount()} if {@link #indicator} is true, zero if {@code indicator} is false.
-     *
+     * <p>
      * The offset of the first aggregate call in the output record is always <i>groupCount + indicatorCount</i>.
      *
      * @return number of indicator fields
      */
     public int getIndicatorCount() {
         return indicator ? getGroupCount() : 0;
-    }
-
-
-    /**
-     * Returns a bit set of the grouping fields.
-     *
-     * @return bit set of ordinals of grouping fields
-     */
-    public ImmutableBitSet getGroupSet() {
-        return groupSet;
-    }
-
-
-    /**
-     * Returns the list of grouping sets computed by this Aggregate.
-     *
-     * @return List of all grouping sets; null for just {@code groupSet}
-     */
-    public ImmutableList<ImmutableBitSet> getGroupSets() {
-        return groupSets;
     }
 
 
@@ -276,14 +261,14 @@ public abstract class Aggregate extends SingleAlg {
 
 
     @Override
-    public double estimateRowCount( AlgMetadataQuery mq ) {
+    public double estimateTupleCount( AlgMetadataQuery mq ) {
         // Assume that each sort column has 50% of the value count.
         // Therefore, one sort column has .5 * rowCount, 2 sort columns give .75 * rowCount. Zero sort columns yields 1 row (or 0 if the input is empty).
         final int groupCount = groupSet.cardinality();
         if ( groupCount == 0 ) {
             return 1;
         } else {
-            double rowCount = super.estimateRowCount( mq );
+            double rowCount = super.estimateTupleCount( mq );
             rowCount *= 1.0 - Math.pow( .5, groupCount );
             return rowCount;
         }
@@ -291,9 +276,9 @@ public abstract class Aggregate extends SingleAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         // REVIEW jvs:  This is bogus, but no more bogus than what's currently in Join.
-        double rowCount = mq.getRowCount( this );
+        double rowCount = mq.getTupleCount( this );
         // Aggregates with more aggregate functions cost a bit more
         float multiplier = 1f + (float) aggCalls.size() * 0.125f;
         for ( AggregateCall aggCall : aggCalls ) {
@@ -308,7 +293,7 @@ public abstract class Aggregate extends SingleAlg {
 
     @Override
     protected AlgDataType deriveRowType() {
-        return deriveRowType( getCluster().getTypeFactory(), getInput().getRowType(), indicator, groupSet, groupSets, aggCalls );
+        return deriveRowType( getCluster().getTypeFactory(), getInput().getTupleType(), indicator, groupSet, groupSets, aggCalls );
     }
 
 
@@ -327,7 +312,7 @@ public abstract class Aggregate extends SingleAlg {
         final List<Integer> groupList = groupSet.asList();
         assert groupList.size() == groupSet.cardinality();
         final AlgDataTypeFactory.Builder builder = typeFactory.builder();
-        final List<AlgDataTypeField> fieldList = inputRowType.getFieldList();
+        final List<AlgDataTypeField> fieldList = inputRowType.getFields();
         final Set<String> containedNames = new HashSet<>();
         for ( int groupKey : groupList ) {
             final AlgDataTypeField field = fieldList.get( groupKey );
@@ -347,23 +332,19 @@ public abstract class Aggregate extends SingleAlg {
                     name = base + "_" + i++;
                 }
                 containedNames.add( name );
-                builder.add( name, null, booleanType );
+                builder.add( null, name, null, booleanType );
             }
         }
         for ( Ord<AggregateCall> aggCall : Ord.zip( aggCalls ) ) {
             final String base;
-            if ( aggCall.e.name != null ) {
-                base = aggCall.e.name;
-            } else {
-                base = "$f" + (groupList.size() + aggCall.i);
-            }
+            base = Objects.requireNonNullElseGet( aggCall.e.name, () -> "$f" + (groupList.size() + aggCall.i) );
             String name = base;
             int i = 0;
             while ( containedNames.contains( name ) ) {
                 name = base + "_" + i++;
             }
             containedNames.add( name );
-            builder.add( name, null, aggCall.e.type );
+            builder.add( null, name, null, aggCall.e.type );
         }
         return builder.build();
     }
@@ -381,7 +362,7 @@ public abstract class Aggregate extends SingleAlg {
 
     @Override
     public boolean isValid( Litmus litmus, Context context ) {
-        return super.isValid( litmus, context ) && litmus.check( Util.isDistinct( getRowType().getFieldNames() ), "distinct field names: {}", getRowType() );
+        return super.isValid( litmus, context ) && litmus.check( Util.isDistinct( getTupleType().getFieldNames() ), "distinct field names: {}", getTupleType() );
     }
 
 
@@ -476,7 +457,7 @@ public abstract class Aggregate extends SingleAlg {
 
     /**
      * Implementation of the {@link OperatorBinding} interface for an {@link AggregateCall aggregate call} applied to a set of operands in the context of
-     * a {@link LogicalAggregate}.
+     * a {@link LogicalRelAggregate}.
      */
     public static class AggCallBinding extends OperatorBinding {
 

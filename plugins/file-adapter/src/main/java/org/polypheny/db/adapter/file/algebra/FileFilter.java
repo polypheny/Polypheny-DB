@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,18 +22,17 @@ import org.polypheny.db.adapter.file.FileAlg;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.ModelTrait;
+import org.polypheny.db.schema.trait.ModelTrait;
 
 
 public class FileFilter extends Filter implements FileAlg {
 
-    protected FileFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, RexNode condition ) {
+    protected FileFilter( AlgCluster cluster, AlgTraitSet traits, AlgNode child, RexNode condition ) {
         super( cluster, traits.replace( ModelTrait.RELATIONAL ), child, condition );
     }
 
@@ -45,7 +44,7 @@ public class FileFilter extends Filter implements FileAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 0.1 );
     }
 
@@ -53,7 +52,10 @@ public class FileFilter extends Filter implements FileAlg {
     @Override
     public void implement( FileImplementor implementor ) {
         implementor.visitChild( 0, getInput() );
-        Condition condition = new Condition( (RexCall) this.condition );//projectionMapping is not available yet
+        Condition condition = Condition.create( this.condition );//projectionMapping is not available yet
+        if ( implementor.getProjectionMapping() != null ) {
+            condition.adjust( implementor.getProjectionMapping() );
+        }
         implementor.setCondition( condition );
     }
 

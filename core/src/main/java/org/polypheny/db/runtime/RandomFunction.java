@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,9 @@ package org.polypheny.db.runtime;
 import java.util.Random;
 import org.apache.calcite.linq4j.function.Deterministic;
 import org.apache.calcite.linq4j.function.Parameter;
+import org.polypheny.db.type.entity.category.PolyNumber;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
 
 
 /**
@@ -72,33 +75,33 @@ public class RandomFunction {
     /**
      * Implements the {@code RAND(seed)} SQL function.
      */
-    public double randSeed( @Parameter(name = "seed") int seed ) {
+    public PolyNumber randSeed( @Parameter(name = "seed") PolyNumber seed ) {
         if ( random == null ) {
-            random = new Random( seed ^ (seed << 16) );
+            random = new Random( seed.intValue() ^ (seed.longValue() << 16) );
         }
-        return random.nextDouble();
+        return PolyDouble.of( random.nextDouble() );
     }
 
 
     /**
      * Implements the {@code RAND_INTEGER(bound)} SQL function.
      */
-    public int randInteger( @Parameter(name = "bound") int bound ) {
+    public PolyInteger randInteger( @Parameter(name = "bound") PolyNumber bound ) {
         if ( random == null ) {
             random = new Random();
         }
-        return random.nextInt( bound );
+        return PolyInteger.of( random.nextInt( bound.intValue() ) );
     }
 
 
     /**
      * Implements the {@code RAND_INTEGER(seed, bound)} SQL function.
      */
-    public int randIntegerSeed( @Parameter(name = "seed") int seed, @Parameter(name = "bound") int bound ) {
+    public PolyNumber randIntegerSeed( @Parameter(name = "seed") PolyNumber seed, @Parameter(name = "bound") PolyNumber bound ) {
         if ( random == null ) {
-            random = new Random( seed );
+            random = new Random( seed.intValue() );
         }
-        return random.nextInt( bound );
+        return PolyInteger.of( random.nextInt( bound.intValue() ) );
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,16 +17,17 @@
 package org.polypheny.db.languages.mql;
 
 import java.util.List;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.Pattern;
-import org.polypheny.db.catalog.entity.CatalogCollection;
-import org.polypheny.db.catalog.entity.CatalogSchema;
+import java.util.Optional;
+import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.languages.mql.Mql.Type;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -44,23 +45,29 @@ public class MqlDrop extends MqlCollectionStatement implements ExecutableStateme
 
 
     @Override
-    public void execute( Context context, Statement statement, QueryParameters parameters ) {
+    public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
         DdlManager ddlManager = DdlManager.getInstance();
-        Catalog catalog = Catalog.getInstance();
-        String database = ((MqlQueryParameters) parameters).getDatabase();
+        long namespaceId = parsedQueryContext.getNamespaceId();
 
-        if ( catalog.getSchemas( Catalog.defaultDatabaseId, new Pattern( database ) ).size() != 1 ) {
+        Optional<LogicalNamespace> optionalNamespace = context.getSnapshot().getNamespace( namespaceId );
+        if ( optionalNamespace.isEmpty() ) {
             // dropping a document database( Polyschema ), which does not exist, which is a no-op
             return;
         }
 
-        CatalogSchema namespace = catalog.getSchemas( Catalog.defaultDatabaseId, new Pattern( database ) ).get( 0 );
-        List<CatalogCollection> collections = catalog.getCollections( namespace.id, new Pattern( getCollection() ) );
+        LogicalNamespace namespace = optionalNamespace.get();
+        List<LogicalCollection> collections = context.getSnapshot().doc().getCollections( namespace.id, new Pattern( getCollection() ) );
         if ( collections.size() != 1 ) {
             // dropping a collection, which does not exist, which is a no-op
             return;
         }
         ddlManager.dropCollection( collections.get( 0 ), statement );
+    }
+
+
+    @Override
+    public @Nullable String getEntity() {
+        return getCollection();
     }
 
 }

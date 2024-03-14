@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,7 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
@@ -56,7 +57,7 @@ import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
@@ -66,24 +67,35 @@ import org.polypheny.db.rex.RexVisitorImpl;
 
 /**
  * Relational expression that represent a MATCH_RECOGNIZE node.
- *
+ * <p>
  * Each output row has the columns defined in the measure statements.
  */
 public abstract class Match extends SingleAlg {
 
     private static final String STAR = "*";
+    @Getter
     protected final ImmutableMap<String, RexNode> measures;
+    @Getter
     protected final RexNode pattern;
+    @Getter
     protected final boolean strictStart;
+    @Getter
     protected final boolean strictEnd;
+    @Getter
     protected final boolean allRows;
+    @Getter
     protected final RexNode after;
+    @Getter
     protected final ImmutableMap<String, RexNode> patternDefinitions;
     protected final Set<RexMRAggCall> aggregateCalls;
     protected final Map<String, SortedSet<RexMRAggCall>> aggregateCallsPreVar;
+    @Getter
     protected final ImmutableMap<String, SortedSet<String>> subsets;
+    @Getter
     protected final List<RexNode> partitionKeys;
+    @Getter
     protected final AlgCollation orderKeys;
+    @Getter
     protected final RexNode interval;
 
 
@@ -106,11 +118,11 @@ public abstract class Match extends SingleAlg {
      * @param orderKeys Order by columns
      * @param interval Interval definition, null if WITHIN clause is not defined
      */
-    protected Match( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, AlgDataType rowType, RexNode pattern, boolean strictStart, boolean strictEnd, Map<String, RexNode> patternDefinitions, Map<String, RexNode> measures, RexNode after, Map<String, ? extends SortedSet<String>> subsets, boolean allRows, List<RexNode> partitionKeys, AlgCollation orderKeys, RexNode interval ) {
+    protected Match( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, AlgDataType rowType, RexNode pattern, boolean strictStart, boolean strictEnd, Map<String, RexNode> patternDefinitions, Map<String, RexNode> measures, RexNode after, Map<String, ? extends SortedSet<String>> subsets, boolean allRows, List<RexNode> partitionKeys, AlgCollation orderKeys, RexNode interval ) {
         super( cluster, traitSet, input );
         this.rowType = Objects.requireNonNull( rowType );
         this.pattern = Objects.requireNonNull( pattern );
-        Preconditions.checkArgument( patternDefinitions.size() > 0 );
+        Preconditions.checkArgument( !patternDefinitions.isEmpty() );
         this.strictStart = strictStart;
         this.strictEnd = strictEnd;
         this.patternDefinitions = ImmutableMap.copyOf( patternDefinitions );
@@ -154,61 +166,6 @@ public abstract class Match extends SingleAlg {
     }
 
 
-    public ImmutableMap<String, RexNode> getMeasures() {
-        return measures;
-    }
-
-
-    public RexNode getAfter() {
-        return after;
-    }
-
-
-    public RexNode getPattern() {
-        return pattern;
-    }
-
-
-    public boolean isStrictStart() {
-        return strictStart;
-    }
-
-
-    public boolean isStrictEnd() {
-        return strictEnd;
-    }
-
-
-    public boolean isAllRows() {
-        return allRows;
-    }
-
-
-    public ImmutableMap<String, RexNode> getPatternDefinitions() {
-        return patternDefinitions;
-    }
-
-
-    public ImmutableMap<String, SortedSet<String>> getSubsets() {
-        return subsets;
-    }
-
-
-    public List<RexNode> getPartitionKeys() {
-        return partitionKeys;
-    }
-
-
-    public AlgCollation getOrderKeys() {
-        return orderKeys;
-    }
-
-
-    public RexNode getInterval() {
-        return interval;
-    }
-
-
     public abstract Match copy( AlgNode input, AlgDataType rowType, RexNode pattern, boolean strictStart, boolean strictEnd, Map<String, RexNode> patternDefinitions, Map<String, RexNode> measures, RexNode after, Map<String, ? extends SortedSet<String>> subsets, boolean allRows, List<RexNode> partitionKeys, AlgCollation orderKeys, RexNode interval );
 
 
@@ -227,7 +184,7 @@ public abstract class Match extends SingleAlg {
         return super.explainTerms( pw )
                 .item( "partition", getPartitionKeys() )
                 .item( "order", getOrderKeys() )
-                .item( "outputFields", getRowType().getFieldNames() )
+                .item( "outputFields", getTupleType().getFieldNames() )
                 .item( "allRows", isAllRows() )
                 .item( "after", getAfter() )
                 .item( "pattern", getPattern() )
@@ -236,7 +193,7 @@ public abstract class Match extends SingleAlg {
                 .itemIf( "interval", getInterval(), getInterval() != null )
                 .item( "subsets", getSubsets().values().asList() )
                 .item( "patternDefinitions", getPatternDefinitions().values().asList() )
-                .item( "inputFields", getInput().getRowType().getFieldNames() );
+                .item( "inputFields", getInput().getTupleType().getFieldNames() );
     }
 
 
@@ -254,7 +211,7 @@ public abstract class Match extends SingleAlg {
                 (subsets != null ? String.join( "$", subsets.keySet() ) : "") + "$" +
                 (subsets != null ? subsets.values().stream().map( s -> String.join( "$", s ) ).collect( Collectors.joining( "$" ) ) : "") + "$" +
                 allRows + "$" +
-                (partitionKeys != null ? partitionKeys.stream().map( Objects::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
+                (partitionKeys != null ? partitionKeys.stream().map( Objects::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "&" +
                 (interval != null ? interval.hashCode() : "") + "&";
     }
 
@@ -262,7 +219,7 @@ public abstract class Match extends SingleAlg {
     /**
      * Find aggregate functions in operands.
      */
-    private static class AggregateFinder extends RexVisitorImpl {
+    private static class AggregateFinder extends RexVisitorImpl<Object> {
 
         final SortedSet<RexMRAggCall> aggregateCalls = new TreeSet<>();
         final Map<String, SortedSet<RexMRAggCall>> aggregateCallsPerVar = new TreeMap<>();
@@ -310,7 +267,7 @@ public abstract class Match extends SingleAlg {
                 RexMRAggCall aggCall = new RexMRAggCall( aggFunction, call.getType(), call.getOperands(), aggregateCalls.size() );
                 aggregateCalls.add( aggCall );
                 Set<String> pv = new PatternVarFinder().go( call.getOperands() );
-                if ( pv.size() == 0 ) {
+                if ( pv.isEmpty() ) {
                     pv.add( STAR );
                 }
                 for ( String alpha : pv ) {
@@ -347,7 +304,7 @@ public abstract class Match extends SingleAlg {
     /**
      * Visits the operands of an aggregate call to retrieve relevant pattern variables.
      */
-    private static class PatternVarFinder extends RexVisitorImpl {
+    private static class PatternVarFinder extends RexVisitorImpl<Object> {
 
         final Set<String> patternVars = new HashSet<>();
 
@@ -372,11 +329,6 @@ public abstract class Match extends SingleAlg {
             return null;
         }
 
-
-        public Set<String> go( RexNode rex ) {
-            rex.accept( this );
-            return patternVars;
-        }
 
 
         public Set<String> go( List<RexNode> rexNodeList ) {

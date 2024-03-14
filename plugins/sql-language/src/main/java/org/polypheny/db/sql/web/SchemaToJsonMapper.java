@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,15 +19,10 @@ package org.polypheny.db.sql.web;
 
 import com.google.gson.Gson;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogKey;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.sql.language.pretty.SqlPrettyWriter;
@@ -37,40 +32,6 @@ import org.polypheny.db.type.PolyType;
 public class SchemaToJsonMapper {
 
     private final static Gson gson = new Gson();
-
-
-    public static String exportTableDefinitionAsJson( @NonNull CatalogTable catalogTable, boolean exportPrimaryKey, boolean exportDefaultValues ) {
-        List<JsonColumn> columns = new LinkedList<>();
-        for ( CatalogColumn catalogColumn : Catalog.getInstance().getColumns( catalogTable.id ) ) {
-            String defaultValue = null;
-            String defaultFunctionName = null;
-            if ( exportDefaultValues ) {
-                if ( catalogColumn.defaultValue != null ) {
-                    defaultValue = catalogColumn.defaultValue.value;
-                    defaultFunctionName = catalogColumn.defaultValue.functionName;
-                }
-            }
-            columns.add( new JsonColumn(
-                    catalogColumn.name,
-                    catalogColumn.type.name(),
-                    catalogColumn.length,
-                    catalogColumn.scale,
-                    catalogColumn.nullable,
-                    defaultValue,
-                    defaultFunctionName ) );
-        }
-        List<String> primaryKeyColumnNames = null;
-        if ( exportPrimaryKey ) {
-            for ( CatalogKey catalogKey : Catalog.getInstance().getTableKeys( catalogTable.id ) ) {
-                if ( catalogKey.id == catalogTable.primaryKey ) {
-                    primaryKeyColumnNames = catalogKey.getColumnNames();
-                    break;
-                }
-            }
-        }
-        JsonTable table = new JsonTable( catalogTable.name, columns, primaryKeyColumnNames );
-        return gson.toJson( table );
-    }
 
 
     public static String getTableNameFromJson( @NonNull String json ) {

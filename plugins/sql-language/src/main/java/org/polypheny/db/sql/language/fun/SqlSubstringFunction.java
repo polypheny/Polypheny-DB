@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -178,7 +178,7 @@ public class SqlSubstringFunction extends SqlFunction {
             final Monotonicity mono0 = call.getOperandMonotonicity( 0 );
             if ( (mono0 != Monotonicity.NOT_MONOTONIC)
                     && call.getOperandMonotonicity( 1 ) == Monotonicity.CONSTANT
-                    && call.getOperandLiteralValue( 1, BigDecimal.class ).equals( BigDecimal.ZERO )
+                    && call.getOperandLiteralValue( 1, PolyType.DECIMAL ).asBigDecimal().value.equals( BigDecimal.ZERO )
                     && call.getOperandMonotonicity( 2 ) == Monotonicity.CONSTANT ) {
                 return mono0.unstrict();
             }

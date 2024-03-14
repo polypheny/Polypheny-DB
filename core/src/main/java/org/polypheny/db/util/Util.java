@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@
 package org.polypheny.db.util;
 
 
+import com.google.common.base.Charsets;
 import com.google.common.base.Throwables;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -96,8 +97,14 @@ import javax.annotation.Nonnull;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.fun.AggFunction;
+import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.nodes.BasicNodeVisitor;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Literal;
@@ -140,7 +147,7 @@ public class Util {
      */
     private static final Pattern JAVA_ID_PATTERN = Pattern.compile( "[a-zA-Z_$][a-zA-Z0-9$]*" );
 
-    private static final Charset DEFAULT_CHARSET = Charset.forName( SaffronProperties.INSTANCE.defaultCharset().get() );
+    private static final Charset DEFAULT_CHARSET = Charsets.UTF_8;//Charset.forName( SaffronProperties.INSTANCE.defaultCharset().get() );
 
     /**
      * Maps classes to the map of their enum values. Uses a weak map so that classes are not prevented from being unloaded.
@@ -389,7 +396,7 @@ public class Util {
                 try {
                     val = field.get( o );
                 } catch ( IllegalAccessException e ) {
-                    throw new RuntimeException( e );
+                    throw new GenericRuntimeException( e );
                 }
                 print( pw, val, indent + 1 );
             }
@@ -703,7 +710,7 @@ public class Util {
     public static RuntimeException needToImplement( Object o ) {
         String description = null;
         if ( o != null ) {
-            description = o.getClass().toString() + ": " + o.toString();
+            description = o.getClass() + ": " + o;
         }
         throw new UnsupportedOperationException( description );
     }
@@ -2012,6 +2019,27 @@ public class Util {
      */
     public static <E> Iterator<E> filter( Iterator<E> iterator, Predicate<E> predicate ) {
         return new FilteringIterator<>( iterator, predicate );
+    }
+
+
+    public static Monotonicity getMonotonicity( Entity entity, String columnName ) {
+        if ( entity.dataModel != DataModel.RELATIONAL ) {
+            return Monotonicity.NOT_MONOTONIC;
+        }
+
+        for ( AlgCollation collation : entity.getCollations() ) {
+            final AlgFieldCollation fieldCollation = collation.getFieldCollations().get( 0 );
+            final int fieldIndex = fieldCollation.getFieldIndex();
+            if ( fieldIndex < entity.getTupleType().getFieldCount() && entity.getTupleType().getFieldNames().get( fieldIndex ).equals( columnName ) ) {
+                return fieldCollation.direction.monotonicity();
+            }
+        }
+        return Monotonicity.NOT_MONOTONIC;
+    }
+
+
+    public static Collation getDefaultCollation() {
+        return Collation.COERCIBLE;
     }
 
 

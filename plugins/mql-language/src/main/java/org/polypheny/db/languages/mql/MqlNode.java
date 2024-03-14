@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryLanguage;
@@ -31,17 +32,15 @@ import org.polypheny.db.nodes.NodeVisitor;
 import org.polypheny.db.util.Litmus;
 
 
+@Getter
 public abstract class MqlNode implements Node {
 
-    @Getter
     protected final ParserPos pos;
 
-    @Getter
     @Setter
     List<String> stores = new ArrayList<>();
 
     @Setter
-    @Getter
     List<String> primary = new ArrayList<>();
 
 
@@ -84,6 +83,12 @@ public abstract class MqlNode implements Node {
 
 
     @Override
+    public @Nullable String getEntity() {
+        return null;
+    }
+
+
+    @Override
     public Object clone() {
         return null;
     }
@@ -100,7 +105,7 @@ public abstract class MqlNode implements Node {
 
     @Override
     public boolean isA( Set<Kind> category ) {
-        return false;
+        return category.contains( this.getKind() );
     }
 
 
@@ -123,6 +128,16 @@ public abstract class MqlNode implements Node {
 
     @Override
     public Kind getKind() {
+        switch ( getFamily() ) {
+            case DCL:
+                return Kind.OTHER;
+            case DDL:
+                return Kind.OTHER_DDL;
+            case DML:
+                return Kind.INSERT;
+            case DQL:
+                return Kind.SELECT;
+        }
         return Kind.OTHER;
     }
 

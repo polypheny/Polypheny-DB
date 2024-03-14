@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.function.Predicate;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.methods.response.EthBlock;
@@ -41,7 +42,7 @@ class BlockReader implements Closeable {
         try {
             this.currentBlock = web3j.ethBlockNumber().send().getBlockNumber();
         } catch ( IOException e ) {
-            throw new RuntimeException( "Unable to connect to server: " + clientUrl );
+            throw new GenericRuntimeException( "Unable to connect to server: " + clientUrl );
         }
     }
 

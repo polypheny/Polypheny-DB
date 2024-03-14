@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,8 @@ package org.polypheny.db.webui.models;
 
 import java.util.ArrayList;
 import lombok.Getter;
-import org.polypheny.db.catalog.Catalog.EntityType;
+import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.webui.models.catalog.UiColumnDefinition;
 
 
 /**
@@ -31,7 +32,7 @@ public class DbTable {
     private final String tableName;
     @Getter
     private final String schema;
-    private final ArrayList<DbColumn> columns = new ArrayList<>();
+    private final ArrayList<UiColumnDefinition> columns = new ArrayList<>();
     private final ArrayList<String> primaryKeyFields = new ArrayList<>();
     private final ArrayList<String> uniqueColumns = new ArrayList<>();
     private final boolean modifiable;
@@ -59,7 +60,7 @@ public class DbTable {
      *
      * @param col column that is part of this table
      */
-    public void addColumn( final DbColumn col ) {
+    public void addColumn( final UiColumnDefinition col ) {
         this.columns.add( col );
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,10 @@
 
 package org.polypheny.db.sql.language.validate;
 
-
 import com.google.common.collect.ImmutableList;
-import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.sql.language.SqlNode;
-import org.polypheny.db.util.Moniker;
-import org.polypheny.db.util.Util;
 
 
 /**
@@ -52,13 +46,7 @@ class SchemaNamespace extends AbstractNamespace {
 
     @Override
     protected AlgDataType validateImpl( AlgDataType targetRowType ) {
-        final AlgDataTypeFactory.Builder builder = validator.getTypeFactory().builder();
-        for ( Moniker moniker : validator.catalogReader.getAllSchemaObjectNames( names ) ) {
-            final List<String> names1 = moniker.getFullyQualifiedNames();
-            final ValidatorTable table = validator.catalogReader.getTable( names1 );
-            builder.add( Util.last( names1 ), null, table.getRowType() );
-        }
-        return builder.build();
+        return targetRowType;
     }
 
 

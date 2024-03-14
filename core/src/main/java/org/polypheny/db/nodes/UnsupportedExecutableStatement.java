@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 
 package org.polypheny.db.nodes;
 
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -27,7 +27,7 @@ import org.polypheny.db.transaction.Statement;
 public interface UnsupportedExecutableStatement extends ExecutableStatement {
 
     @Override
-    default void execute( Context context, Statement statement, QueryParameters parameters ) {
+    default void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
         throw new UnsupportedOperationException( "The operation is not supported by the used language." );
     }
 

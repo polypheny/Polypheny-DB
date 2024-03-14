@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,18 +28,19 @@ import org.apache.calcite.linq4j.tree.NewExpression;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.nodes.ArrayValueConstructor;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.language.fun.SqlDistanceFunction;
@@ -58,15 +59,9 @@ public class CottontailProject extends Project implements CottontailAlg {
     private final boolean arrayProject;
 
 
-    public CottontailProject( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType, boolean arrayValueProject ) {
+    public CottontailProject( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType, boolean arrayValueProject ) {
         super( cluster, traitSet, input, projects, rowType );
         this.arrayProject = arrayValueProject;
-    }
-
-
-    @Override
-    public boolean isImplementationCacheable() {
-        return true;
     }
 
 
@@ -77,8 +72,8 @@ public class CottontailProject extends Project implements CottontailAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        return super.computeSelfCost( planner, mq ).multiplyBy( 0.6 );
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
+        return super.computeSelfCost( planner, mq ).multiplyBy( 0.1 );
     }
 
 
@@ -89,13 +84,16 @@ public class CottontailProject extends Project implements CottontailAlg {
         if ( !this.arrayProject ) {
             context.visitChild( 0, getInput() );
         }
+        if ( context.table == null ) {
+            searchUnderlyingEntity( context );
+        }
 
-        final List<AlgDataTypeField> fieldList = context.cottontailTable.getRowType( getCluster().getTypeFactory() ).getFieldList();
+        final List<AlgDataTypeField> fieldList = context.table.getTupleType().getFields();
         final List<String> physicalColumnNames = new ArrayList<>( fieldList.size() );
         final List<PolyType> columnTypes = new ArrayList<>( fieldList.size() );
 
         for ( AlgDataTypeField field : fieldList ) {
-            physicalColumnNames.add( context.cottontailTable.getPhysicalColumnName( field.getName() ) );
+            physicalColumnNames.add( field.getPhysicalName() );
             if ( field.getType().getComponentType() != null ) {
                 columnTypes.add( field.getType().getComponentType().getPolyType() );
             } else {
@@ -108,7 +106,22 @@ public class CottontailProject extends Project implements CottontailAlg {
         } else {
             context.blockBuilder = builder;
         }
-        context.projectionMap = makeProjectionAndKnnBuilder( context.blockBuilder, getNamedProjects(), physicalColumnNames );
+        context.projectionMap = makeProjectionAndKnnBuilder( context.blockBuilder, getNamedProjects(), physicalColumnNames, context );
+    }
+
+
+    private void searchUnderlyingEntity( CottontailImplementContext context ) {
+        accept( new AlgShuttleImpl() {
+
+            @Override
+            public AlgNode visit( AlgNode other ) {
+                if ( other.unwrap( CottontailScan.class ).isPresent() ) {
+                    other.unwrap( CottontailScan.class ).get().implement( context );
+                }
+                return super.visit( other );
+            }
+
+        } );
     }
 
 
@@ -118,19 +131,24 @@ public class CottontailProject extends Project implements CottontailAlg {
      * @param builder The {@link BlockBuilder} instance.
      * @param namedProjects List of projection to alias mappings.
      * @param physicalColumnNames List of physical column names in the underlying store.
+     * @param context The {@link CottontailImplementContext} instance.
      * @return {@link ParameterExpression}
      */
-    public static ParameterExpression makeProjectionAndKnnBuilder( BlockBuilder builder, List<Pair<RexNode, String>> namedProjects, List<String> physicalColumnNames ) {
+    public static ParameterExpression makeProjectionAndKnnBuilder( BlockBuilder builder, List<Pair<RexNode, String>> namedProjects, List<String> physicalColumnNames, CottontailImplementContext context ) {
         final ParameterExpression projectionMap_ = Expressions.variable( Map.class, builder.newName( "projectionMap" + System.nanoTime() ) );
         final NewExpression projectionMapCreator = Expressions.new_( LinkedHashMap.class );
         builder.add( Expressions.declare( Modifier.FINAL, projectionMap_, projectionMapCreator ) );
         for ( Pair<RexNode, String> pair : namedProjects ) {
             final String name = pair.right.toLowerCase();
             final Expression exp;
-            if ( pair.left instanceof RexInputRef ) {
-                exp = Expressions.constant( physicalColumnNames.get( ((RexInputRef) pair.left).getIndex() ) );
-            } else if ( pair.left instanceof RexCall && (((RexCall) pair.left).getOperator() instanceof SqlDistanceFunction) ) {
-                exp = CottontailTypeUtil.knnCallToFunctionExpression( (RexCall) pair.left, physicalColumnNames, name ); /* Map to function. */
+            if ( pair.left instanceof RexIndexRef indexRef ) {
+                exp = Expressions.constant( physicalColumnNames.get( indexRef.getIndex() ) );
+            } else if ( pair.left instanceof RexCall call && call.getOperator() instanceof SqlDistanceFunction ) {
+                exp = CottontailTypeUtil.knnCallToFunctionExpression( call, physicalColumnNames, name ); /* Map to function. */
+            } else if ( pair.left instanceof RexDynamicParam dynamic ) {
+                context.addDynamicParam( pair.right, dynamic.getIndex() );
+                // we don't need to add dynamic parameters to the projection map
+                continue;
             } else {
                 continue;
             }
@@ -155,12 +173,12 @@ public class CottontailProject extends Project implements CottontailAlg {
             final String originalName = physicalColumnNames.get( i );
 
             Expression source_;
-            if ( pair.left instanceof RexLiteral ) {
-                source_ = CottontailTypeUtil.rexLiteralToDataExpression( (RexLiteral) pair.left, columnTypes.get( i ) );
-            } else if ( pair.left instanceof RexDynamicParam ) {
-                source_ = CottontailTypeUtil.rexDynamicParamToDataExpression( (RexDynamicParam) pair.left, dynamicParameterMap_, columnTypes.get( i ) );
-            } else if ( (pair.left instanceof RexCall) && (((RexCall) pair.left).getOperator() instanceof ArrayValueConstructor) ) {
-                source_ = CottontailTypeUtil.rexArrayConstructorToExpression( (RexCall) pair.left, columnTypes.get( i ) );
+            if ( pair.left instanceof RexLiteral literal ) {
+                source_ = CottontailTypeUtil.rexLiteralToDataExpression( literal, columnTypes.get( i ) );
+            } else if ( pair.left instanceof RexDynamicParam dynamicParam ) {
+                source_ = CottontailTypeUtil.rexDynamicParamToDataExpression( dynamicParam, dynamicParameterMap_, columnTypes.get( i ) );
+            } else if ( pair.left instanceof RexCall call && call.getOperator() instanceof ArrayValueConstructor ) {
+                source_ = CottontailTypeUtil.rexArrayConstructorToExpression( call, columnTypes.get( i ) );
             } else {
                 continue;
             }

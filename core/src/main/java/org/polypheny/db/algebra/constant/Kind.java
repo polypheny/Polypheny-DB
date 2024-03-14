@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -130,7 +130,7 @@ public enum Kind {
     /**
      * DESCRIBE SCHEMA statement
      */
-    DESCRIBE_SCHEMA,
+    DESCRIBE_NAMESPACE,
 
     /**
      * DESCRIBE TABLE statement
@@ -620,6 +620,12 @@ public enum Kind {
     INPUT_REF,
 
     /**
+     * Reference to an input field, with a qualified name (and perhaps an identifier)
+     *
+     * (Only used at the RexNode level.)
+     */
+    NAME_INDEX_REF,
+    /**
      * Reference to an input field, with a qualified name and an identifier
      *
      * (Only used at the RexNode level.)
@@ -1101,9 +1107,9 @@ public enum Kind {
     ALTER_SESSION,
 
     /**
-     * {@code CREATE SCHEMA} DDL statement.
+     * {@code CREATE NAMESPACE} DDL statement.
      */
-    CREATE_SCHEMA,
+    CREATE_NAMESPACE,
 
     /**
      * {@code CREATE FOREIGN SCHEMA} DDL statement.
@@ -1111,14 +1117,14 @@ public enum Kind {
     CREATE_FOREIGN_SCHEMA,
 
     /**
-     * {@code ALTER SCHEMA} DDL statement.
+     * {@code ALTER NAMESPACE} DDL statement.
      */
-    ALTER_SCHEMA,
+    ALTER_NAMESPACE,
 
     /**
-     * {@code DROP SCHEMA} DDL statement.
+     * {@code DROP NAMESPACE} DDL statement.
      */
-    DROP_SCHEMA,
+    DROP_NAMESPACE,
 
     /**
      * {@code CREATE TABLE} DDL statement.
@@ -1228,9 +1234,6 @@ public enum Kind {
     /**
      * DDL statement not handled above.
      *
-     * <b>Note to other projects</b>: If you are extending Polypheny-DB's SQL parser and have your own object types you no
-     * doubt want to define CREATE and DROP commands for them. Use OTHER_DDL in the short term, but we are happy to add new
-     * enum values for your object types. Just ask!
      */
     OTHER_DDL,
 
@@ -1315,7 +1318,6 @@ public enum Kind {
      * Document model {@code $exists} operator
      */
     MQL_EXISTS,
-
     /*
      * Deserialize operator
      */
@@ -1324,7 +1326,9 @@ public enum Kind {
     /*
      * CYPHER function
      */
-    CYPHER_FUNCTION;
+    CYPHER_FUNCTION,
+
+    ELEMENT_REF;
 
     // Most of the static fields are categories, aggregating several kinds into a set.
 
@@ -1400,9 +1404,9 @@ public enum Kind {
             COMMIT,
             ROLLBACK,
             ALTER_SESSION,
-            CREATE_SCHEMA,
+            CREATE_NAMESPACE,
             CREATE_FOREIGN_SCHEMA,
-            DROP_SCHEMA,
+            DROP_NAMESPACE,
             CREATE_TABLE,
             ALTER_TABLE,
             DROP_TABLE,
@@ -1422,7 +1426,7 @@ public enum Kind {
             DROP_TYPE,
             SET_OPTION,
             TRUNCATE,
-            ALTER_SCHEMA,
+            ALTER_NAMESPACE,
             OTHER_DDL );
 
     /**
@@ -1715,4 +1719,3 @@ public enum Kind {
         return set;
     }
 }
-

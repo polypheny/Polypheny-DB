@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,8 +39,8 @@ class JoinNamespace extends AbstractNamespace {
 
     @Override
     protected AlgDataType validateImpl( AlgDataType targetRowType ) {
-        AlgDataType leftType = validator.getSqlNamespace( join.getLeft() ).getRowType();
-        AlgDataType rightType = validator.getSqlNamespace( join.getRight() ).getRowType();
+        AlgDataType leftType = validator.getSqlNamespace( join.getLeft() ).getTupleType();
+        AlgDataType rightType = validator.getSqlNamespace( join.getRight() ).getTupleType();
         final AlgDataTypeFactory typeFactory = validator.getTypeFactory();
         switch ( join.getJoinType() ) {
             case LEFT:

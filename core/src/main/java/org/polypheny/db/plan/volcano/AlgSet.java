@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ import java.util.Set;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptListener.AlgEquivalenceEvent;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTrait;
@@ -106,7 +106,7 @@ class AlgSet {
     /**
      * Returns all of the {@link AlgNode}s which reference {@link AlgNode}s in this set.
      */
-    public List<AlgNode> getParentRels() {
+    public List<AlgNode> getParentAlgs() {
         return parents;
     }
 
@@ -114,7 +114,7 @@ class AlgSet {
     /**
      * @return all of the {@link AlgNode}s contained by any subset of this set (does not include the subset objects themselves)
      */
-    public List<AlgNode> getRelsFromAllSubsets() {
+    public List<AlgNode> getAlgsFromAllSubsets() {
         return algs;
     }
 
@@ -132,7 +132,7 @@ class AlgSet {
     /**
      * Removes all references to a specific {@link AlgNode} in both the subsets and their parent relationships.
      */
-    void obliterateRelNode( AlgNode alg ) {
+    void obliterateAlgNode( AlgNode alg ) {
         parents.remove( alg );
     }
 
@@ -150,7 +150,7 @@ class AlgSet {
     }
 
 
-    private void addAbstractConverters( VolcanoPlanner planner, AlgOptCluster cluster, AlgSubset subset, boolean subsetToOthers ) {
+    private void addAbstractConverters( VolcanoPlanner planner, AlgCluster cluster, AlgSubset subset, boolean subsetToOthers ) {
         // Converters from newly introduced subset to all the remaining one (vice versa), only if we can convert.  No point adding converters if it is not possible.
         for ( AlgSubset other : subsets ) {
             assert other.getTraitSet().size() == subset.getTraitSet().size();
@@ -164,32 +164,32 @@ class AlgSet {
                 continue;
             }
 
-            final ImmutableList<AlgTrait> difference = subset.getTraitSet().difference( other.getTraitSet() );
+            final ImmutableList<AlgTrait<?>> difference = subset.getTraitSet().difference( other.getTraitSet() );
 
             boolean addAbstractConverter = true;
             int numTraitNeedConvert = 0;
 
-            for ( AlgTrait curOtherTrait : difference ) {
-                AlgTraitDef traitDef = curOtherTrait.getTraitDef();
-                AlgTrait curRelTrait = subset.getTraitSet().getTrait( traitDef );
+            for ( AlgTrait<?> curOtherTrait : difference ) {
+                AlgTraitDef<?> traitDef = curOtherTrait.getTraitDef();
+                AlgTrait<?> curAlgTrait = subset.getTraitSet().getTrait( traitDef );
 
-                assert curRelTrait.getTraitDef() == traitDef;
+                assert curAlgTrait.getTraitDef() == traitDef;
 
-                if ( curRelTrait == null ) {
+                if ( curAlgTrait == null ) {
                     addAbstractConverter = false;
                     break;
                 }
 
-                boolean canConvert = false;
-                boolean needConvert = false;
+                boolean canConvert;
+                boolean needConvert;
                 if ( subsetToOthers ) {
                     // We can convert from subset to other.  So, add converter with subset as child and traitset as the other's traitset.
-                    canConvert = traitDef.canConvert( cluster.getPlanner(), curRelTrait, curOtherTrait, subset );
-                    needConvert = !curRelTrait.satisfies( curOtherTrait );
+                    canConvert = traitDef.canConvertUnchecked( cluster.getPlanner(), curAlgTrait, curOtherTrait, subset );
+                    needConvert = !curAlgTrait.satisfies( curOtherTrait );
                 } else {
                     // We can convert from others to subset.
-                    canConvert = traitDef.canConvert( cluster.getPlanner(), curOtherTrait, curRelTrait, other );
-                    needConvert = !curOtherTrait.satisfies( curRelTrait );
+                    canConvert = traitDef.canConvertUnchecked( cluster.getPlanner(), curOtherTrait, curAlgTrait, other );
+                    needConvert = !curOtherTrait.satisfies( curAlgTrait );
                 }
 
                 if ( !canConvert ) {
@@ -215,7 +215,7 @@ class AlgSet {
     }
 
 
-    AlgSubset getOrCreateSubset( AlgOptCluster cluster, AlgTraitSet traits ) {
+    AlgSubset getOrCreateSubset( AlgCluster cluster, AlgTraitSet traits ) {
         AlgSubset subset = getSubset( traits );
         if ( subset == null ) {
             subset = new AlgSubset( cluster, this, traits );
@@ -272,7 +272,7 @@ class AlgSet {
     /**
      * Merges <code>otherSet</code> into this AlgSet.
      *
-     * One generally calls this method after discovering that two relational expressions are equivalent, and hence the <code>AlgSet</code>s they belong to are equivalent also.
+     * One generally calls this method after discovering that two algebra expressions are equivalent, and hence the <code>AlgSet</code>s they belong to are equivalent also.
      *
      * After this method completes, <code>otherSet</code> is obsolete, its {@link #equivalentSet} member points to this AlgSet, and this AlgSet is still alive.
      *
@@ -298,21 +298,21 @@ class AlgSet {
                 subset.bestCost = otherSubset.bestCost;
                 subset.best = otherSubset.best;
             }
-            for ( AlgNode otherRel : otherSubset.getAlgs() ) {
-                planner.reregister( this, otherRel );
+            for ( AlgNode otherAlg : otherSubset.getAlgs() ) {
+                planner.reregister( this, otherAlg );
             }
         }
 
         // Has another set merged with this?
         assert equivalentSet == null;
 
-        // Update all rels which have a child in the other set, to reflect the fact that the child has been renamed.
+        // Update all algs which have a child in the other set, to reflect the fact that the child has been renamed.
         //
         // Copy array to prevent ConcurrentModificationException.
         final List<AlgNode> previousParents =
-                ImmutableList.copyOf( otherSet.getParentRels() );
-        for ( AlgNode parentRel : previousParents ) {
-            planner.rename( parentRel );
+                ImmutableList.copyOf( otherSet.getParentAlgs() );
+        for ( AlgNode parentAlg : previousParents ) {
+            planner.rename( parentAlg );
         }
 
         // Renaming may have caused this set to merge with another. If so, this set is now obsolete. There's no need to update the children of this set - indeed, it could be dangerous.
@@ -323,7 +323,7 @@ class AlgSet {
         // Make sure the cost changes as a result of merging are propagated.
         final Set<AlgSubset> activeSet = new HashSet<>();
         final AlgMetadataQuery mq = alg.getCluster().getMetadataQuery();
-        for ( AlgNode parentRel : getParentRels() ) {
+        for ( AlgNode parentRel : getParentAlgs() ) {
             final AlgSubset parentSubset = planner.getSubset( parentRel );
             parentSubset.propagateCostImprovements( planner, mq, parentRel, activeSet );
         }

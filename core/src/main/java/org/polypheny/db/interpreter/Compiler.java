@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -54,7 +55,7 @@ public interface Compiler {
 
     AlgDataType combinedRowType( List<AlgNode> inputs );
 
-    Source source( AlgNode alg, int ordinal );
+    Source<PolyValue> source( AlgNode alg, int ordinal );
 
     /**
      * Creates a Sink for a relational expression to write into.
@@ -74,11 +75,11 @@ public interface Compiler {
      * @param alg Relational expression
      * @param rowEnumerable Contents of relational expression
      */
-    void enumerable( AlgNode alg, Enumerable<Row> rowEnumerable );
+    void enumerable( AlgNode alg, Enumerable<Row<PolyValue>> rowEnumerable );
 
     DataContext getDataContext();
 
-    Context createContext();
+    Context<PolyValue> createContext();
 
 }
 

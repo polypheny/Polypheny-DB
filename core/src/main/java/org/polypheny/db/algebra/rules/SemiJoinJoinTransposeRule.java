@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@
 package org.polypheny.db.algebra.rules;
 
 
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
@@ -46,7 +47,6 @@ import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilderFactory;
-import org.polypheny.db.util.ImmutableIntList;
 
 
 /**
@@ -82,24 +82,24 @@ public class SemiJoinJoinTransposeRule extends AlgOptRule {
         if ( join instanceof SemiJoin ) {
             return;
         }
-        final ImmutableIntList leftKeys = semiJoin.getLeftKeys();
-        final ImmutableIntList rightKeys = semiJoin.getRightKeys();
+        final ImmutableList<Integer> leftKeys = semiJoin.getLeftKeys();
+        final ImmutableList<Integer> rightKeys = semiJoin.getRightKeys();
 
         // X is the left child of the join below the semi-join
         // Y is the right child of the join below the semi-join
         // Z is the right child of the semi-join
-        int nFieldsX = join.getLeft().getRowType().getFieldList().size();
-        int nFieldsY = join.getRight().getRowType().getFieldList().size();
-        int nFieldsZ = semiJoin.getRight().getRowType().getFieldList().size();
+        int nFieldsX = join.getLeft().getTupleType().getFields().size();
+        int nFieldsY = join.getRight().getTupleType().getFields().size();
+        int nFieldsZ = semiJoin.getRight().getTupleType().getFields().size();
         int nTotalFields = nFieldsX + nFieldsY + nFieldsZ;
         List<AlgDataTypeField> fields = new ArrayList<>();
 
         // create a list of fields for the full join result; note that we can't simply use the fields from the semi-join because the row-type of a semi-join only includes the left hand side fields
-        List<AlgDataTypeField> joinFields = semiJoin.getRowType().getFieldList();
+        List<AlgDataTypeField> joinFields = semiJoin.getTupleType().getFields();
         for ( int i = 0; i < (nFieldsX + nFieldsY); i++ ) {
             fields.add( joinFields.get( i ) );
         }
-        joinFields = semiJoin.getRight().getRowType().getFieldList();
+        joinFields = semiJoin.getRight().getTupleType().getFields();
         for ( int i = 0; i < nFieldsZ; i++ ) {
             fields.add( joinFields.get( i ) );
         }
@@ -143,7 +143,7 @@ public class SemiJoinJoinTransposeRule extends AlgOptRule {
         } else {
             leftSemiJoinOp = join.getRight();
         }
-        SemiJoin newSemiJoin = SemiJoin.create( leftSemiJoinOp, semiJoin.getRight(), newSemiJoinFilter, ImmutableIntList.copyOf( newLeftKeys ), rightKeys );
+        SemiJoin newSemiJoin = SemiJoin.create( leftSemiJoinOp, semiJoin.getRight(), newSemiJoinFilter, ImmutableList.copyOf( newLeftKeys ), rightKeys );
 
         AlgNode leftJoinRel;
         AlgNode rightJoinRel;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.polypheny.db.jdbc;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -31,20 +33,15 @@ import org.apache.calcite.avatica.ColumnMetaData.Rep;
 import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.avatica.util.ArrayFactoryImpl;
 import org.apache.calcite.avatica.util.Unsafe;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.polypheny.db.AdapterTestSuite;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.db.excluded.CassandraExcluded;
-import org.polypheny.db.excluded.CottontailExcluded;
-import org.polypheny.db.excluded.FileExcluded;
+
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
-@Category({ AdapterTestSuite.class, CassandraExcluded.class })
+@Tag("adapter")
 public class JdbcPreparedStatementsTest {
 
 
@@ -78,7 +75,7 @@ public class JdbcPreparedStatementsTest {
             "hallo" };
 
 
-    @BeforeClass
+    @BeforeAll
     public static void start() {
         // Ensures that Polypheny-DB is running
         //noinspection ResultOfMethodCallIgnored
@@ -120,7 +117,6 @@ public class JdbcPreparedStatementsTest {
 
 
     @Test
-    @Ignore
     public void nullValueTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -161,7 +157,7 @@ public class JdbcPreparedStatementsTest {
                         exceptionThrown = true;
                     }
 
-                    Assert.assertTrue( "Excepted null value for a non-nullable column", exceptionThrown );
+                    assertTrue( exceptionThrown, "Excepted null value for a non-nullable column" );
 
                     connection.commit();
                 } finally {
@@ -271,20 +267,20 @@ public class JdbcPreparedStatementsTest {
 
                     connection.commit();
 
-                    PreparedStatement preparedSelect = connection.prepareStatement( ""
-                            + "SELECT * FROM pstest WHERE "
-                            + "tbigint = ? AND "
-                            + "tboolean = ? AND "
-                            + "tdate = ? AND "
-                            + "tdecimal = ? AND "
-                            + "tdouble = ? AND "
-                            + "tinteger = ? AND "
-                            + "treal = ? AND "
-                            + "tsmallint = ? AND "
-                            + "ttime = ? AND "
-                            + "ttimestamp = ? AND "
-                            + "ttinyint = ? AND "
-                            + "tvarchar = ?" );
+                    PreparedStatement preparedSelect = connection.prepareStatement(
+                            "SELECT * FROM pstest WHERE "
+                                    + "tbigint = ? AND "
+                                    + "tboolean = ? AND "
+                                    + "tdate = ? AND "
+                                    + "tdecimal = ? AND "
+                                    + "tdouble = ? AND "
+                                    + "tinteger = ? AND "
+                                    + "treal = ? AND "
+                                    + "tsmallint = ? AND "
+                                    + "ttime = ? AND "
+                                    + "ttimestamp = ? AND "
+                                    + "ttinyint = ? AND "
+                                    + "tvarchar = ?" );
                     preparedSelect.setLong( 1, (long) TEST_DATA[0] );
                     preparedSelect.setBoolean( 2, (boolean) TEST_DATA[1] );
                     preparedSelect.setDate( 3, (Date) TEST_DATA[2] );
@@ -337,8 +333,8 @@ public class JdbcPreparedStatementsTest {
                     preparedInsert.executeBatch();
                     connection.commit();
 
-                    PreparedStatement preparedSelect = connection.prepareStatement( ""
-                            + "SELECT * FROM pstest WHERE "
+                    PreparedStatement preparedSelect = connection.prepareStatement(
+                            "SELECT * FROM pstest WHERE "
                             + "tbigint = ? AND "
                             + "tboolean = ? AND "
                             + "tdate = ? AND "
@@ -420,7 +416,6 @@ public class JdbcPreparedStatementsTest {
 
 
     @Test
-    @Category({ CottontailExcluded.class, FileExcluded.class })
     public void updateTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -478,7 +473,7 @@ public class JdbcPreparedStatementsTest {
 
 
     @Test
-    @Category({ CottontailExcluded.class, FileExcluded.class })
+    @Tag("cottontailExcluded") // leads to BatchQuery is unimplemented
     public void batchUpdateTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -488,14 +483,14 @@ public class JdbcPreparedStatementsTest {
                 try {
                     // Insert data
                     PreparedStatement preparedInsert = connection.prepareStatement( "INSERT INTO pstest(tinteger,tsmallint,tvarchar) VALUES (?,?,?)" );
-                    preparedInsert.setInt( 1, 1 );
-                    preparedInsert.setShort( 2, (short) 5 );
-                    preparedInsert.setString( 3, "Foo" );
+                    preparedInsert.setInt( 1, 1 ); // integer
+                    preparedInsert.setShort( 2, (short) 5 ); // smallint + 3 + 1
+                    preparedInsert.setString( 3, "Foo" ); // varchar
                     preparedInsert.addBatch();
 
-                    preparedInsert.setInt( 1, 2 );
-                    preparedInsert.setShort( 2, (short) 5 );
-                    preparedInsert.setString( 3, "Bar" );
+                    preparedInsert.setInt( 1, 2 ); // integer
+                    preparedInsert.setShort( 2, (short) 5 ); // smallint
+                    preparedInsert.setString( 3, "Bar" ); // varchar
                     preparedInsert.addBatch();
 
                     // Update
@@ -588,7 +583,6 @@ public class JdbcPreparedStatementsTest {
 
 
     @Test
-    @Category(FileExcluded.class)
     public void arrayTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -634,7 +628,6 @@ public class JdbcPreparedStatementsTest {
 
 
     @Test
-    @Category(FileExcluded.class)
     public void arrayBatchTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

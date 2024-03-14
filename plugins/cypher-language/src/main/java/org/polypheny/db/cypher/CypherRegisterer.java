@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import com.google.common.annotations.VisibleForTesting;
 import lombok.Getter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.LangFunctionOperator;
@@ -34,12 +35,16 @@ public class CypherRegisterer {
 
     public static void registerOperators() {
         if ( isInit ) {
-            throw new RuntimeException( "Cypher operators were already registered." );
+            throw new GenericRuntimeException( "Cypher operators were already registered." );
         }
+
+        register( OperatorName.CYPHER_LIKE, new LangFunctionOperator( OperatorName.CYPHER_LIKE.name(), Kind.LIKE ) );
 
         register( OperatorName.CYPHER_HAS_PROPERTY, new LangFunctionOperator( OperatorName.CYPHER_HAS_PROPERTY.name(), Kind.CYPHER_FUNCTION ) );
 
         register( OperatorName.CYPHER_HAS_LABEL, new LangFunctionOperator( OperatorName.CYPHER_HAS_LABEL.name(), Kind.CYPHER_FUNCTION ) );
+
+        register( OperatorName.CYPHER_GRAPH_ONLY_LABEL, new LangFunctionOperator( OperatorName.CYPHER_GRAPH_ONLY_LABEL.name(), Kind.CYPHER_FUNCTION ) );
 
         register( OperatorName.CYPHER_PATH_MATCH, new LangFunctionOperator( OperatorName.CYPHER_PATH_MATCH.name(), Kind.CYPHER_FUNCTION ) );
 

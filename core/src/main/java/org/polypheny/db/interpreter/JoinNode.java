@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.algebra.core.Join;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -45,12 +46,12 @@ import org.polypheny.db.algebra.core.Join;
  */
 public class JoinNode implements Node {
 
-    private final Source leftSource;
-    private final Source rightSource;
+    private final Source<PolyValue> leftSource;
+    private final Source<PolyValue> rightSource;
     private final Sink sink;
     private final Join alg;
     private final Scalar condition;
-    private final Context context;
+    private final Context<PolyValue> context;
 
 
     public JoinNode( Compiler compiler, Join alg ) {
@@ -66,12 +67,12 @@ public class JoinNode implements Node {
 
     @Override
     public void run() throws InterruptedException {
-        List<Row> rightList = null;
-        final int leftCount = alg.getLeft().getRowType().getFieldCount();
-        final int rightCount = alg.getRight().getRowType().getFieldCount();
-        context.values = new Object[alg.getRowType().getFieldCount()];
-        Row left;
-        Row right;
+        List<Row<PolyValue>> rightList = null;
+        final int leftCount = alg.getLeft().getTupleType().getFieldCount();
+        final int rightCount = alg.getRight().getTupleType().getFieldCount();
+        context.values = new PolyValue[alg.getTupleType().getFieldCount()];
+        Row<PolyValue> left;
+        Row<PolyValue> right;
         while ( (left = leftSource.receive()) != null ) {
             System.arraycopy( left.getValues(), 0, context.values, 0, leftCount );
             if ( rightList == null ) {
@@ -80,9 +81,9 @@ public class JoinNode implements Node {
                     rightList.add( right );
                 }
             }
-            for ( Row right2 : rightList ) {
+            for ( Row<PolyValue> right2 : rightList ) {
                 System.arraycopy( right2.getValues(), 0, context.values, leftCount, rightCount );
-                final Boolean execute = (Boolean) condition.execute( context );
+                final Boolean execute = condition.execute( context ).asBoolean().value;
                 if ( execute != null && execute ) {
                     sink.send( Row.asCopy( context.values ) );
                 }

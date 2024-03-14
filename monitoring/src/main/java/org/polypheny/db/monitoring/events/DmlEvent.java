@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package org.polypheny.db.monitoring.events;
 
-import java.util.Arrays;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
@@ -30,13 +29,13 @@ public class DmlEvent extends StatementEvent {
 
     @Override
     public <T extends MonitoringDataPoint> List<Class<T>> getMetrics() {
-        return Arrays.asList( (Class<T>) DmlDataPoint.class );
+        return List.of( (Class<T>) DmlDataPoint.class );
     }
 
 
     @Override
     public List<MonitoringDataPoint> analyze() {
-        return Arrays.asList( DmlEventAnalyzer.analyze( this ) );
+        return List.of( DmlEventAnalyzer.analyze( this ) );
     }
 
 }

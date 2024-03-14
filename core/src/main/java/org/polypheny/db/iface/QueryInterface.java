@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.pf4j.ExtensionPoint;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.transaction.TransactionManager;
 
@@ -39,7 +39,7 @@ public abstract class QueryInterface implements Runnable, PropertyChangeListener
     protected final transient Authenticator authenticator;
 
     @Getter
-    private final int queryInterfaceId;
+    private final long queryInterfaceId;
     @Getter
     private final String uniqueName;
 
@@ -54,7 +54,7 @@ public abstract class QueryInterface implements Runnable, PropertyChangeListener
     public QueryInterface(
             final TransactionManager transactionManager,
             final Authenticator authenticator,
-            final int queryInterfaceId,
+            final long queryInterfaceId,
             final String uniqueName,
             final Map<String, String> settings,
             final boolean supportsDml,
@@ -106,13 +106,13 @@ public abstract class QueryInterface implements Runnable, PropertyChangeListener
                 if ( s.modifiable || initialSetup ) {
                     String newValue = newSettings.get( s.name );
                     if ( !s.canBeNull && newValue == null ) {
-                        throw new RuntimeException( "Setting \"" + s.name + "\" cannot be null." );
+                        throw new GenericRuntimeException( "Setting \"" + s.name + "\" cannot be null." );
                     }
                 } else {
-                    throw new RuntimeException( "Setting \"" + s.name + "\" cannot be modified." );
+                    throw new GenericRuntimeException( "Setting \"" + s.name + "\" cannot be modified." );
                 }
             } else if ( s.required && s.modifiable ) {
-                throw new RuntimeException( "Setting \"" + s.name + "\" must be present." );
+                throw new GenericRuntimeException( "Setting \"" + s.name + "\" must be present." );
             }
         }
     }
@@ -122,13 +122,7 @@ public abstract class QueryInterface implements Runnable, PropertyChangeListener
         this.validateSettings( newSettings, false );
         List<String> updatedSettings = this.applySettings( newSettings );
         this.reloadSettings( updatedSettings );
-        Catalog catalog = Catalog.getInstance();
-        Catalog.getInstance().updateQueryInterfaceSettings( getQueryInterfaceId(), getCurrentSettings() );
-        try {
-            catalog.commit();
-        } catch ( NoTablePrimaryKeyException e ) {
-            throw new RuntimeException( e );
-        }
+        Catalog.getInstance().commit();
     }
 
 

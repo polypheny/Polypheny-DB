@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,18 +20,21 @@ package org.polypheny.db.adapter.file.algebra;
 import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.adapter.file.FileAlg;
-import org.polypheny.db.adapter.file.FileTranslatableTable;
+import org.polypheny.db.adapter.file.FileTranslatableEntity;
 import org.polypheny.db.adapter.file.Value;
+import org.polypheny.db.adapter.file.Value.DynamicValue;
+import org.polypheny.db.adapter.file.Value.LiteralValue;
+import org.polypheny.db.adapter.file.util.FileUtil;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Modify;
+import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
@@ -39,15 +42,15 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 
 
-public class FileTableModify extends Modify implements FileAlg {
+public class FileTableModify extends RelModify<FileTranslatableEntity> implements FileAlg {
 
-    public FileTableModify( AlgOptCluster cluster, AlgTraitSet traits, AlgOptTable table, CatalogReader catalogReader, AlgNode child, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
-        super( cluster, traits, table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
+    public FileTableModify( AlgCluster cluster, AlgTraitSet traits, FileTranslatableEntity table, AlgNode child, Operation operation, List<String> updateColumnList, List<? extends RexNode> sourceExpressionList, boolean flattened ) {
+        super( cluster, traits, table, child, operation, updateColumnList, sourceExpressionList, flattened );
     }
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 0.1 );
     }
 
@@ -57,18 +60,17 @@ public class FileTableModify extends Modify implements FileAlg {
         return new FileTableModify(
                 getCluster(),
                 traitSet,
-                getTable(),
-                getCatalogReader(),
+                entity,
                 AbstractAlgNode.sole( inputs ),
                 getOperation(),
-                getUpdateColumnList(),
-                getSourceExpressionList(),
+                getUpdateColumns(),
+                getSourceExpressions(),
                 isFlattened() );
     }
 
 
     @Override
-    public void register( AlgOptPlanner planner ) {
+    public void register( AlgPlanner planner ) {
         getConvention().register( planner );
     }
 
@@ -77,32 +79,36 @@ public class FileTableModify extends Modify implements FileAlg {
     public void implement( final FileImplementor implementor ) {
         setOperation( implementor );//do it first, so children know that we have an insert/update/delete
         implementor.visitChild( 0, getInput() );
-        FileTranslatableTable fileTable = (FileTranslatableTable) getTable().getTable();
-        implementor.setFileTable( fileTable );
+
+        implementor.setFileTable( entity );
         if ( getOperation() == Operation.UPDATE ) {
-            if ( getSourceExpressionList() != null ) {
+            if ( getSourceExpressions() != null ) {
                 if ( implementor.getUpdates() == null ) {
                     implementor.setUpdates( new ArrayList<>() );
                 }
                 implementor.getUpdates().clear();
                 List<Value> values = new ArrayList<>();
                 int i = 0;
-                for ( RexNode src : getSourceExpressionList() ) {
+                for ( RexNode src : getSourceExpressions() ) {
                     if ( src instanceof RexLiteral ) {
-                        values.add( new Value( implementor.getFileTable().getColumnIdMap().get( getUpdateColumnList().get( i ) ).intValue(), ((RexLiteral) src).getValueForFileCondition(), false ) );
+                        String logicalName = getUpdateColumns().get( i );
+                        AlgDataTypeField field = entity.getTupleType().getField( logicalName, false, false );
+                        values.add( new LiteralValue( Math.toIntExact( field.getId() ), ((RexLiteral) src).value ) );
                     } else if ( src instanceof RexDynamicParam ) {
-                        values.add( new Value( implementor.getFileTable().getColumnIdMap().get( getUpdateColumnList().get( i ) ).intValue(), ((RexDynamicParam) src).getIndex(), true ) );
+                        String logicalName = getUpdateColumns().get( i );
+                        AlgDataTypeField field = entity.getTupleType().getField( logicalName, false, false );
+                        values.add( new DynamicValue( Math.toIntExact( field.getId() ), ((RexDynamicParam) src).getIndex() ) );
                     } else if ( src instanceof RexCall && src.getType().getPolyType() == PolyType.ARRAY ) {
-                        values.add( Value.fromArrayRexCall( (RexCall) src ) );
+                        values.add( FileUtil.fromArrayRexCall( (RexCall) src ) );
                     } else {
-                        throw new RuntimeException( "Unknown element in sourceExpressionList: " + src.toString() );
+                        throw new GenericRuntimeException( "Unknown element in sourceExpressionList: " + src.toString() );
                     }
                     i++;
                 }
                 implementor.setUpdates( values );
             }
             //set the columns that should be updated in the projection list
-            implementor.project( this.getUpdateColumnList(), null );
+            implementor.project( this.getUpdateColumns(), null );
         }
     }
 
@@ -120,7 +126,7 @@ public class FileTableModify extends Modify implements FileAlg {
                 implementor.setOperation( FileImplementor.Operation.DELETE );
                 break;
             default:
-                throw new RuntimeException( "The File adapter does not support " + operation + "operations." );
+                throw new GenericRuntimeException( "The File adapter does not support " + operation + "operations." );
         }
     }
 

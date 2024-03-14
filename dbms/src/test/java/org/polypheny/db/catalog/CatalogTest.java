@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package org.polypheny.db.catalog;
 
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -24,31 +26,33 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.catalog.entity.LogicalAdapter;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
 public class CatalogTest {
 
-    @BeforeClass
+    private static TestHelper helper;
+
+
+    @BeforeAll
     public static void start() {
-        // Ensures that Polypheny-DB is running
-        //noinspection ResultOfMethodCallIgnored
-        TestHelper.getInstance();
-        //deleteOldData();
+        helper = TestHelper.getInstance();
         addTestData();
     }
 
 
-    @AfterClass
+    @AfterAll
     public static void stop() {
         deleteOldData();
+
+        helper.checkAllTrxClosed();
     }
 
 
@@ -56,10 +60,12 @@ public class CatalogTest {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "CREATE SCHEMA schema1" );
+                statement.executeUpdate( "CREATE NAMESPACE schema1" );
                 statement.executeUpdate( "CREATE TABLE schema1.table1( id INTEGER NOT NULL, PRIMARY KEY(id))" );
                 statement.executeUpdate( "ALTER TABLE schema1.table1 ADD COLUMN name VARCHAR (255) NULL" );
-                statement.executeUpdate( "ALTER TABLE schema1.table1 ADD UNIQUE INDEX index1 ON id ON STORE hsqldb" );
+                if ( helper.storeSupportsIndex() ) {
+                    statement.executeUpdate( "ALTER TABLE schema1.table1 ADD UNIQUE INDEX index1 ON id ON STORE hsqldb" );
+                }
                 statement.executeUpdate( "CREATE TABLE schema1.table2( id INTEGER NOT NULL, PRIMARY KEY(id) )" );
                 statement.executeUpdate( "ALTER TABLE schema1.table2 ADD CONSTRAINT fk_id FOREIGN KEY (id) REFERENCES schema1.table1(id) ON UPDATE RESTRICT ON DELETE RESTRICT" );
                 statement.executeUpdate( "CREATE DOCUMENT SCHEMA private" );
@@ -110,12 +116,12 @@ public class CatalogTest {
 
             // Check number of columns
             int totalColumns = rsmd.getColumnCount();
-            Assert.assertEquals( "Wrong number of columns", 3, totalColumns );
+            assertEquals( 3, totalColumns, "Wrong number of columns" );
 
             // Check column names
-            Assert.assertEquals( "Wrong column name", "TABLE_CAT", rsmd.getColumnName( 1 ) );
-            Assert.assertEquals( "Wrong column name", "OWNER", rsmd.getColumnName( 2 ) );
-            Assert.assertEquals( "Wrong column name", "DEFAULT_SCHEMA", rsmd.getColumnName( 3 ) );
+            assertEquals( "TABLE_CAT", rsmd.getColumnName( 1 ), "Wrong column name" );
+            assertEquals( "OWNER", rsmd.getColumnName( 2 ), "Wrong column name" );
+            assertEquals( "DEFAULT_SCHEMA", rsmd.getColumnName( 3 ), "Wrong column name" );
 
             // Check data
             final Object[] databaseApp = new Object[]{ "APP", "system", "public" };
@@ -136,19 +142,19 @@ public class CatalogTest {
             Connection connection = polyphenyDbConnection.getConnection();
 
             final Object[] schemaTest = new Object[]{ "schema1", "APP", "pa", "RELATIONAL" };
-            final Object[] schemaPublic = new Object[]{ "public", "APP", "system", "RELATIONAL" };
+            final Object[] schemaPublic = new Object[]{ "public", "APP", "pa", "RELATIONAL" };
             final Object[] schemaPrivate = new Object[]{ "private", "APP", "pa", "DOCUMENT" };
 
             TestHelper.checkResultSet(
                     connection.getMetaData().getSchemas( "APP", null ),
-                    ImmutableList.of( schemaPublic, schemaTest, schemaPrivate ) );
+                    ImmutableList.of( schemaPublic, schemaTest, schemaPrivate ), true );
 
             TestHelper.checkResultSet(
                     connection.getMetaData().getSchemas( "APP", "schema1" ),
-                    ImmutableList.of( schemaTest ) );
+                    ImmutableList.of( schemaTest ), true );
 
         } catch ( SQLException e ) {
-            log.error( "Exception while testing getSchemas()", e );
+            log.error( "Exception while testing getNamespaces()", e );
         }
     }
 
@@ -195,12 +201,19 @@ public class CatalogTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
 
+            LogicalAdapter adapter = Catalog.snapshot().getAdapter( "hsqldb" ).orElseThrow();
             // Check data
-            final Object[] index1 = new Object[]{ "APP", "schema1", "table1", false, null, "index1", 0, 1, "id", null, -1, null, null, 1, 1 };
+            final Object[] index1 = new Object[]{ "APP", "schema1", "table1", false, null, "index1", 0, 1, "id", null, -1, null, null, adapter.id, 1 };
 
-            TestHelper.checkResultSet(
-                    connection.getMetaData().getIndexInfo( "APP", "schema1", "table1", false, false ),
-                    ImmutableList.of( index1 ) );
+            if ( helper.storeSupportsIndex() ) {
+                TestHelper.checkResultSet(
+                        connection.getMetaData().getIndexInfo( "APP", "schema1", "table1", false, false ),
+                        ImmutableList.of( index1 ) );
+            } else {
+                TestHelper.checkResultSet(
+                        connection.getMetaData().getIndexInfo( "APP", "schema1", "table1", false, false ),
+                        ImmutableList.of() );
+            }
 
         } catch ( SQLException e ) {
             log.error( "Exception while testing getTables()", e );

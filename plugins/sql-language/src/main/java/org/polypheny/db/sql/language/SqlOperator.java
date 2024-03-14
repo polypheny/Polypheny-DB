@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -203,12 +203,11 @@ public abstract class SqlOperator extends OperatorImpl {
      * @param functionQualifier function qualifier (e.g. "DISTINCT"), may be
      * @param pos parser position of the identifier of the call
      * @param operands array of operands
-     * @return
      */
     @Override
     public Call createCall( Literal functionQualifier, ParserPos pos, Node... operands ) {
         pos = pos.plusAll( Arrays.asList( operands ) );
-        return new SqlBasicCall( this, Arrays.stream( operands ).map( e -> (SqlNode) e ).toArray( value -> new SqlNode[value] ), pos, false, (SqlLiteral) functionQualifier );
+        return new SqlBasicCall( this, Arrays.stream( operands ).map( e -> (SqlNode) e ).toArray( SqlNode[]::new ), pos, false, (SqlLiteral) functionQualifier );
     }
 
 

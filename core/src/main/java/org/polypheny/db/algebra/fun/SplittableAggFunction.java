@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,11 +29,10 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.mapping.Mappings.TargetMapping;
 
 
@@ -54,7 +53,7 @@ public interface SplittableAggFunction {
     /**
      * Generates an aggregate call to merge sub-totals.
      *
-     * Most implementations will add a single aggregate call to {@code aggCalls}, and return a {@link RexInputRef} that points to it.
+     * Most implementations will add a single aggregate call to {@code aggCalls}, and return a {@link RexIndexRef} that points to it.
      *
      * @param rexBuilder Rex builder
      * @param extra Place to define extra input expressions
@@ -121,7 +120,7 @@ public interface SplittableAggFunction {
                     OperatorRegistry.getAgg( OperatorName.COUNT ),
                     false,
                     false,
-                    ImmutableIntList.of(),
+                    ImmutableList.of(),
                     -1,
                     AlgCollations.EMPTY,
                     typeFactory.createPolyType( PolyType.BIGINT ),
@@ -171,7 +170,7 @@ public interface SplittableAggFunction {
         public RexNode singleton( RexBuilder rexBuilder, AlgDataType inputRowType, AggregateCall aggregateCall ) {
             final List<RexNode> predicates = new ArrayList<>();
             for ( Integer arg : aggregateCall.getArgList() ) {
-                final AlgDataType type = inputRowType.getFieldList().get( arg ).getType();
+                final AlgDataType type = inputRowType.getFields().get( arg ).getType();
                 if ( type.isNullable() ) {
                     predicates.add( rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NOT_NULL ), rexBuilder.makeInputRef( type, arg ) ) );
                 }
@@ -204,7 +203,7 @@ public interface SplittableAggFunction {
         @Override
         public RexNode singleton( RexBuilder rexBuilder, AlgDataType inputRowType, AggregateCall aggregateCall ) {
             final int arg = aggregateCall.getArgList().get( 0 );
-            final AlgDataTypeField field = inputRowType.getFieldList().get( arg );
+            final AlgDataTypeField field = inputRowType.getFields().get( arg );
             return rexBuilder.makeInputRef( field.getType(), arg );
         }
 
@@ -226,7 +225,7 @@ public interface SplittableAggFunction {
             assert (leftSubTotal >= 0) != (rightSubTotal >= 0);
             assert aggregateCall.collation.getFieldCollations().isEmpty();
             final int arg = leftSubTotal >= 0 ? leftSubTotal : rightSubTotal;
-            return aggregateCall.copy( ImmutableIntList.of( arg ), -1, AlgCollations.EMPTY );
+            return aggregateCall.copy( ImmutableList.of( arg ), -1, AlgCollations.EMPTY );
         }
 
     }
@@ -240,7 +239,7 @@ public interface SplittableAggFunction {
         @Override
         public RexNode singleton( RexBuilder rexBuilder, AlgDataType inputRowType, AggregateCall aggregateCall ) {
             final int arg = aggregateCall.getArgList().get( 0 );
-            final AlgDataTypeField field = inputRowType.getFieldList().get( arg );
+            final AlgDataTypeField field = inputRowType.getFields().get( arg );
             return rexBuilder.makeInputRef( field.getType(), arg );
         }
 
@@ -257,7 +256,7 @@ public interface SplittableAggFunction {
                     OperatorRegistry.getAgg( OperatorName.COUNT ),
                     false,
                     false,
-                    ImmutableIntList.of(),
+                    ImmutableList.of(),
                     -1,
                     AlgCollations.EMPTY,
                     typeFactory.createPolyType( PolyType.BIGINT ),
@@ -268,7 +267,7 @@ public interface SplittableAggFunction {
         @Override
         public AggregateCall topSplit( RexBuilder rexBuilder, Registry<RexNode> extra, int offset, AlgDataType inputRowType, AggregateCall aggregateCall, int leftSubTotal, int rightSubTotal ) {
             final List<RexNode> merges = new ArrayList<>();
-            final List<AlgDataTypeField> fieldList = inputRowType.getFieldList();
+            final List<AlgDataTypeField> fieldList = inputRowType.getFields();
             if ( leftSubTotal >= 0 ) {
                 final AlgDataType type = fieldList.get( leftSubTotal ).getType();
                 merges.add( rexBuilder.makeInputRef( type, leftSubTotal ) );

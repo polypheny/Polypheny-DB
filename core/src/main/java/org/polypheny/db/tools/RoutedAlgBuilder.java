@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,57 +16,38 @@
 
 package org.polypheny.db.tools;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import org.bson.BsonValue;
+import lombok.Setter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptSchema;
+import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.Contexts;
-import org.polypheny.db.processing.DeepCopyShuttle;
 import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.routing.FieldDistribution;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.util.Pair;
+import org.polypheny.db.type.entity.document.PolyDocument;
 
 
 /**
- * Extension of RelBuilder for routed plans with some more information.
+ * Extension of AlgBuilder for routed plans with some more information.
  */
+@Setter
+@Getter
 public class RoutedAlgBuilder extends AlgBuilder {
 
-    @Getter
-    protected Map<Long, List<Pair<Integer, Long>>> physicalPlacementsOfPartitions = new HashMap<>(); // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
+    protected FieldDistribution fieldDistribution; // PartitionId -> List<AllocationColumn>
 
 
-    public RoutedAlgBuilder( Context context, AlgOptCluster cluster, AlgOptSchema algOptSchema ) {
-        super( context, cluster, algOptSchema );
+    public RoutedAlgBuilder( Context context, AlgCluster cluster, Snapshot snapshot ) {
+        super( context, cluster, snapshot );
     }
 
 
-    public static RoutedAlgBuilder create( Statement statement, AlgOptCluster cluster ) {
-        return new RoutedAlgBuilder( Contexts.EMPTY_CONTEXT, cluster, statement.getTransaction().getCatalogReader() );
-    }
-
-
-    public static RoutedAlgBuilder createCopy( Statement statement, AlgOptCluster cluster, RoutedAlgBuilder builder ) {
-        final RoutedAlgBuilder newBuilder = RoutedAlgBuilder.create( statement, cluster );
-        newBuilder.getPhysicalPlacementsOfPartitions().putAll( ImmutableMap.copyOf( builder.getPhysicalPlacementsOfPartitions() ) );
-
-        if ( builder.stackSize() > 0 ) {
-            final AlgNode node = builder.peek().accept( new DeepCopyShuttle() );
-            newBuilder.push( node );
-        }
-
-        return newBuilder;
+    public static RoutedAlgBuilder create( Statement statement, AlgCluster cluster ) {
+        return new RoutedAlgBuilder( Contexts.EMPTY_CONTEXT, cluster, statement.getTransaction().getSnapshot() );
     }
 
 
@@ -78,8 +59,8 @@ public class RoutedAlgBuilder extends AlgBuilder {
 
 
     @Override
-    public RoutedAlgBuilder scan( Iterable<String> tableNames ) {
-        super.scan( tableNames );
+    public RoutedAlgBuilder relScan( List<String> tableNames ) {
+        super.relScan( tableNames );
         return this;
     }
 
@@ -92,32 +73,11 @@ public class RoutedAlgBuilder extends AlgBuilder {
 
 
     @Override
-    public RoutedAlgBuilder documents( ImmutableList<BsonValue> tuples, AlgDataType rowType ) {
-        super.documents( tuples, rowType );
+    public RoutedAlgBuilder documents( List<PolyDocument> documents, AlgDataType rowType ) {
+        super.documents( documents, rowType );
         return this;
     }
 
 
-    public void addPhysicalInfo( Map<Long, List<CatalogColumnPlacement>> physicalPlacements ) {
-        final Map<Long, List<Pair<Integer, Long>>> map = physicalPlacements.entrySet().stream()
-                .collect( Collectors.toMap( Map.Entry::getKey, entry -> map( entry.getValue() ) ) );
-        physicalPlacementsOfPartitions.putAll( map );
-    }
-
-
-    private List<Pair<Integer, Long>> map( List<CatalogColumnPlacement> catalogCols ) {
-        return catalogCols.stream().map( col -> new Pair<>( col.adapterId, col.columnId ) ).collect( Collectors.toList() );
-    }
-
-
-    @AllArgsConstructor
-    @Getter
-    public static class SelectedAdapterInfo {
-
-        public final String uniqueName;
-        public final String physicalSchemaName;
-        public final String physicalTableName;
-
-    }
 
 }

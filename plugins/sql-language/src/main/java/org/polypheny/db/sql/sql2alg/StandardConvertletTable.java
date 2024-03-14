@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFamily;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.BinaryOperator;
+import org.polypheny.db.nodes.DataTypeSpec;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexBuilder;
@@ -80,6 +81,8 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.InitializerContext;
 import org.polypheny.db.util.Pair;
@@ -117,14 +120,10 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                 OperatorRegistry.get( OperatorName.MINUS ),
                 ( cx, call ) -> {
                     final RexCall e = (RexCall) StandardConvertletTable.this.convertCall( cx, call, (SqlOperator) call.getOperator() );
-                    switch ( e.getOperands().get( 0 ).getType().getPolyType() ) {
-                        case DATE:
-                        case TIME:
-                        case TIMESTAMP:
-                            return convertDatetimeMinus( cx, OperatorRegistry.get( OperatorName.MINUS_DATE, SqlDatetimeSubtractionOperator.class ), call );
-                        default:
-                            return e;
-                    }
+                    return switch ( e.getOperands().get( 0 ).getType().getPolyType() ) {
+                        case DATE, TIME, TIMESTAMP -> convertDatetimeMinus( cx, OperatorRegistry.get( OperatorName.MINUS_DATE, SqlDatetimeSubtractionOperator.class ), call );
+                        default -> e;
+                    };
                 } );
 
         registerOp( OracleSqlOperatorTable.LTRIM, new TrimConvertlet( SqlTrimFunction.Flag.LEADING ) );
@@ -380,7 +379,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
         final AlgDataType originalType = cx.getValidator().getValidatedNodeType( call );
         RexRangeRef rr = cx.getSubQueryExpr( call );
         assert rr != null;
-        AlgDataType msType = rr.getType().getFieldList().get( 0 ).getType();
+        AlgDataType msType = rr.getType().getFields().get( 0 ).getType();
         RexNode expr = cx.getRexBuilder().makeInputRef( msType, rr.getOffset() );
         assert msType.getComponentType().isStruct();
         if ( !originalType.getComponentType().isStruct() ) {
@@ -407,7 +406,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
         final AlgDataType originalType = cx.getValidator().getValidatedNodeType( call );
         RexRangeRef rr = cx.getSubQueryExpr( call );
         assert rr != null;
-        AlgDataType msType = rr.getType().getFieldList().get( 0 ).getType();
+        AlgDataType msType = rr.getType().getFields().get( 0 ).getType();
         RexNode expr = cx.getRexBuilder().makeInputRef( msType, rr.getOffset() );
         assert msType.getComponentType().isStruct();
         if ( !originalType.getComponentType().isStruct() ) {
@@ -437,12 +436,12 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
             final SqlIntervalQualifier intervalQualifier = (SqlIntervalQualifier) right;
             if ( left instanceof SqlIntervalLiteral ) {
                 RexLiteral sourceInterval = (RexLiteral) cx.convertExpression( left );
-                BigDecimal sourceValue = (BigDecimal) sourceInterval.getValue();
+                BigDecimal sourceValue = sourceInterval.value.asInterval().value;
                 RexLiteral castedInterval = cx.getRexBuilder().makeIntervalLiteral( sourceValue, intervalQualifier );
                 return castToValidatedType( cx, call, castedInterval );
             } else if ( left instanceof SqlNumericLiteral ) {
                 RexLiteral sourceInterval = (RexLiteral) cx.convertExpression( left );
-                BigDecimal sourceValue = (BigDecimal) sourceInterval.getValue();
+                BigDecimal sourceValue = sourceInterval.getValue().asNumber().bigDecimalValue();
                 final BigDecimal multiplier = intervalQualifier.getUnit().multiplier;
                 sourceValue = sourceValue.multiply( multiplier );
                 RexLiteral castedInterval = cx.getRexBuilder().makeIntervalLiteral( sourceValue, intervalQualifier );
@@ -470,7 +469,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
             if ( argComponentType.isStruct() && !componentType.isStruct() ) {
                 AlgDataType tt =
                         typeFactory.builder()
-                                .add( argComponentType.getFieldList().get( 0 ).getName(), null, componentType )
+                                .add( null, argComponentType.getFields().get( 0 ).getName(), null, componentType )
                                 .build();
                 tt = typeFactory.createTypeWithNullability( tt, componentType.isNullable() );
                 boolean isn = type.isNullable();
@@ -676,7 +675,6 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                         ? PolyOperandTypeChecker.Consistency.NONE
                         : op.getOperandTypeChecker().getConsistency();
         if ( op.getOperatorName() == OperatorName.CROSS_MODEL_ITEM ) {
-            // todo dl, check if this is okey
             RexNode target = cx.convertExpression( call.operand( 0 ) );
             return rexBuilder.makeCall(
                     rexBuilder.getTypeFactory().createPolyType( PolyType.VARCHAR, 255 ),
@@ -693,10 +691,42 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
             type = rexBuilder.deriveReturnType( op, exprs );
         }
         if ( type.getPolyType() == PolyType.ARRAY ) {
-            return rexBuilder.makeArray( type, RexUtil.flatten( exprs, op ) );
+            return rexBuilder.makeArray( type, makePolyValues( cx, operands ) );
         }
 
         return rexBuilder.makeCall( type, op, RexUtil.flatten( exprs, op ) );
+    }
+
+
+    private List<PolyValue> makePolyValues( SqlRexContext cx, List<SqlNode> nodes ) {
+        final List<PolyValue> exprs = new ArrayList<>();
+        for ( SqlNode node : nodes ) {
+            exprs.add( toPolyValue( node ) );
+        }
+        /*if ( exprs.size() > 1 ) {
+            final AlgDataType type = consistentType( cx, consistency, RexUtil.types( exprs ) );
+            if ( type != null ) {
+                final List<RexNode> oldExprs = Lists.newArrayList( exprs );
+                exprs.clear();
+                for ( RexNode expr : oldExprs ) {
+                    exprs.add( cx.getRexBuilder().ensureType( type, expr, true ) );
+                }
+            }
+        }*/
+        return exprs;
+    }
+
+
+    private PolyValue toPolyValue( SqlNode node ) {
+        switch ( node.getKind() ) {
+            case LITERAL:
+                return ((SqlLiteral) node).getPolyValue();
+            case CAST:
+                return PolyValue.convert( toPolyValue( ((SqlCall) node).operand( 0 ) ), ((DataTypeSpec) ((SqlCall) node).operand( 1 )).getType() );
+            case ARRAY_VALUE_CONSTRUCTOR:
+                return PolyList.of( ((SqlCall) node).getSqlOperandList().stream().map( this::toPolyValue ).toList() );
+        }
+        return null;
     }
 
 
@@ -1357,29 +1387,39 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
             RexNode interval2Add;
             SqlIntervalQualifier qualifier = new SqlIntervalQualifier( unit, null, unitLiteral.getPos() );
             RexNode op1 = cx.convertExpression( call.operand( 1 ) );
-            switch ( unit ) {
-                case MICROSECOND:
-                case NANOSECOND:
-                    interval2Add =
-                            divide(
-                                    rexBuilder,
-                                    multiply(
-                                            rexBuilder,
-                                            rexBuilder.makeIntervalLiteral( BigDecimal.ONE, qualifier ),
-                                            op1 ),
-                                    BigDecimal.ONE.divide( unit.multiplier, RoundingMode.UNNECESSARY ) );
-                    break;
-                default:
-                    interval2Add = multiply(
-                            rexBuilder,
-                            rexBuilder.makeIntervalLiteral( unit.multiplier, qualifier ),
-                            op1 );
-            }
+            interval2Add = switch ( unit ) {
+                case MICROSECOND, NANOSECOND -> divide(
+                        rexBuilder,
+                        multiply(
+                                rexBuilder,
+                                rexBuilder.makeIntervalLiteral( BigDecimal.ONE, qualifier ),
+                                op1 ),
+                        BigDecimal.ONE.divide( unit.multiplier, RoundingMode.UNNECESSARY ) );
+                default -> multiply(
+                        rexBuilder,
+                        rexBuilder.makeIntervalLiteral( unit.multiplier, qualifier ),
+                        op1 );
+            };
 
             return rexBuilder.makeCall(
                     OperatorRegistry.get( OperatorName.DATETIME_PLUS ),
                     cx.convertExpression( call.operand( 2 ) ),
+                    toInterval( rexBuilder, interval2Add, qualifier ) );
+        }
+
+
+        private RexNode toInterval( RexBuilder rexBuilder, RexNode interval2Add, SqlIntervalQualifier qualifier ) {
+            return rexBuilder.makeCast(
+                    rexBuilder.getTypeFactory().createIntervalType( qualifier ),
                     interval2Add );
+        }
+
+
+        private RexNode interval2Num( RexBuilder rexBuilder, RexLiteral rexLiteral ) {
+            return rexBuilder.makeCall(
+                    AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.BIGINT ),
+                    OperatorRegistry.get( OperatorName.UNWRAP_INTERVAL ),
+                    rexLiteral );
         }
 
     }

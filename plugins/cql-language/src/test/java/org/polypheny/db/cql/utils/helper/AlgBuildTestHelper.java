@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,11 +24,11 @@ import org.polypheny.db.TestHelper;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.cql.TableIndex;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.cql.EntityIndex;
 import org.polypheny.db.cql.exception.UnknownIndexException;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
@@ -56,13 +56,13 @@ public class AlgBuildTestHelper extends CqlTestHelper {
         tableScanOrdinalities = new HashMap<>();
 
         if ( algBuildLevel == AlgBuildLevel.NONE ) {
-//            If NONE, then don't build any relational algebra.
+//            If NONE, then don't build any  algebra.
 //            Else, keep executing more statements.
         } else {
-            algBuilder = algBuilder.scan( "test", "employee" );
-            algBuilder = algBuilder.scan( "test", "dept" );
+            algBuilder = algBuilder.relScan( "test", "employee" );
+            algBuilder = algBuilder.relScan( "test", "dept" );
             if ( algBuildLevel == AlgBuildLevel.TABLE_SCAN ) {
-//                If TABLE_SCAN, then scan has already been done.
+//                If TABLE_SCAN, then relScan has already been done.
 //                Else, keep executing more statements.
             } else {
                 algBuilder = algBuilder.join( JoinAlgType.INNER );
@@ -72,16 +72,16 @@ public class AlgBuildTestHelper extends CqlTestHelper {
                 } else {
                     List<RexNode> inputRefs = new ArrayList<>();
                     List<String> columnNames = new ArrayList<>();
-                    List<TableIndex> tableIndices = new ArrayList<>();
-                    tableIndices.add( TableIndex.createIndex( "APP", "test", "employee" ) );
-                    tableIndices.add( TableIndex.createIndex( "APP", "test", "dept" ) );
+                    List<EntityIndex> tableIndices = new ArrayList<>();
+                    tableIndices.add( EntityIndex.createIndex( "test", "employee" ) );
+                    tableIndices.add( EntityIndex.createIndex( "test", "dept" ) );
                     Catalog catalog = Catalog.getInstance();
 
-                    for ( TableIndex tableIndex : tableIndices ) {
-                        for ( Long columnId : tableIndex.catalogTable.fieldIds ) {
-                            CatalogColumn column = catalog.getColumn( columnId );
-                            columnNames.add( tableIndex.fullyQualifiedName + "." + column.name );
-                            RexInputRef inputRef = rexBuilder.makeInputRef( algBuilder.peek(), inputRefs.size() );
+                    for ( EntityIndex entityIndex : tableIndices ) {
+                        for ( Long columnId : entityIndex.catalogTable.getColumnIds() ) {
+                            LogicalColumn column = catalog.getSnapshot().rel().getColumn( columnId ).orElseThrow();
+                            columnNames.add( entityIndex.fullyQualifiedName + "." + column.name );
+                            RexIndexRef inputRef = rexBuilder.makeInputRef( algBuilder.peek(), inputRefs.size() );
                             tableScanOrdinalities.put( columnId, inputRefs.size() );
                             inputRefs.add( inputRef );
                         }

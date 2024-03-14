@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,11 @@ package org.polypheny.db.avatica;
 
 
 import com.google.common.collect.ImmutableList;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.metrics.MetricsSystem;
 import org.apache.calcite.avatica.metrics.MetricsSystemConfiguration;
@@ -27,35 +32,31 @@ import org.apache.calcite.avatica.remote.Driver.Serialization;
 import org.apache.calcite.avatica.server.AvaticaHandler;
 import org.apache.calcite.avatica.server.HandlerFactory;
 import org.pf4j.Extension;
-import org.pf4j.Plugin;
-import org.pf4j.PluginWrapper;
-import org.polypheny.db.StatusService;
+import org.polypheny.db.StatusNotificationService;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
+import org.polypheny.db.plugins.PluginContext;
+import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.Util;
 
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
-
-public class AvaticaInterfacePlugin extends Plugin {
+@SuppressWarnings("unused")
+public class AvaticaInterfacePlugin extends PolyPlugin {
 
     /**
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to be successfully loaded by manager.
      */
-    public AvaticaInterfacePlugin( PluginWrapper wrapper ) {
-        super( wrapper );
+    public AvaticaInterfacePlugin( PluginContext context ) {
+        super( context );
     }
 
 
     @Override
-    public void start() {
+    public void afterCatalogInit() {
         // Add JDBC interface
         Map<String, String> settings = new HashMap<>();
         settings.put( "port", "20591" );
@@ -76,8 +77,8 @@ public class AvaticaInterfacePlugin extends Plugin {
 
         @SuppressWarnings("WeakerAccess")
         public static final String INTERFACE_NAME = "AVATICA Interface";
-        @SuppressWarnings("WeakerAccess")
-        public static final String INTERFACE_DESCRIPTION = "AVATICA-SQL query interface supporting the PolySQL dialect.";
+        @SuppressWarnings({ "WeakerAccess", "unused" })
+        public static final String INTERFACE_DESCRIPTION = "AVATICA-SQL query interface supporting the Polypheny SQL dialect.";
         @SuppressWarnings("WeakerAccess")
         public static final List<QueryInterfaceSetting> AVAILABLE_SETTINGS = ImmutableList.of(
                 new QueryInterfaceSettingInteger( "port", false, true, false, 20591 ),
@@ -93,7 +94,7 @@ public class AvaticaInterfacePlugin extends Plugin {
         private final HttpServerDispatcher httpServerDispatcher;
 
 
-        public AvaticaInterface( TransactionManager transactionManager, Authenticator authenticator, int ifaceId, String uniqueName, Map<String, String> settings ) {
+        public AvaticaInterface( TransactionManager transactionManager, Authenticator authenticator, long ifaceId, String uniqueName, Map<String, String> settings ) {
             super( transactionManager, authenticator, ifaceId, uniqueName, settings, true, true );
             metricsSystemConfiguration = NoopMetricsSystemConfiguration.getInstance();
             metricsSystem = NoopMetricsSystem.getInstance();
@@ -101,7 +102,7 @@ public class AvaticaInterfacePlugin extends Plugin {
             port = Integer.parseInt( settings.get( "port" ) );
             if ( !Util.checkIfPortIsAvailable( port ) ) {
                 // Port is already in use
-                throw new RuntimeException( "Unable to start " + INTERFACE_NAME + " on port " + port + "! The port is already in use." );
+                throw new GenericRuntimeException( "Unable to start " + INTERFACE_NAME + " on port " + port + "! The port is already in use." );
             }
 
             meta = new DbmsMeta( transactionManager, authenticator, uniqueName );
@@ -113,7 +114,7 @@ public class AvaticaInterfacePlugin extends Plugin {
             try {
                 httpServerDispatcher = new HttpServerDispatcher( port, handler );
             } catch ( Exception e ) {
-                throw new RuntimeException( "Exception while starting " + INTERFACE_NAME, e );
+                throw new GenericRuntimeException( "Exception while starting " + INTERFACE_NAME, e );
             }
 
         }
@@ -139,7 +140,7 @@ public class AvaticaInterfacePlugin extends Plugin {
                 log.error( "Exception while starting " + INTERFACE_NAME, e );
             }
 
-            StatusService.printInfo( String.format( "%s started and is listening on port %d.", INTERFACE_NAME, port ) );
+            StatusNotificationService.printInfo( String.format( "%s started and is listening on port %d.", INTERFACE_NAME, port ) );
         }
 
 

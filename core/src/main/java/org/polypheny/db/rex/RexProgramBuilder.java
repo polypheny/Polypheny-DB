@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,9 +39,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import lombok.Getter;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptPredicateList;
 import org.polypheny.db.plan.AlgOptUtil;
@@ -57,15 +59,19 @@ import org.polypheny.db.util.Pair;
 public class RexProgramBuilder {
 
     private final RexBuilder rexBuilder;
+    /**
+     * -- GETTER --
+     * Returns the rowtype of the input to the program
+     */
+    @Getter
     private final AlgDataType inputRowType;
     private final List<RexNode> exprList = new ArrayList<>();
     private final Map<Pair<RexNode, String>, RexLocalRef> exprMap = new HashMap<>();
     private final List<RexLocalRef> localRefList = new ArrayList<>();
     private final List<RexLocalRef> projectRefList = new ArrayList<>();
     private final List<String> projectNameList = new ArrayList<>();
-    private final RexSimplify simplify;
     private RexLocalRef conditionRef = null;
-    private boolean validating;
+    private final boolean validating;
 
 
     /**
@@ -82,14 +88,13 @@ public class RexProgramBuilder {
     private RexProgramBuilder( AlgDataType inputRowType, RexBuilder rexBuilder, RexSimplify simplify ) {
         this.inputRowType = Objects.requireNonNull( inputRowType );
         this.rexBuilder = Objects.requireNonNull( rexBuilder );
-        this.simplify = simplify; // may be null
         this.validating = assertionsAreEnabled();
 
         // Pre-create an expression for each input field.
         if ( inputRowType.isStruct() ) {
-            final List<AlgDataTypeField> fields = inputRowType.getFieldList();
+            final List<AlgDataTypeField> fields = inputRowType.getFields();
             for ( int i = 0; i < fields.size(); i++ ) {
-                registerInternal( RexInputRef.of( i, fields ), false );
+                registerInternal( RexIndexRef.of( i, fields ), false );
             }
         }
     }
@@ -123,7 +128,7 @@ public class RexProgramBuilder {
         final RexShuttle expander = new RexProgram.ExpansionShuttle( exprList );
 
         // Register project expressions and create a named project item.
-        final List<AlgDataTypeField> fieldList = outputRowType.getFieldList();
+        final List<AlgDataTypeField> fieldList = outputRowType.getFields();
         for ( Pair<? extends RexNode, AlgDataTypeField> pair : Pair.zip( projectList, fieldList ) ) {
             final RexNode project;
             if ( simplify != null ) {
@@ -165,11 +170,11 @@ public class RexProgramBuilder {
 
     private void validate( final RexNode expr, final int fieldOrdinal ) {
         final RexVisitor<Void> validator =
-                new RexVisitorImpl<Void>( true ) {
+                new RexVisitorImpl<>( true ) {
                     @Override
-                    public Void visitInputRef( RexInputRef input ) {
+                    public Void visitIndexRef( RexIndexRef input ) {
                         final int index = input.getIndex();
-                        final List<AlgDataTypeField> fields = inputRowType.getFieldList();
+                        final List<AlgDataTypeField> fields = inputRowType.getFields();
                         if ( index < fields.size() ) {
                             final AlgDataTypeField inputField = fields.get( index );
                             if ( input.getType() != inputField.getType() ) {
@@ -467,7 +472,7 @@ public class RexProgramBuilder {
      * If {@code normalize}, converts the program to canonical form. In canonical form, in addition to the usual constraints:
      *
      * <ul>
-     * <li>The first N internal expressions are {@link RexInputRef}s to the N input fields;</li>
+     * <li>The first N internal expressions are {@link RexIndexRef}s to the N input fields;</li>
      * <li>Subsequent internal expressions reference only preceding expressions;</li>
      * <li>Arguments to {@link RexCall}s must be {@link RexLocalRef}s (that is, expressions must have maximum depth 1)</li>
      * </ul>
@@ -560,7 +565,7 @@ public class RexProgramBuilder {
      * @param updateRefs Whether to update references that changes as a result of rewrites made by the shuttle
      */
     private void add( List<RexNode> exprList, List<RexLocalRef> projectRefList, RexLocalRef conditionRef, final AlgDataType outputRowType, RexShuttle shuttle, boolean updateRefs ) {
-        final List<AlgDataTypeField> outFields = outputRowType.getFieldList();
+        final List<AlgDataTypeField> outFields = outputRowType.getFields();
         final RexShuttle registerInputShuttle = new RegisterInputShuttle( false );
 
         // For each common expression, first apply the user's shuttle, then register the result.
@@ -603,7 +608,7 @@ public class RexProgramBuilder {
      * Merges two programs together, and normalizes the result.
      *
      * @param topProgram Top program. Its expressions are in terms of the outputs of the bottom program.
-     * @param bottomProgram Bottom program. Its expressions are in terms of the result fields of the relational expression's input
+     * @param bottomProgram Bottom program. Its expressions are in terms of the result fields of the algebra expression's input
      * @param rexBuilder Rex builder
      * @return Merged program
      * @see #mergePrograms(RexProgram, RexProgram, RexBuilder, boolean)
@@ -695,7 +700,7 @@ public class RexProgramBuilder {
         }
         RexProgram mergedProg = progBuilder.getProgram( normalize );
         assert mergedProg.isValid( Litmus.THROW, null );
-        assert mergedProg.getOutputRowType() == topProgram.getOutputRowType();
+        assert Objects.equals( mergedProg.getOutputRowType(), topProgram.getOutputRowType() );
         return mergedProg;
     }
 
@@ -705,7 +710,7 @@ public class RexProgramBuilder {
         final List<RexLocalRef> projectRefList = new ArrayList<>();
         final RexShuttle shuttle = new RegisterOutputShuttle( exprList );
 
-        // For each project, lookup the expr and expand it so it is in terms of bottomCalc's input fields
+        // For each project, lookup the expr and expand it, so it is in terms of bottomCalc's input fields
         for ( RexLocalRef topProject : program.getProjectList() ) {
             final RexNode topExpr = exprList.get( topProject.getIndex() );
             final RexLocalRef expanded = (RexLocalRef) topExpr.accept( shuttle );
@@ -754,9 +759,14 @@ public class RexProgramBuilder {
      */
     public void addIdentity() {
         assert projectRefList.isEmpty();
-        for ( AlgDataTypeField field : inputRowType.getFieldList() ) {
+        if ( inputRowType instanceof GraphType ) {
+            addProject( 0, "graph" );
+            return;
+        }
+
+        for ( AlgDataTypeField field : inputRowType.getFields() ) {
             addProject(
-                    new RexInputRef( field.getIndex(), field.getType() ),
+                    new RexIndexRef( field.getIndex(), field.getType() ),
                     field.getName() );
         }
     }
@@ -769,18 +779,10 @@ public class RexProgramBuilder {
      * @return Reference to input field
      */
     public RexLocalRef makeInputRef( int index ) {
-        final List<AlgDataTypeField> fields = inputRowType.getFieldList();
+        final List<AlgDataTypeField> fields = inputRowType.getFields();
         assert index < fields.size();
         final AlgDataTypeField field = fields.get( index );
         return new RexLocalRef( index, field.getType() );
-    }
-
-
-    /**
-     * Returns the rowtype of the input to the program
-     */
-    public AlgDataType getInputRowType() {
-        return inputRowType;
     }
 
 
@@ -843,7 +845,7 @@ public class RexProgramBuilder {
 
     /**
      * Shuttle which walks over an expression, registering each sub-expression.
-     * Each {@link RexInputRef} is assumed to refer to an <em>input</em> of the program.
+     * Each {@link RexIndexRef} is assumed to refer to an <em>input</em> of the program.
      */
     private class RegisterInputShuttle extends RegisterShuttle {
 
@@ -856,26 +858,23 @@ public class RexProgramBuilder {
 
 
         @Override
-        public RexNode visitInputRef( RexInputRef input ) {
+        public RexNode visitIndexRef( RexIndexRef input ) {
             final int index = input.getIndex();
             if ( valid ) {
                 // The expression should already be valid. Check that its index is within bounds.
-                if ( (index < 0) || (index >= inputRowType.getFieldCount()) ) {
-                    assert false : "RexInputRef index " + index + " out of range 0.." + (inputRowType.getFieldCount() - 1);
-                }
+                assert (index >= 0) && (index < inputRowType.getFieldCount()) : "RexInputRef index " + index + " out of range 0.." + (inputRowType.getFieldCount() - 1);
 
                 // Check that the type is consistent with the referenced field. If it is an object type, the rules are different, so skip the check.
                 assert input.getType().isStruct() || AlgOptUtil.eq(
                         "type1",
                         input.getType(),
                         "type2",
-                        inputRowType.getFieldList().get( index ).getType(),
+                        inputRowType.getFields().get( index ).getType(),
                         Litmus.THROW );
             }
 
             // Return a reference to the N'th expression, which should be equivalent.
-            final RexLocalRef ref = localRefList.get( index );
-            return ref;
+            return localRefList.get( index );
         }
 
 
@@ -910,6 +909,15 @@ public class RexProgramBuilder {
             }
         }
 
+
+        @Override
+        public RexNode visitNameRef( RexNameRef nameRef ) {
+            final int index = 0;
+
+            // Return a reference to the N'th expression, which should be equivalent.
+            return localRefList.get( index );
+        }
+
     }
 
 
@@ -939,7 +947,7 @@ public class RexProgramBuilder {
 
     /**
      * Shuttle which walks over an expression, registering each sub-expression.
-     * Each {@link RexInputRef} is assumed to refer to an <em>output</em> of the program.
+     * Each {@link RexIndexRef} is assumed to refer to an <em>output</em> of the program.
      */
     private class RegisterOutputShuttle extends RegisterShuttle {
 
@@ -953,7 +961,7 @@ public class RexProgramBuilder {
 
 
         @Override
-        public RexNode visitInputRef( RexInputRef input ) {
+        public RexNode visitIndexRef( RexIndexRef input ) {
             // This expression refers to the Nth project column. Lookup that column and find out what common sub-expression IT refers to.
             final int index = input.getIndex();
             final RexLocalRef local = projectRefList.get( index );
@@ -980,9 +988,9 @@ public class RexProgramBuilder {
     /**
      * Shuttle which rewires {@link RexLocalRef} using a list of updated references
      */
-    private class UpdateRefShuttle extends RexShuttle {
+    private static class UpdateRefShuttle extends RexShuttle {
 
-        private List<RexLocalRef> newRefs;
+        private final List<RexLocalRef> newRefs;
 
 
         private UpdateRefShuttle( List<RexLocalRef> newRefs ) {

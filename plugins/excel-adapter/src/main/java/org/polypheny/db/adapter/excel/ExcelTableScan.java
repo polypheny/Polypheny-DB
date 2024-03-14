@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,31 +20,30 @@ import java.util.List;
 import org.apache.calcite.linq4j.tree.Blocks;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.Primitive;
-import org.polypheny.db.adapter.enumerable.EnumerableAlg;
-import org.polypheny.db.adapter.enumerable.EnumerableAlgImplementor;
-import org.polypheny.db.adapter.enumerable.EnumerableConvention;
-import org.polypheny.db.adapter.enumerable.PhysType;
-import org.polypheny.db.adapter.enumerable.PhysTypeImpl;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
-import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.core.relational.RelScan;
+import org.polypheny.db.algebra.enumerable.EnumerableAlg;
+import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
+import org.polypheny.db.algebra.enumerable.EnumerableConvention;
+import org.polypheny.db.algebra.enumerable.PhysType;
+import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 
-public class ExcelTableScan extends Scan implements EnumerableAlg {
+public class ExcelTableScan extends RelScan<ExcelTable> implements EnumerableAlg {
 
     final ExcelTranslatableTable excelTable;
     final int[] fields;
 
 
-    protected ExcelTableScan( AlgOptCluster cluster, AlgOptTable table, ExcelTranslatableTable excelTable, int[] fields ) {
+    protected ExcelTableScan( ExcelTable table, AlgCluster cluster, ExcelTranslatableTable excelTable, int[] fields ) {
         super( cluster, cluster.traitSetOf( EnumerableConvention.INSTANCE ), table );
         this.excelTable = excelTable;
         this.fields = fields;
@@ -56,7 +55,7 @@ public class ExcelTableScan extends Scan implements EnumerableAlg {
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         assert inputs.isEmpty();
-        return new ExcelTableScan( getCluster(), table, excelTable, fields );
+        return new ExcelTableScan( entity, getCluster(), excelTable, fields );
     }
 
 
@@ -68,7 +67,7 @@ public class ExcelTableScan extends Scan implements EnumerableAlg {
 
     @Override
     public AlgDataType deriveRowType() {
-        final List<AlgDataTypeField> fieldList = table.getRowType().getFieldList();
+        final List<AlgDataTypeField> fieldList = entity.getTupleType().getFields();
         final AlgDataTypeFactory.Builder builder = getCluster().getTypeFactory().builder();
         for ( int field : fields ) {
             builder.add( fieldList.get( field ) );
@@ -78,30 +77,27 @@ public class ExcelTableScan extends Scan implements EnumerableAlg {
 
 
     @Override
-    public void register( AlgOptPlanner planner ) {
-        //planner.addRule( ExcelProjectTableScanRule.INSTANCE );
+    public void register( AlgPlanner planner ) {
+        // empty on purpose as there are only scans supported
     }
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        // Multiply the cost by a factor that makes a scan more attractive if it has significantly fewer fields than the original scan.
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
+        // Multiply the cost by a factor that makes a relScan more attractive if it has significantly fewer fields than the original relScan.
         //
         // The "+ 2D" on top and bottom keeps the function fairly smooth.
         //
         // For example, if table has 3 fields, project has 1 field, then factor = (1 + 2) / (3 + 2) = 0.6
-        return super.computeSelfCost( planner, mq ).multiplyBy( ((double) fields.length + 2D) / ((double) table.getRowType().getFieldCount() + 2D) );
+        return super.computeSelfCost( planner, mq ).multiplyBy( ((double) fields.length + 2D) / ((double) entity.getTupleType().getFieldCount() + 2D) );
     }
 
 
     @Override
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
-        PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getRowType(), pref.preferArray() );
+        PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.preferArray() );
 
-        /*if ( table instanceof JsonTable ) {
-            return implementor.result( physType, Blocks.toBlock( Expressions.call( table.getExpression( JsonTable.class ), "enumerable" ) ) );
-        }*/
-        return implementor.result( physType, Blocks.toBlock( Expressions.call( table.getExpression( ExcelTranslatableTable.class ), "project", implementor.getRootExpression(), Expressions.constant( fields ) ) ) );
+        return implementor.result( physType, Blocks.toBlock( Expressions.call( entity.asExpression( ExcelTranslatableTable.class ), "project", implementor.getRootExpression(), Expressions.constant( fields ) ) ) );
     }
 
 }

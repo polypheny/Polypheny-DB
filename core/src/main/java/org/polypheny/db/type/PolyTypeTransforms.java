@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -168,7 +168,7 @@ public abstract class PolyTypeTransforms {
      */
     public static final PolyTypeTransform ONLY_COLUMN =
             ( opBinding, typeToTransform ) -> {
-                final List<AlgDataTypeField> fields = typeToTransform.getFieldList();
+                final List<AlgDataTypeField> fields = typeToTransform.getFields();
                 assert fields.size() == 1;
                 return fields.get( 0 ).getType();
             };

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,15 @@
 package org.polypheny.db.sql.language;
 
 
+import lombok.Getter;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.sql.language.dialect.PolyphenyDbSqlDialect;
+import org.polypheny.db.type.PolySerializable;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -35,9 +42,10 @@ import org.polypheny.db.sql.language.dialect.PolyphenyDbSqlDialect;
  * A sample is not a {@link SqlNode}. To include it in a parse tree, wrap it as a literal, viz:
  * {@link SqlLiteral#createSample(SqlSampleSpec, ParserPos)}.
  */
-public abstract class SqlSampleSpec {
+public abstract class SqlSampleSpec extends PolyValue {
 
     protected SqlSampleSpec() {
+        super( null );
     }
 
 
@@ -72,9 +80,28 @@ public abstract class SqlSampleSpec {
     }
 
 
+    @Override
+    public int compareTo( @NotNull PolyValue o ) {
+        throw new GenericRuntimeException( "Not allowed" );
+    }
+
+
+    @Override
+    public Expression asExpression() {
+        throw new GenericRuntimeException( "Not allowed" );
+    }
+
+
+    @Override
+    public PolySerializable copy() {
+        throw new GenericRuntimeException( "Not allowed" );
+    }
+
+
     /**
      * Sample specification that orders substitution.
      */
+    @Getter
     public static class SqlSubstitutionSampleSpec extends SqlSampleSpec {
 
         private final String name;
@@ -85,13 +112,20 @@ public abstract class SqlSampleSpec {
         }
 
 
-        public String getName() {
-            return name;
+        public String toString() {
+            return "SUBSTITUTE(" + PolyphenyDbSqlDialect.DEFAULT.quoteStringLiteral( name ) + ")";
         }
 
 
-        public String toString() {
-            return "SUBSTITUTE(" + PolyphenyDbSqlDialect.DEFAULT.quoteStringLiteral( name ) + ")";
+        @Override
+        public @Nullable Long deriveByteSize() {
+            return null;
+        }
+
+
+        @Override
+        public Object toJava() {
+            return this;
         }
 
     }
@@ -103,8 +137,18 @@ public abstract class SqlSampleSpec {
     public static class SqlTableSampleSpec extends SqlSampleSpec {
 
         private final boolean isBernoulli;
+        /**
+         * -- GETTER --
+         * Returns sampling percentage. Range is 0.0 to 1.0, exclusive
+         */
+        @Getter
         private final float samplePercentage;
         private final boolean isRepeatable;
+        /**
+         * -- GETTER --
+         * Seed to produce repeatable samples.
+         */
+        @Getter
         private final int repeatableSeed;
 
 
@@ -133,26 +177,10 @@ public abstract class SqlSampleSpec {
 
 
         /**
-         * Returns sampling percentage. Range is 0.0 to 1.0, exclusive
-         */
-        public float getSamplePercentage() {
-            return samplePercentage;
-        }
-
-
-        /**
          * Indicates whether repeatable seed should be used.
          */
         public boolean isRepeatable() {
             return isRepeatable;
-        }
-
-
-        /**
-         * Seed to produce repeatable samples.
-         */
-        public int getRepeatableSeed() {
-            return repeatableSeed;
         }
 
 
@@ -169,6 +197,18 @@ public abstract class SqlSampleSpec {
                 b.append( ')' );
             }
             return b.toString();
+        }
+
+
+        @Override
+        public @Nullable Long deriveByteSize() {
+            return null;
+        }
+
+
+        @Override
+        public Object toJava() {
+            return this;
         }
 
     }

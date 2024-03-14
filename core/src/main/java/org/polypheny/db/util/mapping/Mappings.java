@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -252,7 +252,7 @@ public abstract class Mappings {
 
 
     public static List<Integer> apply2( final Mapping mapping, final List<Integer> list ) {
-        return new AbstractList<Integer>() {
+        return new AbstractList<>() {
             @Override
             public Integer get( int index ) {
                 final int source = list.get( index );
@@ -277,7 +277,7 @@ public abstract class Mappings {
      * @return Permuted view of list
      */
     public static <T> List<T> apply3( final Mapping mapping, final List<T> list ) {
-        return new AbstractList<T>() {
+        return new AbstractList<>() {
             @Override
             public T get( int index ) {
                 return list.get( mapping.getSource( index ) );
@@ -301,7 +301,7 @@ public abstract class Mappings {
      * @return Permuted view of list
      */
     public static <T> List<T> permute( final List<T> list, final TargetMapping mapping ) {
-        return new AbstractList<T>() {
+        return new AbstractList<>() {
             @Override
             public T get( int index ) {
                 return list.get( mapping.getTarget( index ) );
@@ -322,7 +322,7 @@ public abstract class Mappings {
      * Converse of {@link #target(List, int)}
      */
     public static List<Integer> asList( final TargetMapping mapping ) {
-        return new AbstractList<Integer>() {
+        return new AbstractList<>() {
             @Override
             public Integer get( int source ) {
                 int target = mapping.getTargetOpt( source );
@@ -1047,14 +1047,6 @@ public abstract class Mappings {
         public void remove() {
             throw new UnsupportedOperationException();
         }
-    }
-
-
-    /**
-     * Thrown when a mapping is expected to return one element but returns several.
-     */
-    public static class TooManyElementsException extends RuntimeException {
-
     }
 
 

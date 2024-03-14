@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ package org.polypheny.db.util;
 
 import java.math.BigInteger;
 import java.util.List;
+import lombok.Getter;
 
 
 /**
@@ -51,11 +52,12 @@ import java.util.List;
 public class BitString {
 
     private final String bits;
+    @Getter
     private final int bitCount;
 
 
     protected BitString( String bits, int bitCount ) {
-        assert bits.replaceAll( "1", "" ).replaceAll( "0", "" ).length() == 0 : "bit string '" + bits + "' contains digits other than {0, 1}";
+        assert bits.replaceAll( "1", "" ).replaceAll( "0", "" ).isEmpty() : "bit string '" + bits + "' contains digits other than {0, 1}";
         this.bits = bits;
         this.bitCount = bitCount;
     }
@@ -92,11 +94,6 @@ public class BitString {
 
     public String toString() {
         return toBitString();
-    }
-
-
-    public int getBitCount() {
-        return bitCount;
     }
 
 
@@ -148,7 +145,7 @@ public class BitString {
         }
         int byteCount = (bitCount + 7) / 8;
         byte[] srcBytes;
-        if ( bits.length() > 0 ) {
+        if ( !bits.isEmpty() ) {
             BigInteger bigInt = new BigInteger( bits, 2 );
             srcBytes = bigInt.toByteArray();
         } else {

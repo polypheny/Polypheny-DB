@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,41 +34,42 @@
 package org.polypheny.db.adapter.jdbc;
 
 import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.polypheny.db.adapter.jdbc.rel2sql.SqlImplementor.Result;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.*;
-import org.polypheny.db.schema.ModelTrait;
-
-import java.util.List;
+import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgPlanner;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.schema.trait.ModelTrait;
 
 
 /**
- * Relational expression representing a scan of a table in a JDBC data source.
+ * Relational expression representing a relScan of a table in a JDBC data source.
  */
-public class JdbcScan extends Scan implements JdbcAlg {
+public class JdbcScan extends RelScan<JdbcTable> implements JdbcAlg {
 
     protected final JdbcTable jdbcTable;
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 0.9 );
     }
 
 
-    public JdbcScan( AlgOptCluster cluster, AlgOptTable table, JdbcTable jdbcTable, JdbcConvention jdbcConvention ) {
-        super( cluster, cluster.traitSetOf( jdbcConvention ).replace( ModelTrait.RELATIONAL ), table );
+    public JdbcScan( AlgCluster cluster, JdbcTable jdbcTable, JdbcConvention jdbcConvention ) {
+        super( cluster, cluster.traitSetOf( jdbcConvention ).replace( ModelTrait.RELATIONAL ), jdbcTable );
         this.jdbcTable = jdbcTable;
-        assert jdbcTable != null;
     }
 
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         assert inputs.isEmpty();
-        return new JdbcScan( getCluster(), table, jdbcTable, (JdbcConvention) getConvention() );
+        return new JdbcScan( getCluster(), entity, (JdbcConvention) getConvention() );
     }
 
 

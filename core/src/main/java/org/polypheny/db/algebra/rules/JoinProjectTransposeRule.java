@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,8 +42,8 @@ import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptRule;
@@ -62,39 +62,39 @@ import org.polypheny.db.util.ValidatorUtil;
 
 
 /**
- * Planner rule that matches a {@link org.polypheny.db.algebra.core.Join} one of whose inputs is a {@link LogicalProject}, and pulls the project up.
+ * Planner rule that matches a {@link org.polypheny.db.algebra.core.Join} one of whose inputs is a {@link LogicalRelProject}, and pulls the project up.
  *
- * Projections are pulled up if the {@link LogicalProject} doesn't originate from a null generating input in an outer join.
+ * Projections are pulled up if the {@link LogicalRelProject} doesn't originate from a null generating input in an outer join.
  */
 public class JoinProjectTransposeRule extends AlgOptRule {
 
     public static final JoinProjectTransposeRule BOTH_PROJECT =
             new JoinProjectTransposeRule(
                     operand(
-                            LogicalJoin.class,
-                            operand( LogicalProject.class, any() ),
-                            operand( LogicalProject.class, any() ) ),
+                            LogicalRelJoin.class,
+                            operand( LogicalRelProject.class, any() ),
+                            operand( LogicalRelProject.class, any() ) ),
                     "JoinProjectTransposeRule(Project-Project)" );
 
     public static final JoinProjectTransposeRule LEFT_PROJECT =
             new JoinProjectTransposeRule(
-                    operand( LogicalJoin.class, some( operand( LogicalProject.class, any() ) ) ),
+                    operand( LogicalRelJoin.class, some( operand( LogicalRelProject.class, any() ) ) ),
                     "JoinProjectTransposeRule(Project-Other)" );
 
     public static final JoinProjectTransposeRule RIGHT_PROJECT =
             new JoinProjectTransposeRule(
                     operand(
-                            LogicalJoin.class,
+                            LogicalRelJoin.class,
                             operand( AlgNode.class, any() ),
-                            operand( LogicalProject.class, any() ) ),
+                            operand( LogicalRelProject.class, any() ) ),
                     "JoinProjectTransposeRule(Other-Project)" );
 
     public static final JoinProjectTransposeRule BOTH_PROJECT_INCLUDE_OUTER =
             new JoinProjectTransposeRule(
                     operand(
-                            LogicalJoin.class,
-                            operand( LogicalProject.class, any() ),
-                            operand( LogicalProject.class, any() ) ),
+                            LogicalRelJoin.class,
+                            operand( LogicalRelProject.class, any() ),
+                            operand( LogicalRelProject.class, any() ) ),
                     "Join(IncludingOuter)ProjectTransposeRule(Project-Project)",
                     true,
                     AlgFactories.LOGICAL_BUILDER );
@@ -102,8 +102,8 @@ public class JoinProjectTransposeRule extends AlgOptRule {
     public static final JoinProjectTransposeRule LEFT_PROJECT_INCLUDE_OUTER =
             new JoinProjectTransposeRule(
                     operand(
-                            LogicalJoin.class,
-                            some( operand( LogicalProject.class, any() ) ) ),
+                            LogicalRelJoin.class,
+                            some( operand( LogicalRelProject.class, any() ) ) ),
                     "Join(IncludingOuter)ProjectTransposeRule(Project-Other)",
                     true,
                     AlgFactories.LOGICAL_BUILDER );
@@ -111,9 +111,9 @@ public class JoinProjectTransposeRule extends AlgOptRule {
     public static final JoinProjectTransposeRule RIGHT_PROJECT_INCLUDE_OUTER =
             new JoinProjectTransposeRule(
                     operand(
-                            LogicalJoin.class,
+                            LogicalRelJoin.class,
                             operand( AlgNode.class, any() ),
-                            operand( LogicalProject.class, any() ) ),
+                            operand( LogicalRelProject.class, any() ) ),
                     "Join(IncludingOuter)ProjectTransposeRule(Other-Project)",
                     true,
                     AlgFactories.LOGICAL_BUILDER );
@@ -177,8 +177,8 @@ public class JoinProjectTransposeRule extends AlgOptRule {
         // actually been joined yet.
         AlgDataType joinChildrenRowType =
                 ValidatorUtil.deriveJoinRowType(
-                        leftJoinChild.getRowType(),
-                        rightJoinChild.getRowType(),
+                        leftJoinChild.getTupleType(),
+                        rightJoinChild.getTupleType(),
                         JoinAlgType.INNER,
                         joinRel.getCluster().getTypeFactory(),
                         null,
@@ -187,7 +187,7 @@ public class JoinProjectTransposeRule extends AlgOptRule {
         // Create projection expressions, combining the projection expressions from the projects that feed into the join.
         // For the RHS projection expressions, shift them to the right by the number of fields on the LHS.
         // If the join input was not a projection, simply create references to the inputs.
-        int nProjExprs = joinRel.getRowType().getFieldCount();
+        int nProjExprs = joinRel.getTupleType().getFieldCount();
         final List<Pair<RexNode, String>> projects = new ArrayList<>();
         final RexBuilder rexBuilder = joinRel.getCluster().getRexBuilder();
 
@@ -196,24 +196,24 @@ public class JoinProjectTransposeRule extends AlgOptRule {
                 leftJoinChild,
                 0,
                 rexBuilder,
-                joinChildrenRowType.getFieldList(),
+                joinChildrenRowType.getFields(),
                 projects );
 
-        List<AlgDataTypeField> leftFields = leftJoinChild.getRowType().getFieldList();
+        List<AlgDataTypeField> leftFields = leftJoinChild.getTupleType().getFields();
         int nFieldsLeft = leftFields.size();
         createProjectExprs(
                 rightProj,
                 rightJoinChild,
                 nFieldsLeft,
                 rexBuilder,
-                joinChildrenRowType.getFieldList(),
+                joinChildrenRowType.getFields(),
                 projects );
 
         final List<AlgDataType> projTypes = new ArrayList<>();
         for ( int i = 0; i < nProjExprs; i++ ) {
             projTypes.add( projects.get( i ).left.getType() );
         }
-        AlgDataType projRowType = rexBuilder.getTypeFactory().createStructType( projTypes, Pair.right( projects ) );
+        AlgDataType projRowType = rexBuilder.getTypeFactory().createStructType( null, projTypes, Pair.right( projects ) );
 
         // create the RexPrograms and merge them
         RexProgram bottomProgram =
@@ -242,7 +242,7 @@ public class JoinProjectTransposeRule extends AlgOptRule {
         // Expand out the new projection expressions; if the join is an outer join, modify the expressions to reference the join output
         final List<RexNode> newProjExprs = new ArrayList<>();
         List<RexLocalRef> projList = mergedProgram.getProjectList();
-        List<AlgDataTypeField> newJoinFields = newJoinRel.getRowType().getFieldList();
+        List<AlgDataTypeField> newJoinFields = newJoinRel.getTupleType().getFields();
         int nJoinFields = newJoinFields.size();
         int[] adjustments = new int[nJoinFields];
         for ( int i = 0; i < nProjExprs; i++ ) {
@@ -252,7 +252,7 @@ public class JoinProjectTransposeRule extends AlgOptRule {
                         newExpr.accept(
                                 new AlgOptUtil.RexInputConverter(
                                         rexBuilder,
-                                        joinChildrenRowType.getFieldList(),
+                                        joinChildrenRowType.getFields(),
                                         newJoinFields,
                                         adjustments ) );
             }
@@ -262,10 +262,10 @@ public class JoinProjectTransposeRule extends AlgOptRule {
         // Finally, create the projection on top of the join
         final AlgBuilder algBuilder = call.builder();
         algBuilder.push( newJoinRel );
-        algBuilder.project( newProjExprs, joinRel.getRowType().getFieldNames() );
+        algBuilder.project( newProjExprs, joinRel.getTupleType().getFieldNames() );
         // If the join was outer, we might need a cast after the projection to fix differences wrt nullability of fields
         if ( joinType != JoinAlgType.INNER ) {
-            algBuilder.convert( joinRel.getRowType(), false );
+            algBuilder.convert( joinRel.getTupleType(), false );
         }
 
         call.transformTo( algBuilder.build() );
@@ -324,7 +324,7 @@ public class JoinProjectTransposeRule extends AlgOptRule {
      * @param projects Projection expressions &amp; names to be created
      */
     protected void createProjectExprs( Project projRel, AlgNode joinChild, int adjustmentAmount, RexBuilder rexBuilder, List<AlgDataTypeField> joinChildrenFields, List<Pair<RexNode, String>> projects ) {
-        List<AlgDataTypeField> childFields = joinChild.getRowType().getFieldList();
+        List<AlgDataTypeField> childFields = joinChild.getTupleType().getFields();
         if ( projRel != null ) {
             List<Pair<RexNode, String>> namedProjects = projRel.getNamedProjects();
             int nChildFields = childFields.size();

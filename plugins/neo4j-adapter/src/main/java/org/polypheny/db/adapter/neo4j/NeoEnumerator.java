@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,23 +21,23 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.function.Function1;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
  * Neo4j representation of a {@link Enumerator}.
  *
- * @param <T>
  */
-public class NeoEnumerator<T> implements Enumerator<T> {
+public class NeoEnumerator implements Enumerator<PolyValue[]> {
 
     private final List<Result> results;
-    private final Function1<Record, T> getter;
+    private final Function1<Record, PolyValue[]> getter;
     private Result result;
-    private T current;
+    private PolyValue[] current;
     private int pos = 0;
 
 
-    public NeoEnumerator( List<Result> results, Function1<Record, T> getter ) {
+    public NeoEnumerator( List<Result> results, Function1<Record, PolyValue[]> getter ) {
         this.results = results;
         this.result = results.get( pos );
         pos++;
@@ -46,7 +46,7 @@ public class NeoEnumerator<T> implements Enumerator<T> {
 
 
     @Override
-    public T current() {
+    public PolyValue[] current() {
         return current;
     }
 

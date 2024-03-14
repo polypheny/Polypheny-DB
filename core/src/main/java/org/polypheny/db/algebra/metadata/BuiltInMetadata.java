@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,12 +42,12 @@ import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.ExplainLevel;
-import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPredicateList;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.rex.RexTableInputRef;
-import org.polypheny.db.rex.RexTableInputRef.AlgTableRef;
+import org.polypheny.db.rex.RexTableIndexRef;
+import org.polypheny.db.rex.RexTableIndexRef.AlgTableRef;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableBitSet;
 
@@ -93,7 +93,7 @@ public abstract class BuiltInMetadata {
 
         /**
          * Determines the set of unique minimal keys for this expression. A key is represented as an {@link ImmutableBitSet}, where each bit position represents a 0-based output column ordinal.
-         *
+         * <p>
          * Nulls can be ignored if the relational expression has filtered out null values.
          *
          * @param ignoreNulls if true, ignore null values when determining whether the keys are unique
@@ -122,7 +122,7 @@ public abstract class BuiltInMetadata {
 
         /**
          * Determines whether a specified set of columns from a specified relational expression are unique.
-         *
+         * <p>
          * For example, if the relational expression is a {@code Scan} to T(A, B, C, D) whose key is (A, B), then:
          * <ul>
          * <li>{@code areColumnsUnique([0, 1])} yields true,
@@ -176,10 +176,10 @@ public abstract class BuiltInMetadata {
 
     /**
      * Metadata about how a relational expression is distributed.
-     *
+     * <p>
      * If you are an operator consuming a relational expression, which subset of the rows are you seeing? You might be seeing all of them (BROADCAST or SINGLETON), only those whose key column values have a particular hash
      * code (HASH) or only those whose column values have particular values or ranges of values (RANGE).
-     *
+     * <p>
      * When a relational expression is partitioned, it is often partitioned among nodes, but it may be partitioned among threads running on the same node.
      */
     public interface Distribution extends Metadata {
@@ -205,7 +205,7 @@ public abstract class BuiltInMetadata {
 
     /**
      * Metadata about the node types in a relational expression.
-     *
+     * <p>
      * For each relational expression, it returns a multimap from the class to the nodes instantiating that class. Each node will appear in the multimap only once.
      */
     public interface NodeTypes extends Metadata {
@@ -230,26 +230,26 @@ public abstract class BuiltInMetadata {
 
 
     /**
-     * Metadata about the number of rows returned by a relational expression.
+     * Metadata about the number of tuples returned by an expression.
      */
-    public interface RowCount extends Metadata {
+    public interface TupleCount extends Metadata {
 
-        MetadataDef<RowCount> DEF = MetadataDef.of( RowCount.class, RowCount.Handler.class, BuiltInMethod.ROW_COUNT.method );
+        MetadataDef<TupleCount> DEF = MetadataDef.of( TupleCount.class, TupleCount.Handler.class, BuiltInMethod.TUPLE_COUNT.method );
 
         /**
          * Estimates the number of rows which will be returned by a relational expression. The default implementation for this query asks the alg itself
-         * via {@link AlgNode#estimateRowCount}, but metadata providers can override this with their own cost models.
+         * via {@link AlgNode#estimateTupleCount}, but metadata providers can override this with their own cost models.
          *
          * @return estimated row count, or null if no reliable estimate can be determined
          */
-        Double getRowCount();
+        Double getTupleCount();
 
         /**
          * Handler API.
          */
-        interface Handler extends MetadataHandler<RowCount> {
+        interface Handler extends MetadataHandler<TupleCount> {
 
-            Double getRowCount( AlgNode r, AlgMetadataQuery mq );
+            Double getTupleCount( AlgNode r, AlgMetadataQuery mq );
 
         }
 
@@ -265,7 +265,7 @@ public abstract class BuiltInMetadata {
 
         /**
          * Estimates the max number of rows which will be returned by a relational expression.
-         *
+         * <p>
          * The default implementation for this query returns {@link Double#POSITIVE_INFINITY}, but metadata providers can override this with their own cost models.
          *
          * @return upper bound on the number of rows returned
@@ -293,7 +293,7 @@ public abstract class BuiltInMetadata {
 
         /**
          * Estimates the minimum number of rows which will be returned by a relational expression.
-         *
+         * <p>
          * The default implementation for this query returns 0, but metadata providers can override this with their own cost models.
          *
          * @return lower bound on the number of rows returned
@@ -411,9 +411,9 @@ public abstract class BuiltInMetadata {
 
         /**
          * Determines the average size (in bytes) of a value of a column in this relational expression.
-         *
+         * <p>
          * Null values are included (presumably they occupy close to 0 bytes).
-         *
+         * <p>
          * It is left to the caller to decide whether the size is the compressed size, the uncompressed size, or memory allocation when the value is wrapped in an object in the Java heap.
          * The uncompressed size is probably a good compromise.
          *
@@ -472,10 +472,10 @@ public abstract class BuiltInMetadata {
 
         /**
          * Given the input expression applied on the given {@link AlgNode}, this provider returns the expression with its lineage resolved.
-         *
-         * In particular, the result will be a set of nodes which might contain references to columns in Scan operators ({@link RexTableInputRef}). An expression can have more than one lineage expression due to
+         * <p>
+         * In particular, the result will be a set of nodes which might contain references to columns in Scan operators ({@link RexTableIndexRef}). An expression can have more than one lineage expression due to
          * Union operators. However, we do not check column equality in Filter predicates. Each Scan operator below the node is identified uniquely by its qualified name and its entity number.
-         *
+         * <p>
          * For example, if the expression is {@code $0 + 2} and {@code $0} originated from column {@code $3} in the {@code 0} occurrence of table {@code A} in the plan, result will be: {@code A.#0.$3 + 2}.
          * Occurrences are generated in no particular order, but it is guaranteed that if two expressions referred to the same table, the qualified name + occurrence will be the same.
          *
@@ -505,10 +505,10 @@ public abstract class BuiltInMetadata {
 
         /**
          * This provider returns the tables used by a given plan.
-         *
+         * <p>
          * In particular, the result will be a set of unique table references ({@link AlgTableRef}) corresponding to each Scan operator in the plan. These table references are
          * composed by the table qualified name and an entity number.
-         *
+         * <p>
          * Importantly, the table identifiers returned by this metadata provider will be consistent with the unique identifiers used by the {@link ExpressionLineage} provider,
          * meaning that it is guaranteed that same table will use same unique identifiers in both.
          *
@@ -637,9 +637,9 @@ public abstract class BuiltInMetadata {
 
     /**
      * Metadata about the predicates that hold in the rows emitted from a relational expression.
-     *
+     * <p>
      * The difference with respect to {@link Predicates} provider is that this provider tries to extract ALL predicates even if they are not applied on the output expressions of the relational expression; we rely
-     * on {@link RexTableInputRef} to reference origin columns in {@link Scan} for the result predicates.
+     * on {@link RexTableIndexRef} to reference origin columns in {@link RelScan} for the result predicates.
      */
     public interface AllPredicates extends Metadata {
 
@@ -673,17 +673,17 @@ public abstract class BuiltInMetadata {
 
         /**
          * Returns whether each physical operator implementing this relational expression belongs to a different process than its inputs.
-         *
-         * A collection of operators processing all of the splits of a particular stage in the query pipeline is called a "phase". A phase starts with a leaf node such as a {@link Scan},
+         * <p>
+         * A collection of operators processing all of the splits of a particular stage in the query pipeline is called a "phase". A phase starts with a leaf node such as a {@link RelScan},
          * or with a phase-change node such as an {@link org.polypheny.db.algebra.core.Exchange}. Hadoop's shuffle operator (a form of sort-exchange) causes data to be sent across the network.
          */
         Boolean isPhaseTransition();
 
         /**
          * Returns the number of distinct splits of the data.
-         *
+         * <p>
          * Note that splits must be distinct. For broadcast, where each copy is the same, returns 1.
-         *
+         * <p>
          * Thus the split count is the <em>proportion</em> of the data seen by each operator instance.
          */
         Integer splitCount();
@@ -715,7 +715,7 @@ public abstract class BuiltInMetadata {
 
         /**
          * Returns the expected amount of memory, in bytes, required by a physical operator implementing this relational expression, across all splits.
-         *
+         * <p>
          * How much memory is used depends very much on the algorithm; for example, an implementation of {@link org.polypheny.db.algebra.core.Aggregate} that loads all data into a hash table requires approximately
          * {@code rowCount * averageRowSize} bytes, whereas an implementation that assumes that the input is sorted requires only {@code averageRowSize} bytes to maintain a single accumulator for each aggregate function.
          */
@@ -730,7 +730,7 @@ public abstract class BuiltInMetadata {
 
         /**
          * Returns the expected cumulative amount of memory, in bytes, required by the physical operator implementing this relational expression, and all operators within the same phase, within each split.
-         *
+         * <p>
          * Basic formula:
          *
          * <blockquote>
@@ -754,13 +754,6 @@ public abstract class BuiltInMetadata {
 
     }
 
-
-    /**
-     * The built-in forms of metadata.
-     */
-    interface All extends Selectivity, UniqueKeys, RowCount, DistinctRowCount, PercentageOriginalRows, ColumnUniqueness, ColumnOrigin, Predicates, Collation, Distribution, Size, Parallelism, Memory, AllPredicates, ExpressionLineage, TableReferences, NodeTypes {
-
-    }
 
 }
 

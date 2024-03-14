@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,13 +25,22 @@ import org.polypheny.db.adapter.cottontail.algebra.CottontailToEnumerableConvert
 import org.polypheny.db.adapter.cottontail.util.Linq4JFixer;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.sql.language.fun.SqlArrayValueConstructor;
 import org.polypheny.db.type.ArrayType;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyNull;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyFloat;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.vitrivr.cottontail.client.iterators.Tuple;
 import org.vitrivr.cottontail.client.iterators.TupleIterator;
 
 @Slf4j
-public class CottontailQueryEnumerable extends AbstractEnumerable<Object> {
+public class CottontailQueryEnumerable extends AbstractEnumerable<PolyValue[]> {
 
     /**
      * The {@link TupleIterator} backing this {@link CottontailQueryEnumerable}.
@@ -41,22 +50,22 @@ public class CottontailQueryEnumerable extends AbstractEnumerable<Object> {
     /**
      * The {@link RowTypeParser} backing this {@link CottontailQueryEnumerable}.
      */
-    private final Function1<Tuple, Object[]> parser;
+    private final Function1<Tuple, PolyValue[]> parser;
 
 
-    public CottontailQueryEnumerable( TupleIterator iterator, Function1<Tuple, Object[]> rowParser ) {
+    public CottontailQueryEnumerable( TupleIterator iterator, Function1<Tuple, PolyValue[]> rowParser ) {
         this.tupleIterator = iterator;
         this.parser = rowParser;
     }
 
 
     @Override
-    public Enumerator<Object> enumerator() {
+    public Enumerator<PolyValue[]> enumerator() {
         return new CottontailQueryResultEnumerator();
     }
 
 
-    private class CottontailQueryResultEnumerator implements Enumerator<Object> {
+    private class CottontailQueryResultEnumerator implements Enumerator<PolyValue[]> {
 
         /**
          * The current {@link Tuple} this {@link CottontailQueryEnumerable} is pointing to.
@@ -65,13 +74,8 @@ public class CottontailQueryEnumerable extends AbstractEnumerable<Object> {
 
 
         @Override
-        public Object current() {
-            final Object[] results = CottontailQueryEnumerable.this.parser.apply( this.tuple );
-            if ( results.length == 1 ) {
-                return results[0];
-            } else {
-                return results;
-            }
+        public PolyValue[] current() {
+            return CottontailQueryEnumerable.this.parser.apply( this.tuple );
         }
 
 
@@ -104,7 +108,7 @@ public class CottontailQueryEnumerable extends AbstractEnumerable<Object> {
     }
 
 
-    public static class RowTypeParser implements Function1<Tuple, Object[]> {
+    public static class RowTypeParser implements Function1<Tuple, PolyValue[]> {
 
         private final AlgDataType rowType;
         private final List<String> physicalColumnNames;
@@ -117,9 +121,9 @@ public class CottontailQueryEnumerable extends AbstractEnumerable<Object> {
 
 
         @Override
-        public Object[] apply( Tuple a0 ) {
-            final Object[] returnValue = new Object[this.physicalColumnNames.size()];
-            final List<AlgDataTypeField> fieldList = this.rowType.getFieldList();
+        public PolyValue[] apply( Tuple a0 ) {
+            final PolyValue[] returnValue = new PolyValue[this.physicalColumnNames.size()];
+            final List<AlgDataTypeField> fieldList = this.rowType.getFields();
             for ( int i = 0; i < fieldList.size(); i++ ) {
                 final AlgDataType type = fieldList.get( i ).getType();
                 returnValue[i] = this.parseSingleField( a0.get( i ), type );
@@ -136,18 +140,24 @@ public class CottontailQueryEnumerable extends AbstractEnumerable<Object> {
          * @param type The {@link AlgDataType} expected by Polypheny-DB
          * @return Converted value as {@link Object}
          */
-        private Object parseSingleField( Object data, AlgDataType type ) {
+        private PolyValue parseSingleField( Object data, AlgDataType type ) {
             switch ( type.getPolyType() ) {
                 case BOOLEAN:
+                    return PolyBoolean.of( (Boolean) data );
                 case INTEGER:
+                    return PolyInteger.of( (Number) data );
                 case BIGINT:
+                    return PolyLong.of( (Number) data );
                 case FLOAT:
                 case REAL:
+                    return PolyFloat.of( (Number) data );
                 case DOUBLE:
+                    return PolyDouble.of( (Number) data );
                 case CHAR:
                 case VARCHAR:
+                    return PolyString.of( (String) data );
                 case NULL:
-                    return data; /* Pass through, no conversion needed. */
+                    return PolyNull.NULL;
                 case TINYINT:
                     return Linq4JFixer.getTinyIntData( data );
                 case SMALLINT:
@@ -181,7 +191,7 @@ public class CottontailQueryEnumerable extends AbstractEnumerable<Object> {
                             case REAL:
                                 return Linq4JFixer.getFloatVector( data );
                             default:
-                                throw new RuntimeException( "Impossible to reach statement." );
+                                throw new GenericRuntimeException( "Impossible to reach statement." );
                         }
                     } else {
                         SqlArrayValueConstructor.reparse( arrayType.getComponentType().getPolyType(), arrayType.getDimension(), (String) data );

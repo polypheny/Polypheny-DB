@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,9 +21,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.cypher.admin.CypherWithGraph;
 import org.polypheny.db.cypher.clause.CypherUseClause;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 
 @Getter
@@ -42,9 +42,9 @@ public class CypherUseGraph extends CypherWithGraph implements ExecutableStateme
 
 
     @Override
-    public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        if ( this.statement != null && this.statement.isDDL() ) {
-            ((ExecutableStatement) this.statement).execute( context, statement, parameters );
+    public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
+        if ( this.statement != null && this.statement.isDdl() ) {
+            ((ExecutableStatement) this.statement).execute( context, statement, parsedQueryContext );
         }
         if ( useClause != null ) {
             log.warn( useClause.toString() );
@@ -53,7 +53,7 @@ public class CypherUseGraph extends CypherWithGraph implements ExecutableStateme
 
 
     @Override
-    public boolean isDDL() {
+    public boolean isDdl() {
         return true;
     }
 

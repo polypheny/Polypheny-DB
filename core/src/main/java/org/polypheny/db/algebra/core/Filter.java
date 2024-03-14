@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,13 +39,13 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexChecker;
 import org.polypheny.db.rex.RexNode;
@@ -60,7 +60,7 @@ import org.polypheny.db.util.Litmus;
  *
  * If the condition allows nulls, then a null value is treated the same as false.
  *
- * @see LogicalFilter
+ * @see LogicalRelFilter
  */
 public abstract class Filter extends SingleAlg {
 
@@ -75,7 +75,7 @@ public abstract class Filter extends SingleAlg {
      * @param child input relational expression
      * @param condition boolean expression which determines whether a row is allowed to pass
      */
-    protected Filter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, RexNode condition ) {
+    protected Filter( AlgCluster cluster, AlgTraitSet traits, AlgNode child, RexNode condition ) {
         super( cluster, traits, child );
         assert condition != null;
         assert RexUtil.isFlat( condition ) : condition;
@@ -120,7 +120,7 @@ public abstract class Filter extends SingleAlg {
         if ( RexUtil.isNullabilityCast( getCluster().getTypeFactory(), condition ) ) {
             return litmus.fail( "Cast for just nullability not allowed" );
         }
-        final RexChecker checker = new RexChecker( getInput().getRowType(), context, litmus );
+        final RexChecker checker = new RexChecker( getInput().getTupleType(), context, litmus );
         condition.accept( checker );
         if ( checker.getFailureCount() > 0 ) {
             return litmus.fail( null );
@@ -130,16 +130,16 @@ public abstract class Filter extends SingleAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        double dRows = mq.getRowCount( this );
-        double dCpu = mq.getRowCount( getInput() );
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
+        double dRows = mq.getTupleCount( this );
+        double dCpu = mq.getTupleCount( getInput() );
         double dIo = 0;
         return planner.getCostFactory().makeCost( dRows, dCpu, dIo );
     }
 
 
     @Override
-    public double estimateRowCount( AlgMetadataQuery mq ) {
+    public double estimateTupleCount( AlgMetadataQuery mq ) {
         return AlgMdUtil.estimateFilteredRows( getInput(), condition, mq );
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.polypheny.db.sql.language;
 
 
 import org.polypheny.db.algebra.constant.Syntax;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.Util;
 
@@ -134,7 +135,7 @@ public enum SqlSyntax {
             case INTERNAL:
                 return SqlSyntax.INTERNAL;
             default:
-                throw new RuntimeException( "There seems to be an internal error while translating the Syntax." );
+                throw new GenericRuntimeException( "There seems to be an internal error while translating the Syntax." );
         }
     }
 
@@ -164,7 +165,7 @@ public enum SqlSyntax {
             case INTERNAL:
                 return Syntax.INTERNAL;
         }
-        throw new RuntimeException( "There seems to be an internal error while translating the Syntax." );
+        throw new GenericRuntimeException( "There seems to be an internal error while translating the Syntax." );
     }
 }
 

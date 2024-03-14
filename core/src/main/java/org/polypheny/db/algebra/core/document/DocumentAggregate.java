@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,42 +19,45 @@ package org.polypheny.db.algebra.core.document;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
-import org.polypheny.db.algebra.core.AggregateCall;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.algebra.core.LaxAggregateCall;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.DocumentType;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.rex.RexNameRef;
+import org.polypheny.db.schema.trait.ModelTrait;
 
 
 public class DocumentAggregate extends SingleAlg implements DocumentAlg {
 
-    public final boolean indicator;
-    public final List<AggregateCall> aggCalls;
-    public final ImmutableBitSet groupSet;
-    public final ImmutableList<ImmutableBitSet> groupSets;
+    @NotNull
+    public final List<LaxAggregateCall> aggCalls;
+
+    @Nullable // null means "group by all fields in the input tuple"
+    private final RexNameRef group;
 
 
     /**
      * Creates a {@link DocumentAggregate}.
-     * {@link org.polypheny.db.schema.ModelTrait#DOCUMENT} native node of an aggregate.
+     * {@link ModelTrait#DOCUMENT} native node of an aggregate.
      */
-    protected DocumentAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
+    protected DocumentAggregate( AlgCluster cluster, AlgTraitSet traits, AlgNode child, @Nullable RexNameRef group, List<LaxAggregateCall> aggCalls ) {
         super( cluster, traits, child );
-        this.indicator = indicator; // true is allowed, but discouraged
+        this.group = group;
         this.aggCalls = ImmutableList.copyOf( aggCalls );
-        this.groupSet = Objects.requireNonNull( groupSet );
-        if ( groupSets == null ) {
-            this.groupSets = ImmutableList.of( groupSet );
-        } else {
-            this.groupSets = ImmutableList.copyOf( groupSets );
-            assert ImmutableBitSet.ORDERING.isStrictlyOrdered( groupSets ) : groupSets;
-            for ( ImmutableBitSet set : groupSets ) {
-                assert groupSet.contains( set );
-            }
-        }
-        assert groupSet.length() <= child.getRowType().getFieldCount();
+        this.rowType = DocumentType.ofDoc();
+    }
+
+
+    public Optional<RexNameRef> getGroup() {
+        return Optional.ofNullable( group );
     }
 
 
@@ -62,10 +65,21 @@ public class DocumentAggregate extends SingleAlg implements DocumentAlg {
     public String algCompareString() {
         return this.getClass().getSimpleName() + "$" +
                 input.algCompareString() + "$" +
-                (aggCalls != null ? aggCalls.stream().map( Objects::toString ).collect( Collectors.joining( " $ " ) ) : "") + "$" +
-                (groupSet != null ? groupSet.toString() : "") + "$" +
-                (groupSets != null ? groupSets.stream().map( Objects::toString ).collect( Collectors.joining( " $ " ) ) : "") + "$" +
-                indicator + "&";
+                (group != null ? group.hashCode() : "") + "$" +
+                aggCalls.stream().map( Objects::toString ).collect( Collectors.joining( " $ " ) ) + "&";
+    }
+
+
+    @Override
+    protected AlgDataType deriveRowType() {
+        AlgDataTypeFactory.Builder builder = getCluster().getTypeFactory().builder();
+        builder.add( "_id", null, DocumentType.ofDoc() );
+
+        for ( LaxAggregateCall aggCall : aggCalls ) {
+            builder.add( aggCall.name, null, DocumentType.ofDoc() );
+        }
+
+        return builder.build();
     }
 
 

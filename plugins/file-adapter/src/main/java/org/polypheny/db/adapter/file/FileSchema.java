@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.file;
 
 
 import java.io.File;
+import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.plan.Convention;
 
 
@@ -27,6 +28,6 @@ public interface FileSchema {
 
     File getRootDir();
 
-    int getAdapterId();
+    Adapter<?> getAdapter();
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,16 @@
 package org.polypheny.db.information;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 
 public class InformationKeyValue extends Information {
 
-    private final HashMap<String, String> keyValuePairs = new HashMap<>();
+    @JsonProperty
+    private final Map<String, String> keyValuePairs = new HashMap<>();
 
 
     /**

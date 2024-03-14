@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.cottontail.CottontailWrapper;
+import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyValue;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.UpdateMessage;
 
 
 @Slf4j
-public class CottontailUpdateEnumerable extends AbstractEnumerable<Long> {
+public class CottontailUpdateEnumerable extends AbstractEnumerable<PolyValue[]> {
 
     private final List<UpdateMessage> updates;
     private final CottontailWrapper wrapper;
@@ -38,17 +40,17 @@ public class CottontailUpdateEnumerable extends AbstractEnumerable<Long> {
 
 
     @Override
-    public Enumerator<Long> enumerator() {
+    public Enumerator<PolyValue[]> enumerator() {
         return new CottontailUpdateEnumerator();
     }
 
 
-    private class CottontailUpdateEnumerator implements Enumerator<Long> {
+    private class CottontailUpdateEnumerator implements Enumerator<PolyValue[]> {
 
         /**
          * Result of the last UPDATE that was performed.
          */
-        private long currentResult;
+        private PolyValue[] currentResult;
 
         /**
          * The pointer to the last {@link UpdateMessage} that was executed.
@@ -57,7 +59,7 @@ public class CottontailUpdateEnumerable extends AbstractEnumerable<Long> {
 
 
         @Override
-        public Long current() {
+        public PolyValue[] current() {
             return this.currentResult;
         }
 
@@ -66,8 +68,8 @@ public class CottontailUpdateEnumerable extends AbstractEnumerable<Long> {
         public boolean moveNext() {
             if ( this.pointer < CottontailUpdateEnumerable.this.updates.size() ) {
                 final UpdateMessage updateMessage = CottontailUpdateEnumerable.this.updates.get( this.pointer++ );
-                this.currentResult = CottontailUpdateEnumerable.this.wrapper.update( updateMessage );
-                return !(this.currentResult == -1L);
+                this.currentResult = new PolyValue[]{ PolyLong.of( CottontailUpdateEnumerable.this.wrapper.update( updateMessage ) ) };
+                return !currentResult[0].equals( PolyLong.of( -1 ) );
             }
             return false;
         }

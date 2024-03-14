@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package org.polypheny.db.adapter.ethereum;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
@@ -28,14 +27,13 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.ethereum.EthereumPlugin.EthereumDataSource;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.FilterableTable;
-import org.polypheny.db.schema.impl.AbstractTable;
-import org.polypheny.db.util.Pair;
+import org.polypheny.db.schema.types.FilterableEntity;
+import org.polypheny.db.type.entity.PolyValue;
 
-public class EthereumTable extends AbstractTable implements FilterableTable {
+public class EthereumTable extends PhysicalTable implements FilterableEntity {
 
     protected final String clientUrl;
     protected final AlgProtoDataType protoRowType;
@@ -46,32 +44,34 @@ public class EthereumTable extends AbstractTable implements FilterableTable {
 
 
     public EthereumTable(
+            PhysicalTable table,
             String clientUrl,
             AlgProtoDataType protoRowType,
             List<EthereumFieldType> fieldTypes,
             int[] fields,
             EthereumMapper mapper,
-            EthereumDataSource ethereumDataSource,
-            Long tableId ) {
+            EthereumDataSource ethereumDataSource ) {
+        super( table.id,
+                table.allocationId,
+                table.logicalId,
+                table.name,
+                table.columns,
+                table.namespaceId,
+                table.namespaceName,
+                table.uniqueFieldIds,
+                table.adapterId );
         this.clientUrl = clientUrl;
         this.protoRowType = protoRowType;
         this.fieldTypes = fieldTypes;
         this.fields = fields;
         this.ethereumDataSource = ethereumDataSource;
         this.mapper = mapper;
-        this.tableId = tableId;
     }
 
 
     @Override
-    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
-        final List<AlgDataType> types = new ArrayList<>();
-        final List<String> names = new ArrayList<>();
-        for ( AlgDataTypeField field : this.protoRowType.apply( typeFactory ).getFieldList() ) {
-            types.add( field.getType() );
-            names.add( field.getName() );
-        }
-        return typeFactory.createStructType( Pair.zip( names, types ) );
+    public AlgDataType getTupleType( AlgDataTypeFactory typeFactory ) {
+        return typeFactory.createStructType( this.protoRowType.apply( typeFactory ).getFields() );
     }
 
 
@@ -81,7 +81,7 @@ public class EthereumTable extends AbstractTable implements FilterableTable {
 
 
     @Override
-    public Enumerable scan( DataContext dataContext, List<RexNode> filters ) {
+    public Enumerable<PolyValue[]> scan( DataContext dataContext, List<RexNode> filters ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( ethereumDataSource );
         Predicate<BigInteger> blockNumberPredicate = EthereumPredicateFactory.ALWAYS_TRUE;
         if ( ethereumDataSource.isExperimentalFiltering() ) {
@@ -92,26 +92,10 @@ public class EthereumTable extends AbstractTable implements FilterableTable {
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
         final Predicate<BigInteger> finalBlockNumberPredicate = blockNumberPredicate;
 
-        if ( fields.length == 1 ) {
-            return new AbstractEnumerable<Object>() {
-                @Override
-                public Enumerator<Object> enumerator() {
-                    return new EthereumEnumerator<>(
-                            clientUrl,
-                            ethereumDataSource.getBlocks(),
-                            cancelFlag,
-                            true,
-                            null,
-                            mapper,
-                            finalBlockNumberPredicate,
-                            (EthereumEnumerator.RowConverter<Object>) EthereumEnumerator.converter( fieldTypes, fields ) );
-                }
-            };
-        }
-        return new AbstractEnumerable<Object[]>() {
+        return new AbstractEnumerable<PolyValue[]>() {
             @Override
-            public Enumerator<Object[]> enumerator() {
-                return new EthereumEnumerator<>(
+            public Enumerator<PolyValue[]> enumerator() {
+                return new EthereumEnumerator(
                         clientUrl,
                         ethereumDataSource.getBlocks(),
                         cancelFlag,
@@ -119,7 +103,7 @@ public class EthereumTable extends AbstractTable implements FilterableTable {
                         null,
                         mapper,
                         finalBlockNumberPredicate,
-                        (EthereumEnumerator.RowConverter<Object[]>) EthereumEnumerator.converter( fieldTypes, fields ) );
+                        EthereumEnumerator.converter( fieldTypes, fields ) );
             }
         };
     }

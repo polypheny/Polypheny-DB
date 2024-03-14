@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,8 +29,6 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import org.apache.calcite.avatica.util.Spaces;
-import org.junit.Assert;
-import org.junit.ComparisonFailure;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Sources;
 import org.polypheny.db.util.Util;
@@ -345,7 +343,7 @@ public class DiffRepository {
      */
     private String getCurrentTestCaseName( boolean fail ) {
         // REVIEW jvs 12-Mar-2006: Too clever by half.  Someone might not know about this and use a private helper method whose name also starts with test. Perhaps just require them to pass in getName() from the
-        // calling TestCase's setUp method and store it in a thread-local, failing here if they forgot?
+        // calling TestCase's setUp method and storeId it in a thread-local, failing here if they forgot?
 
         // Clever, this. Dump the stack and look up it for a method which looks like a test case name, e.g. "testFoo".
         final StackTraceElement[] stackTrace;
@@ -377,8 +375,8 @@ public class DiffRepository {
                 // TODO jvs 25-Apr-2006:  reuse bulk of DiffTestCase.diffTestLog here; besides newline insensitivity, it can report on the line at which the first diff occurs, which is useful for largish snippets
                 String expected2Canonical = expected2.replace( Util.LINE_SEPARATOR, "\n" );
                 String actualCanonical = actual.replace( Util.LINE_SEPARATOR, "\n" );
-                Assert.assertEquals( tag, expected2Canonical, actualCanonical );
-            } catch ( ComparisonFailure e ) {
+                assertEquals( tag, expected2Canonical, actualCanonical );
+            } catch ( Exception e ) {
                 amend( expected, actual );
                 throw e;
             }

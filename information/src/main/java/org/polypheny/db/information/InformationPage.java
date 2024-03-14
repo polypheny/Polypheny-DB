@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,59 +17,51 @@
 package org.polypheny.db.information;
 
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.TypeAdapter;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonToken;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
-import java.util.Map.Entry;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import org.polypheny.db.information.InformationDuration.Duration;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.information.exception.InformationRuntimeException;
 
 
 /**
  * An InformationPage contains multiple InformationGroups that will be rendered together in a subpage in the UI.
  */
+@Slf4j
 @Accessors(chain = true)
 public class InformationPage extends Refreshable {
 
-    // GsonBuilder, which is able to serialize the underlying InformationGroups
-    private static final Gson gson = new GsonBuilder()
-            .registerTypeAdapter( InformationGroup.class, InformationGroup.getSerializer() )
-            .registerTypeAdapter( InformationDuration.class, InformationDuration.getSerializer() )
-            .registerTypeAdapter( Duration.class, Duration.getSerializer() )
-            .registerTypeAdapter( Enum.class, getSerializer() )
-            .create();
 
     /**
      * Id of this page
      */
+    @JsonProperty
     @Getter
     private final String id;
 
     /**
      * Name of this page
      */
+    @JsonProperty
     @Getter
     private String name; // title
 
     /**
      * Description for this page
      */
+    @JsonProperty
     @Getter
     private String description;
 
     /**
      * You can set an icon that will be displayed before the label of this page (in the sidebar).
      */
+    @JsonProperty
     @Getter
     @Setter
     private String icon;
@@ -78,6 +70,7 @@ public class InformationPage extends Refreshable {
      * Is true, if the page was created implicit. If it will be created explicit, additional information (title/description/icon) will be added.
      */
     @Getter
+    @JsonProperty
     private boolean implicit = false;
 
     /**
@@ -85,18 +78,20 @@ public class InformationPage extends Refreshable {
      */
     @Getter
     @Setter
+    @JsonProperty
     private String label;
 
     /**
      * All items on this page will be rendered in full width
      */
-    @SuppressWarnings({ "FieldCanBeLocal", "unused" })
+    @JsonProperty
     private boolean fullWidth = false;
 
     /**
      * Groups that belong to this page.
      */
-    private final ConcurrentMap<String, InformationGroup> groups = new ConcurrentHashMap<>();
+    @JsonProperty
+    private final Map<String, InformationGroup> groups = new ConcurrentHashMap<>();
 
 
     /**
@@ -105,8 +100,7 @@ public class InformationPage extends Refreshable {
      * @param title Title of this page
      */
     public InformationPage( final String title ) {
-        this.id = UUID.randomUUID().toString();
-        this.name = title;
+        this( UUID.randomUUID().toString(), title, null );
     }
 
 
@@ -117,9 +111,7 @@ public class InformationPage extends Refreshable {
      * @param description Description of this page, will be displayed in the UI
      */
     public InformationPage( final String title, final String description ) {
-        this.id = UUID.randomUUID().toString();
-        this.name = title;
-        this.description = description;
+        this( UUID.randomUUID().toString(), title, description );
     }
 
 
@@ -134,42 +126,6 @@ public class InformationPage extends Refreshable {
         this.id = id;
         this.name = title;
         this.description = description;
-    }
-
-
-    private InformationPage( JsonReader in ) throws IOException {
-        String id = null;
-        while ( in.peek() != JsonToken.END_OBJECT ) {
-            switch ( in.nextName() ) {
-                case "id":
-                    id = in.nextString();
-                    break;
-                case "name":
-                    name = in.nextString();
-                    break;
-                case "description":
-                    description = in.nextString();
-                    break;
-                case "icon":
-                    icon = in.nextString();
-                    break;
-                case "implicit":
-                    implicit = in.nextBoolean();
-                    break;
-                case "label":
-                    label = in.nextString();
-                    break;
-                case "fullWidth":
-                    fullWidth = in.nextBoolean();
-                    break;
-                case "groups":
-                    addGroup( gson.fromJson( in, ConcurrentHashMap.class ) );
-                    break;
-                default:
-                    throw new RuntimeException( "Error while deserializing InformationPage." );
-            }
-        }
-        this.id = id;
     }
 
 
@@ -222,61 +178,12 @@ public class InformationPage extends Refreshable {
      * @return this page as JSON
      */
     public String asJson() {
-        return gson.toJson( this );
-    }
-
-
-    public static TypeAdapter<InformationPage> getSerializer() {
-        return new TypeAdapter<InformationPage>() {
-            @Override
-            public void write( JsonWriter out, InformationPage value ) throws IOException {
-                if ( value == null ) {
-                    out.nullValue();
-                    return;
-                }
-                out.beginObject();
-                out.name( "id" );
-                out.value( value.id );
-                out.name( "name" );
-                out.value( value.name );
-                out.name( "description" );
-                out.value( value.description );
-                out.name( "icon" );
-                out.value( value.icon );
-                out.name( "implicit" );
-                out.value( value.implicit );
-                out.name( "label" );
-                out.value( value.label );
-                out.name( "fullWidth" );
-                out.value( value.fullWidth );
-                out.name( "groups" );
-                handleGroups( out, value.groups );
-                out.endObject();
-            }
-
-
-            private void handleGroups( JsonWriter out, ConcurrentMap<String, InformationGroup> groups ) throws IOException {
-                out.beginObject();
-                for ( Entry<String, InformationGroup> entry : groups.entrySet() ) {
-                    out.name( entry.getKey() );
-                    gson.toJson( entry.getValue(), InformationGroup.class, out );
-                }
-                out.endObject();
-            }
-
-
-            @Override
-            public InformationPage read( JsonReader in ) throws IOException {
-                if ( in.peek() == JsonToken.NULL ) {
-                    in.nextNull();
-                    return null;
-                }
-                in.beginObject();
-                InformationPage page = new InformationPage( in );
-                in.endObject();
-                return page;
-            }
-        };
+        try {
+            return Information.mapper.writeValueAsString( this );
+        } catch ( JsonProcessingException e ) {
+            log.warn( "Error on serialization of informationPage" );
+            return null;
+        }
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package org.polypheny.db.sql.language.validate;
 
 
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.nodes.validate.ValidatorTable;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlNode;
@@ -45,13 +45,13 @@ class UnnestNamespace extends AbstractNamespace {
 
 
     @Override
-    public ValidatorTable getTable() {
+    public Entity getEntity() {
         final SqlNode toUnnest = unnest.operand( 0 );
         if ( toUnnest instanceof SqlIdentifier ) {
             // When operand of SqlIdentifier type does not have struct, fake a table for UnnestNamespace
             final SqlIdentifier id = (SqlIdentifier) toUnnest;
             final SqlQualified qualified = this.scope.fullyQualify( id );
-            return qualified.namespace.getTable();
+            return qualified.namespace.getEntity();
         }
         return null;
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -194,7 +194,7 @@ public class ConfigClazzList extends Config {
     @Override
     public boolean parseStringAndSetValue( String value ) {
         Gson gson = new Gson();
-        ArrayList<String> val = gson.fromJson( value, ArrayList.class );
+        List<String> val = gson.fromJson( value, List.class );
         List<Class> toAdd = new ArrayList<>();
         for ( Class c : classes ) {
             if ( val.contains( c.getName() ) ) {
@@ -215,7 +215,7 @@ public class ConfigClazzList extends Config {
     }
 
 
-    class ValueAdapter extends TypeAdapter<List<Class>> {
+    static class ValueAdapter extends TypeAdapter<List<Class>> {
 
         @Override
         public void write( final JsonWriter out, final List<Class> classes ) throws IOException {

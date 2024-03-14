@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,33 +33,55 @@
 
 package org.polypheny.db.type;
 
+import static org.polypheny.db.util.Static.RESOURCE;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
-import com.google.gson.Gson;
-import org.apache.commons.lang3.reflect.TypeUtils;
-import org.polypheny.db.algebra.type.*;
-import org.polypheny.db.nodes.CallBinding;
-import org.polypheny.db.nodes.Node;
-import org.polypheny.db.nodes.validate.Validator;
-import org.polypheny.db.nodes.validate.ValidatorScope;
-import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.util.*;
-
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.nio.charset.Charset;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.util.*;
-
-import static org.polypheny.db.util.Static.RESOURCE;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.IntStream;
+import org.apache.commons.lang3.reflect.TypeUtils;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeFamily;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.nodes.CallBinding;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.nodes.validate.Validator;
+import org.polypheny.db.nodes.validate.ValidatorScope;
+import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.util.Collation;
+import org.polypheny.db.util.NumberUtil;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Util;
+import org.polypheny.db.util.ValidatorUtil;
+import org.polypheny.db.util.mapping.Mappings;
 
 
 /**
  * Contains utility methods used during SQL validation or type derivation.
  */
 public abstract class PolyTypeUtil {
+
+    /**
+     * Returns the identity list [0, ..., count - 1].
+     *
+     * @see Mappings#isIdentity(List, int)
+     */
+    public static ImmutableList<Integer> identity( int count ) {
+        return ImmutableList.copyOf( IntStream.range( 0, count ).boxed().toList() );
+    }
+
 
     /**
      * Checks whether two types or more are char comparable.
@@ -159,7 +181,7 @@ public abstract class PolyTypeUtil {
             if ( fieldName == null ) {
                 fieldName = "ROW_VALUE";
             }
-            type = typeFactory.builder().add( fieldName, null, type ).build();
+            type = typeFactory.builder().add( null, fieldName, null, type ).build();
         }
         return type;
     }
@@ -213,7 +235,7 @@ public abstract class PolyTypeUtil {
         if ( !type.isStruct() ) {
             return false;
         }
-        for ( AlgDataTypeField field : type.getFieldList() ) {
+        for ( AlgDataTypeField field : type.getFields() ) {
             if ( containsNullable( field.getType() ) ) {
                 return true;
             }
@@ -328,16 +350,12 @@ public abstract class PolyTypeUtil {
         if ( typeName == null ) {
             return false;
         }
-        switch ( typeName ) {
-            case VARCHAR:
-            case VARBINARY:
+        return switch ( typeName ) {
 
-                // TODO angel 8-June-2005: Multiset should be LOB
-            case MULTISET:
-                return true;
-            default:
-                return false;
-        }
+            // TODO angel 8-June-2005: Multiset should be LOB
+            case VARCHAR, VARBINARY, MULTISET -> true;
+            default -> false;
+        };
     }
 
 
@@ -349,15 +367,10 @@ public abstract class PolyTypeUtil {
         if ( typeName == null ) {
             return false;
         }
-        switch ( typeName ) {
-            case TINYINT:
-            case SMALLINT:
-            case INTEGER:
-            case BIGINT:
-                return true;
-            default:
-                return false;
-        }
+        return switch ( typeName ) {
+            case TINYINT, SMALLINT, INTEGER, BIGINT -> true;
+            default -> false;
+        };
     }
 
 
@@ -393,16 +406,10 @@ public abstract class PolyTypeUtil {
         if ( typeName == null ) {
             return false;
         }
-        switch ( typeName ) {
-            case TINYINT:
-            case SMALLINT:
-            case INTEGER:
-            case BIGINT:
-            case DECIMAL:
-                return true;
-            default:
-                return false;
-        }
+        return switch ( typeName ) {
+            case TINYINT, SMALLINT, INTEGER, BIGINT, DECIMAL -> true;
+            default -> false;
+        };
     }
 
 
@@ -419,18 +426,13 @@ public abstract class PolyTypeUtil {
      */
     public static long maxValue( AlgDataType type ) {
         assert PolyTypeUtil.isIntType( type );
-        switch ( type.getPolyType() ) {
-            case TINYINT:
-                return Byte.MAX_VALUE;
-            case SMALLINT:
-                return Short.MAX_VALUE;
-            case INTEGER:
-                return Integer.MAX_VALUE;
-            case BIGINT:
-                return Long.MAX_VALUE;
-            default:
-                throw Util.unexpected( type.getPolyType() );
-        }
+        return switch ( type.getPolyType() ) {
+            case TINYINT -> Byte.MAX_VALUE;
+            case SMALLINT -> Short.MAX_VALUE;
+            case INTEGER -> Integer.MAX_VALUE;
+            case BIGINT -> Long.MAX_VALUE;
+            default -> throw Util.unexpected( type.getPolyType() );
+        };
     }
 
 
@@ -442,14 +444,10 @@ public abstract class PolyTypeUtil {
         if ( typeName == null ) {
             return false;
         }
-        switch ( typeName ) {
-            case FLOAT:
-            case REAL:
-            case DOUBLE:
-                return true;
-            default:
-                return false;
-        }
+        return switch ( typeName ) {
+            case FLOAT, REAL, DOUBLE -> true;
+            default -> false;
+        };
     }
 
 
@@ -476,8 +474,8 @@ public abstract class PolyTypeUtil {
             if ( t1.getFieldCount() != t2.getFieldCount() ) {
                 return false;
             }
-            List<AlgDataTypeField> fields1 = t1.getFieldList();
-            List<AlgDataTypeField> fields2 = t2.getFieldList();
+            List<AlgDataTypeField> fields1 = t1.getFields();
+            List<AlgDataTypeField> fields2 = t2.getFields();
             for ( int i = 0; i < fields1.size(); ++i ) {
                 if ( !sameNamedType( fields1.get( i ).getType(), fields2.get( i ).getType() ) ) {
                     return false;
@@ -514,24 +512,16 @@ public abstract class PolyTypeUtil {
             return 0;
         }
 
-        switch ( typeName ) {
-            case CHAR:
-            case VARCHAR:
-                return (int) Math.ceil( ((double) type.getPrecision()) * type.getCharset().newEncoder().maxBytesPerChar() );
-
-            case BINARY:
-            case VARBINARY:
-                return type.getPrecision();
-
-            case MULTISET:
+        return switch ( typeName ) {
+            case CHAR, VARCHAR -> (int) Math.ceil( ((double) type.getPrecision()) * type.getCharset().newEncoder().maxBytesPerChar() );
+            case BINARY, VARBINARY -> type.getPrecision();
+            case MULTISET ->
 
                 // TODO: Need a better way to tell fennel this number. This a very generic place and implementation details
                 //  like this doesnt belong here. Waiting to change this once we have blob support
-                return 4096;
-
-            default:
-                return 0;
-        }
+                    4096;
+            default -> 0;
+        };
     }
 
 
@@ -542,19 +532,13 @@ public abstract class PolyTypeUtil {
      */
     public static long getMinValue( AlgDataType type ) {
         PolyType typeName = type.getPolyType();
-        switch ( typeName ) {
-            case TINYINT:
-                return Byte.MIN_VALUE;
-            case SMALLINT:
-                return Short.MIN_VALUE;
-            case INTEGER:
-                return Integer.MIN_VALUE;
-            case BIGINT:
-            case DECIMAL:
-                return NumberUtil.getMinUnscaled( type.getPrecision() ).longValue();
-            default:
-                throw new AssertionError( "getMinValue(" + typeName + ")" );
-        }
+        return switch ( typeName ) {
+            case TINYINT -> Byte.MIN_VALUE;
+            case SMALLINT -> Short.MIN_VALUE;
+            case INTEGER -> Integer.MIN_VALUE;
+            case BIGINT, DECIMAL -> NumberUtil.getMinUnscaled( type.getPrecision() ).longValue();
+            default -> throw new AssertionError( "getMinValue(" + typeName + ")" );
+        };
     }
 
 
@@ -565,19 +549,13 @@ public abstract class PolyTypeUtil {
      */
     public static long getMaxValue( AlgDataType type ) {
         PolyType typeName = type.getPolyType();
-        switch ( typeName ) {
-            case TINYINT:
-                return Byte.MAX_VALUE;
-            case SMALLINT:
-                return Short.MAX_VALUE;
-            case INTEGER:
-                return Integer.MAX_VALUE;
-            case BIGINT:
-            case DECIMAL:
-                return NumberUtil.getMaxUnscaled( type.getPrecision() ).longValue();
-            default:
-                throw new AssertionError( "getMaxValue(" + typeName + ")" );
-        }
+        return switch ( typeName ) {
+            case TINYINT -> Byte.MAX_VALUE;
+            case SMALLINT -> Short.MAX_VALUE;
+            case INTEGER -> Integer.MAX_VALUE;
+            case BIGINT, DECIMAL -> NumberUtil.getMaxUnscaled( type.getPrecision() ).longValue();
+            default -> throw new AssertionError( "getMaxValue(" + typeName + ")" );
+        };
     }
 
 
@@ -653,9 +631,7 @@ public abstract class PolyTypeUtil {
         Charset cs1 = t1.getCharset();
         Charset cs2 = t2.getCharset();
         if ( (cs1 != null) && (cs2 != null) ) {
-            if ( !cs1.equals( cs2 ) ) {
-                return true;
-            }
+            return !cs1.equals( cs2 );
         }
         return false;
     }
@@ -689,9 +665,9 @@ public abstract class PolyTypeUtil {
                     // can't cast between different distinct types
                     return false;
                 }
-                return canCastFrom( toType.getFieldList().get( 0 ).getType(), fromType, coerce );
+                return canCastFrom( toType.getFields().get( 0 ).getType(), fromType, coerce );
             } else if ( fromTypeName == PolyType.DISTINCT ) {
-                return canCastFrom( toType, fromType.getFieldList().get( 0 ).getType(), coerce );
+                return canCastFrom( toType, fromType.getFields().get( 0 ).getType(), coerce );
             } else if ( toTypeName == PolyType.ROW ) {
                 if ( fromTypeName != PolyType.ROW ) {
                     return false;
@@ -701,8 +677,8 @@ public abstract class PolyTypeUtil {
                     return false;
                 }
                 for ( int i = 0; i < n; ++i ) {
-                    AlgDataTypeField toField = toType.getFieldList().get( i );
-                    AlgDataTypeField fromField = fromType.getFieldList().get( i );
+                    AlgDataTypeField toField = toType.getFields().get( i );
+                    AlgDataTypeField fromField = fromType.getFields().get( i );
                     if ( !canCastFrom( toField.getType(), fromField.getType(), coerce ) ) {
                         return false;
                     }
@@ -777,7 +753,7 @@ public abstract class PolyTypeUtil {
             types.add( field.getType() );
             fieldNames.add( field.getName() + "_" + i );
         }
-        return typeFactory.createStructType( types, fieldNames );
+        return typeFactory.createStructType( null, types, fieldNames );
     }
 
 
@@ -796,11 +772,11 @@ public abstract class PolyTypeUtil {
             if ( type.isNullable() ) {
                 indicatorType = typeFactory.createTypeWithNullability( indicatorType, true );
             }
-            AlgDataTypeField nullIndicatorField = new AlgDataTypeFieldImpl( "NULL_VALUE", 0, indicatorType );
+            AlgDataTypeField nullIndicatorField = new AlgDataTypeFieldImpl( -1L, "NULL_VALUE", 0, indicatorType );
             list.add( nullIndicatorField );
             nested = true;
         }
-        for ( AlgDataTypeField field : type.getFieldList() ) {
+        for ( AlgDataTypeField field : type.getFields() ) {
             if ( flatteningMap != null ) {
                 flatteningMap[field.getIndex()] = list.size();
             }
@@ -821,7 +797,7 @@ public abstract class PolyTypeUtil {
                                     flattenRecordType( typeFactory, field.getType().getComponentType(), null ),
                                     -1 );
                 }
-                field = new AlgDataTypeFieldImpl( field.getName(), field.getIndex(), flattenedCollectionType );
+                field = new AlgDataTypeFieldImpl( field.getId(), field.getName(), field.getIndex(), flattenedCollectionType );
                 list.add( field );
             } else {
                 list.add( field );
@@ -878,7 +854,7 @@ public abstract class PolyTypeUtil {
 
     /**
      * Returns whether two types are equal, ignoring nullability.
-     *
+     * <p>
      * They need not come from the same factory.
      *
      * @param factory Type factory
@@ -907,7 +883,7 @@ public abstract class PolyTypeUtil {
      * @return Ordinal of field
      */
     public static int findField( AlgDataType type, String fieldName ) {
-        List<AlgDataTypeField> fields = type.getFieldList();
+        List<AlgDataTypeField> fields = type.getFields();
         for ( int i = 0; i < fields.size(); i++ ) {
             AlgDataTypeField field = fields.get( i );
             if ( field.getName().equals( fieldName ) ) {
@@ -928,20 +904,12 @@ public abstract class PolyTypeUtil {
      * @return list of data types that are requested by requiredFields
      */
     public static List<AlgDataType> projectTypes( final AlgDataType rowType, final List<? extends Number> requiredFields ) {
-        final List<AlgDataTypeField> fields = rowType.getFieldList();
-
-        return new AbstractList<AlgDataType>() {
-            @Override
-            public AlgDataType get( int index ) {
-                return fields.get( requiredFields.get( index ).intValue() ).getType();
-            }
-
-
-            @Override
-            public int size() {
-                return requiredFields.size();
-            }
-        };
+        final List<AlgDataTypeField> fields = rowType.getFields();
+        return requiredFields.stream()
+                .map( Number::intValue )
+                .map( fields::get )
+                .map( AlgDataTypeField::getType )
+                .toList();
     }
 
 
@@ -952,7 +920,7 @@ public abstract class PolyTypeUtil {
      * @return Struct type with no fields
      */
     public static AlgDataType createEmptyStructType( AlgDataTypeFactory typeFactory ) {
-        return typeFactory.createStructType( ImmutableList.of(), ImmutableList.of() );
+        return typeFactory.createStructType( null, ImmutableList.of(), ImmutableList.of() );
     }
 
 
@@ -962,7 +930,7 @@ public abstract class PolyTypeUtil {
      */
     public static boolean isFlat( AlgDataType type ) {
         if ( type.isStruct() ) {
-            for ( AlgDataTypeField field : type.getFieldList() ) {
+            for ( AlgDataTypeField field : type.getFields() ) {
                 if ( field.getType().isStruct() ) {
                     return false;
                 }
@@ -990,7 +958,7 @@ public abstract class PolyTypeUtil {
             if ( n != type2.getFieldCount() ) {
                 return false;
             }
-            for ( Pair<AlgDataTypeField, AlgDataTypeField> pair : Pair.zip( type1.getFieldList(), type2.getFieldList() ) ) {
+            for ( Pair<AlgDataTypeField, AlgDataTypeField> pair : Pair.zip( type1.getFields(), type2.getFields() ) ) {
                 if ( !isComparable( pair.left.getType(), pair.right.getType() ) ) {
                     return false;
                 }
@@ -1118,7 +1086,7 @@ public abstract class PolyTypeUtil {
             if ( n != type2.getFieldCount() ) {
                 return false;
             }
-            for ( Pair<AlgDataTypeField, AlgDataTypeField> pair : Pair.zip( type1.getFieldList(), type2.getFieldList() ) ) {
+            for ( Pair<AlgDataTypeField, AlgDataTypeField> pair : Pair.zip( type1.getFields(), type2.getFields() ) ) {
                 if ( !isSameFamily( pair.left.getType(), pair.right.getType() ) ) {
                     return false;
                 }
@@ -1136,8 +1104,7 @@ public abstract class PolyTypeUtil {
      * Returns whether a character data type can be implicitly converted to a given family in a compare operation.
      */
     private static boolean canConvertStringInCompare( AlgDataTypeFamily family ) {
-        if ( family instanceof PolyTypeFamily ) {
-            PolyTypeFamily polyTypeFamily = (PolyTypeFamily) family;
+        if ( family instanceof PolyTypeFamily polyTypeFamily ) {
             switch ( polyTypeFamily ) {
                 case DATE:
                 case TIME:
@@ -1231,40 +1198,10 @@ public abstract class PolyTypeUtil {
                 return char.class;
             case VARCHAR:
                 return String.class;
-            case BINARY:
+            case BINARY, TIME_WITH_LOCAL_TIME_ZONE, INTERVAL_SECOND, TIMESTAMP_WITH_LOCAL_TIME_ZONE, INTERVAL_YEAR, INTERVAL_YEAR_MONTH, INTERVAL_MONTH, INTERVAL_DAY, INTERVAL_DAY_HOUR, INTERVAL_DAY_MINUTE, INTERVAL_DAY_SECOND, INTERVAL_HOUR, INTERVAL_HOUR_MINUTE, INTERVAL_HOUR_SECOND, INTERVAL_MINUTE, INTERVAL_MINUTE_SECOND, NULL, ANY, SYMBOL, MULTISET, ARRAY, MAP, DISTINCT, STRUCTURED, ROW, OTHER, CURSOR, COLUMN_LIST, DYNAMIC_STAR, GEOMETRY:
                 break;
             case VARBINARY:
                 return byte[].class;
-            case TIME_WITH_LOCAL_TIME_ZONE:
-            case INTERVAL_SECOND:
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_MONTH:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case NULL:
-            case ANY:
-            case SYMBOL:
-            case MULTISET:
-            case ARRAY:
-            case MAP:
-            case DISTINCT:
-            case STRUCTURED:
-            case ROW:
-            case OTHER:
-            case CURSOR:
-            case COLUMN_LIST:
-            case DYNAMIC_STAR:
-            case GEOMETRY:
-                break;
         }
         return Object.class;
     }
@@ -1276,7 +1213,7 @@ public abstract class PolyTypeUtil {
         if ( dimension == -1 ) {
             conversionType = TypeUtils.parameterize( List.class, PolyTypeUtil.polyToJavaType( innerType ) );
         } else {
-            conversionType = TypeUtils.wrap( PolyTypeUtil.polyToJavaType( innerType ) ).getType();
+            conversionType = TypeUtils.wrap( PolyValue.classFrom( innerType ) ).getType();
             while ( dimension > 0 ) {
                 conversionType = TypeUtils.parameterize( List.class, conversionType );
                 dimension -= 1;
@@ -1294,34 +1231,27 @@ public abstract class PolyTypeUtil {
      * @param polyType PolyType to know how to convert the string
      * @return The converted object
      */
-    public static Object stringToObject( final String s, final PolyType polyType ) {
-        if ( s == null || s.equals( "" ) ) {
+    public static PolyValue stringToObject( final String s, final AlgDataTypeField polyType ) {
+        if ( s == null || s.isEmpty() ) {
             return null;
         }
-        Gson gson = new Gson();
-        switch ( polyType ) {
-            case BOOLEAN:
-                return gson.fromJson( s, Boolean.class );
-            case TINYINT:
-            case SMALLINT:
-            case INTEGER:
-            case TIME:
-            case DATE:
-                return Integer.parseInt( s );
-            case TIMESTAMP:
-            case BIGINT:
-                return Long.parseLong( s );
-            case DOUBLE:
-                return Double.parseDouble( s );
-            case REAL:
-            case FLOAT:
-                return Float.parseFloat( s );
-            case DECIMAL:
-                return new BigDecimal( s );
-            //case ARRAY:
-            default:
-                return s;
-        }
+        return PolyValue.fromTypedJson( s, PolyValue.class );
+        /*Gson gson = new Gson();
+        return switch ( polyType.getType().getPolyType() ) {
+            case BOOLEAN -> PolyBoolean.of( gson.fromJson( s, Boolean.class ) );
+            case TINYINT, SMALLINT, INTEGER -> PolyInteger.of( Integer.parseInt( s ) );
+            case TIME -> PolyTime.of( Integer.parseInt( s ) );
+            case DATE -> PolyDate.of( Integer.parseInt( s ) );
+            case TIMESTAMP -> PolyTimestamp.of( Long.parseLong( s ) );
+            case BIGINT -> PolyLong.of( Long.parseLong( s ) );
+            case DOUBLE -> PolyDouble.of( Double.parseDouble( s ) );
+            case REAL, FLOAT -> PolyFloat.of( Float.parseFloat( s ) );
+            case DECIMAL -> PolyBigDecimal.of( new BigDecimal( s ) );
+            case VARCHAR, TEXT -> PolyString.of( s );
+            case ARRAY -> PolyValue.deserialize( s );
+            default -> throw new NotImplementedException();
+        };
+         */
     }
 
 }

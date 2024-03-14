@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,15 +25,22 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
-import org.polypheny.db.runtime.PolyCollections.PolyList;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.graph.PolyDictionary;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -85,7 +92,7 @@ public class CypherLiteral extends CypherExpression {
         } else if ( (literalType == Literal.DOUBLE) ) {
             this.value = Double.parseDouble( image ) * (negated ? -1 : 1);
         } else {
-            throw new RuntimeException( "Could not use provided format to creat cypher literal." );
+            throw new GenericRuntimeException( "Could not use provided format to creat cypher literal." );
         }
     }
 
@@ -96,40 +103,30 @@ public class CypherLiteral extends CypherExpression {
 
 
     @Override
-    public Comparable<?> getComparable() {
+    public PolyValue getComparable() {
 
-        switch ( literalType ) {
-            case TRUE:
-                return true;
-            case FALSE:
-                return false;
-            case NULL:
-                return null;
-            case LIST:
-                List<Comparable<?>> list = listValue.stream().map( CypherExpression::getComparable ).collect( Collectors.toList() );
-                return new PolyList<>( list );
-            case MAP:
-                Map<String, Comparable<?>> map = mapValue.entrySet().stream().collect( Collectors.toMap( Entry::getKey, e -> e.getValue().getComparable() ) );
-                return new PolyDictionary( map );
-            case STRING:
-                return (String) value;
-            case DOUBLE:
-                return (Double) value;
-            case DECIMAL:
-                return (Integer) value;
-            case HEX:
-                return (String) value;
-            case OCTAL:
-                return (String) value;
-            case STAR:
-                throw new UnsupportedOperationException();
-        }
-        throw new UnsupportedOperationException();
+        return switch ( literalType ) {
+            case TRUE -> PolyBoolean.of( true );
+            case FALSE -> PolyBoolean.of( false );
+            case NULL -> null;
+            case LIST -> {
+                List<PolyValue> list = listValue.stream().map( CypherExpression::getComparable ).toList();
+                yield new PolyList<>( list );
+            }
+            case MAP -> {
+                Map<PolyString, PolyValue> map = mapValue.entrySet().stream().collect( Collectors.toMap( e -> PolyString.of( e.getKey() ), e -> e.getValue().getComparable() ) );
+                yield new PolyDictionary( map );
+            }
+            case STRING, HEX, OCTAL -> PolyString.of( (String) value );
+            case DOUBLE -> PolyDouble.of( (Double) value );
+            case DECIMAL -> PolyInteger.of( (Integer) value );
+            case STAR -> throw new UnsupportedOperationException();
+        };
     }
 
 
     @Override
-    public Pair<String, RexNode> getRex( CypherContext context, RexType type ) {
+    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
         RexNode node;
         switch ( literalType ) {
             case TRUE:
@@ -140,14 +137,14 @@ public class CypherLiteral extends CypherExpression {
                 node = context.rexBuilder.makeLiteral( null, context.typeFactory.createPolyType( PolyType.VARCHAR, 255 ), false );
                 break;
             case LIST:
-                List<RexNode> list = listValue.stream().map( e -> e.getRex( context, type ).right ).collect( Collectors.toList() );
+                List<RexNode> list = listValue.stream().map( e -> e.getRex( context, type ).right ).toList();
                 AlgDataType dataType = context.typeFactory.createPolyType( PolyType.ANY );
 
                 if ( !list.isEmpty() && list.stream().allMatch( e -> PolyTypeUtil.equalSansNullability( context.typeFactory, e.getType(), list.get( 0 ).getType() ) ) ) {
                     dataType = list.get( 0 ).getType();
                 }
                 dataType = context.typeFactory.createArrayType( dataType, -1 );
-                node = context.rexBuilder.makeLiteral( list, dataType, false );
+                node = context.rexBuilder.makeLiteral( PolyList.copyOf( list.stream().map( e -> ((RexLiteral) e).value ).toList() ), dataType, false );
                 break;
             case MAP:
             case STAR:

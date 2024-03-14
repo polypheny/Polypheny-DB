@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,20 +27,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
-import org.polypheny.db.adapter.DataStore.AvailableIndexMethod;
+import org.polypheny.db.adapter.DataStore.IndexMethodModel;
 import org.polypheny.db.adapter.index.Index.IndexFactory;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogIndex;
-import org.polypheny.db.catalog.entity.CatalogKey;
-import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.catalog.entity.logical.LogicalIndex;
+import org.polypheny.db.catalog.entity.logical.LogicalKey;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationAction;
 import org.polypheny.db.information.InformationGraph;
@@ -61,6 +55,7 @@ import org.polypheny.db.transaction.TransactionManager;
 
 public class IndexManager {
 
+    public static final String POLYPHENY = "POLYPHENY";
     private static final IndexManager INSTANCE = new IndexManager();
 
     private final AtomicLong indexLookupHitsCounter = new AtomicLong();
@@ -88,14 +83,14 @@ public class IndexManager {
     }
 
 
-    public static List<AvailableIndexMethod> getAvailableIndexMethods() {
+    public static List<IndexMethodModel> getAvailableIndexMethods() {
         return ImmutableList.of(
-                new AvailableIndexMethod( "hash", "HASH" )
+                new IndexMethodModel( "hash", "HASH" )
         );
     }
 
 
-    public static AvailableIndexMethod getDefaultIndexMethod() {
+    public static IndexMethodModel getDefaultIndexMethod() {
         return getAvailableIndexMethods().get( 0 );
     }
 
@@ -149,61 +144,50 @@ public class IndexManager {
     }
 
 
-    public void restoreIndexes() throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownDatabaseException, UnknownUserException, TransactionException {
-        for ( final CatalogIndex index : Catalog.getInstance().getIndexes() ) {
-            if ( index.location == 0 ) {
+    public void restoreIndexes() throws TransactionException {
+        for ( final LogicalIndex index : Catalog.getInstance().getSnapshot().rel().getIndexes() ) {
+            if ( index.location < 0 ) {
                 addIndex( index );
             }
         }
     }
 
 
-    public void addIndex( final CatalogIndex index ) throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownUserException, UnknownDatabaseException, TransactionException {
+    public void addIndex( final LogicalIndex index ) throws TransactionException {
         addIndex( index, null );
     }
 
 
-    public void addIndex( final CatalogIndex index, final Statement statement ) throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownUserException, UnknownDatabaseException, TransactionException {
-        // TODO(s3lph): persistent
+    public void addIndex( final LogicalIndex index, final Statement statement ) throws TransactionException {
         addIndex( index.id, index.name, index.key, index.method, index.unique, null, statement );
     }
 
 
-    protected void addIndex( final long id, final String name, final CatalogKey key, final String method, final Boolean unique, final Boolean persistent, final Statement statement ) throws UnknownSchemaException, GenericCatalogException, UnknownDatabaseException, UnknownUserException, TransactionException {
+    protected void addIndex( final long id, final String name, final LogicalKey key, final String method, final Boolean unique, final Boolean persistent, final Statement statement ) throws TransactionException {
         final IndexFactory factory = INDEX_FACTORIES.stream()
                 .filter( it -> it.canProvide( method, unique, persistent ) )
                 .findFirst()
                 .orElseThrow( IllegalArgumentException::new );
-        final CatalogTable table = Catalog.getInstance().getTable( key.tableId );
-        final CatalogPrimaryKey pk = Catalog.getInstance().getPrimaryKey( table.primaryKey );
+        final LogicalTable table = statement.getTransaction().getSnapshot().rel().getTable( key.entityId ).orElseThrow();
+        final LogicalPrimaryKey pk = statement.getTransaction().getSnapshot().rel().getPrimaryKey( table.primaryKey ).orElseThrow();
         final Index index = factory.create(
                 id,
                 name,
                 method,
                 unique,
                 persistent,
-                Catalog.getInstance().getSchema( key.schemaId ),
+                Catalog.getInstance().getSnapshot().getNamespace( key.namespaceId ).orElseThrow(),
                 table,
-                key.getColumnNames(),
-                pk.getColumnNames() );
+                key.getFieldNames(),
+                pk.getFieldNames() );
         indexById.put( id, index );
         indexByName.put( name, index );
-        final Transaction tx = statement != null
-                ? statement.getTransaction()
-                : transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, false, "Index Manager" );
-        try {
-            index.rebuild( tx );
-            if ( statement == null ) {
-                tx.commit();
-            }
-        } catch ( TransactionException e ) {
-            tx.rollback();
-            throw e;
-        }
+        final Transaction tx = statement.getTransaction();
+        index.rebuild( tx );
     }
 
 
-    public void deleteIndex( final CatalogIndex index ) {
+    public void deleteIndex( final LogicalIndex index ) {
         deleteIndex( index.id );
     }
 
@@ -214,7 +198,7 @@ public class IndexManager {
     }
 
 
-    public Index getIndex( CatalogSchema schema, CatalogTable table, List<String> columns ) {
+    public Index getIndex( LogicalNamespace schema, LogicalTable table, List<String> columns ) {
         return this.indexById.values().stream().filter( index ->
                 index.schema.equals( schema )
                         && index.table.equals( table )
@@ -224,7 +208,7 @@ public class IndexManager {
     }
 
 
-    public Index getIndex( CatalogSchema schema, CatalogTable table, List<String> columns, String method, Boolean unique, Boolean persistent ) {
+    public Index getIndex( LogicalNamespace schema, LogicalTable table, List<String> columns, String method, Boolean unique, Boolean persistent ) {
         return this.indexById.values().stream().filter( index ->
                 index.schema.equals( schema )
                         && index.table.equals( table )
@@ -236,7 +220,7 @@ public class IndexManager {
     }
 
 
-    public List<Index> getIndices( CatalogSchema schema, CatalogTable table ) {
+    public List<Index> getIndices( LogicalNamespace schema, LogicalTable table ) {
         return this.indexById.values().stream()
                 .filter( index -> index.schema.equals( schema ) && index.table.equals( table ) )
                 .collect( Collectors.toList() );

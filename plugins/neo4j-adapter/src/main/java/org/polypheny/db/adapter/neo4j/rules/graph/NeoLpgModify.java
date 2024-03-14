@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.polypheny.db.adapter.neo4j.NeoGraph;
 import org.polypheny.db.adapter.neo4j.NeoGraphImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
@@ -40,44 +39,45 @@ import org.polypheny.db.adapter.neo4j.util.NeoStatements.NeoStatement;
 import org.polypheny.db.adapter.neo4j.util.Translator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.algebra.core.lpg.LpgModify;
 import org.polypheny.db.algebra.core.lpg.LpgProject;
 import org.polypheny.db.algebra.core.lpg.LpgValues;
 import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.graph.Graph;
-import org.polypheny.db.schema.graph.PolyEdge;
-import org.polypheny.db.schema.graph.PolyNode;
+import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.graph.PolyEdge;
+import org.polypheny.db.type.entity.graph.PolyNode;
 
-public class NeoLpgModify extends LpgModify implements NeoGraphAlg {
+public class NeoLpgModify extends LpgModify<NeoGraph> implements NeoGraphAlg {
 
 
     /**
      * Creates a {@link org.polypheny.db.adapter.neo4j.NeoConvention} of a {@link LpgModify}.
      *
      * @param cluster Cluster this expression belongs to
-     * @param traits Traits active for this node, including {@link org.polypheny.db.schema.ModelTrait#GRAPH}
+     * @param traits Traits active for this node, including {@link ModelTrait#GRAPH}
      * @param input Input algebraic expression
      */
-    public NeoLpgModify( AlgOptCluster cluster, AlgTraitSet traits, Graph graph, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations ) {
+    public NeoLpgModify( AlgCluster cluster, AlgTraitSet traits, NeoGraph graph, AlgNode input, Operation operation, List<PolyString> ids, List<? extends RexNode> operations ) {
         super( cluster, traits, graph, input, operation, ids, operations, AlgOptUtil.createDmlRowType( Kind.INSERT, cluster.getTypeFactory() ) );
     }
 
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new NeoLpgModify( inputs.get( 0 ).getCluster(), traitSet, graph, inputs.get( 0 ), operation, ids, operations );
+        return new NeoLpgModify( inputs.get( 0 ).getCluster(), traitSet, entity, inputs.get( 0 ), operation, ids, operations );
     }
 
 
     @Override
     public void implement( NeoGraphImplementor implementor ) {
-        implementor.setGraph( (NeoGraph) getGraph() );
+        implementor.setGraph( entity );
         implementor.setDml( true );
         implementor.visitChild( 0, getInput() );
 
@@ -99,8 +99,7 @@ public class NeoLpgModify extends LpgModify implements NeoGraphAlg {
 
 
     private void handleInsert( NeoGraphImplementor implementor ) {
-        if ( implementor.getLast() instanceof LpgValues ) {
-            LpgValues values = ((LpgValues) implementor.getLast());
+        if ( implementor.getLast() instanceof LpgValues values ) {
             if ( values.getValues().isEmpty() ) {
                 // node / edge insert
                 implementor.statements.add( create_( list_( getCreatePath( values.getNodes(), values.getEdges(), implementor ) ) ) );
@@ -118,7 +117,7 @@ public class NeoLpgModify extends LpgModify implements NeoGraphAlg {
                 }
             }
         }
-        throw new RuntimeException( "No values before modify." );
+        throw new GenericRuntimeException( "No values before modify." );
     }
 
 
@@ -126,8 +125,8 @@ public class NeoLpgModify extends LpgModify implements NeoGraphAlg {
         // match -> project -> create
         List<NeoStatement> statements = new ArrayList<>();
         for ( RexNode projectProject : project.getProjects() ) {
-            Translator translator = new Translator( project.getRowType(), project.getInput().getRowType(), new HashMap<>(), null, mappingLabel, true );
-            statements.add( literal_( projectProject.accept( translator ) ) );
+            Translator translator = new Translator( project.getTupleType(), project.getInput().getTupleType(), new HashMap<>(), null, mappingLabel, true );
+            statements.add( literal_( PolyString.of( projectProject.accept( translator ) ) ) );
         }
         return statements;
     }
@@ -157,16 +156,14 @@ public class NeoLpgModify extends LpgModify implements NeoGraphAlg {
 
 
     private List<NeoStatement> getCreatePath( ImmutableList<PolyNode> nodes, ImmutableList<PolyEdge> edges, NeoGraphImplementor implementor ) {
-        Map<String, String> uuidNameMapping = new HashMap<>();
+        Map<PolyString, PolyString> uuidNameMapping = new HashMap<>();
 
         List<NeoStatement> statements = new ArrayList<>();
 
-        int i = 0;
         for ( PolyNode node : nodes ) {
             //String name = "n" + i;
             uuidNameMapping.put( node.id, node.getVariableName() );
-            statements.add( node_( node, implementor.getGraph().mappingLabel, true ) );
-            i++;
+            statements.add( node_( node, PolyString.of( implementor.getGraph().mappingLabel ), true ) );
         }
         for ( PolyEdge edge : edges ) {
             statements.add( path_( node_( uuidNameMapping.get( edge.source ) ), edge_( edge, true ), node_( uuidNameMapping.get( edge.target ) ) ) );
@@ -179,8 +176,8 @@ public class NeoLpgModify extends LpgModify implements NeoGraphAlg {
     private void handleUpdate( NeoGraphImplementor implementor ) {
         List<NeoStatement> ops = new ArrayList<>();
         for ( RexNode rexNode : operations ) {
-            Translator translator = new Translator( getRowType(), implementor.getLast().getRowType(), new HashMap<>(), null, implementor.getGraph().mappingLabel, false );
-            ops.add( literal_( rexNode.accept( translator ) ) );
+            Translator translator = new Translator( getTupleType(), implementor.getLast().getTupleType(), new HashMap<>(), null, implementor.getGraph().mappingLabel, false );
+            ops.add( literal_( PolyString.of( rexNode.accept( translator ) ) ) );
         }
 
         implementor.add( set_( list_( ops ) ) );
@@ -188,7 +185,7 @@ public class NeoLpgModify extends LpgModify implements NeoGraphAlg {
 
 
     private void handleDelete( NeoGraphImplementor implementor ) {
-        List<LiteralStatement> fieldNames = ids.stream().map( NeoStatements::literal_ ).collect( Collectors.toList() );
+        List<LiteralStatement> fieldNames = ids.stream().map( NeoStatements::literal_ ).toList();
         implementor.add( delete_( true, list_( fieldNames ) ) );
     }
 

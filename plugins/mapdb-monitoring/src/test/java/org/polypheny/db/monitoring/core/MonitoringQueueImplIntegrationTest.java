@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,29 +17,40 @@
 package org.polypheny.db.monitoring.core;
 
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.polypheny.db.TestHelper;
 import org.polypheny.db.monitoring.events.QueryEvent;
-import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
+import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.transaction.Statement;
 
 
 @Slf4j
 class MonitoringQueueImplIntegrationTest {
 
+    @BeforeAll
+    public static void setUp() {
+        TestHelper.getInstance();
+    }
+
+
     @Test
-    public void queuedEventsAreProcessed() {
+    public void queuedEventsAreProcessed() throws InterruptedException {
         //  -- Arrange --
 
         // Initialize mock repository
-        TestMapDbRepository persistentRepo = new TestMapDbRepository();
-        TestMapDbRepository statisticRepo = new TestMapDbRepository();
+        TestInMemoryRepository persistentRepo = new TestInMemoryRepository();
+        TestInMemoryRepository statisticRepo = new TestInMemoryRepository();
         persistentRepo.initialize( true ); // will delete the file
 
         // Create monitoring service with dependencies
@@ -48,32 +59,39 @@ class MonitoringQueueImplIntegrationTest {
         // Initialize the monitoringService
         MonitoringService sut = new MonitoringServiceImpl( queueWriteService, persistentRepo );
 
-        Assertions.assertNotNull( sut );
+        assertNotNull( sut );
 
         // -- Act --
         List<QueryEvent> events = createQueryEvent( 15 );
         events.forEach( sut::monitorEvent );
 
-        try {
-            Thread.sleep( 2000L );
-        } catch ( InterruptedException e ) {
-            log.error( "Caught exception test", e );
+        Thread.sleep( 10000L );
+
+        for ( int i = 0; i < 5; i++ ) {
+            if ( statisticRepo.count != 15 ) {
+                Thread.sleep( 5000L );
+            }
         }
 
         // -- Assert --
-        List<QueryDataPointImpl> result = sut.getAllDataPoints( QueryDataPointImpl.class );
-        Assertions.assertEquals( 15, result.size() );
+
+        assertEquals( 15, statisticRepo.count );
+        assertEquals( 15, persistentRepo.count );
     }
 
 
     private List<QueryEvent> createQueryEvent( int number ) {
         List<QueryEvent> result = new ArrayList<>();
 
+        LogicalQueryInformation mockedQueryInformation = Mockito.mock( LogicalQueryInformation.class );
+        Mockito.when( mockedQueryInformation.getAllScannedEntities() ).thenReturn( ImmutableSet.of( 0L ) );
+
         for ( int i = 0; i < number; i++ ) {
             QueryEvent event = new QueryEvent();
             event.setRouted( null );
             event.setResult( null );
             event.setStatement( Mockito.mock( Statement.class ) );
+            event.setLogicalQueryInformation( mockedQueryInformation );
             event.setDescription( UUID.randomUUID().toString() );
             event.setExecutionTime( (long) (Math.random() * 1000L) );
             event.setFieldNames( Lists.newArrayList( "T1", "T2", "T3" ) );

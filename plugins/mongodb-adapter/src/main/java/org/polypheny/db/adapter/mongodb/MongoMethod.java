@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,19 +35,19 @@ package org.polypheny.db.adapter.mongodb;
 
 
 import com.google.common.collect.ImmutableMap;
-import org.apache.calcite.linq4j.tree.Types;
-import org.polypheny.db.algebra.core.Modify.Operation;
-
 import java.lang.reflect.Method;
 import java.util.List;
+import org.apache.calcite.linq4j.tree.Types;
+import org.polypheny.db.adapter.mongodb.util.MongoTupleType;
+import org.polypheny.db.algebra.core.common.Modify.Operation;
 
 
 /**
  * Builtin methods in the MongoDB adapter.
  */
 public enum MongoMethod {
-    MONGO_QUERYABLE_FIND( MongoEntity.MongoQueryable.class, "find", String.class, String.class, List.class, List.class ),
-    MONGO_QUERYABLE_AGGREGATE( MongoEntity.MongoQueryable.class, "aggregate", List.class, List.class, List.class, List.class, List.class ),
+    MONGO_QUERYABLE_FIND( MongoEntity.MongoQueryable.class, "find", String.class, String.class, MongoTupleType.class ),
+    MONGO_QUERYABLE_AGGREGATE( MongoEntity.MongoQueryable.class, "aggregate", MongoTupleType.class, List.class, List.class, List.class ),
     HANDLE_DIRECT_DML( MongoEntity.MongoQueryable.class, "handleDirectDML", Operation.class, String.class, List.class, boolean.class, boolean.class );
 
     public final Method method;
@@ -64,7 +64,7 @@ public enum MongoMethod {
     }
 
 
-    MongoMethod( Class clazz, String methodName, Class... argumentTypes ) {
+    MongoMethod( Class<?> clazz, String methodName, Class<?>... argumentTypes ) {
         this.method = Types.lookupMethod( clazz, methodName, argumentTypes );
     }
 }

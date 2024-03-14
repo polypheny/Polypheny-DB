@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,8 +36,8 @@ package org.polypheny.db.algebra.rules;
 
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.logical.relational.LogicalCalc;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.rex.RexBuilder;
@@ -50,9 +50,9 @@ import org.polypheny.db.util.Pair;
 
 
 /**
- * Planner rule which merges a {@link LogicalProject} and a {@link LogicalCalc}.
+ * Planner rule which merges a {@link LogicalRelProject} and a {@link LogicalCalc}.
  *
- * The resulting {@link LogicalCalc} has the same project list as the original {@link LogicalProject}, but expressed in terms
+ * The resulting {@link LogicalCalc} has the same project list as the original {@link LogicalRelProject}, but expressed in terms
  * of the original {@link LogicalCalc}'s inputs.
  *
  * @see FilterCalcMergeRule
@@ -70,7 +70,7 @@ public class ProjectCalcMergeRule extends AlgOptRule {
     public ProjectCalcMergeRule( AlgBuilderFactory algBuilderFactory ) {
         super(
                 operand(
-                        LogicalProject.class,
+                        LogicalRelProject.class,
                         operand( LogicalCalc.class, any() ) ),
                 algBuilderFactory,
                 null );
@@ -79,18 +79,18 @@ public class ProjectCalcMergeRule extends AlgOptRule {
 
     @Override
     public void onMatch( AlgOptRuleCall call ) {
-        final LogicalProject project = call.alg( 0 );
+        final LogicalRelProject project = call.alg( 0 );
         final LogicalCalc calc = call.alg( 1 );
 
         // Don't merge a project which contains windowed aggregates onto a calc. That would effectively be pushing a windowed aggregate down
         // through a filter. Transform the project into an identical calc, which we'll have chance to merge later, after the over is expanded.
-        final AlgOptCluster cluster = project.getCluster();
+        final AlgCluster cluster = project.getCluster();
         RexProgram program =
                 RexProgram.create(
-                        calc.getRowType(),
+                        calc.getTupleType(),
                         project.getProjects(),
                         null,
-                        project.getRowType(),
+                        project.getTupleType(),
                         cluster.getRexBuilder() );
         if ( RexOver.containsOver( program ) ) {
             LogicalCalc projectAsCalc = LogicalCalc.create( calc, program );
@@ -100,7 +100,7 @@ public class ProjectCalcMergeRule extends AlgOptRule {
 
         // Create a program containing the project node's expressions.
         final RexBuilder rexBuilder = cluster.getRexBuilder();
-        final RexProgramBuilder progBuilder = new RexProgramBuilder( calc.getRowType(), rexBuilder );
+        final RexProgramBuilder progBuilder = new RexProgramBuilder( calc.getTupleType(), rexBuilder );
         for ( Pair<RexNode, String> field : project.getNamedProjects() ) {
             progBuilder.addProject( field.left, field.right );
         }

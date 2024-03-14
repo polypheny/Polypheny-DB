@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptRule;
@@ -49,7 +49,7 @@ import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
@@ -87,7 +87,7 @@ public class JoinCommuteRule extends AlgOptRule {
 
 
     private JoinCommuteRule( boolean swapOuter ) {
-        this( LogicalJoin.class, AlgFactories.LOGICAL_BUILDER, swapOuter );
+        this( LogicalRelJoin.class, AlgFactories.LOGICAL_BUILDER, swapOuter );
     }
 
 
@@ -105,8 +105,8 @@ public class JoinCommuteRule extends AlgOptRule {
             return null;
         }
         final RexBuilder rexBuilder = join.getCluster().getRexBuilder();
-        final AlgDataType leftRowType = join.getLeft().getRowType();
-        final AlgDataType rightRowType = join.getRight().getRowType();
+        final AlgDataType leftRowType = join.getLeft().getTupleType();
+        final AlgDataType rightRowType = join.getRight().getTupleType();
         final VariableReplacer variableReplacer = new VariableReplacer( rexBuilder, leftRowType, rightRowType );
         final RexNode oldCondition = join.getCondition();
         RexNode condition = variableReplacer.go( oldCondition );
@@ -116,7 +116,7 @@ public class JoinCommuteRule extends AlgOptRule {
         Join newJoin = join.copy( join.getTraitSet(), condition, join.getRight(), join.getLeft(), joinType.swap(), join.isSemiJoinDone() );
         final List<RexNode> exps = AlgOptUtil.createSwappedJoinExprs( newJoin, join, true );
         return algBuilder.push( newJoin )
-                .project( exps, join.getRowType().getFieldNames() )
+                .project( exps, join.getTupleType().getFieldNames() )
                 .build();
     }
 
@@ -147,7 +147,7 @@ public class JoinCommuteRule extends AlgOptRule {
         // same as 'b join a'. If we didn't do this, the swap join rule would fire on the new join, ad infinitum.
         final AlgBuilder algBuilder = call.builder();
         final List<RexNode> exps = AlgOptUtil.createSwappedJoinExprs( newJoin, join, false );
-        algBuilder.push( swapped ).project( exps, newJoin.getRowType().getFieldNames() );
+        algBuilder.push( swapped ).project( exps, newJoin.getTupleType().getFieldNames() );
 
         call.getPlanner().ensureRegistered( algBuilder.build(), newJoin );
     }
@@ -168,8 +168,8 @@ public class JoinCommuteRule extends AlgOptRule {
 
         VariableReplacer( RexBuilder rexBuilder, AlgDataType leftType, AlgDataType rightType ) {
             this.rexBuilder = rexBuilder;
-            this.leftFields = leftType.getFieldList();
-            this.rightFields = rightType.getFieldList();
+            this.leftFields = leftType.getFields();
+            this.rightFields = rightType.getFields();
         }
 
 
@@ -181,8 +181,8 @@ public class JoinCommuteRule extends AlgOptRule {
                     builder.add( go( operand ) );
                 }
                 return call.clone( call.getType(), builder.build() );
-            } else if ( rex instanceof RexInputRef ) {
-                RexInputRef var = (RexInputRef) rex;
+            } else if ( rex instanceof RexIndexRef ) {
+                RexIndexRef var = (RexIndexRef) rex;
                 int index = var.getIndex();
                 if ( index < leftFields.size() ) {
                     // Field came from left side of join. Move it to the right.

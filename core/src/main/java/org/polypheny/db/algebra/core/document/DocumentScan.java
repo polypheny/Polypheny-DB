@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,51 +16,45 @@
 
 package org.polypheny.db.algebra.core.document;
 
-import java.util.List;
-import java.util.stream.Collectors;
-import lombok.Getter;
-import org.polypheny.db.algebra.AbstractAlgNode;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
-import org.polypheny.db.algebra.type.AlgRecordType;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptTable;
+import lombok.experimental.SuperBuilder;
+import org.polypheny.db.algebra.AlgWriter;
+import org.polypheny.db.algebra.core.common.Scan;
+import org.polypheny.db.algebra.type.DocumentType;
+import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.type.PolyType;
+import org.polypheny.db.schema.trait.ModelTrait;
 
-
-public abstract class DocumentScan extends AbstractAlgNode implements DocumentAlg {
-
-    @Getter
-    private final AlgOptTable collection;
+@SuperBuilder(toBuilder = true)
+public abstract class DocumentScan<E extends Entity> extends Scan<E> implements DocumentAlg {
 
 
     /**
      * Creates a {@link DocumentScan}.
-     * {@link org.polypheny.db.schema.ModelTrait#DOCUMENT} node, which scans the content of a collection.
+     * {@link ModelTrait#DOCUMENT} node, which scans the content of a collection.
      */
-    public DocumentScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable collection ) {
-        super( cluster, traitSet );
-        this.collection = collection;
+    public DocumentScan( AlgCluster cluster, AlgTraitSet traitSet, E collection ) {
+        super( cluster, traitSet.replace( ModelTrait.DOCUMENT ), collection );
+        this.rowType = DocumentType.ofId();
+    }
 
-        AlgDataType docType = cluster.getTypeFactory().createPolyType( PolyType.DOCUMENT );
-        // todo dl: change after RowType refactor
-        if ( this.collection.getTable().getSchemaType() == NamespaceType.DOCUMENT ) {
-            this.rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "d", 0, docType ) ) );
-        } else {
-            List<AlgDataTypeField> list = collection.getRowType().getFieldList().stream()
-                    .map( f -> new AlgDataTypeFieldImpl( f.getName(), f.getIndex(), cluster.getTypeFactory().createPolyType( PolyType.ANY ) ) )
-                    .collect( Collectors.toList() );
-            this.rowType = new AlgRecordType( list );
-        }
+
+    @Override
+    public AlgWriter explainTerms( AlgWriter pw ) {
+        return super.explainTerms( pw )
+                .item( "table", entity.id )
+                .item( "name", entity.name )
+                .item( "layer", entity.getLayer() );
     }
 
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + collection.getTable().getTableId() + "$";
+        // need the name for cross-model queries
+        return getClass().getSimpleName() + "$"
+                + entity.id + "$"
+                + entity.name + "$"
+                + entity.getLayer() + "&";
     }
 
 

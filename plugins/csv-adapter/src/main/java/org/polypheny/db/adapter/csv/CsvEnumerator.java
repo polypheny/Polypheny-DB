@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,16 +34,8 @@
 package org.polypheny.db.adapter.csv;
 
 
-import au.com.bytecode.opencsv.CSVReader;
-import org.apache.calcite.avatica.util.DateTimeUtils;
-import org.apache.calcite.linq4j.Enumerator;
-import org.apache.commons.lang3.time.FastDateFormat;
-import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.Source;
-
+import com.opencsv.CSVReader;
+import com.opencsv.exceptions.CsvValidationException;
 import java.io.IOException;
 import java.io.Reader;
 import java.text.ParseException;
@@ -52,20 +44,36 @@ import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.calcite.linq4j.Enumerator;
+import org.apache.commons.lang3.time.FastDateFormat;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyNull;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyFloat;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.temporal.PolyDate;
+import org.polypheny.db.type.entity.temporal.PolyTime;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
+import org.polypheny.db.util.Source;
 
 
 /**
  * Enumerator that reads from a CSV file.
- *
- * @param <E> Row type
  */
-class CsvEnumerator<E> implements Enumerator<E> {
+class CsvEnumerator implements Enumerator<PolyValue[]> {
 
     private final CSVReader reader;
     private final String[] filterValues;
     private final AtomicBoolean cancelFlag;
-    private final RowConverter<E> rowConverter;
-    private E current;
+    private final RowConverter<PolyValue> rowConverter;
+    private PolyValue[] current;
 
     private static final FastDateFormat TIME_FORMAT_DATE;
     private static final FastDateFormat TIME_FORMAT_TIME;
@@ -92,11 +100,11 @@ class CsvEnumerator<E> implements Enumerator<E> {
 
     CsvEnumerator( Source source, AtomicBoolean cancelFlag, List<CsvFieldType> fieldTypes, int[] fields ) {
         //noinspection unchecked
-        this( source, cancelFlag, false, null, (RowConverter<E>) converter( fieldTypes, fields ) );
+        this( source, cancelFlag, false, null, (RowConverter<PolyValue>) converter( fieldTypes, fields ) );
     }
 
 
-    CsvEnumerator( Source source, AtomicBoolean cancelFlag, boolean stream, String[] filterValues, RowConverter<E> rowConverter ) {
+    CsvEnumerator( Source source, AtomicBoolean cancelFlag, boolean stream, String[] filterValues, RowConverter<PolyValue> rowConverter ) {
         this.cancelFlag = cancelFlag;
         this.rowConverter = rowConverter;
         this.filterValues = filterValues;
@@ -107,8 +115,8 @@ class CsvEnumerator<E> implements Enumerator<E> {
                 this.reader = openCsv( source );
             }
             this.reader.readNext(); // skip header row
-        } catch ( IOException e ) {
-            throw new RuntimeException( e );
+        } catch ( IOException | CsvValidationException e ) {
+            throw new GenericRuntimeException( e );
         }
     }
 
@@ -137,6 +145,7 @@ class CsvEnumerator<E> implements Enumerator<E> {
     static AlgDataType deduceRowType( JavaTypeFactory typeFactory, Source source, List<CsvFieldType> fieldTypes, Boolean stream ) {
         final List<AlgDataType> types = new ArrayList<>();
         final List<String> names = new ArrayList<>();
+        final List<Long> ids = new ArrayList<>();
         if ( stream ) {
             names.add( ROWTIME_COLUMN_NAME );
             types.add( typeFactory.createPolyType( PolyType.TIMESTAMP ) );
@@ -169,18 +178,19 @@ class CsvEnumerator<E> implements Enumerator<E> {
                 }
                 names.add( name );
                 types.add( type );
+                ids.add( null );
                 if ( fieldTypes != null ) {
                     fieldTypes.add( fieldType );
                 }
             }
-        } catch ( IOException e ) {
+        } catch ( IOException | CsvValidationException e ) {
             // ignore
         }
         if ( names.isEmpty() ) {
             names.add( "line" );
             types.add( typeFactory.createPolyType( PolyType.VARCHAR ) );
         }
-        return typeFactory.createStructType( Pair.zip( names, types ) );
+        return typeFactory.createStructType( ids, types, names );
     }
 
 
@@ -191,7 +201,7 @@ class CsvEnumerator<E> implements Enumerator<E> {
 
 
     @Override
-    public E current() {
+    public PolyValue[] current() {
         return current;
     }
 
@@ -210,7 +220,7 @@ class CsvEnumerator<E> implements Enumerator<E> {
                         try {
                             Thread.sleep( CsvStreamReader.DEFAULT_MONITOR_DELAY );
                         } catch ( InterruptedException e ) {
-                            throw new RuntimeException( e );
+                            throw new GenericRuntimeException( e );
                         }
                         continue;
                     }
@@ -231,8 +241,8 @@ class CsvEnumerator<E> implements Enumerator<E> {
                 current = rowConverter.convertRow( strings );
                 return true;
             }
-        } catch ( IOException e ) {
-            throw new RuntimeException( e );
+        } catch ( IOException | CsvValidationException e ) {
+            throw new GenericRuntimeException( e );
         }
     }
 
@@ -248,7 +258,7 @@ class CsvEnumerator<E> implements Enumerator<E> {
         try {
             reader.close();
         } catch ( IOException e ) {
-            throw new RuntimeException( "Error closing CSV reader", e );
+            throw new GenericRuntimeException( "Error closing CSV reader", e );
         }
     }
 
@@ -272,82 +282,55 @@ class CsvEnumerator<E> implements Enumerator<E> {
      */
     abstract static class RowConverter<E> {
 
-        abstract E convertRow( String[] rows );
+        abstract E[] convertRow( String[] rows );
 
 
-        protected Object convert( CsvFieldType fieldType, String string ) {
+        protected PolyValue convert( CsvFieldType fieldType, String string ) {
             if ( fieldType == null ) {
-                return string;
+                return PolyString.of( string );
+            }
+            if ( fieldType == CsvFieldType.STRING ) {
+                return PolyString.of( string );
+            }
+            if ( string.isEmpty() ) {
+                return PolyNull.NULL;
             }
             switch ( fieldType ) {
                 case BOOLEAN:
-                    if ( string.length() == 0 ) {
-                        return null;
-                    }
-                    return Boolean.parseBoolean( string );
+                    return PolyBoolean.of( Boolean.parseBoolean( string ) );
                 case BYTE:
-                    if ( string.length() == 0 ) {
-                        return null;
-                    }
-                    return Byte.parseByte( string );
+                    return PolyInteger.of( Byte.parseByte( string ) );
                 case SHORT:
-                    if ( string.length() == 0 ) {
-                        return null;
-                    }
-                    return Short.parseShort( string );
+                    return PolyInteger.of( Short.parseShort( string ) );
                 case INT:
-                    if ( string.length() == 0 ) {
-                        return null;
-                    }
-                    return Integer.parseInt( string );
+                    return PolyInteger.of( Integer.parseInt( string ) );
                 case LONG:
-                    if ( string.length() == 0 ) {
-                        return null;
-                    }
-                    return Long.parseLong( string );
+                    return PolyLong.of( Long.parseLong( string ) );
                 case FLOAT:
-                    if ( string.length() == 0 ) {
-                        return null;
-                    }
-                    return Float.parseFloat( string );
+                    return PolyFloat.of( Float.parseFloat( string ) );
                 case DOUBLE:
-                    if ( string.length() == 0 ) {
-                        return null;
-                    }
-                    return Double.parseDouble( string );
+                    return PolyDouble.of( Double.parseDouble( string ) );
                 case DATE:
-                    if ( string.length() == 0 ) {
-                        return null;
-                    }
                     try {
-                        Date date = TIME_FORMAT_DATE.parse( string );
-                        return (int) (date.getTime() / DateTimeUtils.MILLIS_PER_DAY);
+                        return PolyDate.of( TIME_FORMAT_DATE.parse( string ) );
                     } catch ( ParseException e ) {
-                        return null;
+                        return PolyNull.NULL;
                     }
                 case TIME:
-                    if ( string.length() == 0 ) {
-                        return null;
-                    }
                     try {
                         Date date = TIME_FORMAT_TIME.parse( string );
-                        return (int) date.getTime();
+                        return PolyTime.of( date.getTime() );
                     } catch ( ParseException e ) {
-                        return null;
+                        return PolyNull.NULL;
                     }
                 case TIMESTAMP:
-                    if ( string.length() == 0 ) {
-                        return null;
-                    }
                     try {
-                        Date date = TIME_FORMAT_TIMESTAMP.parse( string );
-                        return date.getTime();
+                        return PolyTimestamp.of( TIME_FORMAT_TIMESTAMP.parse( string ) );
                     } catch ( ParseException e ) {
-                        return null;
+                        return PolyNull.NULL;
                     }
-                case STRING:
                 default:
-                    return string;
+                    return PolyString.of( string );
             }
         }
 
@@ -357,7 +340,7 @@ class CsvEnumerator<E> implements Enumerator<E> {
     /**
      * Array row converter.
      */
-    static class ArrayRowConverter extends RowConverter<Object[]> {
+    static class ArrayRowConverter extends RowConverter<PolyValue> {
 
         private final CsvFieldType[] fieldTypes;
         private final int[] fields;
@@ -380,7 +363,7 @@ class CsvEnumerator<E> implements Enumerator<E> {
 
 
         @Override
-        public Object[] convertRow( String[] strings ) {
+        public PolyValue[] convertRow( String[] strings ) {
             if ( stream ) {
                 return convertStreamRow( strings );
             } else {
@@ -389,22 +372,22 @@ class CsvEnumerator<E> implements Enumerator<E> {
         }
 
 
-        public Object[] convertNormalRow( String[] strings ) {
-            final Object[] objects = new Object[fields.length];
+        public PolyValue[] convertNormalRow( String[] strings ) {
+            final PolyValue[] objects = new PolyValue[fields.length];
             for ( int i = 0; i < fields.length; i++ ) {
                 int field = fields[i];
-                objects[i] = convert( fieldTypes[i], strings[field - 1] );
+                objects[i] = convert( fieldTypes[i], strings[field] );
             }
             return objects;
         }
 
 
-        public Object[] convertStreamRow( String[] strings ) {
-            final Object[] objects = new Object[fields.length + 1];
-            objects[0] = System.currentTimeMillis();
+        public PolyValue[] convertStreamRow( String[] strings ) {
+            final PolyValue[] objects = new PolyValue[fields.length + 1];
+            objects[0] = PolyLong.of( System.currentTimeMillis() );
             for ( int i = 0; i < fields.length; i++ ) {
                 int field = fields[i];
-                objects[i + 1] = convert( fieldTypes[i], strings[field - 1] );
+                objects[i + 1] = convert( fieldTypes[i], strings[field] );
             }
             return objects;
         }
@@ -415,7 +398,7 @@ class CsvEnumerator<E> implements Enumerator<E> {
     /**
      * Single column row converter.
      */
-    private static class SingleColumnRowConverter extends RowConverter {
+    private static class SingleColumnRowConverter extends RowConverter<Object> {
 
         private final CsvFieldType fieldType;
         private final int fieldIndex;
@@ -428,11 +411,10 @@ class CsvEnumerator<E> implements Enumerator<E> {
 
 
         @Override
-        public Object convertRow( String[] strings ) {
-            return convert( fieldType, strings[fieldIndex] );
+        public Object[] convertRow( String[] strings ) {
+            return new PolyValue[]{ convert( fieldType, strings[fieldIndex] ) };
         }
 
     }
 
 }
-

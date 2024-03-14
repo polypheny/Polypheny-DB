@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,13 @@ package org.polypheny.db.mql;
 
 import java.util.Arrays;
 import java.util.List;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.MongoConnection;
-import org.polypheny.db.webui.models.Result;
+import org.polypheny.db.webui.models.results.DocResult;
 
 
 /**
@@ -35,14 +36,36 @@ public class MqlTestTemplate {
     public static String database = "test";
 
 
-    @BeforeClass
+    @BeforeAll
     public static void start() {
         TestHelper.getInstance();
         initDatabase();
     }
 
 
-    @AfterClass
+    @BeforeEach
+    public void initCollection() {
+        initCollection( database );
+    }
+
+
+    @AfterEach
+    public void dropCollection() {
+        dropCollection( database );
+    }
+
+
+    public static void dropCollection( String collection ) {
+        MongoConnection.executeGetResponse( "db." + collection + ".drop()" );
+    }
+
+
+    public static void initCollection( String collection ) {
+        MongoConnection.executeGetResponse( "db.createCollection(" + collection + ")" );
+    }
+
+
+    @AfterAll
     public static void tearDown() {
         dropDatabase();
     }
@@ -53,7 +76,7 @@ public class MqlTestTemplate {
     }
 
 
-    @After
+    @AfterEach
     public void cleanDocuments() {
         deleteMany( "{}" );
     }
@@ -64,12 +87,12 @@ public class MqlTestTemplate {
     }
 
 
-    public static Result execute( String doc ) {
+    public static DocResult execute( String doc ) {
         return MongoConnection.executeGetResponse( doc );
     }
 
 
-    public static Result execute( String doc, String database ) {
+    public static DocResult execute( String doc, String database ) {
         return MongoConnection.executeGetResponse( doc, database );
     }
 
@@ -81,6 +104,21 @@ public class MqlTestTemplate {
 
     public static void initDatabase( String database ) {
         MongoConnection.executeGetResponse( "use " + database );
+    }
+
+
+    public static String document( String... entries ) {
+        return String.format( "{ %s }", String.join( ",", entries ) );
+    }
+
+
+    public static String string( String string ) {
+        return String.format( "\"%s\"", string );
+    }
+
+
+    public static String kv( String key, Object value ) {
+        return String.format( "%s : %s", key, value );
     }
 
 
@@ -189,22 +227,22 @@ public class MqlTestTemplate {
     }
 
 
-    protected Result find( String query, String project ) {
+    protected DocResult find( String query, String project ) {
         return find( query, project, database );
     }
 
 
-    protected Result find( String query, String project, String db ) {
+    protected DocResult find( String query, String project, String db ) {
         return MongoConnection.executeGetResponse( "db." + db + ".find(" + query + "," + project + ")" );
     }
 
 
-    protected Result aggregate( String... stages ) {
+    protected DocResult aggregate( String... stages ) {
         return aggregate( database, Arrays.asList( stages ) );
     }
 
 
-    protected Result aggregate( String db, List<String> stages ) {
+    protected DocResult aggregate( String db, List<String> stages ) {
         return MongoConnection.executeGetResponse( "db." + db + ".aggregate([" + String.join( ",", stages ) + "])" );
     }
 
@@ -220,7 +258,6 @@ public class MqlTestTemplate {
 
 
     public static void dropDatabase( String database ) {
-        MongoConnection.executeGetResponse( "use " + database );
         MongoConnection.executeGetResponse( "db.dropDatabase()", database );
     }
 

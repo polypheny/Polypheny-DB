@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,26 +22,29 @@ import java.util.Map;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 
 
 public class CreateSinglePlacementStrategy implements CreatePlacementStrategy {
 
     @Override
-    public List<DataStore> getDataStoresForNewColumn( CatalogColumn addedColumn ) {
-        CatalogTable catalogTable = Catalog.getInstance().getTable( addedColumn.tableId );
-        return ImmutableList.of( AdapterManager.getInstance().getStore( catalogTable.dataPlacements.get( 0 ) ) );
+    public List<DataStore<?>> getDataStoresForNewRelField( LogicalColumn addedField ) {
+        Snapshot snapshot = Catalog.getInstance().getSnapshot();
+        List<AllocationEntity> allocations = snapshot.alloc().getFromLogical( addedField.tableId );
+        return ImmutableList.of( AdapterManager.getInstance().getStore( allocations.get( 0 ).adapterId ).orElseThrow() );
     }
 
 
     @Override
-    public List<DataStore> getDataStoresForNewTable() {
-        Map<String, DataStore> availableStores = AdapterManager.getInstance().getStores();
-        for ( DataStore store : availableStores.values() ) {
+    public List<DataStore<?>> getDataStoresForNewEntity() {
+        Map<String, DataStore<?>> availableStores = AdapterManager.getInstance().getStores();
+        for ( DataStore<?> store : availableStores.values() ) {
             return ImmutableList.of( store );
         }
-        throw new RuntimeException( "No suitable data store found" );
+        throw new GenericRuntimeException( "No suitable data store found" );
     }
 
 }

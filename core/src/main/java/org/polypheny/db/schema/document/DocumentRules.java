@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,9 +57,9 @@ public class DocumentRules {
     }
 
 
+    @Getter
     public static class DocUpdateVisitor extends RexVisitorImpl<Void> {
 
-        @Getter
         boolean containsUpdate = false;
 
 
@@ -112,10 +112,10 @@ public class DocumentRules {
     /**
      * Visitor, which returns false if any RexCall, which handles the Document model was traversed
      */
+    @Getter
     private static class DocumentVisitor extends RexVisitorImpl<Void> {
 
         @Accessors(fluent = true)
-        @Getter
         private boolean containsDocument = false;
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package org.polypheny.db.languages;
 
 import lombok.Getter;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.interpreter.Node;
 
 /**
@@ -27,12 +27,12 @@ import org.polypheny.db.interpreter.Node;
 @Getter
 public class QueryParameters {
 
-    private final NamespaceType namespaceType;
+    private final DataModel dataModel;
     private final String query;
 
 
-    public QueryParameters( String query, NamespaceType namespaceType ) {
-        this.namespaceType = namespaceType;
+    public QueryParameters( String query, DataModel dataModel ) {
+        this.dataModel = dataModel;
         this.query = query;
     }
 

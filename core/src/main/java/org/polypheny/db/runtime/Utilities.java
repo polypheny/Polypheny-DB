@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ package org.polypheny.db.runtime;
 
 import java.util.Iterator;
 import java.util.List;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -52,9 +53,11 @@ public class Utilities {
         return v == null ? 0 : v.hashCode();
     }
 
+
     public static int hash( int h, boolean v ) {
         return h * 31 + Boolean.hashCode( v );
     }
+
 
     public static int hash( int h, byte v ) {
         return h * 31 + v;
@@ -172,6 +175,11 @@ public class Utilities {
     }
 
 
+    public static int compare( PolyValue v0, PolyValue v1 ) {
+        return v0.compareTo( v1 );
+    }
+
+
     public static int compareNullsFirst( Comparable v0, Comparable v1 ) {
         //noinspection unchecked
         return v0 == v1
@@ -196,7 +204,7 @@ public class Utilities {
     }
 
 
-    public static int compareNullsLast( List v0, List v1 ) {
+    public static <L extends Comparable<L>, R extends Comparable<R>> int compareNullsLast( ComparableList<L> v0, ComparableList<R> v1 ) {
         //noinspection unchecked
         return v0 == v1
                 ? 0
@@ -204,7 +212,8 @@ public class Utilities {
                         ? 1
                         : v1 == null
                                 ? -1
-                                : FlatLists.ComparableListImpl.compare( v0, v1 );
+                                : v0.compareTo( (ComparableList<L>) v1 );
     }
+
 }
 

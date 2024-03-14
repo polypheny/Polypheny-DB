@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package org.polypheny.db.processing;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
@@ -30,10 +29,11 @@ import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.runtime.Hook;
-import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Holder;
 
 
@@ -43,7 +43,9 @@ import org.polypheny.db.util.Holder;
 public class DataContextImpl implements DataContext {
 
     private final Map<String, Object> map;
-    private final PolyphenyDbSchema rootSchema;
+
+    @Getter
+    private final Snapshot snapshot;
     @Getter
     private final QueryProvider queryProvider;
     @Getter
@@ -53,13 +55,11 @@ public class DataContextImpl implements DataContext {
     private final Statement statement;
 
     @Getter
-    @Setter
     private Map<Long, AlgDataType> parameterTypes; // ParameterIndex -> Data ExpressionType
     @Getter
-    @Setter
-    private List<Map<Long, Object>> parameterValues; // List of ( ParameterIndex -> Value )
+    private List<Map<Long, PolyValue>> parameterValues; // List of ( ParameterIndex -> Value )
 
-    private final Map<Integer, List<Map<Long, Object>>> otherParameterValues;
+    private final Map<Integer, List<Map<Long, PolyValue>>> otherParameterValues;
 
     int i = 0;
 
@@ -68,20 +68,20 @@ public class DataContextImpl implements DataContext {
     private boolean isMixedModel = false;
 
 
-    private DataContextImpl( QueryProvider queryProvider, Map<String, Object> parameters, PolyphenyDbSchema rootSchema, JavaTypeFactory typeFactory, Statement statement, Map<Long, AlgDataType> parameterTypes, List<Map<Long, Object>> parameterValues ) {
+    private DataContextImpl( QueryProvider queryProvider, Map<String, Object> parameters, Snapshot snapshot, JavaTypeFactory typeFactory, Statement statement, Map<Long, AlgDataType> parameterTypes, List<Map<Long, PolyValue>> parameterValues ) {
         this.queryProvider = queryProvider;
         this.typeFactory = typeFactory;
-        this.rootSchema = rootSchema;
+        this.snapshot = snapshot;
         this.statement = statement;
         this.map = getMedaInfo( parameters );
         this.parameterTypes = parameterTypes;
-        this.parameterValues = parameterValues;
+        this.parameterValues = new ArrayList<>( parameterValues );
         otherParameterValues = new HashMap<>();
     }
 
 
-    public DataContextImpl( QueryProvider queryProvider, Map<String, Object> parameters, PolyphenyDbSchema rootSchema, JavaTypeFactory typeFactory, Statement statement ) {
-        this( queryProvider, parameters, rootSchema, typeFactory, statement, new HashMap<>(), new LinkedList<>() );
+    public DataContextImpl( QueryProvider queryProvider, Map<String, Object> parameters, Snapshot snapshot, JavaTypeFactory typeFactory, Statement statement ) {
+        this( queryProvider, parameters, snapshot, typeFactory, statement, new HashMap<>(), new ArrayList<>() );
     }
 
 
@@ -94,25 +94,15 @@ public class DataContextImpl implements DataContext {
         Hook.CURRENT_TIME.run( timeHolder );
         final long time = timeHolder.get();
         final long localOffset = timeZone.getOffset( time );
-        final long currentOffset = localOffset;
 
         // Give a hook chance to alter standard input, output, error streams.
         final Holder<Object[]> streamHolder = Holder.of( new Object[]{ System.in, System.out, System.err } );
         Hook.STANDARD_STREAMS.run( streamHolder );
 
         Map<String, Object> map = new HashMap<>();
-        map.put( Variable.UTC_TIMESTAMP.camelName, time );
-        map.put( Variable.CURRENT_TIMESTAMP.camelName, time + currentOffset );
-        map.put( Variable.LOCAL_TIMESTAMP.camelName, time + localOffset );
-        map.put( Variable.TIME_ZONE.camelName, timeZone );
-        map.put( Variable.STDIN.camelName, streamHolder.get()[0] );
-        map.put( Variable.STDOUT.camelName, streamHolder.get()[1] );
-        map.put( Variable.STDERR.camelName, streamHolder.get()[2] );
         for ( Map.Entry<String, Object> entry : parameters.entrySet() ) {
             Object e = entry.getValue();
-            if ( e == null ) {
-                e = AvaticaSite.DUMMY_VALUE;
-            }
+            //e = AvaticaSite.DUMMY_VALUE;
             map.put( entry.getKey(), e );
         }
         return map;
@@ -125,9 +115,6 @@ public class DataContextImpl implements DataContext {
         if ( o == AvaticaSite.DUMMY_VALUE ) {
             return null;
         }
-        /* if ( o == null && Variable.SQL_ADVISOR.camelName.equals( name ) ) {
-            return getSqlAdvisor();
-        } */
         return o;
     }
 
@@ -139,21 +126,21 @@ public class DataContextImpl implements DataContext {
 
 
     @Override
-    public void addParameterValues( long index, AlgDataType type, List<Object> data ) {
+    public void addParameterValues( long index, AlgDataType type, List<PolyValue> data ) {
         if ( parameterTypes.containsKey( index ) ) {
-            throw new RuntimeException( "There are already values assigned to this index" );
+            throw new GenericRuntimeException( "There are already values assigned to this index" );
         }
-        if ( parameterValues.size() == 0 ) {
+        if ( parameterValues.isEmpty() ) {
             for ( Object d : data ) {
                 parameterValues.add( new HashMap<>() );
             }
         }
         if ( parameterValues.size() != data.size() ) {
-            throw new RuntimeException( "Expecting " + parameterValues.size() + " rows but " + data.size() + " values specified!" );
+            throw new GenericRuntimeException( "Expecting " + parameterValues.size() + " rows but " + data.size() + " values specified!" );
         }
         parameterTypes.put( index, type );
         int i = 0;
-        for ( Object d : data ) {
+        for ( PolyValue d : data ) {
             parameterValues.get( i++ ).put( index, d );
         }
     }
@@ -162,6 +149,18 @@ public class DataContextImpl implements DataContext {
     @Override
     public AlgDataType getParameterType( long index ) {
         return parameterTypes.get( index );
+    }
+
+
+    @Override
+    public void setParameterValues( List<Map<Long, PolyValue>> values ) {
+        parameterValues = new ArrayList<>( values );
+    }
+
+
+    @Override
+    public void setParameterTypes( Map<Long, AlgDataType> types ) {
+        parameterTypes = new HashMap<>( types );
     }
 
 
@@ -175,7 +174,7 @@ public class DataContextImpl implements DataContext {
     @Override
     public DataContext switchContext() {
         if ( otherParameterValues.containsKey( i ) ) {
-            return new DataContextImpl( queryProvider, map, rootSchema, typeFactory, statement, parameterTypes, otherParameterValues.get( i++ ) );
+            return new DataContextImpl( queryProvider, map, snapshot, typeFactory, statement, parameterTypes, otherParameterValues.get( i++ ) );
         }
         return this;
     }
@@ -191,17 +190,11 @@ public class DataContextImpl implements DataContext {
     @Override
     public void resetContext() {
         i = 0;
-        if ( otherParameterValues.size() > 0 ) {
+        if ( !otherParameterValues.isEmpty() ) {
             parameterValues = otherParameterValues.get( i );
         } else {
             parameterValues = new ArrayList<>();
         }
-    }
-
-
-    @Override
-    public SchemaPlus getRootSchema() {
-        return rootSchema == null ? null : rootSchema.plus();
     }
 
 

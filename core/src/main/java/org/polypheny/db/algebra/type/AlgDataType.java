@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,18 +36,21 @@ package org.polypheny.db.algebra.type;
 
 import java.nio.charset.Charset;
 import java.util.List;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.polypheny.db.catalog.impl.Expressible;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Collation;
+import org.polypheny.db.util.Wrapper;
 
 
 /**
- * RelDataType represents the type of a scalar expression or entire row returned from a relational expression.
+ * RelDataType represents the type of scalar expression or entire row returned from a relational expression.
  * <p>
  * This is a somewhat "fat" interface which unions the attributes of many different type classes into one. Inelegant,
  * but since our type system was defined before the advent of Java generics, it avoids a lot of typecasting.
  */
-public interface AlgDataType {
+public interface AlgDataType extends Wrapper, Expressible {
 
     int SCALE_NOT_SPECIFIED = Integer.MIN_VALUE;
     int PRECISION_NOT_SPECIFIED = -1;
@@ -59,12 +62,25 @@ public interface AlgDataType {
      */
     boolean isStruct();
 
+    default AlgDataType asRelational() {
+        throw new UnsupportedOperationException();
+    }
+
+    default AlgDataType asDocument() {
+        throw new UnsupportedOperationException();
+    }
+
+    default AlgDataType asGraph() {
+        throw new UnsupportedOperationException();
+    }
+
+
     /**
      * Gets the fields in a struct type. The field count is equal to the size of the returned list.
      *
      * @return read-only list of fields
      */
-    List<AlgDataTypeField> getFieldList();
+    List<AlgDataTypeField> getFields();
 
     /**
      * Returns the names of the fields in a struct type. The field count is equal to the size of the returned list.
@@ -73,10 +89,13 @@ public interface AlgDataType {
      */
     List<String> getFieldNames();
 
+    List<Long> getFieldIds();
+
+
     /**
      * Returns the number of fields in a struct type.
-     *
-     * This method is equivalent to <code>{@link #getFieldList}.size()</code>.
+     * <p>
+     * This method is equivalent to <code>{@link #getFields}.size()</code>.
      */
     int getFieldCount();
 
@@ -89,7 +108,7 @@ public interface AlgDataType {
 
     /**
      * Looks up a field by name.
-     *
+     * <p>
      * NOTE: Be careful choosing the value of {@code caseSensitive}:
      * <ul>
      * <li>If the field name was supplied by an end-user (e.g. as a column alias in SQL), use your session's case-sensitivity setting.</li>
@@ -119,20 +138,6 @@ public interface AlgDataType {
     AlgDataType getComponentType();
 
     /**
-     * Gets the key type if this type is a map, otherwise null.
-     *
-     * @return canonical type descriptor for key
-     */
-    AlgDataType getKeyType();
-
-    /**
-     * Gets the value type if this type is a map, otherwise null.
-     *
-     * @return canonical type descriptor for value
-     */
-    AlgDataType getValueType();
-
-    /**
      * Gets this type's character set, or null if this type cannot carry a character set or has no character set defined.
      *
      * @return charset of type
@@ -156,7 +161,7 @@ public interface AlgDataType {
     /**
      * Gets the JDBC-defined precision for values of this type. Note that this is not always the same as the user-specified
      * precision. For example, the type INTEGER has no user-specified precision, but this method returns 10 for an INTEGER type.
-     *
+     * <p>
      * Returns {@link #PRECISION_NOT_SPECIFIED} (-1) if precision is not applicable for this type or  in Class BasicPolyType the defaultPrecision for the Datatype
      *
      * @return number of decimal digits for exact numeric types; number of decimal digits in mantissa for approximate numeric types; number of decimal digits for fractional seconds of datetime types; length in characters for character types; length in bytes for binary types; length in bits for bit types; 1 for BOOLEAN; -1 if precision is not valid for this type
@@ -166,7 +171,7 @@ public interface AlgDataType {
     /**
      * Gets the JDBC-defined precision for values of this type. Note that this is not always the same as the user-specified
      * precision. For example, the type INTEGER has no user-specified precision, but this method returns 10 for an INTEGER type.
-     *
+     * <p>
      * Returns {@link #PRECISION_NOT_SPECIFIED} (-1) if precision is not applicable for this type.
      *
      * @return number of decimal digits for exact numeric types; number of decimal digits in mantissa for approximate numeric types; number of decimal digits for fractional seconds of datetime types; length in characters for character types; length in bytes for binary types; length in bits for bit types; 1 for BOOLEAN; -1 if precision is not valid for this type
@@ -226,6 +231,11 @@ public interface AlgDataType {
      * @return whether it has dynamic structure (for "schema-on-read" table)
      */
     boolean isDynamicStruct();
+
+
+    default Expression asExpression() {
+        throw new UnsupportedOperationException();
+    }
 
 }
 

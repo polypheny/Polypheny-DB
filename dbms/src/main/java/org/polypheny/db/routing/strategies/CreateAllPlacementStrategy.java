@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,15 @@
 package org.polypheny.db.routing.strategies;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 
 
 /**
@@ -31,16 +34,20 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 public class CreateAllPlacementStrategy implements CreatePlacementStrategy {
 
     @Override
-    public List<DataStore> getDataStoresForNewColumn( CatalogColumn addedColumn ) {
-        CatalogTable catalogTable = Catalog.getInstance().getTable( addedColumn.tableId );
-        return catalogTable.dataPlacements.stream()
-                .map( elem -> AdapterManager.getInstance().getStore( elem ) )
+    public List<DataStore<?>> getDataStoresForNewRelField( LogicalColumn addedField ) {
+        Snapshot snapshot = Catalog.getInstance().getSnapshot();
+        LogicalTable catalogTable = snapshot.rel().getTable( addedField.tableId ).orElseThrow();
+        List<AllocationPlacement> placements = snapshot.alloc().getPlacementsFromLogical( catalogTable.id );
+        return placements.stream()
+                .map( elem -> AdapterManager.getInstance().getStore( elem.adapterId ) )
+                .filter( Optional::isPresent )
+                .map( Optional::get )
                 .collect( Collectors.toList() );
     }
 
 
     @Override
-    public List<DataStore> getDataStoresForNewTable() {
+    public List<DataStore<?>> getDataStoresForNewEntity() {
         return AdapterManager.getInstance().getStores().values().asList();
     }
 

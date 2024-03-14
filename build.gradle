@@ -10,13 +10,19 @@ buildscript {
         classpath group: "io.freefair.gradle", name: "lombok-plugin", version: lombok_version
         classpath group: "com.adarshr", name: "gradle-test-logger-plugin", version: gradle_test_logger_version
         classpath group: "org.reflections", name: "reflections", version: reflections_version
+        classpath group: "com.jaredsburrows", name: "gradle-license-plugin", version: license_report_version
     }
 }
 
 
 plugins {
-    id "org.jetbrains.kotlin.jvm" version "1.5.31"
+    id "java"
     id "org.jetbrains.gradle.plugin.idea-ext" version "1.1.7"
+}
+
+
+test {
+    useJUnitPlatform()
 }
 
 
@@ -43,18 +49,21 @@ allprojects {
     apply plugin: "java-library"
     apply plugin: "io.freefair.lombok"
     apply plugin: "com.adarshr.test-logger"
+    apply plugin: "com.jaredsburrows.license"
 
     compileJava.options.encoding = "UTF-8"
     compileTestJava.options.encoding = "UTF-8"
     javadoc.options.encoding = "UTF-8"
 
-    sourceCompatibility = 1.11
-    targetCompatibility = 1.11
-
-    tasks.withType(JavaCompile) {
-        options.encoding = "UTF-8"
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(17)
+        }
     }
 
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = "UTF-8"
+    }
 
     repositories {
         mavenLocal()
@@ -71,11 +80,7 @@ allprojects {
         }
     }
 
-    tasks.withType(JavaCompile) {
-        options.encoding = "UTF-8"
-    }
-
-    configurations.all {
+    configurations.configureEach {
         // check for updates every build
         resolutionStrategy.cacheChangingModulesFor 0, "seconds"
     }
@@ -92,13 +97,13 @@ allprojects {
 
     String storeName = System.getProperty("store.default") != null ? System.getProperty("store.default") : 'hsqldb'
 
-    task integrationTests(type: Test) {
+    tasks.register('integrationTests', Test) {
         description = 'Runs integration tests.'
         group = 'verification'
         systemProperty 'store.default', storeName
-        useJUnit {
-            includeCategories 'org.polypheny.db.AdapterTestSuite'
-            excludeCategories 'org.polypheny.db.excluded.' + storeName.capitalize() + "Excluded"
+        useJUnitPlatform {
+            includeTags("adapter")
+            excludeTags(storeName.toLowerCase() + "Excluded")
         }
         shouldRunAfter(tasks.named('test'))
     }
@@ -133,8 +138,19 @@ allprojects {
         testCompileOnly(group: 'org.pf4j', name: 'pf4j', version: pf4j_version) {
             exclude group: "org.slf4j"
         }
+        testImplementation(group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: junit_jupiter_version)
     }
 
+    test {
+        useJUnitPlatform()
+    }
+
+    licenseReport {
+        generateJsonReport = true
+        generateCsvReport = false
+        generateHtmlReport = false
+        generateTextReport = false
+    }
 
     idea {
         module {
@@ -152,11 +168,38 @@ allprojects {
 
 }
 
+tasks.register('gatherLicenseReports', Copy) {
+    // Define the destination directory for the reports
+    def destinationDir = "${rootProject.buildDir}/reports/licenses"
+
+    // Go through each subproject
+    subprojects.each { subproject ->
+        from("${subproject.buildDir}/reports/licenses") {
+            include 'licenseReport.json'
+            // Rename the report file to include the module name
+            rename { String fileName ->
+                "${subproject.name}-$fileName"
+            }
+        }
+    }
+
+    // Set the destination for the copied files
+    into destinationDir
+}
+gradle.projectsEvaluated { // Make sure the task runs after all projects are evaluated
+    gatherLicenseReports.dependsOn subprojects*.tasks*.findByName('licenseReport')
+}
+
 // plugin location
 ext.pluginsDir = rootProject.buildDir.path + '/plugins'
 
+
 build {
     dependsOn(":plugins:build")
+}
+
+allprojects {
+    test.dependsOn(":plugins:assemblePlugins")
 }
 
 
@@ -165,10 +208,13 @@ idea {
         settings {
             runConfigurations {
                 "Polypheny-DB"(Gradle) {
-                    taskNames = ["assemblePlugins", "run"]
+                    taskNames = ["assemblePlugins", "runDev"]
                 }
                 "Polypheny-DB (reset)"(Gradle) {
-                    taskNames = ["assemblePlugins", ":dbms:runReset"]
+                    taskNames = ["assemblePlugins", ":dbms:runDevReset"]
+                }
+                "Polypheny-DB (production)"(Gradle) {
+                    taskNames = ["assemblePlugins", "run"]
                 }
             }
             copyright {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.util.Map;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolyType;
 
 
@@ -67,30 +68,19 @@ public enum GoogleSheetFieldType {
 
 
     public static GoogleSheetFieldType getGoogleSheetFieldType( PolyType type ) {
-        switch ( type ) {
-            case BOOLEAN:
-                return GoogleSheetFieldType.BOOLEAN;
-            case VARBINARY:
-                return GoogleSheetFieldType.BYTE;
-            case INTEGER:
-                return GoogleSheetFieldType.INT;
-            case BIGINT:
-                return GoogleSheetFieldType.LONG;
-            case REAL:
-                return GoogleSheetFieldType.FLOAT;
-            case DOUBLE:
-                return GoogleSheetFieldType.DOUBLE;
-            case VARCHAR:
-                return GoogleSheetFieldType.STRING;
-            case DATE:
-                return GoogleSheetFieldType.DATE;
-            case TIME:
-                return GoogleSheetFieldType.TIME;
-            case TIMESTAMP:
-                return GoogleSheetFieldType.TIMESTAMP;
-            default:
-                throw new RuntimeException( "Unsupported datatype: " + type.name() );
-        }
+        return switch ( type ) {
+            case BOOLEAN -> GoogleSheetFieldType.BOOLEAN;
+            case VARBINARY -> GoogleSheetFieldType.BYTE;
+            case INTEGER -> GoogleSheetFieldType.INT;
+            case BIGINT -> GoogleSheetFieldType.LONG;
+            case REAL -> GoogleSheetFieldType.FLOAT;
+            case DOUBLE -> GoogleSheetFieldType.DOUBLE;
+            case VARCHAR -> GoogleSheetFieldType.STRING;
+            case DATE -> GoogleSheetFieldType.DATE;
+            case TIME -> GoogleSheetFieldType.TIME;
+            case TIMESTAMP -> GoogleSheetFieldType.TIMESTAMP;
+            default -> throw new GenericRuntimeException( "Unsupported datatype: " + type.name() );
+        };
     }
 
 

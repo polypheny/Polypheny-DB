@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,11 +36,16 @@ import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Functions;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.constant.Modality;
 import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypePrecedenceList;
+import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.BasicNodeVisitor;
@@ -53,6 +58,7 @@ import org.polypheny.db.nodes.Literal;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.NodeList;
 import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.schema.types.StreamableEntity;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.BarfingInvocationHandler;
 import org.polypheny.db.util.CoreUtil;
@@ -71,7 +77,7 @@ public abstract class SqlUtil {
         if ( node1 == null ) {
             return node2;
         }
-        ArrayList<Node> list = new ArrayList<>();
+        List<Node> list = new ArrayList<>();
         if ( node1.getKind() == Kind.AND ) {
             list.addAll( ((SqlCall) node1).getOperandList() );
         } else {
@@ -86,8 +92,8 @@ public abstract class SqlUtil {
     }
 
 
-    static ArrayList<SqlNode> flatten( SqlNode node ) {
-        ArrayList<SqlNode> list = new ArrayList<>();
+    static List<SqlNode> flatten( SqlNode node ) {
+        List<SqlNode> list = new ArrayList<>();
         flatten( node, list );
         return list;
     }
@@ -97,7 +103,7 @@ public abstract class SqlUtil {
      * Returns the <code>n</code>th (0-based) input to a join expression.
      */
     public static SqlNode getFromNode( SqlSelect query, int ordinal ) {
-        ArrayList<SqlNode> list = flatten( query.getSqlFrom() );
+        List<SqlNode> list = flatten( query.getSqlFrom() );
         return list.get( ordinal );
     }
 
@@ -120,7 +126,7 @@ public abstract class SqlUtil {
     }
 
 
-    private static void flatten( SqlNode node, ArrayList<SqlNode> list ) {
+    private static void flatten( SqlNode node, List<SqlNode> list ) {
         switch ( node.getKind() ) {
             case JOIN:
                 SqlJoin join = (SqlJoin) node;
@@ -133,7 +139,6 @@ public abstract class SqlUtil {
                 return;
             default:
                 list.add( node );
-                return;
         }
     }
 
@@ -262,9 +267,8 @@ public abstract class SqlUtil {
             quantifier.unparse( writer, 0, 0 );
         }
         if ( call.operandCount() == 0 ) {
-            switch ( call.getOperator().getSyntax() ) {
-                case FUNCTION_STAR:
-                    writer.sep( "*" );
+            if ( Objects.requireNonNull( call.getOperator().getSyntax() ) == Syntax.FUNCTION_STAR ) {
+                writer.sep( "*" );
             }
         }
         for ( Node operand : call.getOperandList() ) {
@@ -410,13 +414,11 @@ public abstract class SqlUtil {
     private static Iterator<SqlOperator> lookupSubjectRoutinesByName( OperatorTable opTab, SqlIdentifier funcName, final SqlSyntax syntax, FunctionCategory category ) {
         final List<Operator> operators = new ArrayList<>();
         opTab.lookupOperatorOverloads( funcName, category, syntax.getSyntax(), operators );
-        final List<SqlOperator> sqlOperators = operators.stream().map( e -> (SqlOperator) e ).collect( Collectors.toList() );
-        switch ( syntax ) {
-            case FUNCTION:
-                return Iterators.filter( sqlOperators.iterator(), Predicates.instanceOf( SqlFunction.class ) );
-            default:
-                return Iterators.filter( sqlOperators.iterator(), operator -> Objects.requireNonNull( operator ).getSqlSyntax() == syntax );
+        final List<SqlOperator> sqlOperators = operators.stream().map( e -> (SqlOperator) e ).toList();
+        if ( syntax == SqlSyntax.FUNCTION ) {
+            return Iterators.filter( sqlOperators.iterator(), Predicates.instanceOf( SqlFunction.class ) );
         }
+        return Iterators.filter( sqlOperators.iterator(), operator -> Objects.requireNonNull( operator ).getSqlSyntax() == syntax );
     }
 
 
@@ -504,7 +506,7 @@ public abstract class SqlUtil {
                             final AlgDataType paramType = paramTypes.get( argType.i );
                             return precList.compareTypePrecedence( paramType, bestMatch ) >= 0;
                         } )
-                        .collect( Collectors.toList() );
+                        .toList();
             }
         }
         //noinspection unchecked
@@ -592,12 +594,32 @@ public abstract class SqlUtil {
 
 
     public static List<List<Node>> toNodeListList( List<List<SqlNode>> sqlList ) {
-        return sqlList.stream().map( CoreUtil::toNodeList ).collect( Collectors.toList() );
+        return sqlList.stream().map( CoreUtil::toNodeList ).toList();
     }
 
 
     public static SqlLiteral symbol( Enum<?> o, ParserPos parserPos ) {
         return SqlLiteral.createSymbol( o, parserPos );
+    }
+
+
+    public static AlgDataType getNamedType( Identifier node, Snapshot snapshot ) {
+        LogicalTable table = snapshot.rel().getTable( node.getNames().get( 0 ), node.getNames().get( 1 ) ).orElse( null );
+        if ( table != null ) {
+            return table.getTupleType();
+        } else {
+            return null;
+        }
+    }
+
+
+    public static boolean supportsModality( Modality modality, Entity entity ) {
+
+        if ( Objects.requireNonNull( modality ) == Modality.STREAM ) {
+            return entity instanceof StreamableEntity;
+        }
+        return !(entity instanceof StreamableEntity);
+
     }
 
 
@@ -731,7 +753,7 @@ public abstract class SqlUtil {
 
 
     static public List<List<SqlNode>> toSqlListList( List<List<? extends Node>> nodes ) {
-        return nodes.stream().map( SqlUtil::toSqlList ).collect( Collectors.toList() );
+        return nodes.stream().map( SqlUtil::toSqlList ).toList();
     }
 
 
@@ -746,7 +768,7 @@ public abstract class SqlUtil {
 
 
     static public <T extends Node> List<T> toSqlList( List<? extends Node> nodes, Class<T> clazz ) {
-        return nodes.stream().map( clazz::cast ).collect( Collectors.toList() );
+        return nodes.stream().map( clazz::cast ).toList();
     }
 
 
@@ -779,11 +801,11 @@ public abstract class SqlUtil {
                     brackets.push( ch == '(' ? ')' : ch == '[' ? ']' : '}' );
                 } else if ( ch == ')' || ch == ']' || ch == '}' ) {
                     if ( ch != brackets.pop() ) {
-                        throw new RuntimeException( "Unbalanced brackets" );
+                        throw new GenericRuntimeException( "Unbalanced brackets" );
                     }
                 } else if ( ch == ';' ) {
                     if ( !brackets.isEmpty() ) {
-                        throw new RuntimeException( "Missing " + brackets.pop() );
+                        throw new GenericRuntimeException( "Missing " + brackets.pop() );
                     }
                     split.add( currentStatement.toString() );
                     currentStatement = new StringBuilder();
@@ -805,7 +827,7 @@ public abstract class SqlUtil {
                         i++;
                     }
                     if ( i + 1 == statements.length() ) {
-                        throw new RuntimeException( "Unterminated comment" );
+                        throw new GenericRuntimeException( "Unterminated comment" );
                     }
                     i++;
                     // Same reason as above for cases like "SEL/**/ECT"
@@ -816,18 +838,18 @@ public abstract class SqlUtil {
         }
 
         if ( quote != null ) {
-            throw new RuntimeException( String.format( "Unterminated %s", quote ) );
+            throw new GenericRuntimeException( String.format( "Unterminated %s", quote ) );
         }
 
         if ( !brackets.empty() ) {
-            throw new RuntimeException( "Missing " + brackets.pop() );
+            throw new GenericRuntimeException( "Missing " + brackets.pop() );
         }
 
         if ( !currentStatement.toString().isBlank() ) {
             split.add( currentStatement.toString() );
         }
 
-        return split.stream().map( String::strip ).collect( Collectors.toList() );
+        return split.stream().map( String::strip ).toList();
     }
 
 }

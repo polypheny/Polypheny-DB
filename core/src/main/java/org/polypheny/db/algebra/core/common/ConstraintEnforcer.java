@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.BiAlg;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
 @Slf4j
@@ -35,7 +35,7 @@ public class ConstraintEnforcer extends BiAlg {
 
     @Override
     protected AlgDataType deriveRowType() {
-        return left.getRowType();
+        return left.getTupleType();
     }
 
 
@@ -44,7 +44,7 @@ public class ConstraintEnforcer extends BiAlg {
      * right is the control query, which tests if still all conditions are correct
      */
     public ConstraintEnforcer(
-            AlgOptCluster cluster,
+            AlgCluster cluster,
             AlgTraitSet traitSet,
             AlgNode modify,
             AlgNode control,
@@ -58,7 +58,7 @@ public class ConstraintEnforcer extends BiAlg {
 
     @Override
     public String algCompareString() {
-        return "Constraint:(" + this.left.algCompareString() + ")->[" + right.algCompareString() + "]";
+        return ConstraintEnforcer.class.getSimpleName() + "$if(" + this.left.algCompareString() + ")->[" + right.algCompareString() + "]&";
     }
 
 }

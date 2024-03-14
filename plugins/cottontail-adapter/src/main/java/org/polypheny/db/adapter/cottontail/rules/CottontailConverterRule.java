@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ public abstract class CottontailConverterRule extends ConverterRule {
     <R extends AlgNode> CottontailConverterRule(
             Class<R> clazz,
             Predicate<? super R> predicate,
-            AlgTrait in,
+            AlgTrait<?> in,
             CottontailConvention out,
             AlgBuilderFactory algBuilderFactory,
             String description ) {

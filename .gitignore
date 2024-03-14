@@ -220,12 +220,12 @@ nbdist/
 # Avoid ignoring Gradle wrapper jar file (.jar files are usually ignored)
 !/gradle/wrapper/gradle-wrapper.jar
 
-/geode-adapter/vf.gf.server.status.cmd
-/core/custom-schema-model.json
-/testTestCsv/**
 !/libs/avatica-1.16.0-POLYPHENYDB-shaded.jar
 !/libs/avatica-server-1.16.0-POLYPHENYDB.jar
 /dbms/target/
 /dbms/src/main/resources/acknowledgements.txt
 
 .polypheny/*
+
+## dynamicly generated version information
+/dbms/src/main/resources/version.properties

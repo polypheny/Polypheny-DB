@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -44,9 +45,9 @@ public class CypherHasLabelOrTypes extends CypherExpression {
 
 
     @Override
-    public Pair<String, RexNode> getRex( CypherContext context, RexType type ) {
+    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
 
-        Pair<String, RexNode> namedSubject = subject.getRex( context, type );
+        Pair<PolyString, RexNode> namedSubject = subject.getRex( context, type );
 
         RexNode hasLabels;
         if ( labels.size() == 1 ) {

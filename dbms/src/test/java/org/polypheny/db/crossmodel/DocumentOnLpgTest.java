@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,9 @@ import static java.lang.String.format;
 import static org.polypheny.db.mql.MqlTestTemplate.execute;
 
 import com.google.common.collect.ImmutableList;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.cypher.CypherTestTemplate;
 
@@ -33,7 +33,7 @@ public class DocumentOnLpgTest extends CrossModelTestTemplate {
     private static final String DATA_LABEL = "label1";
 
 
-    @BeforeClass
+    @BeforeAll
     public static void init() {
         //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
@@ -42,7 +42,7 @@ public class DocumentOnLpgTest extends CrossModelTestTemplate {
     }
 
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() {
         CypherTestTemplate.deleteData( GRAPH_NAME );
     }
@@ -50,9 +50,9 @@ public class DocumentOnLpgTest extends CrossModelTestTemplate {
 
     @Test
     public void simpleFindTest() {
-        TestHelper.MongoConnection.checkUnorderedResultSet(
+        TestHelper.MongoConnection.checkDocResultSet(
                 execute( format( "db.%s.find({})", DATA_LABEL ), GRAPH_NAME ),
-                ImmutableList.of( new String[]{ "{\"key\":\"3\"}" } ), true );
+                ImmutableList.of( "{\"key\":\"3\"}" ), true, true );
     }
 
 
@@ -60,17 +60,19 @@ public class DocumentOnLpgTest extends CrossModelTestTemplate {
     public void simpleFindUppercaseTest() {
         CypherTestTemplate.execute( format( "CREATE (n:%s {key: 5})", DATA_LABEL.toUpperCase() ), GRAPH_NAME );
 
-        TestHelper.MongoConnection.checkUnorderedResultSet(
+        TestHelper.MongoConnection.checkDocResultSet(
                 execute( format( "db.%s.find({})", DATA_LABEL.toUpperCase() ), GRAPH_NAME ),
-                ImmutableList.of( new String[]{ "{\"key\":\"5\"}" } ), true );
+                ImmutableList.of( "{\"key\":\"5\"}" ), true, true );
+
+        CypherTestTemplate.execute( format( "MATCH (n:%s {key: 5}) DELETE n", DATA_LABEL.toUpperCase() ), GRAPH_NAME );
     }
 
 
     @Test
     public void simpleProjectTest() {
-        TestHelper.MongoConnection.checkUnorderedResultSet(
+        TestHelper.MongoConnection.checkDocResultSet(
                 execute( format( "db.%s.find({},{\"key\":1})", DATA_LABEL ), GRAPH_NAME ),
-                ImmutableList.of( new String[]{ "3" } ), false );
+                ImmutableList.of( "{\"key\":\"3\"}" ), true, true );
     }
 
 

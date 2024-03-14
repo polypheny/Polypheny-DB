@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,70 +17,67 @@
 package org.polypheny.db.adapter.ethereum;
 
 
-import com.google.common.collect.ImmutableMap;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.Getter;
+import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.Extension;
-import org.pf4j.Plugin;
-import org.pf4j.PluginWrapper;
-import org.polypheny.db.adapter.Adapter.AdapterProperties;
-import org.polypheny.db.adapter.Adapter.AdapterSettingBoolean;
-import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
-import org.polypheny.db.adapter.Adapter.AdapterSettingString;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
-import org.polypheny.db.catalog.Adapter;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.adapter.RelationalScanDelegate;
+import org.polypheny.db.adapter.annotations.AdapterProperties;
+import org.polypheny.db.adapter.annotations.AdapterSettingBoolean;
+import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
+import org.polypheny.db.adapter.annotations.AdapterSettingString;
+import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
+import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
+import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationTable;
+import org.polypheny.db.plugins.PluginContext;
+import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.schema.Schema;
-import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.http.HttpService;
 
 
-public class EthereumPlugin extends Plugin {
+public class EthereumPlugin extends PolyPlugin {
 
 
-    public static final String ADAPTER_NAME = "ETHEREUM";
+    public static final String ADAPTER_NAME = "Ethereum";
+    private long id;
 
 
     /**
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to be successfully loaded by manager.
      */
-    public EthereumPlugin( PluginWrapper wrapper ) {
-        super( wrapper );
+    public EthereumPlugin( PluginContext context ) {
+        super( context );
     }
 
 
     @Override
-    public void start() {
-        Map<String, String> settings = ImmutableMap.of(
-                "ClientUrl", "https://mainnet.infura.io/v3/4d06589e97064040b5da99cf4051ef04",
-                "Blocks", "10",
-                "ExperimentalFiltering", "false"
-        );
-
-        Adapter.addAdapter( EthereumDataSource.class, ADAPTER_NAME, settings );
+    public void afterCatalogInit() {
+        this.id = AdapterManager.addAdapterTemplate( EthereumDataSource.class, ADAPTER_NAME, EthereumDataSource::new );
     }
 
 
     @Override
     public void stop() {
-        Adapter.removeAdapter( EthereumDataSource.class, ADAPTER_NAME );
+        AdapterManager.removeAdapterTemplate( id );
     }
 
 
@@ -89,27 +86,33 @@ public class EthereumPlugin extends Plugin {
     @AdapterProperties(
             name = "Ethereum",
             description = "An adapter for querying the Ethereum blockchain. It uses the ethereum JSON-RPC API. Currently, this adapter only supports read operations.",
-            usedModes = DeployMode.REMOTE)
+            usedModes = DeployMode.REMOTE,
+            defaultMode = DeployMode.REMOTE)
     @AdapterSettingString(name = "ClientUrl", description = "The URL of the ethereum JSON RPC client", defaultValue = "https://mainnet.infura.io/v3/4d06589e97064040b5da99cf4051ef04", position = 1)
     @AdapterSettingInteger(name = "Blocks", description = "The number of Blocks to fetch when processing a query", defaultValue = 10, position = 2, modifiable = true)
     @AdapterSettingBoolean(name = "ExperimentalFiltering", description = "Experimentally filter Past Block", defaultValue = false, position = 3, modifiable = true)
-    public static class EthereumDataSource extends DataSource {
+    public static class EthereumDataSource extends DataSource<RelAdapterCatalog> {
 
+        @Delegate(excludes = Excludes.class)
+        private final RelationalScanDelegate delegate;
         private String clientURL;
         @Getter
         private int blocks;
         @Getter
         private boolean experimentalFiltering;
-        private EthereumSchema currentSchema;
+        @Getter
+        private EthereumNamespace currentNamespace;
 
 
-        public EthereumDataSource( final int storeId, final String uniqueName, final Map<String, String> settings ) {
-            super( storeId, uniqueName, settings, true );
+        public EthereumDataSource( final long storeId, final String uniqueName, final Map<String, String> settings ) {
+            super( storeId, uniqueName, settings, true, new RelAdapterCatalog( storeId ) );
             setClientURL( settings.get( "ClientUrl" ) );
             this.blocks = Integer.parseInt( settings.get( "Blocks" ) );
             this.experimentalFiltering = Boolean.parseBoolean( settings.get( "ExperimentalFiltering" ) );
             createInformationPage();
             enableInformationPage();
+
+            this.delegate = new RelationalScanDelegate( this, adapterCatalog );
         }
 
 
@@ -118,7 +121,7 @@ public class EthereumPlugin extends Plugin {
             try {
                 BigInteger latest = web3j.ethBlockNumber().send().getBlockNumber();
             } catch ( Exception e ) {
-                throw new RuntimeException( "Unable to connect the client URL '" + clientURL + "'" );
+                throw new GenericRuntimeException( "Unable to connect the client URL '" + clientURL + "'" );
             }
             web3j.shutdown();
             this.clientURL = clientURL;
@@ -126,26 +129,32 @@ public class EthereumPlugin extends Plugin {
 
 
         @Override
-        public void createNewSchema( SchemaPlus rootSchema, String name ) {
-            currentSchema = new EthereumSchema( this.clientURL );
+        public void updateNamespace( String name, long id ) {
+            currentNamespace = new EthereumNamespace( id, adapterId, this.clientURL );
         }
 
 
         @Override
-        public Table createTableSchema( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
-            return currentSchema.createBlockchainTable( combinedTable, columnPlacementsOnStore, this );
+        public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
+            PhysicalTable table = adapterCatalog.createTable(
+                    logical.table.getNamespaceName(),
+                    logical.table.name,
+                    logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
+                    logical.table,
+                    logical.columns.stream().collect( Collectors.toMap( t -> t.id, t -> t ) ),
+                    logical.pkIds, allocation );
+
+            EthereumTable physical = currentNamespace.createBlockchainTable( table, this );
+
+            adapterCatalog.replacePhysical( physical );
+
+            return List.of( physical );
         }
 
 
         @Override
-        public Schema getCurrentSchema() {
-            return currentSchema;
-        }
-
-
-        @Override
-        public void truncate( Context context, CatalogTable table ) {
-            throw new RuntimeException( "Blockchain adapter does not support truncate" );
+        public void truncate( Context context, long allocId ) {
+            throw new GenericRuntimeException( "Blockchain adapter does not support truncate" );
         }
 
 
@@ -268,6 +277,16 @@ public class EthereumPlugin extends Plugin {
                 informationGroups.add( group );
             }
         }
+
+    }
+
+
+    @SuppressWarnings("unused")
+    private interface Excludes {
+
+        void refreshTable( long allocId );
+
+        void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation );
 
     }
 

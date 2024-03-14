@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,7 +64,7 @@ import org.polypheny.db.util.NumberUtil;
  */
 public class AlgMdDistinctRowCount implements MetadataHandler<BuiltInMetadata.DistinctRowCount> {
 
-    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( BuiltInMethod.DISTINCT_ROW_COUNT.method, new AlgMdDistinctRowCount() );
+    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( new AlgMdDistinctRowCount(), BuiltInMethod.DISTINCT_ROW_COUNT.method );
 
 
     protected AlgMdDistinctRowCount() {
@@ -86,7 +86,7 @@ public class AlgMdDistinctRowCount implements MetadataHandler<BuiltInMetadata.Di
         // REVIEW zfong: Broadbase code does not take into consideration selectivity of predicates passed in.  Also, they assume the rows are unique even if the table is not
         boolean uniq = AlgMdUtil.areColumnsDefinitelyUnique( mq, alg, groupKey );
         if ( uniq ) {
-            return NumberUtil.multiply( mq.getRowCount( alg ), mq.getSelectivity( alg, predicate ) );
+            return NumberUtil.multiply( mq.getTupleCount( alg ), mq.getSelectivity( alg, predicate ) );
         }
         return null;
     }
@@ -94,7 +94,7 @@ public class AlgMdDistinctRowCount implements MetadataHandler<BuiltInMetadata.Di
 
     public Double getDistinctRowCount( Union alg, AlgMetadataQuery mq, ImmutableBitSet groupKey, RexNode predicate ) {
         double rowCount = 0.0;
-        int[] adjustments = new int[alg.getRowType().getFieldCount()];
+        int[] adjustments = new int[alg.getTupleType().getFieldCount()];
         RexBuilder rexBuilder = alg.getCluster().getRexBuilder();
         for ( AlgNode input : alg.getInputs() ) {
             // convert the predicate to reference the types of the union child
@@ -107,7 +107,7 @@ public class AlgMdDistinctRowCount implements MetadataHandler<BuiltInMetadata.Di
                                 new AlgOptUtil.RexInputConverter(
                                         rexBuilder,
                                         null,
-                                        input.getRowType().getFieldList(),
+                                        input.getTupleType().getFields(),
                                         adjustments ) );
             }
             Double partialRowCount = mq.getDistinctRowCount( input, groupKey, modifiedPred );
@@ -208,7 +208,7 @@ public class AlgMdDistinctRowCount implements MetadataHandler<BuiltInMetadata.Di
         double selectivity = AlgMdUtil.guessSelectivity( predicate );
 
         // assume half the rows are duplicates
-        double nRows = alg.estimateRowCount( mq ) / 2;
+        double nRows = alg.estimateTupleCount( mq ) / 2;
         return AlgMdUtil.numDistinctVals( nRows, nRows * selectivity );
     }
 
@@ -226,7 +226,7 @@ public class AlgMdDistinctRowCount implements MetadataHandler<BuiltInMetadata.Di
 
         final List<RexNode> notPushable = new ArrayList<>();
         final List<RexNode> pushable = new ArrayList<>();
-        AlgOptUtil.splitFilters( ImmutableBitSet.range( alg.getRowType().getFieldCount() ), predicate, pushable, notPushable );
+        AlgOptUtil.splitFilters( ImmutableBitSet.range( alg.getTupleType().getFieldCount() ), predicate, pushable, notPushable );
         final RexBuilder rexBuilder = alg.getCluster().getRexBuilder();
 
         // get the distinct row count of the child input, passing in the columns and filters that only reference the child; convert the filter to reference the children projection expressions
@@ -260,7 +260,7 @@ public class AlgMdDistinctRowCount implements MetadataHandler<BuiltInMetadata.Di
             distinctRowCount *= subRowCount;
         }
 
-        return AlgMdUtil.numDistinctVals( distinctRowCount, mq.getRowCount( alg ) );
+        return AlgMdUtil.numDistinctVals( distinctRowCount, mq.getTupleCount( alg ) );
     }
 
 

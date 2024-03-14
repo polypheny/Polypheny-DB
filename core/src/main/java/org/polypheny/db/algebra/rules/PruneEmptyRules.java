@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,6 @@ package org.polypheny.db.algebra.rules;
 import static org.polypheny.db.plan.AlgOptRule.any;
 import static org.polypheny.db.plan.AlgOptRule.none;
 import static org.polypheny.db.plan.AlgOptRule.operand;
-import static org.polypheny.db.plan.AlgOptRule.operandJ;
 import static org.polypheny.db.plan.AlgOptRule.some;
 import static org.polypheny.db.plan.AlgOptRule.unordered;
 
@@ -53,12 +52,12 @@ import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Values;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
-import org.polypheny.db.algebra.logical.relational.LogicalMinus;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
-import org.polypheny.db.algebra.logical.relational.LogicalUnion;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelIntersect;
+import org.polypheny.db.algebra.logical.relational.LogicalRelMinus;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptUtil;
@@ -70,16 +69,16 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 
 /**
  * Collection of rules which remove sections of a query plan known never to produce any rows.
- *
+ * <p>
  * Conventionally, the way to represent an empty relational expression is with a {@link Values} that has no tuples.
  *
- * @see LogicalValues#createEmpty
+ * @see LogicalRelValues#createEmpty
  */
 public abstract class PruneEmptyRules {
 
     /**
-     * Rule that removes empty children of a {@link LogicalUnion}.
-     *
+     * Rule that removes empty children of a {@link LogicalRelUnion}.
+     * <p>
      * Examples:
      *
      * <ul>
@@ -90,12 +89,12 @@ public abstract class PruneEmptyRules {
      */
     public static final AlgOptRule UNION_INSTANCE =
             new AlgOptRule(
-                    operand( LogicalUnion.class, unordered( operandJ( Values.class, null, Values::isEmpty, none() ) ) ),
+                    operand( LogicalRelUnion.class, unordered( AlgOptRule.operand( Values.class, null, Values::isEmpty, none() ) ) ),
                     "Union" ) {
                 @Override
                 public void onMatch( AlgOptRuleCall call ) {
-                    final LogicalUnion union = call.alg( 0 );
-                    final List<AlgNode> inputs = call.getChildRels( union );
+                    final LogicalRelUnion union = call.alg( 0 );
+                    final List<AlgNode> inputs = call.getChildAlgs( union );
                     assert inputs != null;
                     final List<AlgNode> newInputs = new ArrayList<>();
                     for ( AlgNode input : inputs ) {
@@ -110,10 +109,10 @@ public abstract class PruneEmptyRules {
                             builder.push( union ).empty();
                             break;
                         case 1:
-                            builder.push( AlgOptUtil.createCastAlg( newInputs.get( 0 ), union.getRowType(), true ) );
+                            builder.push( AlgOptUtil.createCastAlg( newInputs.get( 0 ), union.getTupleType(), true ) );
                             break;
                         default:
-                            builder.push( LogicalUnion.create( newInputs, union.all ) );
+                            builder.push( LogicalRelUnion.create( newInputs, union.all ) );
                             break;
                     }
                     call.transformTo( builder.build() );
@@ -121,8 +120,8 @@ public abstract class PruneEmptyRules {
             };
 
     /**
-     * Rule that removes empty children of a {@link LogicalMinus}.
-     *
+     * Rule that removes empty children of a {@link LogicalRelMinus}.
+     * <p>
      * Examples:
      *
      * <ul>
@@ -132,12 +131,12 @@ public abstract class PruneEmptyRules {
      */
     public static final AlgOptRule MINUS_INSTANCE =
             new AlgOptRule(
-                    operand( LogicalMinus.class, unordered( operandJ( Values.class, null, Values::isEmpty, none() ) ) ),
+                    operand( LogicalRelMinus.class, unordered( AlgOptRule.operand( Values.class, null, Values::isEmpty, none() ) ) ),
                     "Minus" ) {
                 @Override
                 public void onMatch( AlgOptRuleCall call ) {
-                    final LogicalMinus minus = call.alg( 0 );
-                    final List<AlgNode> inputs = call.getChildRels( minus );
+                    final LogicalRelMinus minus = call.alg( 0 );
+                    final List<AlgNode> inputs = call.getChildAlgs( minus );
                     assert inputs != null;
                     final List<AlgNode> newInputs = new ArrayList<>();
                     for ( AlgNode input : inputs ) {
@@ -155,10 +154,10 @@ public abstract class PruneEmptyRules {
                             builder.push( minus ).empty();
                             break;
                         case 1:
-                            builder.push( AlgOptUtil.createCastAlg( newInputs.get( 0 ), minus.getRowType(), true ) );
+                            builder.push( AlgOptUtil.createCastAlg( newInputs.get( 0 ), minus.getTupleType(), true ) );
                             break;
                         default:
-                            builder.push( LogicalMinus.create( newInputs, minus.all ) );
+                            builder.push( LogicalRelMinus.create( newInputs, minus.all ) );
                             break;
                     }
                     call.transformTo( builder.build() );
@@ -166,8 +165,8 @@ public abstract class PruneEmptyRules {
             };
 
     /**
-     * Rule that converts a {@link LogicalIntersect} to empty if any of its children are empty.
-     *
+     * Rule that converts a {@link LogicalRelIntersect} to empty if any of its children are empty.
+     * <p>
      * Examples:
      *
      * <ul>
@@ -177,11 +176,11 @@ public abstract class PruneEmptyRules {
      */
     public static final AlgOptRule INTERSECT_INSTANCE =
             new AlgOptRule(
-                    operand( LogicalIntersect.class, unordered( operandJ( Values.class, null, Values::isEmpty, none() ) ) ),
+                    operand( LogicalRelIntersect.class, unordered( AlgOptRule.operand( Values.class, null, Values::isEmpty, none() ) ) ),
                     "Intersect" ) {
                 @Override
                 public void onMatch( AlgOptRuleCall call ) {
-                    LogicalIntersect intersect = call.alg( 0 );
+                    LogicalRelIntersect intersect = call.alg( 0 );
                     final AlgBuilder builder = call.builder();
                     builder.push( intersect ).empty();
                     call.transformTo( builder.build() );
@@ -195,8 +194,8 @@ public abstract class PruneEmptyRules {
 
 
     /**
-     * Rule that converts a {@link LogicalProject} to empty if its child is empty.
-     *
+     * Rule that converts a {@link LogicalRelProject} to empty if its child is empty.
+     * <p>
      * Examples:
      *
      * <ul>
@@ -205,11 +204,11 @@ public abstract class PruneEmptyRules {
      */
     public static final AlgOptRule PROJECT_INSTANCE =
             new RemoveEmptySingleRule( Project.class,
-                    (Predicate<Project>) project -> true, AlgFactories.LOGICAL_BUILDER,
+                    project -> true, AlgFactories.LOGICAL_BUILDER,
                     "PruneEmptyProject" );
 
     /**
-     * Rule that converts a {@link LogicalFilter}
+     * Rule that converts a {@link LogicalRelFilter}
      * to empty if its child is empty.
      *
      * <p>Examples:
@@ -233,7 +232,7 @@ public abstract class PruneEmptyRules {
 
     /**
      * Rule that converts a {@link Sort} to empty if it has {@code LIMIT 0}.
-     *
+     * <p>
      * Examples:
      *
      * <ul>
@@ -253,7 +252,7 @@ public abstract class PruneEmptyRules {
 
     /**
      * Rule that converts an {@link org.polypheny.db.algebra.core.Aggregate} to empty if its child is empty.
-     *
+     * <p>
      * Examples:
      *
      * <ul>
@@ -266,13 +265,13 @@ public abstract class PruneEmptyRules {
     public static final AlgOptRule AGGREGATE_INSTANCE =
             new RemoveEmptySingleRule(
                     Aggregate.class,
-                    (Predicate<Aggregate>) Aggregate::isNotGrandTotal,
+                    Aggregate::isNotGrandTotal,
                     AlgFactories.LOGICAL_BUILDER,
                     "PruneEmptyAggregate" );
 
     /**
      * Rule that converts a {@link Join} to empty if its left child is empty.
-     *
+     * <p>
      * Examples:
      *
      * <ul>
@@ -284,7 +283,7 @@ public abstract class PruneEmptyRules {
                     operand(
                             Join.class,
                             some(
-                                    operandJ( Values.class, null, Values::isEmpty, none() ),
+                                    AlgOptRule.operand( Values.class, null, Values::isEmpty, none() ),
                                     operand( AlgNode.class, any() ) ) ),
                     "PruneEmptyJoin(left)" ) {
                 @Override
@@ -300,7 +299,7 @@ public abstract class PruneEmptyRules {
 
     /**
      * Rule that converts a {@link Join} to empty if its right child is empty.
-     *
+     * <p>
      * Examples:
      *
      * <ul>
@@ -313,7 +312,7 @@ public abstract class PruneEmptyRules {
                             Join.class,
                             some(
                                     operand( AlgNode.class, any() ),
-                                    operandJ( Values.class, null, Values::isEmpty, none() ) ) ),
+                                    AlgOptRule.operand( Values.class, null, Values::isEmpty, none() ) ) ),
                     "PruneEmptyJoin(right)" ) {
                 @Override
                 public void onMatch( AlgOptRuleCall call ) {
@@ -345,11 +344,11 @@ public abstract class PruneEmptyRules {
          */
         public <R extends SingleAlg> RemoveEmptySingleRule( Class<R> clazz, Predicate<R> predicate, AlgBuilderFactory algBuilderFactory, String description ) {
             super(
-                    operandJ(
+                    operand(
                             clazz,
                             null,
                             predicate,
-                            operandJ( Values.class, null, Values::isEmpty, none() ) ),
+                            operand( Values.class, null, Values::isEmpty, none() ) ),
                     algBuilderFactory, description );
         }
 

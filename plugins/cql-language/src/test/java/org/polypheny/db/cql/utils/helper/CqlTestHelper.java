@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,8 @@ import java.sql.Statement;
 import java.util.Locale;
 import java.util.Random;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
@@ -36,8 +36,9 @@ public class CqlTestHelper {
     static boolean interfaceRunning = false;
 
 
-    @BeforeClass
+    @BeforeAll
     public static void setup() throws SQLException {
+        //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
         if ( !interfaceRunning ) {
             deployCqlInterface();
@@ -49,7 +50,7 @@ public class CqlTestHelper {
     }
 
 
-    @AfterClass
+    @AfterAll
     public static void teardown() {
         deleteTestData();
         //removeCqlInterface();
@@ -200,8 +201,16 @@ public class CqlTestHelper {
 
 
     private static void insertIntoTestTable(
-            long tbigint, boolean tboolean, Date tdate, double tdecimal,
-            double tdouble, int tinteger, double treal, int tsmallint, int ttinyint, String tvarchar ) {
+            long tbigint,
+            boolean tboolean,
+            Date tdate,
+            double tdecimal,
+            double tdouble,
+            int tinteger,
+            double treal,
+            int tsmallint,
+            int ttinyint,
+            String tvarchar ) {
 
         String query = String.format( Locale.ROOT, "INSERT INTO test.testtable (tbigint, tboolean, tdate,"
                         + " tdecimal, tdouble, tinteger, treal, tsmallint, ttinyint, tvarchar)"

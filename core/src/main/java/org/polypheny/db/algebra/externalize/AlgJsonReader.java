@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,12 +53,13 @@ import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptSchema;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.schema.Schema;
+import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Util;
 
@@ -73,17 +74,15 @@ public class AlgJsonReader {
     private static final TypeReference<LinkedHashMap<String, Object>> TYPE_REF = new TypeReference<>() {
     };
 
-    private final AlgOptCluster cluster;
-    private final AlgOptSchema algOptSchema;
+    private final AlgCluster cluster;
     private final AlgJson algJson = new AlgJson( null );
     private final Map<String, AlgNode> algMap = new LinkedHashMap<>();
     private AlgNode lastAlg;
 
 
-    public AlgJsonReader( AlgOptCluster cluster, AlgOptSchema algOptSchema, Schema schema ) {
+    public AlgJsonReader( AlgCluster cluster, Namespace namespace ) {
         this.cluster = cluster;
-        this.algOptSchema = algOptSchema;
-        Util.discard( schema );
+        Util.discard( namespace );
     }
 
 
@@ -91,29 +90,31 @@ public class AlgJsonReader {
         lastAlg = null;
         final ObjectMapper mapper = new ObjectMapper();
         Map<String, Object> o = mapper.readValue( s, TYPE_REF );
-        @SuppressWarnings("unchecked") final Map<String, Object> algs = (Map) o.get( "Plan" );
-        readRels( algs );
+        @SuppressWarnings("unchecked") final Map<String, Object> algs = (Map<String, Object>) o.get( "Plan" );
+        readAlgs( algs );
         System.out.println( lastAlg );
         return lastAlg;
     }
 
 
-    private void readRels( Map<String, Object> jsonRels ) {
-        @SuppressWarnings("unchecked") List<Map<String, Object>> inputsList = (List) jsonRels.get( "inputs" );
-        for ( Map<String, Object> input : inputsList ) {
-            readRels( input );
+    private void readAlgs( Map<String, Object> jsonAlgs ) {
+        List<?> inputsList = (List<?>) jsonAlgs.get( "inputs" );
+        for ( Object input : inputsList ) {
+            if ( input instanceof Map ) {
+                readAlgs( (Map<String, Object>) input );
+            }
         }
-        readAlg( jsonRels );
+        readAlg( jsonAlgs );
     }
 
 
     private void readAlg( final Map<String, Object> jsonAlg ) {
         String id = (String) jsonAlg.get( "id" );
         String type = (String) jsonAlg.get( "relOp" );
-        Constructor constructor = algJson.getConstructor( type );
+        Constructor<?> constructor = algJson.getConstructor( type );
         AlgInput input = new AlgInput() {
             @Override
-            public AlgOptCluster getCluster() {
+            public AlgCluster getCluster() {
                 return cluster;
             }
 
@@ -125,22 +126,22 @@ public class AlgJsonReader {
 
 
             @Override
-            public AlgOptTable getTable( String table ) {
+            public Entity getEntity( String entity ) {
                 final List<String> list;
-                if ( jsonAlg.get( table ) instanceof String ) {
-                    String str = (String) jsonAlg.get( table );
+                if ( jsonAlg.get( entity ) instanceof String str ) {
                     // MV: This is not a nice solution...
                     if ( str.startsWith( "[" ) && str.endsWith( "]" ) ) {
                         str = str.substring( 1, str.length() - 1 );
                         list = new LinkedList<>();
                         list.add( StringUtils.join( Arrays.asList( str.split( "," ) ), ", " ) );
                     } else {
-                        list = getStringList( table );
+                        list = getStringList( entity );
                     }
                 } else {
-                    list = getStringList( table );
+                    list = getStringList( entity );
                 }
-                return algOptSchema.getTableForMember( list );
+                LogicalNamespace namespace = Catalog.snapshot().getNamespace( list.get( 0 ) ).orElseThrow();
+                return Catalog.snapshot().getLogicalEntity( namespace.id, list.get( 1 ) ).orElse( null );
             }
 
 
@@ -154,7 +155,7 @@ public class AlgJsonReader {
 
             @Override
             public List<AlgNode> getInputs() {
-                @SuppressWarnings("unchecked") final List<Map<String, Object>> jsonInputs = (List) get( "inputs" );
+                @SuppressWarnings("unchecked") final List<Map<String, Object>> jsonInputs = (List<Map<String, Object>>) get( "inputs" );
                 if ( jsonInputs == null ) {
                     return ImmutableList.of( lastAlg );
                 }
@@ -183,13 +184,6 @@ public class AlgJsonReader {
             public List<Integer> getIntegerList( String tag ) {
                 //noinspection unchecked
                 return (List<Integer>) jsonAlg.get( tag );
-            }
-
-
-            @Override
-            public List<List<Integer>> getIntegerListList( String tag ) {
-                //noinspection unchecked
-                return (List<List<Integer>>) jsonAlg.get( tag );
             }
 
 
@@ -225,7 +219,7 @@ public class AlgJsonReader {
 
 
             @Override
-            public AlgDataType getRowType( String tag ) {
+            public AlgDataType getTupleType( String tag ) {
                 final Object o = jsonAlg.get( tag );
                 return algJson.toType( cluster.getTypeFactory(), o );
             }
@@ -234,7 +228,7 @@ public class AlgJsonReader {
             @Override
             public AlgCollation getCollation() {
                 //noinspection unchecked
-                return algJson.toCollation( (List) get( "collation" ) );
+                return algJson.toCollation( (List<Map<String, Object>>) get( "collation" ) );
             }
 
 

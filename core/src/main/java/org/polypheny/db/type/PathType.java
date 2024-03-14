@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ public class PathType extends AbstractPolyType {
     protected void generateTypeString( StringBuilder sb, boolean withDetail ) {
         int i = 0;
         sb.append( " Path(" );
-        for ( AlgDataTypeField field : fieldList ) {
+        for ( AlgDataTypeField field : fields ) {
             if ( i != 0 ) {
                 sb.append( ", " );
             }

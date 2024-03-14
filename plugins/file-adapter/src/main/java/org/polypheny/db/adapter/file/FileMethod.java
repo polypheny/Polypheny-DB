@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,14 +24,13 @@ import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileAlg.FileImplementor.Operation;
 import org.polypheny.db.adapter.file.source.QfsSchema;
-import org.polypheny.db.type.PolyType;
 
 
 public enum FileMethod {
 
-    EXECUTE( FileStoreSchema.class, "execute", Operation.class, Integer.class, Long.class, DataContext.class, String.class, Long[].class, PolyType[].class, List.class, Integer[].class, Condition.class, Value[].class ),
-    EXECUTE_MODIFY( FileStoreSchema.class, "executeModify", Operation.class, Integer.class, Long.class, DataContext.class, String.class, Long[].class, PolyType[].class, List.class, Boolean.class, Object[].class, Condition.class ),
-    EXECUTE_QFS( QfsSchema.class, "execute", Operation.class, Integer.class, Long.class, DataContext.class, String.class, Long[].class, PolyType[].class, List.class, Integer[].class, Condition.class, Value[].class );
+    EXECUTE( FileStoreSchema.class, "execute", Operation.class, Long.class, Long.class, DataContext.class, String.class, Long[].class, FileTranslatableEntity.class, List.class, List.class, Condition.class, List.class ),
+    EXECUTE_MODIFY( FileStoreSchema.class, "executeModify", Operation.class, Long.class, Long.class, DataContext.class, String.class, Long[].class, FileTranslatableEntity.class, List.class, Boolean.class, List.class, Condition.class ),
+    EXECUTE_QFS( QfsSchema.class, "execute", Operation.class, Long.class, Long.class, DataContext.class, String.class, Long[].class, FileTranslatableEntity.class, List.class, List.class, Condition.class, List.class );
 
     public final Method method;
     public static final ImmutableMap<Method, FileMethod> MAP;
@@ -46,7 +45,7 @@ public enum FileMethod {
     }
 
 
-    FileMethod( Class clazz, String methodName, Class... argumentTypes ) {
+    FileMethod( Class<?> clazz, String methodName, Class<?>... argumentTypes ) {
         this.method = Types.lookupMethod( clazz, methodName, argumentTypes );
     }
 }

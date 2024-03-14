@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,9 +37,9 @@ package org.polypheny.db.algebra.convert;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.plan.AlgTraitSet;
 
@@ -50,7 +50,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 public abstract class ConverterImpl extends SingleAlg implements Converter {
 
     protected AlgTraitSet inTraits;
-    protected final AlgTraitDef traitDef;
+    protected final AlgTraitDef<?> traitDef;
 
 
     /**
@@ -61,7 +61,7 @@ public abstract class ConverterImpl extends SingleAlg implements Converter {
      * @param traits the output traits of this converter
      * @param child child alg (provides input traits)
      */
-    protected ConverterImpl( AlgOptCluster cluster, AlgTraitDef traitDef, AlgTraitSet traits, AlgNode child ) {
+    protected ConverterImpl( AlgCluster cluster, AlgTraitDef<?> traitDef, AlgTraitSet traits, AlgNode child ) {
         super( cluster, traits, child );
         this.inTraits = child.getTraitSet();
         this.traitDef = traitDef;
@@ -69,8 +69,8 @@ public abstract class ConverterImpl extends SingleAlg implements Converter {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        double dRows = mq.getRowCount( getInput() );
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
+        double dRows = mq.getTupleCount( getInput() );
         double dCpu = dRows;
         double dIo = 0;
         return planner.getCostFactory().makeCost( dRows, dCpu, dIo );
@@ -84,14 +84,15 @@ public abstract class ConverterImpl extends SingleAlg implements Converter {
 
 
     @Override
-    public AlgTraitDef getTraitDef() {
+    public AlgTraitDef<?> getTraitDef() {
         return traitDef;
     }
 
 
     @Override
     public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" + input.algCompareString() + "&";
+        return this.getClass().getSimpleName() + "$"
+                + input.algCompareString() + "&";
     }
 
 }

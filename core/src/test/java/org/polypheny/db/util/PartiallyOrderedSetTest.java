@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,10 +35,11 @@ package org.polypheny.db.util;
 
 
 import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.AbstractList;
 import java.util.ArrayList;
@@ -49,18 +50,14 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.function.Function;
-import org.junit.Assume;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.polypheny.db.test.PolyphenyDbAssert;
-import org.polypheny.db.test.SlowTests;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
 
 /**
  * Unit test for {@link PartiallyOrderedSet}.
  */
-@Category(SlowTests.class)
+@Tag("slow")
 public class PartiallyOrderedSetTest {
 
     private static final boolean DEBUG = false;
@@ -244,7 +241,7 @@ public class PartiallyOrderedSetTest {
 
     @Test
     public void testPosetBitsLarge() {
-        Assume.assumeTrue( "it takes 80 seconds, and the computations are exactly the same every time", PolyphenyDbAssert.ENABLE_SLOW );
+        assumeTrue( PolyphenyDbAssert.ENABLE_SLOW, "it takes 80 seconds, and the computations are exactly the same every time" );
         final PartiallyOrderedSet<Integer> poset = new PartiallyOrderedSet<>( PartiallyOrderedSetTest::isBitSuperset );
         checkPosetBitsLarge( poset, 30000, 2921, 164782 );
     }
@@ -252,11 +249,11 @@ public class PartiallyOrderedSetTest {
 
     @Test
     public void testPosetBitsLarge2() {
-        Assume.assumeTrue( "too slow to run every day", PolyphenyDbAssert.ENABLE_SLOW );
+        assumeTrue( PolyphenyDbAssert.ENABLE_SLOW, "too slow to run every day" );
         final int n = 30000;
         final PartiallyOrderedSet<Integer> poset =
                 new PartiallyOrderedSet<>( PartiallyOrderedSetTest::isBitSuperset,
-                        (Function<Integer, Iterable<Integer>>) i -> {
+                        i -> {
                             int r = Objects.requireNonNull( i ); // bits not yet cleared
                             final List<Integer> list = new ArrayList<>();
                             for ( int z = 1; r != 0; z <<= 1 ) {

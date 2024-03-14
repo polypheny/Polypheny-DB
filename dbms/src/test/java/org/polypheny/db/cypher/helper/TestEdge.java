@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ package org.polypheny.db.cypher.helper;
 import java.util.List;
 import java.util.Map;
 import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
 public class TestEdge extends TestGraphObject {
@@ -32,8 +34,8 @@ public class TestEdge extends TestGraphObject {
 
     public TestEdge(
             @Nullable String id,
-            @Nullable Map<String, Object> properties,
-            @Nullable List<String> labels,
+            @Nullable Map<PolyString, PolyValue> properties,
+            @Nullable List<PolyString> labels,
             @Nullable String source,
             @Nullable String target ) {
         super( id, properties, labels );
@@ -50,7 +52,7 @@ public class TestEdge extends TestGraphObject {
 
     @SafeVarargs
     public static TestEdge from( List<String> labels, Pair<String, Object>... properties ) {
-        return new TestEdge( null, getProps( properties ), labels, null, null );
+        return new TestEdge( null, getProps( properties ), getLabels( labels ), null, null );
     }
 
 }

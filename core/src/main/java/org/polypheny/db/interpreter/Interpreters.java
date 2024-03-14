@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.runtime.ArrayBindable;
 import org.polypheny.db.runtime.Bindable;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -53,21 +54,21 @@ public class Interpreters {
     /**
      * Creates a {@link Bindable} that interprets a given relational expression.
      */
-    public static ArrayBindable bindable( final AlgNode alg ) {
+    public static ArrayBindable<PolyValue> bindable( final AlgNode alg ) {
         if ( alg instanceof ArrayBindable ) {
             // E.g. if alg instanceof BindableRel
-            return (ArrayBindable) alg;
+            return (ArrayBindable<PolyValue>) alg;
         }
-        return new ArrayBindable() {
+        return new ArrayBindable<>() {
             @Override
-            public Enumerable<Object[]> bind( DataContext dataContext ) {
+            public Enumerable<PolyValue[]> bind( DataContext dataContext ) {
                 return new Interpreter( dataContext, alg );
             }
 
 
             @Override
-            public Class<Object[]> getElementType() {
-                return Object[].class;
+            public Class<PolyValue[]> getElementType() {
+                return PolyValue[].class;
             }
         };
     }

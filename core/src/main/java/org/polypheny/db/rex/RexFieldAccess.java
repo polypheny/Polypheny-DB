@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@
 package org.polypheny.db.rex;
 
 
+import lombok.Getter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -41,14 +42,14 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 
 /**
  * Access to a field of a row-expression.
- *
+ * <p>
  * You might expect to use a <code>RexFieldAccess</code> to access columns of relational tables, for example, the expression <code>emp.empno</code> in the query
  *
  * <blockquote>
  * <pre>SELECT emp.empno FROM emp</pre>
  * </blockquote>
  *
- * but there is a specialized expression {@link RexInputRef} for this purpose. So in practice, <code>RexFieldAccess</code> is usually used to access fields of correlating variables,
+ * but there is a specialized expression {@link RexIndexRef} for this purpose. So in practice, <code>RexFieldAccess</code> is usually used to access fields of correlating variables,
  * for example the expression <code>emp.deptno</code> in
  *
  * <blockquote>
@@ -66,6 +67,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 public class RexFieldAccess extends RexNode {
 
     private final RexNode expr;
+    @Getter
     private final AlgDataTypeField field;
 
 
@@ -73,12 +75,7 @@ public class RexFieldAccess extends RexNode {
         this.expr = expr;
         this.field = field;
         this.digest = expr + "." + field.getName();
-        assert expr.getType().getFieldList().get( field.getIndex() ) == field;
-    }
-
-
-    public AlgDataTypeField getField() {
-        return field;
+        assert expr.getType().getFields().get( field.getIndex() ) == field;
     }
 
 

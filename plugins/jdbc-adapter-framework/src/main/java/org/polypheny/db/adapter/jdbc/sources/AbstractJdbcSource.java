@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,21 +26,26 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.SneakyThrows;
+import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.pf4j.ExtensionPoint;
 import org.polypheny.db.adapter.DataSource;
+import org.polypheny.db.adapter.RelationalScanDelegate;
 import org.polypheny.db.adapter.jdbc.JdbcSchema;
 import org.polypheny.db.adapter.jdbc.JdbcUtils;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
+import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
+import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PolyXid;
@@ -48,7 +53,10 @@ import org.polypheny.db.type.PolyType;
 
 
 @Slf4j
-public abstract class AbstractJdbcSource extends DataSource implements ExtensionPoint {
+public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> implements ExtensionPoint {
+
+    @Delegate(excludes = Exclude.class)
+    private final RelationalScanDelegate delegate;
 
     protected SqlDialect dialect;
     protected JdbcSchema currentJdbcSchema;
@@ -57,17 +65,19 @@ public abstract class AbstractJdbcSource extends DataSource implements Extension
 
 
     public AbstractJdbcSource(
-            int storeId,
+            long storeId,
             String uniqueName,
             Map<String, String> settings,
             String diverClass,
             SqlDialect dialect,
             boolean readOnly ) {
-        super( storeId, uniqueName, settings, readOnly );
+        super( storeId, uniqueName, settings, readOnly, new RelAdapterCatalog( storeId ) );
         this.connectionFactory = createConnectionFactory( settings, dialect, diverClass );
         this.dialect = dialect;
         // Register the JDBC Pool Size as information in the information manager and enable it
         registerInformationPage();
+
+        this.delegate = new RelationalScanDelegate( this, adapterCatalog );
     }
 
 
@@ -109,27 +119,31 @@ public abstract class AbstractJdbcSource extends DataSource implements Extension
     }
 
 
-    protected abstract String getConnectionUrl( final String dbHostname, final int dbPort, final String dbName );
-
-
     @Override
-    public void createNewSchema( SchemaPlus rootSchema, String name ) {
-        currentJdbcSchema = JdbcSchema.create( rootSchema, name, connectionFactory, dialect, this );
+    public void updateNamespace( String name, long id ) {
+        currentJdbcSchema = JdbcSchema.create( id, name, connectionFactory, dialect, this );
+        putNamespace( currentJdbcSchema );
     }
 
 
     @Override
-    public void truncate( Context context, CatalogTable catalogTable ) {
-        // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
-        // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
-        // approach rather than using the default physical schema / table names is that this approach allows truncating linked tables.
-        String physicalTableName = Catalog.getInstance().getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogTable.id ).get( 0 ).physicalTableName;
-        String physicalSchemaName = Catalog.getInstance().getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogTable.id ).get( 0 ).physicalSchemaName;
+    public Namespace getCurrentNamespace() {
+        return currentJdbcSchema;
+    }
+
+
+    protected abstract String getConnectionUrl( final String dbHostname, final int dbPort, final String dbName );
+
+
+
+    @Override
+    public void truncate( Context context, long allocId ) {
+        PhysicalTable table = adapterCatalog.getTable( allocId );
         StringBuilder builder = new StringBuilder();
         builder.append( "TRUNCATE TABLE " )
-                .append( dialect.quoteIdentifier( physicalSchemaName ) )
+                .append( dialect.quoteIdentifier( table.namespaceName ) )
                 .append( "." )
-                .append( dialect.quoteIdentifier( physicalTableName ) );
+                .append( dialect.quoteIdentifier( table.name ) );
         executeUpdate( builder, context );
     }
 
@@ -139,7 +153,7 @@ public abstract class AbstractJdbcSource extends DataSource implements Extension
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
             connectionFactory.getOrCreateConnectionHandler( context.getStatement().getTransaction().getXid() ).executeUpdate( builder.toString() );
         } catch ( SQLException | ConnectionHandlerException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 
@@ -195,7 +209,7 @@ public abstract class AbstractJdbcSource extends DataSource implements Extension
             for ( String str : tables ) {
                 String[] names = str.split( "\\." );
                 if ( names.length == 0 || names.length > 2 || (requiresSchema() && names.length == 1) ) {
-                    throw new RuntimeException( "Invalid table name: " + str );
+                    throw new GenericRuntimeException( "Invalid table name: " + str );
                 }
                 String tableName;
                 String schemaPattern;
@@ -240,7 +254,7 @@ public abstract class AbstractJdbcSource extends DataSource implements Extension
                                 type = PolyType.TIME;
                                 length = row.getInt( "DECIMAL_DIGITS" );
                                 if ( length > 3 ) {
-                                    throw new RuntimeException( "Unsupported precision for data type time: " + length );
+                                    throw new GenericRuntimeException( "Unsupported precision for data type time: " + length );
                                 }
                                 break;
                             case TIMESTAMP:
@@ -248,7 +262,7 @@ public abstract class AbstractJdbcSource extends DataSource implements Extension
                                 type = PolyType.TIMESTAMP;
                                 length = row.getInt( "DECIMAL_DIGITS" );
                                 if ( length > 3 ) {
-                                    throw new RuntimeException( "Unsupported precision for data type timestamp: " + length );
+                                    throw new GenericRuntimeException( "Unsupported precision for data type timestamp: " + length );
                                 }
                                 break;
                             case CHAR:
@@ -262,7 +276,7 @@ public abstract class AbstractJdbcSource extends DataSource implements Extension
                                 length = row.getInt( "COLUMN_SIZE" );
                                 break;
                             default:
-                                throw new RuntimeException( "Unsupported data type: " + type.getName() );
+                                throw new GenericRuntimeException( "Unsupported data type: " + type.getName() );
                         }
                         list.add( new ExportedColumn(
                                 row.getString( "COLUMN_NAME" ).toLowerCase(),
@@ -284,9 +298,20 @@ public abstract class AbstractJdbcSource extends DataSource implements Extension
                 }
             }
         } catch ( SQLException | ConnectionHandlerException e ) {
-            throw new RuntimeException( "Exception while collecting schema information!" + e );
+            throw new GenericRuntimeException( "Exception while collecting schema information!" + e );
         }
         return map;
+    }
+
+
+    @SuppressWarnings("unused")
+    public interface Exclude {
+
+        void updateTable( long allocId );
+
+
+        void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocationWrapper );
+
     }
 
 }

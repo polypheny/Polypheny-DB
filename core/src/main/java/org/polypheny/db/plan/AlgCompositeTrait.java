@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,9 +48,9 @@ import java.util.Objects;
  *
  * @param <T> Member trait
  */
-class AlgCompositeTrait<T extends AlgMultipleTrait> implements AlgTrait {
+class AlgCompositeTrait<T extends AlgMultipleTrait<?> & AlgTrait<?>> implements AlgTrait {
 
-    private final AlgTraitDef traitDef;
+    private final AlgTraitDef<T> traitDef;
     private final T[] traits;
 
 
@@ -58,10 +58,10 @@ class AlgCompositeTrait<T extends AlgMultipleTrait> implements AlgTrait {
      * Creates a RelCompositeTrait.
      */
     // Must remain private. Does not copy the array.
-    private AlgCompositeTrait( AlgTraitDef traitDef, T[] traits ) {
+    private AlgCompositeTrait( AlgTraitDef<T> traitDef, T[] traits ) {
         this.traitDef = traitDef;
         this.traits = Objects.requireNonNull( traits );
-        assert Ordering.natural().isStrictlyOrdered( Arrays.asList( (Comparable[]) traits ) ) : Arrays.toString( traits );
+        assert Ordering.natural().isStrictlyOrdered( Arrays.asList( (Comparable<?>[]) traits ) ) : Arrays.toString( traits );
         for ( T trait : traits ) {
             assert trait.getTraitDef() == this.traitDef;
         }
@@ -72,14 +72,14 @@ class AlgCompositeTrait<T extends AlgMultipleTrait> implements AlgTrait {
      * Creates a RelCompositeTrait. The constituent traits are canonized.
      */
     @SuppressWarnings("unchecked")
-    static <T extends AlgMultipleTrait> AlgTrait of( AlgTraitDef def, List<T> traitList ) {
+    static <T extends AlgMultipleTrait<?>> AlgTrait<?> of( AlgTraitDef def, List<T> traitList ) {
         final AlgCompositeTrait<T> compositeTrait;
         if ( traitList.isEmpty() ) {
             return def.getDefault();
         } else if ( traitList.size() == 1 ) {
             return def.canonize( traitList.get( 0 ) );
         } else {
-            final AlgMultipleTrait[] traits = traitList.toArray( new AlgMultipleTrait[0] );
+            final AlgMultipleTrait<?>[] traits = traitList.toArray( new AlgMultipleTrait[0] );
             for ( int i = 0; i < traits.length; i++ ) {
                 traits[i] = (T) def.canonize( traits[i] );
             }
@@ -90,7 +90,7 @@ class AlgCompositeTrait<T extends AlgMultipleTrait> implements AlgTrait {
 
 
     @Override
-    public AlgTraitDef getTraitDef() {
+    public AlgTraitDef<?> getTraitDef() {
         return traitDef;
     }
 
@@ -105,7 +105,7 @@ class AlgCompositeTrait<T extends AlgMultipleTrait> implements AlgTrait {
     public boolean equals( Object obj ) {
         return this == obj
                 || obj instanceof AlgCompositeTrait
-                && Arrays.equals( traits, ((AlgCompositeTrait) obj).traits );
+                && Arrays.equals( traits, ((AlgCompositeTrait<?>) obj).traits );
     }
 
 
@@ -127,7 +127,7 @@ class AlgCompositeTrait<T extends AlgMultipleTrait> implements AlgTrait {
 
 
     @Override
-    public void register( AlgOptPlanner planner ) {
+    public void register( AlgPlanner planner ) {
     }
 
 

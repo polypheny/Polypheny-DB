@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import lombok.Getter;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.mql.Mql.Type;
 
@@ -40,7 +42,7 @@ public class MqlInsert extends MqlCollectionStatement {
         } else if ( values.isArray() ) {
             this.values = values.asArray();
         } else {
-            throw new RuntimeException( "Insert requires either a single document or multiple documents in an array." );
+            throw new GenericRuntimeException( "Insert requires either a single document or multiple documents in an array." );
         }
         this.ordered = getBoolean( options, "ordered" );
     }
@@ -49,6 +51,12 @@ public class MqlInsert extends MqlCollectionStatement {
     @Override
     public Type getMqlKind() {
         return Type.INSERT;
+    }
+
+
+    @Override
+    public @Nullable String getEntity() {
+        return getCollection();
     }
 
 }

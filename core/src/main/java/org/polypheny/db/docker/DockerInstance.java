@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,11 +24,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.docker.models.DockerHost;
 
 
 /**
@@ -48,18 +49,9 @@ public final class DockerInstance {
     private static final Set<String> seenUuids = new HashSet<>();
 
     private final int instanceId;
+
     @Getter
-    private String host;
-    @Getter
-    private String alias;
-    @Getter
-    private String registry;
-    @Getter
-    private final int communicationPort;
-    @Getter
-    private final int handshakePort;
-    @Getter
-    private final int proxyPort;
+    private DockerHost host;
     private Set<String> uuids = new HashSet<>();
 
     /**
@@ -82,30 +74,22 @@ public final class DockerInstance {
     }
 
 
-    DockerInstance( Integer instanceId, String host, String alias, String registry, int communicationPort, int handshakePort, int proxyPort ) {
-        if ( communicationPort == handshakePort || handshakePort == proxyPort || communicationPort == proxyPort ) {
-            throw new RuntimeException( "Communication, handshake and proxy port must be different" );
-        }
+    DockerInstance( Integer instanceId, DockerHost host ) {
         this.host = host;
-        this.alias = alias;
-        this.registry = registry;
-        this.communicationPort = communicationPort;
-        this.handshakePort = handshakePort;
-        this.proxyPort = proxyPort;
         this.instanceId = instanceId;
         this.dockerInstanceUuid = null;
         try {
             checkConnection();
         } catch ( IOException e ) {
-            log.error( "Could not connect to docker instance " + alias + ": " + e.getMessage() );
+            log.error( "Could not connect to docker instance " + host.alias() + ": " + e.getMessage() );
         }
     }
 
 
     private void connectToDocker() throws IOException {
-        PolyphenyKeypair kp = PolyphenyCertificateManager.loadClientKeypair( "docker", host );
-        byte[] serverCertificate = PolyphenyCertificateManager.loadServerCertificate( "docker", host );
-        this.client = new PolyphenyDockerClient( host, communicationPort, kp, serverCertificate );
+        PolyphenyKeypair kp = PolyphenyCertificateManager.loadClientKeypair( "docker", host.hostname() );
+        byte[] serverCertificate = PolyphenyCertificateManager.loadServerCertificate( "docker", host.hostname() );
+        this.client = new PolyphenyDockerClient( host.hostname(), host.communicationPort(), kp, serverCertificate );
         this.client.ping();
     }
 
@@ -116,8 +100,8 @@ public final class DockerInstance {
         // seenUuids is used to lock out all the other DockerInstance instances
         synchronized ( seenUuids ) {
             for ( DockerInstance instance : DockerManager.getInstance().getDockerInstances().values() ) {
-                if ( instance != this && dockerInstanceUuid.equals( instance.dockerInstanceUuid ) ) {
-                    throw new RuntimeException( "The same docker instance cannot be added twice" );
+                if ( instance != this && instance.dockerInstanceUuid.equals( dockerInstanceUuid ) ) {
+                    throw new GenericRuntimeException( "The same docker instance cannot be added twice" );
                 }
             }
         }
@@ -129,7 +113,7 @@ public final class DockerInstance {
 
         if ( first ) {
             List<ContainerInfo> containers = this.client.listContainers();
-            for ( String uuid : containers.stream().map( ContainerInfo::getUuid ).collect( Collectors.toList() ) ) {
+            for ( String uuid : containers.stream().map( ContainerInfo::getUuid ).toList() ) {
                 try {
                     this.client.deleteContainer( uuid );
                 } catch ( IOException e ) {
@@ -207,13 +191,13 @@ public final class DockerInstance {
             }
             return Map.of(
                     "id", instanceId,
-                    "host", host,
-                    "alias", alias,
+                    "host", host.hostname(),
+                    "alias", host.alias(),
                     "connected", isConnected(),
-                    "registry", registry,
-                    "communicationPort", communicationPort,
-                    "handshakePort", handshakePort,
-                    "proxyPort", proxyPort,
+                    "registry", host.registry(),
+                    "communicationPort", host.communicationPort(),
+                    "handshakePort", host.handshakePort(),
+                    "proxyPort", host.proxyPort(),
                     "numberOfContainers", numberOfContainers
             );
         }
@@ -286,8 +270,10 @@ public final class DockerInstance {
 
 
     void updateConfig( String host, String alias, String registry ) {
+        throw new NotImplementedException( "Updating configurations has been temporarily disabled" );
+        /*
         synchronized ( this ) {
-            if ( !this.host.equals( host ) ) {
+            if ( !this.host.hostname().equals( host ) ) {
                 client.close();
                 this.host = host;
                 status = Status.NEW;
@@ -300,6 +286,7 @@ public final class DockerInstance {
             this.alias = alias;
             this.registry = registry;
         }
+         */
     }
 
 
@@ -354,7 +341,7 @@ public final class DockerInstance {
 
         public DockerContainer createAndStart() throws IOException {
             synchronized ( DockerInstance.this ) {
-                final String registry = DockerInstance.this.registry.isEmpty() ? RuntimeConfig.DOCKER_CONTAINER_REGISTRY.getString() : DockerInstance.this.registry;
+                final String registry = host.getRegistryOrDefault();
 
                 final String imageNameWithRegistry;
                 if ( registry.isEmpty() || registry.endsWith( "/" ) ) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,10 +30,11 @@ import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
 
 
 public abstract class LpgUnwind extends SingleAlg implements LpgAlg {
@@ -49,9 +50,9 @@ public abstract class LpgUnwind extends SingleAlg implements LpgAlg {
      * @param traits
      * @param input Input relational expression
      */
-    protected LpgUnwind( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, int index, @Nullable String alias ) {
+    protected LpgUnwind( AlgCluster cluster, AlgTraitSet traits, AlgNode input, int index, @Nullable String alias ) {
         super( cluster, traits, adjustInputIfNecessary( input, index ) );
-        assert this.input.getRowType().getFieldCount() == 1 : "Unwind is for now only able on a single field.";
+        assert this.input.getTupleType().getFieldCount() == 1 : "Unwind is for now only able on a single field.";
 
         this.index = 0; //adjustIfNecessary( target );
         this.alias = alias;
@@ -59,31 +60,31 @@ public abstract class LpgUnwind extends SingleAlg implements LpgAlg {
 
 
     private static AlgNode adjustInputIfNecessary( AlgNode input, int index ) {
-        if ( input.getRowType().getFieldList().get( index ).getType().getPolyType() == PolyType.ARRAY ) {
+        if ( input.getTupleType().getFields().get( index ).getType().getPolyType() == PolyType.ARRAY ) {
             return input;
         }
-        AlgDataTypeField field = input.getRowType().getFieldList().get( index );
+        AlgDataTypeField field = input.getTupleType().getFields().get( index );
         RexNode ref = input.getCluster().getRexBuilder().makeInputRef( field.getType(), field.getIndex() );
         // we wrap the field in a to-list operation, which wraps single values as list, leaves lists and replaces null with an empty list
         AlgDataType arrayType = input.getCluster().getTypeFactory().createArrayType( ref.getType(), -1 );
         ref = input.getCluster().getRexBuilder().makeCall( arrayType, OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_TO_LIST ), List.of( ref ) );
-        return new LogicalLpgProject( input.getCluster(), input.getTraitSet(), input, Collections.singletonList( ref ), Collections.singletonList( field.getName() ) );
+        return new LogicalLpgProject( input.getCluster(), input.getTraitSet(), input, Collections.singletonList( ref ), Collections.singletonList( PolyString.of( field.getName() ) ) );
     }
 
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName()
-                + "$" + index
-                + (alias != null ? "$As$" + alias : "")
-                + "$" + input.algCompareString();
+        return getClass().getSimpleName() + "$"
+                + index + "$"
+                + (alias != null ? "$As$" + alias : "") + "$"
+                + input.algCompareString() + "&";
     }
 
 
     @Override
     protected AlgDataType deriveRowType() {
         List<AlgDataTypeField> fields = new ArrayList<>();
-        fields.add( new AlgDataTypeFieldImpl( alias, 0, input.getRowType().getFieldList().get( index ).getType().getComponentType() ) );
+        fields.add( new AlgDataTypeFieldImpl( -1L, alias, 0, input.getTupleType().getFields().get( index ).getType().getComponentType() ) );
         return new AlgRecordType( fields );
     }
 

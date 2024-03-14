@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,20 +61,19 @@ import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.commons.compiler.CompilerFactoryFactory;
 import org.codehaus.commons.compiler.ICompilerFactory;
 import org.codehaus.commons.compiler.ISimpleCompiler;
-import org.polypheny.db.adapter.enumerable.EnumerableAggregate;
-import org.polypheny.db.adapter.enumerable.EnumerableBatchIterator;
-import org.polypheny.db.adapter.enumerable.EnumerableConditionalExecute;
-import org.polypheny.db.adapter.enumerable.EnumerableDocumentTransformer;
-import org.polypheny.db.adapter.enumerable.EnumerableFilter;
-import org.polypheny.db.adapter.enumerable.EnumerableJoin;
-import org.polypheny.db.adapter.enumerable.EnumerableModifyCollect;
-import org.polypheny.db.adapter.enumerable.EnumerableProject;
-import org.polypheny.db.adapter.enumerable.EnumerableScan;
-import org.polypheny.db.adapter.enumerable.EnumerableTransformer;
-import org.polypheny.db.adapter.enumerable.EnumerableUnwind;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterImpl;
+import org.polypheny.db.algebra.enumerable.EnumerableAggregate;
+import org.polypheny.db.algebra.enumerable.EnumerableFilter;
+import org.polypheny.db.algebra.enumerable.EnumerableJoin;
+import org.polypheny.db.algebra.enumerable.EnumerableLpgUnwind;
+import org.polypheny.db.algebra.enumerable.EnumerableProject;
+import org.polypheny.db.algebra.enumerable.EnumerableScan;
+import org.polypheny.db.algebra.enumerable.EnumerableTransformer;
+import org.polypheny.db.algebra.enumerable.common.EnumerableBatchIterator;
+import org.polypheny.db.algebra.enumerable.common.EnumerableConditionalExecute;
+import org.polypheny.db.algebra.enumerable.common.EnumerableModifyCollect;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.common.LogicalContextSwitcher;
@@ -99,21 +98,21 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgTransformer;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnion;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnwind;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalCalc;
-import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
-import org.polypheny.db.algebra.logical.relational.LogicalExchange;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
-import org.polypheny.db.algebra.logical.relational.LogicalMinus;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
-import org.polypheny.db.algebra.logical.relational.LogicalScan;
-import org.polypheny.db.algebra.logical.relational.LogicalSort;
-import org.polypheny.db.algebra.logical.relational.LogicalTableFunctionScan;
-import org.polypheny.db.algebra.logical.relational.LogicalUnion;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelCorrelate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelExchange;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelIntersect;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelMinus;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
+import org.polypheny.db.algebra.logical.relational.LogicalRelTableFunctionScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.logical.relational.LogicalWindow;
 import org.polypheny.db.algebra.stream.LogicalChi;
 import org.polypheny.db.algebra.stream.LogicalDelta;
@@ -138,14 +137,13 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
 
     public static final JaninoRelMetadataProvider DEFAULT = JaninoRelMetadataProvider.of( DefaultAlgMetadataProvider.INSTANCE );
 
-    private static final Set<Class<? extends AlgNode>> ALL_RELS = new CopyOnWriteArraySet<>();
+    private static final Set<Class<? extends AlgNode>> ALL_ALGS = new CopyOnWriteArraySet<>();
 
     /**
      * Cache of pre-generated handlers by provider and kind of metadata.
      * For the cache to be effective, providers should implement identity correctly.
      */
-    @SuppressWarnings("unchecked")
-    private static final LoadingCache<Key, MetadataHandler> HANDLERS =
+    private static final LoadingCache<Key, MetadataHandler<? extends Metadata>> HANDLERS =
             maxSize( CacheBuilder.newBuilder(), SaffronProperties.INSTANCE.metadataHandlerCacheMaximumSize().get() )
                     .build( CacheLoader.from( key -> load3( key.def, key.provider.handlers( key.def ), key.algClasses ) ) );
 
@@ -161,21 +159,21 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
                         ConverterImpl.class,
                         AbstractConverter.class,
 
-                        LogicalAggregate.class,
+                        LogicalRelAggregate.class,
                         LogicalCalc.class,
-                        LogicalCorrelate.class,
-                        LogicalExchange.class,
-                        LogicalFilter.class,
-                        LogicalIntersect.class,
-                        LogicalJoin.class,
-                        LogicalMinus.class,
-                        LogicalProject.class,
-                        LogicalSort.class,
-                        LogicalTableFunctionScan.class,
-                        LogicalModify.class,
-                        LogicalScan.class,
-                        LogicalUnion.class,
-                        LogicalValues.class,
+                        LogicalRelCorrelate.class,
+                        LogicalRelExchange.class,
+                        LogicalRelFilter.class,
+                        LogicalRelIntersect.class,
+                        LogicalRelJoin.class,
+                        LogicalRelMinus.class,
+                        LogicalRelProject.class,
+                        LogicalRelSort.class,
+                        LogicalRelTableFunctionScan.class,
+                        LogicalRelModify.class,
+                        LogicalRelScan.class,
+                        LogicalRelUnion.class,
+                        LogicalRelValues.class,
                         LogicalWindow.class,
                         LogicalChi.class,
                         LogicalDelta.class,
@@ -216,13 +214,12 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
                         EnumerableProject.class,
                         EnumerableJoin.class,
                         EnumerableScan.class,
-                        EnumerableUnwind.class,
+                        EnumerableLpgUnwind.class,
                         EnumerableTransformer.class,
                         EnumerableTransformer.class,
                         EnumerableBatchIterator.class,
                         EnumerableConditionalExecute.class,
-                        EnumerableModifyCollect.class,
-                        EnumerableDocumentTransformer.class ) );
+                        EnumerableModifyCollect.class ) );
     }
 
 
@@ -286,23 +283,23 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
     private static <M extends Metadata> MetadataHandler<M> load3( MetadataDef<M> def, Multimap<Method, MetadataHandler<M>> map, ImmutableList<Class<? extends AlgNode>> algClasses ) {
         final StringBuilder buff = new StringBuilder();
         final String name = "GeneratedMetadataHandler_" + def.metadataClass.getSimpleName();
-        final Set<MetadataHandler> providerSet = new HashSet<>();
-        final List<Pair<String, MetadataHandler>> providerList = new ArrayList<>();
+        final Set<MetadataHandler<?>> providerSet = new HashSet<>();
+        final List<Pair<String, MetadataHandler<?>>> providerList = new ArrayList<>();
         //noinspection unchecked
         final ReflectiveAlgMetadataProvider.Space space = new ReflectiveAlgMetadataProvider.Space( (Multimap) map );
-        for ( MetadataHandler provider : space.providerMap.values() ) {
+        for ( MetadataHandler<?> provider : space.providers.values() ) {
             if ( providerSet.add( provider ) ) {
                 providerList.add( Pair.of( "provider" + (providerSet.size() - 1), provider ) );
             }
         }
 
         buff.append( "  private final java.util.List relClasses;\n" );
-        for ( Pair<String, MetadataHandler> pair : providerList ) {
+        for ( Pair<String, MetadataHandler<?>> pair : providerList ) {
             buff.append( "  public final " ).append( pair.right.getClass().getName() )
                     .append( ' ' ).append( pair.left ).append( ";\n" );
         }
         buff.append( "  public " ).append( name ).append( "(java.util.List relClasses" );
-        for ( Pair<String, MetadataHandler> pair : providerList ) {
+        for ( Pair<String, MetadataHandler<?>> pair : providerList ) {
             buff.append( ",\n" )
                     .append( "      " )
                     .append( pair.right.getClass().getName() )
@@ -312,7 +309,7 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
         buff.append( ") {\n" )
                 .append( "    this.relClasses = relClasses;\n" );
 
-        for ( Pair<String, MetadataHandler> pair : providerList ) {
+        for ( Pair<String, MetadataHandler<?>> pair : providerList ) {
             buff.append( "    this." )
                     .append( pair.left )
                     .append( " = " )
@@ -342,7 +339,7 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
             paramList( buff, method.e )
                     .append( ") {\n" );
             buff.append( "    final java.util.List key = " )
-                    .append( (method.e.getParameterTypes().length < 4 ? org.polypheny.db.runtime.FlatLists.class : ImmutableList.class).getName() )
+                    .append( ImmutableList.class.getName() ) // this should be re-evaluated, if it is even needed anymore
                     .append( ".of(" )
                     .append( def.metadataClass.getName() );
             if ( method.i == 0 ) {
@@ -466,8 +463,8 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
     }
 
 
-    private static String findProvider( List<Pair<String, MetadataHandler>> providerList, Class<?> declaringClass ) {
-        for ( Pair<String, MetadataHandler> pair : providerList ) {
+    private static String findProvider( List<Pair<String, MetadataHandler<?>>> providerList, Class<?> declaringClass ) {
+        for ( Pair<String, MetadataHandler<?>> pair : providerList ) {
             if ( declaringClass.isInstance( pair.right ) ) {
                 return pair.left;
             }
@@ -548,7 +545,7 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
         }
 
         compiler.cook( s );
-        final Constructor constructor;
+        final Constructor<?> constructor;
         final Object o;
         try {
             constructor = compiler.getClassLoader().loadClass( className ).getDeclaredConstructors()[0];
@@ -562,7 +559,7 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
 
     synchronized <M extends Metadata, H extends MetadataHandler<M>> H create( MetadataDef<M> def ) {
         try {
-            final Key key = new Key( (MetadataDef) def, provider, ImmutableList.copyOf( ALL_RELS ) );
+            final Key<?> key = new Key<>( def, provider, ImmutableList.copyOf( ALL_ALGS ) );
             //noinspection unchecked
             return (H) HANDLERS.get( key );
         } catch ( UncheckedExecutionException | ExecutionException e ) {
@@ -573,11 +570,10 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
 
 
     synchronized <M extends Metadata, H extends MetadataHandler<M>> H revise( Class<? extends AlgNode> rClass, MetadataDef<M> def ) {
-        if ( ALL_RELS.add( rClass ) ) {
+        if ( ALL_ALGS.add( rClass ) ) {
             HANDLERS.invalidateAll();
         }
-        //noinspection unchecked
-        return (H) create( def );
+        return create( def );
     }
 
 
@@ -590,14 +586,14 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
         final List<Class<? extends AlgNode>> list = Lists.newArrayList( classes );
         for ( int i = 0; i < list.size(); i++ ) {
             final Class<? extends AlgNode> c = list.get( i );
-            final Class s = c.getSuperclass();
+            final Class<?> s = c.getSuperclass();
             if ( s != null && AlgNode.class.isAssignableFrom( s ) ) {
                 //noinspection unchecked
-                list.add( s );
+                list.add( (Class<? extends AlgNode>) s );
             }
         }
         synchronized ( this ) {
-            if ( ALL_RELS.addAll( list ) ) {
+            if ( ALL_ALGS.addAll( list ) ) {
                 HANDLERS.invalidateAll();
             }
         }
@@ -605,7 +601,7 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
 
 
     /**
-     * Exception that indicates there there should be a handler for this class but there is not. The action is probably to re-generate the handler class.
+     * Exception that indicates there should be a handler for this class but there is not. The action is probably to re-generate the handler class.
      */
     public static class NoHandler extends ControlFlowException {
 
@@ -622,14 +618,14 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
     /**
      * Key for the cache.
      */
-    private static class Key {
+    private static class Key<M extends Metadata> {
 
-        public final MetadataDef def;
+        public final MetadataDef<M> def;
         public final AlgMetadataProvider provider;
         public final ImmutableList<Class<? extends AlgNode>> algClasses;
 
 
-        private Key( MetadataDef def, AlgMetadataProvider provider, ImmutableList<Class<? extends AlgNode>> algClassList ) {
+        private Key( MetadataDef<M> def, AlgMetadataProvider provider, ImmutableList<Class<? extends AlgNode>> algClassList ) {
             this.def = def;
             this.provider = provider;
             this.algClasses = algClassList;
@@ -646,9 +642,9 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
         public boolean equals( Object obj ) {
             return this == obj
                     || obj instanceof Key
-                    && ((Key) obj).def.equals( def )
-                    && ((Key) obj).provider.equals( provider )
-                    && ((Key) obj).algClasses.equals( algClasses );
+                    && ((Key<?>) obj).def.equals( def )
+                    && ((Key<?>) obj).provider.equals( provider )
+                    && ((Key<?>) obj).algClasses.equals( algClasses );
         }
 
     }

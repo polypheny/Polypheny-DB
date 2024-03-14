@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,11 @@
 package org.polypheny.db.cypher.remove;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.cypher.parser.StringPos;
@@ -29,6 +29,8 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -47,14 +49,14 @@ public class CypherRemoveLabels extends CypherRemoveItem {
     @Override
     public void removeItem( CypherContext context ) {
         AlgNode node = context.peek();
-        int index = node.getRowType().getFieldNames().indexOf( variable.getName() );
+        int index = node.getTupleType().getFieldNames().indexOf( variable.getName() );
         if ( index < 0 ) {
-            throw new RuntimeException( String.format( "Unknown variable with name %s", variable ) );
+            throw new GenericRuntimeException( String.format( "Unknown variable with name %s", variable ) );
         }
-        AlgDataTypeField field = node.getRowType().getFieldList().get( index );
+        AlgDataTypeField field = node.getTupleType().getFields().get( index );
 
         if ( field.getType().getPolyType() == PolyType.EDGE && labels.size() != 1 ) {
-            throw new RuntimeException( "Edges require exactly one label" );
+            throw new GenericRuntimeException( "Edges require exactly one label" );
         }
 
         RexNode ref = context.getRexNode( variable.getName() );
@@ -69,9 +71,9 @@ public class CypherRemoveLabels extends CypherRemoveItem {
                         ref,
                         context.rexBuilder.makeArray(
                                 context.typeFactory.createArrayType( context.typeFactory.createPolyType( PolyType.VARCHAR, 255 ), -1 ),
-                                labels.stream().map( l -> (RexNode) context.rexBuilder.makeLiteral( l.getImage() ) ).collect( Collectors.toList() ) ) ) );
+                                labels.stream().map( l -> (PolyValue) PolyString.of( l.getImage() ) ).toList() ) ) );
 
-        context.add( Pair.of( variable.getName(), op ) );
+        context.add( Pair.of( PolyString.of( variable.getName() ), op ) );
     }
 
 

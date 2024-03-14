@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -141,7 +141,7 @@
  *     msecs).  Stop on EOD or on timeout.
  * &nbsp;
  * &#64;close
- *     Closes the current prepared statement. However that an open prepared
+ *     Closes the current prepared statement. However that an execute prepared
  *     statement will be closed automatically at the end of its thread.
  * &nbsp;
  * &#64;shell &lt;Shell Command&gt;

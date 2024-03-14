@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,16 +27,16 @@ import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.FunctionExpression;
-import org.polypheny.db.adapter.enumerable.RexToLixTranslator;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.enumerable.RexToLixTranslator;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.FunctionParameter;
 import org.polypheny.db.schema.TableMacro;
-import org.polypheny.db.schema.TranslatableTable;
+import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlFunction;
 import org.polypheny.db.sql.language.SqlIdentifier;
@@ -86,7 +86,7 @@ public class SqlUserDefinedTableMacro extends SqlFunction {
     /**
      * Returns the table in this UDF, or null if there is no table.
      */
-    public TranslatableTable getTable( AlgDataTypeFactory typeFactory, List<SqlNode> operandList ) {
+    public TranslatableEntity getTable( AlgDataTypeFactory typeFactory, List<SqlNode> operandList ) {
         List<Object> arguments = convertArguments( typeFactory, operandList, tableMacro, getNameAsId(), true );
         return tableMacro.apply( arguments );
     }

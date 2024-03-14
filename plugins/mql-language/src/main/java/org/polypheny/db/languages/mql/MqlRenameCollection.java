@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,20 +16,14 @@
 
 package org.polypheny.db.languages.mql;
 
-import java.util.List;
-import java.util.Optional;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.ddl.DdlManager;
-import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.languages.mql.Mql.Type;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -53,36 +47,23 @@ public class MqlRenameCollection extends MqlCollectionStatement implements Execu
 
 
     @Override
-    public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        Catalog catalog = Catalog.getInstance();
-        String database = ((MqlQueryParameters) parameters).getDatabase();
+    public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
+        long namespaceId = parsedQueryContext.getQueryNode().orElseThrow().getNamespaceId();
 
-        try {
-            CatalogSchema schema = catalog.getSchema( Catalog.defaultDatabaseId, database );
-            List<CatalogTable> tables = catalog.getTables( schema.id, null );
+        LogicalCollection collection = context.getSnapshot().doc().getCollection( namespaceId, getCollection() ).orElseThrow();
 
-            if ( dropTarget ) {
-                Optional<CatalogTable> newTable = tables.stream()
-                        .filter( t -> t.name.equals( newName ) )
-                        .findAny();
-
-                if ( newTable.isPresent() ) {
-                    DdlManager.getInstance().dropTable( newTable.get(), statement );
-                }
-            }
-
-            Optional<CatalogTable> table = tables.stream()
-                    .filter( t -> t.name.equals( getCollection() ) )
-                    .findAny();
-
-            if ( table.isEmpty() ) {
-                throw new RuntimeException( "The target for the rename is not valid." );
-            }
-
-            DdlManager.getInstance().renameTable( table.get(), newName, statement );
-        } catch ( DdlOnSourceException | EntityAlreadyExistsException | UnknownSchemaException e ) {
-            throw new RuntimeException( "The rename was not successful, due to an error: " + e.getMessage() );
+        if ( dropTarget ) {
+            DdlManager.getInstance().dropCollection( collection, statement );
         }
+
+        DdlManager.getInstance().renameCollection( collection, newName, statement );
+
+    }
+
+
+    @Override
+    public @Nullable String getEntity() {
+        return getCollection();
     }
 
 }

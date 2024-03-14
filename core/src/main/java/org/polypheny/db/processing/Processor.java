@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,15 +18,16 @@ package org.polypheny.db.processing;
 
 
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.nodes.Node;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -34,47 +35,44 @@ import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
 
-
+@Slf4j
 public abstract class Processor {
 
     public abstract List<? extends Node> parse( String query );
 
     public abstract Pair<Node, AlgDataType> validate( Transaction transaction, Node parsed, boolean addDefaultValues );
 
-    public abstract AlgRoot translate( Statement statement, Node query, QueryParameters parameters );
+    public abstract AlgRoot translate( Statement statement, ParsedQueryContext context );
 
 
-    public PolyImplementation prepareDdl( Statement statement, Node parsed, QueryParameters parameters ) {
-        if ( parsed instanceof ExecutableStatement ) {
-            try {
-                // Acquire global schema lock
-                lock( statement );
-                // Execute statement
-                return getResult( statement, parsed, parameters );
-            } catch ( DeadlockException e ) {
-                throw new RuntimeException( "Exception while acquiring global schema lock", e );
-            } catch ( TransactionException | NoTablePrimaryKeyException e ) {
-                throw new RuntimeException( e );
-            } finally {
-                // Release lock
-                unlock( statement );
-            }
-        } else {
-            throw new RuntimeException( "All DDL queries should be of a type that inherits ExecutableStatement. But this one is of type " + parsed.getClass() );
+    public PolyImplementation prepareDdl( Statement statement, ExecutableStatement node, ParsedQueryContext context ) {
+        try {
+            // Acquire global schema lock
+            lock( statement );
+            // Execute statement
+            return getImplementation( statement, node, context );
+        } catch ( DeadlockException e ) {
+            throw new GenericRuntimeException( "Exception while acquiring global schema lock", e );
+        } catch ( TransactionException e ) {
+            throw new GenericRuntimeException( e );
+        } finally {
+            // Release lock
+            unlock( statement );
         }
+
     }
 
 
-    PolyImplementation getResult( Statement statement, Node parsed, QueryParameters parameters ) throws TransactionException, NoTablePrimaryKeyException {
-        ((ExecutableStatement) parsed).execute( statement.getPrepareContext(), statement, parameters );
+    PolyImplementation getImplementation( Statement statement, ExecutableStatement node, ParsedQueryContext context ) throws TransactionException {
+        node.execute( statement.getPrepareContext(), statement, context );
         statement.getTransaction().commit();
-        Catalog.getInstance().commit();
+
         return new PolyImplementation(
                 null,
-                parameters.getNamespaceType(),
+                context.getLanguage().dataModel(),
                 new ExecutionTimeMonitor(),
                 null,
-                Kind.CREATE_SCHEMA, // technically correct, maybe change
+                Kind.CREATE_NAMESPACE, // technically correct, maybe change
                 statement,
                 null );
     }
@@ -90,7 +88,7 @@ public abstract class Processor {
 
 
     public List<String> splitStatements( String statements ) {
-        throw new RuntimeException( "splitStatements not implemented" );
+        throw new GenericRuntimeException( "splitStatements not implemented" );
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,11 +49,14 @@ import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Window;
+import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNode;
@@ -65,14 +68,13 @@ import org.polypheny.db.rex.RexWindowBound;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Litmus;
-import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
 
 /**
  * Sub-class of {@link Window} not targeted at any particular engine or calling convention.
  */
-public final class LogicalWindow extends Window {
+public final class LogicalWindow extends Window implements RelAlg {
 
     /**
      * Creates a LogicalWindow.
@@ -86,7 +88,7 @@ public final class LogicalWindow extends Window {
      * @param rowType Output row type
      * @param groups Window groups
      */
-    public LogicalWindow( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, List<RexLiteral> constants, AlgDataType rowType, List<Group> groups ) {
+    public LogicalWindow( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, List<RexLiteral> constants, AlgDataType rowType, List<Group> groups ) {
         super( cluster, traitSet, input, constants, rowType, groups );
     }
 
@@ -114,26 +116,26 @@ public final class LogicalWindow extends Window {
     /**
      * Creates a LogicalWindow by parsing a {@link RexProgram}.
      */
-    public static AlgNode create( AlgOptCluster cluster, AlgTraitSet traitSet, AlgBuilder algBuilder, AlgNode child, final RexProgram program ) {
+    public static AlgNode create( AlgCluster cluster, AlgTraitSet traitSet, AlgBuilder algBuilder, AlgNode child, final RexProgram program ) {
         final AlgDataType outRowType = program.getOutputRowType();
         // Build a list of distinct groups, partitions and aggregate functions.
         final Multimap<WindowKey, RexOver> windowMap = LinkedListMultimap.create();
 
-        final int inputFieldCount = child.getRowType().getFieldCount();
+        final int inputFieldCount = child.getTupleType().getFieldCount();
 
-        final Map<RexLiteral, RexInputRef> constantPool = new HashMap<>();
+        final Map<RexLiteral, RexIndexRef> constantPool = new HashMap<>();
         final List<RexLiteral> constants = new ArrayList<>();
 
         // Identify constants in the expression tree and replace them with references to newly generated constant pool.
         RexShuttle replaceConstants = new RexShuttle() {
             @Override
             public RexNode visitLiteral( RexLiteral literal ) {
-                RexInputRef ref = constantPool.get( literal );
+                RexIndexRef ref = constantPool.get( literal );
                 if ( ref != null ) {
                     return ref;
                 }
                 constants.add( literal );
-                ref = new RexInputRef( constantPool.size() + inputFieldCount, literal.getType() );
+                ref = new RexIndexRef( constantPool.size() + inputFieldCount, literal.getType() );
                 constantPool.put( literal, ref );
                 return ref;
             }
@@ -168,7 +170,7 @@ public final class LogicalWindow extends Window {
             RexShuttle toInputRefs = new RexShuttle() {
                 @Override
                 public RexNode visitLocalRef( RexLocalRef localRef ) {
-                    return new RexInputRef( localRef.getIndex(), localRef.getType() );
+                    return new RexIndexRef( localRef.getIndex(), localRef.getType() );
                 }
             };
             groups.add(
@@ -184,7 +186,7 @@ public final class LogicalWindow extends Window {
         // Figure out the type of the inputs to the output program.
         // They are: the inputs to this alg, followed by the outputs of each window.
         final List<Window.RexWinAggCall> flattenedAggCallList = new ArrayList<>();
-        final List<Map.Entry<String, AlgDataType>> fieldList = new ArrayList<>( child.getRowType().getFieldList() );
+        final List<AlgDataTypeField> fieldList = new ArrayList<>( child.getTupleType().getFields() );
         final int offset = fieldList.size();
 
         // Use better field names for agg calls that are projected.
@@ -195,7 +197,7 @@ public final class LogicalWindow extends Window {
                 fieldNames.put( index - offset, outRowType.getFieldNames().get( ref.i ) );
             }
         }
-
+        int j = 0;
         for ( Ord<Group> window : Ord.zip( groups ) ) {
             for ( Ord<RexWinAggCall> over : Ord.zip( window.e.aggCalls ) ) {
                 // Add the k-th over expression of the i-th window to the output of the program.
@@ -203,7 +205,7 @@ public final class LogicalWindow extends Window {
                 if ( name == null || name.startsWith( "$" ) ) {
                     name = "w" + window.i + "$o" + over.i;
                 }
-                fieldList.add( Pair.of( name, over.e.getType() ) );
+                fieldList.add( new AlgDataTypeFieldImpl( -1L, name, j++, over.e.getType() ) );
                 flattenedAggCallList.add( over.e );
             }
         }
@@ -234,9 +236,9 @@ public final class LogicalWindow extends Window {
                                 "over",
                                 over.getType(),
                                 "intermed",
-                                intermediateRowType.getFieldList().get( index ).getType(),
+                                intermediateRowType.getFields().get( index ).getType(),
                                 Litmus.THROW );
-                        return new RexInputRef( index, over.getType() );
+                        return new RexIndexRef( index, over.getType() );
                     }
 
 
@@ -264,7 +266,7 @@ public final class LogicalWindow extends Window {
         final List<RexNode> projectList = new ArrayList<>();
         for ( RexLocalRef inputRef : program.getProjectList() ) {
             final int index = inputRef.getIndex();
-            final RexInputRef ref = (RexInputRef) refToWindow.get( index );
+            final RexIndexRef ref = (RexIndexRef) refToWindow.get( index );
             projectList.add( ref );
         }
 
@@ -285,12 +287,12 @@ public final class LogicalWindow extends Window {
             @Override
             public RexNode get( int index ) {
                 final RexNode operand = operands.get( index );
-                if ( operand instanceof RexInputRef ) {
+                if ( operand instanceof RexIndexRef ) {
                     return operand;
                 }
                 assert operand instanceof RexLocalRef;
                 final RexLocalRef ref = (RexLocalRef) operand;
-                return new RexInputRef( ref.getIndex(), ref.getType() );
+                return new RexIndexRef( ref.getIndex(), ref.getType() );
             }
         };
     }

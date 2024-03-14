@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,7 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.lpg.LpgFilter;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 
@@ -32,7 +31,7 @@ public class LogicalLpgFilter extends LpgFilter {
     /**
      * Subclass of {@link LpgFilter} not targeted at any particular engine or calling convention.
      */
-    public LogicalLpgFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
+    public LogicalLpgFilter( AlgCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
         super( cluster, traits, input, condition );
     }
 
@@ -40,12 +39,6 @@ public class LogicalLpgFilter extends LpgFilter {
     @Override
     protected AlgNode copy( AlgTraitSet traitSet, AlgNode input, RexNode condition ) {
         return new LogicalLpgFilter( getCluster(), traitSet, input, condition );
-    }
-
-
-    @Override
-    protected AlgDataType deriveRowType() {
-        return input.getRowType();
     }
 
 

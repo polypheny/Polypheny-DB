@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import java.util.List;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -29,20 +31,20 @@ import org.polypheny.db.config.RuntimeConfig;
  * Responsible to validate if data should be changed
  */
 @Slf4j
-public class AlphabeticStatisticColumn<T extends Comparable<T>> extends StatisticColumn<T> {
+public class AlphabeticStatisticColumn extends StatisticColumn {
 
     @Getter
-    public List<T> uniqueValuesCache = new ArrayList<>();
+    public List<PolyString> uniqueValuesCache = new ArrayList<>();
     boolean cacheFull;
 
 
     public AlphabeticStatisticColumn( QueryResult column ) {
-        super( column.getSchemaId(), column.getTableId(), column.getColumnId(), column.getType(), StatisticType.ALPHABETICAL );
+        super( column.getColumn().id, column.getColumn().type );
     }
 
 
     @Override
-    public void insert( T val ) {
+    public void insert( PolyValue val ) {
         if ( uniqueValues.size() < RuntimeConfig.STATISTIC_BUFFER.getInteger() ) {
             if ( !uniqueValues.contains( val ) ) {
                 uniqueValues.add( val );
@@ -50,7 +52,7 @@ public class AlphabeticStatisticColumn<T extends Comparable<T>> extends Statisti
         } else {
             full = true;
             if ( uniqueValuesCache.size() < (RuntimeConfig.STATISTIC_BUFFER.getInteger() * 2) ) {
-                uniqueValuesCache.add( val );
+                uniqueValuesCache.add( val.asString() );
             } else {
                 cacheFull = true;
             }
@@ -59,11 +61,13 @@ public class AlphabeticStatisticColumn<T extends Comparable<T>> extends Statisti
 
 
     @Override
-    public void insert( List<T> values ) {
-        if ( values != null && !(values.get( 0 ) instanceof ArrayList) ) {
-            for ( T val : values ) {
-                insert( val );
-            }
+    public void insert( List<PolyValue> values ) {
+        if ( values == null ) {
+            return;
+        }
+
+        for ( PolyValue val : values ) {
+            insert( val == null ? null : val.asString() );
         }
     }
 

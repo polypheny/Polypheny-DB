@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
@@ -32,13 +33,13 @@ import org.polypheny.db.rex.RexNode;
 @Slf4j
 public class LiteralFilter implements Filter {
 
-    private final ColumnIndex columnIndex;
+    private final FieldIndex fieldIndex;
     private final Relation relation;
     private final String searchTerm;
 
 
-    public LiteralFilter( ColumnIndex columnIndex, Relation relation, String searchTerm ) {
-        this.columnIndex = columnIndex;
+    public LiteralFilter( FieldIndex fieldIndex, Relation relation, String searchTerm ) {
+        this.fieldIndex = fieldIndex;
         this.relation = relation;
         this.searchTerm = searchTerm;
     }
@@ -49,7 +50,7 @@ public class LiteralFilter implements Filter {
         if ( log.isDebugEnabled() ) {
             log.debug( "Converting '{}' to RexNode.", this );
         }
-        AlgDataTypeField typeField = filterMap.get( columnIndex.fullyQualifiedName );
+        AlgDataTypeField typeField = filterMap.get( fieldIndex.fullyQualifiedName );
         RexNode lhs = rexBuilder.makeInputRef( baseNode, typeField.getIndex() );
         RexNode rhs = rexBuilder.makeLiteral( searchTerm );
         rhs = rexBuilder.makeCast( typeField.getType(), rhs );
@@ -57,14 +58,14 @@ public class LiteralFilter implements Filter {
             return rexBuilder.makeCall( relation.comparator.toSqlStdOperatorTable( OperatorRegistry.getBinary( OperatorName.EQUALS ) ), lhs, rhs );
         } else {
             log.error( "Named Comparators have not been implemented." );
-            throw new RuntimeException( "Named Comparators have not been implemented." );
+            throw new GenericRuntimeException( "Named Comparators have not been implemented." );
         }
     }
 
 
     @Override
     public String toString() {
-        return columnIndex.toString() + relation.toString() + " \"" + searchTerm + "\" ";
+        return fieldIndex.toString() + relation.toString() + " \"" + searchTerm + "\" ";
     }
 
 }

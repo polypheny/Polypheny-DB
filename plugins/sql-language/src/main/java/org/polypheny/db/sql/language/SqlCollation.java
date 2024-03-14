@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -95,59 +95,39 @@ public class SqlCollation extends Collation {
         final Coercibility coercibility2 = col2.getCoercibility();
         switch ( coercibility1 ) {
             case COERCIBLE:
-                switch ( coercibility2 ) {
-                    case COERCIBLE:
-                        return col2;
-                    case IMPLICIT:
-                        return col2;
-                    case NONE:
-                        return null;
-                    case EXPLICIT:
-                        return col2;
-                    default:
-                        throw Util.unexpected( coercibility2 );
-                }
+                return switch ( coercibility2 ) {
+                    case COERCIBLE -> col2;
+                    case IMPLICIT -> col2;
+                    case NONE -> null;
+                    case EXPLICIT -> col2;
+                };
             case IMPLICIT:
-                switch ( coercibility2 ) {
-                    case COERCIBLE:
-                        return col1;
-                    case IMPLICIT:
+                return switch ( coercibility2 ) {
+                    case COERCIBLE -> col1;
+                    case IMPLICIT -> {
                         if ( col1.getCollationName().equals( col2.getCollationName() ) ) {
-                            return col2;
+                            yield col2;
                         }
-                        return null;
-                    case NONE:
-                        return null;
-                    case EXPLICIT:
-                        return col2;
-                    default:
-                        throw Util.unexpected( coercibility2 );
-                }
+                        yield null;
+                    }
+                    case NONE -> null;
+                    case EXPLICIT -> col2;
+                };
             case NONE:
-                switch ( coercibility2 ) {
-                    case COERCIBLE:
-                    case IMPLICIT:
-                    case NONE:
-                        return null;
-                    case EXPLICIT:
-                        return col2;
-                    default:
-                        throw Util.unexpected( coercibility2 );
-                }
+                return switch ( coercibility2 ) {
+                    case COERCIBLE, IMPLICIT, NONE -> null;
+                    case EXPLICIT -> col2;
+                };
             case EXPLICIT:
-                switch ( coercibility2 ) {
-                    case COERCIBLE:
-                    case IMPLICIT:
-                    case NONE:
-                        return col1;
-                    case EXPLICIT:
+                return switch ( coercibility2 ) {
+                    case COERCIBLE, IMPLICIT, NONE -> col1;
+                    case EXPLICIT -> {
                         if ( col1.getCollationName().equals( col2.getCollationName() ) ) {
-                            return col2;
+                            yield col2;
                         }
                         throw RESOURCE.differentCollations( col1.getCollationName(), col2.getCollationName() ).ex();
-                    default:
-                        throw Util.unexpected( coercibility2 );
-                }
+                    }
+                };
             default:
                 throw Util.unexpected( coercibility1 );
         }

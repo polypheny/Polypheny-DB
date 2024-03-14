@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,10 +35,11 @@ package org.polypheny.db.schema;
 
 
 import java.util.List;
+import org.polypheny.db.schema.types.TranslatableEntity;
 
 
 /**
- * Function that returns a {@link Table}.
+ * Function that returns a {@link Entity}.
  *
  * As the name "macro" implies, this is invoked at "compile time", that is, during query preparation. Compile-time expansion
  * of table expressions allows for some very powerful query-optimizations.
@@ -51,7 +52,7 @@ public interface TableMacro extends Function {
      * @param arguments Arguments
      * @return Table
      */
-    TranslatableTable apply( List<Object> arguments );
+    TranslatableEntity apply( List<Object> arguments );
 
 }
 

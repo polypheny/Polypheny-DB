@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,13 +34,16 @@
 package org.polypheny.db.interpreter;
 
 
+import org.polypheny.db.type.entity.PolyValue;
+
 /**
  * Compiled scalar expression.
  */
 public interface Scalar {
 
-    Object execute( Context context );
+    PolyValue execute( Context context );
 
-    void execute( Context context, Object[] results );
+    void execute( Context context, PolyValue[] results );
+
 }
 

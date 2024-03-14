@@ -1,0 +1,57 @@
+group "org.polypheny"
+
+dependencies {
+    implementation group: 'com.google.auto.service', name: 'auto-service', version: '1.1.1' // Apache 2.0
+
+    // --- Test Compile ---
+    testImplementation project(path: ":core", configuration: "tests")
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: junit_jupiter_version
+}
+
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ["src/main/java"]
+        }
+        resources {
+            srcDirs = ["src/main/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
+    }
+    test {
+        java {
+            srcDirs = ["src/test/java"]
+            destinationDirectory.set(file(project.buildDir.absolutePath + "/test-classes"))
+        }
+        resources {
+            srcDirs = ["src/test/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
+    }
+}
+
+
+/**
+ * JavaDoc
+ */
+javadoc {
+    if(JavaVersion.current().isJava9Compatible()) {
+        options.addBooleanOption("html5", true)
+    }
+    // Suppress most of the warnings
+    options.addStringOption("Xdoclint:none", "-quiet")
+    // Include private fields in JavaDoc
+    options.memberLevel = JavadocMemberLevel.PRIVATE
+}
+
+
+/**
+ * JARs
+ */
+jar {
+    setDuplicatesStrategy(DuplicatesStrategy.WARN)
+    from(sourceSets.main.output) {
+        include 'META-INF/services/**'
+    }
+}

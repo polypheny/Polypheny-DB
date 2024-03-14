@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,10 +41,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.AlgFactories;
@@ -52,8 +54,8 @@ import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.fun.SplittableAggFunction;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptRule;
@@ -61,7 +63,7 @@ import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.tools.AlgBuilder;
@@ -78,12 +80,12 @@ import org.polypheny.db.util.mapping.Mappings;
  */
 public class AggregateJoinTransposeRule extends AlgOptRule {
 
-    public static final AggregateJoinTransposeRule INSTANCE = new AggregateJoinTransposeRule( LogicalAggregate.class, LogicalJoin.class, AlgFactories.LOGICAL_BUILDER, false );
+    public static final AggregateJoinTransposeRule INSTANCE = new AggregateJoinTransposeRule( LogicalRelAggregate.class, LogicalRelJoin.class, AlgFactories.LOGICAL_BUILDER, false );
 
     /**
      * Extended instance of the rule that can push down aggregate functions.
      */
-    public static final AggregateJoinTransposeRule EXTENDED = new AggregateJoinTransposeRule( LogicalAggregate.class, LogicalJoin.class, AlgFactories.LOGICAL_BUILDER, true );
+    public static final AggregateJoinTransposeRule EXTENDED = new AggregateJoinTransposeRule( LogicalRelAggregate.class, LogicalRelJoin.class, AlgFactories.LOGICAL_BUILDER, true );
 
     private final boolean allowFunctions;
 
@@ -93,11 +95,11 @@ public class AggregateJoinTransposeRule extends AlgOptRule {
      */
     public AggregateJoinTransposeRule( Class<? extends Aggregate> aggregateClass, Class<? extends Join> joinClass, AlgBuilderFactory algBuilderFactory, boolean allowFunctions ) {
         super(
-                operandJ(
+                operand(
                         aggregateClass,
                         null,
                         agg -> isAggregateSupported( agg, allowFunctions ),
-                        operandJ( joinClass, null, join -> join.getJoinType() == JoinAlgType.INNER, any() ) ),
+                        operand( joinClass, null, join -> join.getJoinType() == JoinAlgType.INNER, any() ) ),
                 algBuilderFactory, null );
         this.allowFunctions = allowFunctions;
     }
@@ -113,7 +115,7 @@ public class AggregateJoinTransposeRule extends AlgOptRule {
         // If any aggregate functions do not support splitting, bail out
         // If any aggregate call has a filter or is distinct, bail out
         for ( AggregateCall aggregateCall : aggregate.getAggCallList() ) {
-            if ( aggregateCall.getAggregation().unwrap( SplittableAggFunction.class ) == null ) {
+            if ( aggregateCall.getAggregation().unwrap( SplittableAggFunction.class ).isEmpty() ) {
                 return false;
             }
             if ( aggregateCall.filterArg >= 0 || aggregateCall.isDistinct() ) {
@@ -158,7 +160,7 @@ public class AggregateJoinTransposeRule extends AlgOptRule {
         for ( int s = 0; s < 2; s++ ) {
             final Side side = new Side();
             final AlgNode joinInput = join.getInput( s );
-            int fieldCount = joinInput.getRowType().getFieldCount();
+            int fieldCount = joinInput.getTupleType().getFieldCount();
             final ImmutableBitSet fieldSet = ImmutableBitSet.range( offset, offset + fieldCount );
             final ImmutableBitSet belowAggregateKeyNotShifted = belowAggregateColumns.intersect( fieldSet );
             for ( Ord<Integer> c : Ord.zip( belowAggregateKeyNotShifted ) ) {
@@ -193,12 +195,12 @@ public class AggregateJoinTransposeRule extends AlgOptRule {
                 }
                 for ( Ord<AggregateCall> aggCall : Ord.zip( aggregate.getAggCallList() ) ) {
                     final AggFunction aggregation = aggCall.e.getAggregation();
-                    final SplittableAggFunction splitter = Objects.requireNonNull( aggregation.unwrap( SplittableAggFunction.class ) );
+                    final SplittableAggFunction splitter = aggregation.unwrap( SplittableAggFunction.class ).orElseThrow();
                     if ( !aggCall.e.getArgList().isEmpty() && fieldSet.contains( ImmutableBitSet.of( aggCall.e.getArgList() ) ) ) {
-                        final RexNode singleton = splitter.singleton( rexBuilder, joinInput.getRowType(), aggCall.e.transform( mapping ) );
+                        final RexNode singleton = splitter.singleton( rexBuilder, joinInput.getTupleType(), aggCall.e.transform( mapping ) );
 
-                        if ( singleton instanceof RexInputRef ) {
-                            final int index = ((RexInputRef) singleton).getIndex();
+                        if ( singleton instanceof RexIndexRef ) {
+                            final int index = ((RexIndexRef) singleton).getIndex();
                             if ( !belowAggregateKey.get( index ) ) {
                                 projects.add( singleton );
                             }
@@ -219,7 +221,7 @@ public class AggregateJoinTransposeRule extends AlgOptRule {
                 final int newGroupKeyCount = belowAggregateKey.cardinality();
                 for ( Ord<AggregateCall> aggCall : Ord.zip( aggregate.getAggCallList() ) ) {
                     final AggFunction aggregation = aggCall.e.getAggregation();
-                    final SplittableAggFunction splitter = Objects.requireNonNull( aggregation.unwrap( SplittableAggFunction.class ) );
+                    final SplittableAggFunction splitter = aggregation.unwrap( SplittableAggFunction.class ).orElseThrow();
                     final AggregateCall call1;
                     if ( fieldSet.contains( ImmutableBitSet.of( aggCall.e.getArgList() ) ) ) {
                         final AggregateCall splitCall = splitter.split( aggCall.e, mapping );
@@ -236,7 +238,7 @@ public class AggregateJoinTransposeRule extends AlgOptRule {
                         .build();
             }
             offset += fieldCount;
-            belowOffset += side.newInput.getRowType().getFieldCount();
+            belowOffset += side.newInput.getTupleType().getFieldCount();
             sides.add( side );
         }
 
@@ -246,7 +248,7 @@ public class AggregateJoinTransposeRule extends AlgOptRule {
         }
 
         // Update condition
-        final Mapping mapping = (Mapping) Mappings.target( map::get, join.getRowType().getFieldCount(), belowOffset );
+        final Mapping mapping = (Mapping) Mappings.target( map::get, join.getTupleType().getFieldCount(), belowOffset );
         final RexNode newCondition = RexUtil.apply( mapping, join.getCondition() );
 
         // Create new join
@@ -257,11 +259,11 @@ public class AggregateJoinTransposeRule extends AlgOptRule {
         // Aggregate above to sum up the sub-totals
         final List<AggregateCall> newAggCalls = new ArrayList<>();
         final int groupIndicatorCount = aggregate.getGroupCount() + aggregate.getIndicatorCount();
-        final int newLeftWidth = sides.get( 0 ).newInput.getRowType().getFieldCount();
-        final List<RexNode> projects = new ArrayList<>( rexBuilder.identityProjects( algBuilder.peek().getRowType() ) );
+        final int newLeftWidth = sides.get( 0 ).newInput.getTupleType().getFieldCount();
+        final List<RexNode> projects = new ArrayList<>( rexBuilder.identityProjects( algBuilder.peek().getTupleType() ) );
         for ( Ord<AggregateCall> aggCall : Ord.zip( aggregate.getAggCallList() ) ) {
             final AggFunction aggregation = aggCall.e.getAggregation();
-            final SplittableAggFunction splitter = Objects.requireNonNull( aggregation.unwrap( SplittableAggFunction.class ) );
+            final SplittableAggFunction splitter = aggregation.unwrap( SplittableAggFunction.class ).orElseThrow();
             final Integer leftSubTotal = sides.get( 0 ).split.get( aggCall.i );
             final Integer rightSubTotal = sides.get( 1 ).split.get( aggCall.i );
             newAggCalls.add(
@@ -269,7 +271,7 @@ public class AggregateJoinTransposeRule extends AlgOptRule {
                             rexBuilder,
                             registry( projects ),
                             groupIndicatorCount,
-                            algBuilder.peek().getRowType(),
+                            algBuilder.peek().getTupleType(),
                             aggCall.e,
                             leftSubTotal == null ? -1 : leftSubTotal,
                             rightSubTotal == null ? -1 : rightSubTotal + newLeftWidth ) );
@@ -285,10 +287,10 @@ public class AggregateJoinTransposeRule extends AlgOptRule {
                 projects2.add( algBuilder.field( key ) );
             }
             for ( AggregateCall newAggCall : newAggCalls ) {
-                final SplittableAggFunction splitter = newAggCall.getAggregation().unwrap( SplittableAggFunction.class );
-                if ( splitter != null ) {
-                    final AlgDataType rowType = algBuilder.peek().getRowType();
-                    projects2.add( splitter.singleton( rexBuilder, rowType, newAggCall ) );
+                Optional<SplittableAggFunction> oSplitter = newAggCall.getAggregation().unwrap( SplittableAggFunction.class );
+                if ( oSplitter.isPresent() ) {
+                    final AlgDataType rowType = algBuilder.peek().getTupleType();
+                    projects2.add( oSplitter.get().singleton( rexBuilder, rowType, newAggCall ) );
                 }
             }
             if ( projects2.size() == aggregate.getGroupSet().cardinality() + newAggCalls.size() ) {
@@ -328,18 +330,17 @@ public class AggregateJoinTransposeRule extends AlgOptRule {
 
 
     private static void populateEquivalences( Map<Integer, BitSet> equivalence, RexNode predicate ) {
-        switch ( predicate.getKind() ) {
-            case EQUALS:
-                RexCall call = (RexCall) predicate;
-                final List<RexNode> operands = call.getOperands();
-                if ( operands.get( 0 ) instanceof RexInputRef ) {
-                    final RexInputRef ref0 = (RexInputRef) operands.get( 0 );
-                    if ( operands.get( 1 ) instanceof RexInputRef ) {
-                        final RexInputRef ref1 = (RexInputRef) operands.get( 1 );
-                        populateEquivalence( equivalence, ref0.getIndex(), ref1.getIndex() );
-                        populateEquivalence( equivalence, ref1.getIndex(), ref0.getIndex() );
-                    }
+        if ( Objects.requireNonNull( predicate.getKind() ) == Kind.EQUALS ) {
+            RexCall call = (RexCall) predicate;
+            final List<RexNode> operands = call.getOperands();
+            if ( operands.get( 0 ) instanceof RexIndexRef ) {
+                final RexIndexRef ref0 = (RexIndexRef) operands.get( 0 );
+                if ( operands.get( 1 ) instanceof RexIndexRef ) {
+                    final RexIndexRef ref1 = (RexIndexRef) operands.get( 1 );
+                    populateEquivalence( equivalence, ref0.getIndex(), ref1.getIndex() );
+                    populateEquivalence( equivalence, ref1.getIndex(), ref0.getIndex() );
                 }
+            }
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,10 +37,10 @@ package org.polypheny.db.algebra.type;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.Glossary;
 import org.polypheny.db.util.ValidatorUtil;
@@ -56,6 +56,8 @@ import org.polypheny.db.util.ValidatorUtil;
  * if and only if they are represented by the same Java object. This reduces memory consumption and comparison cost.
  */
 public interface AlgDataTypeFactory {
+
+    AlgDataTypeFactory DEFAULT = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
 
     /**
      * Returns the type system.
@@ -84,35 +86,35 @@ public interface AlgDataTypeFactory {
      * Creates a type that represents a structured collection of fields, given lists of the names and types of the fields.
      *
      * @param kind Name resolution policy
-     * @param typeList types of the fields
-     * @param fieldNameList names of the fields
+     * @param types types of the fields
+     * @param fieldNames names of the fields
      * @return canonical struct type descriptor
      */
-    AlgDataType createStructType( StructKind kind, List<AlgDataType> typeList, List<String> fieldNameList );
+    AlgDataType createStructType( StructKind kind, final List<Long> ids, List<AlgDataType> types, List<String> fieldNames );
 
     /**
      * Creates a type that represents a structured collection of fields, given lists of the names and types of the fields.
      *
      * @param kind Name resolution policy
-     * @param typeList types of the fields
-     * @param fieldNameList names of the fields
-     * @param physicalFieldNameList physical names of the fields
+     * @param types types of the fields
+     * @param fieldNames names of the fields
+     * @param physicalFieldNames physical names of the fields
      * @return canonical struct type descriptor
      */
-    AlgDataType createStructType( StructKind kind, final List<AlgDataType> typeList, final List<String> fieldNameList, final List<String> physicalFieldNameList );
+    AlgDataType createStructType( StructKind kind, final List<Long> ids, final List<AlgDataType> types, final List<String> fieldNames, final List<String> physicalFieldNames );
 
     /**
      * Creates a type that represents a structured collection of fields. Shorthand for <code>createStructType(StructKind.FULLY_QUALIFIED, typeList, fieldNameList)</code>.
      */
-    AlgDataType createStructType( List<AlgDataType> typeList, List<String> fieldNameList );
+    AlgDataType createStructType( List<Long> ids, List<AlgDataType> types, List<String> fieldNames );
 
     /**
      * Creates a type that represents a structured collection of fieldList, obtaining the field information from a list of (name, type) pairs.
      *
-     * @param fieldList List of (name, type) pairs
+     * @param fields List of (name, type) pairs
      * @return canonical struct type descriptor
      */
-    AlgDataType createStructType( List<? extends Map.Entry<String, AlgDataType>> fieldList );
+    AlgDataType createStructType( List<? extends AlgDataTypeField> fields );
 
     /**
      * Creates an array type. Arrays are ordered collections of elements.
@@ -333,8 +335,8 @@ public interface AlgDataTypeFactory {
 
 
         @Override
-        public FieldInfoBuilder add( String name, String physicalName, AlgDataType type ) {
-            return (FieldInfoBuilder) super.add( name, physicalName, type );
+        public FieldInfoBuilder add( Long id, String name, String physicalName, AlgDataType type ) {
+            return (FieldInfoBuilder) super.add( id, name, physicalName, type );
         }
 
 
@@ -375,7 +377,7 @@ public interface AlgDataTypeFactory {
 
 
         @Override
-        public FieldInfoBuilder addAll( Iterable<? extends Map.Entry<String, AlgDataType>> fields ) {
+        public FieldInfoBuilder addAll( Iterable<AlgDataTypeField> fields ) {
             return (FieldInfoBuilder) super.addAll( fields );
         }
 
@@ -402,6 +404,7 @@ public interface AlgDataTypeFactory {
         private final List<String> names = new ArrayList<>();
         private final List<String> physicalNames = new ArrayList<>();
         private final List<AlgDataType> types = new ArrayList<>();
+        private final List<Long> ids = new ArrayList<>();
         private StructKind kind = StructKind.FULLY_QUALIFIED;
         private final AlgDataTypeFactory typeFactory;
 
@@ -460,7 +463,8 @@ public interface AlgDataTypeFactory {
         /**
          * Adds a field with given name and type.
          */
-        public Builder add( String name, String physicalName, AlgDataType type ) {
+        public Builder add( Long id, String name, String physicalName, AlgDataType type ) {
+            ids.add( id );
             names.add( name );
             physicalNames.add( physicalName );
             types.add( type );
@@ -472,7 +476,7 @@ public interface AlgDataTypeFactory {
          * Adds a field with a type created using {@link AlgDataTypeFactory#createPolyType(PolyType)}.
          */
         public Builder add( String name, String physicalName, PolyType typeName ) {
-            add( name, physicalName, typeFactory.createPolyType( typeName ) );
+            add( null, name, physicalName, typeFactory.createPolyType( typeName ) );
             return this;
         }
 
@@ -481,7 +485,7 @@ public interface AlgDataTypeFactory {
          * Adds a field with a type created using {@link AlgDataTypeFactory#createPolyType(PolyType, int)}.
          */
         public Builder add( String name, String physicalName, PolyType typeName, int precision ) {
-            add( name, physicalName, typeFactory.createPolyType( typeName, precision ) );
+            add( null, name, physicalName, typeFactory.createPolyType( typeName, precision ) );
             return this;
         }
 
@@ -490,7 +494,13 @@ public interface AlgDataTypeFactory {
          * Adds a field with a type created using {@link AlgDataTypeFactory#createPolyType(PolyType, int, int)}.
          */
         public Builder add( String name, String physicalName, PolyType typeName, int precision, int scale ) {
-            add( name, physicalName, typeFactory.createPolyType( typeName, precision, scale ) );
+            add( null, name, physicalName, typeFactory.createPolyType( typeName, precision, scale ) );
+            return this;
+        }
+
+
+        public Builder add( String name, String physicalName, AlgDataType type ) {
+            add( null, name, physicalName, type );
             return this;
         }
 
@@ -514,7 +524,7 @@ public interface AlgDataTypeFactory {
          * Adds a field. Field's ordinal is ignored.
          */
         public Builder add( AlgDataTypeField field ) {
-            add( field.getName(), field.getPhysicalName(), field.getType() );
+            add( null, field.getName(), field.getPhysicalName(), field.getType() );
             return this;
         }
 
@@ -522,10 +532,10 @@ public interface AlgDataTypeFactory {
         /**
          * Adds all fields in a collection.
          */
-        public Builder addAll( Iterable<? extends Map.Entry<String, AlgDataType>> fields ) {
-            for ( Map.Entry<String, AlgDataType> field : fields ) {
+        public Builder addAll( Iterable<AlgDataTypeField> fields ) {
+            for ( AlgDataTypeField field : fields ) {
                 // TODO MV: Adding null for physical name
-                add( field.getKey(), null, field.getValue() );
+                add( field.getId(), field.getName(), field.getPhysicalName(), field.getType() );
             }
             return this;
         }
@@ -554,7 +564,7 @@ public interface AlgDataTypeFactory {
          * Creates a struct type with the current contents of this builder.
          */
         public AlgDataType build() {
-            return typeFactory.createStructType( kind, types, names, physicalNames );
+            return typeFactory.createStructType( kind, ids, types, names, physicalNames );
         }
 
 
@@ -564,7 +574,7 @@ public interface AlgDataTypeFactory {
         public AlgDataType buildDynamic() {
             final AlgDataType dynamicType = new DynamicRecordTypeImpl( typeFactory );
             final AlgDataType type = build();
-            dynamicType.getFieldList().addAll( type.getFieldList() );
+            dynamicType.getFields().addAll( type.getFields() );
             return dynamicType;
         }
 

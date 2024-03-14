@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,7 +50,7 @@ import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -61,7 +61,7 @@ import org.polypheny.db.util.ImmutableBitSet;
  */
 public class AlgMdUniqueKeys implements MetadataHandler<BuiltInMetadata.UniqueKeys> {
 
-    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( BuiltInMethod.UNIQUE_KEYS.method, new AlgMdUniqueKeys() );
+    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( new AlgMdUniqueKeys(), BuiltInMethod.UNIQUE_KEYS.method );
 
 
     private AlgMdUniqueKeys() {
@@ -101,8 +101,8 @@ public class AlgMdUniqueKeys implements MetadataHandler<BuiltInMetadata.UniqueKe
         // Build an input to output position map.
         for ( int i = 0; i < projExprs.size(); i++ ) {
             RexNode projExpr = projExprs.get( i );
-            if ( projExpr instanceof RexInputRef ) {
-                mapInToOutPos.put( ((RexInputRef) projExpr).getIndex(), i );
+            if ( projExpr instanceof RexIndexRef ) {
+                mapInToOutPos.put( ((RexIndexRef) projExpr).getIndex(), i );
             }
         }
 
@@ -152,7 +152,7 @@ public class AlgMdUniqueKeys implements MetadataHandler<BuiltInMetadata.UniqueKe
         Set<ImmutableBitSet> rightSet = null;
 
         final Set<ImmutableBitSet> tmpRightSet = mq.getUniqueKeys( right, ignoreNulls );
-        int nFieldsOnLeft = left.getRowType().getFieldCount();
+        int nFieldsOnLeft = left.getTupleType().getFieldCount();
 
         if ( tmpRightSet != null ) {
             rightSet = new HashSet<>();
@@ -208,7 +208,7 @@ public class AlgMdUniqueKeys implements MetadataHandler<BuiltInMetadata.UniqueKe
 
     public Set<ImmutableBitSet> getUniqueKeys( SetOp alg, AlgMetadataQuery mq, boolean ignoreNulls ) {
         if ( !alg.all ) {
-            return ImmutableSet.of( ImmutableBitSet.range( alg.getRowType().getFieldCount() ) );
+            return ImmutableSet.of( ImmutableBitSet.range( alg.getTupleType().getFieldCount() ) );
         }
         return ImmutableSet.of();
     }

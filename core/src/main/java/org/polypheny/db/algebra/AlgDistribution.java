@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,7 +50,7 @@ import org.polypheny.db.util.mapping.Mappings.TargetMapping;
  * <li>{@link AlgDistributionTraitDef#convert} does not create specific physical operators as it does in Drill. Drill will need to create rules; or we could allow "converters" to be registered with the planner that are not trait-defs.</li>
  * </ul>
  */
-public interface AlgDistribution extends AlgMultipleTrait {
+public interface AlgDistribution extends AlgMultipleTrait<AlgDistributionTraitDef> {
 
     /**
      * Returns the type of distribution.

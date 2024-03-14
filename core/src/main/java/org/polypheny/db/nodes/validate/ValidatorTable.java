@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,22 +18,21 @@ package org.polypheny.db.nodes.validate;
 
 
 import java.util.List;
-import org.polypheny.db.algebra.constant.Modality;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.schema.Wrapper;
-import org.polypheny.db.util.AccessType;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.util.Wrapper;
 
 
 /**
  * Supplies a {@link Validator} with the metadata for a table.
- *
- * #@see ValidatorCatalogReader
  */
 public interface ValidatorTable extends Wrapper {
 
 
-    AlgDataType getRowType();
+    AlgDataType getTupleType();
 
     List<String> getQualifiedName();
 
@@ -42,12 +41,17 @@ public interface ValidatorTable extends Wrapper {
      */
     Monotonicity getMonotonicity( String columnName );
 
-    /**
-     * Returns the access type of the table
-     */
-    AccessType getAllowedAccess();
-
-    boolean supportsModality( Modality modality );
+    @Deprecated
+    static Monotonicity getMonotonicity( LogicalTable table, String columnName ) {
+        for ( AlgCollation collation : table.getStatistic().getCollations() ) {
+            final AlgFieldCollation fieldCollation = collation.getFieldCollations().get( 0 );
+            final int fieldIndex = fieldCollation.getFieldIndex();
+            if ( fieldIndex < table.getTupleType().getFieldCount() && table.getTupleType().getFieldNames().get( fieldIndex ).equals( columnName ) ) {
+                return fieldCollation.direction.monotonicity();
+            }
+        }
+        return Monotonicity.NOT_MONOTONIC;
+    }
 
 }
 

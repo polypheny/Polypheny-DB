@@ -1,10 +1,6 @@
 package org.polypheny.db.util.background;
 
 
-import com.google.gson.TypeAdapter;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
 import lombok.Getter;
 
 
@@ -18,6 +14,7 @@ public interface BackgroundTask {
     }
 
 
+    @Getter
     enum TaskSchedulingType {
         EVERY_SECOND( 1000, TaskDelayType.DELAYED ),
         EVERY_FIVE_SECONDS( 5000, TaskDelayType.DELAYED ),
@@ -37,33 +34,13 @@ public interface BackgroundTask {
         EVERY_FIFTEEN_MINUTES_FIXED( 900000, TaskDelayType.FIXED ),
         EVERY_THIRTY_MINUTES_FIXED( 1800000, TaskDelayType.FIXED );
 
-        @Getter
         private final TaskDelayType delayType;
-        @Getter
         private final long millis;
 
 
         TaskSchedulingType( long millis, TaskDelayType delayType ) {
             this.millis = millis;
             this.delayType = delayType;
-        }
-
-
-        public static class TaskSchedulingTypeAdapter extends TypeAdapter<TaskSchedulingType> {
-
-            @Override
-            public void write( JsonWriter out, TaskSchedulingType value ) throws IOException {
-                out.beginObject();
-                out.value( value.name() );
-                out.endObject();
-            }
-
-
-            @Override
-            public TaskSchedulingType read( JsonReader in ) throws IOException {
-                return TaskSchedulingType.valueOf( in.nextString() );
-            }
-
         }
 
     }

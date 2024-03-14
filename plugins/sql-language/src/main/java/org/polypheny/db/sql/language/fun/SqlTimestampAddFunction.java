@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,7 +64,7 @@ public class SqlTimestampAddFunction extends SqlFunction {
                 final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
                 return deduceType(
                         typeFactory,
-                        opBinding.getOperandLiteralValue( 0, TimeUnit.class ),
+                        (TimeUnit) opBinding.getOperandLiteralValue( 0, PolyType.TIME ).asSymbol().value,
                         opBinding.getOperandType( 1 ),
                         opBinding.getOperandType( 2 ) );
             };

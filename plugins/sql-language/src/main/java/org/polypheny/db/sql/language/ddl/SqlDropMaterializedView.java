@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,22 +16,20 @@
 
 package org.polypheny.db.sql.language.ddl;
 
-import static org.polypheny.db.util.Static.RESOURCE;
-
+import java.util.Optional;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalMaterializedView;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
-import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.runtime.PolyphenyDbContextException;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlOperator;
 import org.polypheny.db.sql.language.SqlSpecialOperator;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.view.MaterializedViewManager;
 
 public class SqlDropMaterializedView extends SqlDropObject {
@@ -48,33 +46,36 @@ public class SqlDropMaterializedView extends SqlDropObject {
 
 
     @Override
-    public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        final CatalogTable catalogTable;
+    public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
+        final Optional<? extends LogicalEntity> entity = searchEntity( context, name );
 
-        try {
-            catalogTable = getCatalogTable( context, name );
-        } catch ( PolyphenyDbContextException e ) {
+        if ( entity.isEmpty() ) {
             if ( ifExists ) {
-                // It is ok that there is no database / schema / table with this name because "IF EXISTS" was specified
+                // It is ok that there is no view with this name because "IF EXISTS" was specified
                 return;
             } else {
-                throw e;
+                throw new GenericRuntimeException( "Could not find view with name: " + String.join( ".", name.names ) );
             }
         }
 
-        if ( catalogTable.entityType != EntityType.MATERIALIZED_VIEW ) {
-            throw new RuntimeException( "Not Possible to use DROP MATERIALIZED VIEW because " + catalogTable.name + " is not a Materialized View." );
+        Optional<LogicalMaterializedView> optionalView = entity.get().unwrap( LogicalMaterializedView.class );
+
+        if ( optionalView.isEmpty() ) {
+            throw new GenericRuntimeException( "Could not find materialized view with name: " + String.join( ".", name.names ) );
+        }
+
+        LogicalMaterializedView view = optionalView.get();
+
+        if ( view.entityType != EntityType.MATERIALIZED_VIEW ) {
+            throw new GenericRuntimeException( "Not Possible to use DROP MATERIALIZED VIEW because " + view.name + " is not a materialized view." );
         }
 
         MaterializedViewManager materializedManager = MaterializedViewManager.getInstance();
         materializedManager.isDroppingMaterialized = true;
-        materializedManager.deleteMaterializedViewFromInfo( catalogTable.id );
+        materializedManager.deleteMaterializedViewFromInfo( view.id );
 
-        try {
-            DdlManager.getInstance().dropMaterializedView( catalogTable, statement );
-        } catch ( DdlOnSourceException e ) {
-            throw CoreUtil.newContextException( name.getPos(), RESOURCE.ddlOnSourceTable() );
-        }
+        DdlManager.getInstance().dropMaterializedView( view, statement );
+
         materializedManager.isDroppingMaterialized = false;
     }
 

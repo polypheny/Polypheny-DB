@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
@@ -37,13 +38,15 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.notebooks.model.language.JupyterKernelLanguage;
 import org.polypheny.db.notebooks.model.language.JupyterKernelLanguage.JupyterQueryPart;
 import org.polypheny.db.notebooks.model.language.JupyterLanguageFactory;
+import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.webui.crud.LanguageCrud;
-import org.polypheny.db.webui.models.Result;
 import org.polypheny.db.webui.models.requests.QueryRequest;
+import org.polypheny.db.webui.models.results.Result;
 
 /**
  * Instances correspond to running Kernels in the Jupyter Server docker container.
@@ -96,7 +99,6 @@ public class JupyterKernel {
         sendInitCode();
 
         GsonBuilder gsonBuilder = new GsonBuilder();
-        gsonBuilder.registerTypeAdapter( Result.class, Result.getSerializer() );
         resultSetGson = gsonBuilder.create();
     }
 
@@ -175,7 +177,8 @@ public class JupyterKernel {
         if ( apc == null ) {
             return;
         }
-        String result = anyQuery( query, apc.language, apc.namespace );
+        Optional<LogicalNamespace> namespace = Catalog.snapshot().getNamespace( apc.namespace );
+        String result = anyQuery( query, apc.language, namespace.orElseThrow().name );
         ByteBuffer request = buildInputReply( result, parentHeader );
         webSocket.sendBinary( request, true );
     }
@@ -247,14 +250,13 @@ public class JupyterKernel {
      */
     private String anyQuery( String query, String language, String namespace ) {
         QueryRequest queryRequest = new QueryRequest( query, false, true, language, namespace );
-        List<Result> results = LanguageCrud.anyQuery(
-                QueryLanguage.from( language ),
-                null,
-                queryRequest,
-                jsm.getTransactionManager(),
-                Catalog.defaultUserId,
-                Catalog.defaultDatabaseId,
-                null );
+        List<? extends Result<?, ?>> results = LanguageCrud.anyQueryResult(
+                QueryContext.builder()
+                        .query( query )
+                        .language( QueryLanguage.from( language ) )
+                        .origin( "Notebooks" )
+                        .transactionManager( jsm.getTransactionManager() )
+                        .build(), queryRequest );
         return resultSetGson.toJson( results );
     }
 

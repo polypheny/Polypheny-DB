@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,50 +27,46 @@ import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.BiAlg;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.Scan;
-import org.polypheny.db.algebra.core.TableFunctionScan;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
-import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
-import org.polypheny.db.algebra.logical.relational.LogicalExchange;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalIntersect;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
-import org.polypheny.db.algebra.logical.relational.LogicalMatch;
-import org.polypheny.db.algebra.logical.relational.LogicalMinus;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelCorrelate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelExchange;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelIntersect;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelMatch;
+import org.polypheny.db.algebra.logical.relational.LogicalRelMinus;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
+import org.polypheny.db.algebra.logical.relational.LogicalRelTableFunctionScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
-import org.polypheny.db.algebra.logical.relational.LogicalScan;
-import org.polypheny.db.algebra.logical.relational.LogicalSort;
-import org.polypheny.db.algebra.logical.relational.LogicalUnion;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.entity.CatalogMaterializedView;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.prepare.AlgOptTableImpl;
+import org.polypheny.db.catalog.entity.logical.LogicalMaterializedView;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.LogicalTable;
 
 
 public class ViewManager {
 
-    private static LogicalSort orderMaterialized( AlgNode other ) {
-        int positionPrimary = other.getRowType().getFieldList().size() - 1;
+    public static LogicalRelSort orderMaterialized( AlgNode other ) {
+        int positionPrimary = other.getTupleType().getFields().size() - 1;
         AlgFieldCollation algFieldCollation = new AlgFieldCollation( positionPrimary, Direction.ASCENDING );
         AlgCollations.of( algFieldCollation );
 
-        return LogicalSort.create( other, AlgCollations.of( algFieldCollation ), null, null );
+        return LogicalRelSort.create( other, AlgCollations.of( algFieldCollation ), null, null );
     }
 
 
     public static AlgNode expandViewNode( AlgNode other ) {
         RexBuilder rexBuilder = other.getCluster().getRexBuilder();
         final List<RexNode> exprs = new ArrayList<>();
-        final AlgDataType rowType = other.getRowType();
+        final AlgDataType rowType = other.getTupleType();
         final int fieldCount = rowType.getFieldCount();
         for ( int i = 0; i < fieldCount; i++ ) {
             exprs.add( rexBuilder.makeInputRef( other, i ) );
@@ -78,14 +74,14 @@ public class ViewManager {
 
         AlgNode algNode = ((LogicalRelViewScan) other).getAlgNode();
 
-        if ( algNode instanceof Project && algNode.getRowType().getFieldNames().equals( other.getRowType().getFieldNames() ) ) {
+        if ( algNode instanceof Project && algNode.getTupleType().getFieldNames().equals( other.getTupleType().getFieldNames() ) ) {
             return algNode;
-        } else if ( algNode instanceof LogicalSort && algNode.getRowType().getFieldNames().equals( other.getRowType().getFieldNames() ) ) {
+        } else if ( algNode instanceof LogicalRelSort && algNode.getTupleType().getFieldNames().equals( other.getTupleType().getFieldNames() ) ) {
             return algNode;
-        } else if ( algNode instanceof LogicalAggregate && algNode.getRowType().getFieldNames().equals( other.getRowType().getFieldNames() ) ) {
+        } else if ( algNode instanceof LogicalRelAggregate && algNode.getTupleType().getFieldNames().equals( other.getTupleType().getFieldNames() ) ) {
             return algNode;
         } else {
-            return LogicalProject.create( algNode, exprs, other.getRowType().getFieldNames() );
+            return LogicalRelProject.create( algNode, exprs, other.getTupleType().getFieldNames() );
         }
     }
 
@@ -102,7 +98,7 @@ public class ViewManager {
 
 
         @Override
-        public AlgNode visit( LogicalAggregate aggregate ) {
+        public AlgNode visit( LogicalRelAggregate aggregate ) {
             handleNodeType( aggregate );
             depth++;
             return aggregate;
@@ -110,7 +106,7 @@ public class ViewManager {
 
 
         @Override
-        public AlgNode visit( LogicalMatch match ) {
+        public AlgNode visit( LogicalRelMatch match ) {
             handleNodeType( match );
             depth++;
             return match;
@@ -118,7 +114,7 @@ public class ViewManager {
 
 
         @Override
-        public AlgNode visit( Scan scan ) {
+        public AlgNode visit( LogicalRelScan scan ) {
             if ( depth == 0 ) {
                 return checkNode( scan );
             }
@@ -129,7 +125,7 @@ public class ViewManager {
 
 
         @Override
-        public AlgNode visit( TableFunctionScan scan ) {
+        public AlgNode visit( LogicalRelTableFunctionScan scan ) {
             handleNodeType( scan );
             depth++;
             return scan;
@@ -137,7 +133,7 @@ public class ViewManager {
 
 
         @Override
-        public AlgNode visit( LogicalValues values ) {
+        public AlgNode visit( LogicalRelValues values ) {
             handleNodeType( values );
             depth++;
             return values;
@@ -145,7 +141,7 @@ public class ViewManager {
 
 
         @Override
-        public AlgNode visit( LogicalFilter filter ) {
+        public AlgNode visit( LogicalRelFilter filter ) {
             handleNodeType( filter );
             depth++;
             return filter;
@@ -153,7 +149,7 @@ public class ViewManager {
 
 
         @Override
-        public AlgNode visit( LogicalProject project ) {
+        public AlgNode visit( LogicalRelProject project ) {
             handleNodeType( project );
             depth++;
             return project;
@@ -161,7 +157,7 @@ public class ViewManager {
 
 
         @Override
-        public AlgNode visit( LogicalJoin join ) {
+        public AlgNode visit( LogicalRelJoin join ) {
             handleNodeType( join );
             depth++;
             return join;
@@ -169,7 +165,7 @@ public class ViewManager {
 
 
         @Override
-        public AlgNode visit( LogicalCorrelate correlate ) {
+        public AlgNode visit( LogicalRelCorrelate correlate ) {
             handleNodeType( correlate );
             depth++;
             return correlate;
@@ -177,7 +173,7 @@ public class ViewManager {
 
 
         @Override
-        public AlgNode visit( LogicalUnion union ) {
+        public AlgNode visit( LogicalRelUnion union ) {
             handleNodeType( union );
             depth++;
             return union;
@@ -185,7 +181,7 @@ public class ViewManager {
 
 
         @Override
-        public AlgNode visit( LogicalIntersect intersect ) {
+        public AlgNode visit( LogicalRelIntersect intersect ) {
             handleNodeType( intersect );
             depth++;
             return intersect;
@@ -193,7 +189,7 @@ public class ViewManager {
 
 
         @Override
-        public AlgNode visit( LogicalMinus minus ) {
+        public AlgNode visit( LogicalRelMinus minus ) {
             handleNodeType( minus );
             depth++;
             return minus;
@@ -201,7 +197,7 @@ public class ViewManager {
 
 
         @Override
-        public AlgNode visit( LogicalSort sort ) {
+        public AlgNode visit( LogicalRelSort sort ) {
             handleNodeType( sort );
             depth++;
             return sort;
@@ -209,7 +205,7 @@ public class ViewManager {
 
 
         @Override
-        public AlgNode visit( LogicalExchange exchange ) {
+        public AlgNode visit( LogicalRelExchange exchange ) {
             handleNodeType( exchange );
             depth++;
             return exchange;
@@ -233,7 +229,7 @@ public class ViewManager {
 
 
         @Override
-        public AlgNode visit( LogicalModify modify ) {
+        public AlgNode visit( LogicalRelModify modify ) {
             handleNodeType( modify );
             depth++;
             return modify;
@@ -251,17 +247,13 @@ public class ViewManager {
 
 
         public AlgNode checkNode( AlgNode other ) {
-            if ( other instanceof LogicalRelViewScan ) {
+            /*if ( other instanceof LogicalRelViewScan ) {
                 return expandViewNode( other );
-            } else if ( doesSubstituteOrderBy && other instanceof LogicalScan ) {
-                if ( other.getTable() instanceof AlgOptTableImpl ) {
-                    if ( other.getTable().getTable() instanceof LogicalTable ) {
-                        long tableId = ((LogicalTable) ((AlgOptTableImpl) other.getTable()).getTable()).getTableId();
-                        CatalogTable catalogtable = Catalog.getInstance().getTable( tableId );
-                        if ( catalogtable.entityType == EntityType.MATERIALIZED_VIEW && ((CatalogMaterializedView) catalogtable).isOrdered() ) {
-                            return orderMaterialized( other );
-                        }
-                    }
+            } else */
+            if ( doesSubstituteOrderBy && other instanceof LogicalRelScan ) {
+                LogicalTable catalogTable = other.getEntity().unwrap( LogicalTable.class ).orElseThrow();
+                if ( catalogTable.entityType == EntityType.MATERIALIZED_VIEW && ((LogicalMaterializedView) catalogTable).isOrdered() ) {
+                    return orderMaterialized( other );
                 }
             }
             handleNodeType( other );

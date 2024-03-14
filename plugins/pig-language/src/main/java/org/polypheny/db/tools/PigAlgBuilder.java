@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,24 +35,23 @@ package org.polypheny.db.tools;
 
 
 import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.JoinAlgType;
-import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptSchema;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.Util;
-
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**
@@ -63,43 +62,34 @@ public class PigAlgBuilder extends AlgBuilder {
     private String lastAlias;
 
 
-    private PigAlgBuilder( Context context, AlgOptCluster cluster, AlgOptSchema algOptSchema ) {
-        super( context, cluster, algOptSchema );
+    private PigAlgBuilder( Context context, AlgCluster cluster, Snapshot snapshot ) {
+        super( context, cluster, snapshot );
     }
 
 
-    /**
-     * Creates a PigRelBuilder.
-     */
-    public static PigAlgBuilder create( FrameworkConfig config ) {
-        final AlgBuilder algBuilder = AlgBuilder.create( config );
-        return new PigAlgBuilder( config.getContext(), algBuilder.cluster, algBuilder.algOptSchema );
-    }
-
-
-    public static PigAlgBuilder create( Statement statement, AlgOptCluster cluster ) {
-        return new PigAlgBuilder( Contexts.EMPTY_CONTEXT, cluster, statement.getTransaction().getCatalogReader() );
+    public static PigAlgBuilder create( Statement statement, AlgCluster cluster ) {
+        return new PigAlgBuilder( Contexts.EMPTY_CONTEXT, cluster, statement.getTransaction().getSnapshot() );
     }
 
 
     public static PigAlgBuilder create( Statement statement ) {
         final RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
-        final AlgOptCluster cluster = AlgOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder );
+        final AlgCluster cluster = AlgCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder, null, statement.getTransaction().getSnapshot() );
         return create( statement, cluster );
     }
 
 
     @Override
-    public PigAlgBuilder scan( String... tableNames ) {
+    public PigAlgBuilder relScan( String... tableNames ) {
         lastAlias = null;
-        return (PigAlgBuilder) super.scan( tableNames );
+        return (PigAlgBuilder) super.relScan( tableNames );
     }
 
 
     @Override
-    public PigAlgBuilder scan( Iterable<String> tableNames ) {
+    public PigAlgBuilder relScan( List<String> tableNames ) {
         lastAlias = null;
-        return (PigAlgBuilder) super.scan( tableNames );
+        return (PigAlgBuilder) super.relScan( tableNames );
     }
 
 
@@ -117,7 +107,7 @@ public class PigAlgBuilder extends AlgBuilder {
      * @return This builder
      */
     public PigAlgBuilder load( String path, RexNode loadFunction, AlgDataType rowType ) {
-        scan( path.replace( ".csv", "" ) ); // TODO: use a UDT
+        relScan( path.replace( ".csv", "" ) ); // TODO: use a UDT
         return this;
     }
 
@@ -182,7 +172,7 @@ public class PigAlgBuilder extends AlgBuilder {
             // Create a ROW to pass to COLLECT. Interestingly, this is not allowed by standard SQL; see [POLYPHENYDB-877] Allow ROW as argument to COLLECT.
             final RexNode row =
                     cluster.getRexBuilder().makeCall(
-                            peek( 1, 0 ).getRowType(),
+                            peek( 1, 0 ).getTupleType(),
                             OperatorRegistry.get( OperatorName.ROW ),
                             fields() );
             aggregate( groupKey.e, aggregateCall( OperatorRegistry.getAgg( OperatorName.COLLECT ), row ).as( getAlias() ) );
@@ -204,8 +194,8 @@ public class PigAlgBuilder extends AlgBuilder {
             return lastAlias;
         } else {
             AlgNode top = peek();
-            if ( top instanceof Scan ) {
-                return Util.last( top.getTable().getQualifiedName() );
+            if ( top instanceof RelScan ) {
+                return top.getEntity().name;
             } else {
                 return null;
             }

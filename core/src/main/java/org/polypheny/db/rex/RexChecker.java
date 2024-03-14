@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -124,7 +124,7 @@ public class RexChecker extends RexVisitorImpl<Boolean> {
 
 
     @Override
-    public Boolean visitInputRef( RexInputRef ref ) {
+    public Boolean visitIndexRef( RexIndexRef ref ) {
         final int index = ref.getIndex();
         if ( (index < 0) || (index >= inputTypeList.size()) ) {
             ++failCount;
@@ -164,11 +164,11 @@ public class RexChecker extends RexVisitorImpl<Boolean> {
         assert refType.isStruct();
         final AlgDataTypeField field = fieldAccess.getField();
         final int index = field.getIndex();
-        if ( (index < 0) || (index > refType.getFieldList().size()) ) {
+        if ( (index < 0) || (index > refType.getFields().size()) ) {
             ++failCount;
             return litmus.fail( null );
         }
-        final AlgDataTypeField typeField = refType.getFieldList().get( index );
+        final AlgDataTypeField typeField = refType.getFields().get( index );
         if ( !AlgOptUtil.eq( "type1", typeField.getType(), "type2", fieldAccess.getType(), litmus ) ) {
             ++failCount;
             return litmus.fail( null );

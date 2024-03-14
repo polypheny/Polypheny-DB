@@ -19,6 +19,7 @@ subprojects {
 
     dependencies {
         testImplementation project(path: ":core", configuration: "tests")
+        testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
     }
 
     // jar
@@ -57,13 +58,14 @@ subprojects {
         into('lib') {
             from configurations.runtimeClasspath
         }
-        extension('zip')
+        setArchiveExtension('zip')
     }
 
     task assemblePlugin(type: Copy) {
         from plugin
         into pluginsDir
     }
+
 }
 
 tasks.register('assemblePlugins') {

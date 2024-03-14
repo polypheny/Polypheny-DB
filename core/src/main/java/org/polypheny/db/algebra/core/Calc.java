@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,16 +35,17 @@ package org.polypheny.db.algebra.core;
 
 
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.logical.relational.LogicalCalc;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNode;
@@ -58,6 +59,7 @@ import org.polypheny.db.util.Litmus;
  */
 public abstract class Calc extends SingleAlg {
 
+    @Getter
     protected final RexProgram program;
 
 
@@ -69,7 +71,7 @@ public abstract class Calc extends SingleAlg {
      * @param child Input relation
      * @param program Calc program
      */
-    protected Calc( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, RexProgram program ) {
+    protected Calc( AlgCluster cluster, AlgTraitSet traits, AlgNode child, RexProgram program ) {
         super( cluster, traits, child );
         this.rowType = program.getOutputRowType();
         this.program = program;
@@ -97,7 +99,7 @@ public abstract class Calc extends SingleAlg {
 
     @Override
     public boolean isValid( Litmus litmus, Context context ) {
-        if ( !AlgOptUtil.equal( "program's input type", program.getInputRowType(), "child's output type", getInput().getRowType(), litmus ) ) {
+        if ( !AlgOptUtil.equal( "program's input type", program.getInputRowType(), "child's output type", getInput().getTupleType(), litmus ) ) {
             return litmus.fail( null );
         }
         if ( !program.isValid( litmus, context ) ) {
@@ -110,21 +112,17 @@ public abstract class Calc extends SingleAlg {
     }
 
 
-    public RexProgram getProgram() {
-        return program;
-    }
-
 
     @Override
-    public double estimateRowCount( AlgMetadataQuery mq ) {
+    public double estimateTupleCount( AlgMetadataQuery mq ) {
         return AlgMdUtil.estimateFilteredRows( getInput(), program, mq );
     }
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        double dRows = mq.getRowCount( this );
-        double dCpu = mq.getRowCount( getInput() ) * program.getExprCount();
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
+        double dRows = mq.getTupleCount( this );
+        double dCpu = mq.getTupleCount( getInput() ) * program.getExprCount();
         double dIo = 0;
         return planner.getCostFactory().makeCost( dRows, dCpu, dIo );
     }

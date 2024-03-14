@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,7 +98,7 @@ class RexCopier extends RexShuttle {
 
 
     @Override
-    public RexNode visitInputRef( RexInputRef inputRef ) {
+    public RexNode visitIndexRef( RexIndexRef inputRef ) {
         return builder.makeInputRef( copy( inputRef.getType() ), inputRef.getIndex() );
     }
 
@@ -112,7 +112,7 @@ class RexCopier extends RexShuttle {
     @Override
     public RexNode visitLiteral( RexLiteral literal ) {
         // Get the value as is
-        return new RexLiteral( RexLiteral.value( literal ), copy( literal.getType() ), literal.getTypeName() );
+        return new RexLiteral( RexLiteral.value( literal ), copy( literal.getType() ), literal.getPolyType() );
     }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import lombok.Getter;
 import org.apache.calcite.linq4j.Linq4j;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
@@ -48,12 +49,12 @@ import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptListener.AlgChosenEvent;
 import org.polypheny.db.plan.AlgOptListener.AlgEquivalenceEvent;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.Litmus;
@@ -64,10 +65,10 @@ import org.slf4j.Logger;
 
 /**
  * Subset of an equivalence class where all algebra expressions have the same physical properties.
- *
+ * <p>
  * Physical properties are instances of the {@link AlgTraitSet}, and consist of traits such as calling convention and
  * collation (sort-order).
- *
+ * <p>
  * For some traits, a algebra expression can have more than one instance. For example, R can be sorted on both [X]
  * and [Y, Z]. In which case, R would belong to the sub-sets for [X] and [Y, Z]; and also the leading edges [Y] and [].
  *
@@ -88,11 +89,13 @@ public class AlgSubset extends AbstractAlgNode {
     /**
      * The set this subset belongs to.
      */
+    @Getter
     final AlgSet set;
 
     /**
      * best known plan
      */
+    @Getter
     AlgNode best;
 
     /**
@@ -106,7 +109,7 @@ public class AlgSubset extends AbstractAlgNode {
     boolean boosted;
 
 
-    AlgSubset( AlgOptCluster cluster, AlgSet set, AlgTraitSet traits ) {
+    AlgSubset( AlgCluster cluster, AlgSet set, AlgTraitSet traits ) {
         super( cluster, traits );
         this.set = set;
         this.boosted = false;
@@ -118,7 +121,7 @@ public class AlgSubset extends AbstractAlgNode {
 
     /**
      * Computes the best {@link AlgNode} in this subset.
-     *
+     * <p>
      * Only necessary when a subset is created in a set that has subsets that subsume it. Rationale:
      *
      * <ol>
@@ -126,7 +129,7 @@ public class AlgSubset extends AbstractAlgNode {
      * <li>After creation, {@code best} and {@code bestCost} are maintained incrementally by {@link #propagateCostImprovements0} and {@link AlgSet#mergeWith(VolcanoPlanner, AlgSet)}.</li>
      * </ol>
      */
-    private void computeBestCost( AlgOptPlanner planner ) {
+    private void computeBestCost( AlgPlanner planner ) {
         bestCost = planner.getCostFactory().makeInfiniteCost();
         final AlgMetadataQuery mq = getCluster().getMetadataQuery();
         for ( AlgNode alg : getAlgs() ) {
@@ -139,8 +142,15 @@ public class AlgSubset extends AbstractAlgNode {
     }
 
 
-    public AlgNode getBest() {
-        return best;
+    @Override
+    public boolean containsJoin() {
+        return set.alg.containsJoin();
+    }
+
+
+    @Override
+    public boolean containsScan() {
+        return set.alg.containsScan();
     }
 
 
@@ -170,17 +180,17 @@ public class AlgSubset extends AbstractAlgNode {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return planner.getCostFactory().makeZeroCost();
     }
 
 
     @Override
-    public double estimateRowCount( AlgMetadataQuery mq ) {
+    public double estimateTupleCount( AlgMetadataQuery mq ) {
         if ( best != null ) {
-            return mq.getRowCount( best );
+            return mq.getTupleCount( best );
         } else {
-            return mq.getRowCount( set.alg );
+            return mq.getTupleCount( set.alg );
         }
     }
 
@@ -203,7 +213,7 @@ public class AlgSubset extends AbstractAlgNode {
     protected String computeDigest() {
         StringBuilder digest = new StringBuilder( "Subset#" );
         digest.append( set.id );
-        for ( AlgTrait trait : traitSet ) {
+        for ( AlgTrait<?> trait : traitSet ) {
             digest.append( '.' ).append( trait );
         }
         return digest.toString();
@@ -212,7 +222,7 @@ public class AlgSubset extends AbstractAlgNode {
 
     @Override
     protected AlgDataType deriveRowType() {
-        return set.alg.getRowType();
+        return set.alg.getTupleType();
     }
 
 
@@ -221,7 +231,7 @@ public class AlgSubset extends AbstractAlgNode {
      */
     Set<AlgNode> getParents() {
         final Set<AlgNode> list = new LinkedHashSet<>();
-        for ( AlgNode parent : set.getParentRels() ) {
+        for ( AlgNode parent : set.getParentAlgs() ) {
             for ( AlgSubset alg : inputSubsets( parent ) ) {
                 if ( alg.set == set && traitSet.satisfies( alg.getTraitSet() ) ) {
                     list.add( parent );
@@ -237,7 +247,7 @@ public class AlgSubset extends AbstractAlgNode {
      */
     Set<AlgSubset> getParentSubsets( VolcanoPlanner planner ) {
         final Set<AlgSubset> list = new LinkedHashSet<>();
-        for ( AlgNode parent : set.getParentRels() ) {
+        for ( AlgNode parent : set.getParentAlgs() ) {
             for ( AlgSubset alg : inputSubsets( parent ) ) {
                 if ( alg.set == set && alg.getTraitSet().equals( traitSet ) ) {
                     list.add( planner.getSubset( parent ) );
@@ -260,7 +270,7 @@ public class AlgSubset extends AbstractAlgNode {
     public Collection<AlgNode> getParentRels() {
         final Set<AlgNode> list = new LinkedHashSet<>();
         parentLoop:
-        for ( AlgNode parent : set.getParentRels() ) {
+        for ( AlgNode parent : set.getParentAlgs() ) {
             for ( AlgSubset alg : inputSubsets( parent ) ) {
                 if ( alg.set == set && traitSet.satisfies( alg.getTraitSet() ) ) {
                     list.add( parent );
@@ -271,10 +281,6 @@ public class AlgSubset extends AbstractAlgNode {
         return list;
     }
 
-
-    AlgSet getSet() {
-        return set;
-    }
 
 
     /**
@@ -293,7 +299,7 @@ public class AlgSubset extends AbstractAlgNode {
 
         // If this isn't the first alg in the set, it must have compatible row type.
         if ( set.alg != null ) {
-            AlgOptUtil.equal( "rowtype of new alg", alg.getRowType(), "rowtype of set", getRowType(), Litmus.THROW );
+            AlgOptUtil.equal( "rowtype of new alg", alg.getTupleType(), "rowtype of set", getTupleType(), Litmus.THROW );
         }
         set.addInternal( alg );
         if ( false ) {
@@ -324,7 +330,7 @@ public class AlgSubset extends AbstractAlgNode {
 
 
     /**
-     * Checks whether a algexp has made its subset cheaper, and if it so, recursively checks whether that subset's parents have gotten cheaper.
+     * Checks whether an algexp has made its subset cheaper, and if it so, recursively checks whether that subset's parents have gotten cheaper.
      *
      * @param planner Planner
      * @param mq Metadata query
@@ -438,8 +444,7 @@ public class AlgSubset extends AbstractAlgNode {
 
 
         public AlgNode visit( AlgNode p, int ordinal, AlgNode parent ) {
-            if ( p instanceof AlgSubset ) {
-                AlgSubset subset = (AlgSubset) p;
+            if ( p instanceof AlgSubset subset ) {
                 AlgNode cheapest = subset.best;
                 if ( cheapest == null ) {
                     AlgOptCost cost = planner.getCost( p, p.getCluster().getMetadataQuery() );
@@ -451,7 +456,7 @@ public class AlgSubset extends AbstractAlgNode {
                     planner.dump( pw );
                     pw.flush();
                     final String dump = sw.toString();
-                    RuntimeException e = new AlgOptPlanner.CannotPlanException( dump );
+                    RuntimeException e = new AlgPlanner.CannotPlanException( dump );
                     LOGGER.trace( "Caught exception in class={}, method=visit", getClass().getName(), e );
                     throw e;
                 }
@@ -475,7 +480,7 @@ public class AlgSubset extends AbstractAlgNode {
             if ( !inputs.equals( oldInputs ) ) {
                 final AlgNode pOld = p;
                 p = p.copy( p.getTraitSet(), inputs );
-                planner.provenanceMap.put( p, new VolcanoPlanner.DirectProvenance( pOld ) );
+                planner.provenances.put( p, new VolcanoPlanner.DirectProvenance( pOld ) );
             }
             return p;
         }

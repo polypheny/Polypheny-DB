@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,21 +17,20 @@
 package org.polypheny.db.monitoring.statistics;
 
 
-import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.catalog.logistic.EntityType;
 
 
 /**
  * Stores the available statistic data of a specific table.
  */
-public class StatisticTable<T extends Comparable<T>> {
+public class StatisticTable {
 
     @Getter
     private String table;
@@ -44,10 +43,7 @@ public class StatisticTable<T extends Comparable<T>> {
     private TableCalls calls;
 
     @Getter
-    private NamespaceType namespaceType;
-
-    @Getter
-    private ImmutableList<Integer> dataPlacements;
+    private DataModel dataModel;
 
     @Getter
     private final List<Integer> availableAdapters = new ArrayList<>();
@@ -56,11 +52,11 @@ public class StatisticTable<T extends Comparable<T>> {
     private EntityType entityType;
 
     @Getter
-    private int numberOfRows;
+    private long numberOfRows;
 
     @Getter
     @Setter
-    private List<AlphabeticStatisticColumn<T>> alphabeticColumn;
+    private List<AlphabeticStatisticColumn> alphabeticColumn;
 
     @Getter
     @Setter
@@ -68,18 +64,17 @@ public class StatisticTable<T extends Comparable<T>> {
 
     @Getter
     @Setter
-    private List<TemporalStatisticColumn<T>> temporalColumn;
+    private List<TemporalStatisticColumn> temporalColumn;
 
 
     public StatisticTable( Long tableId ) {
         this.tableId = tableId;
 
         Catalog catalog = Catalog.getInstance();
-        if ( catalog.checkIfExistsEntity( tableId ) ) {
-            CatalogTable catalogTable = catalog.getTable( tableId );
+        if ( catalog.getSnapshot().getLogicalEntity( tableId ).isPresent() ) {
+            LogicalTable catalogTable = catalog.getSnapshot().getLogicalEntity( tableId ).map( e -> e.unwrap( LogicalTable.class ) ).orElseThrow().orElseThrow();
             this.table = catalogTable.name;
-            this.namespaceType = catalogTable.getNamespaceType();
-            this.dataPlacements = catalogTable.dataPlacements;
+            this.dataModel = catalogTable.dataModel;
             this.entityType = catalogTable.entityType;
         }
         calls = new TableCalls( tableId, 0, 0, 0, 0 );
@@ -91,7 +86,7 @@ public class StatisticTable<T extends Comparable<T>> {
     }
 
 
-    public void setNumberOfRows( int rows ) {
+    public void setNumberOfRows( long rows ) {
         this.numberOfRows = Math.max( rows, 0 );
     }
 

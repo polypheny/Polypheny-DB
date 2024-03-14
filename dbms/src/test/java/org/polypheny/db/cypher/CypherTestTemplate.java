@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,46 +17,41 @@
 package org.polypheny.db.cypher;
 
 import static java.lang.String.format;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.TypeAdapter;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonToken;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
-import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import javax.annotation.Nullable;
 import lombok.Getter;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.CypherConnection;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.catalogs.AdapterCatalog;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.cypher.helper.TestEdge;
 import org.polypheny.db.cypher.helper.TestGraphObject;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.cypher.helper.TestObject;
 import org.polypheny.db.cypher.helper.TestPath;
-import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
-import org.polypheny.db.schema.graph.GraphObject.GraphObjectType;
-import org.polypheny.db.schema.graph.GraphPropertyHolder;
-import org.polypheny.db.schema.graph.PolyEdge;
-import org.polypheny.db.schema.graph.PolyEdge.EdgeDirection;
-import org.polypheny.db.schema.graph.PolyNode;
-import org.polypheny.db.schema.graph.PolyPath;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
+import org.polypheny.db.type.entity.graph.PolyEdge;
+import org.polypheny.db.type.entity.graph.PolyNode;
+import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.webui.models.Result;
+import org.polypheny.db.webui.models.results.GraphResult;
 
+@Slf4j
 public class CypherTestTemplate {
 
     private static final String GRAPH_NAME = "test";
-    public static final Gson GSON = new GsonBuilder().enableComplexMapKeySerialization().registerTypeAdapter( GraphPropertyHolder.class, new GraphObjectAdapter() ).create();
     protected static final String SINGLE_NODE_PERSON_1 = "CREATE (p:Person {name: 'Max'})";
     protected static final String SINGLE_NODE_PERSON_2 = "CREATE (p:Person {name: 'Hans'})";
 
@@ -74,7 +69,7 @@ public class CypherTestTemplate {
     protected final TestNode KIRA = TestNode.from( List.of( "Animal" ), Pair.of( "name", "Kira" ), Pair.of( "age", 3 ), Pair.of( "type", "dog" ) );
 
 
-    @BeforeClass
+    @BeforeAll
     public static void start() {
         //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
@@ -93,7 +88,7 @@ public class CypherTestTemplate {
     }
 
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() {
         deleteData( GRAPH_NAME );
     }
@@ -101,11 +96,13 @@ public class CypherTestTemplate {
 
     public static void deleteData( String graph ) {
         execute( format( "DROP DATABASE %s IF EXISTS", graph ) );
+        Snapshot snapshot = Catalog.getInstance().getSnapshot();
+        AdapterCatalog adapterCatalog = Catalog.getInstance().getAdapterCatalog( 0 ).orElseThrow();
     }
 
 
-    public static Result execute( String query ) {
-        Result res = CypherConnection.executeGetResponse( query );
+    public static GraphResult execute( String query ) {
+        GraphResult res = CypherConnection.executeGetResponse( query );
         if ( res.getError() != null ) {
             fail( res.getError() );
         }
@@ -113,8 +110,8 @@ public class CypherTestTemplate {
     }
 
 
-    public static Result execute( String query, String database ) {
-        Result res = CypherConnection.executeGetResponse( query, database );
+    public static GraphResult execute( String query, String namespace ) {
+        GraphResult res = CypherConnection.executeGetResponse( query, namespace );
         if ( res.getError() != null ) {
             fail( res.getError() );
         }
@@ -122,7 +119,7 @@ public class CypherTestTemplate {
     }
 
 
-    protected boolean containsNodes( Result res, boolean exclusive, TestObject... nodes ) {
+    protected boolean containsNodes( GraphResult res, boolean exclusive, TestObject... nodes ) {
         if ( res.getHeader().length == 1 && res.getHeader()[0].dataType.toLowerCase( Locale.ROOT ).contains( "node" ) ) {
             return contains( res.getData(), exclusive, 0, PolyNode.class, nodes );
         }
@@ -130,7 +127,7 @@ public class CypherTestTemplate {
     }
 
 
-    protected boolean containsEdges( Result res, boolean exclusive, TestEdge... edges ) {
+    protected boolean containsEdges( GraphResult res, boolean exclusive, TestEdge... edges ) {
         if ( res.getHeader().length == 1 && res.getHeader()[0].dataType.toLowerCase( Locale.ROOT ).contains( "edge" ) ) {
             return contains( res.getData(), exclusive, 0, PolyEdge.class, edges );
         }
@@ -138,7 +135,7 @@ public class CypherTestTemplate {
     }
 
 
-    public boolean containsIn( Result res, boolean exclusive, int index, TestGraphObject... expected ) {
+    public boolean containsIn( GraphResult res, boolean exclusive, int index, TestGraphObject... expected ) {
         boolean successful = true;
         Class<? extends GraphPropertyHolder> clazz = null;
         if ( expected.length > 0 ) {
@@ -150,16 +147,16 @@ public class CypherTestTemplate {
             return false;
         }
 
-        return contains( res.getData(), exclusive, index, clazz, expected );
+        return contains( res.data, exclusive, index, clazz, expected );
     }
 
 
-    public boolean containsIn( Result actual, boolean exclusive, int index, @Nullable String name, TestLiteral... expected ) {
+    public boolean containsIn( GraphResult actual, boolean exclusive, int index, @Nullable String name, TestLiteral... expected ) {
         // simple object match
-        List<String> cols = new ArrayList<>();
+        List<PolyValue> cols = new ArrayList<>();
 
         for ( String[] entry : actual.getData() ) {
-            cols.add( entry[index] );
+            cols.add( PolyValue.fromTypedJson( entry[index], PolyValue.class ) );
         }
         assert !exclusive || cols.size() == expected.length;
 
@@ -178,9 +175,9 @@ public class CypherTestTemplate {
     }
 
 
-    public static boolean containsRows( Result actual, boolean exclusive, boolean ordered, Row... rows ) {
+    public static boolean containsRows( GraphResult actual, boolean exclusive, boolean ordered, Row... rows ) {
         try {
-            List<List<Object>> parsed = new ArrayList<>();
+            List<List<PolyValue>> parsed = new ArrayList<>();
 
             int i = 0;
             for ( Row row : rows ) {
@@ -202,14 +199,14 @@ public class CypherTestTemplate {
     }
 
 
-    private static boolean matchesUnorderedRows( List<List<Object>> parsed, Row[] rows ) {
+    private static boolean matchesUnorderedRows( List<List<PolyValue>> parsed, Row[] rows ) {
 
         List<Integer> used = new ArrayList<>();
         for ( Row row : rows ) {
 
             int i = 0;
             boolean matches = false;
-            for ( List<Object> objects : parsed ) {
+            for ( List<PolyValue> objects : parsed ) {
 
                 if ( !matches && !used.contains( i ) ) {
                     if ( row.matches( objects ) ) {
@@ -229,7 +226,7 @@ public class CypherTestTemplate {
     }
 
 
-    private static boolean matchesExactRows( List<List<Object>> parsed, Row[] rows ) {
+    private static boolean matchesExactRows( List<List<PolyValue>> parsed, Row[] rows ) {
         boolean matches = true;
         int j = 0;
         for ( Row row : rows ) {
@@ -240,11 +237,12 @@ public class CypherTestTemplate {
     }
 
 
+    @SneakyThrows
     private <T extends GraphPropertyHolder> boolean contains( String[][] actual, boolean exclusive, int index, Class<T> clazz, TestObject[] expected ) {
         List<T> parsed = new ArrayList<>();
 
         for ( String[] entry : actual ) {
-            parsed.add( GSON.fromJson( entry[index], clazz ) );
+            parsed.add( PolyValue.JSON_WRAPPER.readValue( entry[index], clazz ) );
         }
 
         assert !exclusive || parsed.size() == expected.length;
@@ -258,29 +256,29 @@ public class CypherTestTemplate {
     }
 
 
-    public Result matchAndReturnAllNodes() {
+    public GraphResult matchAndReturnAllNodes() {
         return execute( "MATCH (n) RETURN n" );
     }
 
 
-    protected void assertNode( Result res, int index ) {
+    protected void assertNode( GraphResult res, int index ) {
         assert is( res, Type.NODE, index );
     }
 
 
-    protected void assertEdge( Result res, int index ) {
+    protected void assertEdge( GraphResult res, int index ) {
         assert is( res, Type.EDGE, index );
     }
 
 
-    protected boolean is( Result res, Type type, int index ) {
+    protected boolean is( GraphResult res, Type type, int index ) {
         assert res.getHeader().length >= index;
 
         return res.getHeader()[index].dataType.toLowerCase( Locale.ROOT ).contains( type.getTypeName() );
     }
 
 
-    protected void assertEmpty( Result res ) {
+    protected void assertEmpty( GraphResult res ) {
         assert res.getData().length == 0;
     }
 
@@ -288,17 +286,18 @@ public class CypherTestTemplate {
     @Getter
     public enum Type {
         NODE( "node", TestNode.class, PolyNode.class ),
-        EDGE( "edge", TestNode.class, PolyNode.class ),
+        EDGE( "edge", TestEdge.class, PolyEdge.class ),
         PATH( "path", TestPath.class, PolyPath.class ),
-        STRING( "varchar", TestNode.class, PolyNode.class );
+        ANY( "any", TestNode.class, PolyValue.class ),
+        STRING( "varchar", TestLiteral.class, PolyString.class );
 
 
         private final String typeName;
         private final Class<? extends TestObject> testClass;
-        private final Class<?> polyClass;
+        private final Class<? extends PolyValue> polyClass;
 
 
-        Type( String name, Class<? extends TestObject> testClass, Class<?> polyClass ) {
+        Type( String name, Class<? extends TestObject> testClass, Class<? extends PolyValue> polyClass ) {
             this.typeName = name;
             this.testClass = testClass;
             this.polyClass = polyClass;
@@ -335,8 +334,8 @@ public class CypherTestTemplate {
         }
 
 
-        public List<Object> asList( String[] actual ) {
-            List<Object> res = new ArrayList<>();
+        public List<PolyValue> asList( String[] actual ) {
+            List<PolyValue> res = new ArrayList<>();
             assert this.values.length == actual.length;
 
             int i = 0;
@@ -348,79 +347,15 @@ public class CypherTestTemplate {
         }
 
 
-        public boolean matches( List<Object> objects ) {
+        public boolean matches( List<PolyValue> objects ) {
             int i = 0;
             boolean matches = true;
 
-            for ( Object object : objects ) {
+            for ( PolyValue object : objects ) {
                 matches &= values[i].matches( object, true );
                 i++;
             }
             return matches;
-        }
-
-    }
-
-
-    public static class GraphObjectAdapter extends TypeAdapter<GraphPropertyHolder> {
-
-
-        @Override
-        public void write( JsonWriter out, GraphPropertyHolder value ) throws IOException {
-            throw new RemoteException( "Test adapter does not need to write." );
-        }
-
-
-        @Override
-        public GraphPropertyHolder read( JsonReader in ) throws IOException {
-            String id = null;
-            Map<String, Comparable<?>> properties = null;
-            GraphObjectType type = null;
-            String source = null;
-            String target = null;
-            List<String> labels = null;
-            EdgeDirection direction = null;
-
-            in.beginObject();
-
-            while ( in.peek() != JsonToken.END_OBJECT ) {
-                String name = in.nextName();
-                switch ( name ) {
-                    case "id":
-                        id = in.nextString();
-                        break;
-                    case "properties":
-                        properties = GSON.fromJson( in, Map.class );
-                        break;
-                    case "type":
-                        type = GraphObjectType.valueOf( in.nextString() );
-                        break;
-                    case "source":
-                        source = in.nextString();
-                        break;
-                    case "target":
-                        target = in.nextString();
-                        break;
-                    case "labels":
-                        labels = GSON.fromJson( in, List.class );
-                        break;
-                    case "direction":
-                        direction = EdgeDirection.valueOf( in.nextString() );
-                        break;
-                    default:
-                        throw new RuntimeException( format( "Was not able to parse : %s GraphObject.", name ) );
-
-                }
-            }
-            in.endObject();
-
-            if ( type == GraphObjectType.EDGE ) {
-                return new PolyEdge( id, new PolyDictionary( properties ), labels, source, target, direction, null );
-            } else if ( type == GraphObjectType.NODE ) {
-                return new PolyNode( id, new PolyDictionary( properties ), labels, null );
-            } else {
-                throw new RuntimeException( "Was not able to parse GraphObject." );
-            }
         }
 
     }

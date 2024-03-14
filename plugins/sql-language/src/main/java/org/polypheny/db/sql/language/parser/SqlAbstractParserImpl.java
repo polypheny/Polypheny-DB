@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import java.util.TreeSet;
 import org.apache.calcite.avatica.util.Casing;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Syntax;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.ParserImpl;
 import org.polypheny.db.languages.ParserPos;
@@ -609,7 +610,7 @@ public abstract class SqlAbstractParserImpl implements ParserImpl {
                     }
                 }
             } catch ( Throwable e ) {
-                throw new RuntimeException( "While building token lists", e );
+                throw new GenericRuntimeException( "While building token lists", e );
             }
         }
 

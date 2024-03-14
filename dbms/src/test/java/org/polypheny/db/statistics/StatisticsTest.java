@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,9 @@
 
 package org.polypheny.db.statistics;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -23,19 +26,15 @@ import java.sql.Statement;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.Pattern;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
@@ -149,7 +148,7 @@ public class StatisticsTest {
             } );
 
 
-    @BeforeClass
+    @BeforeAll
     public static void start() {
         // Ensures that Polypheny-DB is running
         //noinspection ResultOfMethodCallIgnored
@@ -158,7 +157,7 @@ public class StatisticsTest {
     }
 
 
-    @AfterClass
+    @AfterAll
     public static void end() {
         dropTables();
     }
@@ -204,18 +203,19 @@ public class StatisticsTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                try {
-                    TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT * FROM statisticschema.nation" ),
-                            NATION_TEST_DATA
-                    );
-                    TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT * FROM statisticschema.region" ),
-                            REGION_TEST_DATA
-                    );
-                } finally {
-                    connection.rollback();
-                }
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT * FROM statisticschema.nation" ),
+                        NATION_TEST_DATA,
+                        true );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT * FROM statisticschema.region" ),
+                        REGION_TEST_DATA,
+                        true );
+
+            } finally {
+                connection.rollback();
             }
         }
     }
@@ -226,13 +226,13 @@ public class StatisticsTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                try {
-                    statement.executeUpdate( DATE_TABLE );
-                    statement.executeUpdate( "INSERT INTO statisticschema.nulldate VALUES(0, null)" );
 
-                } finally {
-                    connection.rollback();
-                }
+                statement.executeUpdate( DATE_TABLE );
+                statement.executeUpdate( "INSERT INTO statisticschema.nulldate VALUES(0, null)" );
+
+            } finally {
+                connection.rollback();
+
             }
         }
     }
@@ -243,35 +243,35 @@ public class StatisticsTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                try {
-                    TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT * FROM statisticschema.nation" ),
-                            NATION_TEST_DATA
-                    );
-                    TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT * FROM statisticschema.region" ),
-                            REGION_TEST_DATA
-                    );
-                    waiter.await( 20, TimeUnit.SECONDS );
-                    try {
-                        CatalogTable catalogTableNation = Catalog.getInstance().getTable( "APP", "statisticschema", "nation" );
-                        CatalogTable catalogTableRegion = Catalog.getInstance().getTable( "APP", "statisticschema", "region" );
 
-                        Integer rowCountNation = StatisticsManager.getInstance().rowCountPerTable( catalogTableNation.id );
-                        Integer rowCountRegion = StatisticsManager.getInstance().rowCountPerTable( catalogTableRegion.id );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT * FROM statisticschema.nation" ),
+                        NATION_TEST_DATA,
+                        true );
 
-                        Assert.assertEquals( Integer.valueOf( 3 ), rowCountNation );
-                        Assert.assertEquals( Integer.valueOf( 2 ), rowCountRegion );
-                    } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
-                        log.error( "Caught exception test", e );
-                    }
-                    connection.commit();
-                } catch ( InterruptedException e ) {
-                    log.error( "Caught exception test", e );
-                } finally {
-                    connection.rollback();
-                }
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT * FROM statisticschema.region" ),
+                        REGION_TEST_DATA,
+                        true );
+
+                waiter.await( 20, TimeUnit.SECONDS );
+                Snapshot snapshot = Catalog.getInstance().getSnapshot();
+                LogicalTable catalogTableNation = snapshot.rel().getTable( "statisticschema", "nation" ).orElseThrow();
+                LogicalTable catalogTableRegion = snapshot.rel().getTable( "statisticschema", "region" ).orElseThrow();
+
+                Long rowCountNation = StatisticsManager.getInstance().tupleCountPerEntity( catalogTableNation.id );
+                Long rowCountRegion = StatisticsManager.getInstance().tupleCountPerEntity( catalogTableRegion.id );
+
+                assertEquals( 3, rowCountNation );
+                assertEquals( 2, rowCountRegion );
+
+                connection.commit();
+            } catch ( InterruptedException e ) {
+                log.error( "Caught exception test", e );
+            } finally {
+                connection.rollback();
             }
+
         }
     }
 
@@ -281,22 +281,22 @@ public class StatisticsTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                try {
-                    assertStatisticsConvertTo( 180, 3 );
-                    statement.executeUpdate( "DELETE FROM statisticschema.nationdelete" );
-                    connection.commit();
 
-                    TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT * FROM statisticschema.nationdelete" ),
-                            ImmutableList.of()
-                    );
-                    assertStatisticsConvertTo( 320, 0 ); // normally the system is a lot faster, but in some edge-cases this seems necessary
+                assertStatisticsConvertTo( 180, 3 );
+                statement.executeUpdate( "DELETE FROM statisticschema.nationdelete" );
+                connection.commit();
 
-                    connection.commit();
-                } finally {
-                    connection.rollback();
-                }
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT * FROM statisticschema.nationdelete" ),
+                        ImmutableList.of()
+                );
+                assertStatisticsConvertTo( 320, 0 ); // normally the system is a lot faster, but in some edge-cases this seems necessary
+
+                connection.commit();
+            } finally {
+                connection.rollback();
             }
+
         }
     }
 
@@ -305,35 +305,28 @@ public class StatisticsTest {
         try {
             boolean successfull = false;
             int count = 0;
-            boolean inCatalog = true;
             while ( !successfull && count < maxSeconds ) {
                 waiter.await( 1, TimeUnit.SECONDS );
-                if ( Catalog.getInstance().getTables( new Pattern( "APP" ), new Pattern( "statisticschema" ), new Pattern( "nationdelete" ) ).size() != 1 ) {
+                if ( Catalog.snapshot().rel().getTable( "statisticschema", "nationdelete" ).isEmpty() ) {
                     count++;
-                    inCatalog = false;
                     continue;
                 }
-                inCatalog = true;
-                CatalogTable catalogTableNation = Catalog.getInstance().getTable( "APP", "statisticschema", "nationdelete" );
-                Integer rowCount = StatisticsManager.getInstance().rowCountPerTable( catalogTableNation.id );
+                LogicalTable catalogTableNation = Catalog.snapshot().rel().getTable( "statisticschema", "nationdelete" ).orElseThrow();
+                Long rowCount = StatisticsManager.getInstance().tupleCountPerEntity( catalogTableNation.id );
                 // potentially table exists not yet in statistics but in catalog
                 if ( rowCount != null && rowCount == target ) {
                     successfull = true;
-
                 }
                 count++;
             }
 
-            if ( !successfull && inCatalog ) {
-                Assert.fail( String.format( "RowCount did not diverge to the correct number: %d.", target ) );
+            if ( !successfull ) {
+                fail( String.format( "RowCount did not diverge to the correct number: %d.", target ) );
             }
 
-            if ( inCatalog ) {
-                // collection was removed too fast, so the count was already removed -> returns null
-                log.warn( "Collection was already removed from the catalog, therefore the count will be null, which is correct" );
-            }
+            // collection was removed too fast, so the count was already removed -> returns null
 
-        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException | InterruptedException e ) {
+        } catch ( InterruptedException e ) {
             log.error( "Caught exception test", e );
         }
     }

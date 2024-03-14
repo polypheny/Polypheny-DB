@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,20 +21,18 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.polypheny.db.AdapterTestSuite;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.db.excluded.CassandraExcluded;
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
-@Category({ AdapterTestSuite.class, CassandraExcluded.class })
+@Tag("adapter")
 public class SqlLimitOffsetFetchTest {
 
-    @BeforeClass
+    @BeforeAll
     public static void start() throws SQLException {
         // Ensures that Polypheny-DB is running
         //noinspection ResultOfMethodCallIgnored
@@ -60,7 +58,7 @@ public class SqlLimitOffsetFetchTest {
     }
 
 
-    @AfterClass
+    @AfterAll
     public static void stop() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
@@ -336,8 +334,8 @@ public class SqlLimitOffsetFetchTest {
 
     // TODO:
     //  INSERT with LIMIT, OFFSET, FETCH (?)
-    //  UPDATE with LIMIT, OFFSET, FETCH (?)  --> Add to doc if this is working
-    //  DELETE with LIMIT, OFFSET, FETCH (?)  --> Add to doc if this is working
+    //  UPDATE with LIMIT, OFFSET, FETCH (?)  --> Add to document if this is working
+    //  DELETE with LIMIT, OFFSET, FETCH (?)  --> Add to document if this is working
     //  INNER SELECTS with LIMIT, OFFSET, FETCH
 
 }

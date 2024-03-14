@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
@@ -49,7 +50,7 @@ import org.polypheny.db.algebra.core.Calc;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.logical.relational.LogicalCalc;
 import org.polypheny.db.algebra.logical.relational.LogicalWindow;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
@@ -66,7 +67,6 @@ import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.rex.RexWindow;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.graph.DefaultDirectedGraph;
 import org.polypheny.db.util.graph.DefaultEdge;
@@ -110,7 +110,7 @@ public abstract class ProjectToWindowRule extends AlgOptRule {
          */
         public CalcToWindowRule( AlgBuilderFactory algBuilderFactory ) {
             super(
-                    operandJ( Calc.class, null, calc -> RexOver.containsOver( calc.getProgram() ), any() ),
+                    operand( Calc.class, null, calc -> RexOver.containsOver( calc.getProgram() ), any() ),
                     algBuilderFactory, "ProjectToWindowRule" );
         }
 
@@ -140,7 +140,7 @@ public abstract class ProjectToWindowRule extends AlgOptRule {
          */
         public ProjectToLogicalProjectAndWindowRule( AlgBuilderFactory algBuilderFactory ) {
             super(
-                    operandJ(
+                    operand(
                             Project.class,
                             null,
                             project -> RexOver.containsOver( project.getProjects(), null ),
@@ -157,10 +157,10 @@ public abstract class ProjectToWindowRule extends AlgOptRule {
             final AlgNode input = project.getInput();
             final RexProgram program =
                     RexProgram.create(
-                            input.getRowType(),
+                            input.getTupleType(),
                             project.getProjects(),
                             null,
-                            project.getRowType(),
+                            project.getTupleType(),
                             project.getCluster().getRexBuilder() );
             // temporary LogicalCalc, never registered
             final LogicalCalc calc = LogicalCalc.create( input, program );
@@ -179,7 +179,7 @@ public abstract class ProjectToWindowRule extends AlgOptRule {
                     if ( !program.projectsOnlyIdentity() ) {
                         algBuilder.project(
                                 program.getProjectList().stream().map( program::expandLocalRef ).collect( Collectors.toList() ),
-                                calc.getRowType().getFieldNames() );
+                                calc.getTupleType().getFieldNames() );
                     }
                     return algBuilder.build();
                 }
@@ -223,7 +223,7 @@ public abstract class ProjectToWindowRule extends AlgOptRule {
 
 
                     @Override
-                    protected AlgNode makeRel( AlgOptCluster cluster, AlgTraitSet traitSet, AlgBuilder algBuilder, AlgNode input, RexProgram program ) {
+                    protected AlgNode makeRel( AlgCluster cluster, AlgTraitSet traitSet, AlgBuilder algBuilder, AlgNode input, RexProgram program ) {
                         assert !program.containsAggs();
                         program = program.normalize( cluster.getRexBuilder(), null );
                         return super.makeRel( cluster, traitSet, algBuilder, input, program );
@@ -261,7 +261,7 @@ public abstract class ProjectToWindowRule extends AlgOptRule {
 
 
                     @Override
-                    protected AlgNode makeRel( AlgOptCluster cluster, AlgTraitSet traitSet, AlgBuilder algBuilder, AlgNode input, RexProgram program ) {
+                    protected AlgNode makeRel( AlgCluster cluster, AlgTraitSet traitSet, AlgBuilder algBuilder, AlgNode input, RexProgram program ) {
                         Preconditions.checkArgument( program.getCondition() == null, "WindowedAggregateRel cannot accept a condition" );
                         return LogicalWindow.create( cluster, traitSet, algBuilder, input, program );
                     }
@@ -365,7 +365,7 @@ public abstract class ProjectToWindowRule extends AlgOptRule {
             for ( int i : TopologicalOrderIterator.of( graph ) ) {
                 rankArr[i] = rank++;
             }
-            return ImmutableIntList.of( rankArr );
+            return Arrays.stream( rankArr ).boxed().collect( Collectors.toCollection( ImmutableList::of ) );
         }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package org.polypheny.db.languages.mql.parser;
 
 import java.io.Reader;
-import java.io.StringReader;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -28,7 +27,7 @@ import org.polypheny.db.languages.ParserFactory;
 import org.polypheny.db.languages.ParserImpl;
 import org.polypheny.db.languages.mql.MqlCollectionStatement;
 import org.polypheny.db.languages.mql.MqlNode;
-import org.polypheny.db.mql.parser.impl.MqlParserImpl;
+import org.polypheny.db.mql.parser.MqlParserImpl;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.util.SourceStringReader;
 
@@ -119,15 +118,6 @@ public class MqlParser implements Parser {
             }
             throw parser.normalizeException( ex );
         }
-    }
-
-
-    /**
-     * Parses a <code>SELECT</code> statement and reuses parser.
-     */
-    public MqlNode parseQuery( String query ) throws NodeParseException {
-        parser.ReInit( new StringReader( query ) );
-        return parseQuery();
     }
 
 

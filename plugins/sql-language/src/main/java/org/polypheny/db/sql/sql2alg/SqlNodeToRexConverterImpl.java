@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,7 @@
 package org.polypheny.db.sql.sql2alg;
 
 
-import com.google.common.base.Preconditions;
 import java.math.BigDecimal;
-import org.apache.calcite.avatica.util.ByteString;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.rex.RexBuilder;
@@ -34,10 +32,6 @@ import org.polypheny.db.sql.language.SqlTimestampLiteral;
 import org.polypheny.db.sql.language.validate.SqlValidator;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BitString;
-import org.polypheny.db.util.DateString;
-import org.polypheny.db.util.NlsString;
-import org.polypheny.db.util.TimeString;
-import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.Util;
 
 
@@ -94,63 +88,33 @@ public class SqlNodeToRexConverterImpl implements SqlNodeToRexConverter {
         SqlIntervalLiteral.IntervalValue intervalValue;
         long l;
 
-        switch ( literal.getTypeName() ) {
-            case DECIMAL:
+        return switch ( literal.getTypeName() ) {
+            case DECIMAL ->
                 // exact number
-                BigDecimal bd = literal.getValueAs( BigDecimal.class );
-                return rexBuilder.makeExactLiteral( bd, literal.createSqlType( typeFactory ) );
-
-            case DOUBLE:
+                    rexBuilder.makeLiteral( literal.getPolyValue(), literal.createSqlType( typeFactory ), PolyType.DECIMAL );
+            case DOUBLE ->
                 // approximate type
                 // TODO:  preserve fixed-point precision and large integers
-                return rexBuilder.makeApproxLiteral( literal.getValueAs( BigDecimal.class ) );
-
-            case CHAR:
-                return rexBuilder.makeCharLiteral( literal.getValueAs( NlsString.class ) );
-            case BOOLEAN:
-                return rexBuilder.makeLiteral( literal.getValueAs( Boolean.class ) );
-            case BINARY:
-                bitString = literal.getValueAs( BitString.class );
-                Preconditions.checkArgument(
-                        (bitString.getBitCount() % 8) == 0,
-                        "incomplete octet" );
-
-                // An even number of hexits (e.g. X'ABCD') makes whole number of bytes.
-                ByteString byteString = new ByteString( bitString.getAsByteArray() );
-                return rexBuilder.makeBinaryLiteral( byteString );
-            case SYMBOL:
-                return rexBuilder.makeFlag( literal.getValueAs( Enum.class ) );
-            case TIMESTAMP:
-                return rexBuilder.makeTimestampLiteral(
-                        literal.getValueAs( TimestampString.class ),
-                        ((SqlTimestampLiteral) literal).getPrec() );
-            case TIME:
-                return rexBuilder.makeTimeLiteral(
-                        literal.getValueAs( TimeString.class ),
-                        ((SqlTimeLiteral) literal).getPrec() );
-            case DATE:
-                return rexBuilder.makeDateLiteral( literal.getValueAs( DateString.class ) );
-
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_MONTH:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
+                    rexBuilder.makeLiteral( literal.getPolyValue(), literal.createSqlType( typeFactory ), PolyType.DOUBLE );
+            case CHAR -> rexBuilder.makeLiteral( literal.getPolyValue(), literal.createSqlType( typeFactory ), PolyType.CHAR );
+            case BOOLEAN -> rexBuilder.makeLiteral( literal.value.asBoolean().value );
+            case BINARY -> rexBuilder.makeBinaryLiteral( literal.value.asBinary().value );
+            case SYMBOL -> rexBuilder.makeFlag( literal.getValueAs( Enum.class ) );
+            case TIMESTAMP -> rexBuilder.makeTimestampLiteral(
+                    literal.value.asTimestamp(),
+                    ((SqlTimestampLiteral) literal).getPrec() );
+            case TIME -> rexBuilder.makeTimeLiteral(
+                    literal.value.asTime(),
+                    ((SqlTimeLiteral) literal).getPrec() );
+            case DATE -> rexBuilder.makeDateLiteral( literal.value.asDate() );
+            case INTERVAL_YEAR, INTERVAL_YEAR_MONTH, INTERVAL_MONTH, INTERVAL_DAY, INTERVAL_DAY_HOUR, INTERVAL_DAY_MINUTE, INTERVAL_DAY_SECOND, INTERVAL_HOUR, INTERVAL_HOUR_MINUTE, INTERVAL_HOUR_SECOND, INTERVAL_MINUTE, INTERVAL_MINUTE_SECOND, INTERVAL_SECOND -> {
                 SqlIntervalQualifier sqlIntervalQualifier = literal.getValueAs( SqlIntervalLiteral.IntervalValue.class ).getIntervalQualifier();
-                return rexBuilder.makeIntervalLiteral(
+                yield rexBuilder.makeIntervalLiteral(
                         literal.getValueAs( BigDecimal.class ),
                         sqlIntervalQualifier );
-            default:
-                throw Util.unexpected( literal.getTypeName() );
-        }
+            }
+            default -> throw Util.unexpected( literal.getTypeName() );
+        };
     }
 
 }

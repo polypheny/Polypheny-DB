@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import org.bson.BsonArray;
 import org.bson.BsonBinary;
 import org.bson.BsonBoolean;
@@ -41,9 +44,33 @@ import org.bson.BsonTimestamp;
 import org.bson.BsonValue;
 import org.bson.types.Decimal128;
 import org.bson.types.ObjectId;
-import org.polypheny.db.util.DateString;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.relational.RelScan;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.DocumentType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyBinary;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.temporal.PolyDate;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.TimestampString;
 
 public class DocumentUtil {
 
@@ -63,51 +90,51 @@ public class DocumentUtil {
     public static Pair<Class<? extends BsonValue>, Class<?>> getBsonClass( int typeNumber ) {
         switch ( typeNumber ) {
             case 1:
-                return new Pair<>( BsonDouble.class, Double.class );
+                return new Pair<>( BsonDouble.class, PolyDouble.class );
             case 2:
-                return new Pair<>( BsonString.class, String.class );
+                return new Pair<>( BsonString.class, PolyString.class );
             case 3:
-                return new Pair<>( BsonDocument.class, Object.class );
+                return new Pair<>( BsonDocument.class, PolyDocument.class );
             case 4:
-                return new Pair<>( BsonArray.class, List.class );
+                return new Pair<>( BsonArray.class, PolyList.class );
             case 5:
-                return new Pair<>( BsonBinary.class, Byte.class );
+                return new Pair<>( BsonBinary.class, PolyBinary.class );
             case 6: // undefined
-                throw new RuntimeException( "DEPRECATED" );
+                throw new GenericRuntimeException( "DEPRECATED" );
             case 7:
                 return new Pair<>( BsonObjectId.class, ObjectId.class );
             case 8:
-                return new Pair<>( BsonBoolean.class, Boolean.class );
+                return new Pair<>( BsonBoolean.class, PolyBoolean.class );
             case 9:
-                return new Pair<>( BsonDateTime.class, DateString.class );
+                return new Pair<>( BsonDateTime.class, PolyDate.class );
             case 10:
                 return new Pair<>( BsonNull.class, null );
             case 11:
-                return new Pair<>( BsonRegularExpression.class, String.class );
+                return new Pair<>( BsonRegularExpression.class, PolyString.class );
             case 12: // dbPointer
-                throw new RuntimeException( "DEPRECATED" );
+                throw new GenericRuntimeException( "DEPRECATED" );
             case 13:
                 //return new Pair<>( BsonJavaScript.class, String.class );
-                throw new RuntimeException( "UNSUPPORTED" );
+                throw new GenericRuntimeException( "UNSUPPORTED" );
             case 14: // Symbol
-                throw new RuntimeException( "DEPRECATED" );
+                throw new GenericRuntimeException( "DEPRECATED" );
             case 15:
                 //return new Pair<>( BsonJavaScriptWithScope.class, String.class );
-                throw new RuntimeException( "UNSUPPORTED" );
+                throw new GenericRuntimeException( "UNSUPPORTED" );
             case 16:
-                return new Pair<>( BsonInt32.class, Integer.class );
+                return new Pair<>( BsonInt32.class, PolyInteger.class );
             case 17:
-                return new Pair<>( BsonTimestamp.class, TimestampString.class );
+                return new Pair<>( BsonTimestamp.class, PolyTimestamp.class );
             case 18:
-                return new Pair<>( BsonInt64.class, Long.class );
+                return new Pair<>( BsonInt64.class, PolyLong.class );
             case 19:
-                return new Pair<>( BsonDecimal128.class, BigDecimal.class );
+                return new Pair<>( BsonDecimal128.class, PolyBigDecimal.class );
             case -1:
                 return new Pair<>( BsonMinKey.class, BsonMinKey.class );
             case 127:
                 return new Pair<>( BsonMaxKey.class, BsonMaxKey.class );
             default:
-                throw new RuntimeException( "This type does not exist." );
+                throw new GenericRuntimeException( "This type does not exist." );
         }
     }
 
@@ -125,7 +152,7 @@ public class DocumentUtil {
             case "binData":
                 return 5;
             case "undefined":
-                throw new RuntimeException( "DEPRECATED" );
+                throw new GenericRuntimeException( "DEPRECATED" );
             case "objectId":
                 return 7;
             case "bool":
@@ -137,13 +164,13 @@ public class DocumentUtil {
             case "regex":
                 return 11;
             case "dbPointer":
-                throw new RuntimeException( "DEPRECATED" );
+                throw new GenericRuntimeException( "DEPRECATED" );
             case "javascript":
-                throw new RuntimeException( "UNSUPPORTED" );
+                throw new GenericRuntimeException( "UNSUPPORTED" );
             case "symbol":
-                throw new RuntimeException( "DEPRECATED" );
+                throw new GenericRuntimeException( "DEPRECATED" );
             case "javascriptWithScope":
-                throw new RuntimeException( "DEPRECATED" );
+                throw new GenericRuntimeException( "DEPRECATED" );
             case "int":
                 return 16;
             case "timestamp":
@@ -194,6 +221,126 @@ public class DocumentUtil {
             typeNumbers.add( 19 );
         }
         return typeNumbers;
+    }
+
+
+    /**
+     * Updates contain RENAME, REMOVE, REPLACE parts and are merged into a single DOC_UPDATE in this method
+     *
+     * @param rowType the default rowtype at this point
+     * @param node the transformed operation up to this step e.g. {@link RelScan} or {@link LogicalDocumentAggregate}
+     * @return the unified UPDATE AlgNode
+     */
+    public static Pair<List<String>, List<RexNode>> transformUpdateRelational(
+            Map<String, ? extends RexNode> updates,
+            List<String> removes,
+            Map<String, String> renames,
+            AlgDataType rowType,
+            AlgNode node ) {
+        AlgCluster cluster = node.getCluster();
+        RexNode updateChain = cluster.getRexBuilder().makeInputRef( rowType, 0 );
+
+        // replace
+        if ( !updates.isEmpty() ) {
+            updateChain = new RexCall(
+                    new DocumentType(),
+                    OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_REPLACE ),
+                    Arrays.asList(
+                            updateChain,
+                            getStringArray( List.copyOf( updates.keySet() ), cluster ),
+                            getArray( List.copyOf( updates.values() ), new DocumentType() ) ) );
+        }
+
+        // rename
+        if ( !renames.isEmpty() ) {
+            updateChain = new RexCall(
+                    new DocumentType(),
+                    OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_RENAME ),
+                    Arrays.asList(
+                            updateChain,
+                            getStringArray( List.copyOf( renames.keySet() ), cluster ),
+                            getStringArray( List.copyOf( renames.values() ), cluster ) ) );
+        }
+
+        // remove
+        if ( !removes.isEmpty() ) {
+            updateChain = new RexCall(
+                    new DocumentType(),
+                    OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_REMOVE ),
+                    Arrays.asList(
+                            updateChain,
+                            getStringArray( removes, cluster ) ) );
+        }
+
+        if ( !removes.isEmpty() ) {
+            updateChain = new RexCall(
+                    new DocumentType(),
+                    OperatorRegistry.get(
+                            QueryLanguage.from( "mongo" ),
+                            OperatorName.MQL_UPDATE ),
+                    Arrays.asList(
+                            updateChain,
+                            getStringArray( removes, cluster ) ) );
+        }
+
+        return Pair.of(
+                List.of( DocumentType.DOCUMENT_DATA ),
+                List.of( updateChain ) );
+    }
+
+
+    public static RexCall getStringArray( List<String> elements, AlgCluster cluster ) {
+        List<RexNode> rexNodes = new ArrayList<>();
+        int maxSize = 0;
+        for ( String name : elements ) {
+            rexNodes.add( cluster.getRexBuilder().makeLiteral( name ) );
+            maxSize = Math.max( name.length(), maxSize );
+        }
+
+        AlgDataType type = cluster.getTypeFactory().createArrayType(
+                cluster.getTypeFactory().createPolyType( PolyType.CHAR, maxSize ),
+                rexNodes.size() );
+        return getArray( rexNodes, type );
+    }
+
+
+    public static RexCall getArray( List<RexNode> elements, AlgDataType type ) {
+        return new RexCall( type, OperatorRegistry.get( OperatorName.ARRAY_VALUE_CONSTRUCTOR ), elements );
+    }
+
+
+    public static RexLiteral getArrayLiteral( List<String> elements, AlgCluster cluster ) {
+        AlgDataType type = cluster.getTypeFactory().createArrayType(
+                cluster.getTypeFactory().createPolyType( PolyType.CHAR, 255 ),
+                elements.size() );
+        return new RexLiteral( PolyList.of( elements.stream().map( PolyString::of ).collect( Collectors.toList() ) ), type, PolyType.ARRAY );
+    }
+
+
+    public static AlgDataType getNestedArrayType( AlgCluster cluster, int depth, AlgDataType componentType ) {
+        if ( depth == 0 ) {
+            return componentType;
+        } else {
+            return cluster.getTypeFactory().createArrayType( getNestedArrayType( cluster, depth - 1, componentType ), -1 );
+        }
+    }
+
+
+    /**
+     * Defines one of the possible doc update operations
+     */
+    @Getter
+    public enum UpdateOperation {
+        RENAME( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_RENAME ) ),
+        REPLACE( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_REPLACE ) ),
+        REMOVE( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_REMOVE ) );
+
+        private final Operator operator;
+
+
+        UpdateOperation( Operator operator ) {
+            this.operator = operator;
+        }
     }
 
 }

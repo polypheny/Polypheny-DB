@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1319,7 +1319,7 @@ public class ConcurrentTestCommandScript
 
         /**
          * Manages state transitions.
-         * Converts a state name into a map. Map keys are the names of available commands (e.g. @sync), and map values are the state to switch to open seeing the command.
+         * Converts a state name into a map. Map keys are the names of available commands (e.g. @sync), and map values are the state to switch to execute seeing the command.
          */
         private Map<String, String> lookupState( String state ) {
             assert state != null;

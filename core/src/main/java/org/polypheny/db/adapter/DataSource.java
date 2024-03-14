@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,20 +23,18 @@ import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.pf4j.ExtensionPoint;
-import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
-import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
-import org.polypheny.db.prepare.Context;
+import org.polypheny.db.catalog.catalogs.AdapterCatalog;
+import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.type.PolyType;
 
-public abstract class DataSource extends Adapter implements ExtensionPoint {
+@Getter
+public abstract class DataSource<S extends AdapterCatalog> extends Adapter<S> implements ExtensionPoint {
 
-    @Getter
     private final boolean dataReadOnly;
 
 
-    protected DataSource( final int adapterId, final String uniqueName, final Map<String, String> settings, boolean dataReadOnly ) {
-        super( adapterId, uniqueName, settings );
+    protected DataSource( final long adapterId, final String uniqueName, final Map<String, String> settings, boolean dataReadOnly, S catalog ) {
+        super( adapterId, uniqueName, settings, catalog );
         this.dataReadOnly = dataReadOnly;
 
         informationPage.setLabel( "Sources" );
@@ -44,16 +42,6 @@ public abstract class DataSource extends Adapter implements ExtensionPoint {
 
 
     public abstract Map<String, List<ExportedColumn>> getExportedColumns();
-
-
-    public void createGraph( Context context, CatalogGraphDatabase graphDatabase ) {
-        throw new UnsupportedOperationException( "It is not supported to create a graph with this adapter." );
-    }
-
-
-    public void dropGraph( Context context, CatalogGraphPlacement graphPlacement ) {
-        throw new UnsupportedOperationException( "It is not supported to drop a graph with this adapter." );
-    }
 
 
     @AllArgsConstructor
@@ -96,7 +84,7 @@ public abstract class DataSource extends Adapter implements ExtensionPoint {
     }
 
 
-    public static JsonSerializer<DataSource> getSerializer() {
+    public static JsonSerializer<DataSource<?>> getSerializer() {
         //see https://futurestud.io/tutorials/gson-advanced-custom-serialization-part-1
         return ( src, typeOfSrc, context ) -> {
             JsonObject jsonSource = new JsonObject();

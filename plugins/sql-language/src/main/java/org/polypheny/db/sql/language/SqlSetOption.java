@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,12 +24,12 @@ import lombok.Getter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Literal;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.sql.language.validate.SqlValidator;
 import org.polypheny.db.sql.language.validate.SqlValidatorScope;
 import org.polypheny.db.transaction.Statement;
@@ -213,7 +213,7 @@ public class SqlSetOption extends SqlAlter {
 
 
     @Override
-    public void execute( Context context, Statement statement, QueryParameters parameters ) {
+    public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
         DdlManager.getInstance().setOption();
     }
 

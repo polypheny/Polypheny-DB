@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@
 package org.polypheny.db.algebra.rules;
 
 
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
@@ -42,8 +43,8 @@ import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinInfo;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptUtil;
@@ -52,11 +53,10 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.util.ImmutableBitSet;
-import org.polypheny.db.util.ImmutableIntList;
 
 
 /**
- * Planner rule that creates a {@code SemiJoinRule} from a {@link org.polypheny.db.algebra.core.Join} on top of a {@link LogicalAggregate}.
+ * Planner rule that creates a {@code SemiJoinRule} from a {@link org.polypheny.db.algebra.core.Join} on top of a {@link LogicalRelAggregate}.
  */
 public abstract class SemiJoinRule extends AlgOptRule {
 
@@ -72,7 +72,7 @@ public abstract class SemiJoinRule extends AlgOptRule {
             };
 
     /* Tests if an Aggregate always produces 1 row and 0 columns. */
-    private static final Predicate<Aggregate> IS_EMPTY_AGGREGATE = aggregate -> aggregate.getRowType().getFieldCount() == 0;
+    private static final Predicate<Aggregate> IS_EMPTY_AGGREGATE = aggregate -> aggregate.getTupleType().getFieldCount() == 0;
 
 
     protected SemiJoinRule( Class<Project> projectClass, Class<Join> joinClass, Class<Aggregate> aggregateClass, AlgBuilderFactory algBuilderFactory, String description ) {
@@ -80,7 +80,7 @@ public abstract class SemiJoinRule extends AlgOptRule {
                 operand(
                         projectClass,
                         some(
-                                operandJ(
+                                operand(
                                         joinClass,
                                         null,
                                         IS_LEFT_OR_INNER,
@@ -93,23 +93,23 @@ public abstract class SemiJoinRule extends AlgOptRule {
 
     protected SemiJoinRule( Class<Join> joinClass, Class<Aggregate> aggregateClass, AlgBuilderFactory algBuilderFactory, String description ) {
         super(
-                operandJ(
+                operand(
                         joinClass,
                         null,
                         IS_LEFT_OR_INNER,
                         some(
                                 operand( AlgNode.class, any() ),
-                                operandJ( aggregateClass, null, IS_EMPTY_AGGREGATE, any() ) ) ),
+                                operand( aggregateClass, null, IS_EMPTY_AGGREGATE, any() ) ) ),
                 algBuilderFactory, description );
     }
 
 
     protected void perform( AlgOptRuleCall call, Project project, Join join, AlgNode left, Aggregate aggregate ) {
-        final AlgOptCluster cluster = join.getCluster();
+        final AlgCluster cluster = join.getCluster();
         final RexBuilder rexBuilder = cluster.getRexBuilder();
         if ( project != null ) {
             final ImmutableBitSet bits = AlgOptUtil.InputFinder.bits( project.getProjects(), null );
-            final ImmutableBitSet rightBits = ImmutableBitSet.range( left.getRowType().getFieldCount(), join.getRowType().getFieldCount() );
+            final ImmutableBitSet rightBits = ImmutableBitSet.range( left.getTupleType().getFieldCount(), join.getTupleType().getFieldCount() );
             if ( bits.intersects( rightBits ) ) {
                 return;
             }
@@ -131,7 +131,7 @@ public abstract class SemiJoinRule extends AlgOptRule {
                 for ( int key : joinInfo.rightKeys ) {
                     newRightKeyBuilder.add( aggregateKeys.get( key ) );
                 }
-                final ImmutableIntList newRightKeys = ImmutableIntList.copyOf( newRightKeyBuilder );
+                final ImmutableList<Integer> newRightKeys = ImmutableList.copyOf( newRightKeyBuilder );
                 algBuilder.push( aggregate.getInput() );
                 final RexNode newCondition = AlgOptUtil.createEquiJoinCondition( algBuilder.peek( 2, 0 ), joinInfo.leftKeys, algBuilder.peek( 2, 1 ), newRightKeys, rexBuilder );
                 algBuilder.semiJoin( newCondition );
@@ -145,7 +145,7 @@ public abstract class SemiJoinRule extends AlgOptRule {
                 throw new AssertionError( join.getJoinType() );
         }
         if ( project != null ) {
-            algBuilder.project( project.getProjects(), project.getRowType().getFieldNames() );
+            algBuilder.project( project.getProjects(), project.getTupleType().getFieldNames() );
         }
         call.transformTo( algBuilder.build() );
     }

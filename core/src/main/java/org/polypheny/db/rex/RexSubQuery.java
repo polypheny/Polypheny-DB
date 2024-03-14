@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,7 +88,7 @@ public class RexSubQuery extends RexCall {
 
 
     static AlgDataType type( AlgNode alg, ImmutableList<RexNode> nodes ) {
-        assert alg.getRowType().getFieldCount() == nodes.size();
+        assert alg.getTupleType().getFieldCount() == nodes.size();
         final AlgDataTypeFactory typeFactory = alg.getCluster().getTypeFactory();
         boolean nullable = false;
         for ( RexNode node : nodes ) {
@@ -96,7 +96,7 @@ public class RexSubQuery extends RexCall {
                 nullable = true;
             }
         }
-        for ( AlgDataTypeField field : alg.getRowType().getFieldList() ) {
+        for ( AlgDataTypeField field : alg.getTupleType().getFields() ) {
             if ( field.getType().isNullable() ) {
                 nullable = true;
             }
@@ -119,7 +119,7 @@ public class RexSubQuery extends RexCall {
      * Creates a scalar sub-query.
      */
     public static RexSubQuery scalar( AlgNode alg ) {
-        final List<AlgDataTypeField> fieldList = alg.getRowType().getFieldList();
+        final List<AlgDataTypeField> fieldList = alg.getTupleType().getFields();
         assert fieldList.size() == 1;
         final AlgDataTypeFactory typeFactory = alg.getCluster().getTypeFactory();
         final AlgDataType type = typeFactory.createTypeWithNullability( fieldList.get( 0 ).getType(), true );

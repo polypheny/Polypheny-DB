@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,9 +40,14 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-
-import java.util.*;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 
 
 /**
@@ -155,6 +160,12 @@ public class PolyTypeAssignmentRules {
         rule.add( PolyType.BINARY );
         rules.add( PolyType.VARBINARY, rule );
 
+        // TEXT is assignable from...
+        rule.clear();
+        rule.add( PolyType.TEXT );
+        rule.add( PolyType.VARCHAR );
+        rules.add( PolyType.TEXT, rule );
+
         // CHAR is assignable from...
         rules.add( PolyType.CHAR, EnumSet.of( PolyType.CHAR ) );
 
@@ -162,6 +173,7 @@ public class PolyTypeAssignmentRules {
         rule.clear();
         rule.add( PolyType.CHAR );
         rule.add( PolyType.VARCHAR );
+        rule.add( PolyType.TEXT );
         rules.add( PolyType.VARCHAR, rule );
 
         // BOOLEAN is assignable from...
@@ -286,7 +298,16 @@ public class PolyTypeAssignmentRules {
                         .add( PolyType.TIME )
                         .add( PolyType.TIMESTAMP )
                         .add( PolyType.DOCUMENT )
+                        .add( PolyType.TEXT )
+                        .add( PolyType.JSON )
                         .addAll( PolyType.INTERVAL_TYPES )
+                        .build() );
+
+        coerceRules.add(
+                PolyType.TEXT,
+                coerceRules.copyValues( PolyType.TEXT )
+                        .add( PolyType.VARCHAR )
+                        .add( PolyType.JSON )
                         .build() );
 
         // CHAR is castable from BOOLEAN, DATE, TIME, TIMESTAMP and numeric types
@@ -446,7 +467,7 @@ public class PolyTypeAssignmentRules {
             try {
                 map.put( fromType, sets.get( toTypes ) );
             } catch ( ExecutionException e ) {
-                throw new RuntimeException( "populating SqlTypeAssignmentRules", e );
+                throw new GenericRuntimeException( "populating SqlTypeAssignmentRules", e );
             }
         }
 

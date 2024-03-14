@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,20 +23,20 @@ import org.polypheny.db.adapter.neo4j.rules.NeoRelAlg;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexLiteral;
 
 public class NeoValues extends Values implements NeoRelAlg {
 
-    public NeoValues( AlgOptCluster cluster, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, AlgTraitSet traits ) {
+    public NeoValues( AlgCluster cluster, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, AlgTraitSet traits ) {
         super( cluster, rowType, tuples, traits );
     }
 
 
     @Override
     public void implement( NeoRelationalImplementor implementor ) {
-        if ( getRowType().getFieldCount() == 1 && getRowType().getFieldList().get( 0 ).getName().equals( "ZERO" ) ) {
+        if ( getTupleType().getFieldCount() == 1 && getTupleType().getFields().get( 0 ).getName().equals( "ZERO" ) ) {
             implementor.setPrepared( true );
         }
 

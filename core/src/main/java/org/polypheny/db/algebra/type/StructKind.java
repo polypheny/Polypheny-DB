@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,6 +65,11 @@ public enum StructKind {
      * This is not a structured type.
      */
     NONE,
+
+    /**
+     * This type might have some defined structure but also undefined parts.
+     */
+    SEMI,
 
     /**
      * This is a traditional structured type, where each field must be referenced explicitly.

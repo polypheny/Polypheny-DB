@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package org.polypheny.db.information;
 
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -24,15 +26,13 @@ import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Assert;
 import org.polypheny.db.information.InformationGraph.GraphData;
 import org.polypheny.db.information.InformationGraph.GraphType;
-import org.polypheny.db.webui.InformationServer;
+import org.polypheny.db.webui.InformationService;
 import oshi.SystemInfo;
 import oshi.hardware.HardwareAbstractionLayer;
 import oshi.software.os.OSProcess;
 import oshi.software.os.OperatingSystem;
-import oshi.software.os.OperatingSystem.ProcessSort;
 
 
 @Slf4j
@@ -40,7 +40,7 @@ public class InformationServerTest {
 
 
     public static void main( String[] args ) {
-        InformationServer s = new InformationServer( 8082 );
+        InformationService s = new InformationService( null );
         demoData();
     }
 
@@ -110,10 +110,10 @@ public class InformationServerTest {
         InformationGroup processesGroup = new InformationGroup( systemPage.getId(), "processes" );
         im.addGroup( processesGroup );
 
-        List<OSProcess> procs = os.getProcesses( 5, ProcessSort.CPU );
+        List<OSProcess> procs = os.getProcesses();
 
-        ArrayList<String> procNames = new ArrayList<>();
-        ArrayList<Double> procPerc = new ArrayList<>();
+        List<String> procNames = new ArrayList<>();
+        List<Double> procPerc = new ArrayList<>();
         for ( int i = 0; i < procs.size() && i < 5; i++ ) {
             OSProcess proc = procs.get( i );
             double cpuPerc = 100d * (proc.getKernelTime() + proc.getUserTime()) / proc.getUpTime();
@@ -134,7 +134,7 @@ public class InformationServerTest {
         t2.scheduleAtFixedRate( new TimerTask() {
             @Override
             public void run() {
-                List<OSProcess> procs = os.getProcesses( 5, ProcessSort.CPU );
+                List<OSProcess> procs = os.getProcesses();
 
                 ArrayList<String> procNames = new ArrayList<>();
                 ArrayList<Double> procPerc = new ArrayList<>();
@@ -150,7 +150,7 @@ public class InformationServerTest {
                     //}
                 }
 
-                GraphData<Double> data2 = new GraphData<Double>( "processes", procPerc.toArray( new Double[0] ) );
+                GraphData<Double> data2 = new GraphData<>( "processes", procPerc.toArray( new Double[0] ) );
                 graph.updateGraph( procNames.toArray( new String[0] ), data2 );
             }
         }, 5000, 5000 );
@@ -265,7 +265,7 @@ public class InformationServerTest {
         im.addGroup( kvGroup );
         InformationKeyValue iKV = new InformationKeyValue( "kv", kvGroup );
         iKV.putPair( "k1", "value1" ).putPair( "k2", "value2" ).putPair( "k3", "value3" );
-        Assert.assertEquals( iKV.getValue( "k1" ), "value1" );
+        assertEquals( iKV.getValue( "k1" ), "value1" );
         im.registerInformation( iKV );
         Timer t4 = new Timer();
         final boolean[] alternate = { true };

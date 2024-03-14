@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,14 +20,15 @@ package org.polypheny.db.sql.language;
 import java.util.List;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
 
 
 /**
  * Abstract base for character and binary string literals.
  */
-abstract class SqlAbstractStringLiteral extends SqlLiteral {
+public abstract class SqlAbstractStringLiteral extends SqlLiteral {
 
-    protected SqlAbstractStringLiteral( Object value, PolyType typeName, ParserPos pos ) {
+    protected SqlAbstractStringLiteral( PolyString value, PolyType typeName, ParserPos pos ) {
         super( value, typeName, pos );
     }
 

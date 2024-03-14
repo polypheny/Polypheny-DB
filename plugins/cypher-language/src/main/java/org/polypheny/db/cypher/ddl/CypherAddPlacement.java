@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,16 +23,17 @@ import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.Pattern;
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.cypher.CypherParameter;
 import org.polypheny.db.cypher.CypherSimpleEither;
 import org.polypheny.db.cypher.admin.CypherAdminCommand;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -51,38 +52,38 @@ public class CypherAddPlacement extends CypherAdminCommand implements Executable
         this.store = getNameOrNull( storeName );
 
         if ( this.database == null ) {
-            throw new RuntimeException( "Unknown database name." );
+            throw new GenericRuntimeException( "Unknown database name." );
         }
         if ( this.store == null ) {
-            throw new RuntimeException( "Unknown store name." );
+            throw new GenericRuntimeException( "Unknown storeId name." );
         }
     }
 
 
     @Override
-    public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        Catalog catalog = Catalog.getInstance();
+    public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
+
         AdapterManager adapterManager = AdapterManager.getInstance();
 
-        List<CatalogGraphDatabase> graphs = catalog.getGraphs( Catalog.defaultDatabaseId, new Pattern( this.database ) );
+        List<LogicalGraph> graphs = statement.getTransaction().getSnapshot().getNamespaces( new Pattern( this.database ) ).stream().map( g -> statement.getTransaction().getSnapshot().graph().getGraph( g.id ).orElseThrow() ).toList();
 
-        List<DataStore> dataStores = Stream.of( store )
-                .map( store -> (DataStore) adapterManager.getAdapter( store ) )
+        List<DataStore<?>> dataStores = Stream.of( store )
+                .map( store -> adapterManager.getStore( store ).orElseThrow() )
                 .collect( Collectors.toList() );
 
         if ( !adapterManager.getAdapters().containsKey( store ) ) {
-            throw new RuntimeException( "The targeted store does not exist." );
+            throw new GenericRuntimeException( "The targeted storeId does not exist." );
         }
 
         if ( graphs.size() != 1 ) {
-            throw new RuntimeException( "Error while adding graph placement." );
+            throw new GenericRuntimeException( "Error while adding graph placement." );
         }
 
-        if ( graphs.get( 0 ).placements.stream().anyMatch( p -> dataStores.stream().map( Adapter::getAdapterId ).collect( Collectors.toList() ).contains( p ) ) ) {
-            throw new RuntimeException( "Could not create placement of graph as it already exists." );
+        if ( Catalog.snapshot().alloc().getFromLogical( graphs.get( 0 ).id ).stream().anyMatch( p -> dataStores.stream().map( Adapter::getAdapterId ).toList().contains( p.adapterId ) ) ) {
+            throw new GenericRuntimeException( "Could not create placement of graph as it already exists." );
         }
 
-        DdlManager.getInstance().addGraphPlacement( graphs.get( 0 ).id, dataStores, true, statement );
+        DdlManager.getInstance().createGraphPlacement( graphs.get( 0 ).id, dataStores, statement );
     }
 
 }

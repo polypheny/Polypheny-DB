@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,19 +18,19 @@ package org.polypheny.db.languages.mql;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.Pattern;
-import org.polypheny.db.catalog.entity.CatalogCollection;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.languages.mql.Mql.Type;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 
 public class MqlAddPlacement extends MqlCollectionStatement implements ExecutableStatement {
@@ -42,39 +42,39 @@ public class MqlAddPlacement extends MqlCollectionStatement implements Executabl
 
 
     @Override
-    public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        final Catalog catalog = Catalog.getInstance();
+    public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
         AdapterManager adapterManager = AdapterManager.getInstance();
 
-        long namespaceId;
-        try {
-            namespaceId = catalog.getSchema( Catalog.defaultDatabaseId, ((MqlQueryParameters) parameters).getDatabase() ).id;
-        } catch ( UnknownSchemaException e ) {
-            throw new RuntimeException( "The used document database (Polypheny Schema) is not available." );
-        }
+        long namespaceId = parsedQueryContext.getNamespaceId();
 
-        List<CatalogCollection> collections = catalog.getCollections( namespaceId, new Pattern( getCollection() ) );
+        List<LogicalCollection> collections = context.getSnapshot().doc().getCollections( namespaceId, new Pattern( getCollection() ) );
 
         if ( collections.size() != 1 ) {
-            throw new RuntimeException( "Error while adding new collection placement, collection not found." );
+            throw new GenericRuntimeException( "Error while adding new collection placement, collection not found." );
         }
 
-        List<DataStore> dataStores = stores
+        List<DataStore<?>> dataStores = stores
                 .stream()
-                .map( store -> (DataStore) adapterManager.getAdapter( store ) )
+                .map( store -> adapterManager.getStore( store ).orElseThrow() )
                 .collect( Collectors.toList() );
 
-        if ( collections.get( 0 ).placements.stream().anyMatch( p -> dataStores.stream().map( Adapter::getAdapterId ).collect( Collectors.toList() ).contains( p ) ) ) {
-            throw new RuntimeException( "Error while adding a new collection placement, placement already present." );
+        if ( statement.getTransaction().getSnapshot().alloc().getFromLogical( collections.get( 0 ).id ).stream().anyMatch( p -> dataStores.stream().map( Adapter::getAdapterId ).toList().contains( p ) ) ) {
+            throw new GenericRuntimeException( "Error while adding a new collection placement, placement already present." );
         }
 
-        DdlManager.getInstance().addCollectionPlacement( namespaceId, getCollection(), dataStores, statement );
+        DdlManager.getInstance().createCollectionPlacement( namespaceId, getCollection(), dataStores, statement );
     }
 
 
     @Override
     public Type getMqlKind() {
         return Type.ADD_PLACEMENT;
+    }
+
+
+    @Override
+    public @Nullable String getEntity() {
+        return getCollection();
     }
 
 }

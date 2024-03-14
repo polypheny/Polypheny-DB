@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,9 +50,9 @@ import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexChecker;
@@ -62,8 +62,8 @@ import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexSlot;
 import org.polypheny.db.rex.RexWindowBound;
+import org.polypheny.db.runtime.ComparableList;
 import org.polypheny.db.util.ImmutableBitSet;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Util;
 
@@ -94,7 +94,7 @@ public abstract class Window extends SingleAlg {
      * @param rowType Output row type
      * @param groups Windows
      */
-    public Window( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, List<RexLiteral> constants, AlgDataType rowType, List<Group> groups ) {
+    public Window( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, List<RexLiteral> constants, AlgDataType rowType, List<Group> groups ) {
         super( cluster, traitSet, input );
         this.constants = ImmutableList.copyOf( constants );
         assert rowType != null;
@@ -106,7 +106,7 @@ public abstract class Window extends SingleAlg {
     @Override
     public boolean isValid( Litmus litmus, Context context ) {
         // In the window specifications, an aggregate call such as 'SUM(RexInputRef #10)' refers to expression #10 of inputProgram. (Not its projections.)
-        final AlgDataType childRowType = getInput().getRowType();
+        final AlgDataType childRowType = getInput().getTupleType();
 
         final int childFieldCount = childRowType.getFieldCount();
         final int inputSize = childFieldCount + constants.size();
@@ -115,7 +115,7 @@ public abstract class Window extends SingleAlg {
                     @Override
                     public AlgDataType get( int index ) {
                         return index < childFieldCount
-                                ? childRowType.getFieldList().get( index ).getType()
+                                ? childRowType.getFields().get( index ).getType()
                                 : constants.get( index - childFieldCount ).getType();
                     }
 
@@ -153,8 +153,8 @@ public abstract class Window extends SingleAlg {
     }
 
 
-    public static ImmutableIntList getProjectOrdinals( final List<RexNode> exprs ) {
-        return ImmutableIntList.copyOf(
+    public static ComparableList<Integer> getProjectOrdinals( final List<RexNode> exprs ) {
+        return ComparableList.copyOf(
                 new AbstractList<Integer>() {
                     @Override
                     public Integer get( int index ) {
@@ -172,7 +172,7 @@ public abstract class Window extends SingleAlg {
 
     public static AlgCollation getCollation( final List<RexFieldCollation> collations ) {
         return AlgCollations.of(
-                new AbstractList<AlgFieldCollation>() {
+                new AbstractList<>() {
                     @Override
                     public AlgFieldCollation get( int index ) {
                         final RexFieldCollation collation = collations.get( index );
@@ -202,12 +202,12 @@ public abstract class Window extends SingleAlg {
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         // Cost is proportional to the number of rows and the number of components (groups and aggregate functions). There is no I/O cost.
         //
         // TODO #1. Add memory cost.
         // TODO #2. MIN and MAX have higher CPU cost than SUM and COUNT.
-        final double rowsIn = mq.getRowCount( getInput() );
+        final double rowsIn = mq.getTupleCount( getInput() );
         int count = groups.size();
         for ( Group group : groups ) {
             count += group.aggCalls.size();
@@ -337,7 +337,7 @@ public abstract class Window extends SingleAlg {
          * Presents a view of the {@link RexWinAggCall} list as a list of {@link AggregateCall}.
          */
         public List<AggregateCall> getAggregateCalls( Window windowRel ) {
-            final List<String> fieldNames = Util.skip( windowRel.getRowType().getFieldNames(), windowRel.getInput().getRowType().getFieldCount() );
+            final List<String> fieldNames = Util.skip( windowRel.getTupleType().getFieldNames(), windowRel.getInput().getTupleType().getFieldCount() );
             return new AbstractList<AggregateCall>() {
                 @Override
                 public int size() {

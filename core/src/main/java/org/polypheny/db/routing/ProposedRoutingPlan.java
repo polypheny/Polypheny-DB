@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,9 @@
 
 package org.polypheny.db.routing;
 
-import java.util.List;
-import java.util.Map;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.util.Pair;
+import org.polypheny.db.routing.ColumnDistribution.RoutedDistribution;
 
 
 public interface ProposedRoutingPlan extends RoutingPlan {
@@ -60,10 +58,10 @@ public interface ProposedRoutingPlan extends RoutingPlan {
     void setRouter( Class<? extends Router> routerClass );
 
     /**
-     * @return The physical placements of the necessary partitions: {@code PartitionId  -> List<AdapterId, CatalogColumnPlacementId>}
+     * @return The physical placements of the necessary partitions: {@code AllocationId  -> List<AdapterId, CatalogColumnPlacementId>}
      */
     @Override
-    Map<Long, List<Pair<Integer, Long>>> getPhysicalPlacementsOfPartitions(); // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
+    RoutedDistribution getRoutedDistribution(); // PartitionId -> List<PlacementId, ColumnId>
 
     /**
      * @return Optional pre costs.

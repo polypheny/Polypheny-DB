@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,14 +22,13 @@ import com.google.common.collect.ImmutableList;
 import io.javalin.http.Context;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyImplementation;
+import org.polypheny.db.ResultIterator;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollations;
@@ -38,24 +37,21 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.JoinAlgType;
-import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.fun.AggFunction;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.core.common.Modify;
+import org.polypheny.db.algebra.core.relational.RelModify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptPlanner;
-import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
-import org.polypheny.db.prepare.Prepare.PreparingTable;
+import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.restapi.RequestParser.Filters;
 import org.polypheny.db.restapi.exception.RestException;
 import org.polypheny.db.restapi.models.requests.ResourceDeleteRequest;
@@ -74,13 +70,12 @@ import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyTypeFamily;
-import org.polypheny.db.util.DateString;
+import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyBlob;
 import org.polypheny.db.util.FileInputHandle;
 import org.polypheny.db.util.ImmutableBitSet;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.TimeString;
-import org.polypheny.db.util.TimestampString;
 
 
 @Slf4j
@@ -134,14 +129,14 @@ public class Rest {
         AlgNode algNode = algBuilder.build();
         log.debug( "AlgNode was built." );
 
-        // Wrap {@link AlgNode} into a RelRoot
-        final AlgDataType rowType = algNode.getRowType();
-        final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
+        // Wrap {@link AlgNode} into a AlgRoot
+        final AlgDataType rowType = algNode.getTupleType();
+        final List<Pair<Integer, String>> fields = Pair.zip( PolyTypeUtil.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
         final AlgCollation collation =
                 algNode instanceof Sort
                         ? ((Sort) algNode).collation
                         : AlgCollations.EMPTY;
-        AlgRoot root = new AlgRoot( algNode, algNode.getRowType(), Kind.SELECT, fields, collation );
+        AlgRoot root = new AlgRoot( algNode, algNode.getTupleType(), Kind.SELECT, fields, collation );
         log.debug( "AlgRoot was built." );
 
         return executeAndTransformPolyAlg( root, statement, ctx );
@@ -155,8 +150,9 @@ public class Rest {
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
-        PolyphenyDbCatalogReader catalogReader = statement.getTransaction().getCatalogReader();
-        PreparingTable table = catalogReader.getTable( Arrays.asList( resourcePatchRequest.tables.get( 0 ).getNamespaceName(), resourcePatchRequest.tables.get( 0 ).name ) );
+        Snapshot snapshot = statement.getTransaction().getSnapshot();
+
+        LogicalTable table = snapshot.rel().getTable( resourcePatchRequest.tables.get( 0 ).id ).orElseThrow();
 
         // Table Scans
         algBuilder = this.tableScans( algBuilder, rexBuilder, resourcePatchRequest.tables );
@@ -171,31 +167,30 @@ public class Rest {
 
         // Table Modify
 
-        AlgOptPlanner planner = statement.getQueryProcessor().getPlanner();
-        AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder );
+        AlgPlanner planner = statement.getQueryProcessor().getPlanner();
+        AlgCluster cluster = AlgCluster.create( planner, rexBuilder, null, Catalog.getInstance().getSnapshot() );
 
         // Values
-        AlgDataType tableRowType = table.getRowType();
-        List<AlgDataTypeField> tableRows = tableRowType.getFieldList();
+        AlgDataType tableRowType = table.getTupleType();
+        List<AlgDataTypeField> tableRows = tableRowType.getFields();
         List<String> valueColumnNames = this.valuesColumnNames( resourcePatchRequest.values );
         List<RexNode> rexValues = this.valuesNode( statement, algBuilder, rexBuilder, resourcePatchRequest, tableRows, inputStreams ).get( 0 );
 
         AlgNode algNode = algBuilder.build();
-        Modify modify = new LogicalModify(
+        RelModify<?> modify = new LogicalRelModify(
                 cluster,
                 algNode.getTraitSet(),
                 table,
-                catalogReader,
                 algNode,
-                LogicalModify.Operation.UPDATE,
+                Modify.Operation.UPDATE,
                 valueColumnNames,
                 rexValues,
                 false
         );
 
         // Wrap {@link AlgNode} into a RelRoot
-        final AlgDataType rowType = modify.getRowType();
-        final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
+        final AlgDataType rowType = modify.getTupleType();
+        final List<Pair<Integer, String>> fields = Pair.zip( PolyTypeUtil.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
         final AlgCollation collation =
                 algNode instanceof Sort
                         ? ((Sort) algNode).collation
@@ -214,8 +209,7 @@ public class Rest {
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
-        PolyphenyDbCatalogReader catalogReader = statement.getTransaction().getCatalogReader();
-        PreparingTable table = catalogReader.getTable( Arrays.asList( resourceDeleteRequest.tables.get( 0 ).getNamespaceName(), resourceDeleteRequest.tables.get( 0 ).name ) );
+        LogicalTable table = getLogicalTable( getTransaction().getSnapshot(), resourceDeleteRequest.tables.get( 0 ).getNamespaceName(), resourceDeleteRequest.tables.get( 0 ).getName() );
 
         // Table Scans
         algBuilder = this.tableScans( algBuilder, rexBuilder, resourceDeleteRequest.tables );
@@ -230,25 +224,24 @@ public class Rest {
 
         // Table Modify
 
-        AlgOptPlanner planner = statement.getQueryProcessor().getPlanner();
-        AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder );
+        AlgPlanner planner = statement.getQueryProcessor().getPlanner();
+        AlgCluster cluster = AlgCluster.create( planner, rexBuilder, null, Catalog.getInstance().getSnapshot() );
 
         AlgNode algNode = algBuilder.build();
-        Modify modify = new LogicalModify(
+        RelModify<?> modify = new LogicalRelModify(
                 cluster,
                 algNode.getTraitSet(),
                 table,
-                catalogReader,
                 algNode,
-                LogicalModify.Operation.DELETE,
+                Modify.Operation.DELETE,
                 null,
                 null,
                 false
         );
 
         // Wrap {@link AlgNode} into a RelRoot
-        final AlgDataType rowType = modify.getRowType();
-        final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
+        final AlgDataType rowType = modify.getTupleType();
+        final List<Pair<Integer, String>> fields = Pair.zip( PolyTypeUtil.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
         final AlgCollation collation =
                 algNode instanceof Sort
                         ? ((Sort) algNode).collation
@@ -260,6 +253,11 @@ public class Rest {
     }
 
 
+    private static LogicalTable getLogicalTable( Snapshot snapshot, String namespaceName, String tableName ) {
+        return snapshot.rel().getTable( namespaceName, tableName ).orElseThrow();
+    }
+
+
     String processPostResource( final ResourcePostRequest insertValueRequest, final Context ctx, Map<String, InputStream> inputStreams ) throws RestException {
         Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
@@ -267,40 +265,36 @@ public class Rest {
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
-        PolyphenyDbCatalogReader catalogReader = statement.getTransaction().getCatalogReader();
-        PreparingTable table = catalogReader.getTable( Arrays.asList( insertValueRequest.tables.get( 0 ).getNamespaceName(), insertValueRequest.tables.get( 0 ).name ) );
+        LogicalTable table = getLogicalTable( transaction.getSnapshot(), insertValueRequest.tables.get( 0 ).getNamespaceName(), insertValueRequest.tables.get( 0 ).getName() );
 
         // Values
-        AlgDataType tableRowType = table.getRowType();
-        List<AlgDataTypeField> tableRows = tableRowType.getFieldList();
+        AlgDataType tableRowType = table.getTupleType();
+        List<AlgDataTypeField> tableRows = tableRowType.getFields();
 
-//        List<String> valueColumnNames = this.valuesColumnNames( updateResourceRequest.values );
-
-        AlgOptPlanner planner = statement.getQueryProcessor().getPlanner();
-        AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder );
+        AlgPlanner planner = statement.getQueryProcessor().getPlanner();
+        AlgCluster cluster = AlgCluster.create( planner, rexBuilder, null, Catalog.getInstance().getSnapshot() );
 
         List<String> valueColumnNames = this.valuesColumnNames( insertValueRequest.values );
         List<RexNode> rexValues = this.valuesNode( statement, algBuilder, rexBuilder, insertValueRequest, tableRows, inputStreams ).get( 0 );
-        algBuilder.push( LogicalValues.createOneRow( cluster ) );
+        algBuilder.push( LogicalRelValues.createOneRow( cluster ) );
         algBuilder.project( rexValues, valueColumnNames );
 
         // Table Modify
         AlgNode algNode = algBuilder.build();
-        Modify modify = new LogicalModify(
+        RelModify<?> modify = new LogicalRelModify(
                 cluster,
                 algNode.getTraitSet(),
                 table,
-                catalogReader,
                 algNode,
-                LogicalModify.Operation.INSERT,
+                Modify.Operation.INSERT,
                 null,
                 null,
                 false
         );
 
         // Wrap {@link AlgNode} into a RelRoot
-        final AlgDataType rowType = modify.getRowType();
-        final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
+        final AlgDataType rowType = modify.getTupleType();
+        final List<Pair<Integer, String>> fields = Pair.zip( PolyTypeUtil.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
         final AlgCollation collation =
                 algNode instanceof Sort
                         ? ((Sort) algNode).collation
@@ -313,15 +307,15 @@ public class Rest {
 
 
     @VisibleForTesting
-    AlgBuilder tableScans( AlgBuilder algBuilder, RexBuilder rexBuilder, List<CatalogTable> tables ) {
+    AlgBuilder tableScans( AlgBuilder algBuilder, RexBuilder rexBuilder, List<LogicalTable> tables ) {
         boolean firstTable = true;
-        for ( CatalogTable catalogTable : tables ) {
+        for ( LogicalTable catalogTable : tables ) {
             if ( firstTable ) {
-                algBuilder = algBuilder.scan( catalogTable.getNamespaceName(), catalogTable.name );
+                algBuilder = algBuilder.relScan( catalogTable.getNamespaceName(), catalogTable.name );
                 firstTable = false;
             } else {
                 algBuilder = algBuilder
-                        .scan( catalogTable.getNamespaceName(), catalogTable.name )
+                        .relScan( catalogTable.getNamespaceName(), catalogTable.name )
                         .join( JoinAlgType.INNER, rexBuilder.makeLiteral( true ) );
             }
         }
@@ -337,23 +331,16 @@ public class Rest {
             }
             List<RexNode> filterNodes = new ArrayList<>();
             AlgNode baseNodeForFilters = algBuilder.peek();
-            AlgDataType filtersRowType = baseNodeForFilters.getRowType();
-            List<AlgDataTypeField> filtersRows = filtersRowType.getFieldList();
+            AlgDataType filtersRowType = baseNodeForFilters.getTupleType();
+            List<AlgDataTypeField> filtersRows = filtersRowType.getFields();
             Map<String, AlgDataTypeField> filterMap = new HashMap<>();
-            filtersRows.forEach( ( r ) -> filterMap.put( r.getKey(), r ) );
+            filtersRows.forEach( ( r ) -> filterMap.put( r.getName(), r ) );
             int index = 0;
             for ( RequestColumn column : filters.literalFilters.keySet() ) {
-                for ( Pair<Operator, Object> filterOperationPair : filters.literalFilters.get( column ) ) {
+                for ( Pair<Operator, PolyValue> filterOperationPair : filters.literalFilters.get( column ) ) {
                     AlgDataTypeField typeField = filterMap.get( column.getColumn().name );
                     RexNode inputRef = rexBuilder.makeInputRef( baseNodeForFilters, typeField.getIndex() );
-                    Object param = filterOperationPair.right;
-                    if ( param instanceof TimestampString ) {
-                        param = ((TimestampString) param).toCalendar();
-                    } else if ( param instanceof TimeString ) {
-                        param = ((TimeString) param).toCalendar();
-                    } else if ( param instanceof DateString ) {
-                        param = ((DateString) param).toCalendar();
-                    }
+                    PolyValue param = filterOperationPair.right;
                     statement.getDataContext().addParameterValues( index, typeField.getType(), ImmutableList.of( param ) );
                     RexNode rightHandSide = rexBuilder.makeDynamicParam( typeField.getType(), index );
                     index++;
@@ -365,7 +352,6 @@ public class Rest {
             if ( req != null && log.isDebugEnabled() ) {
                 log.debug( "Finished processing filters. Session ID: {}.", req.getSession().getId() );
             }
-//            algBuilder = algBuilder.filter( filterNodes );
             if ( req != null && log.isDebugEnabled() ) {
                 log.debug( "Added filters to relation. Session ID: {}.", req.getSession().getId() );
             }
@@ -379,10 +365,10 @@ public class Rest {
     }
 
 
-    List<String> valuesColumnNames( List<List<Pair<RequestColumn, Object>>> values ) {
+    List<String> valuesColumnNames( List<List<Pair<RequestColumn, PolyValue>>> values ) {
         List<String> valueColumnNames = new ArrayList<>();
-        List<Pair<RequestColumn, Object>> rowsToInsert = values.get( 0 );
-        for ( Pair<RequestColumn, Object> insertValue : rowsToInsert ) {
+        List<Pair<RequestColumn, PolyValue>> rowsToInsert = values.get( 0 );
+        for ( Pair<RequestColumn, PolyValue> insertValue : rowsToInsert ) {
             valueColumnNames.add( insertValue.left.getColumn().name );
         }
 
@@ -391,21 +377,21 @@ public class Rest {
 
 
     List<List<RexNode>> valuesNode( Statement statement, AlgBuilder algBuilder, RexBuilder rexBuilder, ResourceValuesRequest request, List<AlgDataTypeField> tableRows, Map<String, InputStream> inputStreams ) {
-        List<List<Pair<RequestColumn, Object>>> values = request.values;
+        List<List<Pair<RequestColumn, PolyValue>>> values = request.values;
         List<List<RexNode>> wrapperList = new ArrayList<>();
         int index = 0;
-        for ( List<Pair<RequestColumn, Object>> rowsToInsert : values ) {
+        for ( List<Pair<RequestColumn, PolyValue>> rowsToInsert : values ) {
             List<RexNode> rexValues = new ArrayList<>();
-            for ( Pair<RequestColumn, Object> insertValue : rowsToInsert ) {
+            for ( Pair<RequestColumn, PolyValue> insertValue : rowsToInsert ) {
                 int columnPosition = insertValue.left.getLogicalIndex();
                 AlgDataTypeField typeField = tableRows.get( columnPosition );
                 if ( inputStreams != null && request.useDynamicParams && typeField.getType().getPolyType().getFamily() == PolyTypeFamily.MULTIMEDIA ) {
                     FileInputHandle fih = new FileInputHandle( statement, inputStreams.get( insertValue.left.getColumn().name ) );
-                    statement.getDataContext().addParameterValues( index, typeField.getType(), ImmutableList.of( fih ) );
+                    statement.getDataContext().addParameterValues( index, typeField.getType(), ImmutableList.of( PolyBlob.of( fih.getData() ) ) );
                     rexValues.add( rexBuilder.makeDynamicParam( typeField.getType(), index ) );
                     index++;
                 } else {
-                    rexValues.add( rexBuilder.makeLiteral( insertValue.right, typeField.getType(), true ) );
+                    rexValues.add( rexBuilder.makeLiteral( insertValue.right, typeField.getType(), typeField.getType().getPolyType() ) );
                 }
             }
             wrapperList.add( rexValues );
@@ -475,7 +461,7 @@ public class Rest {
                 inputFields.add( column.getLogicalIndex() );
                 String fieldName = column.getAlias();
                 AggregateCall aggregateCall = AggregateCall.create(
-                        (Operator & AggFunction) column.getAggregate(),
+                        column.getAggregate(),
                         false,
                         false,
                         inputFields,
@@ -519,10 +505,10 @@ public class Rest {
 
 
     AlgBuilder sort( AlgBuilder algBuilder, RexBuilder rexBuilder, List<Pair<RequestColumn, Boolean>> sorts, int limit, int offset ) {
-        if ( (sorts == null || sorts.size() == 0) && (limit >= 0 || offset >= 0) ) {
+        if ( (sorts == null || sorts.isEmpty()) && (limit >= 0 || offset >= 0) ) {
             algBuilder = algBuilder.limit( offset, limit );
 //            log.debug( "Added limit and offset to relation. Session ID: {}.", req.session().id() );
-        } else if ( sorts != null && sorts.size() != 0 ) {
+        } else if ( sorts != null && !sorts.isEmpty() ) {
             List<RexNode> sortingNodes = new ArrayList<>();
             AlgNode baseNodeForSorts = algBuilder.peek();
             for ( Pair<RequestColumn, Boolean> sort : sorts ) {
@@ -548,11 +534,7 @@ public class Rest {
 
 
     private Transaction getTransaction() {
-        try {
-            return transactionManager.startTransaction( userId, databaseId, false, "REST Interface", MultimediaFlavor.FILE );
-        } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
-            throw new RuntimeException( "Error while starting transaction", e );
-        }
+        return transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultNamespaceId, false, "REST Interface", MultimediaFlavor.FILE );
     }
 
 
@@ -563,9 +545,8 @@ public class Rest {
             PolyImplementation result = statement.getQueryProcessor().prepareQuery( algRoot, true );
             log.debug( "AlgRoot was prepared." );
 
-            final Iterable<Object> iterable = result.enumerable( statement.getDataContext() );
-            Iterator<Object> iterator = iterable.iterator();
-            restResult = new RestResult( algRoot.kind, iterator, result.rowType, result.getColumns() );
+            final ResultIterator iter = result.execute( statement, 1 );
+            restResult = new RestResult( algRoot.kind, iter, result.tupleType, result.getFields() );
             restResult.transform();
             long executionTime = restResult.getExecutionTime();
             if ( !algRoot.kind.belongsTo( Kind.DML ) ) {

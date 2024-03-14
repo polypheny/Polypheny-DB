@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,30 +17,26 @@
 package org.polypheny.db.sql.language.ddl.altertable;
 
 
-import static org.polypheny.db.util.Static.RESOURCE;
-
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
-import org.polypheny.db.ddl.exception.PlacementAlreadyExistsException;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlNodeList;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.ddl.SqlAlterTable;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -116,38 +112,37 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
 
 
     @Override
-    public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        CatalogTable catalogTable = getCatalogTable( context, table );
-        DataStore storeInstance = getDataStoreInstance( storeName );
+    public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
+        LogicalTable table = getTableFailOnEmpty( context, this.table );
+        DataStore<?> storeInstance = getDataStoreInstance( storeName );
 
-        if ( catalogTable.entityType != EntityType.ENTITY ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
+        if ( table.entityType != EntityType.ENTITY ) {
+            throw new GenericRuntimeException( "Not possible to use ALTER TABLE because '%s' is not a table.", table.name );
         }
 
         // You can't partition placements if the table is not partitioned
-        if ( !catalogTable.partitionProperty.isPartitioned && (!partitionGroupsList.isEmpty() || !partitionGroupNamesList.isEmpty()) ) {
-            throw new RuntimeException( "Partition Placement is not allowed for unpartitioned table '" + catalogTable.name + "'" );
+        if ( !statement.getTransaction().getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow().isPartitioned && (!partitionGroupsList.isEmpty() || !partitionGroupNamesList.isEmpty()) ) {
+            throw new GenericRuntimeException( "Partition Placement is not allowed for unpartitioned table '%s'", table.name );
         }
 
-        List<Long> columnIds = new LinkedList<>();
+        List<LogicalColumn> columns = new ArrayList<>();
         for ( SqlNode node : columnList.getSqlList() ) {
-            CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, (SqlIdentifier) node );
-            columnIds.add( catalogColumn.id );
+            LogicalColumn logicalColumn = getColumn( context, table.id, (SqlIdentifier) node );
+            columns.add( logicalColumn );
         }
 
-        try {
-            DdlManager.getInstance().addDataPlacement(
-                    catalogTable,
-                    columnIds,
-                    partitionGroupsList,
-                    partitionGroupNamesList.stream().map( SqlIdentifier::toString ).collect( Collectors.toList() ),
-                    storeInstance,
-                    statement );
-        } catch ( PlacementAlreadyExistsException e ) {
-            throw CoreUtil.newContextException(
-                    storeName.getPos(),
-                    RESOURCE.placementAlreadyExists( catalogTable.name, storeName.getSimple() ) );
+        if ( columns.isEmpty() ) {
+            // full placement
+            columns.addAll( statement.getTransaction().getSnapshot().rel().getColumns( table.id ) );
         }
+
+        DdlManager.getInstance().createAllocationPlacement(
+                table,
+                columns,
+                partitionGroupsList,
+                partitionGroupNamesList.stream().map( SqlIdentifier::toString ).toList(),
+                storeInstance,
+                statement );
 
     }
 

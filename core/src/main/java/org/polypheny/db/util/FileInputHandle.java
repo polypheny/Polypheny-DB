@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Statement;
@@ -97,7 +98,7 @@ public class FileInputHandle {
                 Files.copy( is, file.toPath() );
             }
         } catch ( IOException e ) {
-            throw new RuntimeException( "Exception while creating FileInputHandle", e );
+            throw new GenericRuntimeException( "Exception while creating FileInputHandle", e );
         } finally {
             try {
                 is.close();
@@ -118,7 +119,7 @@ public class FileInputHandle {
             inputStreams.add( is );
             return is;
         } catch ( FileNotFoundException e ) {
-            throw new RuntimeException( "Temporal file does not exist" );
+            throw new GenericRuntimeException( "Temporal file does not exist" );
         }
     }
 

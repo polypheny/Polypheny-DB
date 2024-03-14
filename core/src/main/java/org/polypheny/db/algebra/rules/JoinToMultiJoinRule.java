@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,33 +34,35 @@
 package org.polypheny.db.algebra.rules;
 
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.util.ImmutableBitSet;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 
 
 /**
- * Planner rule to flatten a tree of {@link LogicalJoin}s into a single {@link MultiJoin} with N inputs.
+ * Planner rule to flatten a tree of {@link LogicalRelJoin}s into a single {@link MultiJoin} with N inputs.
  *
  * An input is not flattened if the input is a null generating input in an outer join, i.e., either input in a full outer join, the right hand side of a left outer join, or the left hand
  * side of a right outer join.
@@ -86,14 +88,14 @@ import org.polypheny.db.util.Pair;
  * <li>(A LEFT JOIN B) FULL JOIN (C RIGHT JOIN D) &rarr; MJ[full](MJ(A, B), MJ(C, D)), left outer join on input #1 in the first inner MultiJoin and right outer join on input#0 in the second inner MultiJoin</li>
  * </ul>
  *
- * The constructor is parameterized to allow any sub-class of {@link org.polypheny.db.algebra.core.Join}, not just {@link LogicalJoin}.
+ * The constructor is parameterized to allow any sub-class of {@link org.polypheny.db.algebra.core.Join}, not just {@link LogicalRelJoin}.
  *
  * @see org.polypheny.db.algebra.rules.FilterMultiJoinMergeRule
  * @see ProjectMultiJoinMergeRule
  */
 public class JoinToMultiJoinRule extends AlgOptRule {
 
-    public static final JoinToMultiJoinRule INSTANCE = new JoinToMultiJoinRule( LogicalJoin.class, AlgFactories.LOGICAL_BUILDER );
+    public static final JoinToMultiJoinRule INSTANCE = new JoinToMultiJoinRule( LogicalRelJoin.class, AlgFactories.LOGICAL_BUILDER );
 
 
     /**
@@ -131,10 +133,10 @@ public class JoinToMultiJoinRule extends AlgOptRule {
         List<RexNode> newJoinFilters = combineJoinFilters( origJoin, left, right );
 
         // add on the join field reference counts for the join condition associated with this LogicalJoin
-        final ImmutableMap<Integer, ImmutableIntList> newJoinFieldRefCountsMap =
+        final ImmutableMap<Integer, ImmutableList<Integer>> newJoinFieldRefCountsMap =
                 addOnJoinFieldRefCounts(
                         newInputs,
-                        origJoin.getRowType().getFieldCount(),
+                        origJoin.getTupleType().getFieldCount(),
                         origJoin.getCondition(),
                         joinFieldRefCountsList );
 
@@ -146,7 +148,7 @@ public class JoinToMultiJoinRule extends AlgOptRule {
                         origJoin.getCluster(),
                         newInputs,
                         RexUtil.composeConjunction( rexBuilder, newJoinFilters ),
-                        origJoin.getRowType(),
+                        origJoin.getTupleType(),
                         origJoin.getJoinType() == JoinAlgType.FULL,
                         Pair.right( joinSpecs ),
                         Pair.left( joinSpecs ),
@@ -177,12 +179,12 @@ public class JoinToMultiJoinRule extends AlgOptRule {
             for ( int i = 0; i < left.getInputs().size(); i++ ) {
                 newInputs.add( leftMultiJoin.getInput( i ) );
                 projFieldsList.add( leftMultiJoin.getProjFields().get( i ) );
-                joinFieldRefCountsList.add( leftMultiJoin.getJoinFieldRefCountsMap().get( i ).toIntArray() );
+                joinFieldRefCountsList.add( leftMultiJoin.getJoinFieldRefCountsMap().get( i ).stream().mapToInt( j -> j ).toArray() );
             }
         } else {
             newInputs.add( left );
             projFieldsList.add( null );
-            joinFieldRefCountsList.add( new int[left.getRowType().getFieldCount()] );
+            joinFieldRefCountsList.add( new int[left.getTupleType().getFieldCount()] );
         }
 
         if ( canCombine( right, join.getJoinType().generatesNullsOnRight() ) ) {
@@ -190,12 +192,12 @@ public class JoinToMultiJoinRule extends AlgOptRule {
             for ( int i = 0; i < right.getInputs().size(); i++ ) {
                 newInputs.add( rightMultiJoin.getInput( i ) );
                 projFieldsList.add( rightMultiJoin.getProjFields().get( i ) );
-                joinFieldRefCountsList.add( rightMultiJoin.getJoinFieldRefCountsMap().get( i ).toIntArray() );
+                joinFieldRefCountsList.add( rightMultiJoin.getJoinFieldRefCountsMap().get( i ).stream().mapToInt( j -> j ).toArray() );
             }
         } else {
             newInputs.add( right );
             projFieldsList.add( null );
-            joinFieldRefCountsList.add( new int[right.getRowType().getFieldCount()] );
+            joinFieldRefCountsList.add( new int[right.getTupleType().getFieldCount()] );
         }
 
         return newInputs;
@@ -236,9 +238,9 @@ public class JoinToMultiJoinRule extends AlgOptRule {
                     copyOuterJoinInfo(
                             (MultiJoin) right,
                             joinSpecs,
-                            left.getRowType().getFieldCount(),
-                            right.getRowType().getFieldList(),
-                            joinRel.getRowType().getFieldList() );
+                            left.getTupleType().getFieldCount(),
+                            right.getTupleType().getFields(),
+                            joinRel.getTupleType().getFields() );
                 } else {
                     joinSpecs.add( Pair.of( JoinAlgType.INNER, (RexNode) null ) );
                 }
@@ -258,9 +260,9 @@ public class JoinToMultiJoinRule extends AlgOptRule {
                     copyOuterJoinInfo(
                             (MultiJoin) right,
                             joinSpecs,
-                            left.getRowType().getFieldCount(),
-                            right.getRowType().getFieldList(),
-                            joinRel.getRowType().getFieldList() );
+                            left.getTupleType().getFieldCount(),
+                            right.getTupleType().getFields(),
+                            joinRel.getTupleType().getFields() );
                 } else {
                     joinSpecs.add( Pair.of( JoinAlgType.INNER, (RexNode) null ) );
                 }
@@ -364,8 +366,8 @@ public class JoinToMultiJoinRule extends AlgOptRule {
             return null;
         }
 
-        int nFieldsOnLeft = left.getRowType().getFieldList().size();
-        int nFieldsOnRight = right.getRowType().getFieldList().size();
+        int nFieldsOnLeft = left.getTupleType().getFields().size();
+        int nFieldsOnRight = right.getTupleType().getFields().size();
         int[] adjustments = new int[nFieldsOnRight];
         for ( int i = 0; i < nFieldsOnRight; i++ ) {
             adjustments[i] = nFieldsOnLeft;
@@ -374,8 +376,8 @@ public class JoinToMultiJoinRule extends AlgOptRule {
                 rightFilter.accept(
                         new AlgOptUtil.RexInputConverter(
                                 joinRel.getCluster().getRexBuilder(),
-                                right.getRowType().getFieldList(),
-                                joinRel.getRowType().getFieldList(),
+                                right.getTupleType().getFields(),
+                                joinRel.getTupleType().getFields(),
                                 adjustments ) );
         return rightFilter;
     }
@@ -390,7 +392,7 @@ public class JoinToMultiJoinRule extends AlgOptRule {
      * @param origJoinFieldRefCounts existing join condition reference counts
      * @return Map containing the new join condition
      */
-    private ImmutableMap<Integer, ImmutableIntList> addOnJoinFieldRefCounts( List<AlgNode> multiJoinInputs, int nTotalFields, RexNode joinCondition, List<int[]> origJoinFieldRefCounts ) {
+    private ImmutableMap<Integer, ImmutableList<Integer>> addOnJoinFieldRefCounts( List<AlgNode> multiJoinInputs, int nTotalFields, RexNode joinCondition, List<int[]> origJoinFieldRefCounts ) {
         // count the input references in the join condition
         int[] joinCondRefCounts = new int[nTotalFields];
         joinCondition.accept( new InputReferenceCounter( joinCondRefCounts ) );
@@ -416,15 +418,15 @@ public class JoinToMultiJoinRule extends AlgOptRule {
                 startField += nFields;
                 currInput++;
                 assert currInput < nInputs;
-                nFields = multiJoinInputs.get( currInput ).getRowType().getFieldCount();
+                nFields = multiJoinInputs.get( currInput ).getTupleType().getFieldCount();
             }
             int[] refCounts = refCountsMap.get( currInput );
             refCounts[i - startField] += joinCondRefCounts[i];
         }
 
-        final ImmutableMap.Builder<Integer, ImmutableIntList> builder = ImmutableMap.builder();
+        final ImmutableMap.Builder<Integer, ImmutableList<Integer>> builder = ImmutableMap.builder();
         for ( Map.Entry<Integer, int[]> entry : refCountsMap.entrySet() ) {
-            builder.put( entry.getKey(), ImmutableIntList.of( entry.getValue() ) );
+            builder.put( entry.getKey(), ImmutableList.copyOf( Arrays.stream( entry.getValue() ).boxed().collect( Collectors.toList() ) ) );
         }
         return builder.build();
     }
@@ -468,7 +470,7 @@ public class JoinToMultiJoinRule extends AlgOptRule {
 
 
         @Override
-        public Void visitInputRef( RexInputRef inputRef ) {
+        public Void visitIndexRef( RexIndexRef inputRef ) {
             refCounts[inputRef.getIndex()]++;
             return null;
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,31 +36,28 @@ package org.polypheny.db.algebra.mutable;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.algebra.core.Modify;
-import org.polypheny.db.algebra.core.Modify.Operation;
+import org.polypheny.db.algebra.core.common.Modify.Operation;
+import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.prepare.Prepare;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.rex.RexNode;
 
 
 /**
- * Mutable equivalent of {@link Modify}.
+ * Mutable equivalent of {@link RelModify}.
  */
 public class MutableTableModify extends MutableSingleAlg {
 
-    public final Prepare.CatalogReader catalogReader;
-    public final AlgOptTable table;
+    public final Entity table;
     public final Operation operation;
     public final List<String> updateColumnList;
     public final List<RexNode> sourceExpressionList;
     public final boolean flattened;
 
 
-    private MutableTableModify( AlgDataType rowType, MutableAlg input, AlgOptTable table, Prepare.CatalogReader catalogReader, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
+    private MutableTableModify( AlgDataType rowType, MutableAlg input, Entity table, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
         super( MutableAlgType.TABLE_MODIFY, rowType, input );
         this.table = table;
-        this.catalogReader = catalogReader;
         this.operation = operation;
         this.updateColumnList = updateColumnList;
         this.sourceExpressionList = sourceExpressionList;
@@ -74,14 +71,13 @@ public class MutableTableModify extends MutableSingleAlg {
      * @param rowType Row type
      * @param input Input relational expression
      * @param table Target table to modify
-     * @param catalogReader Accessor to the table metadata
      * @param operation Modify operation (INSERT, UPDATE, DELETE)
      * @param updateColumnList List of column identifiers to be updated (e.g. ident1, ident2); null if not UPDATE
      * @param sourceExpressionList List of value expressions to be set (e.g. exp1, exp2); null if not UPDATE
      * @param flattened Whether set flattens the input row type
      */
-    public static MutableTableModify of( AlgDataType rowType, MutableAlg input, AlgOptTable table, Prepare.CatalogReader catalogReader, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
-        return new MutableTableModify( rowType, input, table, catalogReader, operation, updateColumnList, sourceExpressionList, flattened );
+    public static MutableTableModify of( AlgDataType rowType, MutableAlg input, Entity table, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
+        return new MutableTableModify( rowType, input, table, operation, updateColumnList, sourceExpressionList, flattened );
     }
 
 
@@ -89,7 +85,7 @@ public class MutableTableModify extends MutableSingleAlg {
     public boolean equals( Object obj ) {
         return obj == this
                 || obj instanceof MutableTableModify
-                && table.getQualifiedName().equals( ((MutableTableModify) obj).table.getQualifiedName() )
+                && table.id == ((MutableTableModify) obj).table.id
                 && operation == ((MutableTableModify) obj).operation
                 && Objects.equals( updateColumnList, ((MutableTableModify) obj).updateColumnList )
                 && PAIRWISE_STRING_EQUIVALENCE.equivalent( sourceExpressionList, ((MutableTableModify) obj).sourceExpressionList )
@@ -102,7 +98,7 @@ public class MutableTableModify extends MutableSingleAlg {
     public int hashCode() {
         return Objects.hash(
                 input,
-                table.getQualifiedName(),
+                table.id,
                 operation,
                 updateColumnList,
                 PAIRWISE_STRING_EQUIVALENCE.hash( sourceExpressionList ),
@@ -112,7 +108,7 @@ public class MutableTableModify extends MutableSingleAlg {
 
     @Override
     public StringBuilder digest( StringBuilder buf ) {
-        buf.append( "Modify(table: " ).append( table.getQualifiedName() ).append( ", operation: " ).append( operation );
+        buf.append( "Modify(table: " ).append( table.name ).append( ", operation: " ).append( operation );
         if ( updateColumnList != null ) {
             buf.append( ", updateColumnList: " ).append( updateColumnList );
         }
@@ -125,7 +121,7 @@ public class MutableTableModify extends MutableSingleAlg {
 
     @Override
     public MutableAlg clone() {
-        return MutableTableModify.of( rowType, input.clone(), table, catalogReader, operation, updateColumnList, sourceExpressionList, flattened );
+        return MutableTableModify.of( rowType, input.clone(), table, operation, updateColumnList, sourceExpressionList, flattened );
     }
 
 }

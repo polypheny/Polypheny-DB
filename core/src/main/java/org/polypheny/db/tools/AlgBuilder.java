@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,54 +34,129 @@
 package org.polypheny.db.tools;
 
 
+import static org.polypheny.db.util.Static.RESOURCE;
+
 import com.google.common.base.Preconditions;
-import com.google.common.collect.*;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import java.math.BigDecimal;
+import java.util.AbstractList;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Experimental;
-import org.bson.BsonValue;
-import org.polypheny.db.algebra.*;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgDistribution;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.SemiJoinType;
-import org.polypheny.db.algebra.core.*;
+import org.polypheny.db.algebra.core.Aggregate;
+import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.AlgFactories.ScanFactory;
+import org.polypheny.db.algebra.core.CorrelationId;
+import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.Intersect;
+import org.polypheny.db.algebra.core.Join;
+import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.core.Match;
+import org.polypheny.db.algebra.core.Minus;
+import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.SemiJoin;
+import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.core.Union;
+import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.fun.AggFunction;
+import org.polypheny.db.algebra.logical.common.LogicalTransformer;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
-import org.polypheny.db.algebra.logical.lpg.LogicalGraph;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.algebra.type.StructKind;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.*;
-import org.polypheny.db.rex.*;
+import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.plan.AlgOptPredicateList;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.Context;
+import org.polypheny.db.plan.Contexts;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexCorrelVariable;
+import org.polypheny.db.rex.RexExecutor;
+import org.polypheny.db.rex.RexIndexRef;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.rex.RexSimplify;
+import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.runtime.Hook;
-import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
-import org.polypheny.db.schema.ModelTrait;
-import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.graph.PolyNode;
+import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.schema.trait.ModelTraitDef;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.*;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.graph.PolyDictionary;
+import org.polypheny.db.type.entity.graph.PolyNode;
+import org.polypheny.db.util.DateString;
+import org.polypheny.db.util.Holder;
+import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.util.ImmutableNullableList;
+import org.polypheny.db.util.Litmus;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Permutation;
+import org.polypheny.db.util.TimeString;
+import org.polypheny.db.util.TimestampString;
+import org.polypheny.db.util.Util;
+import org.polypheny.db.util.ValidatorUtil;
 import org.polypheny.db.util.mapping.Mapping;
 import org.polypheny.db.util.mapping.Mappings;
-
-import javax.annotation.Nonnull;
-import java.math.BigDecimal;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static org.polypheny.db.util.Static.RESOURCE;
 
 
 /**
@@ -91,8 +166,8 @@ import static org.polypheny.db.util.Static.RESOURCE;
  * the particular relational expression. But it makes common tasks more straightforward and concise.
  * <p>
  * {@code AlgBuilder} uses factories to create relational expressions.
- * By default, it uses the default factories, which create logical relational expressions ({@link LogicalFilter},
- * {@link LogicalProject} and so forth). But you could override those factories so that, say, {@code filter} creates
+ * By default, it uses the default factories, which create logical relational expressions ({@link LogicalRelFilter},
+ * {@link LogicalRelProject} and so forth). But you could override those factories so that, say, {@code filter} creates
  * instead a {@code HiveFilter}.
  * <p>
  * It is not thread-safe.
@@ -100,8 +175,8 @@ import static org.polypheny.db.util.Static.RESOURCE;
 public class AlgBuilder {
 
     @Getter
-    protected final AlgOptCluster cluster;
-    protected final AlgOptSchema algOptSchema;
+    protected final AlgCluster cluster;
+    protected final Snapshot snapshot;
     private final AlgFactories.FilterFactory filterFactory;
     private final AlgFactories.ProjectFactory projectFactory;
     private final AlgFactories.AggregateFactory aggregateFactory;
@@ -121,78 +196,47 @@ public class AlgBuilder {
     private final RexSimplify simplifier;
 
 
-    protected AlgBuilder( Context context, AlgOptCluster cluster, AlgOptSchema algOptSchema ) {
+    protected AlgBuilder( Context context, AlgCluster cluster, Snapshot snapshot ) {
         this.cluster = cluster;
-        this.algOptSchema = algOptSchema;
+        this.snapshot = snapshot;
         if ( context == null ) {
             context = Contexts.EMPTY_CONTEXT;
         }
         this.simplify = Hook.REL_BUILDER_SIMPLIFY.get( true );
-        this.aggregateFactory =
-                Util.first(
-                        context.unwrap( AlgFactories.AggregateFactory.class ),
-                        AlgFactories.DEFAULT_AGGREGATE_FACTORY );
-        this.filterFactory =
-                Util.first(
-                        context.unwrap( AlgFactories.FilterFactory.class ),
-                        AlgFactories.DEFAULT_FILTER_FACTORY );
-        this.projectFactory =
-                Util.first(
-                        context.unwrap( AlgFactories.ProjectFactory.class ),
-                        AlgFactories.DEFAULT_PROJECT_FACTORY );
-        this.sortFactory =
-                Util.first(
-                        context.unwrap( AlgFactories.SortFactory.class ),
-                        AlgFactories.DEFAULT_SORT_FACTORY );
-        this.exchangeFactory =
-                Util.first(
-                        context.unwrap( AlgFactories.ExchangeFactory.class ),
-                        AlgFactories.DEFAULT_EXCHANGE_FACTORY );
-        this.sortExchangeFactory =
-                Util.first(
-                        context.unwrap( AlgFactories.SortExchangeFactory.class ),
-                        AlgFactories.DEFAULT_SORT_EXCHANGE_FACTORY );
-        this.setOpFactory =
-                Util.first(
-                        context.unwrap( AlgFactories.SetOpFactory.class ),
-                        AlgFactories.DEFAULT_SET_OP_FACTORY );
-        this.joinFactory =
-                Util.first(
-                        context.unwrap( AlgFactories.JoinFactory.class ),
-                        AlgFactories.DEFAULT_JOIN_FACTORY );
-        this.semiJoinFactory =
-                Util.first(
-                        context.unwrap( AlgFactories.SemiJoinFactory.class ),
-                        AlgFactories.DEFAULT_SEMI_JOIN_FACTORY );
-        this.correlateFactory =
-                Util.first(
-                        context.unwrap( AlgFactories.CorrelateFactory.class ),
-                        AlgFactories.DEFAULT_CORRELATE_FACTORY );
-        this.valuesFactory =
-                Util.first(
-                        context.unwrap( AlgFactories.ValuesFactory.class ),
-                        AlgFactories.DEFAULT_VALUES_FACTORY );
-        this.scanFactory =
-                Util.first(
-                        context.unwrap( ScanFactory.class ),
-                        AlgFactories.DEFAULT_TABLE_SCAN_FACTORY );
-        this.matchFactory =
-                Util.first(
-                        context.unwrap( AlgFactories.MatchFactory.class ),
-                        AlgFactories.DEFAULT_MATCH_FACTORY );
-        this.documentsFactory =
-                Util.first(
-                        context.unwrap( AlgFactories.DocumentsFactory.class ),
-                        AlgFactories.DEFAULT_DOCUMENTS_FACTORY );
+        this.aggregateFactory = context.unwrap( AlgFactories.AggregateFactory.class )
+                .orElse( AlgFactories.DEFAULT_AGGREGATE_FACTORY );
+        this.filterFactory = context.unwrap( AlgFactories.FilterFactory.class )
+                .orElse( AlgFactories.DEFAULT_FILTER_FACTORY );
+        this.projectFactory = context.unwrap( AlgFactories.ProjectFactory.class )
+                .orElse( AlgFactories.DEFAULT_PROJECT_FACTORY );
+        this.sortFactory = context.unwrap( AlgFactories.SortFactory.class )
+                .orElse( AlgFactories.DEFAULT_SORT_FACTORY );
+        this.exchangeFactory = context.unwrap( AlgFactories.ExchangeFactory.class )
+                .orElse( AlgFactories.DEFAULT_EXCHANGE_FACTORY );
+        this.sortExchangeFactory = context.unwrap( AlgFactories.SortExchangeFactory.class )
+                .orElse( AlgFactories.DEFAULT_SORT_EXCHANGE_FACTORY );
+        this.setOpFactory = context.unwrap( AlgFactories.SetOpFactory.class )
+                .orElse( AlgFactories.DEFAULT_SET_OP_FACTORY );
+        this.joinFactory = context.unwrap( AlgFactories.JoinFactory.class )
+                .orElse( AlgFactories.DEFAULT_JOIN_FACTORY );
+        this.semiJoinFactory = context.unwrap( AlgFactories.SemiJoinFactory.class )
+                .orElse( AlgFactories.DEFAULT_SEMI_JOIN_FACTORY );
+        this.correlateFactory = context.unwrap( AlgFactories.CorrelateFactory.class )
+                .orElse( AlgFactories.DEFAULT_CORRELATE_FACTORY );
+        this.valuesFactory = context.unwrap( AlgFactories.ValuesFactory.class )
+                .orElse( AlgFactories.DEFAULT_VALUES_FACTORY );
+        this.scanFactory = context.unwrap( ScanFactory.class )
+                .orElse( AlgFactories.DEFAULT_TABLE_SCAN_FACTORY );
+        this.matchFactory = context.unwrap( AlgFactories.MatchFactory.class )
+                .orElse( AlgFactories.DEFAULT_MATCH_FACTORY );
+        this.documentsFactory = context.unwrap( AlgFactories.DocumentsFactory.class )
+                .orElse( AlgFactories.DEFAULT_DOCUMENTS_FACTORY );
 
-        final RexExecutor executor =
+        final RexExecutor executor = context.unwrap( RexExecutor.class ).orElse(
                 Util.first(
-                        context.unwrap( RexExecutor.class ),
-                        Util.first(
-                                cluster.getPlanner().getExecutor(),
-                                RexUtil.EXECUTOR ) );
-        final AlgOptPredicateList predicates = AlgOptPredicateList.EMPTY;
-        this.simplifier = new RexSimplify( cluster.getRexBuilder(), predicates, executor );
+                        cluster.getPlanner().getExecutor(),
+                        RexUtil.EXECUTOR ) );
+        this.simplifier = new RexSimplify( cluster.getRexBuilder(), AlgOptPredicateList.EMPTY, executor );
 
     }
 
@@ -205,34 +249,16 @@ public class AlgBuilder {
     }
 
 
-    /**
-     * Creates a AlgBuilder.
-     */
-    public static AlgBuilder create( FrameworkConfig config ) {
-        final AlgOptCluster[] clusters = { null };
-        final AlgOptSchema[] algOptSchemas = { null };
-        Frameworks.withPrepare(
-                new Frameworks.PrepareAction<Void>( config ) {
-                    @Override
-                    public Void apply( AlgOptCluster cluster, AlgOptSchema algOptSchema, SchemaPlus rootSchema ) {
-                        clusters[0] = cluster;
-                        algOptSchemas[0] = algOptSchema;
-                        return null;
-                    }
-                } );
-        return new AlgBuilder( config.getContext(), clusters[0], algOptSchemas[0] );
-    }
-
 
     public static AlgBuilder create( Statement statement ) {
         final RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
-        final AlgOptCluster cluster = AlgOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder );
+        final AlgCluster cluster = AlgCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder, null, statement.getTransaction().getSnapshot() );
         return create( statement, cluster );
     }
 
 
-    public static AlgBuilder create( Statement statement, AlgOptCluster cluster ) {
-        return new AlgBuilder( Contexts.EMPTY_CONTEXT, cluster, statement.getTransaction().getCatalogReader() );
+    public static AlgBuilder create( Statement statement, AlgCluster cluster ) {
+        return new AlgBuilder( Contexts.EMPTY_CONTEXT, cluster, statement.getTransaction().getSnapshot() );
     }
 
 
@@ -265,10 +291,10 @@ public class AlgBuilder {
 
     /**
      * Creates a {@link AlgBuilderFactory}, a partially-created AlgBuilder.
-     * Just add a {@link AlgOptCluster} and a {@link AlgOptSchema}
+     * Just add a {@link AlgCluster}
      */
     public static AlgBuilderFactory proto( final Context context ) {
-        return ( cluster, schema ) -> new AlgBuilder( context, cluster, schema );
+        return ( cluster, snapshot ) -> new AlgBuilder( context, cluster, snapshot );
     }
 
 
@@ -284,7 +310,7 @@ public class AlgBuilder {
 
     /**
      * Adds a relational expression to be the input to the next relational expression constructed.
-     *
+     * <p>
      * This method is usual when you want to weave in relational expressions that are not supported by the builder. If, while
      * creating such expressions, you need to use previously built expressions as inputs, call
      * {@link #build()} to pop those inputs.
@@ -300,7 +326,7 @@ public class AlgBuilder {
      */
     public void replaceTop( AlgNode node ) {
         final Frame frame = stack.pop();
-        stack.push( new Frame( node, frame.fields ) );
+        stack.push( new Frame( node, toFields( node ), null ) );
     }
 
 
@@ -308,11 +334,17 @@ public class AlgBuilder {
      * Adds an alg node to the top of the stack while preserving the field names and aliases.
      */
     public void replaceTop( AlgNode node, int amount ) {
-        final Frame frame = stack.pop();
-        for ( int i = 0; i < amount - 1; i++ ) {
+        //final Frame frame = stack.pop();
+        for ( int i = 0; i < amount; i++ ) {
             stack.pop();
         }
-        stack.push( new Frame( node, frame.fields ) );
+
+        stack.push( new Frame( node, toFields( node ), null ) );
+    }
+
+
+    private static ImmutableList<RelField> toFields( AlgNode node ) {
+        return ImmutableList.copyOf( node.getTupleType().getFields().stream().map( f -> new RelField( ImmutableSet.of(), f ) ).collect( Collectors.toList() ) );
     }
 
 
@@ -329,7 +361,7 @@ public class AlgBuilder {
 
     /**
      * Returns the final relational expression.
-     *
+     * <p>
      * Throws if the stack is empty.
      */
     public AlgNode build() {
@@ -385,7 +417,7 @@ public class AlgBuilder {
     private int inputOffset( int inputCount, int inputOrdinal ) {
         int offset = 0;
         for ( int i = 0; i < inputOrdinal; i++ ) {
-            offset += peek( inputCount, i ).getRowType().getFieldCount();
+            offset += peek( inputCount, i ).getTupleType().getFieldCount();
         }
         return offset;
     }
@@ -429,19 +461,19 @@ public class AlgBuilder {
      * Creates a correlation variable for the current input, and writes it into a Holder.
      */
     public AlgBuilder variable( Holder<RexCorrelVariable> v ) {
-        v.set( (RexCorrelVariable) getRexBuilder().makeCorrel( peek().getRowType(), cluster.createCorrel() ) );
+        v.set( (RexCorrelVariable) getRexBuilder().makeCorrel( peek().getTupleType(), cluster.createCorrel() ) );
         return this;
     }
 
 
     /**
      * Creates a reference to a field by name.
-     *
+     * <p>
      * Equivalent to {@code field(1, 0, fieldName)}.
      *
      * @param fieldName Field name
      */
-    public RexInputRef field( String fieldName ) {
+    public RexIndexRef field( String fieldName ) {
         return field( 1, 0, fieldName );
     }
 
@@ -453,9 +485,9 @@ public class AlgBuilder {
      * @param inputOrdinal Input ordinal
      * @param fieldName Field name
      */
-    public RexInputRef field( int inputCount, int inputOrdinal, String fieldName ) {
+    public RexIndexRef field( int inputCount, int inputOrdinal, String fieldName ) {
         final Frame frame = peek_( inputCount, inputOrdinal );
-        final List<String> fieldNames = Pair.left( frame.fields() );
+        final List<String> fieldNames = frame.relFields().stream().map( AlgDataTypeField::getName ).toList();
         int i = fieldNames.indexOf( fieldName );
         if ( i >= 0 ) {
             return field( inputCount, inputOrdinal, i );
@@ -467,13 +499,13 @@ public class AlgBuilder {
 
     /**
      * Creates a reference to an input field by ordinal.
-     *
+     * <p>
      * Equivalent to {@code field(1, 0, ordinal)}.
      *
      * @param fieldOrdinal Field ordinal
      */
-    public RexInputRef field( int fieldOrdinal ) {
-        return (RexInputRef) field( 1, 0, fieldOrdinal, false );
+    public RexIndexRef field( int fieldOrdinal ) {
+        return (RexIndexRef) field( 1, 0, fieldOrdinal, false );
     }
 
 
@@ -484,27 +516,30 @@ public class AlgBuilder {
      * @param inputOrdinal Input ordinal
      * @param fieldOrdinal Field ordinal within input
      */
-    public RexInputRef field( int inputCount, int inputOrdinal, int fieldOrdinal ) {
-        return (RexInputRef) field( inputCount, inputOrdinal, fieldOrdinal, false );
+    public RexIndexRef field( int inputCount, int inputOrdinal, int fieldOrdinal ) {
+        return (RexIndexRef) field( inputCount, inputOrdinal, fieldOrdinal, false );
     }
 
 
     /**
      * As {@link #field(int, int, int)}, but if {@code alias} is true, the method may apply an alias to make sure that the
      * field has the same name as in the input frame. If no alias is applied the expression is definitely a
-     * {@link RexInputRef}.
+     * {@link RexIndexRef}.
      */
     private RexNode field( int inputCount, int inputOrdinal, int fieldOrdinal, boolean alias ) {
         final Frame frame = peek_( inputCount, inputOrdinal );
         final AlgNode input = frame.alg;
-        final AlgDataType rowType = input.getRowType();
+        final AlgDataType rowType = input.getTupleType();
         if ( fieldOrdinal < 0 || fieldOrdinal > rowType.getFieldCount() ) {
             throw new IllegalArgumentException( "field ordinal [" + fieldOrdinal + "] out of range; input fields are: " + rowType.getFieldNames() );
         }
-        final AlgDataTypeField field = rowType.getFieldList().get( fieldOrdinal );
+        final AlgDataTypeField field = rowType.getFields().get( fieldOrdinal );
         final int offset = inputOffset( inputCount, inputOrdinal );
-        final RexInputRef ref = cluster.getRexBuilder().makeInputRef( field.getType(), offset + fieldOrdinal );
-        final AlgDataTypeField aliasField = frame.fields().get( fieldOrdinal );
+        final RexIndexRef ref = cluster.getRexBuilder().makeInputRef( field.getType(), offset + fieldOrdinal );
+        if ( frame.alg.getModel() == DataModel.DOCUMENT ) {
+            return ref;
+        }
+        final AlgDataTypeField aliasField = frame.relFields().get( fieldOrdinal );
         if ( !alias || field.getName().equals( aliasField.getName() ) ) {
             return ref;
         } else {
@@ -531,9 +566,26 @@ public class AlgBuilder {
         final List<String> fields = new ArrayList<>();
         for ( int inputOrdinal = 0; inputOrdinal < inputCount; ++inputOrdinal ) {
             final Frame frame = peek_( inputOrdinal );
-            for ( Ord<Field> p : Ord.zip( frame.fields ) ) {
+            for ( Ord<RelField> p : Ord.zip( frame.structured ) ) {
                 // If alias and field name match, reference that field.
                 if ( p.e.left.contains( alias ) && p.e.right.getName().equals( fieldName ) ) {
+                    return field( inputCount, inputCount - 1 - inputOrdinal, p.i );
+                }
+                fields.add( String.format( Locale.ROOT, "{aliases=%s,fieldName=%s}", p.e.left, p.e.right.getName() ) );
+            }
+        }
+        throw new IllegalArgumentException( "no aliased field found; fields are: " + fields );
+    }
+
+
+    public RexNode field( int inputCount, String fieldName ) {
+        Objects.requireNonNull( fieldName );
+        final List<String> fields = new ArrayList<>();
+        for ( int inputOrdinal = 0; inputOrdinal < inputCount; ++inputOrdinal ) {
+            final Frame frame = peek_( inputOrdinal );
+            for ( Ord<RelField> p : Ord.zip( frame.structured ) ) {
+                // If alias and field name match, reference that field.
+                if ( p.e.right.getName().equals( fieldName ) ) {
                     return field( inputCount, inputCount - 1 - inputOrdinal, p.i );
                 }
                 fields.add( String.format( Locale.ROOT, "{aliases=%s,fieldName=%s}", p.e.left, p.e.right.getName() ) );
@@ -564,7 +616,7 @@ public class AlgBuilder {
      */
     public ImmutableList<RexNode> fields( int inputCount, int inputOrdinal ) {
         final AlgNode input = peek( inputCount, inputOrdinal );
-        final AlgDataType rowType = input.getRowType();
+        final AlgDataType rowType = input.getTupleType();
         final ImmutableList.Builder<RexNode> nodes = ImmutableList.builder();
         for ( int fieldOrdinal : Util.range( rowType.getFieldCount() ) ) {
             nodes.add( field( inputCount, inputOrdinal, fieldOrdinal ) );
@@ -685,7 +737,7 @@ public class AlgBuilder {
 
     /**
      * Creates an AND.
-     *
+     * <p>
      * Simplifies the expression a little:
      * {@code e AND TRUE} becomes {@code e};
      * {@code e AND e2 AND NOT e} becomes {@code e2}.
@@ -868,8 +920,8 @@ public class AlgBuilder {
     /**
      * Creates a group key of fields identified by ordinal.
      */
-    public GroupKey groupKey( int... fieldOrdinals ) {
-        return groupKey( fields( ImmutableIntList.of( fieldOrdinals ) ) );
+    public GroupKey groupKey( Integer... fieldOrdinals ) {
+        return groupKey( fields( Arrays.asList( fieldOrdinals ) ) );
     }
 
 
@@ -883,7 +935,7 @@ public class AlgBuilder {
 
     /**
      * Creates a group key, identified by field positions in the underlying relational expression.
-     *
+     * <p>
      * This method of creating a group key does not allow you to group on new expressions, only column projections, but is
      * efficient, especially when you are coming from an existing {@link Aggregate}.
      */
@@ -894,7 +946,7 @@ public class AlgBuilder {
 
     /**
      * Creates a group key with grouping sets, both identified by field positions in the underlying relational expression.
-     *
+     * <p>
      * This method of creating a group key does not allow you to group on new expressions, only column projections, but is
      * efficient, especially when you are coming from an existing {@link Aggregate}.
      */
@@ -932,19 +984,19 @@ public class AlgBuilder {
 
 
     private GroupKey groupKey_( ImmutableBitSet groupSet, boolean indicator, @Nonnull ImmutableList<ImmutableBitSet> groupSets ) {
-        if ( groupSet.length() > peek().getRowType().getFieldCount() ) {
+        if ( groupSet.length() > peek().getTupleType().getFieldCount() ) {
             throw new IllegalArgumentException( "out of bounds: " + groupSet );
         }
         Objects.requireNonNull( groupSets );
-        final ImmutableList<RexNode> nodes = fields( ImmutableIntList.of( groupSet.toArray() ) );
-        final List<ImmutableList<RexNode>> nodeLists = Util.transform( groupSets, bitSet -> fields( ImmutableIntList.of( bitSet.toArray() ) ) );
+        final ImmutableList<RexNode> nodes = fields( groupSet.toList() );
+        final List<ImmutableList<RexNode>> nodeLists = Util.transform( groupSets, bitSet -> fields( bitSet.toList() ) );
         return groupKey_( nodes, indicator, nodeLists );
     }
 
 
     /**
      * Creates a call to an aggregate function.
-     *
+     * <p>
      * To add other operands, apply
      * {@link AggCall#distinct()},
      * {@link AggCall#approximate(boolean)},
@@ -966,7 +1018,7 @@ public class AlgBuilder {
 
     /**
      * Creates a call to an aggregate function.
-     *
+     * <p>
      * To add other operands, apply
      * {@link AggCall#distinct()},
      * {@link AggCall#approximate(boolean)},
@@ -1254,91 +1306,128 @@ public class AlgBuilder {
 
 
     /**
-     * Creates a {@link Scan} of the table with a given name.
-     *
+     * Creates a {@link RelScan} of the table with a given name.
+     * <p>
      * Throws if the table does not exist.
-     *
+     * <p>
      * Returns this builder.
      *
      * @param tableNames Name of table (can optionally be qualified)
      */
-    public AlgBuilder scan( Iterable<String> tableNames ) {
+    public AlgBuilder relScan( List<String> tableNames ) {
         final List<String> names = ImmutableList.copyOf( tableNames );
-        final AlgOptTable algOptTable = algOptSchema.getTableForMember( names );
-        if ( algOptTable == null ) {
-            throw RESOURCE.tableNotFound( String.join( ".", names ) ).ex();
+        final LogicalTable entity;
+        if ( tableNames.size() == 2 ) {
+            entity = snapshot.rel().getTable( tableNames.get( 0 ), names.get( 1 ) ).orElseThrow( () -> new GenericRuntimeException( String.join( ".", names ) ) );
+        } else if ( tableNames.size() == 1 ) {
+            entity = snapshot.rel().getTable( Catalog.DEFAULT_NAMESPACE_NAME, names.get( 0 ) ).orElseThrow( () -> new GenericRuntimeException( String.join( ".", names ) ) );
+        } else {
+            throw new GenericRuntimeException( "Invalid table name: " + String.join( ".", names ) );
         }
-        final AlgNode scan = scanFactory.createScan( cluster, algOptTable );
+
+        final AlgNode scan = scanFactory.createRelScan( cluster, entity );
         push( scan );
-        rename( algOptTable.getRowType().getFieldNames() );
+        rename( entity.getTupleType().getFieldNames() );
         return this;
     }
 
 
-    public AlgBuilder scan( @Nonnull AlgOptTable algOptTable ) {
-        final AlgNode scan = scanFactory.createScan( cluster, algOptTable );
+    public AlgBuilder relScan( @Nonnull Entity entity ) {
+        final AlgNode scan = scanFactory.createRelScan( cluster, entity );
         push( scan );
-        rename( algOptTable.getRowType().getFieldNames() );
+        rename( entity.getTupleType().getFieldNames() );
+        return this;
+    }
+
+
+    public AlgBuilder reorder( AlgDataType target ) {
+        List<Long> ids = peek().getTupleType().getFieldIds();
+        List<Long> targetIds = target.getFieldIds();
+        List<Integer> mapping = new ArrayList<>();
+        for ( Long id : ids ) {
+            mapping.add( targetIds.indexOf( id ) );
+        }
+        permute( new Permutation( mapping ) );
+
+        return this;
+    }
+
+
+    public AlgBuilder relScan( @Nonnull PhysicalEntity entity ) {
+        final AlgNode scan = scanFactory.createRelScan( cluster, entity );
+        push( scan );
         return this;
     }
 
 
     /**
-     * Creates a {@link Scan} of the table with a given name.
-     *
+     * Creates a {@link RelScan} of the table with a given name.
+     * <p>
      * Throws if the table does not exist.
-     *
+     * <p>
      * Returns this builder.
      *
      * @param tableNames Name of table (can optionally be qualified)
      */
-    public AlgBuilder scan( String... tableNames ) {
-        return scan( ImmutableList.copyOf( tableNames ) );
+    public AlgBuilder relScan( String... tableNames ) {
+        return relScan( ImmutableList.copyOf( tableNames ) );
     }
 
 
-    public AlgBuilder documentScan( AlgOptTable collection ) {
+    public AlgBuilder documentScan( Entity collection ) {
         stack.add( new Frame( new LogicalDocumentScan( cluster, cluster.traitSet().replace( ModelTrait.DOCUMENT ), collection ) ) );
         return this;
     }
 
 
-    public AlgBuilder documentProject( List<? extends RexNode> projects, List<String> names ) {
-        stack.add( new Frame( LogicalDocumentProject.create( build(), projects, names ) ) );
+    public AlgBuilder documentProject( Map<String, RexNode> includes, List<String> excludes ) {
+        stack.add( new Frame( LogicalDocumentProject.create( build(), includes, excludes ) ) );
         return this;
     }
 
 
-    public AlgBuilder lpgScan( long id ) {
-        LogicalGraph graph = new LogicalGraph( id );
-        stack.add( new Frame( new LogicalLpgScan( cluster, cluster.traitSet().replace( ModelTrait.GRAPH ), graph, graph.getRowType() ) ) );
+    public AlgBuilder documentFilter( RexNode condition ) {
+        stack.add( new Frame( LogicalDocumentFilter.create( build(), condition ) ) );
         return this;
     }
 
 
-    public AlgBuilder lpgMatch( List<RexCall> matches, List<String> names ) {
+    public AlgBuilder lpgScan( long logicalId ) {
+        LogicalGraph graph = snapshot.graph().getGraph( logicalId ).orElseThrow();
+        stack.add( new Frame( new LogicalLpgScan( cluster, cluster.traitSet().replace( ModelTrait.GRAPH ), graph, graph.getTupleType() ) ) );
+        return this;
+    }
+
+
+    public AlgBuilder lpgScan( Entity entity ) {
+        stack.add( new Frame( new LogicalLpgScan( cluster, cluster.traitSet().replace( ModelTrait.GRAPH ), entity, entity.getTupleType() ) ) );
+        return this;
+    }
+
+
+    public AlgBuilder lpgMatch( List<RexCall> matches, List<PolyString> names ) {
         stack.add( new Frame( new LogicalLpgMatch( cluster, cluster.traitSet().replace( ModelTrait.GRAPH ), build(), matches, names ) ) );
         return this;
     }
 
 
-    public AlgBuilder lpgProject( List<? extends RexNode> projects, List<String> names ) {
+    public AlgBuilder lpgProject( List<? extends RexNode> projects, List<PolyString> names ) {
         stack.add( new Frame( new LogicalLpgProject( cluster, cluster.traitSet().replace( ModelTrait.GRAPH ), build(), projects, names ) ) );
         return this;
     }
 
 
-    public RexCall lpgNodeMatch( List<String> labels ) {
+    public RexCall lpgNodeMatch( List<PolyString> labels ) {
         RexBuilder rexBuilder = getRexBuilder();
         Operator op = OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_NODE_MATCH );
         AlgDataType nodeType = getTypeFactory().createPolyType( PolyType.NODE );
-        return (RexCall) rexBuilder.makeCall( nodeType, op, List.of( rexBuilder.makeInputRef( peek().getRowType().getFieldList().get( 0 ).getType(), 0 ), new RexLiteral( new PolyNode( new PolyDictionary(), labels, null ), nodeType, PolyType.NODE ) ) );
+        return (RexCall) rexBuilder.makeCall( nodeType, op, List.of( rexBuilder.makeInputRef( peek().getTupleType().getFields().get( 0 ).getType(), 0 ), new RexLiteral( new PolyNode( new PolyDictionary(), PolyList.copyOf( labels ), null ), nodeType, PolyType.NODE ) ) );
     }
 
 
     /**
      * Creates a {@link Filter} of an array of predicates.
-     *
+     * <p>
      * The predicates are combined using AND, and optimized in a similar way to the {@link #and} method.
      * If the result is TRUE no filter is created.
      */
@@ -1349,7 +1438,7 @@ public class AlgBuilder {
 
     /**
      * Creates a {@link Filter} of a list of predicates.
-     *
+     * <p>
      * The predicates are combined using AND, and optimized in a similar way to the {@link #and} method.
      * If the result is TRUE no filter is created.
      */
@@ -1362,9 +1451,14 @@ public class AlgBuilder {
         if ( !simplifiedPredicates.isAlwaysTrue() ) {
             final Frame frame = stack.pop();
             final AlgNode filter = filterFactory.createFilter( frame.alg, simplifiedPredicates );
-            stack.push( new Frame( filter, frame.fields ) );
+            stack.push( new Frame( filter, frame.structured, null ) );
         }
         return this;
+    }
+
+
+    public AlgBuilder project() {
+        return project( ImmutableList.copyOf( fields() ) );
     }
 
 
@@ -1378,7 +1472,7 @@ public class AlgBuilder {
 
     /**
      * Creates a {@link Project} of the given list of expressions.
-     *
+     * <p>
      * Infers names as would {@link #project(Iterable, Iterable)} if all suggested names were null.
      *
      * @param nodes Expressions
@@ -1418,7 +1512,7 @@ public class AlgBuilder {
 
     /**
      * Creates a {@link Project} of the given list of expressions, using the given names.
-     *
+     * <p>
      * Names are deduced as follows:
      * <ul>
      * <li>If the length of {@code fieldNames} is greater than the index of the current entry in {@code nodes}, and the entry in {@code fieldNames} is not null, uses it; otherwise</li>
@@ -1434,7 +1528,7 @@ public class AlgBuilder {
      */
     public AlgBuilder project( Iterable<? extends RexNode> nodes, Iterable<String> fieldNames, boolean force ) {
         final Frame frame = stack.peek();
-        final AlgDataType inputRowType = frame.alg.getRowType();
+        final AlgDataType inputRowType = Objects.requireNonNull( frame ).alg.getTupleType();
         final List<RexNode> nodeList = Lists.newArrayList( nodes );
 
         // Perform a quick check for identity. We'll do a deeper check later when we've derived column names.
@@ -1454,9 +1548,9 @@ public class AlgBuilder {
             for ( int i = 0; i < fieldNameList.size(); i++ ) {
                 if ( fieldNameList.get( i ) == null ) {
                     final RexNode node = nodeList.get( i );
-                    if ( node instanceof RexInputRef ) {
-                        final RexInputRef ref = (RexInputRef) node;
-                        fieldNameList.set( i, project.getRowType().getFieldNames().get( ref.getIndex() ) );
+                    if ( node instanceof RexIndexRef ) {
+                        final RexIndexRef ref = (RexIndexRef) node;
+                        fieldNameList.set( i, project.getTupleType().getFieldNames().get( ref.getIndex() ) );
                     }
                 }
             }
@@ -1464,29 +1558,27 @@ public class AlgBuilder {
 
             // Carefully build a list of fields, so that table aliases from the input can be seen for fields that are based on a RexInputRef.
             final Frame frame1 = stack.pop();
-            final List<Field> fields = new ArrayList<>();
-            for ( AlgDataTypeField f : project.getInput().getRowType().getFieldList() ) {
-                fields.add( new Field( ImmutableSet.of(), f ) );
+            final List<RelField> relFields = new ArrayList<>();
+            for ( AlgDataTypeField f : project.getInput().getTupleType().getFields() ) {
+                relFields.add( new RelField( ImmutableSet.of(), f ) );
             }
-            for ( Pair<RexNode, Field> pair : Pair.zip( project.getProjects(), frame1.fields ) ) {
+            for ( Pair<RexNode, RelField> pair : Pair.zip( project.getProjects(), frame1.structured ) ) {
                 switch ( pair.left.getKind() ) {
                     case INPUT_REF:
-                        final int i = ((RexInputRef) pair.left).getIndex();
-                        final Field field = fields.get( i );
+                        final int i = ((RexIndexRef) pair.left).getIndex();
+                        final RelField relField = relFields.get( i );
                         final ImmutableSet<String> aliases = pair.right.left;
-                        fields.set( i, new Field( aliases, field.right ) );
+                        relFields.set( i, new RelField( aliases, relField.right ) );
                         break;
                 }
             }
-            stack.push( new Frame( project.getInput(), ImmutableList.copyOf( fields ) ) );
+            stack.push( new Frame( project.getInput(), ImmutableList.copyOf( relFields ) ) );
             return project( newNodes, fieldNameList, force );
         }
 
         // Simplify expressions.
         if ( simplify ) {
-            for ( int i = 0; i < nodeList.size(); i++ ) {
-                nodeList.set( i, simplifier.simplifyPreservingType( nodeList.get( i ) ) );
-            }
+            nodeList.replaceAll( simplifier::simplifyPreservingType );
         }
 
         // Replace null names with generated aliases.
@@ -1505,7 +1597,7 @@ public class AlgBuilder {
         for ( int i = 0; i < fieldNameList.size(); ++i ) {
             final RexNode node = nodeList.get( i );
             String name = fieldNameList.get( i );
-            Field field;
+            RelField relField;
             if ( name == null || uniqueNameList.contains( name ) ) {
                 int j = 0;
                 if ( name == null ) {
@@ -1516,19 +1608,17 @@ public class AlgBuilder {
                 } while ( uniqueNameList.contains( name ) );
                 fieldNameList.set( i, name );
             }
-            AlgDataTypeField fieldType = new AlgDataTypeFieldImpl( name, i, node.getType() );
-            switch ( node.getKind() ) {
-                case INPUT_REF:
+            AlgDataTypeField fieldType = new AlgDataTypeFieldImpl( -1L, name, i, node.getType() );
+            relField = switch ( node.getKind() ) {
+                case INPUT_REF -> {
                     // preserve alg aliases for INPUT_REF fields
-                    final int index = ((RexInputRef) node).getIndex();
-                    field = new Field( frame.fields.get( index ).left, fieldType );
-                    break;
-                default:
-                    field = new Field( ImmutableSet.of(), fieldType );
-                    break;
-            }
+                    final int index = ((RexIndexRef) node).getIndex();
+                    yield new RelField( frame.structured.get( index ).left, fieldType );
+                }
+                default -> new RelField( ImmutableSet.of(), fieldType );
+            };
             uniqueNameList.add( name );
-            fields.add( field );
+            fields.add( relField );
         }
         if ( !force && RexUtil.isIdentity( nodeList, inputRowType ) ) {
             if ( fieldNameList.equals( inputRowType.getFieldNames() ) ) {
@@ -1550,7 +1640,7 @@ public class AlgBuilder {
 
     /**
      * Whether to attempt to merge consecutive {@link Project} operators.
-     *
+     * <p>
      * The default implementation returns {@code true}; subclasses may disable merge by overriding to return {@code false}.
      */
     @Experimental
@@ -1561,10 +1651,10 @@ public class AlgBuilder {
 
     /**
      * Creates a {@link Project} of the given expressions and field names, and optionally optimizing.
-     *
+     * <p>
      * If {@code fieldNames} is null, or if a particular entry in {@code fieldNames} is null, derives field names from
      * the input expressions.
-     *
+     * <p>
      * If {@code force} is false, and the input is a {@code Project}, and the expressions  make the trivial
      * projection ($0, $1, ...), modifies the input.
      *
@@ -1590,7 +1680,7 @@ public class AlgBuilder {
                         nodeList,
                         fieldNameList,
                         ValidatorUtil.F_SUGGESTER );
-        if ( !force && RexUtil.isIdentity( nodeList, input.getRowType() ) ) {
+        if ( !force && RexUtil.isIdentity( nodeList, input.getTupleType() ) ) {
             if ( input instanceof Project && fieldNames != null ) {
                 // Rename columns of child projection if desired field names are given.
                 final Frame frame = stack.pop();
@@ -1600,7 +1690,7 @@ public class AlgBuilder {
                         childProject.getInput(),
                         childProject.getProjects(),
                         rowType );
-                stack.push( new Frame( newInput, frame.fields ) );
+                stack.push( new Frame( newInput, frame.structured, null ) );
             }
         } else {
             project( nodeList, rowType.getFieldNames(), force );
@@ -1611,16 +1701,16 @@ public class AlgBuilder {
 
     /**
      * Ensures that the field names match those given.
-     *
+     * <p>
      * If all fields have the same name, adds nothing; if any fields do not have the same name, adds a {@link Project}.
-     *
+     * <p>
      * Note that the names can be short-lived. Other {@code AlgBuilder} operations make no guarantees about the field names
      * of the rows they produce.
      *
      * @param fieldNames List of desired field names; may contain null values or have fewer fields than the current row type
      */
     public AlgBuilder rename( List<String> fieldNames ) {
-        final List<String> oldFieldNames = peek().getRowType().getFieldNames();
+        final List<String> oldFieldNames = peek().getTupleType().getFieldNames();
         Preconditions.checkArgument( fieldNames.size() <= oldFieldNames.size(), "More names than fields" );
         final List<String> newFieldNames = new ArrayList<>( oldFieldNames );
         for ( int i = 0; i < fieldNames.size(); i++ ) {
@@ -1636,8 +1726,8 @@ public class AlgBuilder {
             // Special treatment for VALUES. Re-build it rather than add a project.
             final Values v = (Values) build();
             final AlgDataTypeFactory.Builder b = getTypeFactory().builder();
-            for ( Pair<String, AlgDataTypeField> p : Pair.zip( newFieldNames, v.getRowType().getFieldList() ) ) {
-                b.add( p.left, null, p.right.getType() );
+            for ( Pair<String, AlgDataTypeField> p : Pair.zip( newFieldNames, v.getTupleType().getFields() ) ) {
+                b.add( null, p.left, null, p.right.getType() );
             }
             return values( v.tuples, b.build() );
         }
@@ -1648,14 +1738,14 @@ public class AlgBuilder {
 
     /**
      * Infers the alias of an expression.
-     *
+     * <p>
      * If the expression was created by {@link #alias}, replaces the expression in the project list.
      */
     private String inferAlias( List<RexNode> exprList, RexNode expr, int i ) {
         switch ( expr.getKind() ) {
             case INPUT_REF:
-                final RexInputRef ref = (RexInputRef) expr;
-                return stack.peek().fields.get( ref.getIndex() ).getValue().getName();
+                final RexIndexRef ref = (RexIndexRef) expr;
+                return stack.peek().structured.get( ref.getIndex() ).getValue().getName();
             case CAST:
                 return inferAlias( exprList, ((RexCall) expr).getOperands().get( 0 ), -1 );
             case AS:
@@ -1663,7 +1753,7 @@ public class AlgBuilder {
                 if ( i >= 0 ) {
                     exprList.set( i, call.getOperands().get( 0 ) );
                 }
-                return ((NlsString) ((RexLiteral) call.getOperands().get( 1 )).getValue()).getValue();
+                return ((RexLiteral) call.getOperands().get( 1 )).getValue().asString().value;
             default:
                 return null;
         }
@@ -1692,7 +1782,7 @@ public class AlgBuilder {
     public AlgBuilder aggregate( GroupKey groupKey, Iterable<AggCall> aggCalls ) {
         final Registrar registrar = new Registrar();
         registrar.extraNodes.addAll( fields() );
-        registrar.names.addAll( peek().getRowType().getFieldNames() );
+        registrar.names.addAll( peek().getTupleType().getFieldNames() );
         final GroupKeyImpl groupKey_ = (GroupKeyImpl) groupKey;
         final ImmutableBitSet groupSet = ImmutableBitSet.of( registrar.registerExpressions( groupKey_.nodes ) );
         label:
@@ -1776,7 +1866,7 @@ public class AlgBuilder {
                                 .collect( Collectors.toList() ) );
                 aggregateCall =
                         AggregateCall.create(
-                                (Operator & AggFunction) aggCall1.aggFunction,
+                                aggCall1.aggFunction,
                                 aggCall1.distinct,
                                 aggCall1.approximate,
                                 args,
@@ -1800,21 +1890,23 @@ public class AlgBuilder {
 
         // build field list
         final ImmutableList.Builder<Field> fields = ImmutableList.builder();
-        final List<AlgDataTypeField> aggregateFields = aggregate.getRowType().getFieldList();
+        final List<AlgDataTypeField> aggregateFields = aggregate.getTupleType().getFields();
         int i = 0;
         // first, group fields
         for ( Integer groupField : groupSet.asList() ) {
             RexNode node = registrar.extraNodes.get( groupField );
             final Kind kind = node.getKind();
-            switch ( kind ) {
-                case INPUT_REF:
-                    fields.add( frame.fields.get( ((RexInputRef) node).getIndex() ) );
-                    break;
-                default:
-                    String name = aggregateFields.get( i ).getName();
-                    AlgDataTypeField fieldType = new AlgDataTypeFieldImpl( name, i, node.getType() );
-                    fields.add( new Field( ImmutableSet.of(), fieldType ) );
-                    break;
+            if ( Objects.requireNonNull( kind ) == Kind.INPUT_REF ) {
+                /*if ( frame.alg.getModel() == NamespaceType.DOCUMENT ) {
+                    fields.add( frame.unstructured.get( ((RexIndexRef) node).getIndex() ) );
+                } else {*/
+                fields.add( frame.structured.get( ((RexIndexRef) node).getIndex() ) );
+                //}
+
+            } else {
+                String name = aggregateFields.get( i ).getName();
+                AlgDataTypeField fieldType = new AlgDataTypeFieldImpl( -1L, name, i, node.getType() );
+                fields.add( new RelField( ImmutableSet.of(), fieldType ) );
             }
             i++;
         }
@@ -1822,16 +1914,16 @@ public class AlgBuilder {
         if ( groupKey_.indicator ) {
             for ( int j = 0; j < groupSet.cardinality(); ++j ) {
                 final AlgDataTypeField field = aggregateFields.get( i );
-                final AlgDataTypeField fieldType = new AlgDataTypeFieldImpl( field.getName(), i, field.getType() );
-                fields.add( new Field( ImmutableSet.of(), fieldType ) );
+                final AlgDataTypeField fieldType = new AlgDataTypeFieldImpl( -1L, field.getName(), i, field.getType() );
+                fields.add( new RelField( ImmutableSet.of(), fieldType ) );
                 i++;
             }
         }
         // third, aggregate fields. retain `i' as field index
         for ( int j = 0; j < aggregateCalls.size(); ++j ) {
             final AggregateCall call = aggregateCalls.get( j );
-            final AlgDataTypeField fieldType = new AlgDataTypeFieldImpl( aggregateFields.get( i + j ).getName(), i + j, call.getType() );
-            fields.add( new Field( ImmutableSet.of(), fieldType ) );
+            final AlgDataTypeField fieldType = new AlgDataTypeFieldImpl( -1L, aggregateFields.get( i + j ).getName(), i + j, call.getType() );
+            fields.add( new RelField( ImmutableSet.of(), fieldType ) );
         }
         stack.push( new Frame( aggregate, fields.build() ) );
         return this;
@@ -1978,8 +2070,8 @@ public class AlgBuilder {
             join = joinFactory.createJoin( left.alg, right.alg, condition, variablesSet, joinType, false );
         }
         final ImmutableList.Builder<Field> fields = ImmutableList.builder();
-        fields.addAll( left.fields );
-        fields.addAll( right.fields );
+        fields.addAll( left.structured );
+        fields.addAll( right.structured );
         stack.push( new Frame( join, fields.build() ) );
         filter( postCondition );
         return this;
@@ -1988,7 +2080,7 @@ public class AlgBuilder {
 
     /**
      * Creates a {@link Join} using USING syntax.
-     *
+     * <p>
      * For each of the field names, both left and right inputs must have a field of that name. Constructs a join condition
      * that the left and right fields are equal.
      *
@@ -2032,18 +2124,18 @@ public class AlgBuilder {
      */
     public AlgBuilder as( final String alias ) {
         final Frame pair = stack.pop();
-        List<Field> newFields = Util.transform( pair.fields, field -> field.addAlias( alias ) );
-        stack.push( new Frame( pair.alg, ImmutableList.copyOf( newFields ) ) );
+        List<RelField> newRelFields = Util.transform( pair.structured, relField -> relField.addAlias( alias ) );
+        stack.push( new Frame( pair.alg, ImmutableList.copyOf( newRelFields ) ) );
         return this;
     }
 
 
     /**
      * Creates a {@link Values}.
-     *
+     * <p>
      * The {@code values} array must have the same number of entries as {@code fieldNames}, or an integer multiple if you
      * wish to create multiple rows.
-     *
+     * <p>
      * If there are zero rows, or if all values of an any column are null, this method cannot deduce the type of columns.
      * For these cases, call {@link #values(Iterable, AlgDataType)}.
      *
@@ -2084,7 +2176,7 @@ public class AlgBuilder {
                             return rowCount;
                         }
                     } );
-            builder.add( name, null, type );
+            builder.add( null, name, null, type );
         }
         final AlgDataType rowType = builder.build();
         return values( tupleList, rowType );
@@ -2121,23 +2213,23 @@ public class AlgBuilder {
 
     /**
      * Creates a relational expression that reads from an input and throws all of the rows away.
-     *
+     * <p>
      * Note that this method always pops one relational expression from the stack. {@code values}, in contrast, does not
      * pop any relational expressions, and always produces a leaf.
-     *
+     * <p>
      * The default implementation creates a {@link Values} with the same specified row type as the input, and ignores the
      * input entirely. But schema-on-query systems such as Drill might override this method to create a relation expression
      * that retains the input, just to read its schema.
      */
     public AlgBuilder empty() {
         final Frame frame = stack.pop();
-        return values( frame.alg.getRowType() );
+        return values( frame.alg.getTupleType() );
     }
 
 
     /**
      * Creates a {@link Values} with a specified row type.
-     *
+     * <p>
      * This method can handle cases that {@link #values(String[], Object...)} cannot, such as all values of a column being
      * null, or there being zero rows.
      *
@@ -2154,7 +2246,7 @@ public class AlgBuilder {
 
     /**
      * Creates a {@link Values} with a specified row type.
-     *
+     * <p>
      * This method can handle cases that {@link #values(String[], Object...)} cannot, such as all values of a column being
      * null, or there being zero rows.
      *
@@ -2168,9 +2260,9 @@ public class AlgBuilder {
     }
 
 
-    public AlgBuilder documents( ImmutableList<BsonValue> tuples, AlgDataType rowType ) {
-        AlgNode documents = documentsFactory.createDocuments( cluster, tuples, rowType );
-        push( documents );
+    public AlgBuilder documents( List<PolyDocument> documents, AlgDataType rowType ) {
+        AlgNode document = documentsFactory.createDocuments( cluster, documents, rowType );
+        push( document );
         return this;
     }
 
@@ -2238,7 +2330,7 @@ public class AlgBuilder {
 
     /**
      * Creates a {@link Sort} by field ordinals.
-     *
+     * <p>
      * Negative fields mean descending: -1 means field(0) descending, -2 means field(1) descending, etc.
      */
     public AlgBuilder sort( int... fields ) {
@@ -2345,7 +2437,7 @@ public class AlgBuilder {
         switch ( node.getKind() ) {
             case INPUT_REF:
                 return new AlgFieldCollation(
-                        ((RexInputRef) node).getIndex(),
+                        ((RexIndexRef) node).getIndex(),
                         direction,
                         Util.first( nullDirection, direction.defaultNullDirection() ) );
             case DESCENDING:
@@ -2391,6 +2483,65 @@ public class AlgBuilder {
     }
 
 
+    public AlgBuilder transform( ModelTrait model, AlgDataType rowType, boolean isCrossModel, String name ) {
+        if ( peek().getTraitSet().contains( model ) ) {
+            return this;
+        }
+        List<AlgNode> nodes = new ArrayList<>();
+        while ( !stack.isEmpty() ) {
+            // it builds FILO
+            nodes.add( 0, build() );
+        }
+
+        if ( nodes.isEmpty() ) {
+            throw new GenericRuntimeException( "Empty nodes on transform" );
+        }
+        AlgNode input = nodes.get( 0 );
+
+        if ( nodes.size() == 4 && model == ModelTrait.GRAPH ) {
+            push( LogicalTransformer.create(
+                    input.getCluster(),
+                    List.of( buildSubstitutionJoin( nodes.get( 0 ), nodes.get( 1 ) ), buildSubstitutionJoin( nodes.get( 2 ), nodes.get( 3 ) ) ),
+                    null,
+                    input.getTraitSet().getTrait( ModelTraitDef.INSTANCE ),
+                    model,
+                    rowType,
+                    isCrossModel ) );
+            return this;
+        }
+
+        push( LogicalTransformer.create(
+                input.getCluster(),
+                nodes,
+                name == null ? null : List.of( name ),
+                input.getTraitSet().getTrait( ModelTraitDef.INSTANCE ),
+                model,
+                rowType,
+                isCrossModel ) );
+        return this;
+    }
+
+
+    protected AlgNode buildSubstitutionJoin( AlgNode nodesScan, AlgNode propertiesScan ) {
+        AlgTraitSet out = nodesScan.getTraitSet().replace( ModelTrait.RELATIONAL );
+
+        RexBuilder builder = nodesScan.getCluster().getRexBuilder();
+
+        RexNode nodeCondition = builder.makeCall(
+                OperatorRegistry.get( OperatorName.EQUALS ),
+                builder.makeInputRef( nodesScan.getTupleType().getFields().get( 0 ).getType(), 0 ),
+                builder.makeInputRef( propertiesScan.getTupleType().getFields().get( 0 ).getType(), nodesScan.getTupleType().getFields().size() ) );
+
+        LogicalRelJoin join = new LogicalRelJoin( nodesScan.getCluster(), out, nodesScan, propertiesScan, nodeCondition, Set.of(), JoinAlgType.LEFT, false, ImmutableList.of() );
+        return LogicalRelSort.create(
+                join,
+                ImmutableList.of( RexIndexRef.of( 0, join.getTupleType().getFields() ) ),
+                AlgCollations.of( 0 ),
+                null,
+                null );
+    }
+
+
     public AlgBuilder permute( Mapping mapping ) {
         assert mapping.getMappingType().isSingleSource();
         assert mapping.getMappingType().isMandatorySource();
@@ -2406,7 +2557,7 @@ public class AlgBuilder {
 
 
     public AlgBuilder aggregate( GroupKey groupKey, List<AggregateCall> aggregateCalls ) {
-        return aggregate( groupKey, Lists.transform( aggregateCalls, AggCallImpl2::new ) );
+        return aggregate( groupKey, aggregateCalls.stream().map( AggCallImpl2::new ).collect( Collectors.toList() ) );
     }
 
 
@@ -2441,23 +2592,23 @@ public class AlgBuilder {
                     break;
             }
             final AlgFieldCollation.NullDirection nullDirection = direction.defaultNullDirection();
-            final RexInputRef ref = (RexInputRef) orderKey;
+            final RexIndexRef ref = (RexIndexRef) orderKey;
             fieldCollations.add( new AlgFieldCollation( ref.getIndex(), direction, nullDirection ) );
         }
 
         final AlgDataTypeFactory.Builder typeBuilder = cluster.getTypeFactory().builder();
         for ( RexNode partitionKey : partitionKeys ) {
-            typeBuilder.add( partitionKey.toString(), null, partitionKey.getType() );
+            typeBuilder.add( null, partitionKey.toString(), null, partitionKey.getType() );
         }
         if ( allRows ) {
             for ( RexNode orderKey : orderKeys ) {
                 if ( !typeBuilder.nameExists( orderKey.toString() ) ) {
-                    typeBuilder.add( orderKey.toString(), null, orderKey.getType() );
+                    typeBuilder.add( null, orderKey.toString(), null, orderKey.getType() );
                 }
             }
 
-            final AlgDataType inputRowType = peek().getRowType();
-            for ( AlgDataTypeField fs : inputRowType.getFieldList() ) {
+            final AlgDataType inputRowType = peek().getTupleType();
+            for ( AlgDataTypeField fs : inputRowType.getFields() ) {
                 if ( !typeBuilder.nameExists( fs.getName() ) ) {
                     typeBuilder.add( fs );
                 }
@@ -2468,7 +2619,7 @@ public class AlgBuilder {
         for ( RexNode measure : measureList ) {
             List<RexNode> operands = ((RexCall) measure).getOperands();
             String alias = operands.get( 1 ).toString();
-            typeBuilder.add( alias, null, operands.get( 0 ).getType() );
+            typeBuilder.add( null, alias, null, operands.get( 0 ).getType() );
             measures.put( alias, operands.get( 0 ) );
         }
 
@@ -2493,7 +2644,7 @@ public class AlgBuilder {
 
     /**
      * Clears the stack.
-     *
+     * <p>
      * The builder's state is now the same as when it was created.
      */
     public void clear() {
@@ -2557,7 +2708,7 @@ public class AlgBuilder {
 
         /**
          * Assigns an alias to this group key.
-         *
+         * <p>
          * Used to assign field names in the {@code group} operation.
          */
         GroupKey alias( String alias );
@@ -2609,10 +2760,10 @@ public class AlgBuilder {
         private final AggFunction aggFunction;
         private final boolean distinct;
         private final boolean approximate;
-        private final RexNode filter; // may be null
-        private final String alias; // may be null
-        private final ImmutableList<RexNode> operands; // may be empty, never null
-        private final ImmutableList<RexNode> orderKeys; // may be empty, never null
+        private final @Nullable RexNode filter;
+        private final @Nullable String alias;
+        private final @Nonnull ImmutableList<RexNode> operands;
+        private final @Nonnull ImmutableList<RexNode> orderKeys;
 
 
         AggCallImpl(
@@ -2755,7 +2906,7 @@ public class AlgBuilder {
 
     /**
      * Collects the extra expressions needed for {@link #aggregate}.
-     *
+     * <p>
      * The extra expressions come from the group key and as arguments to aggregate calls, and later there will be
      * a {@link #project} or a {@link #rename(List)} if necessary.
      */
@@ -2770,7 +2921,7 @@ public class AlgBuilder {
                 case AS:
                     final List<RexNode> operands = ((RexCall) node).operands;
                     int i = registerExpression( operands.get( 0 ) );
-                    names.set( i, RexLiteral.stringValue( operands.get( 1 ) ) );
+                    names.set( i, ((RexLiteral) operands.get( 1 )).value.asString().value );
                     return i;
             }
             int i = extraNodes.indexOf( node );
@@ -2796,50 +2947,84 @@ public class AlgBuilder {
 
     /**
      * Builder stack frame.
-     *
+     * <p>
      * Describes a previously created relational expression and information about how table aliases map into its row type.
      */
     private static class Frame {
 
         final AlgNode alg;
-        final ImmutableList<Field> fields;
+        final ImmutableList<RelField> structured;
+        final ImmutableList<DocField> unstructured;
 
 
         private Frame( AlgNode alg, ImmutableList<Field> fields ) {
+
+            List<RelField> structured = new ArrayList<>();
+            List<DocField> unstructured = new ArrayList<>();
+            for ( Field field : fields ) {
+                if ( field.isStructured() ) {
+                    structured.add( (RelField) field );
+                } else {
+                    unstructured.add( (DocField) field );
+                }
+            }
             this.alg = alg;
-            this.fields = fields;
+            this.structured = ImmutableList.copyOf( structured );
+            this.unstructured = ImmutableList.copyOf( unstructured );
+        }
+
+
+        private Frame( AlgNode alg, ImmutableList<RelField> structured, ImmutableList<DocField> unstructured ) {
+            this.alg = alg;
+            this.structured = structured;
+            this.unstructured = unstructured;
         }
 
 
         private Frame( AlgNode alg ) {
             String tableAlias = deriveAlias( alg );
-            ImmutableList.Builder<Field> builder = ImmutableList.builder();
+
             ImmutableSet<String> aliases =
                     tableAlias == null
                             ? ImmutableSet.of()
                             : ImmutableSet.of( tableAlias );
-            for ( AlgDataTypeField field : alg.getRowType().getFieldList() ) {
-                builder.add( new Field( aliases, field ) );
+            if ( alg.getTupleType().getStructKind() == StructKind.SEMI ) {
+                ImmutableList.Builder<DocField> builder = ImmutableList.builder();
+                this.alg = alg;
+                builder.add( new DocField( aliases ) );
+                this.structured = null;
+                this.unstructured = builder.build();
+                return;
+            }
+            ImmutableList.Builder<RelField> builder = ImmutableList.builder();
+            for ( AlgDataTypeField field : alg.getTupleType().getFields() ) {
+                builder.add( new RelField( aliases, field ) );
             }
             this.alg = alg;
-            this.fields = builder.build();
+            this.structured = builder.build();
+            this.unstructured = null;
         }
 
 
         private static String deriveAlias( AlgNode alg ) {
-            if ( alg instanceof Scan ) {
-                final List<String> names = alg.getTable().getQualifiedName();
-                if ( !names.isEmpty() ) {
-                    return Util.last( names );
-                }
+            if ( alg instanceof RelScan ) {
+                return alg.getEntity().name;
             }
             return null;
         }
 
 
-        List<AlgDataTypeField> fields() {
-            return Pair.right( fields );
+        List<AlgDataTypeField> relFields() {
+            return Pair.right( structured );
         }
+
+
+    }
+
+
+    private interface Field {
+
+        boolean isStructured();
 
     }
 
@@ -2847,19 +3032,43 @@ public class AlgBuilder {
     /**
      * A field that belongs to a stack {@link Frame}.
      */
-    private static class Field extends Pair<ImmutableSet<String>, AlgDataTypeField> {
+    private static class RelField extends Pair<ImmutableSet<String>, AlgDataTypeField> implements Field {
 
-        Field( ImmutableSet<String> left, AlgDataTypeField right ) {
-            super( left, right );
+        RelField( ImmutableSet<String> aliases, AlgDataTypeField right ) {
+            super( aliases, right );
         }
 
 
-        Field addAlias( String alias ) {
+        RelField addAlias( String alias ) {
             if ( left.contains( alias ) ) {
                 return this;
             }
             final ImmutableSet<String> aliasList = ImmutableSet.<String>builder().addAll( left ).add( alias ).build();
-            return new Field( aliasList, right );
+            return new RelField( aliasList, right );
+        }
+
+
+        @Override
+        public boolean isStructured() {
+            return true;
+        }
+
+    }
+
+
+    private static class DocField implements Field {
+
+        private final ImmutableSet<String> aliases;
+
+
+        DocField( ImmutableSet<String> aliases ) {
+            this.aliases = aliases;
+        }
+
+
+        @Override
+        public boolean isStructured() {
+            return false;
         }
 
     }
@@ -2883,8 +3092,8 @@ public class AlgBuilder {
 
 
         @Override
-        public RexNode visitInputRef( RexInputRef inputRef ) {
-            final AlgDataType leftRowType = left.getRowType();
+        public RexNode visitIndexRef( RexIndexRef inputRef ) {
+            final AlgDataType leftRowType = left.getTupleType();
             final RexBuilder rexBuilder = getRexBuilder();
             final int leftCount = leftRowType.getFieldCount();
             if ( inputRef.getIndex() < leftCount ) {

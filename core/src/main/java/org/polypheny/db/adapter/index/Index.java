@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,16 +20,18 @@ package org.polypheny.db.adapter.index;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.PolyImplementation;
+import org.polypheny.db.ResultIterator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
@@ -38,6 +40,7 @@ import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
 
@@ -51,11 +54,11 @@ public abstract class Index {
 
     // The logical schema of the table this index is for
     @Getter
-    protected CatalogSchema schema;
+    protected LogicalNamespace schema;
 
     // The logical table this index is for
     @Getter
-    protected CatalogTable table;
+    protected LogicalTable table;
 
     // The list of columns over which the index was created
     protected List<String> columns;
@@ -93,16 +96,18 @@ public abstract class Index {
             cols.addAll( targetColumns );
         }
         final AlgNode scan = builder
-                .scan( ImmutableList.of( table.getNamespaceName(), table.name ) )
+                .relScan( table )
                 .project( cols.stream().map( builder::field ).collect( Collectors.toList() ) )
                 .build();
         final QueryProcessor processor = statement.getQueryProcessor();
-        final PolyImplementation result = processor.prepareQuery( AlgRoot.of( scan, Kind.SELECT ), false );
+        final PolyImplementation implementation = processor.prepareQuery( AlgRoot.of( scan, Kind.SELECT ), false );
         // Execute query
 
-        final List<List<Object>> rows = result.getRows( statement, 1, false, false, result.getStatement().getMonitoringEvent(), true );
-        final List<Pair<List<Object>, List<Object>>> kv = new ArrayList<>( rows.size() );
-        for ( final List<Object> row : rows ) {
+        ResultIterator iterator = implementation.execute( statement, 1, true, false, true );
+        final List<List<PolyValue>> rows = iterator.getAllRowsAndClose();
+
+        final List<Pair<List<PolyValue>, List<PolyValue>>> kv = new ArrayList<>( rows.size() );
+        for ( final List<PolyValue> row : rows ) {
             if ( row.size() > columns.size() ) {
                 kv.add( new Pair<>( row.subList( 0, columns.size() ), row.subList( columns.size(), columns.size() + targetColumns.size() ) ) );
             } else {
@@ -128,8 +133,8 @@ public abstract class Index {
      * The default implementation is simply a loop over the iterable.
      * Implementations may choose to override this method.
      */
-    public void insertAll( PolyXid xid, final Iterable<Pair<List<Object>, List<Object>>> values ) {
-        for ( final Pair<List<Object>, List<Object>> row : values ) {
+    public void insertAll( PolyXid xid, final Iterable<Pair<List<PolyValue>, List<PolyValue>>> values ) {
+        for ( final Pair<List<PolyValue>, List<PolyValue>> row : values ) {
             this.insert( xid, row.getKey(), row.getValue() );
         }
     }
@@ -139,8 +144,8 @@ public abstract class Index {
      * The default implementation is simply a loop over the iterable.
      * Implementations may choose to override this method.
      */
-    void insertAll( final Iterable<Pair<List<Object>, List<Object>>> values ) {
-        for ( final Pair<List<Object>, List<Object>> row : values ) {
+    void insertAll( final Iterable<Pair<List<PolyValue>, List<PolyValue>>> values ) {
+        for ( final Pair<List<PolyValue>, List<PolyValue>> row : values ) {
             this.insert( row.getKey(), row.getValue() );
         }
     }
@@ -150,8 +155,8 @@ public abstract class Index {
      * The default implementation is simply a loop over the iterable.
      * Implementations may choose to override this method.
      */
-    public void deleteAll( PolyXid xid, final Iterable<List<Object>> values ) {
-        for ( final List<Object> value : values ) {
+    public void deleteAll( PolyXid xid, final Iterable<List<PolyValue>> values ) {
+        for ( final List<PolyValue> value : values ) {
             this.delete( xid, value );
         }
     }
@@ -161,8 +166,8 @@ public abstract class Index {
      * The default implementation is simply a loop over the iterable.
      * Implementations may choose to override this method.
      */
-    public void deleteAllPrimary( PolyXid xid, final Iterable<Pair<List<Object>, List<Object>>> values ) {
-        for ( final Pair<List<Object>, List<Object>> value : values ) {
+    public void deleteAllPrimary( PolyXid xid, final Iterable<Pair<List<PolyValue>, List<PolyValue>>> values ) {
+        for ( final Pair<List<PolyValue>, List<PolyValue>> value : values ) {
             this.deletePrimary( xid, value.left, value.right );
         }
     }
@@ -172,8 +177,8 @@ public abstract class Index {
      * The default implementation is simply a loop over the iterable.
      * Implementations may choose to override this method.
      */
-    void deleteAll( final Iterable<List<Object>> values ) {
-        for ( final List<Object> value : values ) {
+    void deleteAll( final Iterable<List<PolyValue>> values ) {
+        for ( final List<PolyValue> value : values ) {
             this.delete( value );
         }
     }
@@ -183,8 +188,8 @@ public abstract class Index {
      * The default implementation is simply a loop over the iterable.
      * Implementations may choose to override this method.
      */
-    void deleteAllPrimary( final Iterable<Pair<List<Object>, List<Object>>> values ) {
-        for ( final Pair<List<Object>, List<Object>> value : values ) {
+    void deleteAllPrimary( final Iterable<Pair<List<PolyValue>, List<PolyValue>>> values ) {
+        for ( final Pair<List<PolyValue>, List<PolyValue>> value : values ) {
             this.deletePrimary( value.left, value.right );
         }
     }
@@ -201,29 +206,29 @@ public abstract class Index {
 
     public abstract int size();
 
-    public abstract void insert( final PolyXid xid, final List<Object> key, final List<Object> value );
+    public abstract void insert( final PolyXid xid, final List<PolyValue> key, final List<PolyValue> value );
 
-    abstract void insert( final List<Object> key, final List<Object> value );
+    abstract void insert( final List<PolyValue> key, final List<PolyValue> value );
 
-    public abstract void delete( final PolyXid xid, final List<Object> values );
+    public abstract void delete( final PolyXid xid, final List<PolyValue> values );
 
-    abstract void deletePrimary( final PolyXid xid, final List<Object> key, final List<Object> primary );
+    abstract void deletePrimary( final PolyXid xid, final List<PolyValue> key, final List<PolyValue> primary );
 
-    abstract void delete( final List<Object> values );
+    abstract void delete( final List<PolyValue> values );
 
-    abstract void deletePrimary( final List<Object> key, final List<Object> primary );
+    abstract void deletePrimary( final List<PolyValue> key, final List<PolyValue> primary );
 
-    public abstract boolean contains( final PolyXid xid, final List<Object> value );
+    public abstract boolean contains( final PolyXid xid, final List<PolyValue> value );
 
-    public abstract boolean containsAny( final PolyXid xid, final Iterable<List<Object>> values );
+    public abstract boolean containsAny( final PolyXid xid, final Iterable<List<PolyValue>> values );
 
-    public abstract boolean containsAll( final PolyXid xid, final Iterable<List<Object>> values );
+    public abstract boolean containsAll( final PolyXid xid, final Iterable<List<PolyValue>> values );
 
     public abstract Values getAsValues( final PolyXid xid, AlgBuilder builder, AlgDataType rowType );
 
-    public abstract Values getAsValues( final PolyXid xid, AlgBuilder builder, AlgDataType rowType, final List<Object> key );
+    public abstract Values getAsValues( final PolyXid xid, AlgBuilder builder, AlgDataType rowType, final List<PolyValue> key );
 
-    abstract Object getRaw();
+    abstract Map<?, ?> getRaw();
 
 
     interface IndexFactory {
@@ -239,8 +244,8 @@ public abstract class Index {
                 final String method,
                 final Boolean unique,
                 final Boolean persitent,
-                final CatalogSchema schema,
-                final CatalogTable table,
+                final LogicalNamespace schema,
+                final LogicalTable table,
                 final List<String> columns,
                 final List<String> targetColumns );
 
@@ -252,12 +257,12 @@ public abstract class Index {
      */
 
 
-    protected ImmutableList<RexLiteral> makeRexRow( final AlgDataType rowType, final RexBuilder rexBuilder, final List<Object> tuple ) {
+    protected ImmutableList<RexLiteral> makeRexRow( final AlgDataType rowType, final RexBuilder rexBuilder, final List<PolyValue> tuple ) {
         assert rowType.getFieldCount() == tuple.size();
         List<RexLiteral> row = new ArrayList<>( tuple.size() );
         for ( int i = 0; i < tuple.size(); ++i ) {
-            final AlgDataType type = rowType.getFieldList().get( i ).getType();
-            final Pair<Comparable, PolyType> converted = RexLiteral.convertType( (Comparable) tuple.get( i ), type );
+            final AlgDataType type = rowType.getFields().get( i ).getType();
+            final Pair<PolyValue, PolyType> converted = RexLiteral.convertType( tuple.get( i ), type );
             row.add( new RexLiteral( converted.left, type, converted.right ) );
         }
         return ImmutableList.copyOf( row );

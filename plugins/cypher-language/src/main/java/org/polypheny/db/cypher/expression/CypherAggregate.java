@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,17 +24,19 @@ import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
 
 public class CypherAggregate extends CypherExpression {
 
-    private final OperatorName op;
+    public final OperatorName op;
     private final CypherExpression target;
     private final boolean distinct;
 
@@ -45,16 +47,16 @@ public class CypherAggregate extends CypherExpression {
         this.target = target;
         this.distinct = distinct;
         if ( this.op != OperatorName.COUNT && distinct ) {
-            throw new RuntimeException( "Only count([name]) aggregations can be DISTINCT." );
+            throw new GenericRuntimeException( "Only count([name]) aggregations can be DISTINCT." );
         }
     }
 
 
-    public Pair<String, RexNode> getAggregate( CypherContext context, String alias ) {
+    public Pair<PolyString, RexNode> getAggregate( CypherContext context, String alias ) {
         List<Integer> aggIndexes = new ArrayList<>();
 
-        String name = null;
-        Pair<String, RexNode> namedNode = null;
+        PolyString name = null;
+        Pair<PolyString, RexNode> namedNode = null;
         if ( target != null ) {
             namedNode = target.getRex( context, RexType.PROJECT );
             name = namedNode.left;
@@ -73,7 +75,7 @@ public class CypherAggregate extends CypherExpression {
                 alias != null ? alias : String.format( "%s(%s)", op.name(), name )
         );
 
-        context.addAgg( Pair.of( name, call ) );
+        context.addAgg( Pair.of( name != null ? name.value : null, call ) );
 
         if ( namedNode != null ) {
             return Pair.of( namedNode.left, typeAndValue.left );
@@ -85,16 +87,17 @@ public class CypherAggregate extends CypherExpression {
 
 
     private Pair<RexNode, AlgDataType> getReturnType( CypherContext context, RexNode node ) {
-        switch ( op ) {
-            case COLLECT:
-                Pair<String, RexNode> rex = Objects.requireNonNull( this.target ).getRex( context, RexType.PROJECT );
-                return Pair.of( node, context.typeFactory.createArrayType( rex.getValue().getType(), -1 ) );
-            case AVG:
+        return switch ( op ) {
+            case COLLECT -> {
+                Pair<PolyString, RexNode> rex = Objects.requireNonNull( this.target ).getRex( context, RexType.PROJECT );
+                yield Pair.of( node, context.typeFactory.createArrayType( rex.getValue().getType(), -1 ) );
+            }
+            case AVG -> {
                 RexNode casted = context.rexBuilder.makeCast( context.typeFactory.createTypeWithNullability( context.typeFactory.createPolyType( PolyType.DOUBLE ), true ), node );
-                return Pair.of( casted, context.typeFactory.createTypeWithNullability( context.typeFactory.createPolyType( PolyType.DOUBLE ), true ) );
-            default:
-                return Pair.of( node, context.typeFactory.createPolyType( PolyType.BIGINT ) );
-        }
+                yield Pair.of( casted, context.typeFactory.createTypeWithNullability( context.typeFactory.createPolyType( PolyType.DOUBLE ), true ) );
+            }
+            default -> Pair.of( node, context.typeFactory.createPolyType( PolyType.BIGINT ) );
+        };
     }
 
 

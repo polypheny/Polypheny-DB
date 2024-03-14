@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,18 +34,17 @@
 package org.polypheny.db.prepare;
 
 
-import com.google.common.collect.Lists;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
-import java.math.BigDecimal;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import org.apache.calcite.avatica.util.ByteString;
+import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
@@ -57,18 +56,31 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgRecordType;
+import org.polypheny.db.algebra.type.DocumentType;
+import org.polypheny.db.algebra.type.GraphType;
+import org.polypheny.db.functions.GeoFunctions;
 import org.polypheny.db.runtime.Unit;
-import org.polypheny.db.runtime.functions.GeoFunctions;
-import org.polypheny.db.schema.graph.PolyEdge;
-import org.polypheny.db.schema.graph.PolyGraph;
-import org.polypheny.db.schema.graph.PolyNode;
-import org.polypheny.db.schema.graph.PolyPath;
-import org.polypheny.db.type.BasicPolyType;
-import org.polypheny.db.type.IntervalPolyType;
+import org.polypheny.db.type.AbstractPolyType;
 import org.polypheny.db.type.JavaToPolyTypeConversionRules;
-import org.polypheny.db.type.PathType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
+import org.polypheny.db.type.entity.PolyBinary;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyInterval;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolySymbol;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyBlob;
+import org.polypheny.db.type.entity.category.PolyNumber;
+import org.polypheny.db.type.entity.category.PolyTemporal;
+import org.polypheny.db.type.entity.graph.PolyEdge;
+import org.polypheny.db.type.entity.graph.PolyGraph;
+import org.polypheny.db.type.entity.graph.PolyNode;
+import org.polypheny.db.type.entity.graph.PolyPath;
+import org.polypheny.db.type.entity.relational.PolyMap;
+import org.polypheny.db.type.entity.temporal.PolyDate;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
@@ -78,6 +90,7 @@ import org.polypheny.db.util.Util;
  *
  * <strong>NOTE: This class is experimental and subject to change/removal without notice</strong>.</p>
  */
+@Slf4j
 public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaTypeFactory {
 
     private final Map<List<Pair<Type, Boolean>>, SyntheticRecordType> syntheticTypes = new HashMap<>();
@@ -94,13 +107,13 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
 
 
     @Override
-    public AlgDataType createStructType( Class type ) {
+    public AlgDataType createStructType( Class<?> type ) {
         final List<AlgDataTypeField> list = new ArrayList<>();
         for ( Field field : type.getFields() ) {
             if ( !Modifier.isStatic( field.getModifiers() ) ) {
                 // FIXME: watch out for recursion
                 final Type fieldType = fieldType( field );
-                list.add( new AlgDataTypeFieldImpl( field.getName(), list.size(), createType( fieldType ) ) );
+                list.add( new AlgDataTypeFieldImpl( -1L, field.getName(), list.size(), createType( fieldType ) ) );
             }
         }
         return canonize( new JavaRecordType( list, type ) );
@@ -151,12 +164,12 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
         if ( !(type instanceof Class) ) {
             throw new UnsupportedOperationException( "TODO: implement " + type );
         }
-        final Class clazz = (Class) type;
+        final Class<?> clazz = (Class<?>) type;
         switch ( Primitive.flavor( clazz ) ) {
             case PRIMITIVE:
                 return createJavaType( clazz );
             case BOX:
-                return createJavaType( Primitive.ofBox( clazz ).boxClass );
+                return createJavaType( Objects.requireNonNull( Primitive.ofBox( clazz ) ).boxClass );
         }
         if ( JavaToPolyTypeConversionRules.instance().lookup( clazz ) != null ) {
             return createJavaType( clazz );
@@ -173,34 +186,57 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
         }
     }
 
+    /*@Override
+    public Type getJavaClass( AlgDataType type ) {
+        if( type.getPolyType() == PolyType.ROW ){
+            return PolyValue[].class;
+        }
+
+        return PolyValue.classFrom( type.getPolyType() );
+    }*/
+
 
     @Override
     public Type getJavaClass( AlgDataType type ) {
-        if ( type instanceof JavaType ) {
-            JavaType javaType = (JavaType) type;
-            return javaType.getJavaClass();
+        if ( type instanceof JavaType javaType ) {
+            return PolyTemporal.class.isAssignableFrom( javaType.getJavaClass() )
+                    ? PolyTemporal.class
+                    : PolyNumber.class.isAssignableFrom( javaType.getJavaClass() )
+                            ? PolyNumber.class
+                            : javaType.getJavaClass();
         }
         if ( type.isStruct() && type.getFieldCount() == 1 && type.getPolyType() != PolyType.PATH ) {
-            return getJavaClass( type.getFieldList().get( 0 ).getType() );
+            return getJavaClass( type.getFields().get( 0 ).getType() );
         }
-        if ( type instanceof BasicPolyType || type instanceof IntervalPolyType || type instanceof PathType ) {
+        if ( type instanceof AbstractPolyType || type instanceof DocumentType || type instanceof GraphType ) {
             switch ( type.getPolyType() ) {
                 case JSON:
                 case VARCHAR:
                 case CHAR:
+                case TEXT:
+                    return PolyString.class;
                 case DOCUMENT:
-                    return String.class;
+                    return PolyValue.class;
                 case DATE:
+                    return PolyDate.class;
                 case TIME:
                 case TIME_WITH_LOCAL_TIME_ZONE:
+                    return PolyTemporal.class;
+                case DOUBLE:
+                case FLOAT: // sic
+                case REAL:
+                case SMALLINT:
+                case TINYINT:
+                case DECIMAL:
                 case INTEGER:
+                case BIGINT:
+                    return PolyNumber.class;
+                case TIMESTAMP:
+                case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+                    return PolyTimestamp.class;
                 case INTERVAL_YEAR:
                 case INTERVAL_YEAR_MONTH:
                 case INTERVAL_MONTH:
-                    return type.isNullable() ? Integer.class : int.class;
-                case TIMESTAMP:
-                case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                case BIGINT:
                 case INTERVAL_DAY:
                 case INTERVAL_DAY_HOUR:
                 case INTERVAL_DAY_MINUTE:
@@ -211,27 +247,16 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                 case INTERVAL_MINUTE:
                 case INTERVAL_MINUTE_SECOND:
                 case INTERVAL_SECOND:
-                    return type.isNullable() ? Long.class : long.class;
-                case SMALLINT:
-                    return type.isNullable() ? Short.class : short.class;
-                case TINYINT:
-                    return type.isNullable() ? Byte.class : byte.class;
-                case DECIMAL:
-                    return BigDecimal.class;
+                    return PolyInterval.class;
                 case BOOLEAN:
-                    return type.isNullable() ? Boolean.class : boolean.class;
-                case DOUBLE:
-                case FLOAT: // sic
-                    return type.isNullable() ? Double.class : double.class;
-                case REAL:
-                    return type.isNullable() ? Float.class : float.class;
+                    return PolyBoolean.class;
                 case BINARY:
                 case VARBINARY:
-                    return ByteString.class;
+                    return PolyBinary.class;
                 case GEOMETRY:
                     return GeoFunctions.Geom.class;
                 case SYMBOL:
-                    return Enum.class;
+                    return PolySymbol.class;
                 case GRAPH:
                     return PolyGraph.class;
                 case EDGE:
@@ -244,24 +269,25 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                 case IMAGE:
                 case VIDEO:
                 case AUDIO:
+                    return PolyBlob.class;
+                case MAP:
+                    return PolyMap.class;
+                case ARRAY:
+                case MULTISET:
+                    return PolyList.class;
                 case ANY:
-                    return Object.class;
+                    return PolyValue.class;
+
             }
-        }
-        switch ( type.getPolyType() ) {
-            case ROW:
-                assert type instanceof AlgRecordType;
+            if ( type instanceof AlgRecordType && type.getPolyType() == PolyType.ROW ) {
                 if ( type instanceof JavaRecordType ) {
                     return ((JavaRecordType) type).clazz;
                 } else {
                     return createSyntheticType( (AlgRecordType) type );
                 }
-            case MAP:
-                return Map.class;
-            case ARRAY:
-            case MULTISET:
-                return List.class;
+            }
         }
+        log.debug( "Could not find corresponding class for PolyType" );
         return null;
     }
 
@@ -278,7 +304,8 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
     public static AlgDataType toSql( final AlgDataTypeFactory typeFactory, AlgDataType type ) {
         if ( type instanceof AlgRecordType ) {
             return typeFactory.createStructType(
-                    Lists.transform( type.getFieldList(), field -> toSql( typeFactory, field.getType() ) ),
+                    type.getFields().stream().map( AlgDataTypeField::getId ).collect( Collectors.toList() ),
+                    type.getFields().stream().map( field -> toSql( typeFactory, field.getType() ) ).collect( Collectors.toList() ),
                     type.getFieldNames() );
         }
         if ( type instanceof JavaType ) {
@@ -305,7 +332,7 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
 
     private SyntheticRecordType register( final SyntheticRecordType syntheticType ) {
         final List<Pair<Type, Boolean>> key =
-                new AbstractList<Pair<Type, Boolean>>() {
+                new AbstractList<>() {
                     @Override
                     public Pair<Type, Boolean> get( int index ) {
                         final Types.RecordField field = syntheticType.getRecordFields().get( index );
@@ -334,7 +361,7 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
     private Type createSyntheticType( AlgRecordType type ) {
         final String name = "Record" + type.getFieldCount() + "_" + syntheticTypes.size();
         final SyntheticRecordType syntheticType = new SyntheticRecordType( type, name );
-        for ( final AlgDataTypeField recordField : type.getFieldList() ) {
+        for ( final AlgDataTypeField recordField : type.getFields() ) {
             final Type javaClass = getJavaClass( recordField.getType() );
             syntheticType.fields.add( new RecordFieldImpl( syntheticType, recordField.getName(), javaClass, recordField.getType().isNullable() && !Primitive.is( javaClass ), Modifier.PUBLIC ) );
         }

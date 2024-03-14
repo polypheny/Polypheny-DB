@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,12 +35,13 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.prepare.Prepare.PreparedResult;
+import org.polypheny.db.type.entity.PolyValue;
 
 public class ImplementationCache {
 
     public static final ImplementationCache INSTANCE = new ImplementationCache();
 
-    private final Cache<String, PreparedResult> implementationCache;
+    private final Cache<String, PreparedResult<PolyValue>> implementationCache;
 
     private final AtomicLong hitsCounter = new AtomicLong(); // Number of requests for which the cache contained the value
     private final AtomicLong missesCounter = new AtomicLong(); // Number of requests for which the cache hasn't contained the value
@@ -56,8 +57,8 @@ public class ImplementationCache {
     }
 
 
-    public PreparedResult getIfPresent( AlgNode parameterizedNode ) {
-        PreparedResult preparedResult = implementationCache.getIfPresent( parameterizedNode.algCompareString() );
+    public PreparedResult<PolyValue> getIfPresent( AlgNode parameterizedNode ) {
+        PreparedResult<PolyValue> preparedResult = implementationCache.getIfPresent( parameterizedNode.algCompareString() );
         if ( preparedResult == null ) {
             missesCounter.incrementAndGet();
         } else {
@@ -67,7 +68,7 @@ public class ImplementationCache {
     }
 
 
-    public void put( AlgNode parameterizedNode, PreparedResult preparedResult ) {
+    public void put( AlgNode parameterizedNode, PreparedResult<PolyValue> preparedResult ) {
         implementationCache.put( parameterizedNode.algCompareString(), preparedResult );
     }
 
@@ -99,8 +100,8 @@ public class ImplementationCache {
         im.registerInformation( generalKv );
         generalGroup.setRefreshFunction( () -> {
             generalKv.putPair( "Status", RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean() ? "Active" : "Disabled" );
-            generalKv.putPair( "Current Cache Size", implementationCache.size() + "" );
-            generalKv.putPair( "Maximum Cache Size", RuntimeConfig.IMPLEMENTATION_CACHING_SIZE.getInteger() + "" );
+            generalKv.putPair( "Current Cache Size", String.valueOf( implementationCache.size() ) );
+            generalKv.putPair( "Maximum Cache Size", String.valueOf( RuntimeConfig.IMPLEMENTATION_CACHING_SIZE.getInteger() ) );
         } );
 
         // Hit ratio
@@ -162,6 +163,11 @@ public class ImplementationCache {
         } );
         invalidateAction.setOrder( 2 );
         im.registerInformation( invalidateAction );
+    }
+
+
+    public long getCacheSize() {
+        return implementationCache.size();
     }
 
 }

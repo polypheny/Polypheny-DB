@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.polypheny.db.algebra.logical.lpg;
 
+import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgCollation;
@@ -23,7 +24,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.lpg.LpgSort;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
@@ -35,7 +36,7 @@ public class LogicalLpgSort extends LpgSort {
     /**
      * Subclass of {@link LpgSort} not targeted at any particular engine or calling convention.
      */
-    public LogicalLpgSort( AlgOptCluster cluster, AlgTraitSet traitSet, AlgCollation collation, AlgNode input, Integer skip, Integer limit ) {
+    public LogicalLpgSort( AlgCluster cluster, AlgTraitSet traitSet, AlgCollation collation, AlgNode input, Integer skip, Integer limit ) {
         super( cluster, traitSet, input, collation,
                 skip != null ? cluster.getRexBuilder().makeExactLiteral( new BigDecimal( skip ) ) : null,
                 limit != null ? cluster.getRexBuilder().makeExactLiteral( new BigDecimal( limit ) ) : null );
@@ -44,15 +45,19 @@ public class LogicalLpgSort extends LpgSort {
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + collation.hashCode() + "$" + input.algCompareString();
+        return getClass().getSimpleName() + "$"
+                + collation.hashCode() + "$"
+                + input.algCompareString() + "$"
+                + (offset == null ? "" : offset.hashCode()) + "$"
+                + (fetch == null ? "" : fetch.hashCode()) + "&";
     }
 
 
     @Override
-    public Sort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation, RexNode offset, RexNode fetch ) {
+    public Sort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation, ImmutableList<RexNode> nodes, RexNode offset, RexNode fetch ) {
         return new LogicalLpgSort( newInput.getCluster(), traitSet, collation, newInput,
-                offset == null ? null : ((RexLiteral) offset).getValueAs( Integer.class ),
-                fetch == null ? null : ((RexLiteral) fetch).getValueAs( Integer.class ) );
+                offset == null ? null : ((RexLiteral) offset).value.asNumber().intValue(),
+                fetch == null ? null : ((RexLiteral) fetch).value.asNumber().intValue() );
     }
 
 

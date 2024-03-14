@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import com.google.common.base.Preconditions;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.fun.MinMaxAggFunction;
-import org.polypheny.db.algebra.fun.SplittableAggFunction;
 import org.polypheny.db.sql.language.SqlAggFunction;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
@@ -64,14 +63,6 @@ public class SqlMinMaxAggFunction extends SqlAggFunction implements MinMaxAggFun
         Preconditions.checkArgument( kind == Kind.MIN || kind == Kind.MAX );
     }
 
-
-    @Override
-    public <T> T unwrap( Class<T> clazz ) {
-        if ( clazz == SplittableAggFunction.class ) {
-            return clazz.cast( SplittableAggFunction.SelfSplitter.INSTANCE );
-        }
-        return super.unwrap( clazz );
-    }
 
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,11 +44,11 @@ import org.polypheny.db.algebra.core.Intersect;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Minus;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.plan.hep.HepAlgVertex;
 import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.util.BuiltInMethod;
@@ -62,8 +62,8 @@ public class AlgMdNodeTypes implements MetadataHandler<BuiltInMetadata.NodeTypes
 
     public static final AlgMetadataProvider SOURCE =
             ReflectiveAlgMetadataProvider.reflectiveSource(
-                    BuiltInMethod.NODE_TYPES.method,
-                    new AlgMdNodeTypes() );
+                    new AlgMdNodeTypes(),
+                    BuiltInMethod.NODE_TYPES.method );
 
 
     @Override
@@ -142,8 +142,8 @@ public class AlgMdNodeTypes implements MetadataHandler<BuiltInMetadata.NodeTypes
     }
 
 
-    public Multimap<Class<? extends AlgNode>, AlgNode> getNodeTypes( Scan alg, AlgMetadataQuery mq ) {
-        return getNodeTypes( alg, Scan.class, mq );
+    public Multimap<Class<? extends AlgNode>, AlgNode> getNodeTypes( RelScan alg, AlgMetadataQuery mq ) {
+        return getNodeTypes( alg, RelScan.class, mq );
     }
 
 

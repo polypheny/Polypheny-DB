@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,19 +27,22 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.cottontail.CottontailEntity;
 import org.polypheny.db.adapter.cottontail.CottontailWrapper;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
+import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyValue;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.DeleteMessage;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Metadata;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Where;
 
 
-public class CottontailDeleteEnumerable<T> extends AbstractEnumerable<T> {
+public class CottontailDeleteEnumerable extends AbstractEnumerable<PolyValue[]> {
 
     public static final Method CREATE_DELETE_METHOD = Types.lookupMethod(
             CottontailDeleteEnumerable.class,
             "delete",
-            String.class, String.class, Function1.class, DataContext.class, CottontailWrapper.class );
+            Function1.class, DataContext.class, CottontailEntity.class );
 
     private final List<DeleteMessage> deletes;
     private final CottontailWrapper wrapper;
@@ -52,40 +55,39 @@ public class CottontailDeleteEnumerable<T> extends AbstractEnumerable<T> {
 
 
     @Override
-    public Enumerator<T> enumerator() {
-        return new CottontailDeleteEnumerator<>( deletes, wrapper );
+    public Enumerator<PolyValue[]> enumerator() {
+        return new CottontailDeleteEnumerator( deletes, wrapper );
     }
 
 
-    public static CottontailDeleteEnumerable<Object> delete(
-            String entity,
-            String schema,
-            Function1<Map<Long, Object>, Where> whereBuilder,
+    @SuppressWarnings("unused")
+    public static CottontailDeleteEnumerable delete(
+            Function1<Map<Long, PolyValue>, Where> whereBuilder,
             DataContext dataContext,
-            CottontailWrapper wrapper
+            CottontailEntity entity
     ) {
         /* Begin or continue Cottontail DB transaction. */
-        final Long txId = wrapper.beginOrContinue( dataContext.getStatement().getTransaction() );
+        final Long txId = entity.getCottontailNamespace().getWrapper().beginOrContinue( dataContext.getStatement().getTransaction() );
 
         /* Build DELETE messages and create enumerable. */
         List<DeleteMessage> deleteMessages;
         if ( dataContext.getParameterValues().size() < 2 ) {
-            Map<Long, Object> parameterValues;
-            if ( dataContext.getParameterValues().size() == 0 ) {
+            Map<Long, PolyValue> parameterValues;
+            if ( dataContext.getParameterValues().isEmpty() ) {
                 parameterValues = new HashMap<>();
             } else {
                 parameterValues = dataContext.getParameterValues().get( 0 );
             }
             deleteMessages = new ArrayList<>( 1 );
-            deleteMessages.add( buildSingleDelete( entity, schema, txId, whereBuilder, parameterValues ) );
+            deleteMessages.add( buildSingleDelete( entity.getPhysicalTableName(), entity.getPhysicalSchemaName(), txId, whereBuilder, parameterValues ) );
         } else {
             deleteMessages = new ArrayList<>();
-            for ( Map<Long, Object> parameterValues : dataContext.getParameterValues() ) {
-                deleteMessages.add( buildSingleDelete( entity, schema, txId, whereBuilder, parameterValues ) );
+            for ( Map<Long, PolyValue> parameterValues : dataContext.getParameterValues() ) {
+                deleteMessages.add( buildSingleDelete( entity.getPhysicalTableName(), entity.getPhysicalSchemaName(), txId, whereBuilder, parameterValues ) );
             }
         }
 
-        return new CottontailDeleteEnumerable<>( deleteMessages, dataContext, wrapper );
+        return new CottontailDeleteEnumerable( deleteMessages, dataContext, entity.getCottontailNamespace().getWrapper() );
     }
 
 
@@ -93,8 +95,8 @@ public class CottontailDeleteEnumerable<T> extends AbstractEnumerable<T> {
             String entity,
             String schema,
             Long txId,
-            Function1<Map<Long, Object>, Where> whereBuilder,
-            Map<Long, Object> parameterValues
+            Function1<Map<Long, PolyValue>, Where> whereBuilder,
+            Map<Long, PolyValue> parameterValues
     ) {
         final DeleteMessage.Builder builder = DeleteMessage.newBuilder().setMetadata( Metadata.newBuilder().setTransactionId( txId ).build() );
         builder.setFrom( CottontailTypeUtil.fromFromTableAndSchema( entity, schema ) );
@@ -106,10 +108,10 @@ public class CottontailDeleteEnumerable<T> extends AbstractEnumerable<T> {
     }
 
 
-    private static class CottontailDeleteEnumerator<T> implements Enumerator<T> {
+    private static class CottontailDeleteEnumerator implements Enumerator<PolyValue[]> {
 
         Iterator<DeleteMessage> deleteMessageIterator;
-        Long currentResult;
+        PolyValue[] currentResult;
         CottontailWrapper wrapper;
 
 
@@ -120,8 +122,8 @@ public class CottontailDeleteEnumerable<T> extends AbstractEnumerable<T> {
 
 
         @Override
-        public T current() {
-            return (T) currentResult;
+        public PolyValue[] current() {
+            return currentResult;
         }
 
 
@@ -130,9 +132,9 @@ public class CottontailDeleteEnumerable<T> extends AbstractEnumerable<T> {
             if ( deleteMessageIterator.hasNext() ) {
                 DeleteMessage deleteMessage = deleteMessageIterator.next();
 
-                this.currentResult = wrapper.delete( deleteMessage );
+                this.currentResult = new PolyValue[]{ PolyLong.of( wrapper.delete( deleteMessage ) ) };
 
-                return !this.currentResult.equals( -1L );
+                return !this.currentResult[0].equals( PolyLong.of( -1L ) );
             }
             return false;
         }

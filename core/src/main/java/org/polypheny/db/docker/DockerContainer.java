@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,9 @@ import org.bouncycastle.tls.AlertDescription;
 import org.bouncycastle.tls.TlsFatalAlert;
 import org.bouncycastle.tls.TlsNoCloseNotifyException;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.util.RunMode;
 
 /**
  * The container is the main interaction instance for calling classes when interacting with Docker.
@@ -127,16 +129,15 @@ public final class DockerContainer {
     public static String getPhysicalUniqueName( String uniqueName ) {
         // while not all Docker containers belong to an adapter we annotate it anyway
         String name = "polypheny_" + RuntimeConfig.INSTANCE_UUID.getString() + "_" + uniqueName;
-        if ( !Catalog.testMode ) {
+        if ( Catalog.mode != RunMode.TEST ) {
             return name;
-        } else {
-            return name + "_test";
         }
+        return name + "_test";
     }
 
 
     public Optional<String> getHost() {
-        return getDockerInstance().map( DockerInstance::getHost );
+        return getDockerInstance().map( d -> d.getHost().hostname() );
     }
 
 
@@ -183,14 +184,10 @@ public final class DockerContainer {
 
     private void startProxyForConnection( Socket local, int port ) {
         try {
-            Optional<DockerInstance> maybeDockerInstance = getDockerInstance();
-            if ( maybeDockerInstance.isEmpty() ) {
-                throw new IOException( "Not connected to docker host" );
-            }
-            DockerInstance dockerInstance = maybeDockerInstance.get();
-            Socket remote = new Socket( dockerInstance.getHost(), dockerInstance.getProxyPort() );
-            PolyphenyKeypair kp = PolyphenyCertificateManager.loadClientKeypair( "docker", dockerInstance.getHost() );
-            byte[] serverCert = PolyphenyCertificateManager.loadServerCertificate( "docker", dockerInstance.getHost() );
+            DockerInstance dockerInstance = getDockerInstance().orElseThrow( () -> new IOException( "Not connected to Docker instance" ) );
+            Socket remote = new Socket( dockerInstance.getHost().hostname(), dockerInstance.getHost().proxyPort() );
+            PolyphenyKeypair kp = PolyphenyCertificateManager.loadClientKeypair( "docker", dockerInstance.getHost().hostname() );
+            byte[] serverCert = PolyphenyCertificateManager.loadServerCertificate( "docker", dockerInstance.getHost().hostname() );
             PolyphenyTlsClient client = new PolyphenyTlsClient( kp, serverCert, remote.getInputStream(), remote.getOutputStream() );
             InputStream remote_in = client.getInputStream().get();
             OutputStream remote_out = client.getOutputStream().get();
@@ -269,7 +266,7 @@ public final class DockerContainer {
             return s;
         } catch ( Exception e ) {
             log.error( "Failed to start local proxy server: ", e );
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 
@@ -305,18 +302,7 @@ public final class DockerContainer {
     }
 
 
-    static public class HostAndPort {
-
-        @Getter
-        final String host;
-        @Getter
-        final int port;
-
-
-        HostAndPort( String host, int port ) {
-            this.host = host;
-            this.port = port;
-        }
+    public record HostAndPort(String host, int port) {
 
     }
 

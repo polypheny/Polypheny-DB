@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,27 +30,22 @@ import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.DelegatingTypeSystem;
-import org.polypheny.db.catalog.MockCatalogReader;
-import org.polypheny.db.catalog.MockCatalogReaderSimple;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
-import org.polypheny.db.nodes.validate.ValidatorCatalogReader;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.sql.MockSqlOperatorTable;
-import org.polypheny.db.sql.language.advise.SqlAdvisor;
 import org.polypheny.db.sql.language.fun.OracleSqlOperatorTable;
 import org.polypheny.db.sql.language.parser.SqlAbstractParserImpl;
 import org.polypheny.db.sql.language.parser.SqlParser;
 import org.polypheny.db.sql.language.validate.SqlValidator;
 import org.polypheny.db.sql.language.validate.SqlValidatorUtil;
-import org.polypheny.db.sql.language.validate.SqlValidatorWithHints;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.SourceStringReader;
 
 
 /**
  * Default implementation of {@link SqlTestFactory}.
- *
+ * <p>
  * Suitable for most tests. If you want different behavior, you can extend; if you want a factory with different properties (e.g. SQL conformance level or identifier quoting), use {@link #with(String, Object)} to create a new factory.
  */
 public class SqlTestFactory {
@@ -68,28 +63,23 @@ public class SqlTestFactory {
     public static final SqlTestFactory INSTANCE = new SqlTestFactory();
 
     private final ImmutableMap<String, Object> options;
-    private final MockCatalogReaderFactory catalogReaderFactory;
     private final ValidatorFactory validatorFactory;
 
     private final Supplier<AlgDataTypeFactory> typeFactory;
     private final Supplier<OperatorTable> operatorTable;
-    private final Supplier<ValidatorCatalogReader> catalogReader;
     private final Supplier<ParserConfig> parserConfig;
 
 
     protected SqlTestFactory() {
-        this( DEFAULT_OPTIONS, MockCatalogReaderSimple::new, SqlValidatorUtil::newValidator );
+        this( DEFAULT_OPTIONS, SqlValidatorUtil::newValidator );
     }
 
 
-    protected SqlTestFactory( ImmutableMap<String, Object> options, MockCatalogReaderFactory catalogReaderFactory, ValidatorFactory validatorFactory ) {
+    protected SqlTestFactory( ImmutableMap<String, Object> options, ValidatorFactory validatorFactory ) {
         this.options = options;
-        this.catalogReaderFactory = catalogReaderFactory;
         this.validatorFactory = validatorFactory;
         this.operatorTable = Suppliers.memoize( () -> createOperatorTable( (OperatorTable) options.get( "operatorTable" ) ) );
         this.typeFactory = Suppliers.memoize( () -> createTypeFactory( (Conformance) options.get( "conformance" ) ) );
-        Boolean caseSensitive = (Boolean) options.get( "caseSensitive" );
-        this.catalogReader = Suppliers.memoize( () -> catalogReaderFactory.create( typeFactory.get(), caseSensitive ).init() );
         this.parserConfig = Suppliers.memoize( () -> createParserConfig( options ) );
     }
 
@@ -100,10 +90,6 @@ public class SqlTestFactory {
         return opTab;
     }
 
-
-    public ParserConfig getParserConfig() {
-        return parserConfig.get();
-    }
 
 
     public Parser createParser( String sql ) {
@@ -119,23 +105,13 @@ public class SqlTestFactory {
                 .setUnquotedCasing( (Casing) options.get( "unquotedCasing" ) )
                 .setQuotedCasing( (Casing) options.get( "quotedCasing" ) )
                 .setConformance( (Conformance) options.get( "conformance" ) )
-                .setCaseSensitive( (boolean) options.get( "caseSensitive" ) )
                 .build();
     }
 
 
     public SqlValidator getValidator() {
         final Conformance conformance = (Conformance) options.get( "conformance" );
-        return validatorFactory.create( operatorTable.get(), catalogReader.get(), typeFactory.get(), conformance );
-    }
-
-
-    public SqlAdvisor createAdvisor() {
-        SqlValidator validator = getValidator();
-        if ( validator instanceof SqlValidatorWithHints ) {
-            return new SqlAdvisor( (SqlValidatorWithHints) validator, parserConfig.get() );
-        }
-        throw new UnsupportedOperationException( "Validator should implement SqlValidatorWithHints, actual validator is " + validator );
+        return validatorFactory.create( operatorTable.get(), typeFactory.get(), conformance );
     }
 
 
@@ -152,18 +128,9 @@ public class SqlTestFactory {
             builder.put( entry );
         }
         builder.put( name, value );
-        return new SqlTestFactory( builder.build(), catalogReaderFactory, validatorFactory );
+        return new SqlTestFactory( builder.build(), validatorFactory );
     }
 
-
-    public SqlTestFactory withCatalogReader( MockCatalogReaderFactory newCatalogReaderFactory ) {
-        return new SqlTestFactory( options, newCatalogReaderFactory, validatorFactory );
-    }
-
-
-    public SqlTestFactory withValidator( ValidatorFactory newValidatorFactory ) {
-        return new SqlTestFactory( options, catalogReaderFactory, newValidatorFactory );
-    }
 
 
     public final Object get( String name ) {
@@ -183,9 +150,6 @@ public class SqlTestFactory {
         }
         if ( conformance.allowExtendedTrim() ) {
             typeSystem = new DelegatingTypeSystem( typeSystem ) {
-                public boolean allowExtendedTrim() {
-                    return true;
-                }
             };
         }
         return new JavaTypeFactoryImpl( typeSystem );
@@ -197,20 +161,10 @@ public class SqlTestFactory {
      */
     public interface ValidatorFactory {
 
-        SqlValidator create( OperatorTable opTab, ValidatorCatalogReader catalogReader, AlgDataTypeFactory typeFactory, Conformance conformance );
+        SqlValidator create( OperatorTable opTab, AlgDataTypeFactory typeFactory, Conformance conformance );
 
     }
 
-
-    /**
-     * Creates {@link MockCatalogReader} for tests.
-     * Note: {@link MockCatalogReader#init()} is to be invoked later, so a typical implementation should be via constructor reference like {@code MockCatalogReaderSimple::new}.
-     */
-    public interface MockCatalogReaderFactory {
-
-        MockCatalogReader create( AlgDataTypeFactory typeFactory, boolean caseSensitive );
-
-    }
 
 }
 

@@ -4,13 +4,13 @@ group "org.polypheny"
 dependencies {
     compileOnly project(":core")
     compileOnly project(":plugins:sql-language")
-    compileOnly project(':dbms')
+    compileOnly project(":dbms")
 
     implementation group: "org.neo4j.driver", name: "neo4j-java-driver", version: neo4j_version // Apache 2.0
 
+
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
-
 
 }
 
@@ -19,7 +19,6 @@ sourceSets {
     main {
         java {
             srcDirs = ["src/main/java"]
-            outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {
             srcDirs = ["src/main/resources"]
@@ -29,7 +28,7 @@ sourceSets {
     test {
         java {
             srcDirs = ["src/test/java"]
-            outputDir = file(project.buildDir.absolutePath + "/test-classes")
+            destinationDirectory.set(file(project.buildDir.absolutePath + "/test-classes"))
         }
         resources {
             srcDirs = ["src/test/resources"]
@@ -76,7 +75,5 @@ java {
 
 licensee {
     allow('Apache-2.0')
-
-    allow('CC0-1.0')
+    allow('MIT-0')
 }
-

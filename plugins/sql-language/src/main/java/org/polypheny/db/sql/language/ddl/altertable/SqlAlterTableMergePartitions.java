@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,20 +20,15 @@ package org.polypheny.db.sql.language.ddl.altertable;
 import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
@@ -81,31 +76,31 @@ public class SqlAlterTableMergePartitions extends SqlAlterTable {
 
 
     @Override
-    public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        CatalogTable catalogTable = getCatalogTable( context, table );
+    public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
+        LogicalTable table = getTableFailOnEmpty( context, this.table );
 
-        if ( catalogTable.entityType != EntityType.ENTITY ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
+        if ( table.entityType != EntityType.ENTITY ) {
+            throw new GenericRuntimeException( "Not possible to use ALTER TABLE because %s is not a table.", table.name );
         }
 
         // Check if table is even partitioned
-        if ( catalogTable.partitionProperty.partitionType != Catalog.PartitionType.NONE ) {
+        if ( statement.getTransaction().getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow().partitionType != PartitionType.NONE ) {
 
             if ( log.isDebugEnabled() ) {
-                log.debug( "Merging partitions for table: {} with id {} on schema: {}", catalogTable.name, catalogTable.id, catalogTable.getNamespaceName() );
+                log.debug( "Merging partitions for table: {} with id {} on namespace: {}", table.name, table.id, statement.getTransaction().getSnapshot().getNamespace( table.namespaceId ).orElseThrow().name );
             }
 
             try {
-                DdlManager.getInstance().removePartitioning( catalogTable, statement );
-            } catch ( UnknownDatabaseException | GenericCatalogException | UnknownTableException | TransactionException | UnknownSchemaException | UnknownUserException | UnknownKeyException e ) {
-                throw new RuntimeException( "Error while merging partitions", e );
+                DdlManager.getInstance().dropTablePartition( table, statement );
+            } catch ( TransactionException e ) {
+                throw new GenericRuntimeException( "Error while merging partitions", e );
             }
 
             if ( log.isDebugEnabled() ) {
-                log.debug( "Table: '{}' has been merged", catalogTable.name );
+                log.debug( "Table: '{}' has been merged", table.name );
             }
         } else {
-            throw new RuntimeException( "Table '" + catalogTable.name + "' is not partitioned!" );
+            throw new GenericRuntimeException( "Table '%s' is not partitioned!", table.name );
         }
     }
 

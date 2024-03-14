@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,11 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Objects;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Monotonicity;
+import org.polypheny.db.algebra.json.JsonEmptyOrError;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -34,6 +36,7 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Literal;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.NodeVisitor;
+import org.polypheny.db.sql.language.SqlIntervalLiteral.IntervalValue;
 import org.polypheny.db.sql.language.fun.SqlLiteralChainOperator;
 import org.polypheny.db.sql.language.parser.SqlParserUtil;
 import org.polypheny.db.sql.language.validate.SqlValidator;
@@ -41,15 +44,24 @@ import org.polypheny.db.sql.language.validate.SqlValidatorScope;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.entity.PolyBinary;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyInterval;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolySymbol;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyNumber;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
+import org.polypheny.db.type.entity.temporal.PolyDate;
+import org.polypheny.db.type.entity.temporal.PolyTime;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.BitString;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.CoreUtil;
-import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Static;
-import org.polypheny.db.util.TimeString;
-import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.Util;
 
 
@@ -127,26 +139,26 @@ import org.polypheny.db.util.Util;
  * </tr>
  * </table>
  */
+@Slf4j
+@Getter
 public class SqlLiteral extends SqlNode implements Literal {
 
     /**
      * The type with which this literal was declared. This type is very approximate: the literal may have a different type once validated. For example, all numeric literals have a type name of
      * {@link PolyType#DECIMAL}, but on validation may become {@link PolyType#INTEGER}.
      */
-    @Getter
     private final PolyType typeName;
 
     /**
      * The value of this literal. The type of the value must be appropriate for the typeName, as defined by the {@link #valueMatchesType} method.
      */
-    @Getter
-    protected final Object value;
+    public final PolyValue value;
 
 
     /**
      * Creates a <code>SqlLiteral</code>.
      */
-    protected SqlLiteral( Object value, PolyType typeName, ParserPos pos ) {
+    protected SqlLiteral( PolyValue value, PolyType typeName, ParserPos pos ) {
         super( pos );
         this.value = value;
         this.typeName = typeName;
@@ -158,57 +170,38 @@ public class SqlLiteral extends SqlNode implements Literal {
     /**
      * @return whether value is appropriate for its type (we have rules about these things)
      */
-    public static boolean valueMatchesType( Object value, PolyType typeName ) {
-        switch ( typeName ) {
-            case BOOLEAN:
-                return (value == null) || (value instanceof Boolean);
-            case NULL:
-                return value == null;
-            case DECIMAL:
-            case DOUBLE:
-                return value instanceof BigDecimal;
-            case DATE:
-                return value instanceof DateString;
-            case TIME:
-                return value instanceof TimeString;
-            case TIMESTAMP:
-                return value instanceof TimestampString;
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_MONTH:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
-                return value instanceof SqlIntervalLiteral.IntervalValue;
-            case BINARY:
-                return value instanceof BitString;
-            case CHAR:
-                return value instanceof NlsString;
-            case SYMBOL:
-                return (value instanceof Enum)
-                        || (value instanceof SqlSampleSpec);
-            case MULTISET:
-                return true;
-            case ARRAY:
-                return value instanceof List;
-            case INTEGER: // not allowed -- use Decimal
-            case VARCHAR: // not allowed -- use Char
-            case VARBINARY: // not allowed -- use Binary
-            default:
-                throw Util.unexpected( typeName );
-        }
+    public static boolean valueMatchesType( PolyValue value, PolyType typeName ) {
+        return switch ( typeName ) {
+            case BOOLEAN -> (value == null) || (value instanceof PolyBoolean);
+            case NULL -> value == null;
+            case DECIMAL, DOUBLE -> value instanceof PolyNumber;
+            case DATE -> value instanceof PolyDate;
+            case TIME -> value instanceof PolyTime;
+            case TIMESTAMP -> value instanceof PolyTimestamp;
+            case INTERVAL_YEAR, INTERVAL_YEAR_MONTH, INTERVAL_MONTH, INTERVAL_DAY, INTERVAL_DAY_HOUR, INTERVAL_DAY_MINUTE, INTERVAL_DAY_SECOND, INTERVAL_HOUR, INTERVAL_HOUR_MINUTE, INTERVAL_HOUR_SECOND, INTERVAL_MINUTE, INTERVAL_MINUTE_SECOND, INTERVAL_SECOND -> value instanceof PolyInterval || value instanceof IntervalValue;
+            case BINARY -> value instanceof PolyBinary;
+            case CHAR -> value instanceof PolyString;
+            case SYMBOL -> (value instanceof SqlSampleSpec) || value instanceof PolySymbol;
+            case MULTISET -> true;
+            case ARRAY -> value instanceof PolyList; // not allowed -- use Decimal
+            // not allowed -- use Char
+            // not allowed -- use Binary
+            default -> throw Util.unexpected( typeName );
+        };
     }
 
 
-    public static SqlNode createArray( List<SqlNode> array, AlgDataType type, ParserPos pos ) {
-        return new SqlArrayLiteral( array, type, pos );
+    public static SqlNode createArray( List<PolyValue> array, AlgDataType type, ParserPos pos ) {
+        return new SqlArrayLiteral( PolyList.copyOf( array ), type, pos );
+    }
+
+
+    public static PolyValue toPoly( SqlNode value ) {
+        if ( !(value instanceof SqlLiteral) ) {
+            log.warn( "Could not transform: " + value.toString() );
+            return null;
+        }
+        return ((SqlLiteral) value).value;
     }
 
 
@@ -231,17 +224,17 @@ public class SqlLiteral extends SqlNode implements Literal {
         switch ( typeName ) {
             case CHAR:
                 if ( clazz == String.class ) {
-                    return clazz.cast( ((NlsString) value).getValue() );
+                    return clazz.cast( value.asString().getValue() );
                 }
                 break;
             case BINARY:
                 if ( clazz == byte[].class ) {
-                    return clazz.cast( ((BitString) value).getAsByteArray() );
+                    return clazz.cast( value.asBinary().value );
                 }
                 break;
             case DECIMAL:
                 if ( clazz == Long.class ) {
-                    return clazz.cast( ((BigDecimal) value).unscaledValue().longValue() );
+                    return clazz.cast( ((PolyBigDecimal) value).longValue() );
                 }
                 // fall through
             case BIGINT:
@@ -252,32 +245,24 @@ public class SqlLiteral extends SqlNode implements Literal {
             case REAL:
             case FLOAT:
                 if ( clazz == Long.class ) {
-                    return clazz.cast( ((BigDecimal) value).longValue() );
+                    return clazz.cast( value.asBigDecimal().longValue() );
                 } else if ( clazz == Integer.class ) {
-                    return clazz.cast( ((BigDecimal) value).intValue() );
+                    return clazz.cast( value.asBigDecimal().intValue() );
                 } else if ( clazz == Short.class ) {
-                    return clazz.cast( ((BigDecimal) value).shortValue() );
+                    return clazz.cast( value.asBigDecimal().intValue() );
                 } else if ( clazz == Byte.class ) {
-                    return clazz.cast( ((BigDecimal) value).byteValue() );
+                    return clazz.cast( value.asBigDecimal().bigDecimalValue().byteValue() );
                 } else if ( clazz == Double.class ) {
-                    return clazz.cast( ((BigDecimal) value).doubleValue() );
+                    return clazz.cast( (value.asBigDecimal().doubleValue()) );
                 } else if ( clazz == Float.class ) {
-                    return clazz.cast( ((BigDecimal) value).floatValue() );
+                    return clazz.cast( value.asBigDecimal().floatValue() );
                 }
                 break;
             case DATE:
-                if ( clazz == Calendar.class ) {
-                    return clazz.cast( ((DateString) value).toCalendar() );
-                }
-                break;
             case TIME:
-                if ( clazz == Calendar.class ) {
-                    return clazz.cast( ((TimeString) value).toCalendar() );
-                }
-                break;
             case TIMESTAMP:
                 if ( clazz == Calendar.class ) {
-                    return clazz.cast( ((TimestampString) value).toCalendar() );
+                    return clazz.cast( value.asTemporal().toCalendar() );
                 }
                 break;
             case INTERVAL_YEAR:
@@ -311,6 +296,13 @@ public class SqlLiteral extends SqlNode implements Literal {
                     return clazz.cast( valTime.getIntervalQualifier().timeUnitRange );
                 }
                 break;
+            case SYMBOL:
+                if ( clazz == Enum.class ) {
+                    return clazz.cast( value.asSymbol().value );
+                } else if ( clazz == JsonEmptyOrError.class ) {
+                    return clazz.cast( value.asSymbol().value );
+                }
+                break;
         }
         throw new AssertionError( "cannot cast " + value + " as " + clazz );
     }
@@ -321,7 +313,7 @@ public class SqlLiteral extends SqlNode implements Literal {
      */
     @Override
     public <E extends Enum<E>> E symbolValue( Class<E> class_ ) {
-        return class_.cast( value );
+        return class_.cast( value.asSymbol().value );
     }
 
 
@@ -329,7 +321,7 @@ public class SqlLiteral extends SqlNode implements Literal {
      * Returns the value as a boolean.
      */
     public boolean booleanValue() {
-        return (Boolean) value;
+        return value.asBoolean().value;
     }
 
 
@@ -358,16 +350,15 @@ public class SqlLiteral extends SqlNode implements Literal {
      * </ul>
      */
     public static Comparable value( SqlNode node ) throws IllegalArgumentException {
-        if ( node instanceof SqlLiteral ) {
-            final SqlLiteral literal = (SqlLiteral) node;
+        if ( node instanceof SqlLiteral literal ) {
             if ( literal.getTypeName() == PolyType.SYMBOL ) {
-                return (Enum) literal.value;
+                return literal.value.asSymbol().value;
             }
             switch ( literal.getTypeName().getFamily() ) {
                 case CHARACTER:
-                    return (NlsString) literal.value;
+                    return literal.value.asString().value;
                 case NUMERIC:
-                    return (BigDecimal) literal.value;
+                    return literal.value.asNumber().bigDecimalValue();
                 case INTERVAL_YEAR_MONTH:
                     final SqlIntervalLiteral.IntervalValue valMonth = (SqlIntervalLiteral.IntervalValue) literal.value;
                     return valMonth.getSign() * SqlParserUtil.intervalToMonths( valMonth );
@@ -380,10 +371,9 @@ public class SqlLiteral extends SqlNode implements Literal {
             assert node instanceof SqlCall;
             final SqlLiteral literal = SqlLiteralChainOperator.concatenateOperands( (SqlCall) node );
             assert PolyTypeUtil.inCharFamily( literal.getTypeName() );
-            return (NlsString) literal.value;
+            return literal.value.asString().value;
         }
-        if ( node instanceof SqlIntervalQualifier ) {
-            SqlIntervalQualifier qualifier = (SqlIntervalQualifier) node;
+        if ( node instanceof SqlIntervalQualifier qualifier ) {
             return qualifier.timeUnitRange;
         }
         switch ( node.getKind() ) {
@@ -392,9 +382,8 @@ public class SqlLiteral extends SqlNode implements Literal {
                 return value( ((SqlCall) node).operand( 0 ) );
             case MINUS_PREFIX:
                 assert node instanceof SqlCall;
-                Comparable o = value( ((SqlCall) node).operand( 0 ) );
-                if ( o instanceof BigDecimal ) {
-                    BigDecimal bigDecimal = (BigDecimal) o;
+                Comparable<?> o = value( ((SqlCall) node).operand( 0 ) );
+                if ( o instanceof BigDecimal bigDecimal ) {
                     return bigDecimal.negate();
                 }
                 // fall through
@@ -411,8 +400,7 @@ public class SqlLiteral extends SqlNode implements Literal {
      */
     @Deprecated // to be removed before 2.0
     public static String stringValue( SqlNode node ) {
-        if ( node instanceof SqlLiteral ) {
-            SqlLiteral literal = (SqlLiteral) node;
+        if ( node instanceof SqlLiteral literal ) {
             assert PolyTypeUtil.inCharFamily( literal.getTypeName() );
             return literal.value.toString();
         } else if ( SqlUtil.isLiteralChain( node ) ) {
@@ -437,8 +425,7 @@ public class SqlLiteral extends SqlNode implements Literal {
             return (SqlLiteral) node;
         } else if ( SqlUtil.isLiteralChain( node ) ) {
             return SqlLiteralChainOperator.concatenateOperands( (SqlCall) node );
-        } else if ( node instanceof SqlIntervalQualifier ) {
-            final SqlIntervalQualifier q = (SqlIntervalQualifier) node;
+        } else if ( node instanceof SqlIntervalQualifier q ) {
             return new SqlLiteral(
                     new SqlIntervalLiteral.IntervalValue( q, 1, q.toString() ),
                     q.typeName(),
@@ -467,14 +454,10 @@ public class SqlLiteral extends SqlNode implements Literal {
         if ( value == null ) {
             return null;
         }
-        switch ( typeName ) {
-            case CHAR:
-                // We want 'It''s superman!', not _ISO-8859-1'It''s superman!'
-                return ((NlsString) value).getValue();
-
-            default:
-                return value.toString();
+        if ( Objects.requireNonNull( typeName ) == PolyType.CHAR ) {// We want 'It''s superman!', not _ISO-8859-1'It''s superman!'
+            return value.asString().getValue();
         }
+        return value.toString();
     }
 
 
@@ -492,10 +475,9 @@ public class SqlLiteral extends SqlNode implements Literal {
 
     @Override
     public boolean equalsDeep( Node node, Litmus litmus ) {
-        if ( !(node instanceof SqlLiteral) ) {
+        if ( !(node instanceof SqlLiteral that) ) {
             return litmus.fail( "{} != {}", this, node );
         }
-        SqlLiteral that = (SqlLiteral) node;
         if ( !this.equals( that ) ) {
             return litmus.fail( "{} != {}", this, node );
         }
@@ -522,10 +504,15 @@ public class SqlLiteral extends SqlNode implements Literal {
     /**
      * Creates a boolean literal.
      */
+    public static SqlLiteral createBoolean( PolyBoolean b, ParserPos pos ) {
+        return createBoolean( b.asBoolean().value, pos );
+    }
+
+
     public static SqlLiteral createBoolean( boolean b, ParserPos pos ) {
         return b
-                ? new SqlLiteral( Boolean.TRUE, PolyType.BOOLEAN, pos )
-                : new SqlLiteral( Boolean.FALSE, PolyType.BOOLEAN, pos );
+                ? new SqlLiteral( PolyBoolean.TRUE, PolyType.BOOLEAN, pos )
+                : new SqlLiteral( PolyBoolean.FALSE, PolyType.BOOLEAN, pos );
     }
 
 
@@ -540,7 +527,7 @@ public class SqlLiteral extends SqlNode implements Literal {
      * @see #symbolValue(Class)
      */
     public static SqlLiteral createSymbol( Enum<?> o, ParserPos pos ) {
-        return new SqlLiteral( o, PolyType.SYMBOL, pos );
+        return new SqlLiteral( PolySymbol.of( o ), PolyType.SYMBOL, pos );
     }
 
 
@@ -553,10 +540,9 @@ public class SqlLiteral extends SqlNode implements Literal {
 
 
     public boolean equals( Object obj ) {
-        if ( !(obj instanceof SqlLiteral) ) {
+        if ( !(obj instanceof SqlLiteral that) ) {
             return false;
         }
-        SqlLiteral that = (SqlLiteral) obj;
         return Objects.equals( value, that.value );
     }
 
@@ -577,7 +563,7 @@ public class SqlLiteral extends SqlNode implements Literal {
         switch ( typeName ) {
             case DECIMAL:
             case DOUBLE:
-                BigDecimal bd = (BigDecimal) value;
+                BigDecimal bd = value.asNumber().BigDecimalValue();
                 if ( exact ) {
                     try {
                         return bd.intValueExact();
@@ -604,7 +590,7 @@ public class SqlLiteral extends SqlNode implements Literal {
         switch ( typeName ) {
             case DECIMAL:
             case DOUBLE:
-                BigDecimal bd = (BigDecimal) value;
+                BigDecimal bd = value.asNumber().bigDecimalValue();
                 if ( exact ) {
                     try {
                         return bd.longValueExact();
@@ -636,24 +622,26 @@ public class SqlLiteral extends SqlNode implements Literal {
      */
     @Override
     public BigDecimal bigDecimalValue() {
-        switch ( typeName ) {
-            case DECIMAL:
-            case DOUBLE:
-                return (BigDecimal) value;
-            default:
-                throw Util.unexpected( typeName );
-        }
+        return switch ( typeName ) {
+            case DECIMAL, DOUBLE -> value.asBigDecimal().value;
+            default -> throw Util.unexpected( typeName );
+        };
     }
 
 
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
+        unparsePoly( typeName, value, writer );
+    }
+
+
+    public static void unparsePoly( PolyType typeName, PolyValue value, SqlWriter writer ) {
         switch ( typeName ) {
             case BOOLEAN:
                 writer.keyword(
                         value == null
                                 ? "UNKNOWN"
-                                : (Boolean) value
+                                : value.asBoolean().value
                                         ? "TRUE"
                                         : "FALSE" );
                 break;
@@ -661,18 +649,18 @@ public class SqlLiteral extends SqlNode implements Literal {
                 writer.keyword( "NULL" );
                 break;
             case CHAR:
-            case DECIMAL:
+                //case DECIMAL:
             case DOUBLE:
             case BINARY:
                 // should be handled in subtype
                 throw Util.unexpected( typeName );
 
             case SYMBOL:
-                if ( value instanceof TimeUnitRange ) {
-                    String s = writer.getDialect().timeUnitName( (TimeUnitRange) value );
+                if ( value.isSymbol() && value.asSymbol().value instanceof TimeUnitRange ) {
+                    String s = writer.getDialect().timeUnitName( value.asSymbol().asEnum( TimeUnitRange.class ) );
                     writer.keyword( s );
-                } else if ( value instanceof Enum ) {
-                    Enum enumVal = (Enum) value;
+                } else if ( value.isSymbol() ) {
+                    Enum<?> enumVal = value.asSymbol().value;
                     writer.keyword( enumVal.toString() );
                 } else {
                     writer.keyword( String.valueOf( value ) );
@@ -685,7 +673,6 @@ public class SqlLiteral extends SqlNode implements Literal {
 
 
     public AlgDataType createSqlType( AlgDataTypeFactory typeFactory ) {
-        BitString bitString;
         switch ( typeName ) {
             case NULL:
             case BOOLEAN:
@@ -693,19 +680,15 @@ public class SqlLiteral extends SqlNode implements Literal {
                 ret = typeFactory.createTypeWithNullability( ret, null == value );
                 return ret;
             case BINARY:
-                bitString = (BitString) value;
-                int bitCount = bitString.getBitCount();
+                int bitCount = value.asBinary().getBitCount();
                 return typeFactory.createPolyType( PolyType.BINARY, bitCount / 8 );
             case CHAR:
-                NlsString string = (NlsString) value;
+                PolyString string = (PolyString) value;
                 Charset charset = string.getCharset();
                 if ( null == charset ) {
                     charset = typeFactory.getDefaultCharset();
                 }
-                Collation collation = string.getCollation();
-                if ( null == collation ) {
-                    collation = Collation.COERCIBLE;
-                }
+                Collation collation = Collation.COERCIBLE;//string.getCollation();
                 AlgDataType type = typeFactory.createPolyType( PolyType.CHAR, string.getValue().length() );
                 type = typeFactory.createTypeWithCharsetAndCollation( type, charset, collation );
                 return type;
@@ -740,35 +723,17 @@ public class SqlLiteral extends SqlNode implements Literal {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public static SqlDateLiteral createDate( Calendar calendar, ParserPos pos ) {
-        return createDate( DateString.fromCalendarFields( calendar ), pos );
-    }
-
-
-    public static SqlDateLiteral createDate( DateString date, ParserPos pos ) {
+    public static SqlDateLiteral createDate( PolyDate date, ParserPos pos ) {
         return new SqlDateLiteral( date, pos );
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public static SqlTimestampLiteral createTimestamp( Calendar calendar, int precision, ParserPos pos ) {
-        return createTimestamp( TimestampString.fromCalendarFields( calendar ), precision, pos );
-    }
-
-
-    public static SqlTimestampLiteral createTimestamp( TimestampString ts, int precision, ParserPos pos ) {
+    public static SqlTimestampLiteral createTimestamp( PolyTimestamp ts, int precision, ParserPos pos ) {
         return new SqlTimestampLiteral( ts, precision, false, pos );
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public static SqlTimeLiteral createTime( Calendar calendar, int precision, ParserPos pos ) {
-        return createTime( TimeString.fromCalendarFields( calendar ), precision, pos );
-    }
-
-
-    public static SqlTimeLiteral createTime( TimeString t, int precision, ParserPos pos ) {
+    public static SqlTimeLiteral createTime( PolyTime t, int precision, ParserPos pos ) {
         return new SqlTimeLiteral( t, precision, false, pos );
     }
 
@@ -787,7 +752,7 @@ public class SqlLiteral extends SqlNode implements Literal {
 
     public static SqlNumericLiteral createNegative( SqlNumericLiteral num, ParserPos pos ) {
         return new SqlNumericLiteral(
-                ((BigDecimal) num.getValue()).negate(),
+                ((PolyNumber) num.value).negate(),
                 num.getPrec(),
                 num.getScale(),
                 num.isExact(),
@@ -815,19 +780,30 @@ public class SqlLiteral extends SqlNode implements Literal {
             scale = 0;
             prec = s.length();
         }
-        return new SqlNumericLiteral( value, prec, scale, true, pos );
+        return new SqlNumericLiteral( PolyBigDecimal.of( value ), prec, scale, true, pos );
     }
 
 
     public static SqlNumericLiteral createApproxNumeric( String s, ParserPos pos ) {
         BigDecimal value = CoreUtil.parseDecimal( s );
-        return new SqlNumericLiteral( value, null, null, false, pos );
+        return new SqlNumericLiteral( PolyBigDecimal.of( value ), null, null, false, pos );
     }
 
 
     /**
      * Creates a literal like X'ABAB'. Although it matters when we derive a type for this beastie, we don't care at this point whether the number of hexits is odd or even.
      */
+    public static SqlBinaryStringLiteral createBinaryString( PolyBinary s, ParserPos pos ) {
+        /*BitString bits;
+        try {
+            bits = BitString.createFromHexString( s );
+        } catch ( NumberFormatException e ) {
+            throw CoreUtil.newContextException( pos, Static.RESOURCE.binaryLiteralInvalid() );
+        }*/
+        return new SqlBinaryStringLiteral( s, pos );
+    }
+
+
     public static SqlBinaryStringLiteral createBinaryString( String s, ParserPos pos ) {
         BitString bits;
         try {
@@ -835,7 +811,7 @@ public class SqlLiteral extends SqlNode implements Literal {
         } catch ( NumberFormatException e ) {
             throw CoreUtil.newContextException( pos, Static.RESOURCE.binaryLiteralInvalid() );
         }
-        return new SqlBinaryStringLiteral( bits, pos );
+        return new SqlBinaryStringLiteral( PolyBinary.of( bits.getAsByteArray(), s.length() ), pos );
     }
 
 
@@ -847,25 +823,13 @@ public class SqlLiteral extends SqlNode implements Literal {
      * @return Binary string literal
      */
     public static SqlBinaryStringLiteral createBinaryString( byte[] bytes, ParserPos pos ) {
-        BitString bits;
+        /*BitString bits;
         try {
             bits = BitString.createFromBytes( bytes );
         } catch ( NumberFormatException e ) {
             throw CoreUtil.newContextException( pos, Static.RESOURCE.binaryLiteralInvalid() );
-        }
-        return new SqlBinaryStringLiteral( bits, pos );
-    }
-
-
-    /**
-     * Creates a string literal in the system character set.
-     *
-     * @param s a string (without the sql single quotes)
-     * @param pos Parser position
-     */
-    public static SqlCharStringLiteral createCharString( String s, ParserPos pos ) {
-        // UnsupportedCharsetException not possible
-        return createCharString( s, null, pos );
+        }*/
+        return new SqlBinaryStringLiteral( PolyBinary.of( bytes ), pos );
     }
 
 
@@ -873,14 +837,22 @@ public class SqlLiteral extends SqlNode implements Literal {
      * Creates a string literal, with optional character-set.
      *
      * @param s a string (without the sql single quotes)
-     * @param charSet character set name, null means take system default
      * @param pos Parser position
      * @return A string literal
      * @throws UnsupportedCharsetException if charSet is not null but there is no character set with that name in this environment
      */
-    public static SqlCharStringLiteral createCharString( String s, String charSet, ParserPos pos ) {
-        NlsString slit = new NlsString( s, charSet, null );
-        return new SqlCharStringLiteral( slit, pos );
+    public static SqlCharStringLiteral createCharString( PolyString s, ParserPos pos ) {
+        return new SqlCharStringLiteral( s, pos );
+    }
+
+
+    public static SqlCharStringLiteral createCharString( String s, String charsetName, ParserPos pos ) {
+        return new SqlCharStringLiteral( PolyString.of( s, charsetName ), pos );
+    }
+
+
+    public static SqlCharStringLiteral createCharString( String s, ParserPos pos ) {
+        return new SqlCharStringLiteral( PolyString.of( s ), pos );
     }
 
 
@@ -895,7 +867,7 @@ public class SqlLiteral extends SqlNode implements Literal {
             return this;
         }
         assert PolyTypeUtil.inCharFamily( getTypeName() );
-        NlsString ns = (NlsString) value;
+        PolyString ns = (PolyString) value;
         String s = ns.getValue();
         StringBuilder sb = new StringBuilder();
         int n = s.length();
@@ -927,8 +899,12 @@ public class SqlLiteral extends SqlNode implements Literal {
                 sb.append( c );
             }
         }
-        ns = new NlsString( sb.toString(), ns.getCharsetName(), ns.getCollation() );
-        return new SqlCharStringLiteral( ns, getPos() );
+        return new SqlCharStringLiteral( PolyString.of( sb.toString(), ns.charset ), getPos() );
+    }
+
+
+    public PolyValue getPolyValue() {
+        return value;
     }
 
 }

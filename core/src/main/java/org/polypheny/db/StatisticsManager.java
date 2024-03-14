@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,8 @@ package org.polypheny.db;
 import java.beans.PropertyChangeListener;
 import java.util.List;
 import java.util.Map;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.monitoring.events.MonitoringType;
 
 
 public abstract class StatisticsManager implements PropertyChangeListener {
@@ -31,7 +30,7 @@ public abstract class StatisticsManager implements PropertyChangeListener {
 
     public static StatisticsManager setAndGetInstance( StatisticsManager transaction ) {
         if ( INSTANCE != null ) {
-            throw new RuntimeException( "Overwriting the MaterializedViewManager is not permitted." );
+            throw new GenericRuntimeException( "Overwriting the StatisticsManager is not permitted." );
         }
         INSTANCE = transaction;
         return INSTANCE;
@@ -40,54 +39,48 @@ public abstract class StatisticsManager implements PropertyChangeListener {
 
     public static StatisticsManager getInstance() {
         if ( INSTANCE == null ) {
-            throw new RuntimeException( "MaterializedViewManager was not set correctly on Polypheny-DB start-up" );
+            throw new GenericRuntimeException( "StatisticsManager was not set correctly on Polypheny-DB start-up" );
         }
         return INSTANCE;
     }
 
 
-    // Use relNode to update
-    public abstract void tablesToUpdate( long tableId );
+    // Use algNode to update
+    public abstract void entitiesToUpdate( long entityId );
 
     // Use cache if possible
-    public abstract void tablesToUpdate( long tableId, Map<Long, List<Object>> changedValues, String type, long schemaId );
+    public abstract void entitiesToUpdate( long entityId, Map<Long, List<?>> changedValues, MonitoringType type, long namespaceId );
 
-    protected abstract void reevaluateTable( long tableId );
+    protected abstract void reevaluateEntity( long entityId );
 
     public abstract void displayInformation();
 
     public abstract void asyncReevaluateAllStatistics();
 
-    public abstract void deleteTableToUpdate( long tableId, long schemaId );
+    public abstract void deleteEntityToUpdate( long entityId );
 
-    public abstract void updateRowCountPerTable( long tableId, int number, String source );
+    public abstract void updateRowCountPerEntity( long entityId, long number, MonitoringType type );
 
-    public abstract void setIndexSize( long tableId, int indexSize );
+    public abstract void setIndexSize( long entityId, int indexSize );
 
-    public abstract void setTableCalls( long tableId, String kind );
+    public abstract void setEntityCalls( long entityId, MonitoringType type );
 
     public abstract String getRevalId();
 
     public abstract void setRevalId( String revalId );
 
-    public abstract Map<?, ?> getStatisticSchemaMap();
+    public abstract Map<?, ?> getStatisticFields();
 
     public abstract Map<?, ?> getQualifiedStatisticMap();
 
-    public abstract <T extends Comparable<T>> Object getTableStatistic( long schemaId, long tableId );
+    public abstract Object getEntityStatistic( long namespaceId, long entityId );
 
-    public abstract Integer rowCountPerTable( long tableId );
+    public abstract Long tupleCountPerEntity( long entityId );
 
     public abstract void updateCommitRollback( boolean committed );
 
     public abstract Object getDashboardInformation();
 
     public abstract void initializeStatisticSettings();
-
-    public abstract void updateColumnName( CatalogColumn catalogColumn, String newName );
-
-    public abstract void updateTableName( CatalogTable catalogTable, String newName );
-
-    public abstract void updateSchemaName( CatalogSchema catalogSchema, String newName );
 
 }

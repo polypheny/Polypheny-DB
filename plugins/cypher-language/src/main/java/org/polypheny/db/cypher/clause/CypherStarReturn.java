@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
 
 
@@ -41,11 +42,11 @@ public class CypherStarReturn extends CypherReturn {
 
     @Override
     @Nullable
-    public Pair<String, RexNode> getRex( CypherContext context, RexType type ) {
+    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
         AlgNode node = context.peek();
 
-        for ( AlgDataTypeField field : node.getRowType().getFieldList() ) {
-            context.add( Pair.of( field.getName(), context.rexBuilder.makeInputRef( field.getType(), field.getIndex() ) ) );
+        for ( AlgDataTypeField field : node.getTupleType().getFields() ) {
+            context.add( Pair.of( PolyString.of( field.getName() ), context.rexBuilder.makeInputRef( field.getType(), field.getIndex() ) ) );
         }
 
         return null;

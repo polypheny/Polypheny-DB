@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,47 +18,45 @@ package org.polypheny.db.monitoring.statistics;
 
 
 import com.google.gson.annotations.Expose;
-import java.util.Comparator;
 import java.util.List;
 import java.util.TreeSet;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyNumber;
 
 
 /**
  * Stores the available statistic data of a specific column
  * Responsible to validate if data should be changed
  */
+@Getter
 @Slf4j
-public class NumericalStatisticColumn extends StatisticColumn<Number> {
+public class NumericalStatisticColumn extends StatisticColumn {
 
     @Expose
-    @Getter
     @Setter
-    private Number min;
+    private PolyNumber min;
 
     @Expose
-    @Getter
     @Setter
-    private Number max;
+    private PolyNumber max;
 
-    @Getter
-    private final TreeSet<Number> minCache = new TreeSet<>( Comparator.comparingDouble( Number::doubleValue ) );
-    @Getter
-    private final TreeSet<Number> maxCache = new TreeSet<>( Comparator.comparingDouble( Number::doubleValue ) );
+    private final TreeSet<PolyNumber> minCache = new TreeSet<>();
+    private final TreeSet<PolyNumber> maxCache = new TreeSet<>();
 
 
     public NumericalStatisticColumn( QueryResult column ) {
-        super( column.getSchemaId(), column.getTableId(), column.getColumnId(), column.getType(), StatisticType.NUMERICAL );
+        super( column.getColumn().id, column.getColumn().type );
     }
 
 
     @Override
-    public void insert( List<Number> values ) {
+    public void insert( List<PolyValue> values ) {
         if ( values != null && !(values.get( 0 ) instanceof List) ) {
-            for ( Number val : values ) {
+            for ( PolyValue val : values ) {
                 if ( val != null ) {
                     insert( val );
                 }
@@ -68,14 +66,14 @@ public class NumericalStatisticColumn extends StatisticColumn<Number> {
 
 
     @Override
-    public void insert( Number val ) {
+    public void insert( PolyValue val ) {
         if ( uniqueValues.size() < RuntimeConfig.STATISTIC_BUFFER.getInteger() ) {
             if ( !uniqueValues.contains( val ) ) {
                 if ( !uniqueValues.isEmpty() ) {
                     uniqueValues.add( val );
                 }
-                minCache.add( val );
-                maxCache.add( val );
+                minCache.add( val.asNumber() );
+                maxCache.add( val.asNumber() );
             }
         } else {
             full = true;
@@ -85,26 +83,26 @@ public class NumericalStatisticColumn extends StatisticColumn<Number> {
         }
 
         if ( min == null ) {
-            min = val;
-            max = val;
-        } else if ( val.doubleValue() < min.doubleValue() ) {
-            this.min = val;
-        } else if ( val.doubleValue() > min.doubleValue() ) {
-            this.max = val;
+            min = val.asNumber();
+            max = val.asNumber();
+        } else if ( val.compareTo( min ) < 0 ) {
+            this.min = val.asNumber();
+        } else if ( val.compareTo( max ) > 0 ) {
+            this.max = val.asNumber();
         }
 
-        if ( minCache.last().doubleValue() > val.doubleValue() ) {
+        if ( minCache.last().compareTo( val ) > 0 ) {
             if ( minCache.size() > RuntimeConfig.STATISTIC_BUFFER.getInteger() ) {
                 minCache.remove( minCache.last() );
             }
-            minCache.add( val );
+            minCache.add( val.asNumber() );
         }
 
-        if ( maxCache.first().doubleValue() < val.doubleValue() ) {
+        if ( maxCache.first().compareTo( val ) < 0 ) {
             if ( maxCache.size() > RuntimeConfig.STATISTIC_BUFFER.getInteger() ) {
                 maxCache.remove( maxCache.first() );
             }
-            maxCache.add( val );
+            maxCache.add( val.asNumber() );
         }
     }
 

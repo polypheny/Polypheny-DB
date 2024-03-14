@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -117,7 +117,7 @@ public class FilterCorrelateRule extends AlgOptRule {
 
         // Create a Filter on top of the join if needed
         algBuilder.push( newCorrRel );
-        algBuilder.filter( RexUtil.fixUp( rexBuilder, aboveFilters, AlgOptUtil.getFieldTypeList( algBuilder.peek().getRowType() ) ) );
+        algBuilder.filter( RexUtil.fixUp( rexBuilder, aboveFilters, AlgOptUtil.getFieldTypeList( algBuilder.peek().getTupleType() ) ) );
 
         call.transformTo( algBuilder.build() );
     }

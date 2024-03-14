@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,10 +27,12 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -38,20 +40,15 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;
-import org.polypheny.db.nodes.validate.ValidatorCatalogReader;
-import org.polypheny.db.nodes.validate.ValidatorTable;
-import org.polypheny.db.plan.AlgOptSchemaWithSampling;
-import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.prepare.Prepare;
-import org.polypheny.db.schema.AbstractPolyphenyDbSchema;
-import org.polypheny.db.schema.CustomColumnResolvingTable;
-import org.polypheny.db.schema.ExtensibleTable;
-import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.CustomFieldResolvingEntity;
+import org.polypheny.db.schema.types.ExtensibleEntity;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlDataTypeSpec;
 import org.polypheny.db.sql.language.SqlIdentifier;
@@ -66,6 +63,7 @@ import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Moniker;
 import org.polypheny.db.util.NameMatcher;
+import org.polypheny.db.util.NameMatchers;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Static;
 import org.polypheny.db.util.Util;
@@ -81,67 +79,36 @@ public class SqlValidatorUtil {
 
 
     /**
-     * Converts a {@link SqlValidatorScope} into a {@link AlgOptTable}. This is only possible if the scope represents an identifier, such as "sales.emp".
+     * Converts a {@link SqlValidatorScope} into a {@link Entity}. This is only possible if the scope represents an identifier, such as "sales.emp".
      * Otherwise, returns null.
      *
      * @param namespace Namespace
-     * @param catalogReader Schema
      * @param datasetName Name of sample dataset to substitute, or null to use the regular table
      * @param usedDataset Output parameter which is set to true if a sample dataset is found; may be null
      */
-    public static AlgOptTable getAlgOptTable( SqlValidatorNamespace namespace, Prepare.CatalogReader catalogReader, String datasetName, boolean[] usedDataset ) {
-        if ( namespace.isWrapperFor( TableNamespace.class ) ) {
-            final TableNamespace tableNamespace = namespace.unwrap( TableNamespace.class );
-            return getAlgOptTable( tableNamespace, catalogReader, datasetName, usedDataset, tableNamespace.extendedFields );
-        } else if ( namespace.isWrapperFor( SqlValidatorImpl.DmlNamespace.class ) ) {
+    public static Entity getLogicalEntity( SqlValidatorNamespace namespace, Snapshot snapshot, String datasetName, boolean[] usedDataset ) {
+
+        if ( namespace.isWrapperFor( SqlValidatorImpl.DmlNamespace.class ) ) {
             final SqlValidatorImpl.DmlNamespace dmlNamespace = namespace.unwrap( SqlValidatorImpl.DmlNamespace.class );
             final SqlValidatorNamespace resolvedNamespace = dmlNamespace.resolve();
-            if ( resolvedNamespace.isWrapperFor( TableNamespace.class ) ) {
-                final TableNamespace tableNamespace = resolvedNamespace.unwrap( TableNamespace.class );
-                final ValidatorTable validatorTable = tableNamespace.getTable();
-                final AlgDataTypeFactory typeFactory = catalogReader.getTypeFactory();
-                final List<AlgDataTypeField> extendedFields =
-                        dmlNamespace.extendList == null
-                                ? ImmutableList.of()
-                                : getExtendedColumns( typeFactory, validatorTable, dmlNamespace.extendList );
-                return getAlgOptTable( tableNamespace, catalogReader, datasetName, usedDataset, extendedFields );
-            }
+            return resolvedNamespace.getEntity();
         }
-        return null;
-    }
-
-
-    private static AlgOptTable getAlgOptTable( TableNamespace tableNamespace, Prepare.CatalogReader catalogReader, String datasetName, boolean[] usedDataset, List<AlgDataTypeField> extendedFields ) {
-        final List<String> names = tableNamespace.getTable().getQualifiedName();
-        AlgOptTable table;
-        if ( datasetName != null && catalogReader instanceof AlgOptSchemaWithSampling ) {
-            final AlgOptSchemaWithSampling reader = (AlgOptSchemaWithSampling) catalogReader;
-            table = reader.getTableForMember( names, datasetName, usedDataset );
-        } else {
-            // Schema does not support substitution. Ignore the data set, if any.
-            table = catalogReader.getTableForMember( names );
-        }
-        if ( !extendedFields.isEmpty() ) {
-            table = table.extend( extendedFields );
-        }
-        return table;
+        final EntityNamespace entityNamespace = namespace.unwrap( EntityNamespace.class );
+        return entityNamespace.getEntity();
     }
 
 
     /**
      * Gets a list of extended columns with field indices to the underlying table.
      */
-    public static List<AlgDataTypeField> getExtendedColumns( AlgDataTypeFactory typeFactory, ValidatorTable table, SqlNodeList extendedColumns ) {
+    public static List<AlgDataTypeField> getExtendedColumns( AlgDataTypeFactory typeFactory, Entity table, SqlNodeList extendedColumns ) {
         final ImmutableList.Builder<AlgDataTypeField> extendedFields = ImmutableList.builder();
-        final ExtensibleTable extTable = table.unwrap( ExtensibleTable.class );
-        int extendedFieldOffset =
-                extTable == null
-                        ? table.getRowType().getFieldCount()
-                        : extTable.getExtendedColumnOffset();
+        final ExtensibleEntity extTable = table.unwrap( ExtensibleEntity.class ).orElseThrow();
+        int extendedFieldOffset = extTable.getExtendedColumnOffset();
         for ( final Pair<SqlIdentifier, SqlDataTypeSpec> pair : pairs( extendedColumns ) ) {
             final SqlIdentifier identifier = pair.left;
             final SqlDataTypeSpec type = pair.right;
-            extendedFields.add( new AlgDataTypeFieldImpl( identifier.toString(), extendedFieldOffset++, type.deriveType( typeFactory ) ) );
+            extendedFields.add( new AlgDataTypeFieldImpl( -1L, identifier.toString(), extendedFieldOffset++, type.deriveType( typeFactory ) ) );
         }
         return extendedFields.build();
     }
@@ -182,7 +149,7 @@ public class SqlValidatorUtil {
      * @param targetRowType The target to overlay on the source to create the bit set.
      */
     public static ImmutableBitSet getOrdinalBitSet( AlgDataType sourceRowType, AlgDataType targetRowType ) {
-        Map<Integer, AlgDataTypeField> indexToField = getIndexToFieldMap( sourceRowType.getFieldList(), targetRowType );
+        Map<Integer, AlgDataTypeField> indexToField = getIndexToFieldMap( sourceRowType.getFields(), targetRowType );
         return getOrdinalBitSet( sourceRowType, indexToField );
     }
 
@@ -194,7 +161,7 @@ public class SqlValidatorUtil {
      * @param indexToField The map of ordinals to target fields.
      */
     public static ImmutableBitSet getOrdinalBitSet( AlgDataType sourceRowType, Map<Integer, AlgDataTypeField> indexToField ) {
-        ImmutableBitSet source = ImmutableBitSet.of( Lists.transform( sourceRowType.getFieldList(), AlgDataTypeField::getIndex ) );
+        ImmutableBitSet source = ImmutableBitSet.of( Lists.transform( sourceRowType.getFields(), AlgDataTypeField::getIndex ) );
         ImmutableBitSet target = ImmutableBitSet.of( indexToField.keySet() );
         return source.intersect( target );
     }
@@ -224,7 +191,7 @@ public class SqlValidatorUtil {
 
     /**
      * Derives an alias for a node, and invents a mangled identifier if it cannot.
-     *
+     * <p>
      * Examples:
      *
      * <ul>
@@ -262,13 +229,13 @@ public class SqlValidatorUtil {
     /**
      * Factory method for {@link SqlValidator}.
      */
-    public static SqlValidatorWithHints newValidator( OperatorTable opTab, ValidatorCatalogReader catalogReader, AlgDataTypeFactory typeFactory, Conformance conformance ) {
-        return new SqlValidatorImpl( opTab, catalogReader, typeFactory, conformance );
+    public static SqlValidatorWithHints newValidator( OperatorTable opTab, AlgDataTypeFactory typeFactory, Conformance conformance ) {
+        return new SqlValidatorImpl( opTab, Catalog.snapshot(), typeFactory, conformance );
     }
 
 
-    public static AlgDataTypeField getTargetField( AlgDataType rowType, AlgDataTypeFactory typeFactory, SqlIdentifier id, ValidatorCatalogReader catalogReader, AlgOptTable table ) {
-        return getTargetField( rowType, typeFactory, id, catalogReader, table, false );
+    public static AlgDataTypeField getTargetField( AlgDataType rowType, AlgDataTypeFactory typeFactory, SqlIdentifier id, Snapshot snapshot, Entity table ) {
+        return getTargetField( rowType, typeFactory, id, snapshot, table, false );
     }
 
 
@@ -280,60 +247,33 @@ public class SqlValidatorUtil {
      * @param table the target table or null if it is not a RelOptTable instance
      * @return the target field or null if the name cannot be resolved
      */
-    public static AlgDataTypeField getTargetField( AlgDataType rowType, AlgDataTypeFactory typeFactory, SqlIdentifier id, ValidatorCatalogReader catalogReader, AlgOptTable table, boolean isDocument ) {
-        final Table t = table == null ? null : table.unwrap( Table.class );
+    public static AlgDataTypeField getTargetField( AlgDataType rowType, AlgDataTypeFactory typeFactory, SqlIdentifier id, Snapshot snapshot, Entity table, boolean isDocument ) {
+        final Entity t = table == null ? null : table.unwrap( Entity.class ).orElseThrow();
 
-        if ( !(t instanceof CustomColumnResolvingTable) ) {
-            final NameMatcher nameMatcher = catalogReader.nameMatcher();
+        if ( !(t instanceof CustomFieldResolvingEntity) ) {
+            final NameMatcher nameMatcher = NameMatchers.withCaseSensitive( false );
             AlgDataTypeField typeField = nameMatcher.field( rowType, id.getSimple() );
 
             if ( typeField == null && isDocument ) {
-                return new AlgDataTypeFieldImpl( id.getSimple(), -1, new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.JSON, 300 ) );
+                return new AlgDataTypeFieldImpl( -1L, id.getSimple(), -1, new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.JSON, 300 ) );
             }
 
             return typeField;
         }
 
-        final List<Pair<AlgDataTypeField, List<String>>> entries = ((CustomColumnResolvingTable) t).resolveColumn( rowType, typeFactory, id.names );
-        switch ( entries.size() ) {
-            case 1:
-                if ( !entries.get( 0 ).getValue().isEmpty() ) {
-                    return null;
-                }
-                return entries.get( 0 ).getKey();
-            default:
+        final List<Pair<AlgDataTypeField, List<String>>> entries = ((CustomFieldResolvingEntity) t).resolveColumn( rowType, typeFactory, id.names );
+        if ( entries.size() == 1 ) {
+            if ( !entries.get( 0 ).getValue().isEmpty() ) {
                 return null;
+            }
+            return entries.get( 0 ).getKey();
         }
+        return null;
     }
 
 
-    /**
-     * Resolves a multi-part identifier such as "SCHEMA.EMP.EMPNO" to a namespace. The returned namespace, never null, may represent a schema, table, column, etc.
-     */
-    public static SqlValidatorNamespace lookup( SqlValidatorScope scope, List<String> names ) {
-        assert names.size() > 0;
-        final NameMatcher nameMatcher = scope.getValidator().getCatalogReader().nameMatcher();
-        final SqlValidatorScope.ResolvedImpl resolved = new SqlValidatorScope.ResolvedImpl();
-        scope.resolve( ImmutableList.of( names.get( 0 ) ), nameMatcher, false, resolved );
-        assert resolved.count() == 1;
-        SqlValidatorNamespace namespace = resolved.only().namespace;
-        for ( String name : Util.skip( names ) ) {
-            namespace = namespace.lookupChild( name );
-            assert namespace != null;
-        }
-        return namespace;
-    }
-
-
-    public static void getSchemaObjectMonikers( ValidatorCatalogReader catalogReader, List<String> names, List<Moniker> hints ) {
+    public static void getSchemaObjectMonikers( Snapshot snapshot, List<String> names, List<Moniker> hints ) {
         // Assume that the last name is 'dummy' or similar.
-        List<String> subNames = Util.skipLast( names );
-
-        // Try successively with catalog.schema, catalog and no prefix
-        for ( List<String> x : catalogReader.getSchemaPaths() ) {
-            final List<String> names2 = ImmutableList.<String>builder().addAll( x ).addAll( subNames ).build();
-            hints.addAll( catalogReader.getAllSchemaObjectNames( names2 ) );
-        }
     }
 
 
@@ -382,10 +322,10 @@ public class SqlValidatorUtil {
 
     /**
      * Analyzes an expression in a GROUP BY clause.
-     *
+     * <p>
      * It may be an expression, an empty list (), or a call to {@code GROUPING SETS}, {@code CUBE}, {@code ROLLUP}, {@code TUMBLE}, {@code HOP}
      * or {@code SESSION}.
-     *
+     * <p>
      * Each group item produces a list of group sets, which are written to {@code topBuilder}. To find the grouping sets of the query, we will take
      * the cartesian product of the group sets.
      */
@@ -396,17 +336,14 @@ public class SqlValidatorUtil {
             case ROLLUP:
                 // E.g. ROLLUP(a, (b, c)) becomes [{0}, {1, 2}] then we roll up to [(0, 1, 2), (0), ()]  -- note no (0, 1)
                 List<ImmutableBitSet> bitSets = analyzeGroupTuple( scope, groupAnalyzer, ((SqlCall) groupExpr).getOperandList() );
-                switch ( groupExpr.getKind() ) {
-                    case ROLLUP:
-                        topBuilder.add( rollup( bitSets ) );
-                        return;
-                    default:
-                        topBuilder.add( cube( bitSets ) );
-                        return;
+                if ( Objects.requireNonNull( groupExpr.getKind() ) == Kind.ROLLUP ) {
+                    topBuilder.add( rollup( bitSets ) );
+                    return;
                 }
+                topBuilder.add( cube( bitSets ) );
+                return;
             case OTHER:
-                if ( groupExpr instanceof SqlNodeList ) {
-                    SqlNodeList list = (SqlNodeList) groupExpr;
+                if ( groupExpr instanceof SqlNodeList list ) {
                     for ( Node node : list ) {
                         analyzeGroupItem( scope, groupAnalyzer, topBuilder, (SqlNode) node );
                     }
@@ -447,14 +384,12 @@ public class SqlValidatorUtil {
                 // GROUPING SETS ( (a), (c,b), (b) ,(), (d,e), (d), (e) ).
                 // Expand all ROLLUP/CUBE nodes
                 List<ImmutableBitSet> operandBitSet = analyzeGroupTuple( scope, groupAnalyzer, ((SqlCall) groupExpr).getOperandList() );
-                switch ( groupExpr.getKind() ) {
-                    case ROLLUP:
-                        builder.addAll( rollup( operandBitSet ) );
-                        return;
-                    default:
-                        builder.addAll( cube( operandBitSet ) );
-                        return;
+                if ( Objects.requireNonNull( groupExpr.getKind() ) == Kind.ROLLUP ) {
+                    builder.addAll( rollup( operandBitSet ) );
+                    return;
                 }
+                builder.addAll( cube( operandBitSet ) );
+                return;
             }
             default:
                 builder.add( analyzeGroupExpr( scope, groupAnalyzer, groupExpr ) );
@@ -465,9 +400,9 @@ public class SqlValidatorUtil {
 
     /**
      * Analyzes a tuple in a GROUPING SETS clause.
-     *
+     * <p>
      * For example, in {@code GROUP BY GROUPING SETS ((a, b), a, c)}, {@code (a, b)} is a tuple.
-     *
+     * <p>
      * Gathers into {@code groupExprs} the set of distinct expressions being grouped, and returns a bitmap indicating which expressions this tuple
      * is grouping.
      */
@@ -496,36 +431,23 @@ public class SqlValidatorUtil {
         }
 
         final int ref = lookupGroupExpr( groupAnalyzer, groupExpr );
-        if ( expandedGroupExpr instanceof SqlIdentifier ) {
+        if ( expandedGroupExpr instanceof SqlIdentifier expr ) {
             // SQL 2003 does not allow expressions of column references
-            SqlIdentifier expr = (SqlIdentifier) expandedGroupExpr;
 
             // column references should be fully qualified.
             assert expr.names.size() == 2;
             String originalRelName = expr.names.get( 0 );
             String originalFieldName = expr.names.get( 1 );
 
-            final NameMatcher nameMatcher = scope.getValidator().getCatalogReader().nameMatcher();
+            final NameMatcher nameMatcher = NameMatchers.withCaseSensitive( false );
             final SqlValidatorScope.ResolvedImpl resolved = new SqlValidatorScope.ResolvedImpl();
-            scope.resolve( ImmutableList.of( originalRelName ), nameMatcher, false, resolved );
+            scope.resolve( ImmutableList.of( originalRelName ), false, resolved );
 
             assert resolved.count() == 1;
             final SqlValidatorScope.Resolve resolve = resolved.only();
             final AlgDataType rowType = resolve.rowType();
-            final int childNamespaceIndex = resolve.path.steps().get( 0 ).i;
 
             int namespaceOffset = 0;
-
-            if ( childNamespaceIndex > 0 ) {
-                // If not the first child, need to figure out the width of output types from all the preceding namespaces
-                final SqlValidatorScope ancestorScope = resolve.scope;
-                assert ancestorScope instanceof ListScope;
-                List<SqlValidatorNamespace> children = ((ListScope) ancestorScope).getChildren();
-
-                for ( int j = 0; j < childNamespaceIndex; j++ ) {
-                    namespaceOffset += children.get( j ).getRowType().getFieldCount();
-                }
-            }
 
             AlgDataTypeField field = nameMatcher.field( rowType, originalFieldName );
             int origPos = namespaceOffset + field.getIndex();
@@ -558,9 +480,9 @@ public class SqlValidatorUtil {
 
     /**
      * Computes the rollup of bit sets.
-     *
+     * <p>
      * For example, <code>rollup({0}, {1})</code> returns <code>({0, 1}, {0}, {})</code>.
-     *
+     * <p>
      * Bit sets are not necessarily singletons: <code>rollup({0, 2}, {3, 5})</code> returns <code>({0, 2, 3, 5}, {0, 2}, {})</code>.
      */
     @VisibleForTesting
@@ -580,9 +502,9 @@ public class SqlValidatorUtil {
 
     /**
      * Computes the cube of bit sets.
-     *
+     * <p>
      * For example,  <code>rollup({0}, {1})</code> returns <code>({0, 1}, {0}, {})</code>.
-     *
+     * <p>
      * Bit sets are not necessarily singletons: <code>rollup({0, 2}, {3, 5})</code> returns <code>({0, 2, 3, 5}, {0, 2}, {})</code>.
      */
     @VisibleForTesting
@@ -602,13 +524,13 @@ public class SqlValidatorUtil {
 
     /**
      * Returns whether there are any input columns that are sorted.
-     *
+     * <p>
      * If so, it can be the default ORDER BY clause for a WINDOW specification. (This is an extension to the SQL standard for streaming.)
      */
     public static boolean containsMonotonic( SqlValidatorScope scope ) {
         for ( SqlValidatorNamespace ns : children( scope ) ) {
             ns = ns.resolve();
-            for ( String field : ns.getRowType().getFieldNames() ) {
+            for ( String field : ns.getTupleType().getFieldNames() ) {
                 if ( !ns.getMonotonicity( field ).mayRepeat() ) {
                     return true;
                 }
@@ -627,7 +549,7 @@ public class SqlValidatorUtil {
 
     /**
      * Returns whether any of the given expressions are sorted.
-     *
+     * <p>
      * If so, it can be the default ORDER BY clause for a WINDOW specification.
      * (This is an extension to the SQL standard for streaming.)
      */
@@ -641,20 +563,24 @@ public class SqlValidatorUtil {
     }
 
 
-    public static boolean isTableNonRelational( SqlValidatorImpl validator ) {
+    public static boolean isNotRelational( SqlValidatorImpl validator ) {
         if ( validator.getTableScope() == null ) {
             return false;
         }
         if ( !(validator.getTableScope().getNode() instanceof SqlIdentifier) ) {
-            return false;
+            //return true;
         }
         SqlIdentifier id = ((SqlIdentifier) validator.getTableScope().getNode());
-        PolyphenyDbSchema schema = validator.getCatalogReader().getRootSchema().getSubSchema( id.names.get( 0 ), false );
-        if ( schema == null ) {
-            return false;
+
+        String namespace = id.names.get( 0 );
+        if ( id.names.size() == 1 ) {
+            namespace = Catalog.DEFAULT_NAMESPACE_NAME;
         }
 
-        return ((AbstractPolyphenyDbSchema) schema).getNamespaceType() != NamespaceType.RELATIONAL;
+        if ( validator.snapshot.getNamespace( namespace ).map( n -> n.dataModel != DataModel.RELATIONAL ).orElse( false ) ) {
+            return true;
+        }
+        return validator.snapshot.getNamespace( id.names.get( 0 ) ).map( n -> n.dataModel != DataModel.RELATIONAL ).orElse( false );
     }
 
 

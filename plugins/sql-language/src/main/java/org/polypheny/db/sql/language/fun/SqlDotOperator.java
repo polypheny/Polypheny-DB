@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.polypheny.db.sql.language.fun;
 
 
 import java.util.Arrays;
+import java.util.Objects;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -176,20 +177,18 @@ public class SqlDotOperator extends SqlSpecialOperator {
     public AlgDataType inferReturnType( OperatorBinding opBinding ) {
         final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
         final AlgDataType recordType = opBinding.getOperandType( 0 );
-        switch ( recordType.getPolyType() ) {
-            case ROW:
-                final String fieldName = opBinding.getOperandLiteralValue( 1, String.class );
-                final AlgDataType type = opBinding.getOperandType( 0 )
-                        .getField( fieldName, false, false )
-                        .getType();
-                if ( recordType.isNullable() ) {
-                    return typeFactory.createTypeWithNullability( type, true );
-                } else {
-                    return type;
-                }
-            default:
-                throw new AssertionError();
+        if ( Objects.requireNonNull( recordType.getPolyType() ) == PolyType.ROW ) {
+            final String fieldName = opBinding.getOperandLiteralValue( 1, PolyType.VARCHAR ).asString().value;
+            final AlgDataType type = opBinding.getOperandType( 0 )
+                    .getField( fieldName, false, false )
+                    .getType();
+            if ( recordType.isNullable() ) {
+                return typeFactory.createTypeWithNullability( type, true );
+            } else {
+                return type;
+            }
         }
+        throw new AssertionError();
     }
 
 }

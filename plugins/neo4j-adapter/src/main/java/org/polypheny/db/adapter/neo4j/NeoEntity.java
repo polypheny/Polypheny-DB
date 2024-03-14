@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,172 +17,189 @@
 package org.polypheny.db.adapter.neo4j;
 
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import lombok.experimental.SuperBuilder;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
-import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function1;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.java.AbstractQueryableTable;
 import org.polypheny.db.adapter.neo4j.rules.relational.NeoScan;
+import org.polypheny.db.adapter.neo4j.types.NestedPolyType;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Modify;
-import org.polypheny.db.algebra.core.Modify.Operation;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
+import org.polypheny.db.algebra.core.common.Modify;
+import org.polypheny.db.algebra.core.common.Modify.Operation;
+import org.polypheny.db.algebra.core.relational.RelModify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalField;
+import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
+import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.ModifiableTable;
-import org.polypheny.db.schema.QueryableTable;
-import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.TranslatableTable;
-import org.polypheny.db.schema.impl.AbstractTableQueryable;
-import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.Pair;
+import org.polypheny.db.schema.impl.AbstractEntityQueryable;
+import org.polypheny.db.schema.types.ModifiableTable;
+import org.polypheny.db.schema.types.QueryableEntity;
+import org.polypheny.db.schema.types.TranslatableEntity;
+import org.polypheny.db.type.entity.PolyValue;
 
 /**
- * Relational Neo4j representation of a {@link org.polypheny.db.schema.PolyphenyDbSchema} entity
+ * Relational Neo4j representation of a {@link PhysicalEntity} entity
  */
-public class NeoEntity extends AbstractQueryableTable implements TranslatableTable, ModifiableTable {
+@Slf4j
+@SuperBuilder(toBuilder = true)
+public class NeoEntity extends PhysicalEntity implements TranslatableEntity, ModifiableTable, QueryableEntity {
 
-    public final String physicalEntityName;
-    public final long id;
-    public final AlgProtoDataType rowType;
+    @Getter
+    private final List<? extends PhysicalField> fields;
+
+    private final NeoNamespace namespace;
 
 
-    protected NeoEntity( String physicalEntityName, AlgProtoDataType proto, long id ) {
-        super( Object[].class );
-        this.physicalEntityName = physicalEntityName;
-        this.rowType = proto;
-        this.id = id;
+    protected NeoEntity( PhysicalEntity physical, List<? extends PhysicalField> fields, NeoNamespace namespace ) {
+        super( physical.id, physical.allocationId, physical.logicalId, physical.name, physical.namespaceId, physical.namespaceName, physical.uniqueFieldIds, physical.dataModel, physical.adapterId );
+        this.fields = fields;
+        this.namespace = namespace;
     }
 
 
     @Override
-    public Long getTableId() {
-        return id;
-    }
-
-
-    @Override
-    public <T> Queryable<T> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
-        return new NeoQueryable<>( dataContext, schema, this, tableName );
-    }
-
-
-    @Override
-    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
-        return rowType.apply( getTypeFactory() );
-    }
-
-
-    @Override
-    public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable, AlgTraitSet traitSet ) {
-        final AlgOptCluster cluster = context.getCluster();
-        return new NeoScan( cluster, traitSet.replace( NeoConvention.INSTANCE ), algOptTable, this );
-    }
-
-
-    @Override
-    public Collection<?> getModifiableCollection() {
-        throw new UnsupportedOperationException( "getModifiableCollection is not supported by the NEO4j adapter." );
+    public AlgNode toAlg( AlgCluster cluster, AlgTraitSet traitSet ) {
+        return new NeoScan( cluster, traitSet.replace( NeoConvention.INSTANCE ), this );
     }
 
 
     /**
-     * Creates an {@link org.polypheny.db.algebra.core.Modify} algebra object, which is modifies this relational entity.
+     * Creates an {@link RelModify} algebra object, which is modifies this relational entity.
      *
      * @param child child algebra nodes of the created algebra operation
      * @param operation the operation type
-     * @param updateColumnList the target elements of the modification
-     * @param sourceExpressionList the modify operation to create the new values
-     * @param flattened if the {@link Modify} is flattened
      */
     @Override
-    public Modify toModificationAlg(
-            AlgOptCluster cluster,
-            AlgOptTable table,
-            CatalogReader catalogReader,
+    public Modify<Entity> toModificationTable(
+            AlgCluster cluster,
+            AlgTraitSet traits,
+            Entity physical,
             AlgNode child,
             Operation operation,
-            List<String> updateColumnList,
-            List<RexNode> sourceExpressionList,
-            boolean flattened ) {
+            List<String> targets,
+            List<? extends RexNode> sources ) {
         NeoConvention.INSTANCE.register( cluster.getPlanner() );
-        return new LogicalModify(
-                cluster,
-                cluster.traitSetOf( Convention.NONE ),
-                table,
-                catalogReader,
+        return new LogicalRelModify(
+                traits.replace( Convention.NONE ),
+                physical,
                 child,
                 operation,
-                updateColumnList,
-                sourceExpressionList,
-                flattened );
+                targets,
+                sources
+        );
     }
 
 
-    public static class NeoQueryable<T> extends AbstractTableQueryable<T> {
+    @Override
+    public PolyValue[] getParameterArray() {
+        return new PolyValue[0];
+    }
 
-        @Getter
-        private final NeoEntity entity;
-        private final NeoNamespace namespace;
+
+    @Override
+    public Expression asExpression() {
+        return Expressions.call(
+                Expressions.convert_(
+                        Expressions.call(
+                                Expressions.call(
+                                        namespace.store.getCatalogAsExpression(),
+                                        "getPhysical", Expressions.constant( id ) ),
+                                "unwrapOrThrow", Expressions.constant( NeoEntity.class ) ),
+                        NeoEntity.class ),
+                "asQueryable",
+                DataContext.ROOT,
+                Catalog.SNAPSHOT_EXPRESSION );
+    }
+
+
+    @Override
+    public NeoQueryable asQueryable( DataContext dataContext, Snapshot snapshot ) {
+        return new NeoQueryable( dataContext, snapshot, this );
+    }
+
+
+    @Override
+    public PhysicalEntity normalize() {
+        return new PhysicalGraph( id, allocationId, logicalId, name, adapterId );
+    }
+
+
+    public AlgDataType getTupleType() {
+        if ( dataModel == DataModel.RELATIONAL ) {
+            return buildProto().apply( AlgDataTypeFactory.DEFAULT );
+        }
+        return super.getTupleType();
+    }
+
+
+    public AlgProtoDataType buildProto() {
+        final AlgDataTypeFactory.Builder fieldInfo = AlgDataTypeFactory.DEFAULT.builder();
+
+        for ( PhysicalColumn column : fields.stream().map( f -> f.unwrap( PhysicalColumn.class ).orElseThrow() ).sorted( Comparator.comparingInt( a -> a.position ) ).toList() ) {
+            AlgDataType sqlType = column.getAlgDataType( AlgDataTypeFactory.DEFAULT );
+            fieldInfo.add( column.id, column.logicalName, column.name, sqlType ).nullable( column.nullable );
+        }
+
+        return AlgDataTypeImpl.proto( fieldInfo.build() );
+    }
+
+
+    public static class NeoQueryable extends AbstractEntityQueryable<PolyValue[], NeoEntity> {
+
         private final AlgDataType rowType;
 
 
-        public NeoQueryable( DataContext dataContext, SchemaPlus schema, QueryableTable table, String tableName ) {
-            super( dataContext, schema, table, tableName );
-            this.entity = (NeoEntity) table;
-            this.namespace = schema.unwrap( NeoNamespace.class );
-            this.rowType = entity.rowType.apply( entity.getTypeFactory() );
+        public NeoQueryable( DataContext dataContext, Snapshot snapshot, NeoEntity entity ) {
+            super( dataContext, snapshot, entity );
+            this.rowType = entity.getTupleType();
         }
 
 
         @Override
-        public Enumerator<T> enumerator() {
+        public Enumerator<PolyValue[]> enumerator() {
             return execute(
-                    String.format( "MATCH (n:%s) RETURN %s", entity.physicalEntityName, buildAllQuery() ),
+                    String.format( "MATCH (n:%s) RETURN %s", entity.name, buildAllQuery() ),
                     getTypes(),
-                    getComponentType(),
                     Map.of() ).enumerator();
         }
 
 
-        private List<PolyType> getComponentType() {
-            return rowType.getFieldList().stream().map( t -> {
-                if ( t.getType().getComponentType() != null ) {
-                    return t.getType().getComponentType().getPolyType();
-                }
-                return null;
-            } ).collect( Collectors.toList() );
-        }
-
-
-        private List<PolyType> getTypes() {
-            return rowType.getFieldList().stream().map( t -> t.getType().getPolyType() ).collect( Collectors.toList() );
+        private NestedPolyType getTypes() {
+            return NestedPolyType.from( rowType );
         }
 
 
         private String buildAllQuery() {
-            return rowType.getFieldList().stream().map( f -> "n." + f.getPhysicalName() ).collect( Collectors.joining( ", " ) );
+            return rowType.getFields().stream().map( f -> "n." + f.getPhysicalName() ).collect( Collectors.joining( ", " ) );
         }
 
 
@@ -193,28 +210,32 @@ public class NeoEntity extends AbstractQueryableTable implements TranslatableTab
          * @param prepared mapping of parameters and their components if they are collections
          */
         @SuppressWarnings("UnusedDeclaration")
-        public Enumerable<T> execute( String query, List<PolyType> types, List<PolyType> componentTypes, Map<Long, Pair<PolyType, PolyType>> prepared ) {
+        public Enumerable<PolyValue[]> execute( String query, NestedPolyType types, Map<Long, NestedPolyType> prepared ) {
             Transaction trx = getTrx();
 
-            dataContext.getStatement().getTransaction().registerInvolvedAdapter( namespace.store );
+            dataContext.getStatement().getTransaction().registerInvolvedAdapter( entity.namespace.store );
+
+            if ( log.isDebugEnabled() ) {
+                log.warn( "Executing query: {}", query );
+            }
 
             List<Result> results = new ArrayList<>();
             if ( dataContext.getParameterValues().size() == 1 ) {
-                results.add( trx.run( query, toParameters( dataContext.getParameterValues().get( 0 ), prepared ) ) );
-            } else if ( dataContext.getParameterValues().size() > 0 ) {
-                for ( Map<Long, Object> value : dataContext.getParameterValues() ) {
-                    results.add( trx.run( query, toParameters( value, prepared ) ) );
+                results.add( trx.run( query, toParameters( dataContext.getParameterValues().get( 0 ), prepared, false ) ) );
+            } else if ( !dataContext.getParameterValues().isEmpty() ) {
+                for ( Map<Long, PolyValue> value : dataContext.getParameterValues() ) {
+                    results.add( trx.run( query, toParameters( value, prepared, false ) ) );
                 }
             } else {
                 results.add( trx.run( query ) );
             }
 
-            Function1<Record, T> getter = NeoQueryable.getter( types, componentTypes );
+            Function1<Record, PolyValue[]> getter = NeoQueryable.getter( types );
 
             return new AbstractEnumerable<>() {
                 @Override
-                public Enumerator<T> enumerator() {
-                    return new NeoEnumerator<>( results, getter );
+                public Enumerator<PolyValue[]> enumerator() {
+                    return new NeoEnumerator( results, getter );
                 }
             };
         }
@@ -226,25 +247,24 @@ public class NeoEntity extends AbstractQueryableTable implements TranslatableTab
          * @param values the values to execute the query with
          * @param parameterTypes the types of the attached values
          */
-        private Map<String, Object> toParameters( Map<Long, Object> values, Map<Long, Pair<PolyType, PolyType>> parameterTypes ) {
+        private Map<String, Object> toParameters( Map<Long, PolyValue> values, Map<Long, NestedPolyType> parameterTypes, boolean nested ) {
             Map<String, Object> parameters = new HashMap<>();
-            for ( Entry<Long, Object> entry : values.entrySet().stream().filter( e -> parameterTypes.containsKey( e.getKey() ) ).collect( Collectors.toList() ) ) {
+            for ( Entry<Long, PolyValue> entry : values.entrySet().stream().filter( e -> parameterTypes.containsKey( e.getKey() ) ).toList() ) {
                 parameters.put(
                         NeoUtil.asParameter( entry.getKey(), false ),
-                        NeoUtil.fixParameterValue( entry.getValue(), parameterTypes.get( entry.getKey() ) ) );
+                        NeoUtil.fixParameterValue( entry.getValue(), parameterTypes.get( entry.getKey() ), false ) );
             }
             return parameters;
         }
 
 
-        static <T> Function1<Record, T> getter( List<PolyType> types, List<PolyType> componentTypes ) {
-            //noinspection unchecked
-            return (Function1<Record, T>) NeoUtil.getTypesFunction( types, componentTypes );
+        static Function1<Record, PolyValue[]> getter( NestedPolyType types ) {
+            return NeoUtil.getTypesFunction( types );
         }
 
 
         private Transaction getTrx() {
-            return namespace.transactionProvider.get( dataContext.getStatement().getTransaction().getXid() );
+            return entity.namespace.transactionProvider.get( dataContext.getStatement().getTransaction().getXid() );
         }
 
     }

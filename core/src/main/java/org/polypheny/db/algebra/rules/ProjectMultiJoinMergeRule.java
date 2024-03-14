@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ package org.polypheny.db.algebra.rules;
 
 
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptUtil;
@@ -58,7 +58,7 @@ public class ProjectMultiJoinMergeRule extends AlgOptRule {
      */
     public ProjectMultiJoinMergeRule( AlgBuilderFactory algBuilderFactory ) {
         super(
-                operand( LogicalProject.class, operand( MultiJoin.class, any() ) ),
+                operand( LogicalRelProject.class, operand( MultiJoin.class, any() ) ),
                 algBuilderFactory,
                 null );
     }
@@ -66,7 +66,7 @@ public class ProjectMultiJoinMergeRule extends AlgOptRule {
 
     @Override
     public void onMatch( AlgOptRuleCall call ) {
-        LogicalProject project = call.alg( 0 );
+        LogicalRelProject project = call.alg( 0 );
         MultiJoin multiJoin = call.alg( 1 );
 
         // If all inputs have their projFields set, then projection information has already been pushed into each input
@@ -84,7 +84,7 @@ public class ProjectMultiJoinMergeRule extends AlgOptRule {
         // Create a new MultiJoin that reflects the columns in the projection above the MultiJoin
         final AlgBuilder algBuilder = call.builder();
         MultiJoin newMultiJoin = AlgOptUtil.projectMultiJoin( multiJoin, project );
-        algBuilder.push( newMultiJoin ).project( project.getProjects(), project.getRowType().getFieldNames() );
+        algBuilder.push( newMultiJoin ).project( project.getProjects(), project.getTupleType().getFieldNames() );
 
         call.transformTo( algBuilder.build() );
     }

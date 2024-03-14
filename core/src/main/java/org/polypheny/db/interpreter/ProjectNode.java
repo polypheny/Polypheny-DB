@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ package org.polypheny.db.interpreter;
 
 
 import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -43,26 +44,26 @@ import org.polypheny.db.algebra.core.Project;
 public class ProjectNode extends AbstractSingleNode<Project> {
 
     private final Scalar scalar;
-    private final Context context;
+    private final Context<PolyValue> context;
     private final int projectCount;
 
 
     public ProjectNode( Compiler compiler, Project alg ) {
         super( compiler, alg );
         this.projectCount = alg.getProjects().size();
-        this.scalar = compiler.compile( alg.getProjects(), alg.getInput().getRowType() );
+        this.scalar = compiler.compile( alg.getProjects(), alg.getInput().getTupleType() );
         this.context = compiler.createContext();
     }
 
 
     @Override
     public void run() throws InterruptedException {
-        Row row;
+        Row<PolyValue> row;
         while ( (row = source.receive()) != null ) {
             context.values = row.getValues();
-            Object[] values = new Object[projectCount];
+            PolyValue[] values = new PolyValue[projectCount];
             scalar.execute( context, values );
-            sink.send( new Row( values ) );
+            sink.send( new Row<>( values, PolyValue.class ) );
         }
     }
 

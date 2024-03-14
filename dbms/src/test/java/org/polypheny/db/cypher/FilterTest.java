@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,13 @@
 
 package org.polypheny.db.cypher;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.polypheny.db.webui.models.Result;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.polypheny.db.webui.models.results.GraphResult;
 
 public class FilterTest extends CypherTestTemplate {
 
-    @Before
+    @BeforeEach
     public void reset() {
         tearDown();
         createGraph();
@@ -37,7 +37,7 @@ public class FilterTest extends CypherTestTemplate {
     public void simplePropertyFilter() {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_ANIMAL );
-        Result res = execute( "MATCH (p) WHERE p.age > 3 RETURN p" );
+        GraphResult res = execute( "MATCH (p) WHERE p.age > 3 RETURN p" );
         assertNode( res, 0 );
 
         assert containsRows( res, true, false );

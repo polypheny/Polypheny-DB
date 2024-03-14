@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,21 @@
 
 package org.polypheny.db.cypher.helper;
 
-import static org.junit.Assert.fail;
-import static org.polypheny.db.runtime.functions.Functions.toBigDecimal;
+import static org.polypheny.db.functions.Functions.toBigDecimal;
 
-import com.google.gson.Gson;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import javax.annotation.Nullable;
+import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.TestHelper;
 import org.polypheny.db.cypher.CypherTestTemplate;
-import org.polypheny.db.schema.graph.GraphPropertyHolder;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.util.Pair;
 
 public class TestGraphObject implements TestObject {
@@ -35,76 +38,72 @@ public class TestGraphObject implements TestObject {
     public static double EPSILON = 0.2;
 
     @Nullable
-    final String id;
+    final PolyString id;
 
     @Nullable
-    final Map<String, Object> properties;
+    final Map<PolyString, PolyValue> properties;
 
     @Nullable
-    final List<String> labels;
+    final PolyList<PolyString> labels;
 
 
-    public TestGraphObject( @Nullable String id, @Nullable Map<String, Object> properties, @Nullable List<String> labels ) {
-        this.id = id;
+    public TestGraphObject( @Nullable String id, @Nullable Map<PolyString, PolyValue> properties, @Nullable List<PolyString> labels ) {
+        this.id = PolyString.of( id );
         this.properties = properties;
-        this.labels = labels;
+        this.labels = PolyList.of( labels );
     }
 
 
     @NotNull
-    public static Map<String, Object> getProps( Pair<String, Object>[] properties ) {
-        Map<String, Object> props = new HashMap<>();
+    public static Map<PolyString, PolyValue> getProps( Pair<String, Object>[] properties ) {
+        Map<PolyString, PolyValue> props = new HashMap<>();
 
         for ( Pair<String, Object> property : properties ) {
-            props.put( property.left, property.right );
+            props.put( PolyString.of( property.left ), TestHelper.toPolyValue( property.right ) );
         }
         return props;
     }
 
 
+    static List<PolyString> getLabels( List<String> labels ) {
+        return labels.stream().map( PolyString::of ).toList();
+    }
+
+
     @Override
-    public boolean matches( Object other, boolean exclusive ) {
+    public boolean matches( PolyValue other, boolean exclusive ) {
         assert other instanceof GraphPropertyHolder;
-        return matches( (GraphPropertyHolder) other, exclusive );
+        return matches( (GraphPropertyHolder) other, exclusive, true );
     }
 
 
+    @SneakyThrows
     @Override
-    public Object toPoly( String val ) {
-        return CypherTestTemplate.GSON.fromJson( val, CypherTestTemplate.Type.from( this ).getPolyClass() );
+    public PolyValue toPoly( String val ) {
+        return PolyValue.fromTypedJson( val, CypherTestTemplate.Type.from( this ).getPolyClass() );
     }
 
 
-    public boolean matches( GraphPropertyHolder other, boolean exclusive ) {
+    public boolean matches( GraphPropertyHolder other, boolean exclusive, boolean ignoreId ) {
         boolean matches = true;
-        if ( id != null ) {
+        if ( !ignoreId && id != null ) {
             matches = id.equals( other.id );
         }
         if ( properties != null ) {
             if ( exclusive ) {
                 matches &= properties.size() == other.properties.size();
             }
-            for ( Entry<String, Object> entry : properties.entrySet() ) {
+            for ( Entry<PolyString, PolyValue> entry : properties.entrySet() ) {
                 if ( other.properties.containsKey( entry.getKey() ) ) {
-                    if ( entry.getValue() instanceof List ) {
+                    if ( entry.getValue().isList() ) {
                         int i = 0;
-                        List<?> list;
-                        Object property = other.properties.get( entry.getKey() );
+                        PolyList<PolyString> list = entry.getValue().asList();
 
-                        if ( property instanceof List ) {
-                            list = (List<?>) property;
-                        } else if ( property instanceof String ) {
-                            list = new Gson().fromJson( (String) other.properties.get( entry.getKey() ), List.class );
-                        } else {
-                            fail( "comparison with list is not possible" );
-                            throw new RuntimeException();
-                        }
-
-                        for ( Object o : list ) {
+                        for ( PolyValue o : list ) {
                             matches &= o.equals( ((List<?>) properties.get( entry.getKey() )).get( i ) );
                             i++;
                         }
-                    } else if ( entry.getValue() instanceof Number || other.properties.get( entry.getKey() ) instanceof Number ) {
+                    } else if ( entry.getValue().isNumber() || other.properties.get( entry.getKey() ).isNumber() ) {
                         matches &=
                                 toBigDecimal( other.properties.get( entry.getKey() ).toString() ).doubleValue()
                                         - toBigDecimal( entry.getValue().toString() ).doubleValue() < EPSILON;
@@ -118,7 +117,7 @@ public class TestGraphObject implements TestObject {
         }
 
         if ( labels != null ) {
-            matches &= labels.containsAll( other.labels );
+            matches &= other.labels.containsAll( labels );
         }
 
         return matches;

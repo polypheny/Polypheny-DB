@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.catalog.Catalog.Collation;
-import org.polypheny.db.catalog.exceptions.UnknownCollationException;
+import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.Operator;
@@ -75,19 +74,16 @@ public class SqlColumnDeclaration extends SqlCall {
      * @return the parsed collation
      */
     public Collation getCollation() {
-        try {
-            if ( dataType.getType().getFamily() == PolyTypeFamily.CHARACTER ) {
-                if ( collation != null ) {
-                    return Collation.parse( collation );
-                } else {
-                    return Collation.getDefaultCollation(); // Set default collation
-                }
+        if ( dataType.getType().getFamily() == PolyTypeFamily.CHARACTER ) {
+            if ( collation != null ) {
+                return Collation.parse( collation );
+            } else {
+                return Collation.getDefaultCollation(); // Set default collation
             }
-            return null;
-
-        } catch ( UnknownCollationException e ) {
-            throw new RuntimeException( e );
         }
+        return null;
+
+
     }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@
 package org.polypheny.db.sql;
 
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -27,7 +27,9 @@ import java.util.Set;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matcher;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.polypheny.db.TestHelper;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.rules.DateRangeRules;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -41,6 +43,11 @@ import org.polypheny.db.util.Util;
  * Unit tests for {@link DateRangeRules} algorithms.
  */
 public class DateRangeRulesTest {
+
+    @BeforeAll
+    public static void setUp() {
+        TestHelper.getInstance();
+    }
 
     @Test
     public void testExtractYearFromDateColumn() {
@@ -444,7 +451,7 @@ public class DateRangeRulesTest {
     public void testFloorEqRewrite() {
         final Calendar c = Util.calendar();
         c.clear();
-        c.set( 2010, Calendar.FEBRUARY, 10, 11, 12, 05 );
+        c.set( 2010, Calendar.FEBRUARY, 10, 11, 12, 5 );
         final Fixture2 f = new Fixture2();
         // Always False
         checkDateRange( f, f.eq( f.floorYear, f.timestampLiteral( TimestampString.fromCalendarFields( c ) ) ), is( "false" ) );
@@ -485,7 +492,7 @@ public class DateRangeRulesTest {
         final Calendar c = Util.calendar();
 
         c.clear();
-        c.set( 2010, Calendar.FEBRUARY, 10, 11, 12, 05 );
+        c.set( 2010, Calendar.FEBRUARY, 10, 11, 12, 5 );
         final Fixture2 f = new Fixture2();
         checkDateRange( f, f.lt( f.floorYear, f.timestampLiteral( TimestampString.fromCalendarFields( c ) ) ), is( "<($9, 2011-01-01 00:00:00)" ) );
 
@@ -499,7 +506,7 @@ public class DateRangeRulesTest {
     public void testFloorLeRewrite() {
         final Calendar c = Util.calendar();
         c.clear();
-        c.set( 2010, Calendar.FEBRUARY, 10, 11, 12, 05 );
+        c.set( 2010, Calendar.FEBRUARY, 10, 11, 12, 5 );
         final Fixture2 f = new Fixture2();
         checkDateRange( f, f.le( f.floorYear, f.timestampLiteral( TimestampString.fromCalendarFields( c ) ) ), is( "<($9, 2011-01-01 00:00:00)" ) );
 
@@ -513,7 +520,7 @@ public class DateRangeRulesTest {
     public void testFloorGtRewrite() {
         final Calendar c = Util.calendar();
         c.clear();
-        c.set( 2010, Calendar.FEBRUARY, 10, 11, 12, 05 );
+        c.set( 2010, Calendar.FEBRUARY, 10, 11, 12, 5 );
         final Fixture2 f = new Fixture2();
         checkDateRange( f, f.gt( f.floorYear, f.timestampLiteral( TimestampString.fromCalendarFields( c ) ) ), is( ">=($9, 2011-01-01 00:00:00)" ) );
 
@@ -527,7 +534,7 @@ public class DateRangeRulesTest {
     public void testFloorGeRewrite() {
         final Calendar c = Util.calendar();
         c.clear();
-        c.set( 2010, Calendar.FEBRUARY, 10, 11, 12, 05 );
+        c.set( 2010, Calendar.FEBRUARY, 10, 11, 12, 5 );
         final Fixture2 f = new Fixture2();
         checkDateRange( f, f.ge( f.floorYear, f.timestampLiteral( TimestampString.fromCalendarFields( c ) ) ), is( ">=($9, 2011-01-01 00:00:00)" ) );
 
@@ -574,7 +581,7 @@ public class DateRangeRulesTest {
     public void testCeilEqRewrite() {
         final Calendar c = Util.calendar();
         c.clear();
-        c.set( 2010, Calendar.FEBRUARY, 10, 11, 12, 05 );
+        c.set( 2010, Calendar.FEBRUARY, 10, 11, 12, 5 );
         final Fixture2 f = new Fixture2();
         // Always False
         checkDateRange( f, f.eq( f.ceilYear, f.timestampLiteral( TimestampString.fromCalendarFields( c ) ) ), is( "false" ) );
@@ -615,7 +622,7 @@ public class DateRangeRulesTest {
         final Calendar c = Util.calendar();
 
         c.clear();
-        c.set( 2010, Calendar.FEBRUARY, 10, 11, 12, 05 );
+        c.set( 2010, Calendar.FEBRUARY, 10, 11, 12, 5 );
         final Fixture2 f = new Fixture2();
         checkDateRange( f, f.lt( f.ceilYear, f.timestampLiteral( TimestampString.fromCalendarFields( c ) ) ), is( "<=($9, 2010-01-01 00:00:00)" ) );
 
@@ -629,7 +636,7 @@ public class DateRangeRulesTest {
     public void testCeilLeRewrite() {
         final Calendar c = Util.calendar();
         c.clear();
-        c.set( 2010, Calendar.FEBRUARY, 10, 11, 12, 05 );
+        c.set( 2010, Calendar.FEBRUARY, 10, 11, 12, 5 );
         final Fixture2 f = new Fixture2();
         checkDateRange( f, f.le( f.ceilYear, f.timestampLiteral( TimestampString.fromCalendarFields( c ) ) ), is( "<=($9, 2010-01-01 00:00:00)" ) );
 
@@ -643,7 +650,7 @@ public class DateRangeRulesTest {
     public void testCeilGtRewrite() {
         final Calendar c = Util.calendar();
         c.clear();
-        c.set( 2010, Calendar.FEBRUARY, 10, 11, 12, 05 );
+        c.set( 2010, Calendar.FEBRUARY, 10, 11, 12, 5 );
         final Fixture2 f = new Fixture2();
         checkDateRange( f, f.gt( f.ceilYear, f.timestampLiteral( TimestampString.fromCalendarFields( c ) ) ), is( ">($9, 2010-01-01 00:00:00)" ) );
 
@@ -657,7 +664,7 @@ public class DateRangeRulesTest {
     public void testCeilGeRewrite() {
         final Calendar c = Util.calendar();
         c.clear();
-        c.set( 2010, Calendar.FEBRUARY, 10, 11, 12, 05 );
+        c.set( 2010, Calendar.FEBRUARY, 10, 11, 12, 5 );
         final Fixture2 f = new Fixture2();
         checkDateRange( f, f.ge( f.ceilYear, f.timestampLiteral( TimestampString.fromCalendarFields( c ) ) ), is( ">($9, 2010-01-01 00:00:00)" ) );
 
@@ -681,7 +688,7 @@ public class DateRangeRulesTest {
                 CoreMatchers.any( String.class ) );
 
         c.clear();
-        c.set( 2010, Calendar.FEBRUARY, 1, 11, 00, 0 );
+        c.set( 2010, Calendar.FEBRUARY, 1, 11, 0, 0 );
         checkDateRange(
                 f,
                 f.eq( f.floorHour, f.timestampLiteral( TimestampString.fromCalendarFields( c ) ) ),
@@ -690,7 +697,7 @@ public class DateRangeRulesTest {
                 CoreMatchers.any( String.class ) );
 
         c.clear();
-        c.set( 2010, Calendar.FEBRUARY, 1, 00, 00, 0 );
+        c.set( 2010, Calendar.FEBRUARY, 1, 0, 0, 0 );
         checkDateRange(
                 f,
                 f.eq( f.floorHour, f.dateLiteral( DateString.fromCalendarFields( c ) ) ),

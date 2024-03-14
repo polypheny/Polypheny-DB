@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,20 +22,20 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
+import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
-import org.polypheny.db.ddl.exception.LastPlacementException;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
@@ -53,21 +53,21 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
 
     private final SqlIdentifier table;
     private final SqlIdentifier storeName;
-    private final List<Integer> partitionGroupList;
-    private final List<SqlIdentifier> partitionGroupNamesList;
+    private final List<Integer> partitionGroups;
+    private final List<SqlIdentifier> partitionGroupNames;
 
 
     public SqlAlterTableModifyPartitions(
             ParserPos pos,
             SqlIdentifier table,
             SqlIdentifier storeName,
-            List<Integer> partitionGroupList,
-            List<SqlIdentifier> partitionGroupNamesList ) {
+            List<Integer> partitionGroups,
+            List<SqlIdentifier> partitionGroupNames ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.storeName = Objects.requireNonNull( storeName );
-        this.partitionGroupList = partitionGroupList;
-        this.partitionGroupNamesList = partitionGroupNamesList; //May be null and can only be used in association with PARTITION BY and PARTITIONS
+        this.partitionGroups = partitionGroups;
+        this.partitionGroupNames = partitionGroupNames; //May be null and can only be used in association with PARTITION BY and PARTITIONS
     }
 
 
@@ -97,91 +97,71 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
 
 
     @Override
-    public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        Catalog catalog = Catalog.getInstance();
-        CatalogTable catalogTable = getCatalogTable( context, table );
+    public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
+        LogicalTable table = getTableFailOnEmpty( context, this.table );
 
-        if ( catalogTable.entityType != EntityType.ENTITY ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
+        if ( table.entityType != EntityType.ENTITY ) {
+            throw new GenericRuntimeException( "Not possible to use ALTER TABLE because " + table.name + " is not a table." );
         }
 
-        if ( !catalogTable.partitionProperty.isPartitioned ) {
-            throw new RuntimeException( "Table '" + catalogTable.name + "' is not partitioned" );
+        List<AllocationPartition> partitions = statement.getTransaction().getSnapshot().alloc().getPartitionsFromLogical( table.id );
+        if ( partitions.size() < 2 ) {
+            throw new GenericRuntimeException( "Table '%s' is not partitioned", table.name );
         }
 
-        long tableId = catalogTable.id;
-
-        if ( partitionGroupList.isEmpty() && partitionGroupNamesList.isEmpty() ) {
-            throw new RuntimeException( "Empty Partition Placement is not allowed for partitioned table '" + catalogTable.name + "'" );
+        if ( partitionGroups.isEmpty() && partitionGroupNames.isEmpty() ) {
+            throw new GenericRuntimeException( "Empty Partition Placement is not allowed for partitioned table '" + table.name + "'" );
         }
 
-        DataStore storeInstance = AdapterManager.getInstance().getStore( storeName.getSimple() );
-        if ( storeInstance == null ) {
+        Optional<DataStore<?>> optStoreInstance = AdapterManager.getInstance().getStore( storeName.getSimple() );
+        if ( optStoreInstance.isEmpty() ) {
             throw CoreUtil.newContextException(
                     storeName.getPos(),
                     RESOURCE.unknownStoreName( storeName.getSimple() ) );
         }
-        int storeId = storeInstance.getAdapterId();
+        long storeId = optStoreInstance.get().getAdapterId();
         // Check whether this placement already exists
-        if ( !catalogTable.dataPlacements.contains( storeId ) ) {
+        Optional<AllocationPlacement> optionalPlacement = statement.getTransaction().getSnapshot().alloc().getPlacement( storeId, table.id );
+        if ( optionalPlacement.isEmpty() ) {
             throw CoreUtil.newContextException(
                     storeName.getPos(),
-                    RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogTable.name ) );
+                    RESOURCE.placementDoesNotExist( storeName.getSimple(), table.name ) );
         }
 
-        List<Long> tempPartitionList = new ArrayList<>();
+        List<Long> partitionList = new ArrayList<>();
 
         // If index partitions are specified
-        if ( !partitionGroupList.isEmpty() && partitionGroupNamesList.isEmpty() ) {
+        if ( !partitionGroups.isEmpty() && partitionGroupNames.isEmpty() ) {
+            List<Long> partitionIds = partitions.stream().map( p -> p.id ).sorted().toList();
             //First convert specified index to correct partitionId
-            for ( int partitionId : partitionGroupList ) {
+            for ( int partitionId : partitionGroups ) {
                 // Check if specified partition index is even part of table and if so get corresponding uniquePartId
                 try {
-                    tempPartitionList.add( catalogTable.partitionProperty.partitionGroupIds.get( partitionId ) );
+                    partitionList.add( partitionIds.get( partitionId ) );
                 } catch ( IndexOutOfBoundsException e ) {
-                    throw new RuntimeException( "Specified Partition-Index: '" + partitionId + "' is not part of table '"
-                            + catalogTable.name + "', has only " + catalogTable.partitionProperty.numPartitionGroups + " partitions" );
+                    throw new GenericRuntimeException( "Specified Partition-Index: '%s' is not part of table '%s', has only %s partitions",
+                            partitionId, table.name, partitions.size() );
                 }
             }
-        }
-        // If name partitions are specified
-        else if ( !partitionGroupNamesList.isEmpty() && partitionGroupList.isEmpty() ) {
-            List<CatalogPartitionGroup> catalogPartitionGroups = catalog.getPartitionGroups( tableId );
-            for ( String partitionName : partitionGroupNamesList.stream().map( Object::toString )
-                    .collect( Collectors.toList() ) ) {
-                boolean isPartOfTable = false;
-                for ( CatalogPartitionGroup catalogPartitionGroup : catalogPartitionGroups ) {
-                    if ( partitionName.equals( catalogPartitionGroup.partitionGroupName.toLowerCase() ) ) {
-                        tempPartitionList.add( catalogPartitionGroup.id );
-                        isPartOfTable = true;
-                        break;
-                    }
+        } else if ( !partitionGroupNames.isEmpty() && partitionGroups.isEmpty() ) {
+            // If name partitions are specified
+            // List<AllocationEntity> entities = catalog.getSnapshot().alloc().getAllocsOfPlacement( optionalPlacement.get().id );
+            for ( String partitionName : partitionGroupNames.stream().map( Object::toString ).toList() ) {
+                Optional<AllocationPartition> optionalPartition = partitions.stream().filter( p -> partitionName.equals( p.name ) ).findAny();
+
+                if ( optionalPartition.isEmpty() ) {
+                    throw new GenericRuntimeException( "There exists no partition with the identifier '%s'.", partitionName );
                 }
-                if ( !isPartOfTable ) {
-                    throw new RuntimeException( "Specified Partition-Name: '" + partitionName + "' is not part of table '"
-                            + catalogTable.name + "', has only " + catalog.getPartitionGroupNames( tableId ) + " partitions" );
-                }
+                partitionList.add( optionalPartition.get().id );
             }
         }
 
-        // Check if in-memory dataPartitionPlacement Map should even be changed and therefore start costly partitioning
-        // Avoid unnecessary partitioning when the placement is already partitioned in the same way it has been specified
-        if ( tempPartitionList.equals( catalog.getPartitionGroupsOnDataPlacement( storeId, tableId ) ) ) {
-            log.info( "The data placement for table: '{}' on store: '{}' already contains all specified partitions of statement: {}",
-                    catalogTable.name, storeName, partitionGroupList );
-            return;
-        }
-        // Update
-        try {
-            DdlManager.getInstance().modifyPartitionPlacement(
-                    catalogTable,
-                    tempPartitionList,
-                    storeInstance,
-                    statement
-            );
-        } catch ( LastPlacementException e ) {
-            throw new RuntimeException( "Failed to execute requested partition modification. This change would remove one partition entirely from table '" + catalogTable.name + "'", e );
-        }
+        DdlManager.getInstance().modifyPartitionPlacement(
+                table,
+                partitionList,
+                optStoreInstance.get(),
+                statement
+        );
     }
 
 }

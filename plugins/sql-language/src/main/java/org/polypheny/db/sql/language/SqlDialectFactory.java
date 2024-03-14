@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ public interface SqlDialectFactory {
 
     /**
      * Creates a <code>SqlDialect</code> from a DatabaseMetaData.
-     *
+     * <p>
      * Does not maintain a reference to the DatabaseMetaData -- or, more* importantly, to its {@link Connection} -- after this call has returned.
      *
      * @param databaseMetaData used to determine which dialect of SQL to generate

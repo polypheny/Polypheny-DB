@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -132,7 +132,7 @@ public class SqlInOperator extends SqlBinaryOperator {
         // Result is a boolean, nullable if there are any nullable types on either side.
         return typeFactory.createTypeWithNullability(
                 typeFactory.createPolyType( PolyType.BOOLEAN ),
-                anyNullable( leftRowType.getFieldList() ) || anyNullable( rightRowType.getFieldList() ) );
+                anyNullable( leftRowType.getFields() ) || anyNullable( rightRowType.getFields() ) );
     }
 
 

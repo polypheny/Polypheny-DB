@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,11 +79,11 @@ public class FilterSetOpTransposeRule extends AlgOptRule {
         // create filters on top of each setop child, modifying the filter condition to reference each setop child
         RexBuilder rexBuilder = filterAlg.getCluster().getRexBuilder();
         final AlgBuilder algBuilder = call.builder();
-        List<AlgDataTypeField> origFields = setOp.getRowType().getFieldList();
+        List<AlgDataTypeField> origFields = setOp.getTupleType().getFields();
         int[] adjustments = new int[origFields.size()];
         final List<AlgNode> newSetOpInputs = new ArrayList<>();
         for ( AlgNode input : setOp.getInputs() ) {
-            RexNode newCondition = condition.accept( new AlgOptUtil.RexInputConverter( rexBuilder, origFields, input.getRowType().getFieldList(), adjustments ) );
+            RexNode newCondition = condition.accept( new AlgOptUtil.RexInputConverter( rexBuilder, origFields, input.getTupleType().getFields(), adjustments ) );
             newSetOpInputs.add( algBuilder.push( input ).filter( newCondition ).build() );
         }
 

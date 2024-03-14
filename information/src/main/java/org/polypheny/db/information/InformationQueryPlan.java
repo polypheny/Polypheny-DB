@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.polypheny.db.information;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.UUID;
 
 
@@ -25,7 +26,8 @@ import java.util.UUID;
  */
 public class InformationQueryPlan extends Information {
 
-    private String queryPlan;
+    @JsonProperty
+    public String queryPlan;
 
 
     /**
@@ -35,6 +37,7 @@ public class InformationQueryPlan extends Information {
      */
     public InformationQueryPlan( final InformationGroup group, final String queryPlan ) {
         this( group.getId(), queryPlan );
+        fullWidth( true );
     }
 
 
@@ -51,7 +54,7 @@ public class InformationQueryPlan extends Information {
     /**
      * Constructor
      *
-     * @param id    Unique id for this information object
+     * @param id Unique id for this information object
      * @param group The id of the InformationGroup to which this information belongs
      */
     public InformationQueryPlan( final String id, final String group, final String queryPlan ) {

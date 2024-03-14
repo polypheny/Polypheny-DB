@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,13 +23,15 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgCollation;
@@ -41,20 +43,19 @@ import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogMaterializedView;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.logical.LogicalMaterializedView;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.logical.LogicalView;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.processing.DataMigrator;
@@ -62,6 +63,7 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.EntityAccessMap;
 import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier;
+import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier.NamespaceLevel;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.PolyXid;
@@ -108,8 +110,8 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      */
     public synchronized Map<Long, MaterializedCriteria> updateMaterializedViewInfo() {
         List<Long> toRemove = new ArrayList<>();
-        for ( Long id : materializedInfo.keySet() ) {
-            if ( Catalog.getInstance().getTable( id ) == null ) {
+        for ( long id : materializedInfo.keySet() ) {
+            if ( Catalog.getInstance().getSnapshot().getLogicalEntity( id ).isEmpty() ) {
                 toRemove.add( id );
             }
         }
@@ -124,7 +126,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      * @param materializedId id from materialized view
      */
     @Override
-    public synchronized void deleteMaterializedViewFromInfo( Long materializedId ) {
+    public synchronized void deleteMaterializedViewFromInfo( long materializedId ) {
         materializedInfo.remove( materializedId );
     }
 
@@ -135,10 +137,10 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      * @param materializedId id from materialized view
      */
     @Override
-    public synchronized void updateMaterializedTime( Long materializedId ) {
+    public synchronized void updateMaterializedTime( long materializedId ) {
         if ( materializedInfo.containsKey( materializedId ) ) {
             materializedInfo.get( materializedId ).setLastUpdate( new Timestamp( System.currentTimeMillis() ) );
-            Catalog.getInstance().updateMaterializedViewRefreshTime( materializedId );
+            Catalog.getInstance().getLogicalRel( 0 ).updateMaterializedViewRefreshTime( materializedId );
         }
     }
 
@@ -162,7 +164,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      * @param matViewCriteria information about the materialized view
      */
     @Override
-    public synchronized void addMaterializedInfo( Long materializedId, MaterializedCriteria matViewCriteria ) {
+    public synchronized void addMaterializedInfo( long materializedId, MaterializedCriteria matViewCriteria ) {
         materializedInfo.put( materializedId, matViewCriteria );
     }
 
@@ -172,21 +174,27 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      * update candidates for materialized view with freshness updates
      *
      * @param transaction transaction of the commit
-     * @param tableNames table that was changed
+     * @param entityIds entity that was changed
      */
     @Override
-    public void addTables( Transaction transaction, List<String> tableNames ) {
-        if ( tableNames.size() > 1 ) {
-            try {
-                CatalogTable catalogTable = Catalog.getInstance().getTable( 1, tableNames.get( 0 ), tableNames.get( 1 ) );
-                long id = catalogTable.id;
-                if ( !catalogTable.getConnectedViews().isEmpty() ) {
-                    updateCandidates.put( transaction.getXid(), id );
-                }
-            } catch ( UnknownTableException e ) {
-                throw new RuntimeException( "Not possible to getTable to update which Tables were changed.", e );
+    public void notifyModifiedEntities( Transaction transaction, Collection<Long> entityIds ) {
+        if ( entityIds.isEmpty() ) {
+            return;
+        }
+
+        for ( long entityId : entityIds ) {
+            Optional<LogicalTable> tableOptional = Catalog.snapshot().rel().getTable( entityId );
+
+            if ( tableOptional.isEmpty() ) {
+                continue;
+            }
+
+            if ( !transaction.getSnapshot().rel().getConnectedViews( tableOptional.get().id ).isEmpty() ) {
+                updateCandidates.put( transaction.getXid(), tableOptional.get().id );
             }
         }
+
+
     }
 
 
@@ -205,17 +213,15 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
 
     /**
-     * Checks if materialized view  with freshness update needs to be updated after a change on the underlying table
+     * Checks if materialized view  with freshness update needs to be updated after a change on the underlying entity
      *
-     * @param potentialInteresting id of underlying table that was updated
+     * @param potentialInteresting id of underlying entity that was updated
      */
-    public void materializedUpdate( Long potentialInteresting ) {
-        Catalog catalog = Catalog.getInstance();
-        CatalogTable catalogTable = catalog.getTable( potentialInteresting );
-        List<Long> connectedViews = catalogTable.getConnectedViews();
+    public void materializedUpdate( long potentialInteresting ) {
+        Snapshot snapshot = Catalog.getInstance().getSnapshot();
+        List<LogicalView> connectedViews = snapshot.rel().getConnectedViews( potentialInteresting );
 
-        for ( Long id : connectedViews ) {
-            CatalogTable view = catalog.getTable( id );
+        for ( LogicalView view : connectedViews ) {
             if ( view.entityType == EntityType.MATERIALIZED_VIEW ) {
                 MaterializedCriteria materializedCriteria = materializedInfo.get( view.id );
                 if ( materializedCriteria.getCriteriaType() == CriteriaType.UPDATE ) {
@@ -252,16 +258,19 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
     private void updatingIntervalMaterialized() {
         Map<Long, MaterializedCriteria> materializedViewInfo;
         materializedViewInfo = ImmutableMap.copyOf( updateMaterializedViewInfo() );
-        materializedViewInfo.forEach( ( k, v ) -> {
-            if ( v.getCriteriaType() == CriteriaType.INTERVAL ) {
-                if ( v.getLastUpdate().getTime() + v.getTimeInMillis() < System.currentTimeMillis() ) {
-                    if ( !isDroppingMaterialized && !isCreatingMaterialized && !isUpdatingMaterialized ) {
-                        prepareToUpdate( k );
-                        updateMaterializedTime( k );
-                    }
-                }
+        for ( Entry<Long, MaterializedCriteria> entry : materializedViewInfo.entrySet() ) {
+            Long k = entry.getKey();
+            MaterializedCriteria v = entry.getValue();
+            if ( v.getCriteriaType() == CriteriaType.INTERVAL
+                    && v.getLastUpdate().getTime() + v.getTimeInMillis() < System.currentTimeMillis()
+                    && !isDroppingMaterialized
+                    && !isCreatingMaterialized
+                    && !isUpdatingMaterialized ) {
+
+                prepareToUpdate( k );
+                updateMaterializedTime( k );
             }
-        } );
+        }
     }
 
 
@@ -270,34 +279,40 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      *
      * @param materializedId of materialized view, which is updated
      */
-    public void prepareToUpdate( Long materializedId ) {
+    public void prepareToUpdate( long materializedId ) {
         Catalog catalog = Catalog.getInstance();
-        CatalogTable catalogTable = catalog.getTable( materializedId );
+        LogicalTable entity = catalog.getSnapshot().getLogicalEntity( materializedId ).map( e -> e.unwrap( LogicalTable.class ).orElseThrow() ).orElseThrow();
+
+        Transaction transaction = getTransactionManager().startTransaction(
+                Catalog.defaultUserId,
+                false,
+                "Materialized View" );
 
         try {
-            Transaction transaction = getTransactionManager().startTransaction(
-                    catalogTable.ownerId,
-                    catalogTable.databaseId,
-                    false,
-                    "Materialized View" );
-
-            try {
-                Statement statement = transaction.createStatement();
-                Collection<Entry<EntityIdentifier, LockMode>> idAccessMap = new ArrayList<>();
-                // Get a shared global schema lock (only DDLs acquire an exclusive global schema lock)
-                idAccessMap.add( Pair.of( LockManager.GLOBAL_LOCK, LockMode.SHARED ) );
-                // Get locks for individual tables
-                EntityAccessMap accessMap = new EntityAccessMap( ((CatalogMaterializedView) catalogTable).getDefinition(), new HashMap<>() );
-                idAccessMap.addAll( accessMap.getAccessedEntityPair() );
-                LockManager.INSTANCE.lock( idAccessMap, (TransactionImpl) statement.getTransaction() );
-            } catch ( DeadlockException e ) {
-                throw new RuntimeException( "DeadLock while locking for materialized view update", e );
+            Statement statement = transaction.createStatement();
+            Optional<LogicalMaterializedView> optionalEntity = entity.unwrap( LogicalMaterializedView.class );
+            if ( optionalEntity.isEmpty() ) {
+                log.warn( "Materialized view with id {} does not longer exist", materializedId );
+                return;
             }
-            updateData( transaction, materializedId );
-            commitTransaction( transaction );
-        } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
-            throw new RuntimeException( "Not possible to create Transaction for Materialized View update", e );
+
+            // Get locks for individual tables
+            EntityAccessMap access = new EntityAccessMap( optionalEntity.get().getDefinition(), new HashMap<>() );
+            Collection<Entry<EntityIdentifier, LockMode>> idAccesses = new ArrayList<>( access.getAccessedEntityPair() );
+            // if we don't lock exclusively for the target here we can produce deadlocks on underlying stores,
+            // as we could end up with two concurrent shared locks waiting for an exclusive lock on the same entity or each other's entities
+            catalog.getSnapshot().alloc().getFromLogical( materializedId )
+                    .forEach( allocation -> idAccesses.add( Pair.of( new EntityIdentifier( entity.id, allocation.id, NamespaceLevel.ENTITY_LEVEL ), LockMode.EXCLUSIVE ) ) );
+
+            LockManager.INSTANCE.lock( idAccesses, (TransactionImpl) statement.getTransaction() );
+        } catch ( DeadlockException e ) {
+            throw new GenericRuntimeException( "DeadLock while locking for materialized view update", e );
         }
+
+        updateData( transaction, materializedId );
+
+        commitTransaction( transaction );
+
         updateMaterializedTime( materializedId );
     }
 
@@ -306,24 +321,27 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      * Is used if a materialized view is created in order to add the data from the underlying tables to the materialized view
      */
     @Override
-    public void addData( Transaction transaction, List<DataStore> stores, Map<Integer, List<CatalogColumn>> columns, AlgRoot algRoot, CatalogMaterializedView materializedView ) {
-        addMaterializedInfo( materializedView.id, materializedView.getMaterializedCriteria() );
+    public void addData( Transaction transaction, @Nullable List<DataStore<?>> stores, @NonNull AlgRoot algRoot, @NonNull LogicalMaterializedView materializedView ) {
 
-        List<CatalogColumnPlacement> columnPlacements = new LinkedList<>();
         DataMigrator dataMigrator = transaction.getDataMigrator();
-
-        for ( int id : materializedView.dataPlacements ) {
+        for ( AllocationEntity allocation : transaction.getSnapshot().alloc().getFromLogical( materializedView.id ) ) {
             Statement sourceStatement = transaction.createStatement();
-            prepareSourceRel( sourceStatement, materializedView.getAlgCollation(), algRoot.alg );
+            prepareSourceAlg( sourceStatement, materializedView.getAlgCollation(), algRoot.alg );
             Statement targetStatement = transaction.createStatement();
-            columnPlacements.clear();
 
-            columns.get( id ).forEach( column -> columnPlacements.add( Catalog.getInstance().getColumnPlacement( id, column.id ) ) );
-            // If partitions should be allowed for materialized views this needs to be changed that all partitions are considered
-            AlgRoot targetRel = dataMigrator.buildInsertStatement( targetStatement, columnPlacements, Catalog.getInstance().getPartitionsOnDataPlacement( id, materializedView.id ).get( 0 ) );
+            if ( allocation.unwrap( AllocationTable.class ).isPresent() ) {
+                List<AllocationColumn> allocColumns = Catalog.snapshot().alloc().getColumns( allocation.placementId );
 
-            dataMigrator.executeQuery( columns.get( id ), algRoot, sourceStatement, targetStatement, targetRel, true, materializedView.isOrdered() );
+                // If partitions should be allowed for materialized views this needs to be changed that all partitions are considered
+                AlgRoot targetAlg = dataMigrator.buildInsertStatement( targetStatement, allocColumns, allocation );
+
+                dataMigrator.executeQuery( allocColumns, algRoot, sourceStatement, targetStatement, targetAlg, true, materializedView.isOrdered() );
+            } else {
+                throw new GenericRuntimeException( "MaterializedViews are only supported for relational entites at the moment." );
+            }
         }
+
+        addMaterializedInfo( materializedView.id, materializedView.getMaterializedCriteria() );
     }
 
 
@@ -334,80 +352,48 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      * @param materializedId id from materialized view
      */
     @Override
-    public void updateData( Transaction transaction, Long materializedId ) {
-        Catalog catalog = Catalog.getInstance();
+    public void updateData( Transaction transaction, long materializedId ) {
 
         DataMigrator dataMigrator = transaction.getDataMigrator();
 
-        List<CatalogColumnPlacement> columnPlacements = new LinkedList<>();
-        Map<Integer, List<CatalogColumn>> columns = new HashMap<>();
+        List<AllocationColumn> columnPlacements = new ArrayList<>();
 
-        List<Integer> ids = new ArrayList<>();
-        if ( catalog.checkIfExistsEntity( materializedId ) && materializedInfo.containsKey( materializedId ) ) {
-            CatalogMaterializedView catalogMaterializedView = (CatalogMaterializedView) catalog.getTable( materializedId );
-            for ( int id : catalogMaterializedView.dataPlacements ) {
-                ids.add( id );
-                List<CatalogColumn> catalogColumns = new ArrayList<>();
+        if ( Catalog.snapshot().getLogicalEntity( materializedId ).isPresent() && materializedInfo.containsKey( materializedId ) ) {
+            LogicalMaterializedView materializedView = Catalog.snapshot().getLogicalEntity( materializedId ).map( e -> e.unwrap( LogicalMaterializedView.class ).orElseThrow() ).orElseThrow();
 
-                int localAdapterIndex = catalogMaterializedView.dataPlacements.indexOf( id );
-                catalog.getDataPlacement( catalogMaterializedView.dataPlacements.get( localAdapterIndex ), catalogMaterializedView.id )
-                        .columnPlacementsOnAdapter.forEach( col ->
-                                catalogColumns.add( catalog.getColumn( col ) )
-                        );
-                columns.put( id, catalogColumns );
-            }
+            Catalog.snapshot().rel().getColumns( materializedId );
 
-            AlgRoot targetRel;
-
-            for ( int id : ids ) {
-                Statement sourceStatement = transaction.createStatement();
+            for ( AllocationEntity allocation : Catalog.snapshot().alloc().getFromLogical( materializedId ) ) {
                 Statement deleteStatement = transaction.createStatement();
-                Statement insertStatement = transaction.createStatement();
-                prepareSourceRel( sourceStatement, catalogMaterializedView.getAlgCollation(), catalogMaterializedView.getDefinition() );
-
-                columnPlacements.clear();
-
-                columns.get( id ).forEach( column -> columnPlacements.add( Catalog.getInstance().getColumnPlacement( id, column.id ) ) );
 
                 // Build {@link AlgNode} to build delete Statement from materialized view
                 AlgBuilder deleteAlgBuilder = AlgBuilder.create( deleteStatement );
-                AlgNode deleteRel = deleteAlgBuilder.scan( catalogMaterializedView.name ).build();
+                AlgNode deleteAlg = deleteAlgBuilder.relScan( materializedView ).build();
 
                 // Build {@link AlgNode} to build insert Statement from materialized view
-                AlgBuilder insertAlgBuilder = AlgBuilder.create( insertStatement );
-                AlgNode insertRel = insertAlgBuilder.push( catalogMaterializedView.getDefinition() ).build();
-
                 Statement targetStatementDelete = transaction.createStatement();
                 // Delete all data
-                targetRel = dataMigrator.buildDeleteStatement(
+                AlgRoot targetAlg = dataMigrator.buildDeleteStatement(
                         targetStatementDelete,
                         columnPlacements,
-                        Catalog.getInstance().getPartitionsOnDataPlacement( id, catalogMaterializedView.id ).get( 0 ) );
+                        allocation );
+
                 dataMigrator.executeQuery(
-                        columns.get( id ),
-                        AlgRoot.of( deleteRel, Kind.SELECT ),
+                        Catalog.snapshot().alloc().getColumns( allocation.id ),
+                        AlgRoot.of( deleteAlg, Kind.SELECT ),
                         deleteStatement,
                         targetStatementDelete,
-                        targetRel,
+                        targetAlg,
                         true,
-                        catalogMaterializedView.isOrdered() );
+                        materializedView.isOrdered() );
 
-                Statement targetStatementInsert = transaction.createStatement();
-
-                // Insert new data
-                targetRel = dataMigrator.buildInsertStatement(
-                        targetStatementInsert,
-                        columnPlacements,
-                        Catalog.getInstance().getPartitionsOnDataPlacement( id, catalogMaterializedView.id ).get( 0 ) );
-                dataMigrator.executeQuery(
-                        columns.get( id ),
-                        AlgRoot.of( insertRel, Kind.SELECT ),
-                        sourceStatement,
-                        targetStatementInsert,
-                        targetRel,
-                        true,
-                        catalogMaterializedView.isOrdered() );
             }
+
+            addData(
+                    transaction,
+                    List.of(),
+                    AlgRoot.of( Catalog.snapshot().rel().getNodeInfo( materializedId ), Kind.SELECT ),
+                    Catalog.snapshot().rel().getTable( materializedId ).orElseThrow().unwrap( LogicalMaterializedView.class ).orElseThrow() );
         }
     }
 
@@ -430,23 +416,23 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
     }
 
 
-    private void prepareSourceRel( Statement sourceStatement, AlgCollation algCollation, AlgNode sourceRel ) {
-        AlgOptCluster cluster = AlgOptCluster.create(
+    private void prepareSourceAlg( Statement sourceStatement, AlgCollation algCollation, AlgNode sourceAlg ) {
+        AlgCluster cluster = AlgCluster.create(
                 sourceStatement.getQueryProcessor().getPlanner(),
-                new RexBuilder( sourceStatement.getTransaction().getTypeFactory() ) );
+                new RexBuilder( sourceStatement.getTransaction().getTypeFactory() ), null, sourceStatement.getDataContext().getSnapshot() );
 
-        prepareNode( sourceRel, cluster, algCollation );
+        prepareNode( sourceAlg, cluster, algCollation );
     }
 
 
-    public void prepareNode( AlgNode viewLogicalRoot, AlgOptCluster algOptCluster, AlgCollation algCollation ) {
-        if ( viewLogicalRoot instanceof AbstractAlgNode ) {
-            ((AbstractAlgNode) viewLogicalRoot).setCluster( algOptCluster );
+    public void prepareNode( AlgNode viewLogicalRoot, AlgCluster algCluster, AlgCollation algCollation ) {
+        if ( viewLogicalRoot instanceof AbstractAlgNode abstractAlgNode ) {
+            abstractAlgNode.setCluster( algCluster );
 
             List<AlgCollation> algCollations = new ArrayList<>();
             algCollations.add( algCollation );
             AlgTraitSet traitSetTest =
-                    algOptCluster.traitSetOf( Convention.NONE )
+                    algCluster.traitSetOf( Convention.NONE )
                             .replaceIfs(
                                     AlgCollationTraitDef.INSTANCE,
                                     () -> {
@@ -456,16 +442,16 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                                         return ImmutableList.of();
                                     } );
 
-            ((AbstractAlgNode) viewLogicalRoot).setTraitSet( traitSetTest );
+            abstractAlgNode.setTraitSet( traitSetTest );
         }
-        if ( viewLogicalRoot instanceof BiAlg ) {
-            prepareNode( ((BiAlg) viewLogicalRoot).getLeft(), algOptCluster, algCollation );
-            prepareNode( ((BiAlg) viewLogicalRoot).getRight(), algOptCluster, algCollation );
-        } else if ( viewLogicalRoot instanceof SingleAlg ) {
-            prepareNode( ((SingleAlg) viewLogicalRoot).getInput(), algOptCluster, algCollation );
+        if ( viewLogicalRoot instanceof BiAlg biAlg ) {
+            prepareNode( biAlg.getLeft(), algCluster, algCollation );
+            prepareNode( biAlg.getRight(), algCluster, algCollation );
+        } else if ( viewLogicalRoot instanceof SingleAlg singleAlg ) {
+            prepareNode( singleAlg.getInput(), algCluster, algCollation );
         }
-        if ( viewLogicalRoot instanceof LogicalRelViewScan ) {
-            prepareNode( ((LogicalRelViewScan) viewLogicalRoot).getAlgNode(), algOptCluster, algCollation );
+        if ( viewLogicalRoot instanceof LogicalRelViewScan scan ) {
+            prepareNode( scan.getAlgNode(), algCluster, algCollation );
         }
     }
 

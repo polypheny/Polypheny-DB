@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,8 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
+import lombok.Getter;
+import lombok.Setter;
 import org.polypheny.db.algebra.AlgNode;
 
 
@@ -50,15 +52,21 @@ import org.polypheny.db.algebra.AlgNode;
  */
 public class AlgOptRuleOperand {
 
+    @Getter
+    @Setter
     private AlgOptRuleOperand parent;
+
+    @Getter
+    @Setter
     private AlgOptRule rule;
+
     private final Predicate<AlgNode> predicate;
 
     // REVIEW jvs: some of these are Volcano-specific and should be factored out
     public int[] solveOrder;
     public int ordinalInParent;
     public int ordinalInRule;
-    private final AlgTrait trait;
+    private final AlgTrait<?> trait;
     private final Class<? extends AlgNode> clazz;
     private final ImmutableList<AlgOptRuleOperand> children;
 
@@ -75,7 +83,7 @@ public class AlgOptRuleOperand {
      *
      * The other constructor is deprecated; when it is removed, make fields {@link #parent}, {@link #ordinalInParent} and {@link #solveOrder} final, and add constructor parameters for them.
      */
-    <R extends AlgNode> AlgOptRuleOperand( Class<R> clazz, AlgTrait trait, Predicate<? super R> predicate, AlgOptRuleOperandChildPolicy childPolicy, ImmutableList<AlgOptRuleOperand> children ) {
+    <R extends AlgNode> AlgOptRuleOperand( Class<R> clazz, AlgTrait<?> trait, Predicate<? super R> predicate, AlgOptRuleOperandChildPolicy childPolicy, ImmutableList<AlgOptRuleOperand> children ) {
         assert clazz != null;
         switch ( childPolicy ) {
             case ANY:
@@ -102,45 +110,6 @@ public class AlgOptRuleOperand {
     }
 
 
-    /**
-     * Returns the parent operand.
-     *
-     * @return parent operand
-     */
-    public AlgOptRuleOperand getParent() {
-        return parent;
-    }
-
-
-    /**
-     * Sets the parent operand.
-     *
-     * @param parent Parent operand
-     */
-    public void setParent( AlgOptRuleOperand parent ) {
-        this.parent = parent;
-    }
-
-
-    /**
-     * Returns the rule this operand belongs to.
-     *
-     * @return containing rule
-     */
-    public AlgOptRule getRule() {
-        return rule;
-    }
-
-
-    /**
-     * Sets the rule this operand belongs to
-     *
-     * @param rule containing rule
-     */
-    public void setRule( AlgOptRule rule ) {
-        this.rule = rule;
-    }
-
 
     public int hashCode() {
         return Objects.hash( clazz, trait, children );
@@ -161,7 +130,7 @@ public class AlgOptRuleOperand {
 
 
     /**
-     * @return relational expression class matched by this operand
+     * @return algebra expression class matched by this operand
      */
     public Class<? extends AlgNode> getMatchedClass() {
         return clazz;
@@ -179,7 +148,7 @@ public class AlgOptRuleOperand {
 
 
     /**
-     * Returns whether a relational expression matches this operand. It must be of the right class and trait.
+     * Returns whether an algebra expression matches this operand. It must be of the right class and trait.
      */
     public boolean matches( AlgNode alg ) {
         if ( !clazz.isInstance( alg ) ) {

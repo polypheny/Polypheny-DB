@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,24 +16,24 @@
 
 package org.polypheny.db.monitoring;
 
-import org.pf4j.Plugin;
-import org.pf4j.PluginWrapper;
+import org.polypheny.db.plugins.PluginContext;
+import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.plugins.PolyPluginManager;
 
-public class MapDBMonitoringPlugin extends Plugin {
+public class MapDBMonitoringPlugin extends PolyPlugin {
 
     /**
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to be successfully loaded by manager.
      */
-    public MapDBMonitoringPlugin( PluginWrapper wrapper ) {
-        super( wrapper );
+    public MapDBMonitoringPlugin( PluginContext context ) {
+        super( context );
     }
 
 
     @Override
     public void start() {
-        PolyPluginManager.setPersistentRepository( new MapDbRepository() );
+        PolyPluginManager.setPersistentRepository( new InMemoryRepository() );
     }
 
 }

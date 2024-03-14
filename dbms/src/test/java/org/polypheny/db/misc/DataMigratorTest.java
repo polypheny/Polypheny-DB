@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,28 +16,39 @@
 
 package org.polypheny.db.misc;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.polypheny.db.AdapterTestSuite;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.db.excluded.CassandraExcluded;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
-@Category({ AdapterTestSuite.class, CassandraExcluded.class })
+@Tag("adapter")
 public class DataMigratorTest {
 
 
-    @BeforeClass
+    private static TestHelper helper;
+
+
+    @BeforeAll
     public static void start() {
         // Ensures that Polypheny-DB is running
-        //noinspection ResultOfMethodCallIgnored
-        TestHelper.getInstance();
+        helper = TestHelper.getInstance();
+    }
+
+
+    @BeforeEach
+    public void beforeEach() {
+        helper.randomizeCatalogIds();
     }
 
 
@@ -91,6 +102,8 @@ public class DataMigratorTest {
                         + "tvarchar VARCHAR(20) NULL, "
                         + "PRIMARY KEY (tprimary) )" );
 
+                LogicalTable table = Catalog.snapshot().rel().getTable( Catalog.defaultNamespaceId, "datamigratortest" ).orElseThrow();
+
                 try {
                     statement.executeUpdate( "INSERT INTO datamigratortest VALUES (1,5,'foo')" );
 
@@ -98,19 +111,26 @@ public class DataMigratorTest {
                     statement.executeUpdate( "ALTER ADAPTERS ADD \"store1\" USING 'Hsqldb' AS 'Store'"
                             + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
 
-                    // Add placement
+                    // Add placement tprimary/tvarchar
                     statement.executeUpdate( "ALTER TABLE \"datamigratortest\" ADD PLACEMENT (tvarchar) ON STORE \"store1\"" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM datamigratortest" ),
                             ImmutableList.of(
                                     new Object[]{ 1, 5, "foo" } ) );
 
-                    // Remove tvarchar column placement on initial store
+                    assertEquals( 2, Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).size() );
+
+                    // Remove tvarchar column placement on initial store tprimary/tinteger
                     statement.executeUpdate( "ALTER TABLE \"datamigratortest\" MODIFY PLACEMENT (tinteger) ON STORE \"hsqldb\"" );
+
+                    assertEquals( 2, Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).size() );
+
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM datamigratortest" ),
                             ImmutableList.of(
                                     new Object[]{ 1, 5, "foo" } ) );
+
+                    assertEquals( 2, Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).size() );
 
                     // Add tinteger column placement on store 1
                     statement.executeUpdate( "ALTER TABLE \"datamigratortest\" MODIFY PLACEMENT (tinteger,tvarchar) ON STORE \"store1\"" );

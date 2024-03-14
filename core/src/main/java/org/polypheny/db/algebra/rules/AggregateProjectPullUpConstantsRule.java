@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,8 +42,8 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -51,7 +51,7 @@ import org.polypheny.db.plan.AlgOptPredicateList;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
@@ -75,25 +75,25 @@ public class AggregateProjectPullUpConstantsRule extends AlgOptRule {
     /**
      * The singleton.
      */
-    public static final AggregateProjectPullUpConstantsRule INSTANCE = new AggregateProjectPullUpConstantsRule( LogicalAggregate.class, LogicalProject.class, AlgFactories.LOGICAL_BUILDER, "AggregateProjectPullUpConstantsRule" );
+    public static final AggregateProjectPullUpConstantsRule INSTANCE = new AggregateProjectPullUpConstantsRule( LogicalRelAggregate.class, LogicalRelProject.class, AlgFactories.LOGICAL_BUILDER, "AggregateProjectPullUpConstantsRule" );
 
     /**
      * More general instance that matches any relational expression.
      */
-    public static final AggregateProjectPullUpConstantsRule INSTANCE2 = new AggregateProjectPullUpConstantsRule( LogicalAggregate.class, AlgNode.class, AlgFactories.LOGICAL_BUILDER, "AggregatePullUpConstantsRule" );
+    public static final AggregateProjectPullUpConstantsRule INSTANCE2 = new AggregateProjectPullUpConstantsRule( LogicalRelAggregate.class, AlgNode.class, AlgFactories.LOGICAL_BUILDER, "AggregatePullUpConstantsRule" );
 
 
     /**
      * Creates an AggregateProjectPullUpConstantsRule.
      *
      * @param aggregateClass Aggregate class
-     * @param inputClass Input class, such as {@link LogicalProject}
+     * @param inputClass Input class, such as {@link LogicalRelProject}
      * @param algBuilderFactory Builder for relational expressions
      * @param description Description, or null to guess description
      */
     public AggregateProjectPullUpConstantsRule( Class<? extends Aggregate> aggregateClass, Class<? extends AlgNode> inputClass, AlgBuilderFactory algBuilderFactory, String description ) {
         super(
-                operandJ( aggregateClass, null, Aggregate::isSimple, operand( inputClass, any() ) ),
+                operand( aggregateClass, null, Aggregate::isSimple, operand( inputClass, any() ) ),
                 algBuilderFactory, description );
     }
 
@@ -119,7 +119,7 @@ public class AggregateProjectPullUpConstantsRule extends AlgOptRule {
         }
         final NavigableMap<Integer, RexNode> map = new TreeMap<>();
         for ( int key : aggregate.getGroupSet() ) {
-            final RexInputRef ref = rexBuilder.makeInputRef( aggregate.getInput(), key );
+            final RexIndexRef ref = rexBuilder.makeInputRef( aggregate.getInput(), key );
             if ( predicates.constantMap.containsKey( ref ) ) {
                 map.put( key, predicates.constantMap.get( ref ) );
             }
@@ -157,7 +157,7 @@ public class AggregateProjectPullUpConstantsRule extends AlgOptRule {
         // Create a projection back again.
         List<Pair<RexNode, String>> projects = new ArrayList<>();
         int source = 0;
-        for ( AlgDataTypeField field : aggregate.getRowType().getFieldList() ) {
+        for ( AlgDataTypeField field : aggregate.getTupleType().getFields() ) {
             RexNode expr;
             final int i = field.getIndex();
             if ( i >= groupCount ) {
@@ -167,7 +167,7 @@ public class AggregateProjectPullUpConstantsRule extends AlgOptRule {
                 int pos = aggregate.getGroupSet().nth( i );
                 if ( map.containsKey( pos ) ) {
                     // Re-generate the constant expression in the project.
-                    AlgDataType originalType = aggregate.getRowType().getFieldList().get( projects.size() ).getType();
+                    AlgDataType originalType = aggregate.getTupleType().getFields().get( projects.size() ).getType();
                     if ( !originalType.equals( map.get( pos ).getType() ) ) {
                         expr = rexBuilder.makeCast( originalType, map.get( pos ), true );
                     } else {

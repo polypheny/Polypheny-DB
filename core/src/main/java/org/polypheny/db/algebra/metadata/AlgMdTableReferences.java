@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,12 +49,12 @@ import org.polypheny.db.algebra.core.Exchange;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Union;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.plan.hep.HepAlgVertex;
 import org.polypheny.db.plan.volcano.AlgSubset;
-import org.polypheny.db.rex.RexTableInputRef.AlgTableRef;
+import org.polypheny.db.rex.RexTableIndexRef.AlgTableRef;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Util;
 
@@ -70,7 +70,7 @@ import org.polypheny.db.util.Util;
  */
 public class AlgMdTableReferences implements MetadataHandler<BuiltInMetadata.TableReferences> {
 
-    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( BuiltInMethod.TABLE_REFERENCES.method, new AlgMdTableReferences() );
+    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( new AlgMdTableReferences(), BuiltInMethod.TABLE_REFERENCES.method );
 
 
     protected AlgMdTableReferences() {
@@ -102,8 +102,8 @@ public class AlgMdTableReferences implements MetadataHandler<BuiltInMetadata.Tab
     /**
      * Scan table reference.
      */
-    public Set<AlgTableRef> getTableReferences( Scan alg, AlgMetadataQuery mq ) {
-        return ImmutableSet.of( AlgTableRef.of( alg.getTable(), 0 ) );
+    public Set<AlgTableRef> getTableReferences( RelScan<?> alg, AlgMetadataQuery mq ) {
+        return ImmutableSet.of( AlgTableRef.of( alg.getEntity(), 0 ) );
     }
 
 

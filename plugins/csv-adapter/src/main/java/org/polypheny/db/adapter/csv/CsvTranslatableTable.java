@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,44 +33,33 @@
 
 package org.polypheny.db.adapter.csv;
 
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
-import org.apache.calcite.linq4j.Queryable;
-import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.schema.QueryableTable;
-import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.Schemas;
-import org.polypheny.db.schema.TranslatableTable;
+import org.polypheny.db.schema.types.TranslatableEntity;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Source;
-
-import java.lang.reflect.Type;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 
 /**
  * Table based on a CSV file.
  */
-public class CsvTranslatableTable extends CsvTable implements QueryableTable, TranslatableTable {
+public class CsvTranslatableTable extends CsvTable implements TranslatableEntity {
 
     /**
      * Creates a CsvTable.
      */
-    CsvTranslatableTable( Source source, AlgProtoDataType protoRowType, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource, Long tableId ) {
-        super( source, protoRowType, fieldTypes, fields, csvSource, tableId );
+    CsvTranslatableTable( long id, Source source, PhysicalTable table, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
+        super( id, source, table, fieldTypes, fields, csvSource );
     }
 
-
-    public String toString() {
-        return "CsvTranslatableTable";
-    }
 
 
     /**
@@ -78,40 +67,23 @@ public class CsvTranslatableTable extends CsvTable implements QueryableTable, Tr
      *
      * Called from generated code.
      */
-    public Enumerable<Object> project( final DataContext dataContext, final int[] fields ) {
+    public Enumerable<PolyValue[]> project( final DataContext dataContext, final int[] fields ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( csvSource );
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
-        return new AbstractEnumerable<Object>() {
+        return new AbstractEnumerable<>() {
             @Override
-            public Enumerator<Object> enumerator() {
-                return new CsvEnumerator<>( source, cancelFlag, fieldTypes, fields );
+            public Enumerator<PolyValue[]> enumerator() {
+                return new CsvEnumerator( source, cancelFlag, fieldTypes, fields );
             }
         };
     }
 
 
     @Override
-    public Expression getExpression( SchemaPlus schema, String tableName, Class clazz ) {
-        return Schemas.tableExpression( schema, getElementType(), tableName, clazz );
-    }
-
-
-    @Override
-    public Type getElementType() {
-        return Object[].class;
-    }
-
-
-    @Override
-    public <T> Queryable<T> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
-        throw new UnsupportedOperationException();
-    }
-
-
-    @Override
-    public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable, AlgTraitSet traitSet ) {
+    public AlgNode toAlg( AlgCluster cluster, AlgTraitSet traitSet ) {
         // Request all fields.
-        return new CsvScan( context.getCluster(), algOptTable, this, fields );
+        return new CsvScan( cluster, this, this, fields );
     }
+
 
 }

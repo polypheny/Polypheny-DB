@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 
@@ -30,12 +31,12 @@ import org.polypheny.db.rex.RexNode;
 @Slf4j
 public class ColumnFilter implements Filter {
 
-    private final ColumnIndex left;
+    private final FieldIndex left;
     private final Relation relation;
-    private final ColumnIndex right;
+    private final FieldIndex right;
 
 
-    public ColumnFilter( ColumnIndex left, Relation relation, ColumnIndex right ) {
+    public ColumnFilter( FieldIndex left, Relation relation, FieldIndex right ) {
         this.left = left;
         this.relation = relation;
         this.right = right;
@@ -45,7 +46,7 @@ public class ColumnFilter implements Filter {
     @Override
     public RexNode convert2RexNode( AlgNode baseNode, RexBuilder rexBuilder, Map<String, AlgDataTypeField> typeField ) {
         log.error( "Column Filters have not been implemented." );
-        throw new RuntimeException( "Column Filters have not been implemented." );
+        throw new GenericRuntimeException( "Column Filters have not been implemented." );
     }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,8 +39,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.adapter.enumerable.AggImplementor;
-import org.polypheny.db.adapter.enumerable.RexImpTable.UserDefinedAggReflectiveImplementor;
+import org.polypheny.db.algebra.enumerable.AggImplementor;
+import org.polypheny.db.algebra.enumerable.RexImpTable.UserDefinedAggReflectiveImplementor;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.schema.AggregateFunction;

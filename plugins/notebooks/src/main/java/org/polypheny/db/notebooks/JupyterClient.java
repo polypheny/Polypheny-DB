@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,10 @@
 
 package org.polypheny.db.notebooks;
 
-import static java.time.temporal.ChronoUnit.SECONDS;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import io.javalin.http.HttpCode;
 import java.io.IOException;
 import java.net.CookieManager;
 import java.net.URI;
@@ -33,12 +30,16 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.net.http.WebSocket;
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpStatus.Code;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.notebooks.model.JupyterSessionManager;
 
 @Slf4j
@@ -272,23 +273,23 @@ public class JupyterClient {
      * Send a GET request to the specified endpoint.
      *
      * @param resource the endpoint the GET request is sent to
-     * @param queryParams query parameters as string, correctly formatted (key1=value1&key2=value2...)
+     * @param queryParams query parameters as string, correctly formatted {@code (key1=value1&key2=value2...)}
      * @return the HttpResponse from the jupyter server
      * @throws JupyterServerException if the request fails
      */
     private HttpResponse<String> sendGET( String resource, String queryParams ) throws JupyterServerException {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri( getUriFromPath( resource, queryParams ) )
-                .timeout( Duration.of( 10, SECONDS ) )
+                .timeout( Duration.of( 10, ChronoUnit.SECONDS ) )
                 .GET()
                 .header( "Authorization", "token " + token )
                 .build();
         try {
             return client.send( request, BodyHandlers.ofString() );
         } catch ( IOException e ) {
-            throw new JupyterServerException( "GET failed: Jupyter Server is unavailable", HttpCode.SERVICE_UNAVAILABLE );
+            throw new JupyterServerException( "GET failed: Jupyter Server is unavailable", HttpStatus.SERVICE_UNAVAILABLE_503 );
         } catch ( InterruptedException e ) {
-            throw new JupyterServerException( "GET failed: Thread was interrupted", HttpCode.SERVICE_UNAVAILABLE );
+            throw new JupyterServerException( "GET failed: Thread was interrupted", HttpStatus.SERVICE_UNAVAILABLE_503 );
         }
     }
 
@@ -304,16 +305,16 @@ public class JupyterClient {
     private HttpResponse<String> sendPOST( String resource, String body ) throws JupyterServerException {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri( getUriFromPath( resource ) )
-                .timeout( Duration.of( 10, SECONDS ) )
+                .timeout( Duration.of( 10, ChronoUnit.SECONDS ) )
                 .POST( HttpRequest.BodyPublishers.ofString( body ) )
                 .header( "Authorization", "token " + token )
                 .build();
         try {
             return client.send( request, BodyHandlers.ofString() );
         } catch ( IOException e ) {
-            throw new JupyterServerException( "POST failed: Jupyter Server is unavailable", HttpCode.SERVICE_UNAVAILABLE );
+            throw new JupyterServerException( "POST failed: Jupyter Server is unavailable", HttpStatus.SERVICE_UNAVAILABLE_503 );
         } catch ( InterruptedException e ) {
-            throw new JupyterServerException( "POST failed: Thread was interrupted", HttpCode.SERVICE_UNAVAILABLE );
+            throw new JupyterServerException( "POST failed: Thread was interrupted", HttpStatus.SERVICE_UNAVAILABLE_503 );
         }
     }
 
@@ -329,16 +330,16 @@ public class JupyterClient {
     private HttpResponse<String> sendPUT( String resource, String body ) throws JupyterServerException {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri( getUriFromPath( resource ) )
-                .timeout( Duration.of( 10, SECONDS ) )
+                .timeout( Duration.of( 10, ChronoUnit.SECONDS ) )
                 .PUT( HttpRequest.BodyPublishers.ofString( body ) )
                 .header( "Authorization", "token " + token )
                 .build();
         try {
             return client.send( request, BodyHandlers.ofString() );
         } catch ( IOException e ) {
-            throw new JupyterServerException( "PUT failed: Jupyter Server is unavailable", HttpCode.SERVICE_UNAVAILABLE );
+            throw new JupyterServerException( "PUT failed: Jupyter Server is unavailable", HttpStatus.SERVICE_UNAVAILABLE_503 );
         } catch ( InterruptedException e ) {
-            throw new JupyterServerException( "PUT failed: Thread was interrupted", HttpCode.SERVICE_UNAVAILABLE );
+            throw new JupyterServerException( "PUT failed: Thread was interrupted", HttpStatus.SERVICE_UNAVAILABLE_503 );
         }
     }
 
@@ -354,16 +355,16 @@ public class JupyterClient {
     private HttpResponse<String> sendPATCH( String resource, String body ) throws JupyterServerException {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri( getUriFromPath( resource ) )
-                .timeout( Duration.of( 10, SECONDS ) )
+                .timeout( Duration.of( 10, ChronoUnit.SECONDS ) )
                 .method( "PATCH", HttpRequest.BodyPublishers.ofString( body ) )
                 .header( "Authorization", "token " + token )
                 .build();
         try {
             return client.send( request, BodyHandlers.ofString() );
         } catch ( IOException e ) {
-            throw new JupyterServerException( "PATCH failed: Jupyter Server is unavailable", HttpCode.SERVICE_UNAVAILABLE );
+            throw new JupyterServerException( "PATCH failed: Jupyter Server is unavailable", HttpStatus.SERVICE_UNAVAILABLE_503 );
         } catch ( InterruptedException e ) {
-            throw new JupyterServerException( "PATCH failed: Thread was interrupted", HttpCode.SERVICE_UNAVAILABLE );
+            throw new JupyterServerException( "PATCH failed: Thread was interrupted", HttpStatus.SERVICE_UNAVAILABLE_503 );
         }
     }
 
@@ -378,16 +379,16 @@ public class JupyterClient {
     private HttpResponse<String> sendDELETE( String resource ) throws JupyterServerException {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri( getUriFromPath( resource ) )
-                .timeout( Duration.of( 10, SECONDS ) )
+                .timeout( Duration.of( 10, ChronoUnit.SECONDS ) )
                 .DELETE()
                 .header( "Authorization", "token " + token )
                 .build();
         try {
             return client.send( request, BodyHandlers.ofString() );
         } catch ( IOException e ) {
-            throw new JupyterServerException( "DELETE failed: Jupyter Server is unavailable", HttpCode.SERVICE_UNAVAILABLE );
+            throw new JupyterServerException( "DELETE failed: Jupyter Server is unavailable", HttpStatus.SERVICE_UNAVAILABLE_503 );
         } catch ( InterruptedException e ) {
-            throw new JupyterServerException( "DELETE failed: Thread was interrupted", HttpCode.SERVICE_UNAVAILABLE );
+            throw new JupyterServerException( "DELETE failed: Thread was interrupted", HttpStatus.SERVICE_UNAVAILABLE_503 );
         }
     }
 
@@ -490,7 +491,7 @@ public class JupyterClient {
         try {
             return new URI( "http", host, "/api/" + path, queryParams, null );
         } catch ( URISyntaxException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 
@@ -498,23 +499,22 @@ public class JupyterClient {
     /**
      * A class representing any exception that might occur when a request is sent to the jupyter server.
      */
+    @Getter
     public static class JupyterServerException extends Exception {
 
-        @Getter
         private final String msg;
-        @Getter
-        private final HttpCode status;
+        private final Code status;
 
 
-        public JupyterServerException( String msg, HttpCode status ) {
+        public JupyterServerException( String msg, Code status ) {
             this.msg = msg;
-            this.status = Objects.requireNonNullElse( status, HttpCode.INTERNAL_SERVER_ERROR );
+            this.status = Objects.requireNonNullElse( status, Code.INTERNAL_SERVER_ERROR );
         }
 
 
         public JupyterServerException( String msg, int status ) {
             this.msg = msg;
-            this.status = Objects.requireNonNullElse( HttpCode.Companion.forStatus( status ), HttpCode.INTERNAL_SERVER_ERROR );
+            this.status = Objects.requireNonNullElse( HttpStatus.getCode( status ), Code.INTERNAL_SERVER_ERROR );
         }
 
     }

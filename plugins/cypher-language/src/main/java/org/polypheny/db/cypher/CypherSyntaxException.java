@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,13 @@
 
 package org.polypheny.db.cypher;
 
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.parser.ParseException;
 
 public class CypherSyntaxException extends RuntimeException {
 
     public CypherSyntaxException( ParseException e, int beginOffset, int beginLine, int beginColumn ) {
-        throw new RuntimeException( e.getMessage() );
+        throw new GenericRuntimeException( e.getMessage() );
     }
 
 

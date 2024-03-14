@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1062,7 +1062,7 @@ public class Resources {
             Class<?> clazz = getClass();
             InputStream stream = openPropertiesFile( clazz );
             if ( stream == null ) {
-                throw new IOException( "could not open properties file for " + getClass() );
+                throw new IOException( "could not execute properties file for " + getClass() );
             }
             MyPropertyResourceBundle previousBundle = new MyPropertyResourceBundle( stream );
             bundle = previousBundle;

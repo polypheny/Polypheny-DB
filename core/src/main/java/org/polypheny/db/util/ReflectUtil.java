@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,14 +33,16 @@
 
 package org.polypheny.db.util;
 
-import com.google.common.collect.ImmutableList;
-import org.apache.calcite.linq4j.function.Parameter;
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.apache.calcite.linq4j.function.Parameter;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 
 
 /**
@@ -189,24 +191,6 @@ public abstract class ReflectUtil {
 
 
     /**
-     * Implements the {@link Glossary#VISITOR_PATTERN} via reflection. The basic technique is taken from
-     * <a href="http://www.javaworld.com/javaworld/javatips/jw-javatip98.html">a Javaworld article</a>. For an example of how to use it, see {@code ReflectVisitorTest}.
-     *
-     * Visit method lookup follows the same rules as if compile-time resolution for VisitorClass.visit(VisiteeClass) were performed. An ambiguous match due to multiple
-     * interface inheritance results in an IllegalArgumentException. A non-match is indicated by returning false.
-     *
-     * @param visitor object whose visit method is to be invoked
-     * @param visitee object to be passed as a parameter to the visit method
-     * @param hierarchyRoot if non-null, visitor method will only be invoked if it takes a parameter whose type is a subtype of hierarchyRoot
-     * @param visitMethodName name of visit method, e.g. "visit"
-     * @return true if a matching visit method was found and invoked
-     */
-    public static boolean invokeVisitor( ReflectiveVisitor visitor, Object visitee, Class<?> hierarchyRoot, String visitMethodName ) {
-        return invokeVisitorInternal( visitor, visitee, hierarchyRoot, visitMethodName );
-    }
-
-
-    /**
      * Shared implementation of the two forms of invokeVisitor.
      *
      * @param visitor object whose visit method is to be invoked
@@ -233,12 +217,12 @@ public abstract class ReflectUtil {
         try {
             method.invoke( visitor, visitee );
         } catch ( IllegalAccessException ex ) {
-            throw new RuntimeException( ex );
+            throw new GenericRuntimeException( ex );
         } catch ( InvocationTargetException ex ) {
             // visit methods aren't allowed to have throws clauses, so the only exceptions which should come
             // to us are RuntimeExceptions and Errors
             Util.throwIfUnchecked( ex.getTargetException() );
-            throw new RuntimeException( ex.getTargetException() );
+            throw new GenericRuntimeException( ex.getTargetException() );
         }
         return true;
     }
@@ -265,7 +249,6 @@ public abstract class ReflectUtil {
      * @param visitMethodName name of visit method
      * @param additionalParameterTypes list of additional parameter types
      * @return method found, or null if none found
-     * @see #createDispatcher(Class, Class)
      */
     public static Method lookupVisitMethod( Class<?> visitorClass, Class<?> visiteeClass, String visitMethodName, List<Class<?>> additionalParameterTypes ) {
         // Prepare an array to re-use in recursive calls.  The first argument will have the visitee class substituted into it.
@@ -343,114 +326,7 @@ public abstract class ReflectUtil {
     }
 
 
-    /**
-     * Creates a dispatcher for calls to {@link #lookupVisitMethod}. The dispatcher caches methods between invocations.
-     *
-     * @param visitorBaseClazz Visitor base class
-     * @param visiteeBaseClazz Visitee base class
-     * @return cache of methods
-     */
-    public static <R extends ReflectiveVisitor, E> ReflectiveVisitDispatcher<R, E> createDispatcher( final Class<R> visitorBaseClazz, final Class<E> visiteeBaseClazz ) {
-        assert ReflectiveVisitor.class.isAssignableFrom( visitorBaseClazz );
-        assert Object.class.isAssignableFrom( visiteeBaseClazz );
-        return new ReflectiveVisitDispatcher<R, E>() {
-            final Map<List<Object>, Method> map = new HashMap<>();
 
-
-            @Override
-            public Method lookupVisitMethod( Class<? extends R> visitorClass, Class<? extends E> visiteeClass, String visitMethodName ) {
-                return lookupVisitMethod( visitorClass, visiteeClass, visitMethodName, Collections.emptyList() );
-            }
-
-
-            @Override
-            public Method lookupVisitMethod( Class<? extends R> visitorClass, Class<? extends E> visiteeClass, String visitMethodName, List<Class<?>> additionalParameterTypes ) {
-                final List<Object> key = ImmutableList.of( visitorClass, visiteeClass, visitMethodName, additionalParameterTypes );
-                Method method = map.get( key );
-                if ( method == null ) {
-                    //noinspection StatementWithEmptyBody
-                    if ( map.containsKey( key ) ) {
-                        // We already looked for the method and found nothing.
-                    } else {
-                        method = ReflectUtil.lookupVisitMethod( visitorClass, visiteeClass, visitMethodName, additionalParameterTypes );
-                        map.put( key, method );
-                    }
-                }
-                return method;
-            }
-
-
-            @Override
-            public boolean invokeVisitor( R visitor, E visitee, String visitMethodName ) {
-                return ReflectUtil.invokeVisitor( visitor, visitee, visiteeBaseClazz, visitMethodName );
-            }
-        };
-    }
-
-
-    /**
-     * Creates a dispatcher for calls to a single multi-method on a particular object.
-     *
-     * Calls to that multi-method are resolved by looking for a method on the runtime type of that object, with the required name, and with
-     * the correct type or a subclass for the first argument, and precisely the same types for other arguments.
-     *
-     * For instance, a dispatcher created for the method
-     *
-     * <blockquote>String foo(Vehicle, int, List)</blockquote>
-     *
-     * <p>could be used to call the methods
-     *
-     * <blockquote>
-     * String foo(Car, int, List)
-     * String foo(Bus, int, List)
-     * </blockquote>
-     *
-     * (because Car and Bus are subclasses of Vehicle, and they occur in the polymorphic first argument) but not the method
-     *
-     * <blockquote>String foo(Car, int, ArrayList)</blockquote>
-     *
-     * (only the first argument is polymorphic).
-     * You must create an implementation of the method for the base class.
-     * Otherwise, throws {@link IllegalArgumentException}.
-     *
-     * @param returnClazz Return type of method
-     * @param visitor Object on which to invoke the method
-     * @param methodName Name of method
-     * @param arg0Clazz Base type of argument zero
-     * @param otherArgClasses Types of remaining arguments
-     */
-    public static <E, T> MethodDispatcher<T> createMethodDispatcher( final Class<T> returnClazz, final ReflectiveVisitor visitor, final String methodName, final Class<E> arg0Clazz, final Class<?>... otherArgClasses ) {
-        final List<Class<?>> otherArgClassList = ImmutableList.copyOf( otherArgClasses );
-        @SuppressWarnings({ "unchecked" }) final ReflectiveVisitDispatcher<ReflectiveVisitor, E> dispatcher = createDispatcher( (Class<ReflectiveVisitor>) visitor.getClass(), arg0Clazz );
-
-        return new MethodDispatcher<>() {
-            @Override
-            public T invoke( Object... args ) {
-                Method method = lookupMethod( args[0] );
-                try {
-                    final Object o = method.invoke( visitor, args );
-                    return returnClazz.cast( o );
-                } catch ( IllegalAccessException | InvocationTargetException e ) {
-                    throw new RuntimeException( "While invoking method '" + method + "'", e );
-                }
-            }
-
-
-            private Method lookupMethod( final Object arg0 ) {
-                if ( !arg0Clazz.isInstance( arg0 ) ) {
-                    throw new IllegalArgumentException();
-                }
-                Method method = dispatcher.lookupVisitMethod( visitor.getClass(), (Class<? extends E>) arg0.getClass(), methodName, otherArgClassList );
-                if ( method == null ) {
-                    List<Class<?>> classList = new ArrayList<>();
-                    classList.add( arg0Clazz );
-                    classList.addAll( otherArgClassList );
-                    throw new IllegalArgumentException( "Method not found: " + methodName + "(" + classList + ")" );
-                }
-                return method;
-            }
-        };
-    }
 
 
     /**
@@ -478,23 +354,6 @@ public abstract class ReflectUtil {
         return false;
     }
 
-
-    /**
-     * Can invoke a method on an object of type E with return type T.
-     *
-     * @param <T> Return type of method
-     */
-    public interface MethodDispatcher<T> {
-
-        /**
-         * Invokes method on an object with a given set of arguments.
-         *
-         * @param args Arguments to method
-         * @return Return value of method
-         */
-        T invoke( Object... args );
-
-    }
 
 }
 

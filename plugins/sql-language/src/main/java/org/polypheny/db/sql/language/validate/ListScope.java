@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,22 +18,28 @@ package org.polypheny.db.sql.language.validate;
 
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import org.polypheny.db.algebra.constant.MonikerType;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.StructKind;
-import org.polypheny.db.nodes.validate.ValidatorTable;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.util.Moniker;
 import org.polypheny.db.util.MonikerImpl;
 import org.polypheny.db.util.NameMatcher;
+import org.polypheny.db.util.NameMatchers;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Static;
 import org.polypheny.db.util.Util;
@@ -68,7 +74,7 @@ public abstract class ListScope extends DelegatingScope {
      * @return list of child namespaces
      */
     public List<SqlValidatorNamespace> getChildren() {
-        return Lists.transform( children, scopeChild -> scopeChild.namespace );
+        return children.stream().map( scopeChild -> scopeChild.namespace ).collect( Collectors.toList() );
     }
 
 
@@ -78,12 +84,21 @@ public abstract class ListScope extends DelegatingScope {
      * @return list of child namespaces
      */
     List<String> getChildNames() {
-        return Lists.transform( children, scopeChild -> scopeChild.name );
+        return children.stream().map( scopeChild -> scopeChild.name ).collect( Collectors.toList() );
     }
 
 
-    private ScopeChild findChild( List<String> names, NameMatcher nameMatcher ) {
+    private ScopeChild findChild( List<String> names ) {
         for ( ScopeChild child : children ) {
+            if ( child.namespace.getEntity() != null && child.namespace.resolve().getDataModel() != DataModel.RELATIONAL ) {
+                return child;
+            }
+            NameMatcher nameMatcher = NameMatchers.withCaseSensitive( false );
+            if ( child.namespace.getEntity() != null ) {
+                // we do not yet know the parent namespace, so we cannot resolve the casing, we are liberal and match case-insensitive
+                nameMatcher = NameMatchers.withCaseSensitive( Catalog.snapshot().getNamespace( child.namespace.getEntity().namespaceId ).orElseThrow().caseSensitive );
+            }
+
             String lastName = Util.last( names );
             if ( child.name != null ) {
                 if ( !nameMatcher.matches( child.name, lastName ) ) {
@@ -97,19 +112,28 @@ public abstract class ListScope extends DelegatingScope {
             }
 
             // Look up the 2 tables independently, in case one is qualified with catalog & schema and the other is not.
-            final ValidatorTable table = child.namespace.getTable();
+            final Entity table = child.namespace.getEntity();
             if ( table != null ) {
-                final ResolvedImpl resolved = new ResolvedImpl();
-                resolveTable( names, nameMatcher, Path.EMPTY, resolved );
-                if ( resolved.count() == 1
-                        && resolved.only().remainingNames.isEmpty()
-                        && resolved.only().namespace instanceof TableNamespace
-                        && resolved.only().namespace.getTable().getQualifiedName().equals( table.getQualifiedName() ) ) {
+                Optional<? extends LogicalEntity> optionalEntity = getEntity( names );
+                if ( optionalEntity.isPresent()
+                        && optionalEntity.get().name.equals( table.name )
+                        && optionalEntity.get().namespaceId == table.namespaceId ) {
                     return child;
                 }
             }
         }
         return null;
+    }
+
+
+    private Optional<? extends org.polypheny.db.catalog.entity.logical.LogicalEntity> getEntity( List<String> names ) {
+        if ( names.size() == 2 ) {
+            return validator.snapshot.rel().getTable( names.get( 0 ), names.get( 1 ) );
+        } else if ( names.size() == 1 ) {
+            return validator.snapshot.rel().getTable( Catalog.defaultNamespaceId, names.get( 0 ) );
+        } else {
+            throw new GenericRuntimeException( "Table is not known" );
+        }
     }
 
 
@@ -132,53 +156,50 @@ public abstract class ListScope extends DelegatingScope {
 
 
     @Override
-    public Pair<String, SqlValidatorNamespace>
-    findQualifyingTableName( final String columnName, SqlNode ctx ) {
-        final NameMatcher nameMatcher = validator.catalogReader.nameMatcher();
-        final Map<String, ScopeChild> map = findQualifyingTableNames( columnName, ctx, nameMatcher );
-        switch ( map.size() ) {
-            case 0:
-                throw validator.newValidationError( ctx, Static.RESOURCE.columnNotFound( columnName ) );
-            case 1:
+    public Pair<String, SqlValidatorNamespace> findQualifyingEntityName( final String columnName, SqlNode ctx ) {
+        final NameMatcher nameMatcher = NameMatchers.withCaseSensitive( false );
+        final Map<String, ScopeChild> map = findQualifyingEntityNames( columnName, ctx, nameMatcher );
+        return switch ( map.size() ) {
+            case 0 -> throw validator.newValidationError( ctx, Static.RESOURCE.fieldNotFound( columnName ) );
+            case 1 -> {
                 final Map.Entry<String, ScopeChild> entry = map.entrySet().iterator().next();
-                return Pair.of( entry.getKey(), entry.getValue().namespace );
-            default:
-                throw validator.newValidationError( ctx, Static.RESOURCE.columnAmbiguous( columnName ) );
-        }
+                yield Pair.of( entry.getKey(), entry.getValue().namespace );
+            }
+            default -> throw validator.newValidationError( ctx, Static.RESOURCE.columnAmbiguous( columnName ) );
+        };
     }
 
 
     @Override
-    public Map<String, ScopeChild>
-    findQualifyingTableNames( String columnName, SqlNode ctx, NameMatcher nameMatcher ) {
+    public Map<String, ScopeChild> findQualifyingEntityNames( String columnName, SqlNode ctx, NameMatcher nameMatcher ) {
         final Map<String, ScopeChild> map = new HashMap<>();
         for ( ScopeChild child : children ) {
             final ResolvedImpl resolved = new ResolvedImpl();
-            resolve( ImmutableList.of( child.name, columnName ), nameMatcher, true, resolved );
+            resolve( ImmutableList.of( child.name, columnName ), true, resolved );
             if ( resolved.count() > 0 ) {
                 map.put( child.name, child );
             }
         }
-        switch ( map.size() ) {
-            case 0:
-                return parent.findQualifyingTableNames( columnName, ctx, nameMatcher );
-            default:
-                return map;
+        if ( map.isEmpty() ) {
+            return parent.findQualifyingEntityNames( columnName, ctx, nameMatcher );
         }
+        return map;
     }
 
 
     @Override
-    public void resolve( List<String> names, NameMatcher nameMatcher, boolean deep, Resolved resolved ) {
+    public void resolve( List<String> names, boolean deep, Resolved resolved ) {
         // First resolve by looking through the child namespaces.
-        final ScopeChild child0 = findChild( names, nameMatcher );
+        final ScopeChild child0 = findChild( names );
+
         if ( child0 != null ) {
             final Step path =
                     Path.EMPTY.plus(
-                            child0.namespace.getRowType(),
+                            child0.namespace.getTupleType(),
                             child0.ordinal,
                             child0.name,
                             StructKind.FULLY_QUALIFIED );
+
             resolved.found(
                     child0.namespace,
                     child0.nullable,
@@ -187,6 +208,7 @@ public abstract class ListScope extends DelegatingScope {
                     null );
             return;
         }
+        NameMatcher nameMatcher = NameMatchers.withCaseSensitive( false );
 
         // Recursively look deeper into the record-valued fields of the namespace, if it allows skipping fields.
         if ( deep ) {
@@ -209,32 +231,29 @@ public abstract class ListScope extends DelegatingScope {
         }
 
         // Then call the base class method, which will delegate to the parent scope.
-        super.resolve( names, nameMatcher, deep, resolved );
+        super.resolve( names, deep, resolved );
     }
 
 
     @Override
     public AlgDataType resolveColumn( String columnName, SqlNode ctx ) {
-        final NameMatcher nameMatcher = validator.catalogReader.nameMatcher();
+        final NameMatcher nameMatcher = NameMatchers.withCaseSensitive( false );
         int found = 0;
         AlgDataType type = null;
         for ( ScopeChild child : children ) {
             SqlValidatorNamespace childNs = child.namespace;
-            final AlgDataType childRowType = childNs.getRowType();
+            final AlgDataType childRowType = childNs.getTupleType();
             final AlgDataTypeField field = nameMatcher.field( childRowType, columnName );
             if ( field != null ) {
                 found++;
                 type = field.getType();
             }
         }
-        switch ( found ) {
-            case 0:
-                return null;
-            case 1:
-                return type;
-            default:
-                throw validator.newValidationError( ctx, Static.RESOURCE.columnAmbiguous( columnName ) );
-        }
+        return switch ( found ) {
+            case 0 -> null;
+            case 1 -> type;
+            default -> throw validator.newValidationError( ctx, Static.RESOURCE.columnAmbiguous( columnName ) );
+        };
     }
 
 }

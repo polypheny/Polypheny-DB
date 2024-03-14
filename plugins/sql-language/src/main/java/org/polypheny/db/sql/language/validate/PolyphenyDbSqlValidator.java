@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ package org.polypheny.db.sql.language.validate;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.sql.language.SqlInsert;
 import org.polypheny.db.util.Conformance;
 
@@ -32,10 +32,10 @@ public class PolyphenyDbSqlValidator extends SqlValidatorImpl {
 
     public PolyphenyDbSqlValidator(
             OperatorTable opTab,
-            PolyphenyDbCatalogReader catalogReader,
+            Snapshot snapshot,
             JavaTypeFactory typeFactory,
             Conformance conformance ) {
-        super( opTab, catalogReader, typeFactory, conformance );
+        super( opTab, snapshot, typeFactory, conformance );
     }
 
 

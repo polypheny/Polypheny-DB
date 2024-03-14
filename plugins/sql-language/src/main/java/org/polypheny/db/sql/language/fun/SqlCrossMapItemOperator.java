@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,8 +70,7 @@ public class SqlCrossMapItemOperator extends SqlSpecialOperator {
 
     @Override
     public void validateCall( SqlCall call, SqlValidator validator, SqlValidatorScope scope, SqlValidatorScope operandScope ) {
-        //super.validateCall( call, validator, scope, operandScope );
-        // todo dl, rewrite whole validator logic
+        // empty on purpose
     }
 
 }

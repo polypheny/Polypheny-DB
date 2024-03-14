@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,46 +16,72 @@
 
 package org.polypheny.db;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
+import java.sql.Array;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import kong.unirest.HttpRequest;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.NotImplementedException;
+import org.bson.BsonArray;
 import org.bson.BsonDocument;
-import org.junit.AfterClass;
-import org.junit.Assert;
+import org.bson.BsonValue;
+import org.junit.jupiter.api.AfterAll;
+import org.polypheny.db.adapter.AdapterManager;
+import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
-import org.polypheny.db.runtime.functions.Functions;
+import org.polypheny.db.catalog.IdBuilder;
+import org.polypheny.db.catalog.impl.PolyCatalog;
+import org.polypheny.db.functions.Functions;
+import org.polypheny.db.processing.caching.ImplementationCache;
+import org.polypheny.db.processing.caching.QueryPlanCache;
+import org.polypheny.db.processing.caching.RoutingPlanCache;
+import org.polypheny.db.routing.Router;
+import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
-import org.polypheny.db.webui.models.Result;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyFloat;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.RunMode;
+import org.polypheny.db.webui.HttpServer;
+import org.polypheny.db.webui.models.results.DocResult;
+import org.polypheny.db.webui.models.results.GraphResult;
 
 
 @Slf4j
@@ -80,17 +106,13 @@ public class TestHelper {
         log.info( "Starting Polypheny-DB..." );
 
         Runnable runnable = () -> {
-            try {
-                polyphenyDb.testMode = true;
-                String defaultStoreName = System.getProperty( "store.default" );
-                if ( defaultStoreName != null ) {
-                    polyphenyDb.defaultStoreName = defaultStoreName;
-                }
-                // polyphenyDb.resetCatalog = true;
-                polyphenyDb.runPolyphenyDb();
-            } catch ( GenericCatalogException e ) {
-                log.error( "Exception while starting Polypheny-DB", e );
+            PolyphenyDb.mode = RunMode.TEST;
+            String defaultStoreName = System.getProperty( "store.default" );
+            if ( defaultStoreName != null ) {
+                polyphenyDb.defaultStoreName = defaultStoreName;
             }
+            // polyphenyDb.resetCatalog = true;
+            polyphenyDb.runPolyphenyDb();
         };
         Thread thread = new Thread( runnable );
         thread.start();
@@ -125,18 +147,125 @@ public class TestHelper {
     }
 
 
-    public Transaction getTransaction() {
+    public static PolyValue toPolyValue( Object value ) {
+
+        if ( value instanceof Integer ) {
+            return PolyInteger.of( (Integer) value );
+        } else if ( value instanceof Long ) {
+            return PolyLong.of( (Long) value );
+        } else if ( value instanceof Float ) {
+            return PolyFloat.of( (Float) value );
+        } else if ( value instanceof Double ) {
+            return PolyDouble.of( (Double) value );
+        } else if ( value instanceof String ) {
+            return PolyString.of( (String) value );
+        } else if ( value instanceof Collection ) {
+            return PolyList.of( ((List<?>) value).stream().map( TestHelper::toPolyValue ).toList() );
+        }
+
+        throw new NotImplementedException();
+    }
+
+
+    public static void checkResultSetWithDelay( int tries, int waitSeconds, DelayedSupplier<ResultSet> resultSet, ImmutableList<Object[]> expected ) {
+        checkResultSetWithDelay( tries, waitSeconds, resultSet, expected, false );
+    }
+
+
+    public static void checkResultSetWithDelay( int tries, int waitSeconds, DelayedSupplier<ResultSet> resultSet, ImmutableList<Object[]> expected, boolean ignoreOrder ) {
         try {
-            return transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, true, "Test Helper" );
-        } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
-            throw new RuntimeException( "Error while starting transaction", e );
+            TimeUnit.SECONDS.sleep( waitSeconds );
+            try {
+                checkResultSet( resultSet.get(), expected, ignoreOrder );
+            } catch ( Throwable e ) {
+                if ( tries > 0 ) {
+                    checkResultSetWithDelay( tries - 1, waitSeconds, resultSet, expected, ignoreOrder );
+                } else {
+                    throw new RuntimeException( e );
+                }
+            }
+        } catch ( InterruptedException interruptedException ) {
+            log.error( "Interrupted exception", interruptedException );
         }
     }
 
 
-    @AfterClass
+    public Transaction getTransaction() {
+        return transactionManager.startTransaction( Catalog.defaultUserId, true, "Test Helper" );
+    }
+
+
+    @AfterAll
     public static void tearDown() {
         //LOG.info( "shutdown - closing DB connection" );
+    }
+
+
+    public static void addHsqldb( String name, Statement statement ) throws SQLException {
+        executeSQL( statement, "ALTER ADAPTERS ADD \"" + name + "\" USING 'Hsqldb' AS 'Store'"
+                + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+    }
+
+
+    public static void addCsv( String name, Statement statement ) throws SQLException {
+        executeSQL( statement, "ALTER ADAPTERS ADD \"" + name + "\" USING 'Csv' AS 'Store'"
+                + " WITH '{}'" );
+    }
+
+
+    public static void dropAdapter( String name, Statement statement ) throws SQLException {
+        executeSQL( statement, "ALTER ADAPTERS DROP \"" + name + "\"" );
+    }
+
+
+    public static void executeSQL( Statement statement, String sql ) throws SQLException {
+        statement.execute( sql );
+    }
+
+
+    public static void executeSQL( String sql ) throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
+            try ( Statement statement = jdbcConnection.connection.createStatement() ) {
+                statement.execute( sql );
+            }
+        }
+    }
+
+
+    /**
+     * Surprisingly often when testing the used ids are in a similar range and quite low, which can result in unexpected behaviour,
+     * where tests seem to work but shouldn't.
+     */
+    public void randomizeCatalogIds() {
+        Random random = new Random();
+        int max = 200;
+        Supplier<Integer> offset = () -> random.nextInt( max );
+
+        try {
+            PolyCatalog catalog = (PolyCatalog) Catalog.getInstance();
+            Field field = catalog.getClass().getDeclaredField( "idBuilder" );
+            field.setAccessible( true );
+            field.set( catalog, new IdBuilder(
+                    new AtomicLong( catalog.idBuilder.getSnapshotId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getNamespaceId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getEntityId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getFieldId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getUserId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getAllocId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getPhysicalId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getIndexId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getKeyId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getAdapterId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getAdapterTemplateId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getInterfaceId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getConstraintId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getGroupId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getPartitionId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getPlacementId().longValue() + offset.get() )
+            ) );
+        } catch ( NoSuchFieldException | IllegalAccessException e ) {
+            throw new RuntimeException( e );
+        }
     }
 
 
@@ -160,72 +289,61 @@ public class TestHelper {
         ResultSetMetaData rsmd = resultSet.getMetaData();
         int i = 0;
         for ( Object[] row : received ) {
-            Assert.assertTrue( "Result set has more rows than expected", i < expected.size() );
+            assertTrue( i < expected.size(), "Result set has more rows than expected" );
             Object[] expectedRow = expected.get( i++ );
-            Assert.assertEquals( "Wrong number of columns", expectedRow.length, rsmd.getColumnCount() );
+            assertEquals( expectedRow.length, rsmd.getColumnCount(), "Wrong number of columns" );
             int j = 0;
             while ( j < expectedRow.length ) {
                 if ( expectedRow.length >= j + 1 ) {
                     int columnType = rsmd.getColumnType( j + 1 );
                     if ( columnType == Types.BINARY ) {
                         if ( expectedRow[j] == null ) {
-                            Assert.assertNull( "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': ", row[j] );
+                            assertNull( row[j], "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': " );
                         } else {
-                            Assert.assertEquals(
-                                    "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'",
+                            assertEquals(
                                     new String( (byte[]) expectedRow[j] ),
-                                    new String( (byte[]) row[j] ) );
+                                    new String( (byte[]) row[j] ),
+                                    "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'" );
                         }
                     } else if ( columnType != Types.ARRAY ) {
                         if ( expectedRow[j] != null ) {
                             if ( columnType == Types.FLOAT || columnType == Types.REAL ) {
                                 float diff = Math.abs( (float) expectedRow[j] - (float) row[j] );
-                                Assert.assertTrue(
-                                        "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': The difference between the expected float and the received float exceeds the epsilon. Difference: " + (diff - EPSILON),
-                                        diff < EPSILON );
+                                assertTrue( diff < EPSILON,
+                                        "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': The difference between the expected float and the received float exceeds the epsilon. Difference: " + (diff - EPSILON) );
                             } else if ( columnType == Types.DOUBLE ) {
                                 double diff = Math.abs( (double) expectedRow[j] - (double) row[j] );
-                                Assert.assertTrue(
-                                        "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': The difference between the expected double and the received double exceeds the epsilon. Difference: " + (diff - EPSILON),
-                                        diff < EPSILON );
+                                assertTrue( diff < EPSILON,
+                                        "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': The difference between the expected double and the received double exceeds the epsilon. Difference: " + (diff - EPSILON) );
                             } else if ( columnType == Types.DECIMAL ) { // Decimals are exact // but not for calculations?
-                                BigDecimal expectedResult = (BigDecimal) expectedRow[j];
+                                BigDecimal expectedResult = new BigDecimal( expectedRow[j].toString() );
                                 double diff = Math.abs( expectedResult.doubleValue() - ((BigDecimal) row[j]).doubleValue() );
                                 if ( isConvertingDecimals ) {
-                                    Assert.assertTrue(
-                                            "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': The difference between the expected decimal and the received decimal exceeds the epsilon. Difference: " + (diff - EPSILON),
-                                            diff < EPSILON );
+                                    assertTrue( diff < EPSILON,
+                                            "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': The difference between the expected decimal and the received decimal exceeds the epsilon. Difference: " + (diff - EPSILON) );
                                 } else {
-                                    Assert.assertEquals( "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'", 0, expectedResult.doubleValue() - ((BigDecimal) row[j]).doubleValue(), 0.0 );
+                                    assertEquals( 0, expectedResult.doubleValue() - ((BigDecimal) row[j]).doubleValue(), 0.0, "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'" );
                                 }
+                            } else if ( expectedRow[j] != null && row[j] != null && expectedRow[j] instanceof Number && row[j] instanceof Number ) {
+                                assertEquals( ((Number) expectedRow[j]).longValue(), ((Number) row[j]).longValue(), "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'" );
                             } else {
-                                Assert.assertEquals(
-                                        "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'",
+                                assertEquals(
                                         expectedRow[j],
-                                        row[j]
+                                        row[j],
+                                        "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'"
                                 );
                             }
                         } else {
-                            Assert.assertEquals(
-                                    "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'",
+                            assertEquals(
+
                                     expectedRow[j],
-                                    row[j]
+                                    row[j],
+                                    "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'"
                             );
                         }
 
                     } else {
-                        List resultList = (List) row[j];
-                        Object[] expectedArray = (Object[]) expectedRow[j];
-                        if ( expectedArray == null ) {
-                            Assert.assertNull( "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': ", resultList );
-                        } else {
-                            for ( int k = 0; k < expectedArray.length; k++ ) {
-                                Assert.assertEquals(
-                                        "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "' at position: " + k + 1,
-                                        expectedArray[k],
-                                        resultList.get( k ) );
-                            }
-                        }
+                        checkArray( rsmd, row, expectedRow, j );
                     }
                     j++;
                 } else {
@@ -233,7 +351,39 @@ public class TestHelper {
                 }
             }
         }
-        Assert.assertEquals( "Wrong number of rows in the result set", expected.size(), i );
+        assertEquals( expected.size(), i, "Wrong number of rows in the result set" );
+    }
+
+
+    private static void checkArray( ResultSetMetaData rsmd, Object[] row, Object[] expectedRow, int j ) throws SQLException {
+        List<?> resultList = (List<?>) row[j];
+
+        if ( expectedRow[j] == null ) {
+            assertNull( resultList, "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': " );
+            return;
+        }
+
+        List<?> expectedArray = toList( (Object[]) expectedRow[j] );//(Object[]) expectedRow[j];
+
+        for ( int k = 0; k < expectedArray.size(); k++ ) {
+            assertEquals(
+                    expectedArray.get( k ),
+                    resultList.get( k ),
+                    "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "' at position: " + k + 1 );
+        }
+    }
+
+
+    private static List<Object> toList( Object[] objects ) {
+        List<Object> list = new ArrayList<>();
+        for ( Object object : objects ) {
+            if ( object instanceof Object[] ) {
+                list.add( toList( (Object[]) object ) );
+            } else {
+                list.add( object );
+            }
+        }
+        return list;
     }
 
 
@@ -262,7 +412,7 @@ public class TestHelper {
                         row[i - 1] = resultSet.getObject( i );
                     }
                 } else {
-                    row[i - 1] = Functions.deepArrayToList( resultSet.getArray( i ) );
+                    row[i - 1] = Functions.deepArrayToList( (Array) resultSet.getObject( i ) );
                 }
             }
             list.add( row );
@@ -283,12 +433,39 @@ public class TestHelper {
     }
 
 
+    public void resetCaches() {
+        ImplementationCache.INSTANCE.reset();
+        QueryPlanCache.INSTANCE.reset();
+        RoutingPlanCache.INSTANCE.reset();
+        RoutingManager.getInstance().getRouters().forEach( Router::resetCaches );
+    }
+
+
+    public void checkAllTrxClosed() {
+        checkTrxStatus( 0 );
+    }
+
+
+    public void checkTrxStatus( int expected ) {
+        long count = transactionManager.getNumberOfActiveTransactions();
+        if ( count != expected ) {
+            fail( "There are still " + count + " active transactions, while there should be " + expected );
+            throw new RuntimeException( "There are still " + count + " active transactions, while there should be " + expected );
+        }
+    }
+
+
+    public boolean storeSupportsIndex() {
+        return !AdapterManager.getInstance().getStore( "hsqldb" ).orElseThrow().getAvailableIndexMethods().isEmpty();
+    }
+
+
     public static abstract class HttpConnection {
 
         public static HttpRequest<?> buildQuery( String route, String query, String database ) {
             JsonObject data = new JsonObject();
             data.addProperty( "query", query );
-            data.addProperty( "database", database );
+            data.addProperty( "namespace", database );
 
             return Unirest.post( "{protocol}://{host}:{port}" + route )
                     .header( "Content-ExpressionType", "application/json" )
@@ -313,67 +490,36 @@ public class TestHelper {
 
         public static final String MONGO_PREFIX = "/mongo";
         public static final String MONGO_DB = "test";
-        static Gson gson = new GsonBuilder().registerTypeAdapter( Result.class, Result.getSerializer() ).create();
 
 
         private MongoConnection() {
         }
 
 
-        public static boolean checkResultSet( Result result, List<Object[]> expected, boolean containsId ) {
-            assertEquals( expected.size(), result.getData().length );
-
-            int j = 0;
-            for ( String[] data : result.getData() ) {
-                int i = 0;
-                for ( String entry : data ) {
-                    if ( containsId && !entry.contains( "_id" ) ) {
-                        return false;
-                    }
-
-                    if ( entry != null && expected.get( j )[i] != null ) {
-                        if ( containsId && result.getHeader()[i].dataType.toLowerCase().contains( "document" ) ) {
-                            BsonDocument doc = BsonDocument.parse( entry );
-                            doc.remove( "_id" );
-
-                            assertEquals( BsonDocument.parse( ((String) expected.get( j )[i]) ), doc );
-                        } else {
-                            assertEquals( ((String) expected.get( j )[i]).replace( " ", "" ), entry.replace( " ", "" ) );
-                        }
-                    } else {
-                        assertEquals( expected.get( j )[i], entry );
-                    }
-                    i++;
-                }
-                j++;
-            }
-
-            return true;
-        }
-
-
-        public static Result executeGetResponse( String mongoQl ) {
+        public static DocResult executeGetResponse( String mongoQl ) {
             return executeGetResponse( mongoQl, MONGO_DB );
         }
 
 
-        public static Result executeGetResponse( String mongoQl, String database ) {
+        public static DocResult executeGetResponse( String mongoQl, String database ) {
             return getBody( execute( MONGO_PREFIX, mongoQl, database ) );
         }
 
 
-        private static Result getBody( HttpResponse<String> res ) {
+        private static DocResult getBody( HttpResponse<String> res ) {
             try {
-                Result[] result = gson.fromJson( res.getBody(), Result[].class );
+                DocResult[] result = HttpServer.mapper.readValue( res.getBody(), DocResult[].class );
                 if ( result.length == 1 ) {
-                    return gson.fromJson( res.getBody(), Result[].class )[0];
+                    if ( result[0].error != null ) {
+                        throw new RuntimeException( result[0].error );
+                    }
+                    return result[0];
                 } else if ( result.length == 0 ) {
-                    return new Result();
+                    return DocResult.builder().build();
                 }
-                fail( "There was more than one result in the response!" );
-                throw new RuntimeException( "This cannot happen" );
+                return result[result.length - 1];
 
-            } catch ( JsonSyntaxException e ) {
+            } catch ( JsonSyntaxException | JsonProcessingException e ) {
                 log.warn( "{}\nmessage: {}", res.getBody(), e.getMessage() );
                 fail();
                 throw new RuntimeException( "This cannot happen" );
@@ -381,74 +527,122 @@ public class TestHelper {
         }
 
 
-        public static boolean checkUnorderedResultSet( Result result, List<String[]> expected, boolean excludeId ) {
+        public static boolean checkDocResultSet( DocResult result, List<String> expected, boolean excludeId, boolean unordered ) {
             if ( result.getData() == null ) {
-                fail( result.getError() );
+                fail( result.error );
             }
             assertEquals( expected.size(), result.getData().length );
 
-            List<List<String>> parsedResults = new ArrayList<>();
+            List<BsonValue> parsedResults = new ArrayList<>();
 
-            for ( String[] data : result.getData() ) {
-                int i = 0;
-                List<String> row = new ArrayList<>();
-                for ( String entry : data ) {
-                    if ( !result.getHeader()[i].name.equals( "_id" ) ) {
-                        BsonDocument doc = tryGetBson( result, i, entry );
-                        if ( doc != null ) {
-                            if ( excludeId && result.getHeader()[i].name.equals( "d" ) ) {
-                                doc.remove( "_id" );
-                            }
-                            row.add( doc.toJson().replace( " ", "" ) );
-                            i++;
-                            continue;
-                        }
+            for ( String data : result.getData() ) {
 
-                        if ( entry != null ) {
-                            row.add( entry.replace( " ", "" ) );
-                        } else {
-                            row.add( null );
-                        }
+                BsonDocument doc = tryGetBson( data );
+                if ( doc != null ) {
+
+                    if ( excludeId && !doc.containsKey( DocumentType.DOCUMENT_ID ) ) {
+                        fail();
+                        throw new RuntimeException( "Should contain " + DocumentType.DOCUMENT_ID + " field." );
                     }
-                    i++;
+                    if ( excludeId ) {
+                        doc.remove( DocumentType.DOCUMENT_ID );
+                    }
+
                 }
-                parsedResults.add( row );
+                parsedResults.add( doc );
             }
-            List<List<String>> parsedExpected = new ArrayList<>();
+            List<BsonValue> parsedExpected = expected.stream().map( e -> e != null ? (BsonValue) BsonDocument.parse( e ) : null ).toList();
 
-            expected.forEach( row -> parsedExpected.add( Arrays.asList( row ) ) );
+            if ( unordered ) {
+                assertTrue( areDocumentEqual( parsedExpected, parsedResults ),
+                        "Expected result does not contain all actual results: \nexpected: \n" + new BsonArray( parsedExpected ) + "\nactual: \n" + new BsonArray( parsedResults ) );
+                assertTrue( areDocumentEqual( parsedResults, parsedExpected ),
+                        "Actual result does not contain all expected results: \nexpected: \n" + new BsonArray( parsedExpected ) + "\nactual: \n" + new BsonArray( parsedResults ) );
+            } else {
+                List<Pair<BsonValue, BsonValue>> wrong = new ArrayList<>();
+                for ( Pair<BsonValue, BsonValue> pair : Pair.zip( parsedExpected, parsedResults ) ) {
+                    if ( !Objects.equals( pair.left, pair.right ) ) {
+                        wrong.add( pair );
+                    }
+                }
 
-            List<List<String>> finalExpected = parsedExpected
-                    .stream()
-                    .map(
-                            list -> list
-                                    .stream()
-                                    .map( e -> {
-                                        if ( e != null ) {
-                                            return e.replace( " ", "" );
-                                        } else {
-                                            return null;
-                                        }
-                                    } )
-                                    .collect( Collectors.toList() ) )
-                    .collect( Collectors.toList() );
+                assertTrue( wrong.isEmpty(), "Expected and actual result do not contain the same element or order: \n"
+                        + "expected: " + wrong.stream().map( p -> p.left.toString()
+                        + " != "
+                        + "actual: " + (p.right == null ? null : p.right.toString()) ).collect( Collectors.joining( ", \n" ) ) );
+            }
 
-            assertTrue( "Expected result does not contain all actual results", finalExpected.containsAll( parsedResults ) );
-            assertTrue( "Actual result does not contain all expected results", parsedResults.containsAll( finalExpected ) );
             return true;
         }
 
 
-        private static BsonDocument tryGetBson( Result result, int i, String entry ) {
-            BsonDocument doc = null;
-            if ( result.getHeader()[i].dataType.toLowerCase().contains( "document" ) ) {
-                doc = BsonDocument.parse( entry );
-            } else if ( result.getHeader()[i].dataType.toLowerCase().contains( "any" ) ) {
-                try {
-                    doc = BsonDocument.parse( entry );
-                } catch ( Exception e ) {
-                    // empty on purpose
+        /**
+         * Checks if all elements of parsedExpected are in parsedResults
+         * This is needed because the order of the elements in the result is not guaranteed
+         * The document model does not guarantee specific types like 8.0 and 8 are treated as equal
+         *
+         * @param parsedExpected list of expected documents
+         * @param parsedResults list of actual documents
+         * @return true if all elements of parsedExpected are in parsedResults and vice versa
+         */
+        private static boolean areDocumentEqual( List<BsonValue> parsedExpected, List<BsonValue> parsedResults ) {
+            for ( BsonValue bsonValue : parsedExpected ) {
+                if ( parsedResults.contains( bsonValue ) ) {
+                    continue;
                 }
+                boolean found = false;
+                for ( BsonValue parsedResult : parsedResults ) {
+                    if ( areValueEqual( bsonValue, parsedResult ) ) {
+                        found = true;
+                        break;
+                    }
+                }
+                if ( !found ) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+
+        private static boolean areValueEqual( BsonValue bsonValue, BsonValue parsedResult ) {
+            if ( bsonValue.equals( parsedResult ) ) {
+                return true;
+            }
+            if ( bsonValue.isDocument() && parsedResult.isDocument() ) {
+                BsonDocument bsonDocument = bsonValue.asDocument();
+                BsonDocument parsedDocument = parsedResult.asDocument();
+                for ( String key : bsonDocument.keySet() ) {
+                    if ( !parsedDocument.containsKey( key ) ) {
+                        return false;
+                    }
+                    if ( !areValueEqual( bsonDocument.get( key ), parsedDocument.get( key ) ) ) {
+                        return false;
+                    }
+                }
+                return true;
+            } else if ( bsonValue.isArray() && parsedResult.isArray() ) {
+                BsonArray bsonArray = bsonValue.asArray();
+                BsonArray parsedArray = parsedResult.asArray();
+                for ( int i = 0; i < bsonArray.size(); i++ ) {
+                    if ( !areValueEqual( bsonArray.get( i ), parsedArray.get( i ) ) ) {
+                        return false;
+                    }
+                }
+                return true;
+            } else if ( bsonValue.isNumber() && parsedResult.isNumber() ) {
+                return bsonValue.asNumber().doubleValue() == parsedResult.asNumber().doubleValue();
+            }
+            return false;
+        }
+
+
+        private static BsonDocument tryGetBson( String entry ) {
+            BsonDocument doc = null;
+            try {
+                doc = BsonDocument.parse( entry );
+            } catch ( Exception e ) {
+                // empty on purpose
             }
 
             return doc;
@@ -459,36 +653,53 @@ public class TestHelper {
             return String.format( "{\"%s\": %s}", key, value );
         }
 
+
+        public static List<String> arrayToDoc( List<Object[]> values, String... names ) {
+            List<String> docs = new ArrayList<>();
+            for ( Object[] doc : values ) {
+                docs.add( "{" +
+                        Pair.zip( Arrays.asList( names ), Arrays.asList( doc ) )
+                                .stream()
+                                .map( p -> "\"" + p.left + "\"" + ":" +
+                                        ((p.right != null
+                                                ? (p.right instanceof String && !((String) p.right).startsWith( "{" ) && !((String) p.right).endsWith( "}" ) // special handling for string and document
+                                                ? "\"" + p.right + "\""
+                                                : p.right.toString())
+                                                : null)) )
+                                .collect( Collectors.joining( "," ) )
+                        + "}" );
+            }
+            return docs;
+        }
+
     }
 
 
     public static class CypherConnection extends HttpConnection {
 
-        static Gson gson = new GsonBuilder().registerTypeAdapter( Result.class, Result.getSerializer() ).create();
 
-
-        public static Result executeGetResponse( String query ) {
+        public static GraphResult executeGetResponse( String query ) {
             return getBody( execute( "/cypher", query, "test" ) );
         }
 
 
-        public static Result executeGetResponse( String query, String database ) {
+        public static GraphResult executeGetResponse( String query, String database ) {
             return getBody( execute( "/cypher", query, database ) );
         }
 
 
-        private static Result getBody( HttpResponse<String> res ) {
+        private static GraphResult getBody( HttpResponse<String> res ) {
             try {
-                Result[] result = gson.fromJson( res.getBody(), Result[].class );
+                GraphResult[] result = HttpServer.mapper.readValue( res.getBody(), GraphResult[].class );
                 if ( result.length == 1 ) {
-                    return gson.fromJson( res.getBody(), Result[].class )[0];
+                    return HttpServer.mapper.readValue( res.getBody(), GraphResult[].class )[0];
                 } else if ( result.length == 0 ) {
-                    return new Result();
+                    return GraphResult.builder().build();
                 }
                 fail( "There was more than one result in the response!" );
                 throw new RuntimeException( "This cannot happen" );
 
-            } catch ( JsonSyntaxException e ) {
+            } catch ( JsonSyntaxException | JsonProcessingException e ) {
                 log.warn( "{}\nmessage: {}", res.getBody(), e.getMessage() );
                 fail();
                 throw new RuntimeException( "This cannot happen" );
@@ -498,12 +709,13 @@ public class TestHelper {
     }
 
 
+    @Getter
     public static class JdbcConnection implements AutoCloseable {
 
         private final static String dbHost = "localhost";
         private final static int port = 20591;
 
-        private final Connection conn;
+        private final Connection connection;
 
 
         public JdbcConnection( boolean autoCommit ) throws SQLException {
@@ -519,21 +731,66 @@ public class TestHelper {
             props.setProperty( "user", "pa" );
             props.setProperty( "serialization", "PROTOBUF" );
 
-            conn = DriverManager.getConnection( url, props );
-            conn.setAutoCommit( autoCommit );
-        }
-
-
-        public Connection getConnection() {
-            return conn;
+            connection = DriverManager.getConnection( url, props );
+            connection.setAutoCommit( autoCommit );
         }
 
 
         @Override
         public void close() throws SQLException {
-            conn.commit();
-            conn.close();
+            connection.commit();
+            connection.close();
         }
+
+    }
+
+
+    @SafeVarargs
+    public static void executeSql( SqlBiConsumer<Connection, Statement>... queries ) {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                for ( BiConsumer<Connection, Statement> query : queries ) {
+                    query.accept( connection, statement );
+                }
+            }
+        } catch ( SQLException e ) {
+            fail( e.getMessage() );
+            throw new RuntimeException( e );
+        }
+    }
+
+
+    @FunctionalInterface
+    public interface SqlBiConsumer<C, T> extends BiConsumer<C, T> {
+
+        @Override
+        default void accept( final C elemC, final T elemT ) {
+            try {
+                acceptThrows( elemC, elemT );
+            } catch ( final SQLException e ) {
+                throw new RuntimeException( e );
+            }
+        }
+
+        void acceptThrows( C elemC, T elem ) throws SQLException;
+
+    }
+
+
+    @FunctionalInterface
+    public interface DelayedSupplier<T extends ResultSet> extends Supplier<T> {
+
+        @Override
+        default T get() {
+            try {
+                return getThrows();
+            } catch ( final SQLException e ) {
+                throw new RuntimeException( e );
+            }
+        }
+
+        T getThrows() throws SQLException;
 
     }
 

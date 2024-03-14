@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -118,7 +118,7 @@ public class AlgWriterImpl implements AlgWriter {
         switch ( detailLevel ) {
             case ALL_ATTRIBUTES:
                 s.append( ": rowcount = " )
-                        .append( mq.getRowCount( alg ) )
+                        .append( mq.getTupleCount( alg ) )
                         .append( ", cumulative cost = " )
                         .append( mq.getCumulativeCost( alg ) );
         }
@@ -144,7 +144,7 @@ public class AlgWriterImpl implements AlgWriter {
         if ( str.contains( "$" ) ) {
             int offset = 0;
             for ( AlgNode input : alg.getInputs() ) {
-                for ( AlgDataTypeField field : input.getRowType().getFieldList() ) {
+                for ( AlgDataTypeField field : input.getTupleType().getFields() ) {
                     String searchStr = "$" + (offset + field.getIndex());
                     int position = str.indexOf( searchStr );
                     if ( position >= 0
@@ -153,7 +153,7 @@ public class AlgWriterImpl implements AlgWriter {
                         str = str.replace( searchStr, searchStr + "{" + field.getName() + "}" );
                     }
                 }
-                offset = input.getRowType().getFieldList().size();
+                offset = input.getTupleType().getFields().size();
             }
         }
         return str;

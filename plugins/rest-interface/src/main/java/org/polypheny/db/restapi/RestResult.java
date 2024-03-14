@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,12 +29,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PushbackInputStream;
 import java.nio.charset.StandardCharsets;
-import java.sql.Blob;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -45,11 +43,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.polypheny.db.ResultIterator;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.type.PolyType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
 
@@ -57,7 +57,7 @@ import org.polypheny.db.util.Pair;
 public class RestResult {
 
     private final Kind kind;
-    private final Iterator<Object> iterator;
+    private final ResultIterator iterator;
     private final AlgDataType dataType;
     List<ColumnMetaData> columns;
     private List<Map<String, Object>> result;
@@ -70,7 +70,7 @@ public class RestResult {
     ZipOutputStream zipOut;
 
 
-    public RestResult( Kind Kind, Iterator<Object> iterator, AlgDataType dataType, List<ColumnMetaData> columns ) {
+    public RestResult( Kind Kind, ResultIterator iterator, AlgDataType dataType, List<ColumnMetaData> columns ) {
         this.kind = Kind;
         this.iterator = iterator;
         this.dataType = dataType;
@@ -89,27 +89,24 @@ public class RestResult {
 
 
     private void transformDML() {
-        Object object;
+        List<PolyValue[]> object;
         int rowsChanged = -1;
-        while ( iterator.hasNext() ) {
-            object = iterator.next();
+        while ( iterator.hasMoreRows() ) {
+            object = iterator.getArrayRows();
             int num;
-            if ( object != null && object.getClass().isArray() ) {
-                Object[] o = (Object[]) object;
-                num = ((Number) o[0]).intValue();
-            } else if ( object != null ) {
-                num = ((Number) object).intValue();
+            if ( object != null && object.get( 0 ).getClass().isArray() ) {
+                num = object.get( 0 )[0].asNumber().intValue();
             } else {
-                throw new RuntimeException( "Result is null" );
+                throw new GenericRuntimeException( "Result is null" );
             }
             // Check if num is equal for all stores
             if ( rowsChanged != -1 && rowsChanged != num ) {
-                throw new RuntimeException( "The number of changed rows is not equal for all stores!" );
+                throw new GenericRuntimeException( "The number of changed rows is not equal for all stores!" );
             }
             rowsChanged = num;
         }
         List<Map<String, Object>> result = new ArrayList<>();
-        HashMap<String, Object> map = new HashMap<>();
+        Map<String, Object> map = new HashMap<>();
         map.put( columns.get( 0 ).columnName, rowsChanged );
         result.add( map );
         this.result = result;
@@ -120,36 +117,61 @@ public class RestResult {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         List<Map<String, Object>> result = new ArrayList<>();
-        while ( iterator.hasNext() ) {
-            Object next = iterator.next();
-            Object[] row;
-            if ( next.getClass().isArray() ) {
-                row = (Object[]) next;
-            } else {
-                row = new Object[]{ next };
-            }
-            HashMap<String, Object> temp = new HashMap<>();
+        while ( iterator.hasMoreRows() ) {
+            PolyValue[] row = iterator.getArrayRows().get( 0 );
+
+            Map<String, Object> temp = new HashMap<>();
             int i = 0;
-            for ( AlgDataTypeField type : dataType.getFieldList() ) {
-                Object o = row[i];
+            for ( AlgDataTypeField type : dataType.getFields() ) {
+                PolyValue o = row[i];
+
+                String columnName = columns.get( i ).columnName;
+                if ( o == null ) {
+                    temp.put( columnName, null );
+                    continue;
+                }
+
                 if ( type.getType().getPolyType().getFamily() == PolyTypeFamily.MULTIMEDIA ) {
-                    if ( o instanceof File ) {
-                        o = addZipEntry( o );
-                    } else if ( o instanceof InputStream || o instanceof Blob ) {
-                        o = addZipEntry( o );
-                    } else if ( o instanceof byte[] ) {
-                        o = addZipEntry( o );
-                    }
-                    temp.put( columns.get( i ).columnName, o );
+                    temp.put( columnName, o );
                 } else {
-                    if ( type.getType().getPolyType().equals( PolyType.TIMESTAMP ) ) {
-                        Long nanoSeconds = (Long) o;
-                        LocalDateTime localDateTime = LocalDateTime.ofEpochSecond( nanoSeconds / 1000L, (int) ((nanoSeconds % 1000) * 1000), ZoneOffset.UTC );
-                        temp.put( columns.get( i ).columnName, localDateTime.toString() );
-                    } else if ( type.getType().getPolyType().equals( PolyType.TIME ) ) {
-                        temp.put( columns.get( i ).columnName, o.toString() );
-                    } else {
-                        temp.put( columns.get( i ).columnName, o );
+                    switch ( type.getType().getPolyType() ) {
+                        case TIMESTAMP:
+                            LocalDateTime localDateTime = o.asTimestamp().asSqlTimestamp().toInstant().atOffset( ZoneOffset.UTC ).toLocalDateTime();//.toLocalDateTime(); //LocalDateTime.ofEpochSecond( nanoSeconds / 1000L, (int) ((nanoSeconds % 1000) * 1000), ZoneOffset.UTC );
+                            temp.put( columnName, localDateTime.toString() );
+                            break;
+                        case TIME:
+                            temp.put( columnName, o.asTime().ofDay );
+                            break;
+                        case VARCHAR:
+                            temp.put( columnName, o.asString().value );
+                            break;
+                        case DOUBLE:
+                            temp.put( columnName, o.asNumber().DoubleValue() );
+                            break;
+                        case REAL:
+                        case FLOAT:
+                            temp.put( columnName, o.asNumber().FloatValue() );
+                            break;
+                        case DECIMAL:
+                            temp.put( columnName, o.asNumber().bigDecimalValue() );
+                            break;
+                        case BOOLEAN:
+                            temp.put( columnName, o.asBoolean().value );
+                            break;
+                        case BIGINT:
+                            temp.put( columnName, o.asNumber().LongValue() );
+                            break;
+                        case TINYINT:
+                        case SMALLINT:
+                        case INTEGER:
+                            temp.put( columnName, o.asNumber().IntValue() );
+                            break;
+                        case DATE:
+                            temp.put( columnName, o.asDate().getDaysSinceEpoch() );
+                            break;
+                        default:
+                            temp.put( columnName, o );
+                            break;
                     }
                 }
                 i++;
@@ -221,7 +243,7 @@ public class RestResult {
                 return "";
             }
         } else {
-            throw new RuntimeException( "Unexpected data for content type detection: " + o.getClass().getSimpleName() );
+            throw new GenericRuntimeException( "Unexpected data for content type detection: " + o.getClass().getSimpleName() );
         }
         if ( info != null && info.getFileExtensions() != null && info.getFileExtensions().length > 0 ) {
             return "." + info.getFileExtensions()[0];
@@ -237,7 +259,7 @@ public class RestResult {
         finalResult.put( "result", result );
         finalResult.put( "size", result.size() );
         if ( !containsFiles ) {
-            return new Pair( gson.toJson( finalResult ), finalResult.size() );
+            return new Pair<>( gson.toJson( finalResult ), finalResult.size() );
         } else {
             OutputStream os;
             ZipEntry zipEntry = new ZipEntry( "data.json" );
@@ -263,7 +285,7 @@ public class RestResult {
                 zipFile.delete();
                 ctx.status( 500 );
             }
-            return new Pair( "", finalResult.size() );
+            return new Pair<>( "", finalResult.size() );
         }
     }
 

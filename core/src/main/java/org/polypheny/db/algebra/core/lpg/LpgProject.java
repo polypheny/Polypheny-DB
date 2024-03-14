@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,25 +26,26 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.type.entity.PolyString;
 
 
+@Getter
 public abstract class LpgProject extends SingleAlg implements LpgAlg {
 
-    @Getter
     protected final List<? extends RexNode> projects;
-    @Getter
-    protected final List<String> names;
+    protected final List<PolyString> names;
 
 
     /**
      * Creates a {@link LpgProject}.
-     * {@link org.polypheny.db.schema.ModelTrait#GRAPH} native node of a project.
+     * {@link ModelTrait#GRAPH} native node of a project.
      */
-    protected LpgProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects, List<String> names ) {
+    protected LpgProject( AlgCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects, List<PolyString> names ) {
         super( cluster, traits, input );
         this.projects = projects;
         this.names = names;
@@ -71,9 +72,9 @@ public abstract class LpgProject extends SingleAlg implements LpgAlg {
         if ( names != null && projects != null ) {
             int i = 0;
             int index = 0;
-            for ( String name : names ) {
+            for ( PolyString name : names ) {
                 if ( name != null ) {
-                    fields.add( new AlgDataTypeFieldImpl( name, index, projects.get( i ).getType() ) );
+                    fields.add( new AlgDataTypeFieldImpl( -1L, name.value, index, projects.get( i ).getType() ) );
                     index++;
                 }
                 i++;

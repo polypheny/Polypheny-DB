@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package org.polypheny.db.processing;
 
 import com.google.common.collect.ImmutableSet;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -37,37 +36,32 @@ import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.JoinAlgType;
-import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.common.ConditionalExecute.Condition;
+import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.exceptions.ConstraintViolationException;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer.EnforcementInformation;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer.ModifyExtractor;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
-import org.polypheny.db.algebra.logical.relational.LogicalScan;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.ConstraintType;
-import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogConstraint;
-import org.polypheny.db.catalog.entity.CatalogForeignKey;
-import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
-import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.catalog.entity.LogicalConstraint;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
+import org.polypheny.db.catalog.entity.logical.LogicalKey.EnforcementTime;
+import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.ConstraintType;
+import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.RuntimeConfig;
@@ -76,13 +70,11 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.plan.AlgOptSchema;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexFieldAccess;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
@@ -92,6 +84,7 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.type.entity.PolyValue;
 
 @Slf4j
 public class ConstraintEnforceAttacher {
@@ -130,22 +123,22 @@ public class ConstraintEnforceAttacher {
     public static void attachOnCommitConstraints( AlgNode node, Statement statement ) {
         ModifyExtractor extractor = new ModifyExtractor();
         node.accept( extractor );
-        Modify modify = extractor.getModify();
+        RelModify<?> modify = extractor.getModify();
 
         if ( modify == null ) {
-            throw new RuntimeException( "The tree did no conform, while generating the constraint enforcement query!" );
+            throw new GenericRuntimeException( "The tree did no conform, while generating the constraint enforcement query!" );
         }
 
-        statement.getTransaction().getCatalogTables().add( LogicalConstraintEnforcer.getCatalogTable( modify ) );
+        statement.getTransaction().getLogicalTables().add( modify.entity.unwrap( LogicalTable.class ).orElseThrow() );
     }
 
 
-    public static List<EnforcementInformation> getConstraintAlg( Set<CatalogTable> catalogTables, Statement statement, EnforcementTime enforcementTime ) {
-        return catalogTables
+    public static List<EnforcementInformation> getConstraintAlg( Set<LogicalTable> tables, Statement statement, EnforcementTime enforcementTime ) {
+        return tables
                 .stream()
                 .map( t -> LogicalConstraintEnforcer.getControl( t, statement, enforcementTime ) )
-                .filter( i -> i.getControl() != null )
-                .collect( Collectors.toList() );
+                .filter( i -> i.control() != null )
+                .toList();
     }
 
 
@@ -165,7 +158,7 @@ public class ConstraintEnforceAttacher {
         } else if ( strategy == ConstraintStrategy.BEFORE_QUERY_EXECUTION ) {
             return enforceConstraintBeforeQuery( constraintsRoot, statement );
         } else {
-            throw new RuntimeException( "Constraint enforcement strategy is unknown." );
+            throw new GenericRuntimeException( "Constraint enforcement strategy is unknown." );
         }
 
     }
@@ -196,33 +189,20 @@ public class ConstraintEnforceAttacher {
         if ( !logicalRoot.kind.belongsTo( Kind.DML ) ) {
             return logicalRoot;
         }
-        if ( !(logicalRoot.alg instanceof Modify) ) {
+        if ( !(logicalRoot.alg instanceof RelModify<?> root) ) {
             return logicalRoot;
         }
-        final Modify root = (Modify) logicalRoot.alg;
 
-        final Catalog catalog = Catalog.getInstance();
-        final CatalogSchema schema = statement.getTransaction().getDefaultSchema();
-        final CatalogTable table;
-        final CatalogPrimaryKey primaryKey;
-        final List<CatalogConstraint> constraints;
-        final List<CatalogForeignKey> foreignKeys;
-        final List<CatalogForeignKey> exportedKeys;
-        try {
-            String entityName = LogicalConstraintEnforcer.getEntityName( root, schema );
-            table = catalog.getTable( schema.id, entityName );
-            primaryKey = catalog.getPrimaryKey( table.primaryKey );
-            constraints = new ArrayList<>( Catalog.getInstance().getConstraints( table.id ) );
-            foreignKeys = Catalog.getInstance().getForeignKeys( table.id );
-            exportedKeys = Catalog.getInstance().getExportedKeys( table.id );
-            // Turn primary key into an artificial unique constraint
-            CatalogPrimaryKey pk = Catalog.getInstance().getPrimaryKey( table.primaryKey );
-            final CatalogConstraint pkc = new CatalogConstraint( 0L, pk.id, ConstraintType.UNIQUE, "PRIMARY KEY", pk );
-            constraints.add( pkc );
-        } catch ( UnknownTableException e ) {
-            log.error( "Caught exception", e );
-            return logicalRoot;
-        }
+        final LogicalTable table = root.getEntity().unwrap( LogicalTable.class ).orElseThrow();
+        LogicalRelSnapshot snapshot = statement.getTransaction().getSnapshot().rel();
+        final LogicalPrimaryKey primaryKey = snapshot.getPrimaryKey( table.primaryKey ).orElseThrow();
+        final List<LogicalConstraint> constraints = new ArrayList<>( snapshot.getConstraints( table.id ) );
+        final List<LogicalForeignKey> foreignKeys = snapshot.getForeignKeys( table.id );
+        final List<LogicalForeignKey> exportedKeys = snapshot.getExportedKeys( table.id );
+        // Turn primary key into an artificial unique constraint
+        LogicalPrimaryKey pk = snapshot.getPrimaryKey( table.primaryKey ).orElseThrow();
+        final LogicalConstraint pkc = new LogicalConstraint( 0L, pk.id, ConstraintType.UNIQUE, "PRIMARY KEY", pk );
+        constraints.add( pkc );
 
         AlgNode lceRoot = root;
 
@@ -233,22 +213,22 @@ public class ConstraintEnforceAttacher {
             AlgBuilder builder = AlgBuilder.create( statement );
             final AlgNode input = root.getInput().accept( new DeepCopyShuttle() );
             final RexBuilder rexBuilder = root.getCluster().getRexBuilder();
-            for ( final CatalogConstraint constraint : constraints ) {
+            for ( final LogicalConstraint constraint : constraints ) {
                 if ( constraint.type != ConstraintType.UNIQUE ) {
                     log.warn( "Unknown constraint type: {}", constraint.type );
                     continue;
                 }
                 // Enforce uniqueness between the already existing values and the new values
-                final AlgNode scan = LogicalScan.create( root.getCluster(), root.getTable() );
+                final AlgNode scan = LogicalRelScan.create( root.getCluster(), root.getEntity() );
                 RexNode joinCondition = rexBuilder.makeLiteral( true );
                 //
                 // TODO: Here we get issues with batch queries
                 //
                 builder.push( input );
-                builder.project( constraint.key.getColumnNames().stream().map( builder::field ).collect( Collectors.toList() ) );
+                builder.project( constraint.key.getFieldNames().stream().map( builder::field ).toList() );
                 builder.push( scan );
-                builder.project( constraint.key.getColumnNames().stream().map( builder::field ).collect( Collectors.toList() ) );
-                for ( final String column : constraint.key.getColumnNames() ) {
+                builder.project( constraint.key.getFieldNames().stream().map( builder::field ).toList() );
+                for ( final String column : constraint.key.getFieldNames() ) {
                     RexNode joinComparison = rexBuilder.makeCall(
                             OperatorRegistry.get( OperatorName.EQUALS ),
                             builder.field( 2, 1, column ),
@@ -261,33 +241,33 @@ public class ConstraintEnforceAttacher {
                 //  Make sure this is ok!
                 //
                 final AlgNode join = builder.join( JoinAlgType.INNER, joinCondition ).build();
-                final AlgNode check = LogicalFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NOT_NULL ), rexBuilder.makeInputRef( join, join.getRowType().getFieldCount() - 1 ) ) );
+                final AlgNode check = LogicalRelFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NOT_NULL ), rexBuilder.makeInputRef( join, join.getTupleType().getFieldCount() - 1 ) ) );
                 final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO,
                         ConstraintViolationException.class,
                         String.format( "Insert violates unique constraint `%s`.`%s`", table.name, constraint.name ) );
                 lce.setCheckDescription( String.format( "Enforcement of unique constraint `%s`.`%s`", table.name, constraint.name ) );
                 lceRoot = lce;
                 // Enforce uniqueness within the values to insert
-                if ( input instanceof LogicalValues && ((LogicalValues) input).getTuples().size() <= 1 ) {
+                if ( input instanceof LogicalRelValues && ((LogicalRelValues) input).getTuples().size() <= 1 ) {
                     // no need to check, only one tuple in set
-                } else if ( input instanceof LogicalProject && input.getInput( 0 ) instanceof LogicalValues && (input.getInput( 0 )).getRowType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
+                } else if ( input instanceof LogicalRelProject && input.getInput( 0 ) instanceof LogicalRelValues && (input.getInput( 0 )).getTupleType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
                     //noinspection StatementWithEmptyBody
-                    if ( statement.getDataContext().getParameterValues().size() > 0 ) {
-                        LogicalProject project = (LogicalProject) input;
-                        List<Map<Long, Object>> parameterValues = statement.getDataContext().getParameterValues();
-                        final Set<List<Object>> uniqueSet = new HashSet<>( parameterValues.get( 0 ).size() );
-                        final Map<String, Integer> columnMap = new HashMap<>( constraint.key.columnIds.size() );
-                        for ( final String columnName : constraint.key.getColumnNames() ) {
-                            int i = project.getRowType().getField( columnName, true, false ).getIndex();
+                    if ( !statement.getDataContext().getParameterValues().isEmpty() ) {
+                        LogicalRelProject project = (LogicalRelProject) input;
+                        List<Map<Long, PolyValue>> parameterValues = statement.getDataContext().getParameterValues();
+                        final Set<List<PolyValue>> uniqueSet = new HashSet<>( parameterValues.get( 0 ).size() );
+                        final Map<String, Integer> columnMap = new HashMap<>( constraint.key.fieldIds.size() );
+                        for ( final String columnName : constraint.key.getFieldNames() ) {
+                            int i = project.getTupleType().getField( columnName, true, false ).getIndex();
                             columnMap.put( columnName, i );
                         }
                         for ( Integer index : columnMap.values() ) {
-                            for ( Map<Long, Object> entry : parameterValues ) {
-                                List<Object> list = new LinkedList<>();
+                            for ( Map<Long, PolyValue> entry : parameterValues ) {
+                                List<PolyValue> list = new LinkedList<>();
                                 if ( project.getProjects().get( index ) instanceof RexDynamicParam ) {
                                     list.add( entry.get( ((RexDynamicParam) project.getProjects().get( index )).getIndex() ) );
                                 } else {
-                                    throw new RuntimeException( "Unexpected node type" );
+                                    throw new GenericRuntimeException( "Unexpected node type" );
                                 }
                                 uniqueSet.add( list );
                             }
@@ -298,20 +278,19 @@ public class ConstraintEnforceAttacher {
                     } else {
                         // no need to check, only one tuple in set
                     }
-                } else if ( input instanceof Values ) {
+                } else if ( input instanceof Values values ) {
                     // If the input is a Values node, check uniqueness right away, as not all stores can implement this check
                     // (And anyway, pushing this down to stores seems rather inefficient)
-                    final Values values = (Values) input;
                     final List<? extends List<RexLiteral>> tuples = values.getTuples();
                     final Set<List<RexLiteral>> uniqueSet = new HashSet<>( tuples.size() );
-                    final Map<String, Integer> columnMap = new HashMap<>( constraint.key.columnIds.size() );
-                    for ( final String columnName : constraint.key.getColumnNames() ) {
-                        int i = values.getRowType().getField( columnName, true, false ).getIndex();
+                    final Map<String, Integer> columnMap = new HashMap<>( constraint.key.fieldIds.size() );
+                    for ( final String columnName : constraint.key.getFieldNames() ) {
+                        int i = values.getTupleType().getField( columnName, true, false ).getIndex();
                         columnMap.put( columnName, i );
                     }
                     for ( final List<RexLiteral> tuple : tuples ) {
-                        List<RexLiteral> projection = new ArrayList<>( constraint.key.columnIds.size() );
-                        for ( final String columnName : constraint.key.getColumnNames() ) {
+                        List<RexLiteral> projection = new ArrayList<>( constraint.key.fieldIds.size() );
+                        for ( final String columnName : constraint.key.getFieldNames() ) {
                             projection.add( tuple.get( columnMap.get( columnName ) ) );
                         }
                         uniqueSet.add( projection );
@@ -322,7 +301,7 @@ public class ConstraintEnforceAttacher {
                 } else {
                     builder.clear();
                     builder.push( input );
-                    builder.aggregate( builder.groupKey( constraint.key.getColumnNames().stream().map( builder::field ).collect( Collectors.toList() ) ), builder.aggregateCall( OperatorRegistry.getAgg( OperatorName.COUNT ) ).as( "count" ) );
+                    builder.aggregate( builder.groupKey( constraint.key.getFieldNames().stream().map( builder::field ).toList() ), builder.aggregateCall( OperatorRegistry.getAgg( OperatorName.COUNT ) ).as( "count" ) );
                     builder.filter( builder.call( OperatorRegistry.get( OperatorName.GREATER_THAN ), builder.field( "count" ), builder.literal( 1 ) ) );
                     final AlgNode innerCheck = builder.build();
                     final LogicalConditionalExecute ilce = LogicalConditionalExecute.create( innerCheck, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
@@ -340,18 +319,18 @@ public class ConstraintEnforceAttacher {
             AlgBuilder builder = AlgBuilder.create( statement );
             final AlgNode input = root.getInput().accept( new DeepCopyShuttle() );
             final RexBuilder rexBuilder = root.getCluster().getRexBuilder();
-            for ( final CatalogForeignKey foreignKey : foreignKeys ) {
-                final AlgOptSchema algOptSchema = root.getCatalogReader();
-                final AlgOptTable algOptTable = algOptSchema.getTableForMember( Collections.singletonList( foreignKey.getReferencedKeyTableName() ) );
-                final LogicalScan scan = LogicalScan.create( root.getCluster(), algOptTable );
+            for ( final LogicalForeignKey foreignKey : foreignKeys ) {
+
+                final LogicalTable entity = statement.getDataContext().getSnapshot().rel().getTable( foreignKey.referencedKeyEntityId ).orElseThrow();
+                final LogicalRelScan scan = LogicalRelScan.create( root.getCluster(), entity );
                 RexNode joinCondition = rexBuilder.makeLiteral( true );
                 builder.push( input );
-                builder.project( foreignKey.getColumnNames().stream().map( builder::field ).collect( Collectors.toList() ) );
+                builder.project( foreignKey.getFieldNames().stream().map( builder::field ).collect( Collectors.toList() ) );
                 builder.push( scan );
-                builder.project( foreignKey.getReferencedKeyColumnNames().stream().map( builder::field ).collect( Collectors.toList() ) );
-                for ( int i = 0; i < foreignKey.getColumnNames().size(); ++i ) {
-                    final String column = foreignKey.getColumnNames().get( i );
-                    final String referencedColumn = foreignKey.getReferencedKeyColumnNames().get( i );
+                builder.project( foreignKey.getReferencedKeyFieldNames().stream().map( builder::field ).collect( Collectors.toList() ) );
+                for ( int i = 0; i < foreignKey.getFieldNames().size(); ++i ) {
+                    final String column = foreignKey.getFieldNames().get( i );
+                    final String referencedColumn = foreignKey.getReferencedKeyFieldNames().get( i );
                     RexNode joinComparison = rexBuilder.makeCall(
                             OperatorRegistry.get( OperatorName.EQUALS ),
                             builder.field( 2, 1, referencedColumn ),
@@ -361,7 +340,7 @@ public class ConstraintEnforceAttacher {
                 }
 
                 final AlgNode join = builder.join( JoinAlgType.LEFT, joinCondition ).build();
-                final AlgNode check = LogicalFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NULL ), rexBuilder.makeInputRef( join, join.getRowType().getFieldCount() - 1 ) ) );
+                final AlgNode check = LogicalRelFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NULL ), rexBuilder.makeInputRef( join, join.getTupleType().getFieldCount() - 1 ) ) );
                 final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
                         String.format( "Insert violates foreign key constraint `%s`.`%s`", table.name, foreignKey.name ) );
                 lce.setCheckDescription( String.format( "Enforcement of foreign key `%s`.`%s`", table.name, foreignKey.name ) );
@@ -375,15 +354,15 @@ public class ConstraintEnforceAttacher {
         if ( (root.isUpdate() || root.isMerge()) && RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() ) {
             AlgBuilder builder = AlgBuilder.create( statement );
             RexBuilder rexBuilder = builder.getRexBuilder();
-            for ( final CatalogConstraint constraint : constraints ) {
+            for ( final LogicalConstraint constraint : constraints ) {
                 if ( constraint.type != ConstraintType.UNIQUE ) {
                     log.warn( "Unknown constraint type: {}", constraint.type );
                     continue;
                 }
                 // Check if update affects this constraint
                 boolean affected = false;
-                for ( final String c : root.getUpdateColumnList() ) {
-                    if ( constraint.key.getColumnNames().contains( c ) ) {
+                for ( final String c : root.getUpdateColumns() ) {
+                    if ( constraint.key.getFieldNames().contains( c ) ) {
                         affected = true;
                         break;
                     }
@@ -393,47 +372,48 @@ public class ConstraintEnforceAttacher {
                 }
                 AlgNode input = root.getInput().accept( new DeepCopyShuttle() );
                 Map<String, Integer> nameMap = new HashMap<>();
-                for ( int i = 0; i < root.getUpdateColumnList().size(); ++i ) {
-                    nameMap.put( root.getUpdateColumnList().get( i ), i );
+                for ( int i = 0; i < root.getUpdateColumns().size(); ++i ) {
+                    nameMap.put( root.getUpdateColumns().get( i ), i );
                 }
                 // Enforce uniqueness between updated records and already present records
                 builder.clear();
                 builder.push( input );
                 List<RexNode> projects = new ArrayList<>();
                 List<String> names = new ArrayList<>();
-                for ( final String column : primaryKey.getColumnNames() ) {
+                for ( final String column : primaryKey.getFieldNames() ) {
                     projects.add( builder.field( column ) );
                     names.add( column );
                 }
-                for ( final String column : constraint.key.getColumnNames() ) {
-                    if ( root.getUpdateColumnList().contains( column ) ) {
-                        projects.add( root.getSourceExpressionList().get( nameMap.get( column ) ) );
+                for ( final String column : constraint.key.getFieldNames() ) {
+                    if ( root.getUpdateColumns().contains( column ) ) {
+                        projects.add( root.getSourceExpressions().get( nameMap.get( column ) ) );
                     } else {
                         // TODO(s3lph): For now, let's assume that all columns are actually present.
-                        //  Otherwise this would require either some black magic project rewrites or joining against another table scan
+                        //  Otherwise this would require either some black magic project rewrites or joining against another table relScan
                         projects.add( builder.field( column ) );
                     }
                     names.add( "$projected$." + column );
                 }
                 builder.project( projects );
-                builder.scan( table.name );
+                builder.relScan( table.name );
                 builder.join( JoinAlgType.INNER, builder.literal( true ) );
 
-                List<RexNode> conditionList1 = primaryKey.getColumnNames().stream().map( c ->
+                List<LogicalColumn> columns = snapshot.getColumns( table.id );
+                List<String> columNames = columns.stream().map( c -> c.name ).toList();
+
+                List<RexNode> conditionList1 = primaryKey.getFieldNames().stream().map( c ->
                         builder.call(
                                 OperatorRegistry.get( OperatorName.EQUALS ),
                                 builder.field( names.indexOf( c ) ),
-                                builder.field( names.size() + table.getColumnNames().indexOf( c ) )
-                        )
-                ).collect( Collectors.toList() );
+                                builder.field( names.size() + columNames.indexOf( c ) )
+                        ) ).collect( Collectors.toList() );
 
-                List<RexNode> conditionList2 = constraint.key.getColumnNames().stream().map( c ->
+                List<RexNode> conditionList2 = constraint.key.getFieldNames().stream().map( c ->
                         builder.call(
                                 OperatorRegistry.get( OperatorName.EQUALS ),
                                 builder.field( names.indexOf( "$projected$." + c ) ),
-                                builder.field( names.size() + table.getColumnNames().indexOf( c ) )
-                        )
-                ).collect( Collectors.toList() );
+                                builder.field( names.size() + columNames.indexOf( c ) )
+                        ) ).collect( Collectors.toList() );
 
                 RexNode condition =
                         rexBuilder.makeCall(
@@ -450,7 +430,7 @@ public class ConstraintEnforceAttacher {
                         );
                 condition = RexUtil.flatten( rexBuilder, condition );
                 AlgNode check = builder.build();
-                check = new LogicalFilter( check.getCluster(), check.getTraitSet(), check, condition, ImmutableSet.of() );
+                check = new LogicalRelFilter( check.getCluster(), check.getTraitSet(), check, condition, ImmutableSet.of() );
                 final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
                         String.format( "Update violates unique constraint `%s`.`%s`", table.name, constraint.name ) );
                 lce.setCheckDescription( String.format( "Enforcement of unique constraint `%s`.`%s`", table.name, constraint.name ) );
@@ -459,12 +439,12 @@ public class ConstraintEnforceAttacher {
                 builder.clear();
                 builder.push( input );
                 projects = new ArrayList<>();
-                for ( final String column : constraint.key.getColumnNames() ) {
-                    if ( root.getUpdateColumnList().contains( column ) ) {
-                        projects.add( root.getSourceExpressionList().get( nameMap.get( column ) ) );
+                for ( final String column : constraint.key.getFieldNames() ) {
+                    if ( root.getUpdateColumns().contains( column ) ) {
+                        projects.add( root.getSourceExpressions().get( nameMap.get( column ) ) );
                     } else {
                         // TODO(s3lph): For now, let's assume that all columns are actually present.
-                        //  Otherwise this would require either some black magic project rewrites or joining against another table scan
+                        //  Otherwise this would require either some black magic project rewrites or joining against another table relScan
                         projects.add( builder.field( column ) );
                     }
                 }
@@ -488,35 +468,30 @@ public class ConstraintEnforceAttacher {
         if ( (root.isUpdate() || root.isMerge()) && RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
             AlgBuilder builder = AlgBuilder.create( statement );
             final RexBuilder rexBuilder = builder.getRexBuilder();
-            for ( final CatalogForeignKey foreignKey : foreignKeys ) {
+            for ( final LogicalForeignKey foreignKey : foreignKeys ) {
                 final String constraintRule = "ON UPDATE " + foreignKey.updateRule;
                 AlgNode input = root.getInput().accept( new DeepCopyShuttle() );
-                final List<RexNode> projects = new ArrayList<>( foreignKey.columnIds.size() );
-                final List<RexNode> foreignProjects = new ArrayList<>( foreignKey.columnIds.size() );
-                final CatalogTable foreignTable = Catalog.getInstance().getTable( foreignKey.referencedKeyTableId );
+                final List<RexNode> projects = new ArrayList<>( foreignKey.fieldIds.size() );
+                final List<RexNode> foreignProjects = new ArrayList<>( foreignKey.fieldIds.size() );
+                final LogicalTable foreignTable = snapshot.getTable( foreignKey.referencedKeyEntityId ).orElseThrow();
                 builder.push( input );
-                for ( int i = 0; i < foreignKey.columnIds.size(); ++i ) {
-                    final String columnName = foreignKey.getColumnNames().get( i );
-                    final String foreignColumnName = foreignKey.getReferencedKeyColumnNames().get( i );
-                    final CatalogColumn foreignColumn;
-                    try {
-                        foreignColumn = Catalog.getInstance().getColumn( foreignTable.id, foreignColumnName );
-                    } catch ( UnknownColumnException e ) {
-                        throw new RuntimeException( e );
-                    }
+                for ( int i = 0; i < foreignKey.fieldIds.size(); ++i ) {
+                    final String columnName = foreignKey.getFieldNames().get( i );
+                    final String foreignColumnName = foreignKey.getReferencedKeyFieldNames().get( i );
+                    final LogicalColumn foreignColumn = snapshot.getColumn( foreignTable.id, foreignColumnName ).orElseThrow();
                     RexNode newValue;
                     int targetIndex;
                     if ( root.isUpdate() ) {
-                        targetIndex = root.getUpdateColumnList().indexOf( columnName );
-                        newValue = root.getSourceExpressionList().get( targetIndex );
+                        targetIndex = root.getUpdateColumns().indexOf( columnName );
+                        newValue = root.getSourceExpressions().get( targetIndex );
                         newValue = new RexShuttle() {
                             @Override
                             public RexNode visitFieldAccess( RexFieldAccess fieldAccess ) {
-                                return rexBuilder.makeInputRef( input, input.getRowType().getField( fieldAccess.getField().getName(), true, false ).getIndex() );
+                                return rexBuilder.makeInputRef( input, input.getTupleType().getField( fieldAccess.getField().getName(), true, false ).getIndex() );
                             }
                         }.apply( newValue );
                     } else {
-                        targetIndex = input.getRowType().getField( columnName, true, false ).getIndex();
+                        targetIndex = input.getTupleType().getField( columnName, true, false ).getIndex();
                         newValue = rexBuilder.makeInputRef( input, targetIndex );
                     }
                     RexNode foreignValue = rexBuilder.makeInputRef( foreignColumn.getAlgDataType( rexBuilder.getTypeFactory() ), targetIndex );
@@ -525,7 +500,7 @@ public class ConstraintEnforceAttacher {
                 }
                 builder
                         .project( projects )
-                        .scan( foreignKey.getReferencedKeyTableName() )
+                        .relScan( foreignKey.getReferencedKeyEntityName() )
                         .project( foreignProjects );
                 RexNode condition = rexBuilder.makeLiteral( true );
                 for ( int i = 0; i < projects.size(); ++i ) {
@@ -538,10 +513,10 @@ public class ConstraintEnforceAttacher {
                     );
                 }
                 final AlgNode join = builder.join( JoinAlgType.LEFT, condition ).build();
-                final AlgNode check = LogicalFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NULL ), rexBuilder.makeInputRef( join, projects.size() * 2 - 1 ) ) );
+                final AlgNode check = LogicalRelFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NULL ), rexBuilder.makeInputRef( join, projects.size() * 2 - 1 ) ) );
                 final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
                         String.format( "Update violates foreign key constraint `%s` (`%s` %s -> `%s` %s, %s)",
-                                foreignKey.name, table.name, foreignKey.getColumnNames(), foreignTable.name, foreignKey.getReferencedKeyColumnNames(), constraintRule ) );
+                                foreignKey.name, table.name, foreignKey.getFieldNames(), foreignTable.name, foreignKey.getReferencedKeyFieldNames(), constraintRule ) );
                 lce.setCheckDescription( String.format( "Enforcement of foreign key `%s`.`%s`", table.name, foreignKey.name ) );
                 lceRoot = lce;
             }
@@ -553,7 +528,7 @@ public class ConstraintEnforceAttacher {
         if ( (root.isDelete() || root.isUpdate() || root.isMerge()) && RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
             AlgBuilder builder = AlgBuilder.create( statement );
             final RexBuilder rexBuilder = builder.getRexBuilder();
-            for ( final CatalogForeignKey foreignKey : exportedKeys ) {
+            for ( final LogicalForeignKey foreignKey : exportedKeys ) {
                 final String constraintRule = root.isDelete() ? "ON DELETE " + foreignKey.deleteRule : "ON UPDATE " + foreignKey.updateRule;
                 switch ( root.isDelete() ? foreignKey.deleteRule : foreignKey.updateRule ) {
                     case RESTRICT:
@@ -563,32 +538,27 @@ public class ConstraintEnforceAttacher {
                 }
                 AlgNode pInput;
                 if ( root.getInput() instanceof Project ) {
-                    pInput = ((LogicalProject) root.getInput()).getInput().accept( new DeepCopyShuttle() );
+                    pInput = ((LogicalRelProject) root.getInput()).getInput().accept( new DeepCopyShuttle() );
                 } else {
                     pInput = root.getInput().accept( new DeepCopyShuttle() );
                 }
-                final List<RexNode> projects = new ArrayList<>( foreignKey.columnIds.size() );
-                final List<RexNode> foreignProjects = new ArrayList<>( foreignKey.columnIds.size() );
-                final CatalogTable foreignTable = Catalog.getInstance().getTable( foreignKey.tableId );
-                for ( int i = 0; i < foreignKey.columnIds.size(); ++i ) {
-                    final String columnName = foreignKey.getReferencedKeyColumnNames().get( i );
-                    final String foreignColumnName = foreignKey.getColumnNames().get( i );
-                    final CatalogColumn column, foreignColumn;
-                    try {
-                        column = Catalog.getInstance().getColumn( table.id, columnName );
-                        foreignColumn = Catalog.getInstance().getColumn( foreignTable.id, foreignColumnName );
-                    } catch ( UnknownColumnException e ) {
-                        throw new RuntimeException( e );
-                    }
-                    final RexNode inputRef = new RexInputRef( column.position - 1, rexBuilder.getTypeFactory().createPolyType( column.type ) );
-                    final RexNode foreignInputRef = new RexInputRef( foreignColumn.position - 1, rexBuilder.getTypeFactory().createPolyType( foreignColumn.type ) );
+                final List<RexNode> projects = new ArrayList<>( foreignKey.fieldIds.size() );
+                final List<RexNode> foreignProjects = new ArrayList<>( foreignKey.fieldIds.size() );
+                final LogicalTable foreignTable = snapshot.getTable( foreignKey.entityId ).orElseThrow();
+                for ( int i = 0; i < foreignKey.fieldIds.size(); ++i ) {
+                    final String columnName = foreignKey.getReferencedKeyFieldNames().get( i );
+                    final String foreignColumnName = foreignKey.getFieldNames().get( i );
+                    final LogicalColumn column = snapshot.getColumn( table.id, columnName ).orElseThrow();
+                    final LogicalColumn foreignColumn = snapshot.getColumn( foreignTable.id, foreignColumnName ).orElseThrow();
+                    final RexNode inputRef = new RexIndexRef( column.position - 1, rexBuilder.getTypeFactory().createPolyType( column.type ) );
+                    final RexNode foreignInputRef = new RexIndexRef( foreignColumn.position - 1, rexBuilder.getTypeFactory().createPolyType( foreignColumn.type ) );
                     projects.add( inputRef );
                     foreignProjects.add( foreignInputRef );
                 }
                 builder
                         .push( pInput )
                         .project( projects )
-                        .scan( foreignKey.getTableName() )
+                        .relScan( foreignKey.getTableName() )
                         .project( foreignProjects );
                 RexNode condition = rexBuilder.makeLiteral( true );
                 for ( int i = 0; i < projects.size(); ++i ) {
@@ -604,7 +574,7 @@ public class ConstraintEnforceAttacher {
                 final LogicalConditionalExecute lce = LogicalConditionalExecute.create( join, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
                         String.format( "%s violates foreign key constraint `%s` (`%s` %s -> `%s` %s, %s)",
                                 root.isUpdate() ? "Update" : "Delete",
-                                foreignKey.name, foreignTable.name, foreignKey.getColumnNames(), table.name, foreignKey.getReferencedKeyColumnNames(), constraintRule ) );
+                                foreignKey.name, foreignTable.name, foreignKey.getFieldNames(), table.name, foreignKey.getReferencedKeyFieldNames(), constraintRule ) );
                 lce.setCheckDescription( String.format( "Enforcement of foreign key `%s`.`%s`", foreignTable.name, foreignKey.name ) );
                 lceRoot = lce;
             }
@@ -647,7 +617,7 @@ public class ConstraintEnforceAttacher {
         public void onConfigChange( Config c ) {
             if ( !testConstraintsValid() ) {
                 c.setBoolean( !c.getBoolean() );
-                throw new RuntimeException( "Could not change the constraints." );
+                throw new GenericRuntimeException( "Could not change the constraints." );
             }
         }
 
@@ -656,7 +626,7 @@ public class ConstraintEnforceAttacher {
         public void restart( Config c ) {
             if ( !testConstraintsValid() ) {
                 c.setBoolean( !c.getBoolean() );
-                throw new RuntimeException( "After restart the constraints where not longer enforceable." );
+                throw new GenericRuntimeException( "After restart the constraints where not longer enforceable." );
             }
         }
 
@@ -664,38 +634,40 @@ public class ConstraintEnforceAttacher {
         private boolean testConstraintsValid() {
             if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() || RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() ) {
                 try {
-                    List<CatalogTable> tables = Catalog
+                    List<LogicalTable> tables = Catalog
                             .getInstance()
-                            .getTables( null, null, null )
+                            .getSnapshot()
+                            .getNamespaces( null )
                             .stream()
-                            .filter( t -> t.entityType == EntityType.ENTITY && t.getNamespaceType() == NamespaceType.RELATIONAL )
-                            .collect( Collectors.toList() );
-                    Transaction transaction = this.manager.startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, false, "ConstraintEnforcement" );
+                            .flatMap( n -> Catalog.getInstance().getSnapshot().rel().getTables( n.id, null ).stream() )
+                            .filter( t -> t.entityType == EntityType.ENTITY && t.getDataModel() == DataModel.RELATIONAL )
+                            .toList();
+                    Transaction transaction = this.manager.startTransaction( Catalog.defaultUserId, false, "ConstraintEnforcement" );
                     Statement statement = transaction.createStatement();
                     QueryProcessor processor = statement.getQueryProcessor();
                     List<EnforcementInformation> infos = ConstraintEnforceAttacher
                             .getConstraintAlg( new TreeSet<>( tables ), statement, EnforcementTime.ON_QUERY );
                     List<PolyImplementation> results = infos
                             .stream()
-                            .map( s -> processor.prepareQuery( AlgRoot.of( s.getControl(), Kind.SELECT ), false ) )
-                            .collect( Collectors.toList() );
-                    List<List<List<Object>>> rows = results.stream()
-                            .map( r -> r.getRows( statement, -1 ) )
-                            .filter( r -> r.size() != 0 )
-                            .collect( Collectors.toList() );
+                            .map( s -> processor.prepareQuery( AlgRoot.of( s.control(), Kind.SELECT ), false ) )
+                            .toList();
+                    List<List<List<PolyValue>>> rows = results.stream()
+                            .map( r -> r.execute( statement, -1 ).getAllRowsAndClose() )
+                            .filter( r -> !r.isEmpty() )
+                            .toList();
 
-                    if ( rows.size() != 0 ) {
-                        Integer index = (Integer) rows.get( 0 ).get( 0 ).get( 1 );
-                        throw new TransactionException( infos.get( 0 ).getErrorMessages().get( index ) + "\nThere are violated constraints, the transaction was rolled back!" );
+                    if ( !rows.isEmpty() ) {
+                        int index = rows.get( 0 ).get( 0 ).get( 1 ).asNumber().intValue();
+                        throw new TransactionException( infos.get( 0 ).errorMessages().get( index ) + "\nThere are violated constraints, the transaction was rolled back!" );
                     }
                     try {
                         statement.getTransaction().commit();
                     } catch ( TransactionException e ) {
-                        throw new RuntimeException( "Error while committing constraint enforcement check." );
+                        throw new GenericRuntimeException( "Error while committing constraint enforcement check." );
                     }
 
 
-                } catch ( UnknownDatabaseException | UnknownSchemaException | UnknownUserException | TransactionException | GenericCatalogException e ) {
+                } catch ( TransactionException e ) {
                     return false;
                 }
             }

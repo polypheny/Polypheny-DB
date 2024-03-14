@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,33 +20,45 @@ package org.polypheny.db.algebra.logical.common;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.polypheny.db.adapter.enumerable.EnumerableTableModify;
+import java.util.stream.IntStream;
+import javax.annotation.Nullable;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.AlgShuttle;
-import org.polypheny.db.algebra.core.Modify;
-import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Streamer;
-import org.polypheny.db.algebra.core.document.DocumentModify;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
-import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.core.document.DocumentValues;
+import org.polypheny.db.algebra.core.relational.RelModify;
+import org.polypheny.db.algebra.core.relational.RelScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexFieldAccess;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.tools.AlgBuilder;
 
-
+@EqualsAndHashCode(callSuper = true)
+@Value
+@Slf4j
 public class LogicalStreamer extends Streamer {
 
     /**
      * {@code
-     * Streamer
+     *      Streamer
      * ^               |
      * |               v
      * Provider    Collector
@@ -55,7 +67,7 @@ public class LogicalStreamer extends Streamer {
      * @param provider provides the values which get streamed to the collector
      * @param collector uses the provided values and
      */
-    public LogicalStreamer( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode provider, AlgNode collector ) {
+    public LogicalStreamer( AlgCluster cluster, AlgTraitSet traitSet, AlgNode provider, AlgNode collector ) {
         super( cluster, traitSet, provider, collector );
     }
 
@@ -65,8 +77,14 @@ public class LogicalStreamer extends Streamer {
     }
 
 
-    public static LogicalStreamer create( Modify modify, AlgBuilder algBuilder ) {
+    @Nullable
+    public static LogicalStreamer create( Modify<?> allModify, AlgBuilder algBuilder ) {
         RexBuilder rexBuilder = algBuilder.getRexBuilder();
+
+        if ( !(allModify instanceof RelModify<?> modify) ) {
+            log.debug( "non relational nodes are not supported for toModify streamer rule" );
+            return null;
+        }
 
         if ( !isModifyApplicable( modify ) ) {
             return null;
@@ -81,113 +99,111 @@ public class LogicalStreamer extends Streamer {
     }
 
 
-    private static LogicalStreamer getLogicalStreamer( Modify modify, AlgBuilder algBuilder, RexBuilder rexBuilder, AlgNode input ) {
+    private static LogicalStreamer getLogicalStreamer( RelModify<?> modify, AlgBuilder algBuilder, RexBuilder rexBuilder, AlgNode input ) {
         if ( input == null ) {
-            throw new RuntimeException( "Error while creating Streamer." );
+            throw new GenericRuntimeException( "Error while creating Streamer." );
         }
 
         // add all previous variables e.g. _id, _data(previous), _data(updated)
         // might only extract previous refs used in condition e.g. _data
-        List<String> update = new ArrayList<>( getOldFieldsNames( input.getRowType().getFieldNames() ) );
-        List<RexNode> source = new ArrayList<>( getOldFieldRefs( input.getRowType() ) );
+        List<String> update = new ArrayList<>( getOldFieldsNames( input.getTupleType().getFieldNames() ) );
+        List<RexNode> source = new ArrayList<>( getOldFieldRefs( input.getTupleType() ) );
 
         AlgNode query = input;
 
-        if ( modify.getUpdateColumnList() != null && modify.getSourceExpressionList() != null ) {
+        if ( modify.getUpdateColumns() != null && modify.getSourceExpressions() != null ) {
             // update and source list are not null
-            update.addAll( modify.getUpdateColumnList() );
-            source.addAll( modify.getSourceExpressionList() );
+            update.addAll( modify.getUpdateColumns() );
+            source.addAll( modify.getSourceExpressions().stream().map( s -> replaceCorrelates( s, modify.getEntity() ) ).toList() );
 
             // we project the needed sources out and modify them to fit the prepared
-            query = LogicalProject.create( modify.getInput(), source, update );
+            query = LogicalRelProject.create( modify.getInput(), source, update );
         }
 
         /////// prepared
 
         if ( !modify.isInsert() ) {
             // get collection, which is modified
-            algBuilder.scan( modify.getTable().getQualifiedName() );
+            algBuilder.relScan( modify.getEntity() );
             // at the moment no data model is able to conditionally insert
             attachFilter( modify, algBuilder, rexBuilder );
         } else {
-            //algBuilder.push( LogicalValues.createOneRow( input.getCluster() ) );
-
-            assert input.getRowType().getFieldCount() == modify.getTable().getRowType().getFieldCount();
+            if ( input.getTupleType().getFieldCount() != modify.getEntity().getTupleType().getFieldCount() ) {
+                return null;
+            }
             // attach a projection, so the values can be inserted on execution
-            algBuilder.push(
-                    LogicalProject.create(
-                            LogicalValues.createOneRow( input.getCluster() ),
-                            input.getRowType()
-                                    .getFieldList()
-                                    .stream()
-                                    .map( f -> rexBuilder.makeDynamicParam( f.getType(), f.getIndex() ) )
-                                    .collect( Collectors.toList() ),
-                            input.getRowType() )
-            );
+            algBuilder.push( getCollector( rexBuilder, input ) );
         }
 
-        LogicalModify prepared = LogicalModify.create(
-                        modify.getTable(),
-                        modify.getCatalogReader(),
-                        algBuilder.build(),
-                        modify.getOperation(),
-                        modify.getUpdateColumnList(),
-                        modify.getSourceExpressionList() == null ? null : createSourceList( modify, rexBuilder ),
-                        false )
-                .isStreamed( true );
+        Modify<?> prepared = LogicalRelModify.create(
+                modify.getEntity(),
+                algBuilder.build(),
+                modify.getOperation(),
+                modify.getUpdateColumns(),
+                modify.getSourceExpressions() == null ? null : createSourceList( modify, query, rexBuilder ),
+                false ).streamed( true );
         return new LogicalStreamer( modify.getCluster(), modify.getTraitSet(), query, prepared );
     }
 
 
-    private static List<RexNode> createSourceList( Modify modify, RexBuilder rexBuilder ) {
-        return modify.getUpdateColumnList()
-                .stream()
-                .map( name -> {
-                    int size = modify.getRowType().getFieldList().size();
-                    int index = modify.getTable().getRowType().getFieldNames().indexOf( name );
-                    return rexBuilder.makeDynamicParam(
-                            modify.getTable().getRowType().getFieldList().get( index ).getType(), size + index );
-                } ).collect( Collectors.toList() );
+    private static RexNode replaceCorrelates( RexNode node, Entity entity ) {
+        return node.accept( new CorrelationReplacer( entity ) );
     }
 
 
-    private static List<RexNode> createSourceList( DocumentModify modify, RexBuilder rexBuilder ) {
-        return modify.getUpdates()
-                .stream()
-                .map( name -> {
-                    int size = modify.getRowType().getFieldList().size();
-                    int index = modify.getTable().getRowType().getFieldNames().indexOf( name );
-                    return rexBuilder.makeDynamicParam(
-                            modify.getTable().getRowType().getFieldList().get( index ).getType(), size + index );
-                } ).collect( Collectors.toList() );
+    @NotNull
+    public static LogicalRelProject getCollector( RexBuilder rexBuilder, AlgNode input ) {
+        return LogicalRelProject.create(
+                LogicalRelValues.createOneRow( input.getCluster() ),
+                input.getTupleType()
+                        .getFields()
+                        .stream()
+                        .map( f -> rexBuilder.makeDynamicParam( f.getType(), f.getIndex() ) )
+                        .toList(),
+                input.getTupleType() );
     }
 
 
-    private static void attachFilter( Modify modify, AlgBuilder algBuilder, RexBuilder rexBuilder ) {
-        List<RexNode> fields = new ArrayList<>();
-        int i = 0;
-        for ( AlgDataTypeField field : modify.getTable().getRowType().getFieldList() ) {
-            fields.add(
-                    algBuilder.equals(
-                            rexBuilder.makeInputRef( modify.getTable().getRowType(), i ),
-                            rexBuilder.makeDynamicParam( field.getType(), i ) ) );
-            i++;
+    private static List<RexNode> createSourceList( RelModify<?> modify, AlgNode query, RexBuilder rexBuilder ) {
+        return modify.getUpdateColumns()
+                .stream()
+                .map( name -> {
+                    int index = query.getTupleType().getFieldNames().indexOf( name );
+                    return (RexNode) rexBuilder.makeDynamicParam( query.getTupleType().getFields().get( index ).getType(), index );
+                } ).toList();
+    }
+
+
+    public static void attachFilter( AlgNode modify, AlgBuilder algBuilder, RexBuilder rexBuilder ) {
+        List<Integer> indexes = IntStream.range( 0, modify.getEntity().getTupleType().getFieldCount() ).boxed().toList();
+
+        if ( modify.getEntity().unwrap( PhysicalTable.class ).isPresent() ) {
+            indexes = new ArrayList<>();
+            for ( long fieldId : modify.getEntity().unwrap( PhysicalTable.class ).orElseThrow().getUniqueFieldIds() ) {
+                indexes.add( modify.getEntity().getTupleType().getFieldIds().indexOf( fieldId ) );
+            }
         }
-        algBuilder.filter( fields.size() == 1
-                ? fields.get( 0 )
-                : algBuilder.and( fields ) );
+
+
+        attachFilter( modify.getEntity(), algBuilder, rexBuilder, indexes );
     }
 
 
-    private static void attachFilter( DocumentModify modify, AlgBuilder algBuilder, RexBuilder rexBuilder ) {
+    public static void attachFilter( Entity entity, AlgBuilder algBuilder, RexBuilder rexBuilder, List<Integer> indexes ) {
         List<RexNode> fields = new ArrayList<>();
         int i = 0;
-        for ( AlgDataTypeField field : modify.getTable().getRowType().getFieldList() ) {
+        int j = 0;
+        for ( AlgDataTypeField field : entity.getTupleType().getFields() ) {
+            if ( !indexes.contains( i ) ) {
+                i++;
+                continue;
+            }
             fields.add(
                     algBuilder.equals(
-                            rexBuilder.makeInputRef( modify.getTable().getRowType(), i ),
+                            rexBuilder.makeInputRef( entity.getTupleType(), i ),
                             rexBuilder.makeDynamicParam( field.getType(), i ) ) );
             i++;
+            j++;
         }
         algBuilder.filter( fields.size() == 1
                 ? fields.get( 0 )
@@ -203,65 +219,25 @@ public class LogicalStreamer extends Streamer {
     }
 
 
-    public static boolean isModifyApplicable( Modify modify ) {
+    public static boolean isModifyApplicable( RelModify<?> modify ) {
 
-        if ( modify.isInsert() && modify.getInput() instanceof Values ) {
+        // simple delete, which all store should be able to handle by themselves
+        if ( modify.isInsert() && modify.getInput() instanceof Values || modify.getInput() instanceof DocumentValues ) {
             // simple insert, which all store should be able to handle by themselves
             return false;
-        } else if ( modify.isDelete() && modify.getInput() instanceof Scan ) {
-            // simple delete, which all store should be able to handle by themselves
-            return false;
+        } else {
+            return !modify.isDelete() || !(modify.getInput() instanceof RelScan);
         }
-        return true;
     }
 
 
-    public static boolean isModifyApplicable( DocumentModify modify ) {
-
-        if ( modify.isInsert() && modify.getInput() instanceof Values ) {
-            // simple insert, which all store should be able to handle by themselves
-            return false;
-        } else if ( modify.isDelete() && modify.getInput() instanceof Scan ) {
-            // simple delete, which all store should be able to handle by themselves
-            return false;
-        }
-        return true;
-    }
-
-
-    public static boolean isEnumerableModifyApplicable( EnumerableTableModify modify ) {
-        if ( modify.getSourceExpressionList() == null || modify.getUpdateColumnList() == null ) {
-            return false;
-        }
-
-        if ( modify.isInsert() ) {
-            if ( modify.getInput() instanceof AlgSubset ) {
-                if ( ((AlgSubset) modify.getInput()).getOriginal() instanceof Values ) {
-                    // simple insert, which no store shouldn't be able to handle by themselves
-                    return false;
-                }
-            }
-        }
-
-        if ( modify.isDelete() ) {
-            if ( modify.getInput() instanceof AlgSubset ) {
-                if ( ((AlgSubset) modify.getInput()).getOriginal() instanceof Scan ) {
-                    // simple delete, which no store shouldn't be able to handle by themselves
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-
-    private static List<RexInputRef> getOldFieldRefs( AlgDataType rowType ) {
-        return rowType.getFieldList().stream().map( f -> RexInputRef.of( f.getIndex(), rowType ) ).collect( Collectors.toList() );
+    private static List<RexIndexRef> getOldFieldRefs( AlgDataType rowType ) {
+        return rowType.getFields().stream().map( f -> RexIndexRef.of( f.getIndex(), rowType ) ).collect( Collectors.toList() );
     }
 
 
     private static List<String> getOldFieldsNames( List<String> names ) {
-        return names.stream().map( name -> name + "$old" ).collect( Collectors.toList() );
+        return names.stream().map( name -> name + "$old" ).toList();
     }
 
 
@@ -271,9 +247,23 @@ public class LogicalStreamer extends Streamer {
     }
 
 
-    @Override
-    public AlgNode accept( AlgShuttle shuttle ) {
-        return shuttle.visit( this );
+    private static class CorrelationReplacer extends RexShuttle {
+
+        private final Entity entity;
+
+
+        public CorrelationReplacer( Entity entity ) {
+            this.entity = entity;
+        }
+
+
+        @Override
+        public RexNode visitFieldAccess( RexFieldAccess fieldAccess ) {
+            int index = fieldAccess.getField().getIndex();
+            return new RexIndexRef( index, entity.getTupleType().getFields().get( index ).getType() );
+        }
+
+
     }
 
 }

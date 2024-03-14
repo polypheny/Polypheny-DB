@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,20 @@
 
 package org.polypheny.db.cql.utils;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.cql.ColumnFilter;
-import org.polypheny.db.cql.ColumnIndex;
 import org.polypheny.db.cql.Comparator;
+import org.polypheny.db.cql.FieldIndex;
 import org.polypheny.db.cql.LiteralFilter;
 import org.polypheny.db.cql.Relation;
 import org.polypheny.db.cql.exception.UnknownIndexException;
@@ -44,32 +46,35 @@ public class FilterTest extends AlgBuildTestHelper {
     public FilterTest() throws UnknownIndexException {
         super( AlgBuildLevel.INITIAL_PROJECTION );
         baseNode = algBuilder.peek();
-        AlgDataType filtersRowType = baseNode.getRowType();
-        List<AlgDataTypeField> filtersRows = filtersRowType.getFieldList();
-        filtersRows.forEach( ( r ) -> filterMap.put( r.getKey(), r ) );
+        AlgDataType filtersRowType = baseNode.getTupleType();
+        List<AlgDataTypeField> filtersRows = filtersRowType.getFields();
+        filtersRows.forEach( ( r ) -> filterMap.put( r.getName(), r ) );
     }
 
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void testColumnFilterThrowsNotImplementedRuntimeException() throws UnknownIndexException {
-        ColumnFilter columnFilter = new ColumnFilter(
-                ColumnIndex.createIndex( "APP", "test", "dept", "deptno" ),
-                new Relation( Comparator.EQUALS ),
-                ColumnIndex.createIndex( "APP", "test", "employee", "deptno" )
-        );
-        columnFilter.convert2RexNode( baseNode, rexBuilder, filterMap );
+
+        RuntimeException thrown = assertThrows( RuntimeException.class, () -> {
+            ColumnFilter columnFilter = new ColumnFilter(
+                    FieldIndex.createIndex( "test", "dept", "deptno" ),
+                    new Relation( Comparator.EQUALS ),
+                    FieldIndex.createIndex( "test", "employee", "deptno" )
+            );
+            columnFilter.convert2RexNode( baseNode, rexBuilder, filterMap );
+        } );
     }
 
 
     @Test
     public void testLiteralFilter() throws UnknownIndexException {
         LiteralFilter literalFilter = new LiteralFilter(
-                ColumnIndex.createIndex( "APP", "test", "employee", "deptno" ),
+                FieldIndex.createIndex( "test", "employee", "deptno" ),
                 new Relation( Comparator.EQUALS ),
                 "1"
         );
         RexNode rexNode = literalFilter.convert2RexNode( baseNode, rexBuilder, filterMap );
-        Assert.assertEquals( Kind.EQUALS, rexNode.getKind() );
+        assertEquals( Kind.EQUALS, rexNode.getKind() );
     }
 
 }

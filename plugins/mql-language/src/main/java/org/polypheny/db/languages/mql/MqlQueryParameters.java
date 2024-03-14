@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,18 +17,18 @@
 package org.polypheny.db.languages.mql;
 
 import lombok.Getter;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.QueryParameters;
 
+@Getter
 public class MqlQueryParameters extends QueryParameters {
 
-    @Getter
-    final String database;
+    final Long namespaceId;
 
 
-    public MqlQueryParameters( String query, String database, NamespaceType namespaceType ) {
-        super( query, namespaceType );
-        this.database = database;
+    public MqlQueryParameters( String query, Long namespaceId, DataModel dataModel ) {
+        super( query, dataModel );
+        this.namespaceId = namespaceId;
     }
 
 }

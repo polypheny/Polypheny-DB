@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,14 +27,23 @@ import java.util.function.Predicate;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.commons.lang3.time.FastDateFormat;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyNull;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyFloat;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.temporal.PolyDate;
+import org.polypheny.db.type.entity.temporal.PolyTime;
 
 
 /**
  * Enumerator that reads from a Blockchain.
- *
- * @param <E> Row type
  */
-class EthereumEnumerator<E> implements Enumerator<E> {
+class EthereumEnumerator implements Enumerator<PolyValue[]> {
 
     private static final FastDateFormat TIME_FORMAT_DATE;
     private static final FastDateFormat TIME_FORMAT_TIME;
@@ -53,12 +62,13 @@ class EthereumEnumerator<E> implements Enumerator<E> {
     private final BlockReader reader;
     private final String[] filterValues;
     private final AtomicBoolean cancelFlag;
-    private final RowConverter<E> rowConverter;
+    private final RowConverter<PolyValue> rowConverter;
     private final int blocks;
-    private E current;
+
+    private PolyValue[] current;
 
 
-    EthereumEnumerator( String clientUrl, int blocks, AtomicBoolean cancelFlag, boolean stream, String[] filterValues, EthereumMapper mapper, Predicate<BigInteger> blockNumberPredicate, RowConverter<E> rowConverter ) {
+    EthereumEnumerator( String clientUrl, int blocks, AtomicBoolean cancelFlag, boolean stream, String[] filterValues, EthereumMapper mapper, Predicate<BigInteger> blockNumberPredicate, RowConverter<PolyValue> rowConverter ) {
         this.clientUrl = clientUrl;
         this.cancelFlag = cancelFlag;
         this.rowConverter = rowConverter;
@@ -68,13 +78,8 @@ class EthereumEnumerator<E> implements Enumerator<E> {
     }
 
 
-    static RowConverter<?> converter( List<EthereumFieldType> fieldTypes, int[] fields ) {
-        if ( fields.length == 1 ) {
-            final int field = fields[0];
-            return new SingleColumnRowConverter( fieldTypes.get( field ), field );
-        } else {
-            return new ArrayRowConverter( fieldTypes, fields );
-        }
+    static RowConverter<PolyValue> converter( List<EthereumFieldType> fieldTypes, int[] fields ) {
+        return new ArrayRowConverter( fieldTypes, fields );
     }
 
 
@@ -91,7 +96,7 @@ class EthereumEnumerator<E> implements Enumerator<E> {
 
 
     @Override
-    public E current() {
+    public PolyValue[] current() {
         return current;
     }
 
@@ -122,7 +127,7 @@ class EthereumEnumerator<E> implements Enumerator<E> {
                 return true;
             }
         } catch ( IOException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 
@@ -138,7 +143,7 @@ class EthereumEnumerator<E> implements Enumerator<E> {
         try {
             reader.close();
         } catch ( IOException e ) {
-            throw new RuntimeException( "Error closing Blockchain reader", e );
+            throw new GenericRuntimeException( "Error closing Blockchain reader", e );
         }
     }
 
@@ -150,83 +155,55 @@ class EthereumEnumerator<E> implements Enumerator<E> {
      */
     abstract static class RowConverter<E> {
 
-        abstract E convertRow( String[] rows );
+        abstract PolyValue[] convertRow( String[] rows );
 
 
-        protected Object convert( EthereumFieldType fieldType, String string ) {
+        protected PolyValue convert( EthereumFieldType fieldType, String string ) {
             if ( fieldType == null ) {
-                return string;
+                throw new GenericRuntimeException( "This should not happen." );
+            }
+            if ( string.isEmpty() ) {
+                return PolyNull.NULL;
             }
             switch ( fieldType ) {
                 case BOOLEAN:
-                    if ( string.length() == 0 ) {
-                        return null;
-                    }
-                    return Boolean.parseBoolean( string );
+                    return PolyBoolean.of( Boolean.parseBoolean( string ) );
                 case BYTE:
-                    if ( string.length() == 0 ) {
-                        return null;
-                    }
-                    return Byte.parseByte( string );
+                    return PolyInteger.of( Byte.parseByte( string ) );
                 case SHORT:
-                    if ( string.length() == 0 ) {
-                        return null;
-                    }
-                    return Short.parseShort( string );
+                    return PolyInteger.of( Short.parseShort( string ) );
                 case INT:
-                    if ( string.length() == 0 ) {
-                        return null;
-                    }
-                    return Integer.parseInt( string );
+                    return PolyInteger.of( Integer.parseInt( string ) );
                 case LONG:
-                    if ( string.length() == 0 ) {
-                        return null;
-                    }
-
-                    return new BigInteger( string );
+                    return PolyLong.of( new BigInteger( string ) );
                 case FLOAT:
-                    if ( string.length() == 0 ) {
-                        return null;
-                    }
-                    return Float.parseFloat( string );
+                    return PolyFloat.of( Float.parseFloat( string ) );
                 case DOUBLE:
-                    if ( string.length() == 0 ) {
-                        return null;
-                    }
-                    return Double.parseDouble( string );
+                    return PolyDouble.of( Double.parseDouble( string ) );
                 case DATE:
-                    if ( string.length() == 0 ) {
-                        return null;
-                    }
                     try {
                         Date date = TIME_FORMAT_DATE.parse( string );
-                        return (int) (date.getTime() / DateTimeUtils.MILLIS_PER_DAY);
+                        return PolyDate.of( (date.getTime() / DateTimeUtils.MILLIS_PER_DAY) );
                     } catch ( ParseException e ) {
-                        return null;
+                        return PolyNull.NULL;
                     }
                 case TIME:
-                    if ( string.length() == 0 ) {
-                        return null;
-                    }
                     try {
                         Date date = TIME_FORMAT_TIME.parse( string );
-                        return (int) date.getTime();
+                        return PolyTime.of( (int) date.getTime() );
                     } catch ( ParseException e ) {
-                        return null;
+                        return PolyNull.NULL;
                     }
                 case TIMESTAMP:
-                    if ( string.length() == 0 ) {
-                        return null;
-                    }
                     try {
                         Date date = new Date( Long.parseLong( string ) * 1000 );
-                        return date.getTime();
+                        return PolyDate.of( date.getTime() );
                     } catch ( Exception e ) {
-                        return null;
+                        return PolyNull.NULL;
                     }
                 case STRING:
                 default:
-                    return string;
+                    return PolyString.of( string );
             }
         }
 
@@ -236,7 +213,7 @@ class EthereumEnumerator<E> implements Enumerator<E> {
     /**
      * Array row converter.
      */
-    static class ArrayRowConverter extends RowConverter<Object[]> {
+    static class ArrayRowConverter extends RowConverter<PolyValue> {
 
         private final EthereumFieldType[] fieldTypes;
         private final int[] fields;
@@ -259,7 +236,7 @@ class EthereumEnumerator<E> implements Enumerator<E> {
 
 
         @Override
-        public Object[] convertRow( String[] strings ) {
+        public PolyValue[] convertRow( String[] strings ) {
             if ( stream ) {
                 return convertStreamRow( strings );
             } else {
@@ -268,8 +245,8 @@ class EthereumEnumerator<E> implements Enumerator<E> {
         }
 
 
-        public Object[] convertNormalRow( String[] strings ) {
-            final Object[] objects = new Object[fields.length];
+        public PolyValue[] convertNormalRow( String[] strings ) {
+            final PolyValue[] objects = new PolyValue[fields.length];
             for ( int i = 0; i < fields.length; i++ ) {
                 int field = fields[i];
                 objects[i] = convert( fieldTypes[i], strings[field] );
@@ -278,9 +255,9 @@ class EthereumEnumerator<E> implements Enumerator<E> {
         }
 
 
-        public Object[] convertStreamRow( String[] strings ) {
-            final Object[] objects = new Object[fields.length];
-            objects[0] = System.currentTimeMillis();
+        public PolyValue[] convertStreamRow( String[] strings ) {
+            final PolyValue[] objects = new PolyValue[fields.length];
+            objects[0] = PolyLong.of( System.currentTimeMillis() );
             for ( int i = 0; i < fields.length; i++ ) {
                 int field = fields[i];
                 objects[i] = convert( fieldTypes[i], strings[field] );
@@ -294,7 +271,7 @@ class EthereumEnumerator<E> implements Enumerator<E> {
     /**
      * Single column row converter.
      */
-    private static class SingleColumnRowConverter extends RowConverter {
+    private static class SingleColumnRowConverter extends RowConverter<PolyValue[]> {
 
         private final EthereumFieldType fieldType;
         private final int fieldIndex;
@@ -307,8 +284,8 @@ class EthereumEnumerator<E> implements Enumerator<E> {
 
 
         @Override
-        public Object convertRow( String[] strings ) {
-            return convert( fieldType, strings[fieldIndex] );
+        public PolyValue[] convertRow( String[] strings ) {
+            return new PolyValue[]{ convert( fieldType, strings[fieldIndex] ) };
         }
 
     }

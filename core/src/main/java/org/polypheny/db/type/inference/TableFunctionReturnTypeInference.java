@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ public class TableFunctionReturnTypeInference extends ExplicitReturnTypeInferenc
         AlgDataType unexpandedOutputType = protoType.apply( opBinding.getTypeFactory() );
         List<AlgDataType> expandedOutputTypes = new ArrayList<>();
         List<String> expandedFieldNames = new ArrayList<>();
-        for ( AlgDataTypeField field : unexpandedOutputType.getFieldList() ) {
+        for ( AlgDataTypeField field : unexpandedOutputType.getFields() ) {
             AlgDataType fieldType = field.getType();
             String fieldName = field.getName();
             if ( fieldType.getPolyType() != PolyType.CURSOR ) {
@@ -117,7 +117,7 @@ public class TableFunctionReturnTypeInference extends ExplicitReturnTypeInferenc
                 for ( String columnName : columnNames ) {
                     iInputColumn = -1;
                     AlgDataTypeField cursorField = null;
-                    for ( AlgDataTypeField cField : cursorType.getFieldList() ) {
+                    for ( AlgDataTypeField cField : cursorType.getFields() ) {
                         ++iInputColumn;
                         if ( cField.getName().equals( columnName ) ) {
                             cursorField = cField;
@@ -128,13 +128,13 @@ public class TableFunctionReturnTypeInference extends ExplicitReturnTypeInferenc
                 }
             } else {
                 iInputColumn = -1;
-                for ( AlgDataTypeField cursorField : cursorType.getFieldList() ) {
+                for ( AlgDataTypeField cursorField : cursorType.getFields() ) {
                     ++iInputColumn;
                     addOutputColumn( expandedFieldNames, expandedOutputTypes, iInputColumn, iCursor, opBinding, cursorField );
                 }
             }
         }
-        return opBinding.getTypeFactory().createStructType( expandedOutputTypes, expandedFieldNames );
+        return opBinding.getTypeFactory().createStructType( null, expandedOutputTypes, expandedFieldNames );
     }
 
 

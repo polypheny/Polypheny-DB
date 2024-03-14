@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,53 +33,48 @@
 
 package org.polypheny.db.adapter.csv;
 
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.FilterableTable;
+import org.polypheny.db.schema.types.FilterableEntity;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Source;
-
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 
 /**
  * Table based on a CSV file that can implement simple filtering.
- *
- * It implements the {@link FilterableTable} interface, so Polypheny-DB gets data by calling the {@link #scan(DataContext, List)} method.
+ * <p>
+ * It implements the {@link FilterableEntity} interface, so Polypheny-DB gets data by calling the {@link #scan(DataContext, List)} method.
  */
-public class CsvFilterableTable extends CsvTable implements FilterableTable {
+public class CsvFilterableTable extends CsvTable implements FilterableEntity {
 
     /**
      * Creates a CsvFilterableTable.
      */
-    public CsvFilterableTable( Source source, AlgProtoDataType protoRowType, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource, Long tableId ) {
-        super( source, protoRowType, fieldTypes, fields, csvSource, tableId );
-    }
-
-
-    public String toString() {
-        return "CsvFilterableTable";
+    public CsvFilterableTable( long id, Source source, PhysicalTable table, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
+        super( id, source, table, fieldTypes, fields, csvSource );
     }
 
 
     @Override
-    public Enumerable<Object[]> scan( DataContext dataContext, List<RexNode> filters ) {
+    public Enumerable<PolyValue[]> scan( DataContext dataContext, List<RexNode> filters ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( csvSource );
         final String[] filterValues = new String[fieldTypes.size()];
         filters.removeIf( filter -> addFilter( filter, filterValues ) );
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
-        return new AbstractEnumerable<Object[]>() {
+        return new AbstractEnumerable<>() {
             @Override
-            public Enumerator<Object[]> enumerator() {
-                return new CsvEnumerator<>( source, cancelFlag, false, filterValues, new CsvEnumerator.ArrayRowConverter( fieldTypes, fields ) );
+            public Enumerator<PolyValue[]> enumerator() {
+                return new CsvEnumerator( source, cancelFlag, false, filterValues, new CsvEnumerator.ArrayRowConverter( fieldTypes, fields ) );
             }
         };
     }
@@ -93,16 +88,17 @@ public class CsvFilterableTable extends CsvTable implements FilterableTable {
                 left = ((RexCall) left).operands.get( 0 );
             }
             final RexNode right = call.getOperands().get( 1 );
-            if ( left instanceof RexInputRef && right instanceof RexLiteral ) {
-                final int index = ((RexInputRef) left).getIndex();
+            if ( left instanceof RexIndexRef && right instanceof RexLiteral ) {
+                final int index = ((RexIndexRef) left).getIndex();
                 if ( filterValues[index] == null ) {
-                    filterValues[index] = ((RexLiteral) right).getValue2().toString();
+                    filterValues[index] = ((RexLiteral) right).getValue().toString();
                     return true;
                 }
             }
         }
         return false;
     }
+
 
 }
 

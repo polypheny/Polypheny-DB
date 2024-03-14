@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@
 package org.polypheny.db.algebra.metadata;
 
 
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.catalog.entity.Entity;
 
 
 /**
@@ -42,15 +42,15 @@ import org.polypheny.db.plan.AlgOptTable;
  */
 public class AlgColumnOrigin {
 
-    private final AlgOptTable originTable;
+    private final Entity originTable;
 
     private final int iOriginColumn;
 
     private final boolean isDerived;
 
 
-    public AlgColumnOrigin( AlgOptTable originTable, int iOriginColumn, boolean isDerived ) {
-        this.originTable = originTable;
+    public AlgColumnOrigin( Entity origin, int iOriginColumn, boolean isDerived ) {
+        this.originTable = origin;
         this.iOriginColumn = iOriginColumn;
         this.isDerived = isDerived;
     }
@@ -59,7 +59,7 @@ public class AlgColumnOrigin {
     /**
      * @return table of origin
      */
-    public AlgOptTable getOriginTable() {
+    public Entity getOriginTable() {
         return originTable;
     }
 
@@ -88,7 +88,7 @@ public class AlgColumnOrigin {
             return false;
         }
         AlgColumnOrigin other = (AlgColumnOrigin) obj;
-        return originTable.getQualifiedName().equals( other.originTable.getQualifiedName() )
+        return originTable.id == other.originTable.id
                 && (iOriginColumn == other.iOriginColumn)
                 && (isDerived == other.isDerived);
     }
@@ -96,7 +96,7 @@ public class AlgColumnOrigin {
 
     // override Object
     public int hashCode() {
-        return originTable.getQualifiedName().hashCode() + iOriginColumn + (isDerived ? 313 : 0);
+        return originTable.hashCode() + iOriginColumn + (isDerived ? 313 : 0);
     }
 
 }

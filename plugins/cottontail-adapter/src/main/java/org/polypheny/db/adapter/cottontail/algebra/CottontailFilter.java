@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -33,16 +32,20 @@ import org.polypheny.db.adapter.cottontail.util.Linq4JFixer;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.ModelTrait;
+import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.type.PolyType;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicBooleanOperand;
@@ -62,7 +65,7 @@ public class CottontailFilter extends Filter implements CottontailAlg {
 //            CottontailFilter.Translator.class,
             "generateAtomicPredicate",
             String.class, Boolean.class, Object.class, Object.class );
-//            String.class, Boolean.cla/ss, AtomicLiteralBooleanPredicate.Operator.class, Data.class );
+//            String.class, Boolean.class, AtomicLiteralBooleanPredicate.Operator.class, Data.class );
 
     public static final Method CREATE_COMPOUND_PREDICATE_METHOD = Types.lookupMethod(
             Linq4JFixer.class,
@@ -77,7 +80,7 @@ public class CottontailFilter extends Filter implements CottontailAlg {
             Object.class );
 
 
-    public CottontailFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, RexNode condition ) {
+    public CottontailFilter( AlgCluster cluster, AlgTraitSet traits, AlgNode child, RexNode condition ) {
         super( cluster, traits.replace( ModelTrait.RELATIONAL ), child, condition );
     }
 
@@ -86,8 +89,14 @@ public class CottontailFilter extends Filter implements CottontailAlg {
     public void implement( CottontailImplementContext context ) {
         context.visitChild( 0, getInput() );
         final BooleanPredicate predicate = convertToCnf( this.condition );
-        final Translator translator = new Translator( context, input.getRowType() );
+        final Translator translator = new Translator( context, input.getTupleType() );
         context.filterBuilder = translator.generateWhereBuilder( predicate, context.blockBuilder );
+    }
+
+
+    @Override
+    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
+        return super.computeSelfCost( planner, mq ).multiplyBy( 0.1 );
     }
 
 
@@ -105,7 +114,6 @@ public class CottontailFilter extends Filter implements CottontailAlg {
             // intentionally empty
         }
 
-//        Translator translator = new Translator( this.getRowType() )
         return predicate;
     }
 
@@ -119,13 +127,13 @@ public class CottontailFilter extends Filter implements CottontailAlg {
 
         public Translator( CottontailImplementContext context, AlgDataType rowType ) {
             this.rowType = rowType;
-            this.fieldNames = rowType.getFieldList().stream()
-                    .map( it -> context.cottontailTable.getPhysicalColumnName( it.getName() ) )
-                    .collect( Collectors.toList() );
-            this.columnTypes = rowType.getFieldList().stream()
+            this.fieldNames = rowType.getFields().stream()
+                    .map( field -> field.getPhysicalName() == null ? context.getPhysicalName( field.getName() ) : field.getPhysicalName() )
+                    .toList();
+            this.columnTypes = rowType.getFields().stream()
                     .map( AlgDataTypeField::getType )
                     .map( AlgDataType::getPolyType )
-                    .collect( Collectors.toList() );
+                    .toList();
         }
 
 
@@ -152,8 +160,7 @@ public class CottontailFilter extends Filter implements CottontailAlg {
                 ParameterExpression dynamicParameterMap_,
                 boolean negated
         ) {
-            if ( predicate instanceof AtomicPredicate ) {
-                AtomicPredicate atomicPredicate = (AtomicPredicate) predicate;
+            if ( predicate instanceof AtomicPredicate atomicPredicate ) {
                 return translateMatch2( atomicPredicate.node, dynamicParameterMap_, negated );
 //            RexNode leftOp = ((RexCall) atomicPredicate.node).getOperands().get( 0 );
 //            RexNode rightOp = ((RexCall) atomicPredicate.node).getOperands().get( 1 );
@@ -186,20 +193,14 @@ public class CottontailFilter extends Filter implements CottontailAlg {
 
 
         private Expression translateMatch2( RexNode node, ParameterExpression dynamicParameterMap_, boolean negated ) {
-            switch ( node.getKind() ) {
-                case EQUALS:
-                    return translateBinary( ComparisonOperator.EQUAL, ComparisonOperator.EQUAL, (RexCall) node, dynamicParameterMap_, negated );
-                case LESS_THAN:
-                    return translateBinary( ComparisonOperator.LESS, ComparisonOperator.GEQUAL, (RexCall) node, dynamicParameterMap_, negated );
-                case LESS_THAN_OR_EQUAL:
-                    return translateBinary( ComparisonOperator.LEQUAL, ComparisonOperator.GREATER, (RexCall) node, dynamicParameterMap_, negated );
-                case GREATER_THAN:
-                    return translateBinary( ComparisonOperator.GREATER, ComparisonOperator.LEQUAL, (RexCall) node, dynamicParameterMap_, negated );
-                case GREATER_THAN_OR_EQUAL:
-                    return translateBinary( ComparisonOperator.GEQUAL, ComparisonOperator.LESS, (RexCall) node, dynamicParameterMap_, negated );
-                default:
-                    throw new AssertionError( "cannot translate: " + node );
-            }
+            return switch ( node.getKind() ) {
+                case EQUALS -> translateBinary( ComparisonOperator.EQUAL, ComparisonOperator.EQUAL, (RexCall) node, dynamicParameterMap_, negated );
+                case LESS_THAN -> translateBinary( ComparisonOperator.LESS, ComparisonOperator.GEQUAL, (RexCall) node, dynamicParameterMap_, negated );
+                case LESS_THAN_OR_EQUAL -> translateBinary( ComparisonOperator.LEQUAL, ComparisonOperator.GREATER, (RexCall) node, dynamicParameterMap_, negated );
+                case GREATER_THAN -> translateBinary( ComparisonOperator.GREATER, ComparisonOperator.LEQUAL, (RexCall) node, dynamicParameterMap_, negated );
+                case GREATER_THAN_OR_EQUAL -> translateBinary( ComparisonOperator.GEQUAL, ComparisonOperator.LESS, (RexCall) node, dynamicParameterMap_, negated );
+                default -> throw new AssertionError( "cannot translate: " + node );
+            };
         }
 
 
@@ -237,7 +238,7 @@ public class CottontailFilter extends Filter implements CottontailAlg {
                 return null;
             }
 
-            final RexInputRef left1 = (RexInputRef) left;
+            final RexIndexRef left1 = (RexIndexRef) left;
             switch ( right.getKind() ) {
                 case LITERAL:
                     rightSideData = CottontailTypeUtil.rexLiteralToDataExpression( (RexLiteral) right, columnTypes.get( left1.getIndex() ) );
@@ -253,21 +254,20 @@ public class CottontailFilter extends Filter implements CottontailAlg {
                     return null;
             }
 
-            switch ( left.getKind() ) {
-                case INPUT_REF:
-//                    final RexInputRef left1 = (RexInputRef) left;
+            return switch ( left.getKind() ) {
+                case INPUT_REF -> {
                     String name = fieldNames.get( left1.getIndex() );
-
-                    return Expressions.call(
+                    yield Expressions.call(
                             CREATE_ATOMIC_PREDICATE_METHOD,
                             Expressions.constant( name ),
                             Expressions.constant( negated ),
                             Expressions.constant( op ),
                             rightSideData
                     );
-                default:
-                    return null;
-            }
+//                    final RexInputRef left1 = (RexInputRef) left;
+                }
+                default -> null;
+            };
         }
 
 
@@ -323,7 +323,7 @@ public class CottontailFilter extends Filter implements CottontailAlg {
                 return Where.newBuilder().setCompound( (CompoundBooleanPredicate) filterExpression ).build();
             }
 
-            throw new RuntimeException( "Not a proper filter expression!" );
+            throw new GenericRuntimeException( "Not a proper filter expression!" );
         }
 
     }
@@ -475,8 +475,7 @@ public class CottontailFilter extends Filter implements CottontailAlg {
                 changed = changed || this.right.simplify();
             }
 
-            if ( this.left instanceof CompoundPredicate ) {
-                CompoundPredicate tempLeft = (CompoundPredicate) this.left;
+            if ( this.left instanceof CompoundPredicate tempLeft ) {
 
                 // We only do one change because left might turn into an AtomicPredicate!
                 if ( tempLeft.isDoubleNegation() ) {
@@ -494,8 +493,7 @@ public class CottontailFilter extends Filter implements CottontailAlg {
                 }
             }
 
-            if ( this.right != null && this.right instanceof CompoundPredicate ) {
-                CompoundPredicate tempRight = (CompoundPredicate) this.right;
+            if ( this.right != null && this.right instanceof CompoundPredicate tempRight ) {
                 // We only do one change because left might turn into an AtomicPredicate!
                 if ( tempRight.isDoubleNegation() ) {
                     // We pull up the predicate that has a double negation.
@@ -586,16 +584,11 @@ public class CottontailFilter extends Filter implements CottontailAlg {
 
 
             public Op inverse() {
-                switch ( this ) {
-                    case AND:
-                        return OR;
-                    case OR:
-                        return AND;
-                    case NOT:
-                    case ROOT:
-                        return this;
-                }
-                throw new RuntimeException( "Unreachable code!" );
+                return switch ( this ) {
+                    case AND -> OR;
+                    case OR -> AND;
+                    case NOT, ROOT -> this;
+                };
             }
         }
 

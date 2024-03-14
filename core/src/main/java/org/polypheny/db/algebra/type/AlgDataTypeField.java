@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,17 +34,16 @@
 package org.polypheny.db.algebra.type;
 
 
-import java.util.Map;
-
+import org.polypheny.db.catalog.impl.Expressible;
 
 /**
  * RelDataTypeField represents the definition of a field in a structured {@link AlgDataType}.
  * <p>
  * Extends the {@link java.util.Map.Entry} interface to allow convenient inter-operation with Java collections classes.
- * In any implementation of this interface, {@link #getKey()} must be equivalent to {@link #getName()} and {@link #getValue()}
+ * In any implementation of this interface, {@link #getName()} must be equivalent to {@link #getName()} and {@link #getName()} ()}
  * must be equivalent to {@link #getType()}.
  */
-public interface AlgDataTypeField extends Map.Entry<String, AlgDataType> {
+public interface AlgDataTypeField extends Expressible {
 
     /**
      * Gets the name of this field, which is unique within its containing type.
@@ -66,6 +65,8 @@ public interface AlgDataTypeField extends Map.Entry<String, AlgDataType> {
      * @return 0-based ordinal
      */
     int getIndex();
+
+    Long getId();
 
     /**
      * Gets the type of this field.

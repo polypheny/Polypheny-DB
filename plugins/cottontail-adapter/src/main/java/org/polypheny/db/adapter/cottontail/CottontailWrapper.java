@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,11 @@ package org.polypheny.db.adapter.cottontail;
 import io.grpc.ManagedChannel;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.cottontail.CottontailPlugin.CottontailStore;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Transaction;
 import org.vitrivr.cottontail.client.SimpleClient;
@@ -121,7 +122,7 @@ public class CottontailWrapper implements AutoCloseable {
                 this.transactions.remove( xid );
             } catch ( StatusRuntimeException e ) {
                 log.error( "Could not COMMIT Cottontail DB transaction {} due to error; trying rollback", txId, e );
-                throw new RuntimeException( e );
+                throw new GenericRuntimeException( e );
             }
         } else {
             log.warn( "No Cottontail DB transaction for Xid {} could be found.", xid );
@@ -142,7 +143,7 @@ public class CottontailWrapper implements AutoCloseable {
                 this.transactions.remove( xid );
             } catch ( StatusRuntimeException e ) {
                 log.error( "Could not ROLLBACK Cottontail DB transaction {} due to error.", txId, e );
-                throw new RuntimeException( e );
+                throw new GenericRuntimeException( e );
             }
         } else {
             log.warn( "No Cottontail DB transaction for Xid {} could be found.", xid );
@@ -255,13 +256,9 @@ public class CottontailWrapper implements AutoCloseable {
         try {
             final TupleIterator response = this.client.delete( message );
             final Long results = response.next().asLong( 0 );
-            if ( results != null ) {
-                return results; /* Number of deletions as returned by Cottontail DB. */
-            } else {
-                return -1L;
-            }
-        } catch ( StatusRuntimeException e ) {
-            if ( e.getStatus().getCode() == Status.INVALID_ARGUMENT.getCode() ) {
+            return Objects.requireNonNullElse( results, -1L ); /* Number of deletions as returned by Cottontail DB. */
+        } catch ( Throwable e ) {
+            if ( e instanceof StatusRuntimeException exception && exception.getStatus().getCode() == Status.INVALID_ARGUMENT.getCode() ) {
                 if ( log.isDebugEnabled() ) {
                     log.debug( "Deletion failed due to user error: {}", e.getMessage() );
                 }
@@ -277,11 +274,7 @@ public class CottontailWrapper implements AutoCloseable {
         try {
             final TupleIterator response = this.client.update( message );
             final Long results = response.next().asLong( 0 );
-            if ( results != null ) {
-                return results;  /* Number of updates as returned by Cottontail DB. */
-            } else {
-                return -1L;
-            }
+            return Objects.requireNonNullElse( results, -1L );  /* Number of updates as returned by Cottontail DB. */
         } catch ( StatusRuntimeException e ) {
             if ( e.getStatus().getCode() == Status.INVALID_ARGUMENT.getCode() ) {
                 if ( log.isDebugEnabled() ) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,19 +36,17 @@ package org.polypheny.db.algebra.rules;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import org.polypheny.db.adapter.enumerable.EnumerableInterpreter;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.core.relational.RelScan;
+import org.polypheny.db.algebra.enumerable.EnumerableInterpreter;
 import org.polypheny.db.interpreter.Bindables.BindableScan;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.ProjectableFilterableTable;
+import org.polypheny.db.schema.types.ProjectableFilterableEntity;
 import org.polypheny.db.tools.AlgBuilderFactory;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.mapping.Mapping;
 import org.polypheny.db.util.mapping.Mappings;
 import org.polypheny.db.util.mapping.Mappings.TargetMapping;
@@ -56,8 +54,8 @@ import org.polypheny.db.util.mapping.Mappings.TargetMapping;
 
 /**
  * Planner rule that converts a {@link Project}
- * on a {@link Scan}
- * of a {@link ProjectableFilterableTable}
+ * on a {@link RelScan}
+ * of a {@link ProjectableFilterableEntity}
  * to a {@link BindableScan}.
  *
  * The {@link #INTERPRETER} variant allows an intervening {@link EnumerableInterpreter}.
@@ -72,13 +70,13 @@ public abstract class ProjectScanRule extends AlgOptRule {
      */
     public static final ProjectScanRule INSTANCE =
             new ProjectScanRule(
-                    operand( Project.class, operandJ( Scan.class, null, ProjectScanRule::test, none() ) ),
+                    operand( Project.class, operand( RelScan.class, null, ProjectScanRule::test, none() ) ),
                     AlgFactories.LOGICAL_BUILDER,
                     "ProjectScanRule" ) {
                 @Override
                 public void onMatch( AlgOptRuleCall call ) {
                     final Project project = call.alg( 0 );
-                    final Scan scan = call.alg( 1 );
+                    final RelScan<?> scan = call.alg( 1 );
                     apply( call, project, scan );
                 }
             };
@@ -88,13 +86,13 @@ public abstract class ProjectScanRule extends AlgOptRule {
      */
     public static final ProjectScanRule INTERPRETER =
             new ProjectScanRule(
-                    operand( Project.class, operand( EnumerableInterpreter.class, operandJ( Scan.class, null, ProjectScanRule::test, none() ) ) ),
+                    operand( Project.class, operand( EnumerableInterpreter.class, operand( RelScan.class, null, ProjectScanRule::test, none() ) ) ),
                     AlgFactories.LOGICAL_BUILDER,
                     "ProjectScanRule:interpreter" ) {
                 @Override
                 public void onMatch( AlgOptRuleCall call ) {
                     final Project project = call.alg( 0 );
-                    final Scan scan = call.alg( 2 );
+                    final RelScan<?> scan = call.alg( 2 );
                     apply( call, project, scan );
                 }
             };
@@ -108,23 +106,21 @@ public abstract class ProjectScanRule extends AlgOptRule {
     }
 
 
-    protected static boolean test( Scan scan ) {
+    protected static boolean test( RelScan<?> scan ) {
         // We can only push projects into a ProjectableFilterableTable.
-        final AlgOptTable table = scan.getTable();
-        return table.unwrap( ProjectableFilterableTable.class ) != null;
+        return scan.entity.unwrap( ProjectableFilterableEntity.class ).isPresent();
     }
 
 
-    protected void apply( AlgOptRuleCall call, Project project, Scan scan ) {
-        final AlgOptTable table = scan.getTable();
-        assert table.unwrap( ProjectableFilterableTable.class ) != null;
+    protected void apply( AlgOptRuleCall call, Project project, RelScan<?> scan ) {
+        assert scan.entity.unwrap( ProjectableFilterableEntity.class ).isPresent();
 
         final TargetMapping mapping = project.getMapping();
         if ( mapping == null || Mappings.isIdentity( mapping ) ) {
             return;
         }
 
-        final ImmutableIntList projects;
+        final ImmutableList<Integer> projects;
         final ImmutableList<RexNode> filters;
         if ( scan instanceof BindableScan ) {
             final BindableScan bindableScan = (BindableScan) scan;
@@ -136,7 +132,7 @@ public abstract class ProjectScanRule extends AlgOptRule {
         }
 
         final List<Integer> projects2 = Mappings.apply( (Mapping) mapping, projects );
-        call.transformTo( BindableScan.create( scan.getCluster(), scan.getTable(), filters, projects2 ) );
+        call.transformTo( BindableScan.create( scan.getCluster(), scan.getEntity(), filters, projects2 ) );
     }
 
 }

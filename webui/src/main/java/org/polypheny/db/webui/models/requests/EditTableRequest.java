@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,20 +17,30 @@
 package org.polypheny.db.webui.models.requests;
 
 
-import org.polypheny.db.webui.models.DbColumn;
+import lombok.AllArgsConstructor;
+import lombok.Value;
+import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.webui.models.catalog.UiColumnDefinition;
 
 
 /**
  * Model for a request to edit or create a Table used for request where you want to truncate/drop a table
  * and when you want to create a new table
  */
+@Value
+@AllArgsConstructor
 public class EditTableRequest {
 
-    public String schema;
-    public String table;
+    public @Nullable Long namespaceId;
+    public @Nullable Long entityId;
+    public @Nullable String entityName;
+
     public String action; // truncate / drop
-    public DbColumn[] columns;
-    public String store;
-    public String tableType;
+    public UiColumnDefinition[] columns;
+    public Long storeId;
+    public EntityType tableType;
+
+
 
 }

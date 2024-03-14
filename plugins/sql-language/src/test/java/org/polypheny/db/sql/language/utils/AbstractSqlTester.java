@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,11 @@ package org.polypheny.db.sql.language.utils;
 
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.google.common.collect.ImmutableList;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -49,34 +47,25 @@ import org.polypheny.db.nodes.Literal;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.runtime.Utilities;
-import org.polypheny.db.sql.language.SqlCall;
-import org.polypheny.db.sql.language.SqlIntervalLiteral;
 import org.polypheny.db.sql.language.SqlLiteral;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlOperator;
-import org.polypheny.db.sql.language.SqlSelect;
 import org.polypheny.db.sql.language.SqlTestFactory;
-import org.polypheny.db.sql.language.SqlUtil;
-import org.polypheny.db.sql.language.dialect.AnsiSqlDialect;
 import org.polypheny.db.sql.language.parser.SqlParserUtil;
 import org.polypheny.db.sql.language.parser.SqlParserUtil.StringAndPos;
 import org.polypheny.db.sql.language.util.SqlShuttle;
 import org.polypheny.db.sql.language.utils.SqlValidatorTestCase.Tester;
 import org.polypheny.db.sql.language.validate.SqlValidator;
 import org.polypheny.db.sql.language.validate.SqlValidatorNamespace;
-import org.polypheny.db.sql.language.validate.SqlValidatorScope;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.Collation;
-import org.polypheny.db.util.Collation.Coercibility;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.TestUtil;
 import org.polypheny.db.util.Util;
 
 
 /**
  * Abstract implementation of {@link Tester} that talks to a mock catalog.
- *
+ * <p>
  * This is to implement the default behavior: testing is only against the {@link SqlValidator}.
  */
 public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
@@ -161,8 +150,8 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     @Override
     public AlgDataType getColumnType( String sql ) {
         AlgDataType rowType = getResultType( sql );
-        final List<AlgDataTypeField> fields = rowType.getFieldList();
-        assertEquals( "expected query to return 1 field", 1, fields.size() );
+        final List<AlgDataTypeField> fields = rowType.getFields();
+        assertEquals( 1, fields.size(), "expected query to return 1 field" );
         return fields.get( 0 ).getType();
     }
 
@@ -207,34 +196,6 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
 
 
     @Override
-    public void checkFieldOrigin( String sql, String fieldOriginList ) {
-        SqlValidator validator = getValidator();
-        SqlNode n = parseAndValidate( validator, sql );
-        final List<List<String>> list = validator.getFieldOrigins( n );
-        final StringBuilder buf = new StringBuilder( "{" );
-        int i = 0;
-        for ( List<String> strings : list ) {
-            if ( i++ > 0 ) {
-                buf.append( ", " );
-            }
-            if ( strings == null ) {
-                buf.append( "null" );
-            } else {
-                int j = 0;
-                for ( String s : strings ) {
-                    if ( j++ > 0 ) {
-                        buf.append( '.' );
-                    }
-                    buf.append( s );
-                }
-            }
-        }
-        buf.append( "}" );
-        assertEquals( fieldOriginList, buf.toString() );
-    }
-
-
-    @Override
     public void checkResultType( String sql, String expected ) {
         AlgDataType actualType = getResultType( sql );
         String actual = SqlTests.getTypeString( actualType );
@@ -243,59 +204,9 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
 
 
     @Override
-    public void checkIntervalConv( String sql, String expected ) {
-        SqlValidator validator = getValidator();
-        final SqlCall n = (SqlCall) parseAndValidate( validator, sql );
-
-        SqlNode node = null;
-        for ( int i = 0; i < n.operandCount(); i++ ) {
-            node = SqlUtil.stripAs( n.operand( i ) );
-            if ( node instanceof SqlCall ) {
-                node = ((SqlCall) node).operand( 0 );
-                break;
-            }
-        }
-
-        assertNotNull( node );
-        SqlIntervalLiteral intervalLiteral = (SqlIntervalLiteral) node;
-        SqlIntervalLiteral.IntervalValue interval = (SqlIntervalLiteral.IntervalValue) intervalLiteral.getValue();
-        long l = interval.getIntervalQualifier().isYearMonth()
-                ? SqlParserUtil.intervalToMonths( interval )
-                : SqlParserUtil.intervalToMillis( interval );
-        String actual = l + "";
-        assertEquals( expected, actual );
-    }
-
-
-    @Override
     public void checkType( String expression, String type ) {
         for ( String sql : buildQueries( expression ) ) {
             checkColumnType( sql, type );
-        }
-    }
-
-
-    @Override
-    public void checkCollation( String expression, String expectedCollationName, Coercibility expectedCoercibility ) {
-        for ( String sql : buildQueries( expression ) ) {
-            AlgDataType actualType = getColumnType( sql );
-            Collation collation = actualType.getCollation();
-
-            assertEquals( expectedCollationName, collation.getCollationName() );
-            assertEquals( expectedCoercibility, collation.getCoercibility() );
-        }
-    }
-
-
-    @Override
-    public void checkCharset( String expression, Charset expectedCharset ) {
-        for ( String sql : buildQueries( expression ) ) {
-            AlgDataType actualType = getColumnType( sql );
-            Charset actualCharset = actualType.getCharset();
-
-            if ( !expectedCharset.equals( actualCharset ) ) {
-                fail( "\n" + "Expected=" + expectedCharset.name() + "\n" + "  actual=" + actualCharset.name() );
-            }
         }
     }
 
@@ -496,17 +407,9 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
         SqlNode n = parseAndValidate( validator, query );
         final AlgDataType rowType = validator.getValidatedNodeType( n );
         final SqlValidatorNamespace selectNamespace = validator.getSqlNamespace( n );
-        final String field0 = rowType.getFieldList().get( 0 ).getName();
+        final String field0 = rowType.getFields().get( 0 ).getName();
         final Monotonicity monotonicity = selectNamespace.getMonotonicity( field0 );
         assertThat( monotonicity, equalTo( expectedMonotonicity ) );
-    }
-
-
-    @Override
-    public void checkRewrite( SqlValidator validator, String query, String expectedRewrite ) {
-        SqlNode rewrittenNode = parseAndValidate( validator, query );
-        String actualRewrite = rewrittenNode.toSqlString( AnsiSqlDialect.DEFAULT, false ).getSql();
-        TestUtil.assertEqualsVerbose( expectedRewrite, Util.toLinux( actualRewrite ) );
     }
 
 
@@ -536,17 +439,6 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     }
 
 
-    @Override
-    public Monotonicity getMonotonicity( String sql ) {
-        final SqlValidator validator = getValidator();
-        final SqlNode node = parseAndValidate( validator, sql );
-        final SqlSelect select = (SqlSelect) node;
-        final SqlNode selectItem0 = select.getSqlSelectList().getSqlList().get( 0 );
-        final SqlValidatorScope scope = validator.getSelectScope( select );
-        return selectItem0.getMonotonicity( scope );
-    }
-
-
     public static String buildQuery( String expression ) {
         return "values (" + expression + ")";
     }
@@ -559,13 +451,13 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
 
     /**
      * Builds a query that extracts all literals as columns in an underlying select.
-     *
+     * <p>
      * For example,
-     *
+     * <p>
      * {@code 1 < 5}
      *
      * becomes
-     *
+     * <p>
      * {@code SELECT p0 < p1 FROM (VALUES (1, 5)) AS t(p0, p1)}
      *
      * Null literals don't have enough type information to be extracted. We push down {@code CAST(NULL AS type)} but raw nulls such as {@code CASE 1 WHEN 2 THEN 'a' ELSE NULL END} are left as is.
@@ -672,14 +564,11 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
 
             @Override
             public String next() {
-                switch ( i++ ) {
-                    case 0:
-                        return buildQuery( expression );
-                    case 1:
-                        return buildQuery2( expression );
-                    default:
-                        throw new NoSuchElementException();
-                }
+                return switch ( i++ ) {
+                    case 0 -> buildQuery( expression );
+                    case 1 -> buildQuery2( expression );
+                    default -> throw new NoSuchElementException();
+                };
             }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,19 +41,20 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.fun.AggFunction;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
@@ -64,13 +65,12 @@ import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.CompositeList;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Util;
 
 
 /**
  * Planner rule that reduces aggregate functions in {@link org.polypheny.db.algebra.core.Aggregate}s to simpler forms.
- *
+ * <p>
  * Rewrites:
  * <ul>
  * <li>AVG(x) &rarr; SUM(x) / COUNT(x)</li>
@@ -91,7 +91,7 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
     /**
      * The singleton.
      */
-    public static final AggregateReduceFunctionsRule INSTANCE = new AggregateReduceFunctionsRule( operand( LogicalAggregate.class, any() ), AlgFactories.LOGICAL_BUILDER );
+    public static final AggregateReduceFunctionsRule INSTANCE = new AggregateReduceFunctionsRule( operand( LogicalRelAggregate.class, any() ), AlgFactories.LOGICAL_BUILDER );
 
 
     /**
@@ -114,8 +114,8 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
 
     @Override
     public void onMatch( AlgOptRuleCall ruleCall ) {
-        Aggregate oldAggRel = (Aggregate) ruleCall.algs[0];
-        reduceAggs( ruleCall, oldAggRel );
+        Aggregate oldAggAlg = (Aggregate) ruleCall.algs[0];
+        reduceAggs( ruleCall, oldAggAlg );
     }
 
 
@@ -141,25 +141,21 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
         if ( Kind.AVG_AGG_FUNCTIONS.contains( kind ) || Kind.COVAR_AVG_AGG_FUNCTIONS.contains( kind ) ) {
             return true;
         }
-        switch ( kind ) {
-            case SUM:
-                return true;
-        }
-        return false;
+        return Objects.requireNonNull( kind ) == Kind.SUM;
     }
 
 
     /**
      * Reduces all calls to AVG, STDDEV_POP, STDDEV_SAMP, VAR_POP, VAR_SAMP in the aggregates list to.
-     *
-     * It handles newly generated common subexpressions since this was done at the sql2rel stage.
+     * <p>
+     * It handles newly generated common subexpressions since this was done at the sql2alg stage.
      */
-    private void reduceAggs( AlgOptRuleCall ruleCall, Aggregate oldAggRel ) {
-        RexBuilder rexBuilder = oldAggRel.getCluster().getRexBuilder();
+    private void reduceAggs( AlgOptRuleCall ruleCall, Aggregate oldAggAlg ) {
+        RexBuilder rexBuilder = oldAggAlg.getCluster().getRexBuilder();
 
-        List<AggregateCall> oldCalls = oldAggRel.getAggCallList();
-        final int groupCount = oldAggRel.getGroupCount();
-        final int indicatorCount = oldAggRel.getIndicatorCount();
+        List<AggregateCall> oldCalls = oldAggAlg.getAggCallList();
+        final int groupCount = oldAggAlg.getGroupCount();
+        final int indicatorCount = oldAggAlg.getIndicatorCount();
 
         final List<AggregateCall> newCalls = new ArrayList<>();
         final Map<AggregateCall, RexNode> aggCallMapping = new HashMap<>();
@@ -168,34 +164,35 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
 
         // pass through group key (+ indicators if present)
         for ( int i = 0; i < groupCount + indicatorCount; ++i ) {
-            projList.add( rexBuilder.makeInputRef( getFieldType( oldAggRel, i ), i ) );
+            projList.add( rexBuilder.makeInputRef( getFieldType( oldAggAlg, i ), i ) );
         }
 
         // List of input expressions. If a particular aggregate needs more, it will add an expression to the end, and we will create an extra project.
         final AlgBuilder algBuilder = ruleCall.builder();
-        algBuilder.push( oldAggRel.getInput() );
+        algBuilder.push( oldAggAlg.getInput() );
         final List<RexNode> inputExprs = new ArrayList<>( algBuilder.fields() );
 
         // create new agg function calls and rest of project list together
         for ( AggregateCall oldCall : oldCalls ) {
-            projList.add( reduceAgg( oldAggRel, oldCall, newCalls, aggCallMapping, inputExprs ) );
+            projList.add( reduceAgg( oldAggAlg, oldCall, newCalls, aggCallMapping, inputExprs ) );
         }
 
-        final int extraArgCount = inputExprs.size() - algBuilder.peek().getRowType().getFieldCount();
+        final int extraArgCount = inputExprs.size() - algBuilder.peek().getTupleType().getFieldCount();
         if ( extraArgCount > 0 ) {
             algBuilder.project(
                     inputExprs,
                     CompositeList.of(
-                            algBuilder.peek().getRowType().getFieldNames(),
+                            algBuilder.peek().getTupleType().getFieldNames(),
                             Collections.nCopies( extraArgCount, null ) ) );
         }
-        newAggregateRel( algBuilder, oldAggRel, newCalls );
-        newCalcRel( algBuilder, oldAggRel.getRowType(), projList );
+        newAggregateAlg( algBuilder, oldAggAlg, newCalls );
+
+        newCalcAlg( algBuilder, oldAggAlg.getTupleType(), projList );
         ruleCall.transformTo( algBuilder.build() );
     }
 
 
-    private RexNode reduceAgg( Aggregate oldAggRel, AggregateCall oldCall, List<AggregateCall> newCalls, Map<AggregateCall, RexNode> aggCallMapping, List<RexNode> inputExprs ) {
+    private RexNode reduceAgg( Aggregate oldAggAlg, AggregateCall oldCall, List<AggregateCall> newCalls, Map<AggregateCall, RexNode> aggCallMapping, List<RexNode> inputExprs ) {
         final Kind kind = oldCall.getAggregation().getKind();
         if ( isReducible( kind ) ) {
             final Integer y;
@@ -203,66 +200,66 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
             switch ( kind ) {
                 case SUM:
                     // replace original SUM(x) with case COUNT(x) when 0 then null else SUM0(x) end
-                    return reduceSum( oldAggRel, oldCall, newCalls, aggCallMapping );
+                    return reduceSum( oldAggAlg, oldCall, newCalls, aggCallMapping );
                 case AVG:
                     // replace original AVG(x) with SUM(x) / COUNT(x)
-                    return reduceAvg( oldAggRel, oldCall, newCalls, aggCallMapping, inputExprs );
+                    return reduceAvg( oldAggAlg, oldCall, newCalls, aggCallMapping, inputExprs );
                 case COVAR_POP:
                     // replace original COVAR_POP(x, y) with
                     //     (SUM(x * y) - SUM(y) * SUM(y) / COUNT(x))
                     //     / COUNT(x))
-                    return reduceCovariance( oldAggRel, oldCall, true, newCalls, aggCallMapping, inputExprs );
+                    return reduceCovariance( oldAggAlg, oldCall, true, newCalls, aggCallMapping, inputExprs );
                 case COVAR_SAMP:
                     // replace original COVAR_SAMP(x, y) with
                     //   SQRT(
                     //     (SUM(x * y) - SUM(x) * SUM(y) / COUNT(x))
                     //     / CASE COUNT(x) WHEN 1 THEN NULL ELSE COUNT(x) - 1 END)
-                    return reduceCovariance( oldAggRel, oldCall, false, newCalls, aggCallMapping, inputExprs );
+                    return reduceCovariance( oldAggAlg, oldCall, false, newCalls, aggCallMapping, inputExprs );
                 case REGR_SXX:
                     // replace original REGR_SXX(x, y) with REGR_COUNT(x, y) * VAR_POP(y)
                     assert oldCall.getArgList().size() == 2 : oldCall.getArgList();
                     x = oldCall.getArgList().get( 0 );
                     y = oldCall.getArgList().get( 1 );
                     //noinspection SuspiciousNameCombination
-                    return reduceRegrSzz( oldAggRel, oldCall, newCalls, aggCallMapping, inputExprs, y, y, x );
+                    return reduceRegrSzz( oldAggAlg, oldCall, newCalls, aggCallMapping, inputExprs, y, y, x );
                 case REGR_SYY:
                     // replace original REGR_SYY(x, y) with REGR_COUNT(x, y) * VAR_POP(x)
                     assert oldCall.getArgList().size() == 2 : oldCall.getArgList();
                     x = oldCall.getArgList().get( 0 );
                     y = oldCall.getArgList().get( 1 );
                     //noinspection SuspiciousNameCombination
-                    return reduceRegrSzz( oldAggRel, oldCall, newCalls, aggCallMapping, inputExprs, x, x, y );
+                    return reduceRegrSzz( oldAggAlg, oldCall, newCalls, aggCallMapping, inputExprs, x, x, y );
                 case STDDEV_POP:
                     // replace original STDDEV_POP(x) with
                     //   SQRT(
                     //     (SUM(x * x) - SUM(x) * SUM(x) / COUNT(x))
                     //     / COUNT(x))
-                    return reduceStddev( oldAggRel, oldCall, true, true, newCalls, aggCallMapping, inputExprs );
+                    return reduceStddev( oldAggAlg, oldCall, true, true, newCalls, aggCallMapping, inputExprs );
                 case STDDEV_SAMP:
                     // replace original STDDEV_POP(x) with
                     //   SQRT(
                     //     (SUM(x * x) - SUM(x) * SUM(x) / COUNT(x))
                     //     / CASE COUNT(x) WHEN 1 THEN NULL ELSE COUNT(x) - 1 END)
-                    return reduceStddev( oldAggRel, oldCall, false, true, newCalls, aggCallMapping, inputExprs );
+                    return reduceStddev( oldAggAlg, oldCall, false, true, newCalls, aggCallMapping, inputExprs );
                 case VAR_POP:
                     // replace original VAR_POP(x) with
                     //     (SUM(x * x) - SUM(x) * SUM(x) / COUNT(x))
                     //     / COUNT(x)
-                    return reduceStddev( oldAggRel, oldCall, true, false, newCalls, aggCallMapping, inputExprs );
+                    return reduceStddev( oldAggAlg, oldCall, true, false, newCalls, aggCallMapping, inputExprs );
                 case VAR_SAMP:
                     // replace original VAR_POP(x) with
                     //     (SUM(x * x) - SUM(x) * SUM(x) / COUNT(x))
                     //     / CASE COUNT(x) WHEN 1 THEN NULL ELSE COUNT(x) - 1 END
-                    return reduceStddev( oldAggRel, oldCall, false, false, newCalls, aggCallMapping, inputExprs );
+                    return reduceStddev( oldAggAlg, oldCall, false, false, newCalls, aggCallMapping, inputExprs );
                 default:
                     throw Util.unexpected( kind );
             }
         } else {
             // anything else:  preserve original call
-            RexBuilder rexBuilder = oldAggRel.getCluster().getRexBuilder();
-            final int nGroups = oldAggRel.getGroupCount();
-            List<AlgDataType> oldArgTypes = PolyTypeUtil.projectTypes( oldAggRel.getInput().getRowType(), oldCall.getArgList() );
-            return rexBuilder.addAggCall( oldCall, nGroups, oldAggRel.indicator, newCalls, aggCallMapping, oldArgTypes );
+            RexBuilder rexBuilder = oldAggAlg.getCluster().getRexBuilder();
+            final int nGroups = oldAggAlg.getGroupCount();
+            List<AlgDataType> oldArgTypes = PolyTypeUtil.projectTypes( oldAggAlg.getInput().getTupleType(), oldCall.getArgList() );
+            return rexBuilder.addAggCall( oldCall, nGroups, oldAggAlg.indicator, newCalls, aggCallMapping, oldArgTypes );
         }
     }
 
@@ -278,7 +275,7 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
                 aggFunction,
                 oldCall.isDistinct(),
                 oldCall.isApproximate(),
-                ImmutableIntList.of( argOrdinal ),
+                ImmutableList.of( argOrdinal ),
                 filter,
                 oldCall.collation,
                 aggFunction.inferReturnType( binding ),
@@ -342,11 +339,11 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
     }
 
 
-    private RexNode reduceSum( Aggregate oldAggRel, AggregateCall oldCall, List<AggregateCall> newCalls, Map<AggregateCall, RexNode> aggCallMapping ) {
-        final int nGroups = oldAggRel.getGroupCount();
-        RexBuilder rexBuilder = oldAggRel.getCluster().getRexBuilder();
+    private RexNode reduceSum( Aggregate oldAggAlg, AggregateCall oldCall, List<AggregateCall> newCalls, Map<AggregateCall, RexNode> aggCallMapping ) {
+        final int nGroups = oldAggAlg.getGroupCount();
+        RexBuilder rexBuilder = oldAggAlg.getCluster().getRexBuilder();
         int arg = oldCall.getArgList().get( 0 );
-        AlgDataType argType = getFieldType( oldAggRel.getInput(), arg );
+        AlgDataType argType = getFieldType( oldAggAlg.getInput(), arg );
 
         final AggregateCall sumZeroCall =
                 AggregateCall.create(
@@ -356,8 +353,8 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
                         oldCall.getArgList(),
                         oldCall.filterArg,
                         oldCall.collation,
-                        oldAggRel.getGroupCount(),
-                        oldAggRel.getInput(),
+                        oldAggAlg.getGroupCount(),
+                        oldAggAlg.getInput(),
                         null,
                         oldCall.name );
         final AggregateCall countCall =
@@ -368,17 +365,17 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
                         oldCall.getArgList(),
                         oldCall.filterArg,
                         oldCall.collation,
-                        oldAggRel.getGroupCount(),
-                        oldAggRel,
+                        oldAggAlg.getGroupCount(),
+                        oldAggAlg.getInput(),
                         null,
                         null );
 
-        // NOTE:  these references are with respect to the output of newAggRel
+        // NOTE:  these references are with respect to the output of newAggAlg
         RexNode sumZeroRef =
                 rexBuilder.addAggCall(
                         sumZeroCall,
                         nGroups,
-                        oldAggRel.indicator,
+                        oldAggAlg.indicator,
                         newCalls,
                         aggCallMapping,
                         ImmutableList.of( argType ) );
@@ -390,7 +387,7 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
                 rexBuilder.addAggCall(
                         countCall,
                         nGroups,
-                        oldAggRel.indicator,
+                        oldAggAlg.indicator,
                         newCalls,
                         aggCallMapping,
                         ImmutableList.of( argType ) );
@@ -414,7 +411,7 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
         //     / nullif(count(x) - 1, 0),
         //     .5)
         final int nGroups = oldAggRel.getGroupCount();
-        final AlgOptCluster cluster = oldAggRel.getCluster();
+        final AlgCluster cluster = oldAggRel.getCluster();
         final RexBuilder rexBuilder = cluster.getRexBuilder();
         final AlgDataTypeFactory typeFactory = cluster.getTypeFactory();
 
@@ -452,7 +449,7 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
                         OperatorRegistry.getAgg( OperatorName.SUM ),
                         oldCall.isDistinct(),
                         oldCall.isApproximate(),
-                        ImmutableIntList.of( argOrdinal ),
+                        ImmutableList.of( argOrdinal ),
                         oldCall.filterArg,
                         oldCall.collation,
                         oldAggRel.getGroupCount(),
@@ -526,7 +523,7 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
                         OperatorRegistry.getAgg( OperatorName.SUM ),
                         oldCall.isDistinct(),
                         oldCall.isApproximate(),
-                        ImmutableIntList.of( argOrdinal ),
+                        ImmutableList.of( argOrdinal ),
                         filterArg,
                         oldCall.collation,
                         oldAggRel.getGroupCount(),
@@ -544,14 +541,14 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
 
 
     private RexNode getSumAggregatedRexNodeWithBinding( Aggregate oldAggRel, AggregateCall oldCall, List<AggregateCall> newCalls, Map<AggregateCall, RexNode> aggCallMapping, AlgDataType operandType, int argOrdinal, int filter ) {
-        AlgOptCluster cluster = oldAggRel.getCluster();
+        AlgCluster cluster = oldAggRel.getCluster();
         final AggregateCall sumArgSquaredAggCall = createAggregateCallWithBinding( cluster.getTypeFactory(), OperatorRegistry.getAgg( OperatorName.SUM ), operandType, oldAggRel, oldCall, argOrdinal, filter );
 
         return cluster.getRexBuilder().addAggCall( sumArgSquaredAggCall, oldAggRel.getGroupCount(), oldAggRel.indicator, newCalls, aggCallMapping, ImmutableList.of( sumArgSquaredAggCall.getType() ) );
     }
 
 
-    private RexNode getRegrCountRexNode( Aggregate oldAggRel, AggregateCall oldCall, List<AggregateCall> newCalls, Map<AggregateCall, RexNode> aggCallMapping, ImmutableIntList argOrdinals, ImmutableList<AlgDataType> operandTypes, int filterArg ) {
+    private RexNode getRegrCountRexNode( Aggregate oldAggRel, AggregateCall oldCall, List<AggregateCall> newCalls, Map<AggregateCall, RexNode> aggCallMapping, ImmutableList<Integer> argOrdinals, ImmutableList<AlgDataType> operandTypes, int filterArg ) {
         final AggregateCall countArgAggCall =
                 AggregateCall.create(
                         OperatorRegistry.getAgg( OperatorName.REGR_COUNT ),
@@ -580,7 +577,7 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
         //    sum(y * y, x) - sum(y, x) * sum(y, x) / regr_count(x, y)
         //
 
-        final AlgOptCluster cluster = oldAggRel.getCluster();
+        final AlgCluster cluster = oldAggRel.getCluster();
         final RexBuilder rexBuilder = cluster.getRexBuilder();
         final AlgDataTypeFactory typeFactory = cluster.getTypeFactory();
         final AlgDataType argXType = getFieldType( oldAggRel.getInput(), xIndex );
@@ -615,7 +612,7 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
 
         final RexNode sumXSumY = rexBuilder.makeCall( OperatorRegistry.get( OperatorName.MULTIPLY ), sumX, sumY );
 
-        final RexNode countArg = getRegrCountRexNode( oldAggRel, oldCall, newCalls, aggCallMapping, ImmutableIntList.of( xIndex ), ImmutableList.of( argXType ), argXAndYNotNullFilterOrdinal );
+        final RexNode countArg = getRegrCountRexNode( oldAggRel, oldCall, newCalls, aggCallMapping, ImmutableList.of( xIndex ), ImmutableList.of( argXType ), argXAndYNotNullFilterOrdinal );
 
         RexLiteral zero = rexBuilder.makeExactLiteral( BigDecimal.ZERO );
         RexNode nul = rexBuilder.constantNull();
@@ -638,7 +635,7 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
         // covar_samp(x, y) ==>
         //     (sum(x * y) - sum(x) * sum(y) / regr_count(x, y))
         //     / regr_count(count(x, y) - 1, 0)
-        final AlgOptCluster cluster = oldAggRel.getCluster();
+        final AlgCluster cluster = oldAggRel.getCluster();
         final RexBuilder rexBuilder = cluster.getRexBuilder();
         final AlgDataTypeFactory typeFactory = cluster.getTypeFactory();
         assert oldCall.getArgList().size() == 2 : oldCall.getArgList();
@@ -662,7 +659,7 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
                 oldCall,
                 newCalls,
                 aggCallMapping,
-                ImmutableIntList.of( argXOrdinal, argYOrdinal ),
+                ImmutableList.of( argXOrdinal, argYOrdinal ),
                 ImmutableList.of( argXOrdinalType, argYOrdinalType ),
                 argXAndYNotNullFilterOrdinal );
         final RexNode avgSumSquaredArg = rexBuilder.makeCall( OperatorRegistry.get( OperatorName.DIVIDE ), sumXSumY, countArg );
@@ -707,7 +704,7 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
      * @param oldAggregate LogicalAggregate to clone.
      * @param newCalls New list of AggregateCalls
      */
-    protected void newAggregateRel( AlgBuilder algBuilder, Aggregate oldAggregate, List<AggregateCall> newCalls ) {
+    protected void newAggregateAlg( AlgBuilder algBuilder, Aggregate oldAggregate, List<AggregateCall> newCalls ) {
         algBuilder.aggregate( algBuilder.groupKey( oldAggregate.getGroupSet(), oldAggregate.getGroupSets() ), newCalls );
     }
 
@@ -719,13 +716,13 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
      * @param rowType The output row type of the original aggregate.
      * @param exprs The expressions to compute the original agg calls.
      */
-    protected void newCalcRel( AlgBuilder algBuilder, AlgDataType rowType, List<RexNode> exprs ) {
+    protected void newCalcAlg( AlgBuilder algBuilder, AlgDataType rowType, List<RexNode> exprs ) {
         algBuilder.project( exprs, rowType.getFieldNames() );
     }
 
 
     private AlgDataType getFieldType( AlgNode algNode, int i ) {
-        final AlgDataTypeField inputField = algNode.getRowType().getFieldList().get( i );
+        final AlgDataTypeField inputField = algNode.getTupleType().getFields().get( i );
         return inputField.getType();
     }
 

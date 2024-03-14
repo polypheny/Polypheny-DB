@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,20 @@
 package org.polypheny.db.processing;
 
 import java.util.List;
-import java.util.Map;
 import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.catalog.entity.CatalogAdapter;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.LogicalAdapter;
+import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
+import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
+import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.partition.properties.PartitionProperty;
+import org.polypheny.db.routing.ColumnDistribution;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 
@@ -32,60 +39,52 @@ public interface DataMigrator {
 
     void copyData(
             Transaction transaction,
-            CatalogAdapter store,
-            List<CatalogColumn> columns,
-            List<Long> partitionIds );
+            LogicalAdapter store,
+            LogicalTable source,
+            List<LogicalColumn> columns,
+            AllocationEntity target );
+
+    void copyData(
+            Transaction transaction,
+            LogicalAdapter store,
+            LogicalTable source,
+            List<LogicalColumn> columns,
+            AllocationPlacement target );
 
     /**
-     * Currently used to transfer data if partitioned table is about to be merged.
-     * For Table Partitioning use {@link #copyPartitionData(Transaction, CatalogAdapter, CatalogTable, CatalogTable, List, List, List)}  } instead
+     * Currently used to transfer data if unpartitioned is about to be partitioned.
      *
      * @param transaction Transactional scope
      * @param store Target Store where data should be migrated to
-     * @param sourceTable Source Table from where data is queried
-     * @param targetTable Source Table from where data is queried
-     * @param columns Necessary columns on target
-     * @param placementDistribution Pre computed mapping of partitions and the necessary column placements
-     * @param targetPartitionIds Target Partitions where data should be inserted
+     * @param sourceTables Source Table from where data is queried
      */
-    void copySelectiveData(
+    void copyAllocationData(
             Transaction transaction,
-            CatalogAdapter store,
-            CatalogTable sourceTable, CatalogTable targetTable, List<CatalogColumn> columns,
-            Map<Long, List<CatalogColumnPlacement>> placementDistribution,
-            List<Long> targetPartitionIds );
+            LogicalAdapter store,
+            List<AllocationTable> sourceTables,
+            PartitionProperty targetProperty,
+            List<AllocationTable> targetTables,
+            LogicalTable table );
 
-    /**
-     * Currently used to to transfer data if unpartitioned is about to be partitioned.
-     * For Table Merge use {@link #copySelectiveData(Transaction, CatalogAdapter, CatalogTable, CatalogTable, List, Map, List)}   } instead
-     *
-     * @param transaction Transactional scope
-     * @param store Target Store where data should be migrated to
-     * @param sourceTable Source Table from where data is queried
-     * @param targetTable Target Table where data is to be inserted
-     * @param columns Necessary columns on target
-     * @param sourcePartitionIds Source Partitions which need to be considered for querying
-     * @param targetPartitionIds Target Partitions where data should be inserted
-     */
-    void copyPartitionData(
-            Transaction transaction,
-            CatalogAdapter store,
-            CatalogTable sourceTable,
-            CatalogTable targetTable,
-            List<CatalogColumn> columns,
-            List<Long> sourcePartitionIds,
-            List<Long> targetPartitionIds );
-
-    AlgRoot buildInsertStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId );
+    AlgRoot buildInsertStatement( Statement statement, List<AllocationColumn> to, AllocationEntity allocation );
 
     //is used within copyData
-    void executeQuery( List<CatalogColumn> columns, AlgRoot sourceRel, Statement sourceStatement, Statement targetStatement, AlgRoot targetRel, boolean isMaterializedView, boolean doesSubstituteOrderBy );
+    void executeQuery(
+            List<AllocationColumn> columns,
+            AlgRoot sourceAlg,
+            Statement sourceStatement,
+            Statement targetStatement,
+            AlgRoot targetAlg,
+            boolean isMaterializedView,
+            boolean doesSubstituteOrderBy );
 
-    AlgRoot buildDeleteStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId );
+    AlgRoot buildDeleteStatement( Statement statement, List<AllocationColumn> to, AllocationEntity allocation );
 
-    AlgRoot getSourceIterator( Statement statement, Map<Long, List<CatalogColumnPlacement>> placementDistribution );
+    AlgRoot getSourceIterator( Statement statement, ColumnDistribution columnDistribution );
 
 
-    void copyGraphData( CatalogGraphDatabase graph, Transaction transaction, Integer existingAdapterId, CatalogAdapter adapter );
+    void copyGraphData( AllocationGraph to, LogicalGraph from, Transaction transaction );
+
+    void copyDocData( AllocationCollection to, LogicalCollection from, Transaction transaction );
 
 }

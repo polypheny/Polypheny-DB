@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package org.polypheny.db.algebra.fun;
 
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.nodes.Function;
-import org.polypheny.db.schema.Wrapper;
+import org.polypheny.db.util.Wrapper;
 
 public interface AggFunction extends Function, Wrapper {
 

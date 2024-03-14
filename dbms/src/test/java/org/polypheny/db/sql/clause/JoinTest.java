@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,19 +23,17 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.polypheny.db.AdapterTestSuite;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.db.excluded.CassandraExcluded;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
-@Category({ AdapterTestSuite.class, CassandraExcluded.class })
+@Tag("adapter")
 public class JoinTest {
 
 
@@ -100,7 +98,7 @@ public class JoinTest {
             + "2)";
 
 
-    @BeforeClass
+    @BeforeAll
     public static void start() throws SQLException {
         // Ensures that Polypheny-DB is running
         //noinspection ResultOfMethodCallIgnored
@@ -134,7 +132,7 @@ public class JoinTest {
     }
 
 
-    @AfterClass
+    @AfterAll
     public static void stop() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
@@ -189,6 +187,26 @@ public class JoinTest {
 
 
     @Test
+    public void nestedJoinTest() throws SQLException {
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                List<Object[]> expectedResult = ImmutableList.of(
+                        new Object[]{ 10000, "Ab", "Name1", "Name1", "Name1" },
+                        new Object[]{ 5000, "Bc", "Name2", "Name2", "Name2" },
+                        new Object[]{ 7000, "Cd", "Name3", "Name3", "Name3" }
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT * FROM (SELECT id, name FROM TableA) AS S INNER JOIN (SELECT name, Amount  FROM TableA) AS T ON S.name = T.name NATURAL JOIN (SELECT name, Amount  FROM TableA) AS X" ),
+                        expectedResult,
+                        true );
+            }
+        }
+    }
+
+
+    @Test
     public void leftJoinTest() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -199,7 +217,7 @@ public class JoinTest {
                         new Object[]{ "Cd", "Name3", "Name3", 7000 }
                 );
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT * FROM (SELECT id, name FROM TableA) AS S LEFT JOIN (SELECT name, Amount  FROM TableA) AS T ON S.name = T.name" ),
+                        statement.executeQuery( "SELECT * FROM (SELECT id, name FROM TableA) AS S LEFT JOIN (SELECT name, Amount  FROM TableA) AS T ON S.name = T.name GROUP BY T.name, S.name, S.id, T.Amount ORDER BY SUM(T.Amount + 1)" ),
                         expectedResult,
                         true );
             }
@@ -264,12 +282,39 @@ public class JoinTest {
                         new Object[]{ "Antonio Moreno Taquería", null }
                 );
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT Join_Customers.CustomerName, Join_Orders.OrderID"
-                                + " FROM Join_Customers"
-                                + " FULL OUTER JOIN Join_Orders ON Join_Customers.CustomerID = Join_Orders.CustomerID"
-                                + " ORDER BY Join_Customers.CustomerName" ),
+                        statement.executeQuery( """
+                                SELECT Join_Customers.CustomerName, Join_Orders.OrderID
+                                FROM Join_Customers
+                                FULL OUTER JOIN Join_Orders ON Join_Customers.CustomerID = Join_Orders.CustomerID
+                                ORDER BY Join_Customers.CustomerName""" ),
                         expectedResult,
                         true );
+            }
+        }
+    }
+
+
+    @Test
+    public void fullTest() throws SQLException {
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeQuery( """
+                        SELECT *
+                        FROM Join_Customers, Join_Orders""" );
+            }
+        }
+    }
+
+
+    @Test
+    public void fullMaxTest() throws SQLException {
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeQuery( """
+                        SELECT Join_Customers.CustomerId
+                        FROM Join_Customers, Join_Orders WHERE Join_Customers.CustomerId = (SELECT MAX(CustomerId) FROM Join_Customers)""" );
             }
         }
     }

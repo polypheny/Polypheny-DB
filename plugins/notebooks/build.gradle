@@ -11,9 +11,10 @@ dependencies {
 
     compileOnly(group: "io.javalin", name: "javalin", version: javalin_version) {
         exclude(group: "org.slf4j")
+        exclude(module: "jetty-server")
     }
 
-    implementation group: "net.sf.opencsv", name: "opencsv", version: opencsv_version  // Apache 2.0
+    //implementation group: "com.opencsv", name: "opencsv", version: opencsv_version  // Apache 2.0
     implementation group: "commons-io", name: "commons-io", version: commons_io_version  // Apache 2.0
 
 
@@ -24,7 +25,7 @@ dependencies {
     testImplementation project(path: ":webui")
     testImplementation project(path: ":plugins:sql-language")
 
-    testImplementation group: "junit", name: "junit", version: junit_version
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: junit_jupiter_version
     testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
 }
 
@@ -33,7 +34,6 @@ sourceSets {
     main {
         java {
             srcDirs = ["src/main/java"]
-            outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {
             srcDirs = ["src/main/resources"]
@@ -43,7 +43,7 @@ sourceSets {
     test {
         java {
             srcDirs = ["src/test/java"]
-            outputDir = file(project.buildDir.absolutePath + "/test-classes")
+            destinationDirectory.set(file(project.buildDir.absolutePath + "/test-classes"))
         }
         resources {
             srcDirs = ["src/test/resources"]

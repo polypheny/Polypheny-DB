@@ -3,6 +3,7 @@ group "org.polypheny"
 
 dependencies {
     implementation project(":core")
+    implementation group: "com.github.oshi", name: "oshi-core", version: oshi_core_version  // MIT License
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
@@ -12,7 +13,6 @@ sourceSets {
     main {
         java {
             srcDirs = ["src/main/java"]
-            outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {
             srcDirs = ["src/main/resources"]
@@ -22,7 +22,7 @@ sourceSets {
     test {
         java {
             srcDirs = ["src/test/java"]
-            outputDir = file(project.buildDir.absolutePath + "/test-classes")
+            destinationDirectory.set(file(project.buildDir.absolutePath + "/test-classes"))
         }
         resources {
             srcDirs = ["src/test/resources"]
@@ -54,5 +54,3 @@ java {
     withJavadocJar()
     withSourcesJar()
 }
-
-

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,30 +37,28 @@ package org.polypheny.db.algebra.stream;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
-import org.polypheny.db.algebra.logical.relational.LogicalScan;
-import org.polypheny.db.algebra.logical.relational.LogicalSort;
-import org.polypheny.db.algebra.logical.relational.LogicalUnion;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.algebra.core.relational.RelScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
+import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
-import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.prepare.AlgOptTableImpl;
-import org.polypheny.db.schema.StreamableTable;
-import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.types.StreamableEntity;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.util.Util;
@@ -110,7 +108,7 @@ public class StreamRules {
             Util.discard( delta );
             final Project project = call.alg( 1 );
             final LogicalDelta newDelta = LogicalDelta.create( project.getInput() );
-            final LogicalProject newProject = LogicalProject.create( newDelta, project.getProjects(), project.getRowType().getFieldNames() );
+            final LogicalRelProject newProject = LogicalRelProject.create( newDelta, project.getProjects(), project.getTupleType().getFieldNames() );
             call.transformTo( newProject );
         }
 
@@ -140,7 +138,7 @@ public class StreamRules {
             Util.discard( delta );
             final Filter filter = call.alg( 1 );
             final LogicalDelta newDelta = LogicalDelta.create( filter.getInput() );
-            final LogicalFilter newFilter = LogicalFilter.create( newDelta, filter.getCondition() );
+            final LogicalRelFilter newFilter = LogicalRelFilter.create( newDelta, filter.getCondition() );
             call.transformTo( newFilter );
         }
 
@@ -161,7 +159,7 @@ public class StreamRules {
             super(
                     operand(
                             Delta.class,
-                            operandJ( Aggregate.class, null, Aggregate::noIndicator, any() ) ),
+                            operand( Aggregate.class, null, Aggregate::noIndicator, any() ) ),
                     algBuilderFactory, null );
         }
 
@@ -172,7 +170,7 @@ public class StreamRules {
             Util.discard( delta );
             final Aggregate aggregate = call.alg( 1 );
             final LogicalDelta newDelta = LogicalDelta.create( aggregate.getInput() );
-            final LogicalAggregate newAggregate = LogicalAggregate.create( newDelta, aggregate.getGroupSet(), aggregate.groupSets, aggregate.getAggCallList() );
+            final LogicalRelAggregate newAggregate = LogicalRelAggregate.create( newDelta, aggregate.getGroupSet(), aggregate.groupSets, aggregate.getAggCallList() );
             call.transformTo( newAggregate );
         }
 
@@ -202,7 +200,7 @@ public class StreamRules {
             Util.discard( delta );
             final Sort sort = call.alg( 1 );
             final LogicalDelta newDelta = LogicalDelta.create( sort.getInput() );
-            final LogicalSort newSort = LogicalSort.create( newDelta, sort.collation, sort.offset, sort.fetch );
+            final LogicalRelSort newSort = LogicalRelSort.create( newDelta, sort.collation, sort.offset, sort.fetch );
             call.transformTo( newSort );
         }
 
@@ -236,7 +234,7 @@ public class StreamRules {
                 final LogicalDelta newDelta = LogicalDelta.create( input );
                 newInputs.add( newDelta );
             }
-            final LogicalUnion newUnion = LogicalUnion.create( newInputs, union.all );
+            final LogicalRelUnion newUnion = LogicalRelUnion.create( newInputs, union.all );
             call.transformTo( newUnion );
         }
 
@@ -244,7 +242,7 @@ public class StreamRules {
 
 
     /**
-     * Planner rule that pushes a {@link Delta} into a {@link Scan} of a {@link StreamableTable}.
+     * Planner rule that pushes a {@link Delta} into a {@link RelScan} of a {@link StreamableEntity}.
      *
      * Very likely, the stream was only represented as a table for uniformity with the other relations in the system. The Delta disappears and the stream can be implemented directly.
      */
@@ -257,7 +255,7 @@ public class StreamRules {
          */
         public DeltaScanRule( AlgBuilderFactory algBuilderFactory ) {
             super(
-                    operand( Delta.class, operand( Scan.class, none() ) ),
+                    operand( Delta.class, operand( RelScan.class, none() ) ),
                     algBuilderFactory, null );
         }
 
@@ -265,19 +263,11 @@ public class StreamRules {
         @Override
         public void onMatch( AlgOptRuleCall call ) {
             final Delta delta = call.alg( 0 );
-            final Scan scan = call.alg( 1 );
-            final AlgOptCluster cluster = delta.getCluster();
-            final AlgOptTable algOptTable = scan.getTable();
-            final StreamableTable streamableTable = algOptTable.unwrap( StreamableTable.class );
-            if ( streamableTable != null ) {
-                final Table table1 = streamableTable.stream();
-                final AlgOptTable algOptTable2 =
-                        AlgOptTableImpl.create( algOptTable.getRelOptSchema(),
-                                algOptTable.getRowType(), table1,
-                                ImmutableList.<String>builder()
-                                        .addAll( algOptTable.getQualifiedName() )
-                                        .add( "(STREAM)" ).build() );
-                final LogicalScan newScan = LogicalScan.create( cluster, algOptTable2 );
+            final RelScan<?> scan = call.alg( 1 );
+            final AlgCluster cluster = delta.getCluster();
+            Optional<StreamableEntity> oStreamableTable = scan.entity.unwrap( StreamableEntity.class );
+            if ( oStreamableTable.isPresent() ) {
+                final LogicalRelScan newScan = LogicalRelScan.create( cluster, null );
                 call.transformTo( newScan );
             }
         }
@@ -286,7 +276,7 @@ public class StreamRules {
 
 
     /**
-     * Planner rule that converts {@link Delta} over a {@link Scan} of a table other than {@link StreamableTable} to an empty {@link Values}.
+     * Planner rule that converts {@link Delta} over a {@link RelScan} of a table other than {@link StreamableEntity} to an empty {@link Values}.
      */
     public static class DeltaScanToEmptyRule extends AlgOptRule {
 
@@ -297,7 +287,7 @@ public class StreamRules {
          */
         public DeltaScanToEmptyRule( AlgBuilderFactory algBuilderFactory ) {
             super(
-                    operand( Delta.class, operand( Scan.class, none() ) ),
+                    operand( Delta.class, operand( RelScan.class, none() ) ),
                     algBuilderFactory, null );
         }
 
@@ -305,12 +295,11 @@ public class StreamRules {
         @Override
         public void onMatch( AlgOptRuleCall call ) {
             final Delta delta = call.alg( 0 );
-            final Scan scan = call.alg( 1 );
-            final AlgOptTable algOptTable = scan.getTable();
-            final StreamableTable streamableTable = algOptTable.unwrap( StreamableTable.class );
+            final RelScan<?> scan = call.alg( 1 );
+            Optional<StreamableEntity> oStreamableTable = scan.getEntity().unwrap( StreamableEntity.class );
             final AlgBuilder builder = call.builder();
-            if ( streamableTable == null ) {
-                call.transformTo( builder.values( delta.getRowType() ).build() );
+            if ( oStreamableTable.isEmpty() ) {
+                call.transformTo( builder.values( delta.getTupleType() ).build() );
             }
         }
 
@@ -347,13 +336,13 @@ public class StreamRules {
             final AlgNode right = join.getRight();
 
             final LogicalDelta rightWithDelta = LogicalDelta.create( right );
-            final LogicalJoin joinL = LogicalJoin.create( left, rightWithDelta,
+            final LogicalRelJoin joinL = LogicalRelJoin.create( left, rightWithDelta,
                     join.getCondition(), join.getVariablesSet(), join.getJoinType(),
                     join.isSemiJoinDone(),
                     ImmutableList.copyOf( join.getSystemFieldList() ) );
 
             final LogicalDelta leftWithDelta = LogicalDelta.create( left );
-            final LogicalJoin joinR = LogicalJoin.create( leftWithDelta, right,
+            final LogicalRelJoin joinR = LogicalRelJoin.create( leftWithDelta, right,
                     join.getCondition(), join.getVariablesSet(), join.getJoinType(),
                     join.isSemiJoinDone(),
                     ImmutableList.copyOf( join.getSystemFieldList() ) );
@@ -362,7 +351,7 @@ public class StreamRules {
             inputsToUnion.add( joinL );
             inputsToUnion.add( joinR );
 
-            final LogicalUnion newNode = LogicalUnion.create( inputsToUnion, true );
+            final LogicalRelUnion newNode = LogicalRelUnion.create( inputsToUnion, true );
             call.transformTo( newNode );
         }
 

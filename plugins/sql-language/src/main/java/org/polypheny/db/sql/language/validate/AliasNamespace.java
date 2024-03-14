@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,17 +79,17 @@ public class AliasNamespace extends AbstractNamespace {
             throw validator.newValidationError( node, RESOURCE.aliasListDegree( rowType.getFieldCount(), getString( rowType ), nameList.size() ) );
         }
         final List<AlgDataType> typeList = new ArrayList<>();
-        for ( AlgDataTypeField field : rowType.getFieldList() ) {
+        for ( AlgDataTypeField field : rowType.getFields() ) {
             typeList.add( field.getType() );
         }
-        return validator.getTypeFactory().createStructType( typeList, nameList );
+        return validator.getTypeFactory().createStructType( typeList.stream().map( t -> (Long) null ).toList(), typeList, nameList );
     }
 
 
     private String getString( AlgDataType rowType ) {
         StringBuilder buf = new StringBuilder();
         buf.append( "(" );
-        for ( AlgDataTypeField field : rowType.getFieldList() ) {
+        for ( AlgDataTypeField field : rowType.getFields() ) {
             if ( field.getIndex() > 0 ) {
                 buf.append( ", " );
             }
@@ -112,9 +112,9 @@ public class AliasNamespace extends AbstractNamespace {
     public String translate( String name ) {
         final AlgDataType underlyingRowType = validator.getValidatedNodeType( call.operand( 0 ) );
         int i = 0;
-        for ( AlgDataTypeField field : rowType.getFieldList() ) {
+        for ( AlgDataTypeField field : rowType.getFields() ) {
             if ( field.getName().equals( name ) ) {
-                return underlyingRowType.getFieldList().get( i ).getName();
+                return underlyingRowType.getFields().get( i ).getName();
             }
             ++i;
         }

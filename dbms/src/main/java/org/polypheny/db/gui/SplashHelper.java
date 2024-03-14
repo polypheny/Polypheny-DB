@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,9 +34,9 @@ import javax.swing.WindowConstants;
 import javax.swing.border.EtchedBorder;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.StatusService;
-import org.polypheny.db.StatusService.ErrorConfig;
-import org.polypheny.db.StatusService.StatusType;
+import org.polypheny.db.StatusNotificationService;
+import org.polypheny.db.StatusNotificationService.ErrorConfig;
+import org.polypheny.db.StatusNotificationService.StatusType;
 
 
 /**
@@ -58,16 +58,16 @@ public class SplashHelper {
         screen = new SplashScreen();
         Thread splashT = new Thread( screen );
         splashT.start();
-        statusId = StatusService.addSubscriber( ( m, n ) -> screen.setStatus( m ), StatusType.INFO );
-        errorId = StatusService.addSubscriber( ( m, n ) -> screen.setError( m, (ErrorConfig) n ), StatusType.ERROR );
+        statusId = StatusNotificationService.addSubscriber( ( m, n ) -> screen.setStatus( m ), StatusType.INFO );
+        errorId = StatusNotificationService.addSubscriber( ( m, n ) -> screen.setError( m, (ErrorConfig) n ), StatusType.ERROR );
     }
 
 
     public void setComplete() {
         GuiUtils.openUiInBrowser();
         this.screen.setComplete();
-        StatusService.removeSubscriber( statusId );
-        StatusService.removeSubscriber( errorId );
+        StatusNotificationService.removeSubscriber( statusId );
+        StatusNotificationService.removeSubscriber( errorId );
     }
 
 

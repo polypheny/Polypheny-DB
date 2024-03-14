@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,24 +22,21 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.polypheny.db.AdapterTestSuite;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.db.excluded.CassandraExcluded;
-import org.polypheny.db.excluded.FileExcluded;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
-@Category({ AdapterTestSuite.class, CassandraExcluded.class })
+@Tag("adapter")
 public class GroupByTest {
 
 
-    @BeforeClass
+    @BeforeAll
     public static void start() throws SQLException {
         // Ensures that Polypheny-DB is running
         //noinspection ResultOfMethodCallIgnored
@@ -83,7 +80,7 @@ public class GroupByTest {
     }
 
 
-    @AfterClass
+    @AfterAll
     public static void stop() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
@@ -123,7 +120,6 @@ public class GroupByTest {
 
 
     @Test
-    @Category(FileExcluded.class)
     public void groupByWithInnerSelect() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -134,7 +130,7 @@ public class GroupByTest {
                         new Object[]{ 2, "Name2" }
                 );
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT s.id, s.name FROM TestTableC s, TestTableB t WHERE s.id = t.id AND Frequencies >  (SELECT AVG (Frequencies) FROM TestTableB WHERE row_code = 'C' GROUP BY row_code='C')\n" ),
+                        statement.executeQuery( "SELECT s.id, s.name FROM TestTableC s, TestTableB t WHERE s.id = t.id AND Frequencies > (SELECT AVG (Frequencies) FROM TestTableB WHERE row_code = 'C' GROUP BY row_code='C')" ),
                         expectedResult,
                         true
                 );

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,11 @@ package org.polypheny.db.monitoring.events.metrics;
 
 import java.io.Serializable;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -31,6 +32,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
+import org.polypheny.db.monitoring.events.MonitoringType;
 
 
 @Getter
@@ -43,22 +45,22 @@ public class DmlDataPoint implements MonitoringDataPoint, Serializable {
     private static final long serialVersionUID = 8159995420459385039L;
 
     @Builder.Default
-    private final List<String> tables = new ArrayList<>();
+    private final Set<Long> tables = new HashSet<>();
     private final Map<String, Object> dataElements = new HashMap<>();
     private UUID Id;
     private Timestamp recordedTimestamp;
-    private String monitoringType;
+    private MonitoringType monitoringType;
     private String description;
     private long executionTime;
     private boolean isSubQuery;
     protected boolean isCommitted;
-    private int rowCount;
+    private long rowCount;
     private List<String> fieldNames;
     private List<Long> accessedPartitions;
     private String queryClass;
     private String physicalQueryClass;
     @Builder.Default
-    private final HashMap<Long, List<Object>> changedValues = new HashMap<>();
+    private final Map<Long, List<?>> changedValues = new HashMap<>();
     @Builder.Default
     private final Map<Long, Long> availableColumnsWithTable = new HashMap<>();
 

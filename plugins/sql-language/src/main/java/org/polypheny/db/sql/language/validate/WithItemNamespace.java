@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,8 +48,8 @@ class WithItemNamespace extends AbstractNamespace {
             return rowType;
         }
         final Builder builder = validator.getTypeFactory().builder();
-        for ( Pair<SqlNode, AlgDataTypeField> pair : Pair.zip( withItem.columnList.getSqlList(), rowType.getFieldList() ) ) {
-            builder.add( ((SqlIdentifier) pair.left).getSimple(), null, pair.right.getType() );
+        for ( Pair<SqlNode, AlgDataTypeField> pair : Pair.zip( withItem.columnList.getSqlList(), rowType.getFields() ) ) {
+            builder.add( null, ((SqlIdentifier) pair.left).getSimple(), null, pair.right.getType() );
         }
         return builder.build();
     }
@@ -68,9 +68,9 @@ class WithItemNamespace extends AbstractNamespace {
         }
         final AlgDataType underlyingRowType = validator.getValidatedNodeType( withItem.query );
         int i = 0;
-        for ( AlgDataTypeField field : rowType.getFieldList() ) {
+        for ( AlgDataTypeField field : rowType.getFields() ) {
             if ( field.getName().equals( name ) ) {
-                return underlyingRowType.getFieldList().get( i ).getName();
+                return underlyingRowType.getFields().get( i ).getName();
             }
             ++i;
         }

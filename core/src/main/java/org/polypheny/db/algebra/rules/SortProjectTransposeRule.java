@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,8 +47,8 @@ import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
@@ -68,7 +68,7 @@ import org.polypheny.db.util.mapping.Mappings.TargetMapping;
  */
 public class SortProjectTransposeRule extends AlgOptRule {
 
-    public static final SortProjectTransposeRule INSTANCE = new SortProjectTransposeRule( Sort.class, LogicalProject.class, AlgFactories.LOGICAL_BUILDER, null );
+    public static final SortProjectTransposeRule INSTANCE = new SortProjectTransposeRule( Sort.class, LogicalRelProject.class, AlgFactories.LOGICAL_BUILDER, null );
 
 
     /**
@@ -93,14 +93,14 @@ public class SortProjectTransposeRule extends AlgOptRule {
     public void onMatch( AlgOptRuleCall call ) {
         final Sort sort = call.alg( 0 );
         final Project project = call.alg( 1 );
-        final AlgOptCluster cluster = project.getCluster();
+        final AlgCluster cluster = project.getCluster();
 
         if ( sort.getConvention() != project.getConvention() ) {
             return;
         }
 
         // Determine mapping between project input and output fields. If sort relies on non-trivial expressions, we can't push.
-        final TargetMapping map = AlgOptUtil.permutationIgnoreCast( project.getProjects(), project.getInput().getRowType() );
+        final TargetMapping map = AlgOptUtil.permutationIgnoreCast( project.getProjects(), project.getInput().getTupleType() );
         for ( AlgFieldCollation fc : sort.getCollation().getFieldCollations() ) {
             if ( map.getTargetOpt( fc.getFieldIndex() ) < 0 ) {
                 return;
@@ -121,6 +121,7 @@ public class SortProjectTransposeRule extends AlgOptRule {
                         sort.getTraitSet().replace( newCollation ),
                         project.getInput(),
                         newCollation,
+                        null,
                         sort.offset,
                         sort.fetch );
         AlgNode newProject = project.copy( sort.getTraitSet(), ImmutableList.of( newSort ) );

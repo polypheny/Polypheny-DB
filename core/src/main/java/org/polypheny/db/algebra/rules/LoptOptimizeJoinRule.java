@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@
 package org.polypheny.db.algebra.rules;
 
 
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
@@ -49,7 +50,7 @@ import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.JoinInfo;
 import org.polypheny.db.algebra.core.SemiJoin;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.metadata.AlgColumnOrigin;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
@@ -57,22 +58,21 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.util.BitSets;
 import org.polypheny.db.util.ImmutableBitSet;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.mapping.IntPair;
 
@@ -80,7 +80,7 @@ import org.polypheny.db.util.mapping.IntPair;
 /**
  * Planner rule that implements the heuristic planner for determining optimal join orderings.
  *
- * It is triggered by the pattern {@link LogicalProject} ({@link MultiJoin}).
+ * It is triggered by the pattern {@link LogicalRelProject} ({@link MultiJoin}).
  */
 public class LoptOptimizeJoinRule extends AlgOptRule {
 
@@ -171,12 +171,12 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
                     }
                     RexCall filterCall = (RexCall) filter;
                     if ( (filterCall.getOperator().getOperatorName() != OperatorName.EQUALS)
-                            || !(filterCall.getOperands().get( 0 ) instanceof RexInputRef)
-                            || !(filterCall.getOperands().get( 1 ) instanceof RexInputRef) ) {
+                            || !(filterCall.getOperands().get( 0 ) instanceof RexIndexRef)
+                            || !(filterCall.getOperands().get( 1 ) instanceof RexIndexRef) ) {
                         continue;
                     }
-                    int leftRef = ((RexInputRef) filterCall.getOperands().get( 0 )).getIndex();
-                    int rightRef = ((RexInputRef) filterCall.getOperands().get( 1 )).getIndex();
+                    int leftRef = ((RexIndexRef) filterCall.getOperands().get( 0 )).getIndex();
+                    int rightRef = ((RexIndexRef) filterCall.getOperands().get( 1 )).getIndex();
                     setJoinKey( joinKeyBuilder, otherJoinKeyBuilder, leftRef, rightRef, firstFieldNum, lastFieldNum, true );
                 }
 
@@ -252,10 +252,10 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
      */
     private void findRemovableSelfJoins( AlgMetadataQuery mq, LoptMultiJoin multiJoin ) {
         // Candidates for self-joins must be simple factors
-        Map<Integer, AlgOptTable> simpleFactors = getSimpleFactors( mq, multiJoin );
+        Map<Integer, Entity> simpleFactors = getSimpleFactors( mq, multiJoin );
 
         // See if a simple factor is repeated and therefore potentially is part of a self-join.  Restrict each factor to at most one self-join.
-        final List<AlgOptTable> repeatedTables = new ArrayList<>();
+        final List<Entity> repeatedTables = new ArrayList<>();
         final TreeSet<Integer> sortedFactors = new TreeSet<>();
         sortedFactors.addAll( simpleFactors.keySet() );
         final Map<Integer, Integer> selfJoinPairs = new HashMap<>();
@@ -267,7 +267,7 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
             for ( int j = i + 1; j < factors.length; j++ ) {
                 int leftFactor = factors[i];
                 int rightFactor = factors[j];
-                if ( simpleFactors.get( leftFactor ).getQualifiedName().equals( simpleFactors.get( rightFactor ).getQualifiedName() ) ) {
+                if ( simpleFactors.get( leftFactor ).id == simpleFactors.get( rightFactor ).id ) {
                     selfJoinPairs.put( leftFactor, rightFactor );
                     repeatedTables.add( simpleFactors.get( leftFactor ) );
                     break;
@@ -298,8 +298,8 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
      * @param multiJoin join factors being optimized
      * @return map consisting of the simple factors and the tables they correspond
      */
-    private Map<Integer, AlgOptTable> getSimpleFactors( AlgMetadataQuery mq, LoptMultiJoin multiJoin ) {
-        final Map<Integer, AlgOptTable> returnList = new HashMap<>();
+    private Map<Integer, Entity> getSimpleFactors( AlgMetadataQuery mq, LoptMultiJoin multiJoin ) {
+        final Map<Integer, Entity> returnList = new HashMap<>();
 
         // Loop through all join factors and locate the ones where each column referenced from the factor is not derived and originates from the same underlying table.  Also, discard factors that
         // are null-generating or will be removed because of semijoins.
@@ -311,7 +311,7 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
                 continue;
             }
             final AlgNode alg = multiJoin.getJoinFactor( factIdx );
-            final AlgOptTable table = mq.getTableOrigin( alg );
+            final Entity table = mq.getTableOrigin( alg );
             if ( table != null ) {
                 returnList.put( factIdx, table );
             }
@@ -339,12 +339,12 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
         // Adjust the offsets in the filter by shifting the left factor to the left and shifting the right factor to the left and then back to the right by the number of fields in the left
         int[] adjustments = new int[multiJoin.getNumTotalFields()];
         int leftAdjust = multiJoin.getJoinStart( leftFactor );
-        int nLeftFields = leftRel.getRowType().getFieldCount();
+        int nLeftFields = leftRel.getTupleType().getFieldCount();
         for ( int i = 0; i < nLeftFields; i++ ) {
             adjustments[leftAdjust + i] = -leftAdjust;
         }
         int rightAdjust = multiJoin.getJoinStart( rightFactor );
-        for ( int i = 0; i < rightRel.getRowType().getFieldCount(); i++ ) {
+        for ( int i = 0; i < rightRel.getTupleType().getFieldCount(); i++ ) {
             adjustments[rightAdjust + i] = -rightAdjust + nLeftFields;
         }
         joinFilters =
@@ -352,8 +352,8 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
                         new AlgOptUtil.RexInputConverter(
                                 rexBuilder,
                                 multiJoin.getMultiJoinFields(),
-                                leftRel.getRowType().getFieldList(),
-                                rightRel.getRowType().getFieldList(),
+                                leftRel.getTupleType().getFields(),
+                                rightRel.getTupleType().getFields(),
                                 adjustments ) );
 
         return areSelfJoinKeysUnique( mq, leftRel, rightRel, joinFilters );
@@ -370,7 +370,7 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
     private void findBestOrderings( AlgMetadataQuery mq, AlgBuilder algBuilder, LoptMultiJoin multiJoin, LoptSemiJoinOptimizer semiJoinOpt, AlgOptRuleCall call ) {
         final List<AlgNode> plans = new ArrayList<>();
 
-        final List<String> fieldNames = multiJoin.getMultiJoinRel().getRowType().getFieldNames();
+        final List<String> fieldNames = multiJoin.getMultiJoinRel().getTupleType().getFieldNames();
 
         // generate the N join orderings
         for ( int i = 0; i < multiJoin.getNumJoinFactors(); i++ ) {
@@ -676,7 +676,7 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
                     joinTree,
                     -1,
                     factorToAdd,
-                    ImmutableIntList.of(),
+                    ImmutableList.of(),
                     null,
                     filtersToAdd );
         }
@@ -771,7 +771,7 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
         // The width cost is the width of the tree itself plus the widths of its children. Hence, skinnier rows are better
         // when they're lower in the tree since the width of a {@link AlgNode} contributes to the cost of each LogicalJoin
         // that appears above that AlgNode.
-        int width = tree.getRowType().getFieldCount();
+        int width = tree.getTupleType().getFieldCount();
         if ( isJoinTree( tree ) ) {
             Join joinRel = (Join) tree;
             width += rowWidthCost( joinRel.getLeft() ) + rowWidthCost( joinRel.getRight() );
@@ -867,7 +867,7 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
                         newCondition,
                         factorToAdd,
                         origJoinOrder,
-                        joinTree.getJoinTree().getRowType().getFieldList() );
+                        joinTree.getJoinTree().getTupleType().getFields() );
 
         // Determine if additional filters apply as a result of adding the new factor, provided this isn't a left or right
         // outer join; for those cases, the additional filters will be added on top of the join in createJoinSubtree.
@@ -1008,8 +1008,8 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
                                 new AlgOptUtil.RexInputConverter(
                                         rexBuilder,
                                         multiJoin.getMultiJoinFields(),
-                                        leftTree.getJoinTree().getRowType().getFieldList(),
-                                        rightTree.getJoinTree().getRowType().getFieldList(),
+                                        leftTree.getJoinTree().getTupleType().getFields(),
+                                        rightTree.getJoinTree().getTupleType().getFields(),
                                         adjustments ) );
             }
         }
@@ -1039,7 +1039,7 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
         left.getTreeOrder( newJoinOrder );
         right.getTreeOrder( newJoinOrder );
 
-        int totalFields = left.getJoinTree().getRowType().getFieldCount() + right.getJoinTree().getRowType().getFieldCount() - multiJoin.getNumFieldsInJoinFactor( factorAdded );
+        int totalFields = left.getJoinTree().getTupleType().getFieldCount() + right.getJoinTree().getTupleType().getFieldCount() - multiJoin.getNumFieldsInJoinFactor( factorAdded );
         int[] adjustments = new int[totalFields];
 
         // Go through each factor and adjust relative to the original join order.
@@ -1082,8 +1082,8 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
                             new AlgOptUtil.RexInputConverter(
                                     rexBuilder,
                                     origFields,
-                                    left.getJoinTree().getRowType().getFieldList(),
-                                    right.getJoinTree().getRowType().getFieldList(),
+                                    left.getJoinTree().getTupleType().getFields(),
+                                    right.getJoinTree().getTupleType().getFields(),
                                     adjustments ) );
         }
 
@@ -1195,12 +1195,12 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
         }
 
         // Map the dimension keys to the corresponding keys from the fact table, based on the fact table's position in the current jointree
-        List<AlgDataTypeField> dimFields = multiJoin.getJoinFactor( dimIdx ).getRowType().getFieldList();
+        List<AlgDataTypeField> dimFields = multiJoin.getJoinFactor( dimIdx ).getTupleType().getFields();
         int nDimFields = dimFields.size();
         Integer[] replacementKeys = new Integer[nDimFields];
         SemiJoin semiJoin = multiJoin.getJoinRemovalSemiJoin( dimIdx );
-        ImmutableIntList dimKeys = semiJoin.getRightKeys();
-        ImmutableIntList factKeys = semiJoin.getLeftKeys();
+        ImmutableList<Integer> dimKeys = semiJoin.getRightKeys();
+        ImmutableList<Integer> factKeys = semiJoin.getLeftKeys();
         for ( int i = 0; i < dimKeys.size(); i++ ) {
             replacementKeys[dimKeys.get( i )] = factKeys.get( i ) + adjustment;
         }
@@ -1232,14 +1232,14 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
      * @param filtersToAdd filters remaining to be added; filters added to the new join tree are removed from the list
      * @return created join tree with an appropriate projection for the factor that can be removed
      */
-    private LoptJoinTree createReplacementJoin( AlgBuilder algBuilder, LoptMultiJoin multiJoin, LoptSemiJoinOptimizer semiJoinOpt, LoptJoinTree currJoinTree, int leftIdx, int factorToAdd, ImmutableIntList newKeys, Integer[] replacementKeys, List<RexNode> filtersToAdd ) {
+    private LoptJoinTree createReplacementJoin( AlgBuilder algBuilder, LoptMultiJoin multiJoin, LoptSemiJoinOptimizer semiJoinOpt, LoptJoinTree currJoinTree, int leftIdx, int factorToAdd, ImmutableList<Integer> newKeys, Integer[] replacementKeys, List<RexNode> filtersToAdd ) {
         // Create a projection, projecting the fields from the join tree containing the current joinRel and the new factor; for fields corresponding to join keys, replace them with the corresponding
         // key from the replacementKeys passed in; for other fields, just create a null expression as a placeholder for the column; this is done so we don't have to adjust the offsets of other
         // expressions that reference the new factor; the placeholder expression values should never be referenced, so that's why it's ok to create these possibly invalid expressions
         AlgNode currJoinRel = currJoinTree.getJoinTree();
-        List<AlgDataTypeField> currFields = currJoinRel.getRowType().getFieldList();
+        List<AlgDataTypeField> currFields = currJoinRel.getTupleType().getFields();
         final int nCurrFields = currFields.size();
-        List<AlgDataTypeField> newFields = multiJoin.getJoinFactor( factorToAdd ).getRowType().getFieldList();
+        List<AlgDataTypeField> newFields = multiJoin.getJoinFactor( factorToAdd ).getTupleType().getFields();
         final int nNewFields = newFields.size();
         List<Pair<RexNode, String>> projects = new ArrayList<>();
         RexBuilder rexBuilder = currJoinRel.getCluster().getRexBuilder();
@@ -1329,8 +1329,8 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
                                 new AlgOptUtil.RexInputConverter(
                                         rexBuilder,
                                         multiJoin.getMultiJoinFields(),
-                                        left.getJoinTree().getRowType().getFieldList(),
-                                        right.getJoinTree().getRowType().getFieldList(),
+                                        left.getJoinTree().getTupleType().getFields(),
+                                        right.getJoinTree().getTupleType().getFields(),
                                         adjustments ) );
             }
         }
@@ -1374,7 +1374,7 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
                                 new AlgOptUtil.RexInputConverter(
                                         rexBuilder,
                                         multiJoin.getMultiJoinFields(),
-                                        algBuilder.peek().getRowType().getFieldList(),
+                                        algBuilder.peek().getTupleType().getFields(),
                                         adjustments ) );
                 algBuilder.filter( filterCond );
             }
@@ -1398,8 +1398,8 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
             return !multiJoin.isLeftFactorInRemovableSelfJoin( ((LoptJoinTree.Leaf) left.getFactorTree()).getId() );
         }
 
-        final Double leftRowCount = mq.getRowCount( left.getJoinTree() );
-        final Double rightRowCount = mq.getRowCount( right.getJoinTree() );
+        final Double leftRowCount = mq.getTupleCount( left.getJoinTree() );
+        final Double rightRowCount = mq.getTupleCount( right.getJoinTree() );
 
         // The left side is smaller than the right if it has fewer rows, or if it has the same number of rows as the right (excluding roundoff), but fewer columns.
         if ( (leftRowCount != null)
@@ -1426,8 +1426,8 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
      * @return join condition reflect swap of join inputs
      */
     private RexNode swapFilter( RexBuilder rexBuilder, LoptMultiJoin multiJoin, LoptJoinTree origLeft, LoptJoinTree origRight, RexNode condition ) {
-        int nFieldsOnLeft = origLeft.getJoinTree().getRowType().getFieldCount();
-        int nFieldsOnRight = origRight.getJoinTree().getRowType().getFieldCount();
+        int nFieldsOnLeft = origLeft.getJoinTree().getTupleType().getFieldCount();
+        int nFieldsOnRight = origRight.getJoinTree().getTupleType().getFieldCount();
         int[] adjustments = new int[nFieldsOnLeft + nFieldsOnRight];
 
         for ( int i = 0; i < nFieldsOnLeft; i++ ) {
@@ -1509,15 +1509,15 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
 
         // Make sure the join is between the same simple factor
         final AlgMetadataQuery mq = joinRel.getCluster().getMetadataQuery();
-        final AlgOptTable leftTable = mq.getTableOrigin( left );
+        final Entity leftTable = mq.getTableOrigin( left );
         if ( leftTable == null ) {
             return false;
         }
-        final AlgOptTable rightTable = mq.getTableOrigin( right );
+        final Entity rightTable = mq.getTableOrigin( right );
         if ( rightTable == null ) {
             return false;
         }
-        if ( !leftTable.getQualifiedName().equals( rightTable.getQualifiedName() ) ) {
+        if ( leftTable.id != rightTable.id ) {
             return false;
         }
 

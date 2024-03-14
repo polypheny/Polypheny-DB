@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,75 +17,66 @@
 package org.polypheny.db.adapter.neo4j;
 
 import java.util.List;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
 import org.polypheny.db.adapter.neo4j.Neo4jPlugin.Neo4jStore;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgDataTypeImpl;
-import org.polypheny.db.algebra.type.AlgDataTypeSystem;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.impl.AbstractSchema;
-import org.polypheny.db.type.PolyTypeFactoryImpl;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalField;
+import org.polypheny.db.catalog.impl.Expressible;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.schema.Namespace;
 
+@EqualsAndHashCode(callSuper = true)
+@Value
+public class NeoNamespace extends Namespace implements Expressible {
 
-public class NeoNamespace extends AbstractSchema {
-
-    public final Driver graph;
-    public final Neo4jStore store;
-    public final String physicalName;
-    public final long id;
-    public final Expression rootSchemaRetrieval;
-    public final Session session;
-    public final TransactionProvider transactionProvider;
+    public Driver graph;
+    public Neo4jStore store;
+    public String physicalName;
+    public Session session;
+    public TransactionProvider transactionProvider;
 
 
     /**
      * Namespace object for the Neo4j database.
      *
      * @param db driver reference for the Neo4j database
-     * @param namespaceId id of the namespace
+     * @param id id of the namespace
      */
-    public NeoNamespace( Driver db, Expression expression, TransactionProvider transactionProvider, Neo4jStore neo4jStore, long namespaceId ) {
+    public NeoNamespace( Driver db, TransactionProvider transactionProvider, Neo4jStore neo4jStore, long id ) {
+        super( id, neo4jStore.getAdapterId() );
         this.graph = db;
         this.store = neo4jStore;
-        this.id = namespaceId;
-        this.rootSchemaRetrieval = expression;
-        this.physicalName = Neo4jPlugin.getPhysicalNamespaceName( id );
+        this.physicalName = Neo4jPlugin.getPhysicalNamespaceName( getId() );
         this.session = graph.session();
         this.transactionProvider = transactionProvider;
     }
 
 
     /**
-     * Creates a new table according to the given {@link CatalogTable}
+     * Creates a new table according to the given {@link LogicalTable}
      *
-     * @param combinedTable the table according to which the table is created
-     * @param columnPlacementsOnStore the placements ofr the table on the store
-     * @param partitionPlacement reference to the partition
      * @return the created table
      */
-    public Table createTable( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
-        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
-        final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
+    public NeoEntity createEntity( PhysicalEntity entity, List<? extends PhysicalField> fields, NeoNamespace namespace ) {
 
-        for ( CatalogColumnPlacement placement : columnPlacementsOnStore ) {
-            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
-            AlgDataType sqlType = catalogColumn.getAlgDataType( typeFactory );
-            fieldInfo.add( catalogColumn.name, Neo4jPlugin.getPhysicalFieldName( catalogColumn.id ), sqlType ).nullable( catalogColumn.nullable );
-        }
-
-        return new NeoEntity(
-                Neo4jPlugin.getPhysicalEntityName( combinedTable.namespaceId, combinedTable.id, partitionPlacement.partitionId ),
-                AlgDataTypeImpl.proto( fieldInfo.build() ),
-                combinedTable.id );
+        return new NeoEntity( entity, fields, namespace );
     }
 
+
+    @Override
+    public Expression asExpression() {
+        return null;
+    }
+
+
+    @Override
+    public Convention getConvention() {
+        return NeoConvention.INSTANCE;
+    }
 
 }

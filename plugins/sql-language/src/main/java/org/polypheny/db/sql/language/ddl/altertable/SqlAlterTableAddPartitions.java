@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,39 +17,29 @@
 package org.polypheny.db.sql.language.ddl.altertable;
 
 
-import static org.polypheny.db.util.Static.RESOURCE;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManager.PartitionInformation;
-import org.polypheny.db.ddl.exception.PartitionGroupNamesNotUniqueException;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.partition.raw.RawPartitionInformation;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.ddl.SqlAlterTable;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
-import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -145,38 +135,34 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
 
 
     @Override
-    public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        CatalogTable catalogTable = getCatalogTable( context, table );
+    public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
+        LogicalTable table = getTableFailOnEmpty( context, this.table );
 
-        if ( catalogTable.entityType != EntityType.ENTITY ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
+        if ( table.entityType != EntityType.ENTITY ) {
+            throw new GenericRuntimeException( "Not possible to use ALTER TABLE because %s is not a table.", table.name );
         }
 
         try {
             // Check if table is already partitioned
-            if ( catalogTable.partitionProperty.partitionType == Catalog.PartitionType.NONE ) {
-                DdlManager.getInstance().addPartitioning(
+            if ( Catalog.snapshot().alloc().getPartitionProperty( table.id ).orElseThrow().partitionType == PartitionType.NONE ) {
+                DdlManager.getInstance().createTablePartition(
                         PartitionInformation.fromNodeLists(
-                                catalogTable,
+                                table,
                                 partitionType.getSimple(),
                                 partitionColumn.getSimple(),
                                 partitionGroupNamesList.stream().map( n -> (Identifier) n ).collect( Collectors.toList() ),
                                 numPartitionGroups,
                                 numPartitions,
-                                partitionQualifierList.stream().map( l -> l.stream().map( e -> (Node) e ).collect( Collectors.toList() ) ).collect( Collectors.toList() ),
+                                partitionQualifierList.stream().map( l -> l.stream().map( e -> (Node) e ).toList() ).toList(),
                                 rawPartitionInformation ),
                         null,
                         statement );
 
             } else {
-                throw new RuntimeException( "Table '" + catalogTable.name + "' is already partitioned" );
+                throw new GenericRuntimeException( "Table '%s' is already partitioned", table.name );
             }
-        } catch ( UnknownPartitionTypeException | GenericCatalogException | UnknownDatabaseException | UnknownTableException | TransactionException | UnknownSchemaException | UnknownUserException | UnknownKeyException e ) {
-            throw new RuntimeException( e );
-        } catch ( PartitionGroupNamesNotUniqueException e ) {
-            throw CoreUtil.newContextException( partitionColumn.getPos(), RESOURCE.partitionNamesNotUnique() );
-        } catch ( UnknownColumnException e ) {
-            throw CoreUtil.newContextException( partitionColumn.getPos(), RESOURCE.columnNotFoundInTable( partitionColumn.getSimple(), catalogTable.name ) );
+        } catch ( TransactionException e ) {
+            throw new GenericRuntimeException( e );
         }
     }
 

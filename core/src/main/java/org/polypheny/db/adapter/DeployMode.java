@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,13 +20,13 @@ import java.util.Collections;
 import java.util.List;
 import lombok.Getter;
 
+@Getter
 public enum DeployMode {
 
     REMOTE( "remote" ),
     DOCKER( "docker" ),
     EMBEDDED( "embedded" );
 
-    @Getter
     private final String name;
 
 
@@ -50,7 +50,7 @@ public enum DeployMode {
         REMOTE( DeployMode.REMOTE ),
         DOCKER( DeployMode.DOCKER ),
         EMBEDDED( DeployMode.EMBEDDED ),
-        DEFAULT;
+        ALL;
 
         private final DeployMode mode;
         @Getter

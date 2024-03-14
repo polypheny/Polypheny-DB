@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.polypheny.db.monitoring.statistics;
 
 import lombok.Getter;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -42,13 +43,13 @@ public class StatisticResult {
      *
      * @param data answer per stat as a two-dimensional array
      */
-    public StatisticResult( QueryResult queryResult, Comparable<?>[][] data ) {
+    public StatisticResult( QueryResult queryResult, PolyValue[][] data ) {
         if ( data.length == 0 || data[0].length == 0 ) {
             this.columns = new StatisticQueryResult[0];
         } else {
             this.columns = new StatisticQueryResult[data[0].length];
 
-            Comparable<?>[][] rotated = rotate2dArray( data );
+            PolyValue[][] rotated = rotate2dArray( data );
 
             for ( int i = 0; i < rotated.length; i++ ) {
                 this.columns[i] = new StatisticQueryResult( queryResult, rotated[i] );
@@ -61,11 +62,11 @@ public class StatisticResult {
      * Rotates a 2d array counterclockwise
      * Assumes 2d array is equally long in all "sub"arrays
      */
-    private Comparable<?>[][] rotate2dArray( Comparable<?>[][] data ) {
+    private PolyValue[][] rotate2dArray( PolyValue[][] data ) {
         int width = data[0].length;
         int height = data.length;
 
-        Comparable<?>[][] rotated = new Comparable<?>[width][height];
+        PolyValue[][] rotated = new PolyValue[width][height];
 
         for ( int x = 0; x < width; x++ ) {
             for ( int y = 0; y < height; y++ ) {
@@ -82,8 +83,8 @@ public class StatisticResult {
 //     */
 //    public static <E> Map<E, Integer> toOccurrenceMap( StatisticResult stats ) {
 //        HashMap<E, Integer> map = new HashMap<>();
-//        String[] values = stats.getColumns()[0].getData();
-//        String[] occurrences = stats.getColumns()[1].getData();
+//        String[] values = stats.getAllocColumns()[0].getData();
+//        String[] occurrences = stats.getAllocColumns()[1].getData();
 //        //TODO: handle mismatch
 //        for ( int i = 0; i < values.length; i++ ) {
 //            map.put( (E) values[i], Integer.parseInt( occurrences[i] ) );

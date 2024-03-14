@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.nodes.RowOperator;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptPredicateList;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
@@ -68,7 +68,7 @@ import org.polypheny.db.rex.RexCorrelVariable;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexExecutor;
 import org.polypheny.db.rex.RexFieldAccess;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNode;
@@ -200,8 +200,8 @@ public abstract class ReduceExpressionsRule extends AlgOptRule {
                 alwaysTrue = !alwaysTrue;
             }
             RexNode operand = ((RexCall) rexNode).getOperands().get( 0 );
-            if ( operand instanceof RexInputRef ) {
-                RexInputRef inputRef = (RexInputRef) operand;
+            if ( operand instanceof RexIndexRef ) {
+                RexIndexRef inputRef = (RexIndexRef) operand;
                 if ( !inputRef.getType().isNullable() ) {
                     if ( alwaysTrue ) {
                         call.transformTo( filter.getInput() );
@@ -235,7 +235,7 @@ public abstract class ReduceExpressionsRule extends AlgOptRule {
                 call.transformTo(
                         call.builder()
                                 .push( project.getInput() )
-                                .project( expList, project.getRowType().getFieldNames() )
+                                .project( expList, project.getTupleType().getFieldNames() )
                                 .build() );
 
                 // New plan is absolutely better than old plan.
@@ -260,7 +260,7 @@ public abstract class ReduceExpressionsRule extends AlgOptRule {
         public void onMatch( AlgOptRuleCall call ) {
             final Join join = call.alg( 0 );
             final List<RexNode> expList = Lists.newArrayList( join.getCondition() );
-            final int fieldCount = join.getLeft().getRowType().getFieldCount();
+            final int fieldCount = join.getLeft().getTupleType().getFieldCount();
             final AlgMetadataQuery mq = call.getMetadataQuery();
             final AlgOptPredicateList leftPredicates = mq.getPulledUpPredicates( join.getLeft() );
             final AlgOptPredicateList rightPredicates = mq.getPulledUpPredicates( join.getRight() );
@@ -321,7 +321,7 @@ public abstract class ReduceExpressionsRule extends AlgOptRule {
             }
             final AlgOptPredicateList predicates = AlgOptPredicateList.EMPTY;
             if ( reduceExpressions( calc, expandedExprList, predicates, false, matchNullability ) ) {
-                final RexProgramBuilder builder = new RexProgramBuilder( calc.getInput().getRowType(), calc.getCluster().getRexBuilder() );
+                final RexProgramBuilder builder = new RexProgramBuilder( calc.getInput().getTupleType(), calc.getCluster().getRexBuilder() );
                 final List<RexLocalRef> list = new ArrayList<>();
                 for ( RexNode expr : expandedExprList ) {
                     list.add( builder.registerInput( expr ) );
@@ -413,7 +413,7 @@ public abstract class ReduceExpressionsRule extends AlgOptRule {
      * @return whether reduction found something to change, and succeeded
      */
     protected static boolean reduceExpressions( AlgNode alg, List<RexNode> expList, AlgOptPredicateList predicates, boolean unknownAsFalse, boolean matchNullability ) {
-        final AlgOptCluster cluster = alg.getCluster();
+        final AlgCluster cluster = alg.getCluster();
         final RexBuilder rexBuilder = cluster.getRexBuilder();
         final RexExecutor executor = Util.first( cluster.getPlanner().getExecutor(), RexUtil.EXECUTOR );
         final RexSimplify simplify = new RexSimplify( rexBuilder, predicates, executor );
@@ -607,10 +607,10 @@ public abstract class ReduceExpressionsRule extends AlgOptRule {
 
 
         @Override
-        public RexNode visitInputRef( RexInputRef inputRef ) {
+        public RexNode visitIndexRef( RexIndexRef inputRef ) {
             RexNode node = visit( inputRef );
             if ( node == null ) {
-                return super.visitInputRef( inputRef );
+                return super.visitIndexRef( inputRef );
             }
             return node;
         }
@@ -737,7 +737,7 @@ public abstract class ReduceExpressionsRule extends AlgOptRule {
 
 
         @Override
-        public Void visitInputRef( RexInputRef inputRef ) {
+        public Void visitIndexRef( RexIndexRef inputRef ) {
             final RexNode constant = constants.get( inputRef );
             if ( constant != null ) {
                 if ( constant instanceof RexCall ) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -529,7 +529,7 @@ public abstract class ReturnTypes {
      */
     public static final PolyReturnTypeInference SCOPE = opBinding -> {
         CallBinding callBinding = (CallBinding) opBinding;
-        return callBinding.getValidator().getNamespace( callBinding.getCall() ).getRowType();
+        return callBinding.getValidator().getNamespace( callBinding.getCall() ).getTupleType();
     };
 
     /**
@@ -541,7 +541,7 @@ public abstract class ReturnTypes {
         final AlgDataType recordMultisetType = opBinding.getOperandType( 0 );
         AlgDataType multisetType = recordMultisetType.getComponentType();
         assert multisetType != null : "expected a multiset type: " + recordMultisetType;
-        final List<AlgDataTypeField> fields = multisetType.getFieldList();
+        final List<AlgDataTypeField> fields = multisetType.getFields();
         assert fields.size() > 0;
         final AlgDataType firstColType = fields.get( 0 ).getType();
         return opBinding.getTypeFactory().createMultisetType( firstColType, -1 );
@@ -556,7 +556,7 @@ public abstract class ReturnTypes {
         AlgDataType componentType = multisetType.getComponentType();
         assert componentType != null : "expected a multiset type: " + multisetType;
         final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
-        final AlgDataType type = typeFactory.builder().add( CoreUtil.deriveAliasFromOrdinal( 0 ), null, componentType ).build();
+        final AlgDataType type = typeFactory.builder().add( null, CoreUtil.deriveAliasFromOrdinal( 0 ), null, componentType ).build();
         return typeFactory.createMultisetType( type, -1 );
     };
     /**
@@ -573,7 +573,7 @@ public abstract class ReturnTypes {
 
         assert isStruct && (fieldCount == 1);
 
-        AlgDataTypeField fieldType = recordType.getFieldList().get( 0 );
+        AlgDataTypeField fieldType = recordType.getFields().get( 0 );
         assert fieldType != null : "expected a record type with one field: " + recordType;
         final AlgDataType firstColType = fieldType.getType();
         return opBinding.getTypeFactory().createTypeWithNullability( firstColType, true );

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,9 @@
 package org.polypheny.db.adapter.cottontail.algebra;
 
 
-import org.junit.Assert;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailFilter.AtomicPredicate;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailFilter.CompoundPredicate;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailFilter.CompoundPredicate.Op;
@@ -41,9 +42,9 @@ public class CottontailFilterTest {
 
         CompoundPredicate result = (CompoundPredicate) testPredicate.left;
 
-        Assert.assertEquals( "Highest up predicate should be AND.", Op.AND, result.op );
-        Assert.assertEquals( "Inner operations should be negation", Op.NOT, ((CompoundPredicate) result.left).op );
-        Assert.assertEquals( "Inner operations should be negation", Op.NOT, ((CompoundPredicate) result.right).op );
+        assertEquals( Op.AND, result.op, "Highest up predicate should be AND." );
+        assertEquals( Op.NOT, ((CompoundPredicate) result.left).op, "Inner operations should be negation" );
+        assertEquals( Op.NOT, ((CompoundPredicate) result.right).op, "Inner operations should be negation" );
     }
 
 }

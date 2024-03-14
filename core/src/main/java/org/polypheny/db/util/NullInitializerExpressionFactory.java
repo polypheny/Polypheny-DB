@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ package org.polypheny.db.util;
 
 import java.util.List;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ColumnStrategy;
 
@@ -38,15 +38,15 @@ public class NullInitializerExpressionFactory implements InitializerExpressionFa
 
 
     @Override
-    public ColumnStrategy generationStrategy( AlgOptTable table, int iColumn ) {
-        return table.getRowType().getFieldList().get( iColumn ).getType().isNullable()
+    public ColumnStrategy generationStrategy( Entity table, int iColumn ) {
+        return table.getTupleType().getFields().get( iColumn ).getType().isNullable()
                 ? ColumnStrategy.NULLABLE
                 : ColumnStrategy.NOT_NULLABLE;
     }
 
 
     @Override
-    public RexNode newColumnDefaultValue( AlgOptTable table, int iColumn, InitializerContext context ) {
+    public RexNode newColumnDefaultValue( Entity table, int iColumn, InitializerContext context ) {
         return context.getRexBuilder().constantNull();
     }
 

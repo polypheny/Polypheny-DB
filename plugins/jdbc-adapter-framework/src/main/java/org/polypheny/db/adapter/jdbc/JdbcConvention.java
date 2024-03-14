@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,14 +37,14 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.algebra.rules.FilterSetOpTransposeRule;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.sql.language.SqlDialect;
 
 
 /**
- * Calling convention for relational operations that occur in a JDBC database.
+ * Calling convention for algebra operations that occur in a JDBC database.
  *
  * The convention is a slight misnomer. The operations occur in whatever data-flow architecture the database
  * uses internally. Nevertheless, the result pops out in JDBC.
@@ -52,7 +52,7 @@ import org.polypheny.db.sql.language.SqlDialect;
  * This is the only convention, thus far, that is not a singleton. Each instance contains a JDBC schema
  * (and therefore a data source). If Polypheny-DB is working with two different databases, it would even make
  * sense to convert from "JDBC#A" convention to "JDBC#B", even though we don't do it currently.
- * (That would involve asking database B to open a database link to database A.)
+ * (That would involve asking database B to execute a database link to database A.)
  *
  * As a result, converter rules from and to this convention need to be instantiated, at the start of planning,
  * for each JDBC database in play.
@@ -85,11 +85,11 @@ public class JdbcConvention extends Convention.Impl {
 
 
     @Override
-    public void register( AlgOptPlanner planner ) {
+    public void register( AlgPlanner planner ) {
         for ( AlgOptRule rule : JdbcRules.rules( this ) ) {
-            planner.addRule( rule );
+            planner.addRuleDuringRuntime( rule );
         }
-        planner.addRule( FilterSetOpTransposeRule.INSTANCE );
+        planner.addRuleDuringRuntime( FilterSetOpTransposeRule.INSTANCE );
         //planner.addRule( ProjectRemoveRule.INSTANCE );
     }
 

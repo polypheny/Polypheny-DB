@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,17 +18,16 @@ package org.polypheny.db.languages.mql;
 
 import lombok.Getter;
 import org.bson.BsonDocument;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.mql.Mql.Type;
 
 
+@Getter
 public class MqlDelete extends MqlCollectionStatement implements MqlQueryStatement {
 
-    @Getter
     private final BsonDocument query;
-    @Getter
     private final BsonDocument options;
-    @Getter
     private final boolean onlyOne;
 
 
@@ -43,6 +42,12 @@ public class MqlDelete extends MqlCollectionStatement implements MqlQueryStateme
     @Override
     public Type getMqlKind() {
         return Type.DELETE;
+    }
+
+
+    @Override
+    public @Nullable String getEntity() {
+        return getCollection();
     }
 
 }

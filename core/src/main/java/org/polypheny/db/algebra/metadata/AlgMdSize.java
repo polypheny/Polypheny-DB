@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,16 +47,16 @@ import org.polypheny.db.algebra.core.Intersect;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Minus;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.Size;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
@@ -110,7 +110,7 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
             return null;
         }
         double d = 0d;
-        final List<AlgDataTypeField> fields = alg.getRowType().getFieldList();
+        final List<AlgDataTypeField> fields = alg.getTupleType().getFields();
         for ( Pair<Double, AlgDataTypeField> p : Pair.zip( averageColumnSizes, fields ) ) {
             if ( p.left == null ) {
                 d += averageFieldValueSize( p.right );
@@ -158,7 +158,7 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
 
 
     public List<Double> averageColumnSizes( Values alg, AlgMetadataQuery mq ) {
-        final List<AlgDataTypeField> fields = alg.getRowType().getFieldList();
+        final List<AlgDataTypeField> fields = alg.getTupleType().getFields();
         final ImmutableList.Builder<Double> list = ImmutableList.builder();
         for ( int i = 0; i < fields.size(); i++ ) {
             AlgDataTypeField field = fields.get( i );
@@ -168,7 +168,7 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
             } else {
                 d = 0;
                 for ( ImmutableList<RexLiteral> literals : alg.getTuples() ) {
-                    d += typeValueSize( field.getType(), literals.get( i ).getValueAs( Comparable.class ) );
+                    d += typeValueSize( field.getType(), literals.get( i ).getValue() );
                 }
                 d /= alg.getTuples().size();
             }
@@ -178,8 +178,8 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
     }
 
 
-    public List<Double> averageColumnSizes( Scan alg, AlgMetadataQuery mq ) {
-        final List<AlgDataTypeField> fields = alg.getRowType().getFieldList();
+    public List<Double> averageColumnSizes( RelScan alg, AlgMetadataQuery mq ) {
+        final List<AlgDataTypeField> fields = alg.getTupleType().getFields();
         final ImmutableList.Builder<Double> list = ImmutableList.builder();
         for ( AlgDataTypeField field : fields ) {
             list.add( averageTypeValueSize( field.getType() ) );
@@ -219,13 +219,13 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
         if ( lefts == null && rights == null ) {
             return null;
         }
-        final int fieldCount = alg.getRowType().getFieldCount();
+        final int fieldCount = alg.getTupleType().getFieldCount();
         Double[] sizes = new Double[fieldCount];
         if ( lefts != null ) {
             lefts.toArray( sizes );
         }
         if ( rights != null ) {
-            final int leftCount = left.getRowType().getFieldCount();
+            final int leftCount = left.getTupleType().getFieldCount();
             for ( int i = 0; i < rights.size(); i++ ) {
                 sizes[leftCount + i] = rights.get( i );
             }
@@ -245,7 +245,7 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
 
 
     public List<Double> averageColumnSizes( Union alg, AlgMetadataQuery mq ) {
-        final int fieldCount = alg.getRowType().getFieldCount();
+        final int fieldCount = alg.getTupleType().getFieldCount();
         List<List<Double>> inputColumnSizeList = new ArrayList<>();
         for ( AlgNode input : alg.getInputs() ) {
             final List<Double> inputSizes = mq.getAverageColumnSizes( input );
@@ -341,7 +341,7 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
                 return Math.min( (double) type.getPrecision() * BYTES_PER_CHARACTER, 100d );
             case ROW:
                 double average = 0.0;
-                for ( AlgDataTypeField field : type.getFieldList() ) {
+                for ( AlgDataTypeField field : type.getFields() ) {
                     average += averageTypeValueSize( field.getType() );
                 }
                 return average;
@@ -407,9 +407,9 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
     public Double averageRexSize( RexNode node, List<Double> inputColumnSizes ) {
         switch ( node.getKind() ) {
             case INPUT_REF:
-                return inputColumnSizes.get( ((RexInputRef) node).getIndex() );
+                return inputColumnSizes.get( ((RexIndexRef) node).getIndex() );
             case LITERAL:
-                return typeValueSize( node.getType(), ((RexLiteral) node).getValueAs( Comparable.class ) );
+                return typeValueSize( node.getType(), ((RexLiteral) node).getValue() );
             default:
                 if ( node instanceof RexCall ) {
                     RexCall call = (RexCall) node;

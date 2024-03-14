@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,16 +34,18 @@
 package org.polypheny.db.schema;
 
 
-import org.polypheny.db.adapter.enumerable.AggImplementor;
-import org.polypheny.db.adapter.enumerable.StrictWinAggImplementor;
+import org.polypheny.db.algebra.enumerable.AggImplementor;
+import org.polypheny.db.algebra.enumerable.StrictAggImplementor;
+import org.polypheny.db.algebra.enumerable.StrictWinAggImplementor;
+import org.polypheny.db.algebra.enumerable.WinAggImplementor;
 
 
 /**
  * Function that can be translated to java code.
  *
  * @see AggImplementor
- * @see org.polypheny.db.adapter.enumerable.WinAggImplementor
- * @see org.polypheny.db.adapter.enumerable.StrictAggImplementor
+ * @see WinAggImplementor
+ * @see StrictAggImplementor
  * @see StrictWinAggImplementor
  */
 public interface ImplementableAggFunction extends AggregateFunction {

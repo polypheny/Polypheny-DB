@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,10 +51,11 @@ import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.CorrelationId;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.nodes.Function;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.rex.RexCall;
@@ -96,10 +97,10 @@ public class AlgJson {
                     "org.polypheny.db.adapter.mongodb.",
                     "org.polypheny.db.adapter.mongodb.MongoRules$",
                     "org.polypheny.db.adapter.file.algebra.",
-                    "org.polypheny.db.adapter.enumerable.",
-                    "org.polypheny.db.adapter.enumerable.lpg.",
-                    "org.polypheny.db.adapter.enumerable.document.",
-                    "org.polypheny.db.adapter.enumerable.common.",
+                    "org.polypheny.db.algebra.enumerable.",
+                    "org.polypheny.db.algebra.enumerable.lpg.",
+                    "org.polypheny.db.algebra.enumerable.document.",
+                    "org.polypheny.db.algebra.enumerable.common.",
                     "org.polypheny.db.adapter.jdbc.",
                     "org.polypheny.db.adapter.jdbc.JdbcRules$",
                     "org.polypheny.db.adapter.neo4j.",
@@ -122,7 +123,7 @@ public class AlgJson {
         try {
             return (AlgNode) constructor.newInstance( map );
         } catch ( InstantiationException | ClassCastException | InvocationTargetException | IllegalAccessException e ) {
-            throw new RuntimeException( "while invoking constructor for type '" + type + "'", e );
+            throw new GenericRuntimeException( "while invoking constructor for type '" + type + "'", e );
         }
     }
 
@@ -144,7 +145,7 @@ public class AlgJson {
 
 
     /**
-     * Converts a type name to a class. E.g. {@code getClass("LogicalProject")} returns {@link LogicalProject}.class.
+     * Converts a type name to a class. E.g. {@code getClass("LogicalProject")} returns {@link LogicalRelProject}.class.
      */
     public Class typeNameToClass( String type ) {
         if ( !type.contains( "." ) ) {
@@ -221,7 +222,7 @@ public class AlgJson {
             @SuppressWarnings("unchecked") final List<Map<String, Object>> jsonList = (List<Map<String, Object>>) o;
             final AlgDataTypeFactory.Builder builder = typeFactory.builder();
             for ( Map<String, Object> jsonMap : jsonList ) {
-                builder.add( (String) jsonMap.get( "name" ), null, toType( typeFactory, jsonMap ) );
+                builder.add( null, (String) jsonMap.get( "name" ), null, toType( typeFactory, jsonMap ) );
             }
             return builder.build();
         } else {
@@ -292,7 +293,7 @@ public class AlgJson {
     private Object toJson( AlgDataType node ) {
         if ( node.isStruct() ) {
             final List<Object> list = jsonBuilder.list();
-            for ( AlgDataTypeField field : node.getFieldList() ) {
+            for ( AlgDataTypeField field : node.getFields() ) {
                 list.add( toJson( field ) );
             }
             return list;
@@ -334,12 +335,12 @@ public class AlgJson {
                 return map;
             case LITERAL:
                 final RexLiteral literal = (RexLiteral) node;
-                final Object value2 = literal.getValue2();
+                final Object value2 = literal.getValue();
                 if ( value2 == null ) {
                     // Special treatment for null literal because (1) we wouldn't want 'null' to be confused as an empty expression and (2) for null literals we need an explicit type.
                     map = jsonBuilder.map();
                     map.put( "literal", null );
-                    map.put( "type", literal.getTypeName().name() );
+                    map.put( "type", literal.getPolyType().name() );
                     return map;
                 }
                 return value2;

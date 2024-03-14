@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,26 +26,22 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.polypheny.db.AdapterTestSuite;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.db.excluded.CassandraExcluded;
-import org.polypheny.db.excluded.FileExcluded;
-import org.polypheny.db.excluded.MonetdbExcluded;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
-@Category({ AdapterTestSuite.class, CassandraExcluded.class })
+@Tag("adapter")
 public class DayTimeFunctionsTest {
 
 
-    @BeforeClass
+    @BeforeAll
     public static void start() throws SQLException {
         // Ensures that Polypheny-DB is running
         //noinspection ResultOfMethodCallIgnored
@@ -79,7 +75,7 @@ public class DayTimeFunctionsTest {
     }
 
 
-    @AfterClass
+    @AfterAll
     public static void stop() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
@@ -96,7 +92,6 @@ public class DayTimeFunctionsTest {
 
 
     @Test
-    @Category(MonetdbExcluded.class)
     public void dateTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -116,9 +111,9 @@ public class DayTimeFunctionsTest {
 
                 // YEAR() Equivalent to EXTRACT(YEAR FROM date)
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Long.valueOf( 2000 ) },
-                        new Object[]{ 2, Long.valueOf( 2001 ) },
-                        new Object[]{ 3, Long.valueOf( 2002 ) }
+                        new Object[]{ 1, 2000L },
+                        new Object[]{ 2, 2001L },
+                        new Object[]{ 3, 2002L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id, YEAR(DateData) FROM DateTestTable" ),
@@ -128,9 +123,9 @@ public class DayTimeFunctionsTest {
 
                 // QUARTER(date) Equivalent to  EXTRACT(MONTH FROM date)
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Long.valueOf( 1 ) },
-                        new Object[]{ 2, Long.valueOf( 1 ) },
-                        new Object[]{ 3, Long.valueOf( 1 ) }
+                        new Object[]{ 1, 1L },
+                        new Object[]{ 2, 1L },
+                        new Object[]{ 3, 1L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id, QUARTER(DateData) FROM DateTestTable" ),
@@ -140,9 +135,9 @@ public class DayTimeFunctionsTest {
 
                 // MONTH(date) Equivalent to EXTRACT(MONTH FROM date)
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Long.valueOf( 1 ) },
-                        new Object[]{ 2, Long.valueOf( 2 ) },
-                        new Object[]{ 3, Long.valueOf( 3 ) }
+                        new Object[]{ 1, 1L },
+                        new Object[]{ 2, 2L },
+                        new Object[]{ 3, 3L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id, MONTH(DateData) FROM DateTestTable" ),
@@ -152,9 +147,9 @@ public class DayTimeFunctionsTest {
 
                 // WEEK(date) Equivalent to EXTRACT(WEEK FROM date)
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Long.valueOf( 1 ) },
-                        new Object[]{ 2, Long.valueOf( 5 ) },
-                        new Object[]{ 3, Long.valueOf( 9 ) }
+                        new Object[]{ 1, 1L },
+                        new Object[]{ 2, 5L },
+                        new Object[]{ 3, 9L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id, WEEK(DateData) FROM DateTestTable" ),
@@ -164,9 +159,9 @@ public class DayTimeFunctionsTest {
 
                 // DAYOFYEAR(date) Equivalent to EXTRACT(DOY FROM date)
                 List<Object[]> expectedResult1 = ImmutableList.of(
-                        new Object[]{ Long.valueOf( 5 ) },
-                        new Object[]{ Long.valueOf( 33 ) },
-                        new Object[]{ Long.valueOf( 62 ) }
+                        new Object[]{ 5L },
+                        new Object[]{ 33L },
+                        new Object[]{ 62L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT DAYOFYEAR(DateData) FROM DateTestTable" ),
@@ -176,9 +171,9 @@ public class DayTimeFunctionsTest {
 
                 // DAYOFMONTH(date) Equivalent to EXTRACT(DAY FROM date)
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Long.valueOf( 5 ) },
-                        new Object[]{ 2, Long.valueOf( 2 ) },
-                        new Object[]{ 3, Long.valueOf( 3 ) }
+                        new Object[]{ 1, 5L },
+                        new Object[]{ 2, 2L },
+                        new Object[]{ 3, 3L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id,DAYOFMONTH(DateData) FROM DateTestTable" ),
@@ -188,9 +183,9 @@ public class DayTimeFunctionsTest {
 
                 // DAYOFWEEK(date) Equivalent to EXTRACT(DOW FROM date)
                 expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Long.valueOf( 4 ) },
-                        new Object[]{ 2, Long.valueOf( 6 ) },
-                        new Object[]{ 3, Long.valueOf( 1 ) }
+                        new Object[]{ 1, 4L },
+                        new Object[]{ 2, 6L },
+                        new Object[]{ 3, 1L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id,DAYOFWEEK(DateData) FROM DateTestTable" ),
@@ -203,7 +198,7 @@ public class DayTimeFunctionsTest {
 
 
     @Test
-    public void timeTest() throws SQLException {
+    public void selectTimeTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -218,36 +213,64 @@ public class DayTimeFunctionsTest {
                         expectedResult,
                         true
                 );
+            }
+        }
+    }
 
+
+    @Test
+    public void extractHourTimeTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
                 // HOUR() Equivalent to EXTRACT(HOUR FROM date)
-                expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Long.valueOf( 12 ) },
-                        new Object[]{ 2, Long.valueOf( 6 ) },
-                        new Object[]{ 3, Long.valueOf( 23 ) }
+                List<Object[]> expectedResult = ImmutableList.of(
+                        new Object[]{ 1, 12L },
+                        new Object[]{ 2, 6L },
+                        new Object[]{ 3, 23L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id, HOUR(TimeData) FROM TimeTestTable" ),
                         expectedResult,
                         true
                 );
+            }
+        }
+    }
 
+
+    @Test
+    public void extractMinuteTimeTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
                 // MINUTE() Equivalent to EXTRACT(HOUR FROM date)
-                expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Long.valueOf( 30 ) },
-                        new Object[]{ 2, Long.valueOf( 34 ) },
-                        new Object[]{ 3, Long.valueOf( 59 ) }
+                List<Object[]> expectedResult = ImmutableList.of(
+                        new Object[]{ 1, 30L },
+                        new Object[]{ 2, 34L },
+                        new Object[]{ 3, 59L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id, MINUTE(TimeData) FROM TimeTestTable" ),
                         expectedResult,
                         true
                 );
+            }
+        }
+    }
+
+
+    @Test
+    public void extractSecTimeTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
 
                 // SECOND() Equivalent to EXTRACT(HOUR FROM date)
-                expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Long.valueOf( 35 ) },
-                        new Object[]{ 2, Long.valueOf( 59 ) },
-                        new Object[]{ 3, Long.valueOf( 59 ) }
+                List<Object[]> expectedResult = ImmutableList.of(
+                        new Object[]{ 1, 35L },
+                        new Object[]{ 2, 59L },
+                        new Object[]{ 3, 59L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id, SECOND(TimeData) FROM TimeTestTable" ),
@@ -260,7 +283,6 @@ public class DayTimeFunctionsTest {
 
 
     @Test
-    @Category({ FileExcluded.class, MonetdbExcluded.class })
     public void timeStampTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -276,9 +298,19 @@ public class DayTimeFunctionsTest {
                         expectedResult,
                         true
                 );
+            }
+        }
+    }
+
+
+    @Test
+    public void timeStampExtractTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
 
                 // EXTRACT(timeUnit FROM timestamp) Extracts and returns the value of a specified timestamp field from a timestamp value expression.
-                expectedResult = ImmutableList.of(
+                List<Object[]> expectedResult = ImmutableList.of(
                         new Object[]{ 1, Long.valueOf( "2000" ) },
                         new Object[]{ 2, Long.valueOf( "2001" ) },
                         new Object[]{ 3, Long.valueOf( "2002" ) }
@@ -288,117 +320,217 @@ public class DayTimeFunctionsTest {
                         expectedResult,
                         true
                 );
+            }
+        }
+    }
+
+
+    @Test
+    public void timeStampQuarterTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
 
                 // QUARTER(date) Equivalent to  EXTRACT(MONTH FROM date)
-                expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Long.valueOf( 1 ) },
-                        new Object[]{ 2, Long.valueOf( 1 ) },
-                        new Object[]{ 3, Long.valueOf( 1 ) }
+                List<Object[]> expectedResult = ImmutableList.of(
+                        new Object[]{ 1, 1L },
+                        new Object[]{ 2, 1L },
+                        new Object[]{ 3, 1L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id, QUARTER(TimeStampData) FROM TimeStampTestTable" ),
                         expectedResult,
                         true
                 );
+            }
+        }
+    }
+
+
+    @Test
+    public void timeStampMonthTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
 
                 // MONTH(date) Equivalent to EXTRACT(MONTH FROM date)
-                expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Long.valueOf( 1 ) },
-                        new Object[]{ 2, Long.valueOf( 2 ) },
-                        new Object[]{ 3, Long.valueOf( 3 ) }
+                List<Object[]> expectedResult = ImmutableList.of(
+                        new Object[]{ 1, 1L },
+                        new Object[]{ 2, 2L },
+                        new Object[]{ 3, 3L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id, MONTH(TimeStampData) FROM TimeStampTestTable" ),
                         expectedResult,
                         true
                 );
+            }
+        }
+    }
+
+
+    @Test
+    public void timeStampWeekTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
 
                 // WEEK(date) Equivalent to EXTRACT(WEEK FROM date)
-                expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Long.valueOf( 1 ) },
-                        new Object[]{ 2, Long.valueOf( 5 ) },
-                        new Object[]{ 3, Long.valueOf( 9 ) }
+                List<Object[]> expectedResult = ImmutableList.of(
+                        new Object[]{ 1, 1L },
+                        new Object[]{ 2, 5L },
+                        new Object[]{ 3, 9L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id, WEEK(TimeStampData) FROM TimeStampTestTable" ),
                         expectedResult,
                         true
                 );
+            }
+        }
+    }
+
+
+    @Test
+    public void timeStampDoyTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
 
                 // DAYOFYEAR(date) Equivalent to EXTRACT(DOY FROM date)
                 List<Object[]> expectedResult1 = ImmutableList.of(
-                        new Object[]{ Long.valueOf( 5 ) },
-                        new Object[]{ Long.valueOf( 33 ) },
-                        new Object[]{ Long.valueOf( 62 ) }
+                        new Object[]{ 5L },
+                        new Object[]{ 33L },
+                        new Object[]{ 62L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT DAYOFYEAR(TimeStampData) FROM TimeStampTestTable" ),
                         expectedResult1,
                         true
                 );
+            }
+        }
+    }
+
+
+    @Test
+    public void timeStampDomTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
 
                 // DAYOFMONTH(date) Equivalent to EXTRACT(DAY FROM date)
-                expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Long.valueOf( 5 ) },
-                        new Object[]{ 2, Long.valueOf( 2 ) },
-                        new Object[]{ 3, Long.valueOf( 3 ) }
+                List<Object[]> expectedResult = ImmutableList.of(
+                        new Object[]{ 1, 5L },
+                        new Object[]{ 2, 2L },
+                        new Object[]{ 3, 3L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id,DAYOFMONTH(TimeStampData) FROM TimeStampTestTable" ),
                         expectedResult,
                         true
                 );
+            }
+        }
+    }
+
+
+    @Test
+    public void timeStampDowTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
 
                 // DAYOFWEEK(date) Equivalent to EXTRACT(DOW FROM date)
-                expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Long.valueOf( 4 ) },
-                        new Object[]{ 2, Long.valueOf( 6 ) },
-                        new Object[]{ 3, Long.valueOf( 1 ) }
+                List<Object[]> expectedResult = ImmutableList.of(
+                        new Object[]{ 1, 4L },
+                        new Object[]{ 2, 6L },
+                        new Object[]{ 3, 1L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id,DAYOFWEEK(TimeStampData) FROM TimeStampTestTable" ),
                         expectedResult,
                         true
                 );
+            }
+        }
+    }
+
+
+    @Test
+    public void timeStampHourTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
 
                 // HOUR() Equivalent to EXTRACT(HOUR FROM date)
-                expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Long.valueOf( 12 ) },
-                        new Object[]{ 2, Long.valueOf( 6 ) },
-                        new Object[]{ 3, Long.valueOf( 23 ) }
+                List<Object[]> expectedResult = ImmutableList.of(
+                        new Object[]{ 1, 12L },
+                        new Object[]{ 2, 6L },
+                        new Object[]{ 3, 23L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id, HOUR(TimeStampData) FROM TimeStampTestTable" ),
                         expectedResult,
                         true
                 );
+            }
+        }
+    }
+
+
+    @Test
+    public void timeStampMinuteTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
 
                 // MINUTE() Equivalent to EXTRACT(HOUR FROM date)
-                expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Long.valueOf( 30 ) },
-                        new Object[]{ 2, Long.valueOf( 34 ) },
-                        new Object[]{ 3, Long.valueOf( 59 ) }
+                List<Object[]> expectedResult = ImmutableList.of(
+                        new Object[]{ 1, 30L },
+                        new Object[]{ 2, 34L },
+                        new Object[]{ 3, 59L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id, MINUTE(TimeStampData) FROM TimeStampTestTable" ),
                         expectedResult,
                         true
                 );
+            }
+        }
+    }
+
+
+    @Test
+    public void timeStampSecondsTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
 
                 // SECOND() Equivalent to EXTRACT(HOUR FROM date)
-                expectedResult = ImmutableList.of(
-                        new Object[]{ 1, Long.valueOf( 35 ) },
-                        new Object[]{ 2, Long.valueOf( 59 ) },
-                        new Object[]{ 3, Long.valueOf( 59 ) }
+                List<Object[]> expectedResult = ImmutableList.of(
+                        new Object[]{ 1, 35L },
+                        new Object[]{ 2, 59L },
+                        new Object[]{ 3, 59L }
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id, SECOND(TimeStampData) FROM TimeStampTestTable" ),
                         expectedResult,
                         true
                 );
+            }
+        }
+    }
+
+
+    @Test
+    public void timeStampFloorTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
 
                 // FLOOR(timestamp TO timeUnit) Rounds timestamp down to timeUnit
-                expectedResult = ImmutableList.of(
+                List<Object[]> expectedResult = ImmutableList.of(
                         new Object[]{ 1, Timestamp.valueOf( "2000-01-01 00:00:00.0" ) },
                         new Object[]{ 2, Timestamp.valueOf( "2001-01-01 00:00:00.0" ) },
                         new Object[]{ 3, Timestamp.valueOf( "2002-01-01 00:00:00.0" ) }
@@ -409,8 +541,18 @@ public class DayTimeFunctionsTest {
                         true
                 );
 
+            }
+        }
+    }
+
+
+    @Test
+    public void timeStampAddTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
                 // TIMESTAMPADD(timeUnit, integer, timestamp) Returns timestamp with an interval of (signed) integer timeUnits added.
-                expectedResult = ImmutableList.of(
+                List<Object[]> expectedResult = ImmutableList.of(
                         new Object[]{ 1, Timestamp.valueOf( "2005-01-05 12:30:35" ) },
                         new Object[]{ 2, Timestamp.valueOf( "2006-02-02 06:34:59" ) },
                         new Object[]{ 3, Timestamp.valueOf( "2007-03-03 23:59:59" ) }
@@ -425,7 +567,7 @@ public class DayTimeFunctionsTest {
     }
 
 
-    @Ignore
+    @Disabled
     @Test
     public void timeStampDiff() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {

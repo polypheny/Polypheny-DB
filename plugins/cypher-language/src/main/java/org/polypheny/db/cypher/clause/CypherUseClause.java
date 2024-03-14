@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,9 @@ package org.polypheny.db.cypher.clause;
 import lombok.Getter;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -44,13 +44,13 @@ public class CypherUseClause extends CypherClause implements ExecutableStatement
 
 
     @Override
-    public boolean isDDL() {
+    public boolean isDdl() {
         return true;
     }
 
 
     @Override
-    public void execute( Context context, Statement statement, QueryParameters parameters ) {
+    public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
 
     }
 

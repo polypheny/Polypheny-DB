@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,26 +21,19 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.polypheny.db.AdapterTestSuite;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
 @SuppressWarnings({ "SqlNoDataSourceInspection", "SqlDialectInspection" })
 @Slf4j
-@RunWith(Parameterized.class)
-@Category(AdapterTestSuite.class)
+@Tag("adapter")
+@DisplayName("Use Auto-Commit: {0}")
 public class JdbcAutoCommitTest {
-
-    @Parameters(name = "Use Auto-Commit: {0}")
-    public static Object[] data() {
-        return new Object[]{ false, true };
-    }
 
 
     private static final String CREATE_TABLE = "CREATE TABLE IF NOT EXISTS autoCommit( "
@@ -50,7 +43,7 @@ public class JdbcAutoCommitTest {
             + "PRIMARY KEY (id) )";
 
 
-    @BeforeClass
+    @BeforeAll
     public static void start() {
         // Ensures that Polypheny-DB is running
         //noinspection ResultOfMethodCallIgnored
@@ -58,16 +51,9 @@ public class JdbcAutoCommitTest {
     }
 
 
-    private final boolean useAutoCommit;
-
-
-    public JdbcAutoCommitTest( boolean useAutoCommit ) {
-        this.useAutoCommit = useAutoCommit;
-    }
-
-
-    @Test
-    public void testDDl() throws SQLException {
+    @ParameterizedTest(name = "Auto-Committing: {0}")
+    @ValueSource(booleans = { false, true })
+    public void testDDl( boolean useAutoCommit ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( useAutoCommit ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -82,15 +68,16 @@ public class JdbcAutoCommitTest {
                                 statement2.executeQuery( "SELECT * FROM autoCommit" ), ImmutableList.of() );
                     }
                 } finally {
-                    statement.executeUpdate( "DROP TABLE IF EXISTS autoCommit" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS autocommit" );
                 }
             }
         }
     }
 
 
-    @Test
-    public void testDml() throws SQLException {
+    @ParameterizedTest(name = "Auto-Committing: {0}")
+    @ValueSource(booleans = { false, true })
+    public void testDml( boolean useAutoCommit ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( useAutoCommit ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -117,7 +104,7 @@ public class JdbcAutoCommitTest {
 
                     }
                 } finally {
-                    statement.executeUpdate( "DROP TABLE IF EXISTS autoCommit" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS autocommit" );
                 }
             }
         }

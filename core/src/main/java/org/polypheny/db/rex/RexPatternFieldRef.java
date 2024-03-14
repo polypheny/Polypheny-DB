@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,9 +39,9 @@ import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
- * Variable which references a field of an input relational expression
+ * Variable which references a field of an input algebra expression
  */
-public class RexPatternFieldRef extends RexInputRef {
+public class RexPatternFieldRef extends RexIndexRef {
 
     private final String alpha;
 
@@ -63,7 +63,7 @@ public class RexPatternFieldRef extends RexInputRef {
     }
 
 
-    public static RexPatternFieldRef of( String alpha, RexInputRef ref ) {
+    public static RexPatternFieldRef of( String alpha, RexIndexRef ref ) {
         return new RexPatternFieldRef( alpha, ref.getIndex(), ref.getType() );
     }
 

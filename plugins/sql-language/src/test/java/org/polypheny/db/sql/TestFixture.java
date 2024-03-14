@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,11 @@
 
 package org.polypheny.db.sql;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
-import java.sql.Date;
-import java.sql.Time;
-import java.sql.Timestamp;
-import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -31,34 +28,34 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptPredicateList;
-import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.RexImplicationChecker;
-import org.polypheny.db.prepare.ContextImpl;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexExecutorImpl;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexSimplify;
-import org.polypheny.db.schema.AbstractPolyphenyDbSchema;
-import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.Schemas;
-import org.polypheny.db.tools.FrameworkConfig;
-import org.polypheny.db.tools.Frameworks;
+import org.polypheny.db.type.entity.PolyBinary;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyFloat;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.temporal.PolyDate;
+import org.polypheny.db.type.entity.temporal.PolyTime;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.DateString;
-import org.polypheny.db.util.Holder;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
 
 /**
  * Contains all the nourishment a test case could possibly need.
- *
+ * <p>
  * We put the data in here, rather than as fields in the test case, so that the data can be garbage-collected as soon as the test has executed.
  */
 @SuppressWarnings("WeakerAccess")
@@ -101,20 +98,20 @@ public class TestFixture {
     public TestFixture() {
         typeFactory = new JavaTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         rexBuilder = new RexBuilder( typeFactory );
-        boolRelDataType = typeFactory.createJavaType( Boolean.class );
-        intAlgDataType = typeFactory.createJavaType( Integer.class );
-        decRelDataType = typeFactory.createJavaType( Double.class );
-        longRelDataType = typeFactory.createJavaType( Long.class );
-        shortDataType = typeFactory.createJavaType( Short.class );
-        byteDataType = typeFactory.createJavaType( Byte.class );
-        floatDataType = typeFactory.createJavaType( Float.class );
-        charDataType = typeFactory.createJavaType( Character.class );
-        dateDataType = typeFactory.createJavaType( Date.class );
-        timestampDataType = typeFactory.createJavaType( Timestamp.class );
-        timeDataType = typeFactory.createJavaType( Time.class );
-        stringDataType = typeFactory.createJavaType( String.class );
+        boolRelDataType = typeFactory.createJavaType( PolyBoolean.class );
+        intAlgDataType = typeFactory.createJavaType( PolyInteger.class );
+        decRelDataType = typeFactory.createJavaType( PolyDouble.class );
+        longRelDataType = typeFactory.createJavaType( PolyLong.class );
+        shortDataType = typeFactory.createJavaType( PolyInteger.class );
+        byteDataType = typeFactory.createJavaType( PolyBinary.class );
+        floatDataType = typeFactory.createJavaType( PolyFloat.class );
+        charDataType = typeFactory.createJavaType( PolyString.class );
+        dateDataType = typeFactory.createJavaType( PolyDate.class );
+        timestampDataType = typeFactory.createJavaType( PolyTimestamp.class );
+        timeDataType = typeFactory.createJavaType( PolyTime.class );
+        stringDataType = typeFactory.createJavaType( PolyString.class );
 
-        bl = ref( 0, this.boolRelDataType );
+        bl = ref( 0, boolRelDataType );
         i = ref( 1, intAlgDataType );
         dec = ref( 2, decRelDataType );
         lg = ref( 3, longRelDataType );
@@ -128,56 +125,33 @@ public class TestFixture {
         str = ref( 11, stringDataType );
 
         rowType = typeFactory.builder()
-                .add( "bool", null, this.boolRelDataType )
-                .add( "int", null, intAlgDataType )
-                .add( "dec", null, decRelDataType )
-                .add( "long", null, longRelDataType )
-                .add( "short", null, shortDataType )
-                .add( "byte", null, byteDataType )
-                .add( "float", null, floatDataType )
-                .add( "char", null, charDataType )
-                .add( "date", null, dateDataType )
-                .add( "timestamp", null, timestampDataType )
-                .add( "time", null, timeDataType )
-                .add( "string", null, stringDataType )
+                .add( null, "bool", null, this.boolRelDataType )
+                .add( null, "int", null, intAlgDataType )
+                .add( null, "dec", null, decRelDataType )
+                .add( null, "long", null, longRelDataType )
+                .add( null, "short", null, shortDataType )
+                .add( null, "byte", null, byteDataType )
+                .add( null, "float", null, floatDataType )
+                .add( null, "char", null, charDataType )
+                .add( null, "date", null, dateDataType )
+                .add( null, "timestamp", null, timestampDataType )
+                .add( null, "time", null, timeDataType )
+                .add( null, "string", null, stringDataType )
                 .build();
+        executor = new RexExecutorImpl( new SlimDataContext() {
+            @Override
+            public JavaTypeFactory getTypeFactory() {
+                return new JavaTypeFactoryImpl();
+            }
+        } );
 
-        final Holder<RexExecutorImpl> holder = Holder.of( null );
-
-        PolyphenyDbSchema rootSchema = AbstractPolyphenyDbSchema.createRootSchema( "" );
-        FrameworkConfig config = Frameworks.newConfigBuilder()
-                .defaultSchema( rootSchema.plus() )
-                .prepareContext( new ContextImpl(
-                        rootSchema,
-                        new SlimDataContext() {
-                            @Override
-                            public JavaTypeFactory getTypeFactory() {
-                                return new JavaTypeFactoryImpl();
-                            }
-                        },
-                        "",
-                        0,
-                        0,
-                        null ) )
-                .build();
-        Frameworks.withPrepare(
-                new Frameworks.PrepareAction<Void>( config ) {
-                    @Override
-                    public Void apply( AlgOptCluster cluster, AlgOptSchema algOptSchema, SchemaPlus rootSchema ) {
-                        DataContext dataContext = Schemas.createDataContext( rootSchema );
-                        holder.set( new RexExecutorImpl( dataContext ) );
-                        return null;
-                    }
-                } );
-
-        executor = holder.get();
         simplify = new RexSimplify( rexBuilder, AlgOptPredicateList.EMPTY, executor ).withParanoid( true );
         checker = new RexImplicationChecker( rexBuilder, executor, rowType );
     }
 
 
-    public RexInputRef ref( int i, AlgDataType type ) {
-        return new RexInputRef( i, typeFactory.createTypeWithNullability( type, true ) );
+    public RexIndexRef ref( int i, AlgDataType type ) {
+        return new RexIndexRef( i, typeFactory.createTypeWithNullability( type, true ) );
     }
 
 
@@ -283,13 +257,13 @@ public class TestFixture {
 
     void checkImplies( RexNode node1, RexNode node2 ) {
         final String message = node1 + " does not imply " + node2 + " when it should";
-        assertTrue( message, checker.implies( node1, node2 ) );
+        assertTrue( checker.implies( node1, node2 ), message );
     }
 
 
     void checkNotImplies( RexNode node1, RexNode node2 ) {
         final String message = node1 + " does implies " + node2 + " when it should not";
-        assertFalse( message, checker.implies( node1, node2 ) );
+        assertFalse( checker.implies( node1, node2 ), message );
     }
 
 }

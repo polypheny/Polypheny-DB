@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import java.util.List;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.nodes.validate.ValidatorTable;
-import org.polypheny.db.util.AccessType;
 
 
 /**
@@ -43,8 +42,8 @@ public abstract class DelegatingSqlValidatorTable implements ValidatorTable {
 
 
     @Override
-    public AlgDataType getRowType() {
-        return table.getRowType();
+    public AlgDataType getTupleType() {
+        return table.getTupleType();
     }
 
 
@@ -59,11 +58,6 @@ public abstract class DelegatingSqlValidatorTable implements ValidatorTable {
         return table.getMonotonicity( columnName );
     }
 
-
-    @Override
-    public AccessType getAllowedAccess() {
-        return table.getAllowedAccess();
-    }
 
 }
 

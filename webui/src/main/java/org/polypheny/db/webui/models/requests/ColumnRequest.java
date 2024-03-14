@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,15 +17,23 @@
 package org.polypheny.db.webui.models.requests;
 
 
-import org.polypheny.db.webui.models.DbColumn;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.experimental.SuperBuilder;
+import lombok.extern.jackson.Jacksonized;
+import org.polypheny.db.webui.models.catalog.UiColumnDefinition;
 
-
+@SuperBuilder
+@Jacksonized
 public class ColumnRequest extends UIRequest {
 
-    public DbColumn oldColumn;
-    public DbColumn newColumn;
+    @JsonProperty
+    public UiColumnDefinition oldColumn;
+    @JsonProperty
+    public UiColumnDefinition newColumn;
     // for data sources
+    @JsonProperty
     public boolean renameOnly;
+    @JsonProperty
     public String tableType;
 
 }

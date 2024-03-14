@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,9 @@
 package org.polypheny.db.information;
 
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.HashMap;
 import java.util.UUID;
 import lombok.Getter;
@@ -27,10 +30,11 @@ import lombok.Getter;
  */
 public class InformationAction extends Information {
 
-    @SuppressWarnings({ "FieldCanBeLocal", "unused" })
-    private String label;
+    @JsonSerialize
+    private final String label;
     private transient Action action;
     @Getter
+    @JsonSerialize
     private HashMap<String, String> parameters = new HashMap<>();
 
 
@@ -40,7 +44,18 @@ public class InformationAction extends Information {
      * @param group The InformationGroup to which this information belongs
      */
     public InformationAction( final InformationGroup group, final String buttonLabel, final Action action ) {
-        super( UUID.randomUUID().toString(), group.getId() );
+        this( group.getId(), buttonLabel, action );
+    }
+
+
+    @JsonCreator
+    public InformationAction( @JsonProperty("groupId") final String groupId, @JsonProperty("buttonLabel") final String buttonLabel ) {
+        this( groupId, buttonLabel, null );
+    }
+
+
+    public InformationAction( final String groupId, final String buttonLabel, final Action action ) {
+        super( UUID.randomUUID().toString(), groupId );
         this.action = action;
         this.label = buttonLabel;
     }
@@ -65,6 +80,7 @@ public class InformationAction extends Information {
     public interface Action {
 
         String run( final HashMap<String, String> parameters );
+
     }
 
 }

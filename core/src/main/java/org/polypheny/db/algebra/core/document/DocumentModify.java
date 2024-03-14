@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,44 +16,56 @@
 
 package org.polypheny.db.algebra.core.document;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.mongodb.lang.Nullable;
 import java.util.List;
+import java.util.Map;
 import lombok.Getter;
+import lombok.NonNull;
+import lombok.experimental.SuperBuilder;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.core.Modify.Operation;
+import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.trait.ModelTrait;
 
+@Getter
+@SuperBuilder(toBuilder = true)
+public abstract class DocumentModify<E extends Entity> extends Modify<E> implements DocumentAlg {
 
-public abstract class DocumentModify extends SingleAlg implements DocumentAlg {
-
-    public final Operation operation;
-    @Getter
-    private final AlgOptTable collection;
-    @Getter
-    private final List<String> keys;
-    @Getter
-    private final List<RexNode> updates;
-    @Getter
-    private final CatalogReader catalogReader;
+    @NonNull
+    public ImmutableMap<String, ? extends RexNode> updates;
+    @NonNull
+    public ImmutableList<String> removes;
+    @NonNull
+    public ImmutableMap<String, String> renames;
+    @NonNull
+    public Operation operation;
 
 
     /**
      * Creates a {@link DocumentModify}.
-     * {@link org.polypheny.db.schema.ModelTrait#DOCUMENT} node, which modifies a collection.
+     * {@link ModelTrait#DOCUMENT} node, which modifies a collection.
      */
-    protected DocumentModify( AlgTraitSet traits, AlgOptTable collection, CatalogReader catalogReader, AlgNode input, Operation operation, List<String> keys, List<RexNode> updates ) {
-        super( input.getCluster(), input.getTraitSet(), input );
+    protected DocumentModify(
+            AlgTraitSet traits,
+            E collection,
+            AlgNode input,
+            @NonNull Operation operation,
+            @Nullable Map<String, ? extends RexNode> updates,
+            @Nullable List<String> removes,
+            @Nullable Map<String, String> renames ) {
+        super( input.getCluster(), input.getTraitSet().replace( ModelTrait.DOCUMENT ), collection, input );
         this.operation = operation;
-        this.collection = collection;
-        this.keys = keys;
-        this.updates = updates;
-        this.catalogReader = catalogReader;
+        this.updates = ImmutableMap.copyOf( updates == null ? Map.of() : updates );
+        this.removes = ImmutableList.copyOf( removes == null ? List.of() : removes );
+        this.renames = ImmutableMap.copyOf( renames == null ? Map.of() : renames );
         this.traitSet = traits;
     }
 
@@ -66,11 +78,26 @@ public abstract class DocumentModify extends SingleAlg implements DocumentAlg {
 
     @Override
     public String algCompareString() {
-        String compare = "$" + getClass().getSimpleName() + "$" + operation + "$" + input.algCompareString();
-        if ( keys != null ) {
-            compare += "$" + keys.hashCode() + "$" + updates.hashCode();
-        }
-        return compare + "$" + input.algCompareString();
+        return getClass().getSimpleName() + "$" +
+                entity.id + "$" +
+                entity.getLayer() + "$" +
+                operation + "$" +
+                input.algCompareString() + "$" +
+                updates.hashCode() + "$" +
+                removes.hashCode() + "$" +
+                renames.hashCode() + "&";
+    }
+
+
+    @Override
+    public AlgWriter explainTerms( AlgWriter pw ) {
+        return super.explainTerms( pw )
+                .item( "entity", entity.id )
+                .item( "layer", entity.getLayer() )
+                .item( "operation", getOperation() )
+                .item( "updates", updates )
+                .item( "removes", removes )
+                .item( "renames", renames );
     }
 
 
@@ -81,12 +108,12 @@ public abstract class DocumentModify extends SingleAlg implements DocumentAlg {
 
 
     public boolean isInsert() {
-        return operation == Operation.INSERT;
+        return operation == Modify.Operation.INSERT;
     }
 
 
     public boolean isDelete() {
-        return operation == Operation.DELETE;
+        return operation == Modify.Operation.DELETE;
     }
 
 }

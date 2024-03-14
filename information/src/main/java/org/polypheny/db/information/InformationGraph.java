@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,13 @@
 package org.polypheny.db.information;
 
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
@@ -34,10 +35,13 @@ import org.apache.commons.collections4.queue.CircularFifoQueue;
 @Accessors(chain = true, fluent = true)
 public class InformationGraph extends Information {
 
+    @JsonProperty
     private final Map<String, GraphData<? extends Number>> data = new HashMap<>();
-    @SuppressWarnings("unused")
-    @SerializedName("labels")
+    @JsonProperty("labels")
     private String[] xLabels;
+
+    @Getter
+    @JsonProperty
     private GraphType graphType;
     /**
      * Suggested min value of the y axis in the UI
@@ -46,7 +50,7 @@ public class InformationGraph extends Information {
      */
     @Setter
     @SuppressWarnings("unused")
-    @SerializedName("min")
+    @JsonProperty("min")
     private int minY = 0;
     /**
      * Suggested max value of the y axis in the UI
@@ -54,12 +58,13 @@ public class InformationGraph extends Information {
      */
     @Setter
     @SuppressWarnings("unused")
-    @SerializedName("max")
+    @JsonProperty("max")
     private int maxY;
 
-    @Setter
     @SuppressWarnings("unused")
-    private List<GraphColor> colorList = List.of( GraphColor.PASTEL_RED, GraphColor.BATTERY_CHARGED_BLUE, GraphColor.MIKADO_YELLOW, GraphColor.POLICE_BLUE, GraphColor.TUSCAN_RED, GraphColor.DARK_SEE_GREEN, GraphColor.JELLY_BEAN_BLUE, GraphColor.TWILIGHT_LAVENDER, GraphColor.SILVER_PINK, GraphColor.LIME );
+    @Setter
+    @JsonProperty
+    private List<GraphColor> colors = List.of( GraphColor.PASTEL_RED, GraphColor.BATTERY_CHARGED_BLUE, GraphColor.MIKADO_YELLOW, GraphColor.POLICE_BLUE, GraphColor.TUSCAN_RED, GraphColor.DARK_SEE_GREEN, GraphColor.JELLY_BEAN_BLUE, GraphColor.TWILIGHT_LAVENDER, GraphColor.SILVER_PINK, GraphColor.LIME );
 
 
     /**
@@ -135,16 +140,6 @@ public class InformationGraph extends Information {
 
 
     /**
-     * Get the GraphType
-     *
-     * @return graphType enum
-     */
-    public GraphType getGraphType() {
-        return graphType;
-    }
-
-
-    /**
      * Set the data for this graph.
      *
      * @param xLabels labels that are displayed on the x-axis
@@ -215,13 +210,14 @@ public class InformationGraph extends Information {
          */
         // Choice of CircularFifoQueue: https://stackoverflow.com/questions/5498865/size-limited-queue-that-holds-last-n-elements-in-java
         @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
+        @JsonProperty
         private final CircularFifoQueue<T> data;
 
 
         /**
          * The label that describes the data.
          */
-        @SerializedName("label")
+        @JsonProperty("label")
         private final String dataLabel;
 
         /**

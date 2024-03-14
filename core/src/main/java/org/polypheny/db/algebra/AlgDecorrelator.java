@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,8 +58,10 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import javax.annotation.Nonnull;
+import lombok.Getter;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Function2;
+import org.polypheny.db.algebra.AlgDecorrelator.Frame;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.constant.Kind;
@@ -72,12 +74,12 @@ import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Values;
-import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
-import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
-import org.polypheny.db.algebra.logical.relational.LogicalSort;
+import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelCorrelate;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -91,7 +93,7 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Function;
 import org.polypheny.db.nodes.Function.FunctionType;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCostImpl;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
@@ -104,7 +106,7 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCorrelVariable;
 import org.polypheny.db.rex.RexFieldAccess;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
@@ -118,8 +120,6 @@ import org.polypheny.db.util.Holder;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.ReflectUtil;
-import org.polypheny.db.util.ReflectiveVisitor;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.mapping.Mappings;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
@@ -130,7 +130,6 @@ import org.slf4j.Logger;
  * {@link AlgDecorrelator} replaces all correlated expressions (corExp) in a relational expression (AlgNode) tree with non-correlated expressions that are produced from joining the {@link AlgNode} that produces the
  * corExp with the {@link AlgNode} that references it.
  *
- * TODO:
  * <ul>
  * <li>replace {@code CorelMap} constructor parameter with a AlgNode</li>
  * <li>make {@link #currentAlg} immutable (would require a fresh {@link AlgDecorrelator} for each node being decorrelated)</li>
@@ -138,7 +137,7 @@ import org.slf4j.Logger;
  * <li>make sub-class rules static, and have them create their own de-correlator</li>
  * </ul>
  */
-public class AlgDecorrelator implements ReflectiveVisitor {
+public class AlgDecorrelator implements AlgProducingVisitor<Frame> {
 
     private static final Logger SQL2REL_LOGGER = PolyphenyDbTrace.getSqlToRelTracer();
 
@@ -148,7 +147,6 @@ public class AlgDecorrelator implements ReflectiveVisitor {
     // map built during translation
     private CorelMap cm;
 
-    private final ReflectUtil.MethodDispatcher<Frame> dispatcher = ReflectUtil.createMethodDispatcher( Frame.class, this, "decorrelateAlg", AlgNode.class );
 
     // The alg which is being visited
     private AlgNode currentAlg;
@@ -160,7 +158,23 @@ public class AlgDecorrelator implements ReflectiveVisitor {
      */
     private final Map<AlgNode, Frame> map = new HashMap<>();
 
-    private final Set<LogicalCorrelate> generatedCorAlgs = new HashSet<>();
+    private final Set<LogicalRelCorrelate> generatedCorAlgs = new HashSet<>();
+
+
+    @Getter
+    private final ImmutableMap<Class<? extends AlgNode>, java.util.function.Function<AlgNode, Frame>> handlers = ImmutableMap.<Class<? extends AlgNode>, java.util.function.Function<AlgNode, Frame>>builder()
+            .put( LogicalRelCorrelate.class, c -> decorrelateAlg( (LogicalRelCorrelate) c ) )
+            .put( LogicalRelProject.class, c -> decorrelateAlg( (LogicalRelProject) c ) )
+            .put( LogicalRelFilter.class, c -> decorrelateAlg( (LogicalRelFilter) c ) )
+            .put( LogicalRelJoin.class, c -> decorrelateAlg( (LogicalRelJoin) c ) )
+            .put( LogicalRelSort.class, c -> decorrelateAlg( (LogicalRelSort) c ) )
+            .put( LogicalRelAggregate.class, c -> decorrelateAlg( (LogicalRelAggregate) c ) )
+            .put( Values.class, c -> decorrelateAlg( (Values) c ) )
+            .put( Sort.class, c -> decorrelateAlg( (Sort) c ) )
+            .build();
+
+    @Getter
+    private final java.util.function.Function<AlgNode, Frame> defaultHandler = this::decorrelateAlg;
 
 
     private AlgDecorrelator( CorelMap cm, Context context, AlgBuilder algBuilder ) {
@@ -172,12 +186,12 @@ public class AlgDecorrelator implements ReflectiveVisitor {
 
     /**
      * Decorrelates a query.
-     *
+     * <p>
      * This is the main entry point to {@link AlgDecorrelator}.
      *
      * @param rootAlg Root node of the query
      * @param algBuilder Builder for relational expressions
-     * @return Equivalent query with all {@link LogicalCorrelate} instances removed
+     * @return Equivalent query with all {@link LogicalRelCorrelate} instances removed
      */
     public static AlgNode decorrelateQuery( AlgNode rootAlg, AlgBuilder algBuilder ) {
         final CorelMap corelMap = new CorelMapBuilder().build( rootAlg );
@@ -185,7 +199,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
             return rootAlg;
         }
 
-        final AlgOptCluster cluster = rootAlg.getCluster();
+        final AlgCluster cluster = rootAlg.getCluster();
         final AlgDecorrelator decorrelator = new AlgDecorrelator( corelMap, cluster.getPlanner().getContext(), algBuilder );
 
         AlgNode newRootRel = decorrelator.removeCorrelationViaRule( rootAlg );
@@ -207,7 +221,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
     }
 
 
-    private void setCurrent( AlgNode root, LogicalCorrelate corRel ) {
+    private void setCurrent( AlgNode root, LogicalRelCorrelate corRel ) {
         currentAlg = corRel;
         if ( corRel != null ) {
             cm = new CorelMapBuilder().build( Util.first( root, corRel ) );
@@ -262,15 +276,15 @@ public class AlgDecorrelator implements ReflectiveVisitor {
             if ( cm.mapRefRelToCorRef.containsKey( oldNode ) ) {
                 cm.mapRefRelToCorRef.putAll( newNode, cm.mapRefRelToCorRef.get( oldNode ) );
             }
-            if ( oldNode instanceof LogicalCorrelate && newNode instanceof LogicalCorrelate ) {
-                LogicalCorrelate oldCor = (LogicalCorrelate) oldNode;
+            if ( oldNode instanceof LogicalRelCorrelate && newNode instanceof LogicalRelCorrelate ) {
+                LogicalRelCorrelate oldCor = (LogicalRelCorrelate) oldNode;
                 CorrelationId c = oldCor.getCorrelationId();
                 if ( cm.mapCorToCorRel.get( c ) == oldNode ) {
                     cm.mapCorToCorRel.put( c, newNode );
                 }
 
                 if ( generatedCorAlgs.contains( oldNode ) ) {
-                    generatedCorAlgs.add( (LogicalCorrelate) newNode );
+                    generatedCorAlgs.add( (LogicalRelCorrelate) newNode );
                 }
             }
             return null;
@@ -316,7 +330,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
     }
 
 
-    protected RexNode removeCorrelationExpr( RexNode exp, boolean projectPulledAboveLeftCorrelator, RexInputRef nullIndicator ) {
+    protected RexNode removeCorrelationExpr( RexNode exp, boolean projectPulledAboveLeftCorrelator, RexIndexRef nullIndicator ) {
         RemoveCorrelationRexShuttle shuttle =
                 new RemoveCorrelationRexShuttle(
                         algBuilder.getRexBuilder(),
@@ -344,7 +358,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
     public Frame decorrelateAlg( AlgNode alg ) {
         AlgNode newRel = alg.copy( alg.getTraitSet(), alg.getInputs() );
 
-        if ( alg.getInputs().size() > 0 ) {
+        if ( !alg.getInputs().isEmpty() ) {
             List<AlgNode> oldInputs = alg.getInputs();
             List<AlgNode> newInputs = new ArrayList<>();
             for ( int i = 0; i < oldInputs.size(); ++i ) {
@@ -363,7 +377,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
         }
 
         // the output position should not change since there are no corVars coming from below.
-        return register( alg, newRel, identityMap( alg.getRowType().getFieldCount() ), ImmutableSortedMap.of() );
+        return register( alg, newRel, identityMap( alg.getTupleType().getFieldCount() ), ImmutableSortedMap.of() );
     }
 
 
@@ -397,13 +411,13 @@ public class AlgDecorrelator implements ReflectiveVisitor {
         Mappings.TargetMapping mapping =
                 Mappings.target(
                         frame.oldToNewOutputs,
-                        oldInput.getRowType().getFieldCount(),
-                        newInput.getRowType().getFieldCount() );
+                        oldInput.getTupleType().getFieldCount(),
+                        newInput.getTupleType().getFieldCount() );
 
         AlgCollation oldCollation = alg.getCollation();
         AlgCollation newCollation = RexUtil.apply( mapping, oldCollation );
 
-        final Sort newSort = LogicalSort.create( newInput, newCollation, alg.offset, alg.fetch );
+        final Sort newSort = LogicalRelSort.create( newInput, newCollation, alg.offset, alg.fetch );
 
         // Sort does not change input ordering
         return register( alg, newSort, frame.oldToNewOutputs, frame.corDefOutputs );
@@ -422,11 +436,11 @@ public class AlgDecorrelator implements ReflectiveVisitor {
 
 
     /**
-     * Rewrites a {@link LogicalAggregate}.
+     * Rewrites a {@link LogicalRelAggregate}.
      *
      * @param alg Aggregate to rewrite
      */
-    public Frame decorrelateAlg( LogicalAggregate alg ) {
+    public Frame decorrelateAlg( LogicalRelAggregate alg ) {
         if ( alg.getGroupType() != Aggregate.Group.SIMPLE ) {
             throw new AssertionError( Bug.CALCITE_461_FIXED );
         }
@@ -456,7 +470,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
         // Project projects the original expressions, plus any correlated variables the input wants to pass along.
         final List<Pair<RexNode, String>> projects = new ArrayList<>();
 
-        List<AlgDataTypeField> newInputOutput = newInput.getRowType().getFieldList();
+        List<AlgDataTypeField> newInputOutput = newInput.getTupleType().getFields();
 
         int newPos = 0;
 
@@ -470,7 +484,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
                 continue;
             }
             int newInputPos = frame.oldToNewOutputs.get( i );
-            projects.add( RexInputRef.of2( newInputPos, newInputOutput ) );
+            projects.add( RexIndexRef.of2( newInputPos, newInputOutput ) );
             mapNewInputToProjOutputs.put( newInputPos, newPos );
             newPos++;
         }
@@ -481,7 +495,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
 
             // Now add the corVars from the input, starting from position oldGroupKeyCount.
             for ( Map.Entry<CorDef, Integer> entry : frame.corDefOutputs.entrySet() ) {
-                projects.add( RexInputRef.of2( entry.getValue(), newInputOutput ) );
+                projects.add( RexIndexRef.of2( entry.getValue(), newInputOutput ) );
 
                 corDefOutputs.put( entry.getKey(), newPos );
                 mapNewInputToProjOutputs.put( entry.getValue(), newPos );
@@ -493,7 +507,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
         final int newGroupKeyCount = newPos;
         for ( int i = 0; i < newInputOutput.size(); i++ ) {
             if ( !mapNewInputToProjOutputs.containsKey( i ) ) {
-                projects.add( RexInputRef.of2( i, newInputOutput ) );
+                projects.add( RexIndexRef.of2( i, newInputOutput ) );
                 mapNewInputToProjOutputs.put( i, newPos );
                 newPos++;
             }
@@ -561,7 +575,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
                     newInputOutputFieldCount + i );
         }
 
-        algBuilder.push( LogicalAggregate.create( newProject, newGroupSet, null, newAggCalls ) );
+        algBuilder.push( LogicalRelAggregate.create( newProject, newGroupSet, null, newAggCalls ) );
 
         if ( !omittedConstants.isEmpty() ) {
             final List<RexNode> postProjects = new ArrayList<>( algBuilder.fields() );
@@ -577,7 +591,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
 
 
     public Frame getInvoke( AlgNode r, AlgNode parent ) {
-        final Frame frame = dispatcher.invoke( r );
+        final Frame frame = handle( r );
         if ( frame != null ) {
             map.put( r, frame );
         }
@@ -606,7 +620,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
      *
      * @param alg the project alg to rewrite
      */
-    public Frame decorrelateAlg( LogicalProject alg ) {
+    public Frame decorrelateAlg( LogicalRelProject alg ) {
         //
         // Rewrite logic:
         //
@@ -620,7 +634,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
             return null;
         }
         final List<RexNode> oldProjects = alg.getProjects();
-        final List<AlgDataTypeField> algOutput = alg.getRowType().getFieldList();
+        final List<AlgDataTypeField> algOutput = alg.getTupleType().getFields();
 
         // Project projects the original expressions, plus any correlated variables the input wants to pass along.
         final List<Pair<RexNode, String>> projects = new ArrayList<>();
@@ -645,7 +659,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
         // Project any correlated variables the input wants to pass along.
         final SortedMap<CorDef, Integer> corDefOutputs = new TreeMap<>();
         for ( Map.Entry<CorDef, Integer> entry : frame.corDefOutputs.entrySet() ) {
-            projects.add( RexInputRef.of2( entry.getValue(), frame.r.getRowType().getFieldList() ) );
+            projects.add( RexIndexRef.of2( entry.getValue(), frame.r.getTupleType().getFields() ) );
             corDefOutputs.put( entry.getKey(), newPos );
             newPos++;
         }
@@ -676,7 +690,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
         for ( CorRef corVar : correlations ) {
             final int oldCorVarOffset = corVar.field;
 
-            final AlgNode oldInput = getCorRel( corVar );
+            final AlgNode oldInput = getCorAlg( corVar );
             assert oldInput != null;
             final Frame frame = getFrame( oldInput, true );
             assert frame != null;
@@ -706,7 +720,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
 
         AlgNode r = null;
         for ( CorRef corVar : correlations ) {
-            final AlgNode oldInput = getCorRel( corVar );
+            final AlgNode oldInput = getCorAlg( corVar );
             assert oldInput != null;
             final AlgNode newInput = getFrame( oldInput, true ).r;
             assert newInput != null;
@@ -716,16 +730,16 @@ public class AlgDecorrelator implements ReflectiveVisitor {
                 AlgNode distinct = algBuilder.push( project )
                         .distinct()
                         .build();
-                AlgOptCluster cluster = distinct.getCluster();
+                AlgCluster cluster = distinct.getCluster();
 
                 joinedInputs.add( newInput );
                 mapNewInputToNewOffset.put( newInput, offset );
-                offset += distinct.getRowType().getFieldCount();
+                offset += distinct.getTupleType().getFieldCount();
 
                 if ( r == null ) {
                     r = distinct;
                 } else {
-                    r = LogicalJoin.create(
+                    r = LogicalRelJoin.create(
                             r,
                             distinct,
                             cluster.getRexBuilder().makeLiteral( true ),
@@ -739,7 +753,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
         // referencing correlated variables.
         for ( CorRef corRef : correlations ) {
             // The first input of a Correlate is always the alg defining the correlated variables.
-            final AlgNode oldInput = getCorRel( corRef );
+            final AlgNode oldInput = getCorAlg( corRef );
             assert oldInput != null;
             final Frame frame = getFrame( oldInput, true );
             final AlgNode newInput = frame.r;
@@ -762,20 +776,20 @@ public class AlgDecorrelator implements ReflectiveVisitor {
     private Frame getFrame( AlgNode r, boolean safe ) {
         final Frame frame = map.get( r );
         if ( frame == null && safe ) {
-            return new Frame( r, r, ImmutableSortedMap.of(), identityMap( r.getRowType().getFieldCount() ) );
+            return new Frame( r, r, ImmutableSortedMap.of(), identityMap( r.getTupleType().getFieldCount() ) );
         }
         return frame;
     }
 
 
-    private AlgNode getCorRel( CorRef corVar ) {
+    private AlgNode getCorAlg( CorRef corVar ) {
         final AlgNode r = cm.mapCorToCorRel.get( corVar.corr );
         return r.getInput( 0 );
     }
 
 
     /**
-     * Adds a value generator to satisfy the correlating variables used by a relational expression, if those variables are not already provided by its input.
+     * Adds a value generator to satisfy the correlating variables used by a algebraic expression, if those variables are not already provided by its input.
      */
     private Frame maybeAddValueGenerator( AlgNode alg, Frame frame ) {
         final CorelMap cm1 = new CorelMapBuilder().build( frame.r, alg );
@@ -839,10 +853,10 @@ public class AlgDecorrelator implements ReflectiveVisitor {
                 try {
                     findCorrelationEquivalent( correlation, ((Filter) alg).getCondition() );
                 } catch ( Util.FoundOne e ) {
-                    if ( e.getNode() instanceof RexInputRef ) {
-                        map.put( def, ((RexInputRef) e.getNode()).getIndex() );
+                    if ( e.getNode() instanceof RexIndexRef ) {
+                        map.put( def, ((RexIndexRef) e.getNode()).getIndex() );
                     } else {
-                        map.put( def, frame.r.getRowType().getFieldCount() + projects.size() );
+                        map.put( def, frame.r.getTupleType().getFieldCount() + projects.size() );
                         projects.add( (RexNode) e.getNode() );
                     }
                 }
@@ -861,12 +875,12 @@ public class AlgDecorrelator implements ReflectiveVisitor {
             }
         }
 
-        int leftInputOutputCount = frame.r.getRowType().getFieldCount();
+        int leftInputOutputCount = frame.r.getTupleType().getFieldCount();
 
         // can directly add positions into corDefOutputs since join does not change the output ordering from the inputs.
         AlgNode valueGen = createValueGenerator( corVarList, leftInputOutputCount, corDefOutputs );
 
-        AlgNode join = LogicalJoin.create( frame.r, valueGen, algBuilder.literal( true ), ImmutableSet.of(), JoinAlgType.INNER );
+        AlgNode join = LogicalRelJoin.create( frame.r, valueGen, algBuilder.literal( true ), ImmutableSet.of(), JoinAlgType.INNER );
 
         // Join or Filter does not change the old input ordering. All input fields from newLeftInput (i.e. the original input to the old Filter) are in the output and in the same position.
         return register( alg.getInput( 0 ), join, frame.oldToNewOutputs, corDefOutputs );
@@ -874,7 +888,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
 
 
     /**
-     * Finds a {@link RexInputRef} that is equivalent to a {@link CorRef}, and if found, throws a {@link org.polypheny.db.util.Util.FoundOne}.
+     * Finds a {@link RexIndexRef} that is equivalent to a {@link CorRef}, and if found, throws a {@link org.polypheny.db.util.Util.FoundOne}.
      */
     private void findCorrelationEquivalent( CorRef correlation, RexNode e ) throws Util.FoundOne {
         switch ( e.getKind() ) {
@@ -920,7 +934,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
 
     /**
      * Returns whether one type is just a widening of another.
-     *
+     * <p>
      * For example:
      * <ul>
      * <li>{@code VARCHAR(10)} is a widening of {@code VARCHAR(5)}.</li>
@@ -937,7 +951,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
      *
      * @param alg the filter alg to rewrite
      */
-    public Frame decorrelateAlg( LogicalFilter alg ) {
+    public Frame decorrelateAlg( LogicalRelFilter alg ) {
         //
         // Rewrite logic:
         //
@@ -958,13 +972,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
         }
 
         // If this Filter has correlated reference, create value generator and produce the correlated variables in the new output.
-        if ( false ) {
-            if ( cm.mapRefRelToCorRef.containsKey( alg ) ) {
-                frame = decorrelateInputWithValueGenerator( alg, frame );
-            }
-        } else {
-            frame = maybeAddValueGenerator( alg, frame );
-        }
+        frame = maybeAddValueGenerator( alg, frame );
 
         final CorelMap cm2 = new CorelMapBuilder().build( alg );
 
@@ -983,7 +991,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
      *
      * @param alg Correlator
      */
-    public Frame decorrelateAlg( LogicalCorrelate alg ) {
+    public Frame decorrelateAlg( LogicalRelCorrelate alg ) {
         //
         // Rewrite logic:
         //
@@ -1013,10 +1021,10 @@ public class AlgDecorrelator implements ReflectiveVisitor {
         // Join all the correlated variables produced by this correlator alg with the values generated and propagated from the right input
         final SortedMap<CorDef, Integer> corDefOutputs = new TreeMap<>( rightFrame.corDefOutputs );
         final List<RexNode> conditions = new ArrayList<>();
-        final List<AlgDataTypeField> newLeftOutput = leftFrame.r.getRowType().getFieldList();
+        final List<AlgDataTypeField> newLeftOutput = leftFrame.r.getTupleType().getFields();
         int newLeftFieldCount = newLeftOutput.size();
 
-        final List<AlgDataTypeField> newRightOutput = rightFrame.r.getRowType().getFieldList();
+        final List<AlgDataTypeField> newRightOutput = rightFrame.r.getTupleType().getFields();
 
         for ( Map.Entry<CorDef, Integer> rightOutput : new ArrayList<>( corDefOutputs.entrySet() ) ) {
             final CorDef corDef = rightOutput.getKey();
@@ -1028,8 +1036,8 @@ public class AlgDecorrelator implements ReflectiveVisitor {
             conditions.add(
                     algBuilder.call(
                             OperatorRegistry.get( OperatorName.EQUALS ),
-                            RexInputRef.of( newLeftPos, newLeftOutput ),
-                            new RexInputRef( newLeftFieldCount + newRightPos, newRightOutput.get( newRightPos ).getType() ) ) );
+                            RexIndexRef.of( newLeftPos, newLeftOutput ),
+                            new RexIndexRef( newLeftFieldCount + newRightPos, newRightOutput.get( newRightPos ).getType() ) ) );
 
             // remove this corVar from output position mapping
             corDefOutputs.remove( corDef );
@@ -1045,16 +1053,15 @@ public class AlgDecorrelator implements ReflectiveVisitor {
         corDefOutputs.putAll( leftFrame.corDefOutputs );
 
         // Create the mapping between the output of the old correlation alg and the new join rel
-        final Map<Integer, Integer> mapOldToNewOutputs = new HashMap<>();
 
-        int oldLeftFieldCount = oldLeft.getRowType().getFieldCount();
+        int oldLeftFieldCount = oldLeft.getTupleType().getFieldCount();
 
-        int oldRightFieldCount = oldRight.getRowType().getFieldCount();
+        int oldRightFieldCount = oldRight.getTupleType().getFieldCount();
         //noinspection AssertWithSideEffects
-        assert alg.getRowType().getFieldCount() == oldLeftFieldCount + oldRightFieldCount;
+        assert alg.getTupleType().getFieldCount() == oldLeftFieldCount + oldRightFieldCount;
 
         // Left input positions are not changed.
-        mapOldToNewOutputs.putAll( leftFrame.oldToNewOutputs );
+        final Map<Integer, Integer> mapOldToNewOutputs = new HashMap<>( leftFrame.oldToNewOutputs );
 
         // Right input positions are shifted by newLeftFieldCount.
         for ( int i = 0; i < oldRightFieldCount; i++ ) {
@@ -1062,7 +1069,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
         }
 
         final RexNode condition = RexUtil.composeConjunction( algBuilder.getRexBuilder(), conditions );
-        AlgNode newJoin = LogicalJoin.create( leftFrame.r, rightFrame.r, condition, ImmutableSet.of(), alg.getJoinType().toJoinType() );
+        AlgNode newJoin = LogicalRelJoin.create( leftFrame.r, rightFrame.r, condition, ImmutableSet.of(), alg.getJoinType().toJoinType() );
 
         return register( alg, newJoin, mapOldToNewOutputs, corDefOutputs );
     }
@@ -1073,7 +1080,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
      *
      * @param alg Join
      */
-    public Frame decorrelateAlg( LogicalJoin alg ) {
+    public Frame decorrelateAlg( LogicalRelJoin alg ) {
         //
         // Rewrite logic:
         //
@@ -1093,7 +1100,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
         }
 
         final AlgNode newJoin =
-                LogicalJoin.create(
+                LogicalRelJoin.create(
                         leftFrame.r,
                         rightFrame.r,
                         decorrelateExpr( currentAlg, map, cm, alg.getCondition() ),
@@ -1103,12 +1110,12 @@ public class AlgDecorrelator implements ReflectiveVisitor {
         // Create the mapping between the output of the old correlation alg and the new join rel
         Map<Integer, Integer> mapOldToNewOutputs = new HashMap<>();
 
-        int oldLeftFieldCount = oldLeft.getRowType().getFieldCount();
-        int newLeftFieldCount = leftFrame.r.getRowType().getFieldCount();
+        int oldLeftFieldCount = oldLeft.getTupleType().getFieldCount();
+        int newLeftFieldCount = leftFrame.r.getTupleType().getFieldCount();
 
-        int oldRightFieldCount = oldRight.getRowType().getFieldCount();
+        int oldRightFieldCount = oldRight.getTupleType().getFieldCount();
         //noinspection AssertWithSideEffects
-        assert alg.getRowType().getFieldCount() == oldLeftFieldCount + oldRightFieldCount;
+        assert alg.getTupleType().getFieldCount() == oldLeftFieldCount + oldRightFieldCount;
 
         // Left input positions are not changed.
         mapOldToNewOutputs.putAll( leftFrame.oldToNewOutputs );
@@ -1128,7 +1135,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
     }
 
 
-    private static RexInputRef getNewForOldInputRef( AlgNode currentRel, Map<AlgNode, Frame> map, RexInputRef oldInputRef ) {
+    private static RexIndexRef getNewForOldInputRef( AlgNode currentRel, Map<AlgNode, Frame> map, RexIndexRef oldInputRef ) {
         assert currentRel != null;
 
         int oldOrdinal = oldInputRef.getIndex();
@@ -1138,14 +1145,14 @@ public class AlgDecorrelator implements ReflectiveVisitor {
         AlgNode oldInput = null;
 
         for ( AlgNode oldInput0 : currentRel.getInputs() ) {
-            AlgDataType oldInputType = oldInput0.getRowType();
+            AlgDataType oldInputType = oldInput0.getTupleType();
             int n = oldInputType.getFieldCount();
             if ( oldOrdinal < n ) {
                 oldInput = oldInput0;
                 break;
             }
             AlgNode newInput = map.get( oldInput0 ).r;
-            newOrdinal += newInput.getRowType().getFieldCount();
+            newOrdinal += newInput.getTupleType().getFieldCount();
             oldOrdinal -= n;
         }
 
@@ -1166,7 +1173,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
 
         newOrdinal += newLocalOrdinal;
 
-        return new RexInputRef( newOrdinal, frame.r.getRowType().getFieldList().get( newLocalOrdinal ).getType() );
+        return new RexIndexRef( newOrdinal, frame.r.getTupleType().getFields().get( newLocalOrdinal ).getType() );
     }
 
 
@@ -1178,26 +1185,26 @@ public class AlgDecorrelator implements ReflectiveVisitor {
      * @param nullIndicatorPos Position of null indicator
      * @return the subtree with the new Project at the root
      */
-    private AlgNode projectJoinOutputWithNullability( LogicalJoin join, LogicalProject project, int nullIndicatorPos ) {
+    private AlgNode projectJoinOutputWithNullability( LogicalRelJoin join, LogicalRelProject project, int nullIndicatorPos ) {
         final AlgDataTypeFactory typeFactory = join.getCluster().getTypeFactory();
         final AlgNode left = join.getLeft();
         final JoinAlgType joinType = join.getJoinType();
 
-        RexInputRef nullIndicator =
-                new RexInputRef(
+        RexIndexRef nullIndicator =
+                new RexIndexRef(
                         nullIndicatorPos,
                         typeFactory.createTypeWithNullability(
-                                join.getRowType().getFieldList().get( nullIndicatorPos ).getType(),
+                                join.getTupleType().getFields().get( nullIndicatorPos ).getType(),
                                 true ) );
 
         // now create the new project
         List<Pair<RexNode, String>> newProjExprs = new ArrayList<>();
 
         // project everything from the LHS and then those from the original projRel
-        List<AlgDataTypeField> leftInputFields = left.getRowType().getFieldList();
+        List<AlgDataTypeField> leftInputFields = left.getTupleType().getFields();
 
         for ( int i = 0; i < leftInputFields.size(); i++ ) {
-            newProjExprs.add( RexInputRef.of2( i, leftInputFields ) );
+            newProjExprs.add( RexIndexRef.of2( i, leftInputFields ) );
         }
 
         // Marked where the projected expr is coming from so that the types will become nullable for the original projections which are now coming out of the nullable side of the OJ.
@@ -1228,7 +1235,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
      * @param isCount Positions which are calls to the <code>COUNT</code> aggregation function
      * @return the subtree with the new Project at the root
      */
-    private AlgNode aggregateCorrelatorOutput( Correlate correlate, LogicalProject project, Set<Integer> isCount ) {
+    private AlgNode aggregateCorrelatorOutput( Correlate correlate, LogicalRelProject project, Set<Integer> isCount ) {
         final AlgNode left = correlate.getLeft();
         final JoinAlgType joinType = correlate.getJoinType().toJoinType();
 
@@ -1236,10 +1243,10 @@ public class AlgDecorrelator implements ReflectiveVisitor {
         final List<Pair<RexNode, String>> newProjects = new ArrayList<>();
 
         // Project everything from the LHS and then those from the original project
-        final List<AlgDataTypeField> leftInputFields = left.getRowType().getFieldList();
+        final List<AlgDataTypeField> leftInputFields = left.getTupleType().getFields();
 
         for ( int i = 0; i < leftInputFields.size(); i++ ) {
-            newProjects.add( RexInputRef.of2( i, leftInputFields ) );
+            newProjects.add( RexIndexRef.of2( i, leftInputFields ) );
         }
 
         // Marked where the projected expr is coming from so that the types will become nullable for the original projections which are now coming out of the nullable side of the OJ.
@@ -1269,7 +1276,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
      * @param correlatedJoinKeys Correlated join keys
      * @return true if filter and proj only references corVar provided by corRel
      */
-    private boolean checkCorVars( LogicalCorrelate correlate, LogicalProject project, LogicalFilter filter, List<RexFieldAccess> correlatedJoinKeys ) {
+    private boolean checkCorVars( LogicalRelCorrelate correlate, LogicalRelProject project, LogicalRelFilter filter, List<RexFieldAccess> correlatedJoinKeys ) {
         if ( filter != null ) {
             assert correlatedJoinKeys != null;
 
@@ -1312,7 +1319,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
      *
      * @param correlate Correlate
      */
-    private void removeCorVarFromTree( LogicalCorrelate correlate ) {
+    private void removeCorVarFromTree( LogicalRelCorrelate correlate ) {
         if ( cm.mapCorToCorRel.get( correlate.getCorrelationId() ) == correlate ) {
             cm.mapCorToCorRel.remove( correlate.getCorrelationId() );
         }
@@ -1327,7 +1334,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
      * @return the new Project
      */
     private AlgNode createProjectWithAdditionalExprs( AlgNode input, List<Pair<RexNode, String>> additionalExprs ) {
-        final List<AlgDataTypeField> fieldList = input.getRowType().getFieldList();
+        final List<AlgDataTypeField> fieldList = input.getTupleType().getFields();
         List<Pair<RexNode, String>> projects = new ArrayList<>();
         for ( Ord<AlgDataTypeField> field : Ord.zip( fieldList ) ) {
             projects.add(
@@ -1412,15 +1419,15 @@ public class AlgDecorrelator implements ReflectiveVisitor {
                         Integer newInputPos = frame.corDefOutputs.get( corRef.def() );
                         if ( newInputPos != null ) {
                             // This input does produce the corVar referenced.
-                            return new RexInputRef( newInputPos + newInputOutputOffset, frame.r.getRowType().getFieldList().get( newInputPos ).getType() );
+                            return new RexIndexRef( newInputPos + newInputOutputOffset, frame.r.getTupleType().getFields().get( newInputPos ).getType() );
                         }
                     }
 
                     // this input does not produce the corVar needed
-                    newInputOutputOffset += frame.r.getRowType().getFieldCount();
+                    newInputOutputOffset += frame.r.getTupleType().getFieldCount();
                 } else {
                     // this input is not rewritten
-                    newInputOutputOffset += input.getRowType().getFieldCount();
+                    newInputOutputOffset += input.getTupleType().getFieldCount();
                 }
             }
             return fieldAccess;
@@ -1428,8 +1435,8 @@ public class AlgDecorrelator implements ReflectiveVisitor {
 
 
         @Override
-        public RexNode visitInputRef( RexInputRef inputRef ) {
-            final RexInputRef ref = getNewForOldInputRef( currentAlg, map, inputRef );
+        public RexNode visitIndexRef( RexIndexRef inputRef ) {
+            final RexIndexRef ref = getNewForOldInputRef( currentAlg, map, inputRef );
             if ( ref.getIndex() == inputRef.getIndex() && ref.getType() == inputRef.getType() ) {
                 return inputRef; // re-use old object, to prevent needless expr cloning
             }
@@ -1447,11 +1454,11 @@ public class AlgDecorrelator implements ReflectiveVisitor {
         final RexBuilder rexBuilder;
         final AlgDataTypeFactory typeFactory;
         final boolean projectPulledAboveLeftCorrelator;
-        final RexInputRef nullIndicator;
+        final RexIndexRef nullIndicator;
         final ImmutableSet<Integer> isCount;
 
 
-        RemoveCorrelationRexShuttle( RexBuilder rexBuilder, boolean projectPulledAboveLeftCorrelator, RexInputRef nullIndicator, Set<Integer> isCount ) {
+        RemoveCorrelationRexShuttle( RexBuilder rexBuilder, boolean projectPulledAboveLeftCorrelator, RexIndexRef nullIndicator, Set<Integer> isCount ) {
             this.projectPulledAboveLeftCorrelator = projectPulledAboveLeftCorrelator;
             this.nullIndicator = nullIndicator; // may be null
             this.isCount = ImmutableSet.copyOf( isCount );
@@ -1460,7 +1467,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
         }
 
 
-        private RexNode createCaseExpression( RexInputRef nullInputRef, RexLiteral lit, RexNode rexNode ) {
+        private RexNode createCaseExpression( RexIndexRef nullInputRef, RexLiteral lit, RexNode rexNode ) {
             RexNode[] caseOperands = new RexNode[3];
 
             // Construct a CASE expression to handle the null indicator.
@@ -1472,7 +1479,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
             caseOperands[0] =
                     rexBuilder.makeCall(
                             OperatorRegistry.get( OperatorName.IS_NULL ),
-                            new RexInputRef(
+                            new RexIndexRef(
                                     nullInputRef.getIndex(),
                                     typeFactory.createTypeWithNullability(
                                             nullInputRef.getType(),
@@ -1507,7 +1514,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
                 CorRef corVar = cm.mapFieldAccessToCorRef.get( fieldAccess );
 
                 // corVar offset should point to the leftInput of currentRel, which is the Correlate.
-                RexNode newRexNode = new RexInputRef( corVar.field, fieldAccess.getType() );
+                RexNode newRexNode = new RexIndexRef( corVar.field, fieldAccess.getType() );
 
                 if ( projectPulledAboveLeftCorrelator && (nullIndicator != null) ) {
                     // need to enforce nullability by applying an additional cast operator over the transformed expression.
@@ -1520,11 +1527,11 @@ public class AlgDecorrelator implements ReflectiveVisitor {
 
 
         @Override
-        public RexNode visitInputRef( RexInputRef inputRef ) {
-            if ( currentAlg instanceof LogicalCorrelate ) {
+        public RexNode visitIndexRef( RexIndexRef inputRef ) {
+            if ( currentAlg instanceof LogicalRelCorrelate ) {
                 // If this alg references corVar and now it needs to be rewritten it must have been pulled above the Correlate replace the input ref to account for the LHS of the
                 // Correlate
-                final int leftInputFieldCount = ((LogicalCorrelate) currentAlg).getLeft().getRowType().getFieldCount();
+                final int leftInputFieldCount = ((LogicalRelCorrelate) currentAlg).getLeft().getTupleType().getFieldCount();
                 AlgDataType newType = inputRef.getType();
 
                 if ( projectPulledAboveLeftCorrelator ) {
@@ -1532,7 +1539,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
                 }
 
                 int pos = inputRef.getIndex();
-                RexInputRef newInputRef = new RexInputRef( leftInputFieldCount + pos, newType );
+                RexIndexRef newInputRef = new RexIndexRef( leftInputFieldCount + pos, newType );
 
                 if ( (isCount != null) && isCount.contains( pos ) ) {
                     return createCaseExpression( newInputRef, rexBuilder.makeExactLiteral( BigDecimal.ZERO ), newInputRef );
@@ -1608,10 +1615,10 @@ public class AlgDecorrelator implements ReflectiveVisitor {
         RemoveSingleAggregateRule( AlgBuilderFactory algBuilderFactory ) {
             super(
                     operand(
-                            LogicalAggregate.class,
+                            LogicalRelAggregate.class,
                             operand(
-                                    LogicalProject.class,
-                                    operand( LogicalAggregate.class, any() ) ) ),
+                                    LogicalRelProject.class,
+                                    operand( LogicalRelAggregate.class, any() ) ) ),
                     algBuilderFactory,
                     null );
         }
@@ -1619,9 +1626,9 @@ public class AlgDecorrelator implements ReflectiveVisitor {
 
         @Override
         public void onMatch( AlgOptRuleCall call ) {
-            LogicalAggregate singleAggregate = call.alg( 0 );
-            LogicalProject project = call.alg( 1 );
-            LogicalAggregate aggregate = call.alg( 2 );
+            LogicalRelAggregate singleAggregate = call.alg( 0 );
+            LogicalRelProject project = call.alg( 1 );
+            LogicalRelAggregate aggregate = call.alg( 2 );
 
             // check singleAggRel is single_value agg
             if ( (!singleAggregate.getGroupSet().isEmpty())
@@ -1661,23 +1668,23 @@ public class AlgDecorrelator implements ReflectiveVisitor {
         RemoveCorrelationForScalarProjectRule( AlgBuilderFactory algBuilderFactory ) {
             super(
                     operand(
-                            LogicalCorrelate.class,
+                            LogicalRelCorrelate.class,
                             operand( AlgNode.class, any() ),
                             operand(
-                                    LogicalAggregate.class,
-                                    operand( LogicalProject.class, operand( AlgNode.class, any() ) ) ) ),
+                                    LogicalRelAggregate.class,
+                                    operand( LogicalRelProject.class, operand( AlgNode.class, any() ) ) ) ),
                     algBuilderFactory, null );
         }
 
 
         @Override
         public void onMatch( AlgOptRuleCall call ) {
-            final LogicalCorrelate correlate = call.alg( 0 );
+            final LogicalRelCorrelate correlate = call.alg( 0 );
             final AlgNode left = call.alg( 1 );
-            final LogicalAggregate aggregate = call.alg( 2 );
-            final LogicalProject project = call.alg( 3 );
+            final LogicalRelAggregate aggregate = call.alg( 2 );
+            final LogicalRelProject project = call.alg( 3 );
             AlgNode right = call.alg( 4 );
-            final AlgOptCluster cluster = correlate.getCluster();
+            final AlgCluster cluster = correlate.getCluster();
 
             setCurrent( call.getPlanner().getRoot(), correlate );
 
@@ -1712,7 +1719,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
 
             int nullIndicatorPos;
 
-            if ( (right instanceof LogicalFilter) && cm.mapRefRelToCorRef.containsKey( right ) ) {
+            if ( (right instanceof LogicalRelFilter) && cm.mapRefRelToCorRef.containsKey( right ) ) {
                 // rightInput has this shape:
                 //
                 //       Filter (references corVar)
@@ -1720,7 +1727,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
 
                 // If rightInput is a filter and contains correlated reference, make sure the correlated keys in the filter condition forms a unique key of the RHS.
 
-                LogicalFilter filter = (LogicalFilter) right;
+                LogicalRelFilter filter = (LogicalRelFilter) right;
                 right = filter.getInput();
 
                 assert right instanceof HepAlgVertex;
@@ -1740,10 +1747,10 @@ public class AlgDecorrelator implements ReflectiveVisitor {
                 AlgOptUtil.splitCorrelatedFilterCondition( filter, tmpRightJoinKeys, correlatedJoinKeys, false );
 
                 // check that the columns referenced in these comparisons form a unique key of the filterInput
-                final List<RexInputRef> rightJoinKeys = new ArrayList<>();
+                final List<RexIndexRef> rightJoinKeys = new ArrayList<>();
                 for ( RexNode key : tmpRightJoinKeys ) {
-                    assert key instanceof RexInputRef;
-                    rightJoinKeys.add( (RexInputRef) key );
+                    assert key instanceof RexIndexRef;
+                    rightJoinKeys.add( (RexIndexRef) key );
                 }
 
                 // check that the columns referenced in rightJoinKeys form a unique key of the filterInput
@@ -1777,7 +1784,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
                 // Change the filter condition into a join condition
                 joinCond = removeCorrelationExpr( filter.getCondition(), false );
 
-                nullIndicatorPos = left.getRowType().getFieldCount() + rightJoinKeys.get( 0 ).getIndex();
+                nullIndicatorPos = left.getTupleType().getFieldCount() + rightJoinKeys.get( 0 ).getIndex();
             } else if ( cm.mapRefRelToCorRef.containsKey( project ) ) {
                 // check filter input contains no correlation
                 if ( AlgOptUtil.getVariablesUsed( right ).size() > 0 ) {
@@ -1808,13 +1815,13 @@ public class AlgDecorrelator implements ReflectiveVisitor {
                 // The last field:
                 //     single_value(true)
                 // is the nullIndicator
-                nullIndicatorPos = left.getRowType().getFieldCount() + right.getRowType().getFieldCount() - 1;
+                nullIndicatorPos = left.getTupleType().getFieldCount() + right.getTupleType().getFieldCount() - 1;
             } else {
                 return;
             }
 
             // make the new join rel
-            LogicalJoin join = LogicalJoin.create( left, right, joinCond, ImmutableSet.of(), joinType );
+            LogicalRelJoin join = LogicalRelJoin.create( left, right, joinCond, ImmutableSet.of(), joinType );
 
             AlgNode newProject = projectJoinOutputWithNullability( join, project, nullIndicatorPos );
 
@@ -1834,13 +1841,13 @@ public class AlgDecorrelator implements ReflectiveVisitor {
         RemoveCorrelationForScalarAggregateRule( AlgBuilderFactory algBuilderFactory ) {
             super(
                     operand(
-                            LogicalCorrelate.class,
+                            LogicalRelCorrelate.class,
                             operand( AlgNode.class, any() ),
                             operand(
-                                    LogicalProject.class,
-                                    operandJ( LogicalAggregate.class,
+                                    LogicalRelProject.class,
+                                    operand( LogicalRelAggregate.class,
                                             null, Aggregate::isSimple,
-                                            operand( LogicalProject.class, operand( AlgNode.class, any() ) ) ) ) ),
+                                            operand( LogicalRelProject.class, operand( AlgNode.class, any() ) ) ) ) ),
                     algBuilderFactory,
                     null );
         }
@@ -1848,15 +1855,15 @@ public class AlgDecorrelator implements ReflectiveVisitor {
 
         @Override
         public void onMatch( AlgOptRuleCall call ) {
-            final LogicalCorrelate correlate = call.alg( 0 );
+            final LogicalRelCorrelate correlate = call.alg( 0 );
             final AlgNode left = call.alg( 1 );
-            final LogicalProject aggOutputProject = call.alg( 2 );
-            final LogicalAggregate aggregate = call.alg( 3 );
-            final LogicalProject aggInputProject = call.alg( 4 );
+            final LogicalRelProject aggOutputProject = call.alg( 2 );
+            final LogicalRelAggregate aggregate = call.alg( 3 );
+            final LogicalRelProject aggInputProject = call.alg( 4 );
             AlgNode right = call.alg( 5 );
             final AlgBuilder builder = call.builder();
             final RexBuilder rexBuilder = builder.getRexBuilder();
-            final AlgOptCluster cluster = correlate.getCluster();
+            final AlgCluster cluster = correlate.getCluster();
 
             setCurrent( call.getPlanner().getRoot(), correlate );
 
@@ -1903,12 +1910,12 @@ public class AlgDecorrelator implements ReflectiveVisitor {
                 }
             }
 
-            if ( (right instanceof LogicalFilter) && cm.mapRefRelToCorRef.containsKey( right ) ) {
+            if ( (right instanceof LogicalRelFilter) && cm.mapRefRelToCorRef.containsKey( right ) ) {
                 // rightInput has this shape:
                 //
                 //       Filter (references corVar)
                 //         filterInput
-                LogicalFilter filter = (LogicalFilter) right;
+                LogicalRelFilter filter = (LogicalRelFilter) right;
                 right = filter.getInput();
 
                 assert right instanceof HepAlgVertex;
@@ -1929,13 +1936,13 @@ public class AlgDecorrelator implements ReflectiveVisitor {
 
                 // make sure the correlated reference forms a unique key check that the columns referenced in these comparisons form a unique key of the leftInput
                 List<RexFieldAccess> correlatedJoinKeys = new ArrayList<>();
-                List<RexInputRef> correlatedInputRefJoinKeys = new ArrayList<>();
+                List<RexIndexRef> correlatedInputRefJoinKeys = new ArrayList<>();
                 for ( RexNode joinKey : tmpCorrelatedJoinKeys ) {
                     assert joinKey instanceof RexFieldAccess;
                     correlatedJoinKeys.add( (RexFieldAccess) joinKey );
                     RexNode correlatedInputRef = removeCorrelationExpr( joinKey, false );
-                    assert correlatedInputRef instanceof RexInputRef;
-                    correlatedInputRefJoinKeys.add( (RexInputRef) correlatedInputRef );
+                    assert correlatedInputRef instanceof RexIndexRef;
+                    correlatedInputRefJoinKeys.add( (RexIndexRef) correlatedInputRef );
                 }
 
                 // check that the columns referenced in rightJoinKeys form a unique key of the filterInput
@@ -2007,7 +2014,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
                     return;
                 }
 
-                int nFields = left.getRowType().getFieldCount();
+                int nFields = left.getTupleType().getFieldCount();
                 ImmutableBitSet allCols = ImmutableBitSet.range( nFields );
 
                 // leftInput contains unique keys i.e. each row is distinct and can group by on all the left fields
@@ -2057,14 +2064,14 @@ public class AlgDecorrelator implements ReflectiveVisitor {
                 return;
             }
 
-            AlgDataType leftInputFieldType = left.getRowType();
+            AlgDataType leftInputFieldType = left.getTupleType();
             int leftInputFieldCount = leftInputFieldType.getFieldCount();
             int joinOutputProjExprCount = leftInputFieldCount + aggInputProjects.size() + 1;
 
             right = createProjectWithAdditionalExprs( right, ImmutableList.of( Pair.of( rexBuilder.makeLiteral( true ), "nullIndicator" ) ) );
 
-            LogicalJoin join =
-                    LogicalJoin.create(
+            LogicalRelJoin join =
+                    LogicalRelJoin.create(
                             left,
                             right,
                             joinCond,
@@ -2072,13 +2079,13 @@ public class AlgDecorrelator implements ReflectiveVisitor {
                             joinType );
 
             // To the consumer of joinOutputProjRel, nullIndicator is located at the end
-            int nullIndicatorPos = join.getRowType().getFieldCount() - 1;
+            int nullIndicatorPos = join.getTupleType().getFieldCount() - 1;
 
-            RexInputRef nullIndicator =
-                    new RexInputRef(
+            RexIndexRef nullIndicator =
+                    new RexIndexRef(
                             nullIndicatorPos,
                             cluster.getTypeFactory()
-                                    .createTypeWithNullability( join.getRowType().getFieldList().get( nullIndicatorPos ).getType(), true ) );
+                                    .createTypeWithNullability( join.getTupleType().getFields().get( nullIndicatorPos ).getType(), true ) );
 
             // first project all group-by keys plus the transformed agg input
             List<RexNode> joinOutputProjects = new ArrayList<>();
@@ -2087,7 +2094,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
             for ( int i = 0; i < leftInputFieldCount; i++ ) {
                 joinOutputProjects.add(
                         rexBuilder.makeInputRef(
-                                leftInputFieldType.getFieldList().get( i ).getType(), i ) );
+                                leftInputFieldType.getFields().get( i ).getType(), i ) );
             }
 
             for ( RexNode aggInputProjExpr : aggInputProjects ) {
@@ -2139,7 +2146,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
             }
 
             ImmutableBitSet groupSet = ImmutableBitSet.range( groupCount );
-            LogicalAggregate newAggregate = LogicalAggregate.create( joinOutputProject, groupSet, null, newAggCalls );
+            LogicalRelAggregate newAggregate = LogicalRelAggregate.create( joinOutputProject, groupSet, null, newAggCalls );
             List<RexNode> newAggOutputProjectList = new ArrayList<>();
             for ( int i : groupSet ) {
                 newAggOutputProjectList.add( rexBuilder.makeInputRef( newAggregate, i ) );
@@ -2176,8 +2183,8 @@ public class AlgDecorrelator implements ReflectiveVisitor {
         AdjustProjectForCountAggregateRule( boolean flavor, AlgBuilderFactory algBuilderFactory ) {
             super(
                     flavor
-                            ? operand( LogicalCorrelate.class, operand( AlgNode.class, any() ), operand( LogicalProject.class, operand( LogicalAggregate.class, any() ) ) )
-                            : operand( LogicalCorrelate.class, operand( AlgNode.class, any() ), operand( LogicalAggregate.class, any() ) ),
+                            ? operand( LogicalRelCorrelate.class, operand( AlgNode.class, any() ), operand( LogicalRelProject.class, operand( LogicalRelAggregate.class, any() ) ) )
+                            : operand( LogicalRelCorrelate.class, operand( AlgNode.class, any() ), operand( LogicalRelAggregate.class, any() ) ),
                     algBuilderFactory,
                     null );
             this.flavor = flavor;
@@ -2186,10 +2193,10 @@ public class AlgDecorrelator implements ReflectiveVisitor {
 
         @Override
         public void onMatch( AlgOptRuleCall call ) {
-            final LogicalCorrelate correlate = call.alg( 0 );
+            final LogicalRelCorrelate correlate = call.alg( 0 );
             final AlgNode left = call.alg( 1 );
-            final LogicalProject aggOutputProject;
-            final LogicalAggregate aggregate;
+            final LogicalRelProject aggOutputProject;
+            final LogicalRelAggregate aggregate;
             if ( flavor ) {
                 aggOutputProject = call.alg( 2 );
                 aggregate = call.alg( 3 );
@@ -2198,9 +2205,9 @@ public class AlgDecorrelator implements ReflectiveVisitor {
 
                 // Create identity projection
                 final List<Pair<RexNode, String>> projects = new ArrayList<>();
-                final List<AlgDataTypeField> fields = aggregate.getRowType().getFieldList();
+                final List<AlgDataTypeField> fields = aggregate.getTupleType().getFields();
                 for ( int i = 0; i < fields.size(); i++ ) {
-                    projects.add( RexInputRef.of2( projects.size(), fields ) );
+                    projects.add( RexIndexRef.of2( projects.size(), fields ) );
                 }
                 final AlgBuilder algBuilder = call.builder();
                 algBuilder.push( aggregate )
@@ -2208,13 +2215,13 @@ public class AlgDecorrelator implements ReflectiveVisitor {
                                 Pair.left( projects ),
                                 Pair.right( projects ),
                                 true );
-                aggOutputProject = (LogicalProject) algBuilder.build();
+                aggOutputProject = (LogicalRelProject) algBuilder.build();
             }
             onMatch2( call, correlate, left, aggOutputProject, aggregate );
         }
 
 
-        private void onMatch2( AlgOptRuleCall call, LogicalCorrelate correlate, AlgNode leftInput, LogicalProject aggOutputProject, LogicalAggregate aggregate ) {
+        private void onMatch2( AlgOptRuleCall call, LogicalRelCorrelate correlate, AlgNode leftInput, LogicalRelProject aggOutputProject, LogicalRelAggregate aggregate ) {
             if ( generatedCorAlgs.contains( correlate ) ) {
                 // This Correlate was generated by a previous invocation of this rule. No further work to do.
                 return;
@@ -2267,8 +2274,8 @@ public class AlgDecorrelator implements ReflectiveVisitor {
             //     leftInput
             //     Aggregate(groupby (0), agg0(), agg1()...)
             //
-            LogicalCorrelate newCorrelate =
-                    LogicalCorrelate.create(
+            LogicalRelCorrelate newCorrelate =
+                    LogicalRelCorrelate.create(
                             leftInput,
                             aggregate,
                             correlate.getCorrelationId(),
@@ -2294,7 +2301,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
 
     /**
      * A unique reference to a correlation field.
-     *
+     * <p>
      * For instance, if a {@link AlgNode} references emp.name multiple times, it would result in multiple {@code CorRef} objects that differ just in {@link CorRef#uniqueKey}.
      */
     static class CorRef implements Comparable<CorRef> {
@@ -2356,27 +2363,12 @@ public class AlgDecorrelator implements ReflectiveVisitor {
     /**
      * A correlation and a field.
      */
-    static class CorDef implements Comparable<CorDef> {
-
-        public final CorrelationId corr;
-        public final int field;
-
-
-        CorDef( CorrelationId corr, int field ) {
-            this.corr = corr;
-            this.field = field;
-        }
+    record CorDef(CorrelationId corr, int field) implements Comparable<CorDef> {
 
 
         @Override
         public String toString() {
             return corr.getName() + '.' + field;
-        }
-
-
-        @Override
-        public int hashCode() {
-            return Objects.hash( corr, field );
         }
 
 
@@ -2402,11 +2394,11 @@ public class AlgDecorrelator implements ReflectiveVisitor {
 
 
     /**
-     * A map of the locations of {@link LogicalCorrelate} in a tree of {@link AlgNode}s.
-     *
+     * A map of the locations of {@link LogicalRelCorrelate} in a tree of {@link AlgNode}s.
+     * <p>
      * It is used to drive the decorrelation process.
      * Treat it as immutable; rebuild if you modify the tree.
-     *
+     * <p>
      * There are three maps:
      * <ol>
      * <li>{@link #mapRefRelToCorRef} maps a {@link AlgNode} to the correlated variables it references;</li>
@@ -2414,12 +2406,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
      * <li>{@link #mapFieldAccessToCorRef} maps a rex field access to the corVar it represents. Because typeFlattener does not clone or modify a correlated field access this map does not need to be updated.</li>
      * </ol>
      */
-    private static class CorelMap {
-
-        private final Multimap<AlgNode, CorRef> mapRefRelToCorRef;
-        private final SortedMap<CorrelationId, AlgNode> mapCorToCorRel;
-        private final Map<RexFieldAccess, CorRef> mapFieldAccessToCorRef;
-
+    private record CorelMap(Multimap<AlgNode, CorRef> mapRefRelToCorRef, SortedMap<CorrelationId, AlgNode> mapCorToCorRel, Map<RexFieldAccess, CorRef> mapFieldAccessToCorRef) {
 
         // TODO: create immutable copies of all maps
         private CorelMap( Multimap<AlgNode, CorRef> mapRefRelToCorRef, SortedMap<CorrelationId, AlgNode> mapCorToCorRel, Map<RexFieldAccess, CorRef> mapFieldAccessToCorRef ) {
@@ -2442,12 +2429,6 @@ public class AlgDecorrelator implements ReflectiveVisitor {
                     && mapRefRelToCorRef.equals( ((CorelMap) obj).mapRefRelToCorRef )
                     && mapCorToCorRel.equals( ((CorelMap) obj).mapCorToCorRel )
                     && mapFieldAccessToCorRef.equals( ((CorelMap) obj).mapFieldAccessToCorRef );
-        }
-
-
-        @Override
-        public int hashCode() {
-            return Objects.hash( mapRefRelToCorRef, mapCorToCorRel, mapFieldAccessToCorRef );
         }
 
 
@@ -2501,7 +2482,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
 
 
         @Override
-        public AlgNode visit( LogicalJoin join ) {
+        public AlgNode visit( LogicalRelJoin join ) {
             try {
                 stack.push( join );
                 join.getCondition().accept( rexVisitor( join ) );
@@ -2519,7 +2500,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
 
 
         @Override
-        public AlgNode visit( LogicalCorrelate correlate ) {
+        public AlgNode visit( LogicalRelCorrelate correlate ) {
             mapCorToCorRel.put( correlate.getCorrelationId(), correlate );
             return visitJoin( correlate );
         }
@@ -2528,7 +2509,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
         private AlgNode visitJoin( BiAlg join ) {
             final int x = offset.get();
             visitChild( join, 0, join.getLeft() );
-            offset.set( x + join.getLeft().getRowType().getFieldCount() );
+            offset.set( x + join.getLeft().getTupleType().getFieldCount() );
             visitChild( join, 1, join.getRight() );
             offset.set( x );
             return join;
@@ -2536,7 +2517,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
 
 
         @Override
-        public AlgNode visit( final LogicalFilter filter ) {
+        public AlgNode visit( final LogicalRelFilter filter ) {
             try {
                 stack.push( filter );
                 filter.getCondition().accept( rexVisitor( filter ) );
@@ -2548,7 +2529,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
 
 
         @Override
-        public AlgNode visit( LogicalProject project ) {
+        public AlgNode visit( LogicalRelProject project ) {
             try {
                 stack.push( project );
                 for ( RexNode node : project.getProjects() ) {
@@ -2562,7 +2543,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
 
 
         private RexVisitorImpl<Void> rexVisitor( final AlgNode alg ) {
-            return new RexVisitorImpl<Void>( true ) {
+            return new RexVisitorImpl<>( true ) {
                 @Override
                 public Void visitFieldAccess( RexFieldAccess fieldAccess ) {
                     final RexNode ref = fieldAccess.getReferenceExpr();
@@ -2596,7 +2577,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
     /**
      * Frame describing the relational expression after decorrelation and where to find the output fields and correlation variables among its output fields.
      */
-    static class Frame {
+    public static class Frame {
 
         final AlgNode r;
         final ImmutableSortedMap<CorDef, Integer> corDefOutputs;
@@ -2607,9 +2588,9 @@ public class AlgDecorrelator implements ReflectiveVisitor {
             this.r = Objects.requireNonNull( r );
             this.corDefOutputs = ImmutableSortedMap.copyOf( corDefOutputs );
             this.oldToNewOutputs = ImmutableSortedMap.copyOf( oldToNewOutputs );
-            assert allLessThan( this.corDefOutputs.values(), r.getRowType().getFieldCount(), Litmus.THROW );
-            assert allLessThan( this.oldToNewOutputs.keySet(), oldRel.getRowType().getFieldCount(), Litmus.THROW );
-            assert allLessThan( this.oldToNewOutputs.values(), r.getRowType().getFieldCount(), Litmus.THROW );
+            assert allLessThan( this.corDefOutputs.values(), r.getTupleType().getFieldCount(), Litmus.THROW );
+            assert allLessThan( this.oldToNewOutputs.keySet(), oldRel.getTupleType().getFieldCount(), Litmus.THROW );
+            assert allLessThan( this.oldToNewOutputs.values(), r.getTupleType().getFieldCount(), Litmus.THROW );
         }
 
     }

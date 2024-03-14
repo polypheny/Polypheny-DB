@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,14 +40,14 @@ import org.polypheny.db.adapter.DataContext;
 /**
  * Context for executing a scalar expression in an interpreter.
  */
-public class Context {
+public class Context<T> {
 
     public final DataContext root;
 
     /**
      * Values of incoming columns from all inputs.
      */
-    public Object[] values;
+    public T[] values;
 
 
     Context( DataContext root ) {

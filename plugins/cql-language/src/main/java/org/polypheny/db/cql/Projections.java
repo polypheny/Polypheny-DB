@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,7 +63,7 @@ public class Projections {
     private final Map<Long, Integer> projectedColumnOrdinalities = new HashMap<>();
 
 
-    public static String getAggregationFunction( ColumnIndex columnIndex, Map<String, Modifier> modifiers ) {
+    public static String getAggregationFunction( FieldIndex fieldIndex, Map<String, Modifier> modifiers ) {
 
         boolean[] booleans = new boolean[]{
                 modifiers.containsKey( aggregateFunctions.get( 0 ) ),
@@ -93,21 +93,21 @@ public class Projections {
      * Creates and adds a {@link Projection}.
      * Also classifies it into {@link Aggregation} or {@link Grouping}.
      */
-    public void add( ColumnIndex columnIndex, Map<String, Modifier> modifiers ) {
+    public void add( FieldIndex fieldIndex, Map<String, Modifier> modifiers ) {
         Projection projection;
-        String aggregationFunction = getAggregationFunction( columnIndex, modifiers );
+        String aggregationFunction = getAggregationFunction( fieldIndex, modifiers );
 
         if ( aggregationFunction == null ) {
             if ( log.isDebugEnabled() ) {
-                log.debug( "Adding grouping for ColumnIndex '{}'.", columnIndex.fullyQualifiedName );
+                log.debug( "Adding grouping for FieldIndex '{}'.", fieldIndex.fullyQualifiedName );
             }
-            Grouping grouping = new Grouping( columnIndex, modifiers );
+            Grouping grouping = new Grouping( fieldIndex, modifiers );
             groupings.add( grouping );
             projection = grouping;
         } else {
-            Aggregation aggregation = new Aggregation( columnIndex, modifiers, aggregationFunction );
+            Aggregation aggregation = new Aggregation( fieldIndex, modifiers, aggregationFunction );
             if ( log.isDebugEnabled() ) {
-                log.debug( "Adding aggregation for ColumnIndex '{}'.", aggregation.getProjectionName() );
+                log.debug( "Adding aggregation for FieldIndex '{}'.", aggregation.getProjectionName() );
             }
             aggregations.add( aggregation );
             projection = aggregation;
@@ -120,7 +120,7 @@ public class Projections {
     /**
      * Creates projection. Used when there are no Filters.
      *
-     * @param tableScanOrdinalities Ordinalities of the columns after table scan.
+     * @param tableScanOrdinalities Ordinalities of the columns after table relScan.
      * @param algBuilder {@link AlgBuilder}.
      * @param rexBuilder {@link RexBuilder}.
      * @return {@link AlgBuilder}.
@@ -151,7 +151,7 @@ public class Projections {
      * if there are any aggregations.
      * Makes the final projection.
      *
-     * @param tableScanOrdinalities Ordinalities of the columns after table scan /
+     * @param tableScanOrdinalities Ordinalities of the columns after table relScan /
      * initial projection.
      * @param algBuilder {@link AlgBuilder}.
      * @param rexBuilder {@link RexBuilder}.
@@ -287,23 +287,23 @@ public class Projections {
 
     public static abstract class Projection {
 
-        protected final ColumnIndex columnIndex;
+        protected final FieldIndex fieldIndex;
         protected final Map<String, Modifier> modifiers;
 
 
-        public Projection( ColumnIndex columnIndex, Map<String, Modifier> modifiers ) {
-            this.columnIndex = columnIndex;
+        public Projection( FieldIndex fieldIndex, Map<String, Modifier> modifiers ) {
+            this.fieldIndex = fieldIndex;
             this.modifiers = modifiers;
         }
 
 
         public long getColumnId() {
-            return columnIndex.catalogColumn.id;
+            return fieldIndex.logicalColumn.id;
         }
 
 
         public String getProjectionName() {
-            return columnIndex.fullyQualifiedName;
+            return fieldIndex.fullyQualifiedName;
         }
 
 
@@ -319,15 +319,15 @@ public class Projections {
         private final AggregationFunctions aggregationFunction;
 
 
-        public Aggregation( ColumnIndex columnIndex, Map<String, Modifier> modifiers, String aggregationFunction ) {
-            super( columnIndex, modifiers );
+        public Aggregation( FieldIndex fieldIndex, Map<String, Modifier> modifiers, String aggregationFunction ) {
+            super( fieldIndex, modifiers );
             this.aggregationFunction = AggregationFunctions.createFromString( aggregationFunction );
         }
 
 
         @Override
         public String getProjectionName() {
-            return aggregationFunction.getAliasWithColumnName( columnIndex.fullyQualifiedName );
+            return aggregationFunction.getAliasWithColumnName( fieldIndex.fullyQualifiedName );
         }
 
 
@@ -347,7 +347,7 @@ public class Projections {
                     groupCount,
                     baseNode,
                     null,
-                    aggregationFunction.getAliasWithColumnName( columnIndex.fullyQualifiedName )
+                    aggregationFunction.getAliasWithColumnName( fieldIndex.fullyQualifiedName )
             );
         }
 
@@ -356,8 +356,8 @@ public class Projections {
 
     private static class Grouping extends Projection {
 
-        public Grouping( ColumnIndex columnIndex, Map<String, Modifier> modifiers ) {
-            super( columnIndex, modifiers );
+        public Grouping( FieldIndex fieldIndex, Map<String, Modifier> modifiers ) {
+            super( fieldIndex, modifiers );
         }
 
     }

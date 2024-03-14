@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,12 +22,12 @@ import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.function.Supplier;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
@@ -44,19 +44,23 @@ import org.pf4j.ClassLoadingStrategy;
 import org.pf4j.CompoundPluginDescriptorFinder;
 import org.pf4j.CompoundPluginLoader;
 import org.pf4j.DefaultPluginDescriptor;
+import org.pf4j.DefaultPluginFactory;
 import org.pf4j.DefaultPluginLoader;
 import org.pf4j.DefaultPluginManager;
 import org.pf4j.JarPluginLoader;
 import org.pf4j.ManifestPluginDescriptorFinder;
+import org.pf4j.Plugin;
 import org.pf4j.PluginClassLoader;
 import org.pf4j.PluginDescriptor;
+import org.pf4j.PluginFactory;
 import org.pf4j.PluginLoader;
 import org.pf4j.PluginState;
 import org.pf4j.PluginWrapper;
-import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.ConfigPlugin;
+import org.polypheny.db.config.ConfigString;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.monitoring.repository.PersistentMonitoringRepository;
@@ -73,9 +77,6 @@ public class PolyPluginManager extends DefaultPluginManager {
 
     @Getter
     private static PersistentMonitoringRepository PERSISTENT_MONITORING;
-
-    @Getter
-    private static Supplier<Catalog> CATALOG_SUPPLIER;
 
     @Getter
     public static ObservableMap<String, PluginWrapper> PLUGINS = new ObservableMap<>();
@@ -123,12 +124,43 @@ public class PolyPluginManager extends DefaultPluginManager {
     }
 
 
-    public static void init( boolean resetPluginsOnStartup ) {
-        attachRuntimeToPlugins();
+    public static void initAfterCatalog() {
+        getPLUGINS().values().forEach( p -> ((PolyPlugin) p.getPlugin()).afterCatalogInit() );
+    }
 
+
+    public static void initAfterTransaction( TransactionManager manager ) {
+        getPLUGINS().values().forEach( p -> ((PolyPlugin) p.getPlugin()).afterTransactionInit( manager ) );
+    }
+
+
+    @Override
+    protected PluginFactory createPluginFactory() {
+        return new DefaultPluginFactory() {
+            @Override
+            protected Plugin createInstance( Class<?> pluginClass, PluginWrapper pluginWrapper ) {
+                PluginContext context = new PluginContext( pluginWrapper.getRuntimeMode() );
+                try {
+                    Constructor<?> constructor = pluginClass.getConstructor( PluginContext.class );
+                    return (Plugin) constructor.newInstance( context );
+                } catch ( Exception e ) {
+                    log.error( e.getMessage(), e );
+                }
+
+                return null;
+            }
+        };
+    }
+
+
+    public static void init( boolean resetPluginsOnStartup ) {
         if ( resetPluginsOnStartup ) {
-            deletePluginFolder();
+            //deletePluginFolder(); we cannot delete the folder, we can only reset the plugins, because we need the folder for the plugins
+            RuntimeConfig.AVAILABLE_PLUGINS.getList( ConfigPlugin.class ).clear();
+            RuntimeConfig.BLOCKED_PLUGINS.getList( ConfigString.class ).clear();
         }
+
+        attachRuntimeToPlugins();
 
         pluginManager.loadPlugins();
 
@@ -166,7 +198,7 @@ public class PolyPluginManager extends DefaultPluginManager {
         try {
             FileUtils.deleteDirectory( PolyphenyHomeDirManager.getInstance().registerNewFolder( "plugins" ) );
         } catch ( IOException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 
@@ -232,16 +264,16 @@ public class PolyPluginManager extends DefaultPluginManager {
      */
     private static void stopAvailablePlugin( String pluginId ) {
         if ( !PLUGINS.containsKey( pluginId ) ) {
-            throw new RuntimeException( "Plugin is not not loaded and can not be stopped." );
+            throw new GenericRuntimeException( "Plugin is not not loaded and can not be stopped." );
         }
         PluginWrapper plugin = PLUGINS.get( pluginId );
 
         if ( plugin.getPluginState() != PluginState.STARTED ) {
-            throw new RuntimeException( "Plugin is not active and can not be stopped." );
+            throw new GenericRuntimeException( "Plugin is not active and can not be stopped." );
         }
         PolyPluginDescriptor descriptor = (PolyPluginDescriptor) plugin.getDescriptor();
         if ( descriptor.isSystemComponent ) {
-            throw new RuntimeException( "Plugin is system component and cannot be stopped." );
+            throw new GenericRuntimeException( "Plugin is system component and cannot be stopped." );
         }
 
         pluginManager.stopPlugin( pluginId );
@@ -256,7 +288,7 @@ public class PolyPluginManager extends DefaultPluginManager {
      */
     private static void startAvailablePlugin( String pluginId ) {
         if ( !PLUGINS.containsKey( pluginId ) ) {
-            throw new RuntimeException( "Plugin is not not loaded and can not be started." );
+            throw new GenericRuntimeException( "Plugin is not not loaded and can not be started." );
         }
 
         PolyPluginDescriptor descriptor = (PolyPluginDescriptor) PLUGINS.get( pluginId ).getDescriptor();
@@ -278,7 +310,7 @@ public class PolyPluginManager extends DefaultPluginManager {
             return true;
         }
 
-        throw new RuntimeException( "Polypheny dependencies for plugins are not yet supported." );
+        throw new GenericRuntimeException( "Polypheny dependencies for plugins are not yet supported." );
 
     }
 
@@ -299,7 +331,7 @@ public class PolyPluginManager extends DefaultPluginManager {
             case ACTIVE:
                 return org.pf4j.PluginState.STARTED;
             default:
-                throw new RuntimeException( "Could not find the corresponding plugin state." );
+                throw new GenericRuntimeException( "Could not find the corresponding plugin state." );
         }
     }
 
@@ -370,19 +402,6 @@ public class PolyPluginManager extends DefaultPluginManager {
 
 
     /**
-     * Sets a catalog supplier, which allows to load a {@link Catalog} on runtime.
-     *
-     * @param catalogSupplier the supplier, which returns a {@link Catalog} implementation
-     */
-    public static void setCatalogsSupplier( Supplier<Catalog> catalogSupplier ) {
-        if ( CATALOG_SUPPLIER != null ) {
-            throw new RuntimeException( "There is already a catalog supplier set." );
-        }
-        CATALOG_SUPPLIER = catalogSupplier;
-    }
-
-
-    /**
      * Allows to set a {@link PersistentMonitoringRepository } used to store monitoring events during runtime.
      *
      * @param repository the implementation
@@ -421,8 +440,9 @@ public class PolyPluginManager extends DefaultPluginManager {
     }
 
 
-    private static PluginClassLoader getCustomClassLoader( PluginDescriptor pluginDescriptor ) {
+    public static PluginClassLoader getCustomClassLoader( PluginDescriptor pluginDescriptor ) {
         if ( mainClassLoader == null ) {
+            //mainClassLoader = new URLClassLoader( new URL[0], PolyPluginManager.class.getClassLoader() );
             mainClassLoader = new PluginClassLoader( pluginManager, pluginDescriptor, PolyPluginManager.class.getClassLoader(), ClassLoadingStrategy.APD );
         }
         return mainClassLoader;
@@ -483,7 +503,7 @@ public class PolyPluginManager extends DefaultPluginManager {
 
             if ( attribute == null && !allowsNull ) {
                 if ( !allowsNull ) {
-                    throw new RuntimeException( String.format( "Plugin contains not all required keys: %s", key ) );
+                    throw new GenericRuntimeException( String.format( "Plugin contains not all required keys: %s", key ) );
                 }
                 return null;
             }
@@ -495,7 +515,7 @@ public class PolyPluginManager extends DefaultPluginManager {
         private VersionDependency getVersionDependencies( Manifest manifest ) {
             String dep = manifest.getMainAttributes().getValue( PLUGIN_POLYPHENY_DEPENDENCIES );
 
-            if ( dep == null || dep.trim().equals( "" ) ) {
+            if ( dep == null || dep.trim().isEmpty() ) {
                 return new VersionDependency( DependencyType.NONE, null );
             }
 
@@ -518,7 +538,7 @@ public class PolyPluginManager extends DefaultPluginManager {
         private List<String> getCategories( Manifest manifest ) {
             String categories = manifest.getMainAttributes().getValue( PLUGIN_CATEGORIES );
 
-            if ( categories == null || categories.trim().equals( "" ) ) {
+            if ( categories == null || categories.trim().isEmpty() ) {
                 return List.of();
             }
 

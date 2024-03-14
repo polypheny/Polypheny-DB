@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,33 +23,29 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
-import org.polypheny.db.adapter.Adapter.AbstractAdapterSetting;
-import org.polypheny.db.adapter.Adapter.AbstractAdapterSettingList;
-import org.polypheny.db.adapter.Adapter.AdapterProperties;
-import org.polypheny.db.adapter.Adapter.BindableAbstractAdapterSettingsList;
-import org.polypheny.db.adapter.DeployMode.DeploySetting;
+import java.util.Optional;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
+import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.adapter.annotations.AdapterProperties;
+import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogAdapter;
-import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.config.ConfigDocker;
-import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.docker.DockerInstance;
-import org.polypheny.db.docker.DockerManager;
+import org.polypheny.db.catalog.entity.LogicalAdapter;
+import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+
 
 public class AdapterManager {
 
-    private final Map<Integer, Adapter> adapterById = new HashMap<>();
-    private final Map<String, Adapter> adapterByName = new HashMap<>();
+    public static Expression ADAPTER_MANAGER_EXPRESSION = Expressions.call( AdapterManager.class, "getInstance" );
+
+    private final Map<Long, Adapter<?>> adapterById = new HashMap<>();
+    private final Map<String, Adapter<?>> adapterByName = new HashMap<>();
 
 
     private static final AdapterManager INSTANCE = new AdapterManager();
@@ -65,138 +61,44 @@ public class AdapterManager {
     }
 
 
-    public Adapter getAdapter( String uniqueName ) {
-        return adapterByName.get( uniqueName.toLowerCase() );
+    public static long addAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, Function4<Long, String, Map<String, String>, Adapter<?>> deployer ) {
+        List<AbstractAdapterSetting> settings = AdapterTemplate.getAllSettings( clazz );
+        AdapterProperties properties = clazz.getAnnotation( AdapterProperties.class );
+        return Catalog.getInstance().createAdapterTemplate( clazz, adapterName, properties.description(), List.of( properties.usedModes() ), settings, deployer );
     }
 
 
-    public Adapter getAdapter( int id ) {
-        return adapterById.get( id );
-    }
-
-
-    public ImmutableMap<String, Adapter> getAdapters() {
-        return ImmutableMap.copyOf( adapterByName );
-    }
-
-
-    public DataStore getStore( String uniqueName ) {
-        Adapter adapter = getAdapter( uniqueName );
-        if ( adapter instanceof DataStore ) {
-            return (DataStore) adapter;
+    public static void removeAdapterTemplate( long templateId ) {
+        AdapterTemplate template = Catalog.snapshot().getAdapterTemplate( templateId ).orElseThrow();
+        if ( Catalog.getInstance().getSnapshot().getAdapters().stream().anyMatch( a -> a.adapterName.equals( template.adapterName ) && a.type == template.adapterType ) ) {
+            throw new GenericRuntimeException( "Adapter is still deployed!" );
         }
-        return null;
+        Catalog.getInstance().dropAdapterTemplate( templateId );
     }
 
 
-    public DataStore getStore( int id ) {
-        Adapter adapter = getAdapter( id );
-        if ( adapter instanceof DataStore ) {
-            return (DataStore) adapter;
-        }
-        return null;
+    public static AdapterTemplate getAdapterTemplate( String name, AdapterType adapterType ) {
+        return Catalog.snapshot().getAdapterTemplate( name, adapterType ).orElseThrow();
     }
 
 
-    public ImmutableMap<String, DataStore> getStores() {
-        Map<String, DataStore> map = new HashMap<>();
-        for ( Entry<String, Adapter> entry : getAdapters().entrySet() ) {
-            if ( entry.getValue() instanceof DataStore ) {
-                map.put( entry.getKey(), (DataStore) entry.getValue() );
-            }
-        }
-        return ImmutableMap.copyOf( map );
-    }
+    public List<AdapterInformation> getAdapterTemplates( AdapterType adapterType ) {
+        List<AdapterTemplate> adapterTemplates = Catalog.snapshot().getAdapterTemplates( adapterType );
 
+        List<AdapterInformation> result = new ArrayList<>();
 
-    public DataSource getSource( String uniqueName ) {
-        Adapter adapter = getAdapter( uniqueName );
-        if ( adapter instanceof DataSource ) {
-            return (DataSource) adapter;
-        }
-        return null;
-    }
-
-
-    public DataSource getSource( int id ) {
-        Adapter adapter = getAdapter( id );
-        if ( adapter instanceof DataSource ) {
-            return (DataSource) adapter;
-        }
-        return null;
-    }
-
-
-    public ImmutableMap<String, DataSource> getSources() {
-        Map<String, DataSource> map = new HashMap<>();
-        for ( Entry<String, Adapter> entry : getAdapters().entrySet() ) {
-            if ( entry.getValue() instanceof DataSource ) {
-                map.put( entry.getKey(), (DataSource) entry.getValue() );
-            }
-        }
-        return ImmutableMap.copyOf( map );
-    }
-
-
-    public List<AdapterInformation> getAvailableAdapters( AdapterType adapterType ) {
-        List<org.polypheny.db.catalog.Adapter> adapters = org.polypheny.db.catalog.Adapter.getAdapters( adapterType );
-
-        List<AdapterInformation> result = new LinkedList<>();
-
-        for ( org.polypheny.db.catalog.Adapter adapter : adapters ) {
+        for ( AdapterTemplate adapterTemplate : adapterTemplates ) {
             // Exclude abstract classes
-            if ( !Modifier.isAbstract( adapter.getClazz().getModifiers() ) ) {
-                Map<String, List<AbstractAdapterSetting>> settings = new HashMap<>();
+            if ( !Modifier.isAbstract( adapterTemplate.getClazz().getModifiers() ) ) {
 
-                AdapterProperties properties = adapter.getClazz().getAnnotation( AdapterProperties.class );
+                AdapterProperties properties = adapterTemplate.getClazz().getAnnotation( AdapterProperties.class );
                 if ( properties == null ) {
-                    throw new RuntimeException( adapter.getClazz().getSimpleName() + " does not annotate the adapter correctly" );
+                    throw new GenericRuntimeException( adapterTemplate.getClazz().getSimpleName() + " does not annotate the adapter correctly" );
                 }
-
-                // Used to evaluate which mode is used when deploying the adapter
-                settings.put(
-                        "mode",
-                        Collections.singletonList(
-                                new AbstractAdapterSettingList(
-                                        "mode",
-                                        false,
-                                        null,
-                                        true,
-                                        true,
-                                        Collections.singletonList( "default" ),
-                                        Collections.singletonList( DeploySetting.DEFAULT ),
-                                        "default",
-                                        0 ) ) );
-
-                // Add empty list for each available mode
-                Arrays.stream( properties.usedModes() ).forEach( mode -> settings.put( mode.getName(), new ArrayList<>() ) );
-
-                // Add default which is used by all available modes
-                settings.put( "default", new ArrayList<>() );
-
                 // Merge annotated AdapterSettings into settings
-                Map<String, List<AbstractAdapterSetting>> annotatedSettings = AbstractAdapterSetting.fromAnnotations( adapter.getClazz().getAnnotations(), adapter.getClazz().getAnnotation( AdapterProperties.class ) );
-                settings.putAll( annotatedSettings );
+                List<AbstractAdapterSetting> settings = AbstractAdapterSetting.fromAnnotations( adapterTemplate.getClazz().getAnnotations(), adapterTemplate.getClazz().getAnnotation( AdapterProperties.class ) );
 
-                // If the adapter uses docker add the dynamic docker setting
-                if ( settings.containsKey( "docker" ) ) {
-                    settings
-                            .get( "docker" )
-                            .add( new BindableAbstractAdapterSettingsList<>(
-                                    "instanceId",
-                                    "DockerInstance",
-                                    false,
-                                    null,
-                                    true,
-                                    false,
-                                    RuntimeConfig.DOCKER_INSTANCES.getList( ConfigDocker.class ).stream().filter( c -> DockerManager.getInstance().getInstanceById( c.getId() ).map( DockerInstance::isConnected ).orElse( false ) ).collect( Collectors.toList() ),
-                                    ConfigDocker::getAlias,
-                                    ConfigDocker.class )
-                                    .bind( RuntimeConfig.DOCKER_INSTANCES )
-                                    .setDescription( "To configure additional Docker instances, use the Docker Config in the Config Manager." ) );
-                }
-
-                result.add( new AdapterInformation( properties.name(), properties.description(), adapterType, settings ) );
+                result.add( new AdapterInformation( properties.name(), properties.description(), adapterType, settings, List.of( properties.usedModes() ) ) );
             }
         }
 
@@ -204,50 +106,110 @@ public class AdapterManager {
     }
 
 
-    public Adapter addAdapter( String adapterName, String uniqueName, AdapterType adapterType, Map<String, String> settings ) {
-        uniqueName = uniqueName.toLowerCase();
-        if ( getAdapters().containsKey( uniqueName ) ) {
-            throw new RuntimeException( "There is already an adapter with this unique name" );
-        }
-        if ( !settings.containsKey( "mode" ) ) {
-            throw new RuntimeException( "The adapter does not specify a mode which is necessary." );
-        }
-
-        Adapter instance;
-        Integer adapterId = null;
-        try {
-            adapterId = Catalog.getInstance().addAdapter( uniqueName, adapterName, adapterType, settings );
-            instance = instantiate( adapterId, adapterName, uniqueName, adapterType, settings );
-        } catch ( Exception e ) {
-            if ( adapterId != null ) {
-                Catalog.getInstance().deleteAdapter( adapterId );
-            }
-            if ( e instanceof InvocationTargetException ) {
-                Throwable t = ((InvocationTargetException) e).getTargetException();
-                if ( t instanceof RuntimeException ) {
-                    throw (RuntimeException) t;
-                }
-            }
-            throw new RuntimeException( "Something went wrong while adding a new adapter", e );
-        }
-        adapterByName.put( instance.getUniqueName(), instance );
-        adapterById.put( instance.getAdapterId(), instance );
-
-        return instance;
+    @NotNull
+    public Optional<Adapter<?>> getAdapter( String uniqueName ) {
+        return Optional.ofNullable( adapterByName.get( uniqueName.toLowerCase() ) );
     }
 
 
-    public void removeAdapter( int adapterId ) {
-        Adapter adapterInstance = getAdapter( adapterId );
-        if ( adapterInstance == null ) {
-            throw new RuntimeException( "Unknown adapter instance with id: " + adapterId );
+    @NotNull
+    public Optional<Adapter<?>> getAdapter( long id ) {
+        return Optional.ofNullable( adapterById.get( id ) );
+    }
+
+
+    public ImmutableMap<String, Adapter<?>> getAdapters() {
+        return ImmutableMap.copyOf( adapterByName );
+    }
+
+
+    @NotNull
+    public Optional<DataStore<?>> getStore( String uniqueName ) {
+        return getAdapter( uniqueName ).filter( a -> a instanceof DataStore<?> ).map( a -> (DataStore<?>) a );
+
+    }
+
+
+    @NotNull
+    public Optional<DataStore<?>> getStore( long id ) {
+        return getAdapter( id ).filter( a -> a instanceof DataStore<?> ).map( a -> (DataStore<?>) a );
+    }
+
+
+    public ImmutableMap<String, DataStore<?>> getStores() {
+        Map<String, DataStore<?>> map = new HashMap<>();
+        for ( Entry<String, Adapter<?>> entry : getAdapters().entrySet() ) {
+            if ( entry.getValue() instanceof DataStore<?> ) {
+                map.put( entry.getKey(), (DataStore<?>) entry.getValue() );
+            }
         }
-        CatalogAdapter catalogAdapter = Catalog.getInstance().getAdapter( adapterId );
+        return ImmutableMap.copyOf( map );
+    }
+
+
+    @NotNull
+    public Optional<DataSource<?>> getSource( String uniqueName ) {
+        return getAdapter( uniqueName ).filter( a -> a instanceof DataSource<?> ).map( a -> (DataSource<?>) a );
+    }
+
+
+    @NotNull
+    public Optional<DataSource<?>> getSource( long id ) {
+        return getAdapter( id ).filter( a -> a instanceof DataSource<?> ).map( a -> (DataSource<?>) a );
+    }
+
+
+    public ImmutableMap<String, DataSource<?>> getSources() {
+        Map<String, DataSource<?>> map = new HashMap<>();
+        for ( Entry<String, Adapter<?>> entry : getAdapters().entrySet() ) {
+            if ( entry.getValue() instanceof DataSource<?> ) {
+                map.put( entry.getKey(), (DataSource<?>) entry.getValue() );
+            }
+        }
+        return ImmutableMap.copyOf( map );
+    }
+
+
+
+
+
+    public Adapter<?> addAdapter( String adapterName, String uniqueName, AdapterType adapterType, DeployMode mode, Map<String, String> settings ) {
+        uniqueName = uniqueName.toLowerCase();
+        if ( getAdapters().containsKey( uniqueName ) ) {
+            throw new GenericRuntimeException( "There is already an adapter with this unique name" );
+        }
+        if ( !settings.containsKey( "mode" ) ) {
+            throw new GenericRuntimeException( "The adapter does not specify a mode which is necessary." );
+        }
+
+        AdapterTemplate adapterTemplate = AdapterTemplate.fromString( adapterName, adapterType );
+
+        long adapterId = Catalog.getInstance().createAdapter( uniqueName, adapterName, adapterType, settings, mode );
+        try {
+            Adapter<?> adapter = adapterTemplate.getDeployer().get( adapterId, uniqueName, settings );
+            adapterByName.put( adapter.getUniqueName(), adapter );
+            adapterById.put( adapter.getAdapterId(), adapter );
+            return adapter;
+        } catch ( Exception e ) {
+            Catalog.getInstance().dropAdapter( adapterId );
+            throw new GenericRuntimeException( "Something went wrong while adding a new adapter", e );
+        }
+    }
+
+
+    public void removeAdapter( long adapterId ) {
+        Optional<Adapter<?>> optionalAdapter = getAdapter( adapterId );
+        if ( optionalAdapter.isEmpty() ) {
+            throw new GenericRuntimeException( "Unknown adapter instance with id: %s", adapterId );
+        }
+        Adapter<?> adapterInstance = optionalAdapter.get();
+
+        LogicalAdapter logicalAdapter = Catalog.getInstance().getSnapshot().getAdapter( adapterId ).orElseThrow();
 
         // Check if the store has any placements
-        List<CatalogColumnPlacement> placements = Catalog.getInstance().getColumnPlacementsOnAdapter( catalogAdapter.id );
-        if ( placements.size() != 0 ) {
-            throw new RuntimeException( "There is still data placed on this data store" );
+        List<AllocationEntity> placements = Catalog.getInstance().getSnapshot().alloc().getEntitiesOnAdapter( logicalAdapter.id ).orElseThrow( () -> new GenericRuntimeException( "There is still data placed on this data store" ) );
+        if ( !placements.isEmpty() ) {
+            throw new GenericRuntimeException( "There is still data placed on this data store" );
         }
 
         // Shutdown store
@@ -258,45 +220,28 @@ public class AdapterManager {
         adapterByName.remove( adapterInstance.getUniqueName() );
 
         // Delete store from catalog
-        Catalog.getInstance().deleteAdapter( catalogAdapter.id );
+        Catalog.getInstance().dropAdapter( logicalAdapter.id );
     }
 
 
     /**
      * Restores adapters from catalog
      */
-    public void restoreAdapters() {
+    public void restoreAdapters( List<LogicalAdapter> adapters ) {
         try {
-            List<CatalogAdapter> adapters = Catalog.getInstance().getAdapters();
-            for ( CatalogAdapter adapter : adapters ) {
-                Adapter instance = instantiate( adapter.id, adapter.adapterName, adapter.uniqueName, adapter.type, adapter.settings );
+            for ( LogicalAdapter adapter : adapters ) {
+                Constructor<?> ctor = AdapterTemplate.fromString( adapter.adapterName, adapter.type ).getClazz().getConstructor( long.class, String.class, Map.class );
+                Adapter<?> instance = (Adapter<?>) ctor.newInstance( adapter.id, adapter.uniqueName, adapter.settings );
                 adapterByName.put( instance.getUniqueName(), instance );
                 adapterById.put( instance.getAdapterId(), instance );
             }
         } catch ( NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e ) {
-            throw new RuntimeException( "Something went wrong while restoring adapters from the catalog.", e );
+            throw new GenericRuntimeException( "Something went wrong while restoring adapters from the catalog.", e );
         }
     }
 
 
-    private static Adapter instantiate( int id, String adapterName, String uniqueName, AdapterType type, Map<String, String> settings ) throws NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
-        org.polypheny.db.catalog.Adapter adapter = org.polypheny.db.catalog.Adapter.fromString( adapterName, type );
-        if ( adapter.getPreEvaluation() != null ) {
-            adapter.getPreEvaluation().accept( settings );
-        }
-        Constructor<?> ctor = adapter.getClazz().getConstructor( int.class, String.class, Map.class );
-        return (Adapter) ctor.newInstance( id, uniqueName, settings );
-    }
-
-
-    @AllArgsConstructor
-    public static class AdapterInformation {
-
-        public final String name;
-        public final String description;
-        public final AdapterType type;
-        public final Map<String, List<AbstractAdapterSetting>> settings;
-
+    public record AdapterInformation(String name, String description, AdapterType type, List<AbstractAdapterSetting> settings, List<DeployMode> modes) {
 
         public static JsonSerializer<AdapterInformation> getSerializer() {
             return ( src, typeOfSrc, context ) -> {
@@ -311,5 +256,12 @@ public class AdapterManager {
 
     }
 
+
+    @FunctionalInterface
+    public interface Function4<P1, P2, P3, R> {
+
+        R get( P1 p1, P2 p2, P3 p3 );
+
+    }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,8 +44,8 @@ import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.JoinInfo;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
-import org.polypheny.db.algebra.logical.relational.LogicalSort;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.plan.AlgOptRule;
@@ -61,7 +61,7 @@ import org.polypheny.db.tools.AlgBuilderFactory;
  */
 public class SortJoinTransposeRule extends AlgOptRule {
 
-    public static final SortJoinTransposeRule INSTANCE = new SortJoinTransposeRule( LogicalSort.class, LogicalJoin.class, AlgFactories.LOGICAL_BUILDER );
+    public static final SortJoinTransposeRule INSTANCE = new SortJoinTransposeRule( LogicalRelSort.class, LogicalRelJoin.class, AlgFactories.LOGICAL_BUILDER );
 
 
     /**
@@ -87,7 +87,7 @@ public class SortJoinTransposeRule extends AlgOptRule {
         if ( join.getJoinType() == JoinAlgType.LEFT ) {
             if ( sort.getCollation() != AlgCollations.EMPTY ) {
                 for ( AlgFieldCollation algFieldCollation : sort.getCollation().getFieldCollations() ) {
-                    if ( algFieldCollation.getFieldIndex() >= join.getLeft().getRowType().getFieldCount() ) {
+                    if ( algFieldCollation.getFieldIndex() >= join.getLeft().getTupleType().getFieldCount() ) {
                         return false;
                     }
                 }
@@ -98,7 +98,7 @@ public class SortJoinTransposeRule extends AlgOptRule {
         } else if ( join.getJoinType() == JoinAlgType.RIGHT ) {
             if ( sort.getCollation() != AlgCollations.EMPTY ) {
                 for ( AlgFieldCollation algFieldCollation : sort.getCollation().getFieldCollations() ) {
-                    if ( algFieldCollation.getFieldIndex() < join.getLeft().getRowType().getFieldCount() ) {
+                    if ( algFieldCollation.getFieldIndex() < join.getLeft().getTupleType().getFieldCount() ) {
                         return false;
                     }
                 }
@@ -128,10 +128,10 @@ public class SortJoinTransposeRule extends AlgOptRule {
             if ( AlgMdUtil.checkInputForCollationAndLimit( mq, join.getLeft(), sort.getCollation(), sort.offset, sort.fetch ) ) {
                 return;
             }
-            newLeftInput = sort.copy( sort.getTraitSet(), join.getLeft(), sort.getCollation(), sort.offset, sort.fetch );
+            newLeftInput = sort.copy( sort.getTraitSet(), join.getLeft(), sort.getCollation(), null, sort.offset, sort.fetch );
             newRightInput = join.getRight();
         } else {
-            final AlgCollation rightCollation = AlgCollationTraitDef.INSTANCE.canonize( AlgCollations.shift( sort.getCollation(), -join.getLeft().getRowType().getFieldCount() ) );
+            final AlgCollation rightCollation = AlgCollationTraitDef.INSTANCE.canonize( AlgCollations.shift( sort.getCollation(), -join.getLeft().getTupleType().getFieldCount() ) );
             // If the input is already sorted and we are not reducing the number of tuples, we bail out
             if ( AlgMdUtil.checkInputForCollationAndLimit( mq, join.getRight(), rightCollation, sort.offset, sort.fetch ) ) {
                 return;
@@ -142,12 +142,13 @@ public class SortJoinTransposeRule extends AlgOptRule {
                             sort.getTraitSet().replace( rightCollation ),
                             join.getRight(),
                             rightCollation,
+                            null,
                             sort.offset,
                             sort.fetch );
         }
         // We copy the join and the top sort operator
         final AlgNode joinCopy = join.copy( join.getTraitSet(), join.getCondition(), newLeftInput, newRightInput, join.getJoinType(), join.isSemiJoinDone() );
-        final AlgNode sortCopy = sort.copy( sort.getTraitSet(), joinCopy, sort.getCollation(), sort.offset, sort.fetch );
+        final AlgNode sortCopy = sort.copy( sort.getTraitSet(), joinCopy, sort.getCollation(), null, sort.offset, sort.fetch );
 
         call.transformTo( sortCopy );
     }

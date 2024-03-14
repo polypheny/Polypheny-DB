@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,27 +17,24 @@
 package org.polypheny.db.sql.language.ddl;
 
 
-import static org.polypheny.db.util.Static.RESOURCE;
-
 import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.sql.language.SqlAlter;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlOperator;
 import org.polypheny.db.sql.language.SqlSpecialOperator;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -80,7 +77,7 @@ public class SqlAlterInterfacesDrop extends SqlAlter {
 
 
     @Override
-    public void execute( Context context, Statement statement, QueryParameters parameters ) {
+    public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
         String uniqueNameStr = uniqueName.toString();
         if ( uniqueNameStr.startsWith( "'" ) ) {
             uniqueNameStr = uniqueNameStr.substring( 1 );
@@ -93,10 +90,8 @@ public class SqlAlterInterfacesDrop extends SqlAlter {
 
         try {
             QueryInterfaceManager.getInstance().removeQueryInterface( Catalog.getInstance(), uniqueNameStr );
-        } catch ( UnknownQueryInterfaceException e ) {
-            throw CoreUtil.newContextException( uniqueName.getPos(), RESOURCE.unknownQueryInterface( e.getIfaceName() ) );
         } catch ( Exception e ) {
-            throw new RuntimeException( "Could not remove query interface " + uniqueNameStr, e );
+            throw new GenericRuntimeException( "Could not remove query interface " + uniqueNameStr, e );
         }
     }
 

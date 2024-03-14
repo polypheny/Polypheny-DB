@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,12 +25,19 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.nodes.validate.ValidatorException;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources.ExInst;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.NlsString;
 
+@Getter
 public abstract class OperatorBinding {
 
+    /**
+     * -- GETTER --
+     *
+     * @return factory for type creation
+     */
     protected final AlgDataTypeFactory typeFactory;
-    @Getter
     protected final Operator operator;
 
 
@@ -57,14 +64,6 @@ public abstract class OperatorBinding {
      */
     public boolean hasFilter() {
         return false;
-    }
-
-
-    /**
-     * @return factory for type creation
-     */
-    public AlgDataTypeFactory getTypeFactory() {
-        return typeFactory;
     }
 
 
@@ -177,10 +176,10 @@ public abstract class OperatorBinding {
      * </ul>
      *
      * @param ordinal zero-based ordinal of operand of interest
-     * @param clazz Desired valued type
+     * @param type
      * @return value of operand
      */
-    public <T> T getOperandLiteralValue( int ordinal, Class<T> clazz ) {
+    public PolyValue getOperandLiteralValue( int ordinal, PolyType type ) {
         throw new UnsupportedOperationException();
     }
 

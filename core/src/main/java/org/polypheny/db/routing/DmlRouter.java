@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,12 @@
 package org.polypheny.db.routing;
 
 import java.util.List;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
-import org.polypheny.db.algebra.logical.relational.LogicalModify;
-import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -33,21 +34,19 @@ public interface DmlRouter {
     /**
      * Routes DML queries and returns a RelNode.
      */
-    AlgNode routeDml( LogicalModify node, Statement statement );
+    AlgNode routeDml( LogicalRelModify node, Statement statement );
 
     /**
      * Routes conditional executes and directly returns a RelNode.
      */
-    AlgNode handleConditionalExecute( AlgNode node, Statement statement, LogicalQueryInformation queryInformation );
+    AlgNode handleConditionalExecute( AlgNode node, RoutingContext context );
 
-    AlgNode routeGraphDml( LogicalLpgModify alg, Statement statement );
+    AlgNode handleConstraintEnforcer( AlgNode alg, RoutingContext context );
 
-    AlgNode handleConstraintEnforcer( AlgNode alg, Statement statement, LogicalQueryInformation queryInformation );
+    AlgNode handleBatchIterator( AlgNode alg, RoutingContext context );
 
-    AlgNode handleBatchIterator( AlgNode alg, Statement statement, LogicalQueryInformation queryInformation );
+    AlgNode routeDocumentDml( LogicalDocumentModify alg, Statement statement, @Nullable AllocationEntity target, @Nullable List<Long> excludedPlacements );
 
-    AlgNode routeDocumentDml( LogicalDocumentModify alg, Statement statement, LogicalQueryInformation queryInformation, Integer adapterId );
-
-    AlgNode routeGraphDml( LogicalLpgModify alg, Statement statement, CatalogGraphDatabase catalogGraph, List<Integer> placements );
+    AlgNode routeGraphDml( LogicalLpgModify alg, Statement statement, @Nullable AllocationEntity target, @Nullable List<Long> excludedPlacements );
 
 }

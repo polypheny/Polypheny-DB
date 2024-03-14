@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,31 +17,31 @@
 package org.polypheny.db.adapter.postgres.source;
 
 
-import com.google.common.collect.ImmutableMap;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.Adapter.AdapterProperties;
-import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
-import org.polypheny.db.adapter.Adapter.AdapterSettingList;
-import org.polypheny.db.adapter.Adapter.AdapterSettingString;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.annotations.AdapterProperties;
+import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
+import org.polypheny.db.adapter.annotations.AdapterSettingList;
+import org.polypheny.db.adapter.annotations.AdapterSettingString;
 import org.polypheny.db.adapter.jdbc.sources.AbstractJdbcSource;
-import org.polypheny.db.catalog.Adapter;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.schema.Schema;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.sql.language.dialect.PostgresqlSqlDialect;
+import org.polypheny.db.adapter.postgres.PostgresqlSqlDialect;
+import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
+import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.prepare.Context;
 
 
 @Slf4j
 @AdapterProperties(
         name = "PostgreSQL",
         description = "Relational database system optimized for transactional workload that provides an advanced set of features. PostgreSQL is fully ACID compliant and ensures that all requirements are met.",
-        usedModes = DeployMode.REMOTE)
+        usedModes = DeployMode.REMOTE,
+        defaultMode = DeployMode.REMOTE)
 @AdapterSettingString(name = "host", defaultValue = "localhost", position = 1,
         description = "Hostname or IP address of the remote PostgreSQL instance.")
 @AdapterSettingInteger(name = "port", defaultValue = 5432, position = 2,
@@ -60,7 +60,7 @@ import org.polypheny.db.sql.language.dialect.PostgresqlSqlDialect;
         description = "List of tables which should be imported. The names must to be separated by a comma.")
 public class PostgresqlSource extends AbstractJdbcSource {
 
-    public PostgresqlSource( int storeId, String uniqueName, final Map<String, String> settings ) {
+    public PostgresqlSource( long storeId, String uniqueName, final Map<String, String> settings ) {
         super(
                 storeId,
                 uniqueName,
@@ -68,31 +68,6 @@ public class PostgresqlSource extends AbstractJdbcSource {
                 "org.postgresql.Driver",
                 PostgresqlSqlDialect.DEFAULT,
                 false );
-    }
-
-
-    public static void register() {
-        Map<String, String> settings = ImmutableMap.of(
-                "mode", "docker",
-                "password", "polypheny",
-                "instanceId", "0",
-                "port", "3306",
-                "maxConnections", "25"
-        );
-
-        Adapter.addAdapter( PostgresqlSource.class, "POSTGRESQL", settings );
-    }
-
-
-    @Override
-    public Table createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
-        return currentJdbcSchema.createJdbcTable( catalogTable, columnPlacementsOnStore, partitionPlacement );
-    }
-
-
-    @Override
-    public Schema getCurrentSchema() {
-        return currentJdbcSchema;
     }
 
 
@@ -123,5 +98,21 @@ public class PostgresqlSource extends AbstractJdbcSource {
     protected boolean requiresSchema() {
         return true;
     }
+
+
+    @Override
+    public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
+        PhysicalTable table = adapterCatalog.createTable(
+                logical.table.getNamespaceName(),
+                logical.table.name,
+                logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
+                logical.table,
+                logical.columns.stream().collect( Collectors.toMap( t -> t.id, t -> t ) ),
+                logical.pkIds, allocation );
+
+        adapterCatalog.replacePhysical( currentJdbcSchema.createJdbcTable( table ) );
+        return List.of( table );
+    }
+
 
 }

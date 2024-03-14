@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,12 @@
 package org.polypheny.db.cypher.set;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -41,9 +41,9 @@ public class CypherSetLabels extends CypherSetItem {
     @Override
     public void convertItem( CypherContext context ) {
         String nodeName = variable.getName();
-        RexNode op = context.getLabelUpdate( labels.stream().map( StringPos::getImage ).collect( Collectors.toList() ), nodeName, false );
+        RexNode op = context.getLabelUpdate( labels.stream().map( StringPos::getImage ).toList(), nodeName, false );
 
-        context.add( Pair.of( nodeName, op ) );
+        context.add( Pair.of( PolyString.of( nodeName ), op ) );
     }
 
 

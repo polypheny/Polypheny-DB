@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -124,12 +124,15 @@ public class BasicPolyType extends AbstractPolyType {
         this.precision = precision;
         this.scale = scale;
 
-        if ( typeName == PolyType.JSON ) {
-            this.collation = Collation.IMPLICIT;
-            this.wrappedCharset = SerializableCharset.forCharset( StandardCharsets.ISO_8859_1 );
-        } else {
-            this.collation = collation;
-            this.wrappedCharset = wrappedCharset;
+        switch ( typeName ) {
+            case JSON, TEXT -> {
+                this.collation = Collation.IMPLICIT;
+                this.wrappedCharset = SerializableCharset.forCharset( StandardCharsets.UTF_8 );
+            }
+            default -> {
+                this.collation = collation;
+                this.wrappedCharset = wrappedCharset;
+            }
         }
 
         computeDigest();
@@ -159,7 +162,7 @@ public class BasicPolyType extends AbstractPolyType {
      * <p>
      * This must be a character type.
      */
-    BasicPolyType createWithCharsetAndCollation( Charset charset, Collation collation ) {
+    public BasicPolyType createWithCharsetAndCollation( Charset charset, Collation collation ) {
         Preconditions.checkArgument( PolyTypeUtil.inCharFamily( this ) );
         return new BasicPolyType(
                 this.typeSystem,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,30 +24,29 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.FilterableTable;
+import org.polypheny.db.schema.types.FilterableEntity;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Source;
 
-public class ExcelFilterableTable extends ExcelTable implements FilterableTable {
+public class ExcelFilterableTable extends ExcelTable implements FilterableEntity {
 
     /**
      * Creates a ExcelFilterableTable.
      */
-    private final String sheet;
 
 
-    public ExcelFilterableTable( Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId ) {
-        super( source, protoRowType, fieldTypes, fields, excelSource, tableId );
-        this.sheet = "";
+    public ExcelFilterableTable( PhysicalTable table, Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource ) {
+        this( table, source, protoRowType, fieldTypes, fields, excelSource, "" );
     }
 
 
-    public ExcelFilterableTable( Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId, String sheet ) {
-        super( source, protoRowType, fieldTypes, fields, excelSource, tableId, sheet );
-        this.sheet = sheet;
+    public ExcelFilterableTable( PhysicalTable table, Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, String sheet ) {
+        super( table, source, protoRowType, fieldTypes, fields, excelSource, sheet );
     }
 
 
@@ -57,15 +56,15 @@ public class ExcelFilterableTable extends ExcelTable implements FilterableTable 
 
 
     @Override
-    public Enumerable<Object[]> scan( DataContext dataContext, List<RexNode> filters ) {
+    public Enumerable<PolyValue[]> scan( DataContext dataContext, List<RexNode> filters ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( excelSource );
         final String[] filterValues = new String[fieldTypes.size()];
         filters.removeIf( filter -> addFilter( filter, filterValues ) );
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
-        return new AbstractEnumerable<Object[]>() {
+        return new AbstractEnumerable<PolyValue[]>() {
             @Override
-            public Enumerator<Object[]> enumerator() {
-                return new ExcelEnumerator<>( source, cancelFlag, false, filterValues, new ExcelEnumerator.ArrayRowConverter( fieldTypes, fields ), sheet );
+            public Enumerator<PolyValue[]> enumerator() {
+                return new ExcelEnumerator( source, cancelFlag, false, filterValues, new ExcelEnumerator.ArrayRowConverter( fieldTypes, fields ), sheet );
             }
         };
     }
@@ -79,10 +78,10 @@ public class ExcelFilterableTable extends ExcelTable implements FilterableTable 
                 left = ((RexCall) left).operands.get( 0 );
             }
             final RexNode right = call.getOperands().get( 1 );
-            if ( left instanceof RexInputRef && right instanceof RexLiteral ) {
-                final int index = ((RexInputRef) left).getIndex();
+            if ( left instanceof RexIndexRef && right instanceof RexLiteral ) {
+                final int index = ((RexIndexRef) left).getIndex();
                 if ( filterValues[index] == null ) {
-                    filterValues[index] = ((RexLiteral) right).getValue2().toString();
+                    filterValues[index] = ((RexLiteral) right).getValue().toString();
                     return true;
                 }
             }

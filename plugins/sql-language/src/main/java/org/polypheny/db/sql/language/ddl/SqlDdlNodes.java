@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package org.polypheny.db.sql.language.ddl;
 
 
 import java.util.List;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.partition.raw.RawPartitionInformation;
@@ -41,10 +41,10 @@ public class SqlDdlNodes {
 
 
     /**
-     * Creates a CREATE SCHEMA.
+     * Creates a CREATE NAMESPACE.
      */
-    public static SqlCreateSchema createSchema( ParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, NamespaceType namespaceType ) {
-        return new SqlCreateSchema( pos, replace, ifNotExists, name, namespaceType );
+    public static SqlCreateNamespace createNamespace( ParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, DataModel dataModel ) {
+        return new SqlCreateNamespace( pos, replace, ifNotExists, name, dataModel );
     }
 
 
@@ -89,10 +89,10 @@ public class SqlDdlNodes {
 
 
     /**
-     * Creates a DROP SCHEMA.
+     * Creates a DROP NAMESPACE.
      */
-    public static SqlDropSchema dropSchema( ParserPos pos, boolean ifExists, SqlIdentifier name ) {
-        return new SqlDropSchema( pos, ifExists, name );
+    public static SqlDropNamespace dropNamespace( ParserPos pos, boolean ifExists, SqlIdentifier name ) {
+        return new SqlDropNamespace( pos, ifExists, name );
     }
 
 
@@ -178,6 +178,14 @@ public class SqlDdlNodes {
                 return PRIMARY;
             }
         };
+    }
+
+
+    /**
+     * Creates a PRIMARY KEY constraint.
+     */
+    public static SqlKeyConstraint foreign( ParserPos pos, SqlIdentifier name, SqlNodeList columnList, SqlIdentifier referencedTable, SqlIdentifier referencedColumn ) {
+        return new SqlForeignKeyConstraint( pos, name, columnList, referencedTable, referencedColumn );
     }
 
 

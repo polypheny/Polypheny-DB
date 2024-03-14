@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,19 +52,19 @@ import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Union;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptPredicateList;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.hep.HepAlgVertex;
 import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.rex.RexTableInputRef;
-import org.polypheny.db.rex.RexTableInputRef.AlgTableRef;
+import org.polypheny.db.rex.RexTableIndexRef;
+import org.polypheny.db.rex.RexTableIndexRef.AlgTableRef;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -73,16 +73,16 @@ import org.polypheny.db.util.Util;
 
 /**
  * Utility to extract Predicates that are present in the (sub)plan starting at this node.
- *
+ * <p>
  * This should be used to infer whether same filters are applied on a given plan by materialized view rewriting rules.
- *
- * The output predicates might contain references to columns produced by Scan operators ({@link RexTableInputRef}). In turn, each Scan operator is identified uniquely by its qualified name and an identifier.
- *
+ * <p>
+ * The output predicates might contain references to columns produced by Scan operators ({@link RexTableIndexRef}). In turn, each Scan operator is identified uniquely by its qualified name and an identifier.
+ * <p>
  * If the provider cannot infer the lineage for any of the expressions contain in any of the predicates, it will return null. Observe that this is different from the empty list of predicates, which means that there are not predicates in the (sub)plan.
  */
 public class AlgMdAllPredicates implements MetadataHandler<BuiltInMetadata.AllPredicates> {
 
-    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( BuiltInMethod.ALL_PREDICATES.method, new AlgMdAllPredicates() );
+    public static final AlgMetadataProvider SOURCE = ReflectiveAlgMetadataProvider.reflectiveSource( new AlgMdAllPredicates(), BuiltInMethod.ALL_PREDICATES.method );
 
 
     @Override
@@ -112,9 +112,9 @@ public class AlgMdAllPredicates implements MetadataHandler<BuiltInMetadata.AllPr
 
 
     /**
-     * Extract predicates for a table scan.
+     * Extract predicates for a table relScan.
      */
-    public AlgOptPredicateList getAllPredicates( Scan table, AlgMetadataQuery mq ) {
+    public AlgOptPredicateList getAllPredicates( RelScan table, AlgMetadataQuery mq ) {
         return AlgOptPredicateList.EMPTY;
     }
 
@@ -148,9 +148,9 @@ public class AlgMdAllPredicates implements MetadataHandler<BuiltInMetadata.AllPr
         final ImmutableBitSet inputFieldsUsed = inputFinder.inputBitSet.build();
 
         // Infer column origin expressions for given references
-        final Map<RexInputRef, Set<RexNode>> mapping = new LinkedHashMap<>();
+        final Map<RexIndexRef, Set<RexNode>> mapping = new LinkedHashMap<>();
         for ( int idx : inputFieldsUsed ) {
-            final RexInputRef ref = RexInputRef.of( idx, filter.getRowType().getFieldList() );
+            final RexIndexRef ref = RexIndexRef.of( idx, filter.getTupleType().getFields() );
             final Set<RexNode> originalExprs = mq.getExpressionLineage( filter, ref );
             if ( originalExprs == null ) {
                 // Bail out
@@ -219,15 +219,15 @@ public class AlgMdAllPredicates implements MetadataHandler<BuiltInMetadata.AllPr
         final ImmutableBitSet inputFieldsUsed = inputFinder.inputBitSet.build();
 
         // Infer column origin expressions for given references
-        final Map<RexInputRef, Set<RexNode>> mapping = new LinkedHashMap<>();
+        final Map<RexIndexRef, Set<RexNode>> mapping = new LinkedHashMap<>();
         for ( int idx : inputFieldsUsed ) {
-            final RexInputRef inputRef = RexInputRef.of( idx, join.getRowType().getFieldList() );
+            final RexIndexRef inputRef = RexIndexRef.of( idx, join.getTupleType().getFields() );
             final Set<RexNode> originalExprs = mq.getExpressionLineage( join, inputRef );
             if ( originalExprs == null ) {
                 // Bail out
                 return null;
             }
-            final RexInputRef ref = RexInputRef.of( idx, join.getRowType().getFieldList() );
+            final RexIndexRef ref = RexIndexRef.of( idx, join.getTupleType().getFields() );
             mapping.put( ref, originalExprs );
         }
 

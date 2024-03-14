@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.polypheny.db.sql.language.dialect;
 
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.NullCollation;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlNode;
@@ -36,8 +37,8 @@ public class BigQuerySqlDialect extends SqlDialect {
     public static final SqlDialect DEFAULT =
             new BigQuerySqlDialect(
                     EMPTY_CONTEXT
-                            .withDatabaseProduct( SqlDialect.DatabaseProduct.BIG_QUERY )
-                            .withNullCollation( NullCollation.LOW ) );
+                            .withNullCollation( NullCollation.LOW )
+                            .withIdentifierQuoteString( "`" ) );
 
 
     /**
@@ -58,7 +59,7 @@ public class BigQuerySqlDialect extends SqlDialect {
                 writer.sep( "," );
                 ((SqlNode) call.operand( 0 )).unparse( writer, leftPrec, rightPrec );
                 if ( 3 == call.operandCount() ) {
-                    throw new RuntimeException( "3rd operand Not Supported for Function STRPOS in Big Query" );
+                    throw new GenericRuntimeException( "3rd operand Not Supported for Function STRPOS in Big Query" );
                 }
                 writer.endFunCall( frame );
                 break;

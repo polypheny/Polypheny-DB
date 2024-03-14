@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.polypheny.db.sql.language;
 
 
 import java.util.List;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;
@@ -52,6 +53,12 @@ public class SqlDelete extends SqlCall {
     @Override
     public Kind getKind() {
         return Kind.DELETE;
+    }
+
+
+    @Override
+    public @Nullable String getEntity() {
+        return targetTable.getEntity();
     }
 
 

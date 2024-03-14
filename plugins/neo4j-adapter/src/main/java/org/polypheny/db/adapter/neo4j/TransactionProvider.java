@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.util.Pair;
 
@@ -123,7 +124,7 @@ public class TransactionProvider {
 
     public void rollbackDdlTransaction() {
         if ( !ddlTransaction.isOpen() ) {
-            throw new RuntimeException( "There is no ongoing DDL transaction!" );
+            throw new GenericRuntimeException( "There is no ongoing DDL transaction!" );
         }
         ddlTransaction.rollback();
         ddlTransaction.close();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ import org.codehaus.janino.JavaSourceClassLoader;
 import org.codehaus.janino.util.ClassFile;
 import org.codehaus.janino.util.resource.MapResourceFinder;
 import org.codehaus.janino.util.resource.ResourceFinder;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 
 
@@ -98,7 +99,7 @@ public class JaninoCompiler implements JavaCompiler {
         try {
             classLoader.loadClass( args.fullClassName );
         } catch ( ClassNotFoundException ex ) {
-            throw new RuntimeException( "while compiling " + args.fullClassName, ex );
+            throw new GenericRuntimeException( "while compiling " + args.fullClassName, ex );
         }
     }
 
@@ -201,7 +202,7 @@ public class JaninoCompiler implements JavaCompiler {
                         fos.close();
                     }
                 } catch ( IOException e ) {
-                    throw new RuntimeException( e );
+                    throw new GenericRuntimeException( e );
                 }
             }
 

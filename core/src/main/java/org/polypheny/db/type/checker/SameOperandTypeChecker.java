@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.Collections;
 import java.util.List;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.nodes.CallBinding;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.Operator;
@@ -62,7 +63,7 @@ public class SameOperandTypeChecker implements PolySingleOperandTypeChecker {
     @Override
     public boolean checkOperandTypes( CallBinding callBinding, boolean throwOnFailure ) {
         if ( !(callBinding instanceof OperatorBinding) ) {
-            throw new RuntimeException( "OperatorBinding and CallBinding do need to inherit differently" );
+            throw new GenericRuntimeException( "OperatorBinding and CallBinding do need to inherit differently" );
         }
         return checkOperandTypesImpl( (OperatorBinding) callBinding, throwOnFailure, callBinding );
     }

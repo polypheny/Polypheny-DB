@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNode;
@@ -106,7 +106,7 @@ public class AlgMdUtil {
         RexCall call = (RexCall) artificialSelectivityFuncNode;
         assert call.getOperator().equals( ARTIFICIAL_SELECTIVITY_FUNC );
         RexNode operand = call.getOperands().get( 0 );
-        return ((RexLiteral) operand).getValueAs( Double.class );
+        return ((RexLiteral) operand).value.asDouble().value;//.getValue( Double.class );
     }
 
 
@@ -200,16 +200,16 @@ public class AlgMdUtil {
     }
 
 
-    public static Boolean areColumnsUnique( AlgMetadataQuery mq, AlgNode alg, List<RexInputRef> columnRefs ) {
+    public static Boolean areColumnsUnique( AlgMetadataQuery mq, AlgNode alg, List<RexIndexRef> columnRefs ) {
         ImmutableBitSet.Builder colMask = ImmutableBitSet.builder();
-        for ( RexInputRef columnRef : columnRefs ) {
+        for ( RexIndexRef columnRef : columnRefs ) {
             colMask.set( columnRef.getIndex() );
         }
         return mq.areColumnsUnique( alg, colMask.build() );
     }
 
 
-    public static boolean areColumnsDefinitelyUnique( AlgMetadataQuery mq, AlgNode alg, List<RexInputRef> columnRefs ) {
+    public static boolean areColumnsDefinitelyUnique( AlgMetadataQuery mq, AlgNode alg, List<RexIndexRef> columnRefs ) {
         Boolean b = areColumnsUnique( mq, alg, columnRefs );
         return b != null && b;
     }
@@ -231,10 +231,10 @@ public class AlgMdUtil {
     }
 
 
-    public static Boolean areColumnsUniqueWhenNullsFiltered( AlgMetadataQuery mq, AlgNode alg, List<RexInputRef> columnRefs ) {
+    public static Boolean areColumnsUniqueWhenNullsFiltered( AlgMetadataQuery mq, AlgNode alg, List<RexIndexRef> columnRefs ) {
         ImmutableBitSet.Builder colMask = ImmutableBitSet.builder();
 
-        for ( RexInputRef columnRef : columnRefs ) {
+        for ( RexIndexRef columnRef : columnRefs ) {
             colMask.set( columnRef.getIndex() );
         }
 
@@ -242,7 +242,7 @@ public class AlgMdUtil {
     }
 
 
-    public static boolean areColumnsDefinitelyUniqueWhenNullsFiltered( AlgMetadataQuery mq, AlgNode alg, List<RexInputRef> columnRefs ) {
+    public static boolean areColumnsDefinitelyUniqueWhenNullsFiltered( AlgMetadataQuery mq, AlgNode alg, List<RexIndexRef> columnRefs ) {
         Boolean b = areColumnsUniqueWhenNullsFiltered( mq, alg, columnRefs );
         if ( b == null ) {
             return false;
@@ -447,8 +447,8 @@ public class AlgMdUtil {
     public static void splitCols( List<RexNode> projExprs, ImmutableBitSet groupKey, ImmutableBitSet.Builder baseCols, ImmutableBitSet.Builder projCols ) {
         for ( int bit : groupKey ) {
             final RexNode e = projExprs.get( bit );
-            if ( e instanceof RexInputRef ) {
-                baseCols.set( ((RexInputRef) e).getIndex() );
+            if ( e instanceof RexIndexRef ) {
+                baseCols.set( ((RexIndexRef) e).getIndex() );
             } else {
                 projCols.set( bit );
             }
@@ -482,14 +482,14 @@ public class AlgMdUtil {
         AlgNode right = joinRel.getInputs().get( 1 );
 
         // separate the mask into masks for the left and right
-        AlgMdUtil.setLeftRightBitmaps( groupKey, leftMask, rightMask, left.getRowType().getFieldCount() );
+        AlgMdUtil.setLeftRightBitmaps( groupKey, leftMask, rightMask, left.getTupleType().getFieldCount() );
 
         Double population =
                 NumberUtil.multiply(
                         mq.getPopulationSize( left, leftMask.build() ),
                         mq.getPopulationSize( right, rightMask.build() ) );
 
-        return numDistinctVals( population, mq.getRowCount( joinRel ) );
+        return numDistinctVals( population, mq.getTupleCount( joinRel ) );
     }
 
 
@@ -510,7 +510,7 @@ public class AlgMdUtil {
         AlgNode left = joinRel.getInputs().get( 0 );
         AlgNode right = joinRel.getInputs().get( 1 );
 
-        AlgMdUtil.setLeftRightBitmaps( groupKey, leftMask, rightMask, left.getRowType().getFieldCount() );
+        AlgMdUtil.setLeftRightBitmaps( groupKey, leftMask, rightMask, left.getTupleType().getFieldCount() );
 
         // determine which filters apply to the left vs right
         RexNode leftPred = null;
@@ -548,7 +548,7 @@ public class AlgMdUtil {
                             mq.getDistinctRowCount( right, rightMask.build(), rightPred ) );
         }
 
-        return AlgMdUtil.numDistinctVals( distRowCount, mq.getRowCount( joinRel ) );
+        return AlgMdUtil.numDistinctVals( distRowCount, mq.getTupleCount( joinRel ) );
     }
 
 
@@ -558,7 +558,7 @@ public class AlgMdUtil {
     public static double getUnionAllRowCount( AlgMetadataQuery mq, Union alg ) {
         double rowCount = 0;
         for ( AlgNode input : alg.getInputs() ) {
-            rowCount += mq.getRowCount( input );
+            rowCount += mq.getTupleCount( input );
         }
         return rowCount;
     }
@@ -570,9 +570,9 @@ public class AlgMdUtil {
     public static double getMinusRowCount( AlgMetadataQuery mq, Minus minus ) {
         // REVIEW jvs:  I just pulled this out of a hat.
         final List<AlgNode> inputs = minus.getInputs();
-        double dRows = mq.getRowCount( inputs.get( 0 ) );
+        double dRows = mq.getTupleCount( inputs.get( 0 ) );
         for ( int i = 1; i < inputs.size(); i++ ) {
-            dRows -= 0.5 * mq.getRowCount( inputs.get( i ) );
+            dRows -= 0.5 * mq.getTupleCount( inputs.get( i ) );
         }
         if ( dRows < 0 ) {
             dRows = 0;
@@ -586,8 +586,8 @@ public class AlgMdUtil {
      */
     public static Double getJoinRowCount( AlgMetadataQuery mq, Join join, RexNode condition ) {
         // Row count estimates of 0 will be rounded up to 1. So, use maxRowCount where the product is very small.
-        final Double left = mq.getRowCount( join.getLeft() );
-        final Double right = mq.getRowCount( join.getRight() );
+        final Double left = mq.getTupleCount( join.getLeft() );
+        final Double right = mq.getTupleCount( join.getRight() );
         if ( left == null || right == null ) {
             return null;
         }
@@ -609,7 +609,7 @@ public class AlgMdUtil {
      */
     public static Double getSemiJoinRowCount( AlgMetadataQuery mq, AlgNode left, AlgNode right, JoinAlgType joinType, RexNode condition ) {
         // TODO: correlation factor
-        final Double leftCount = mq.getRowCount( left );
+        final Double leftCount = mq.getTupleCount( left );
         if ( leftCount == null ) {
             return null;
         }
@@ -631,7 +631,7 @@ public class AlgMdUtil {
 
 
     public static double estimateFilteredRows( AlgNode child, RexNode condition, AlgMetadataQuery mq ) {
-        return mq.getRowCount( child ) * mq.getSelectivity( child, condition );
+        return mq.getTupleCount( child ) * mq.getSelectivity( child, condition );
     }
 
 
@@ -680,28 +680,28 @@ public class AlgMdUtil {
 
 
         @Override
-        public Double visitInputRef( RexInputRef var ) {
+        public Double visitIndexRef( RexIndexRef var ) {
             int index = var.getIndex();
             ImmutableBitSet col = ImmutableBitSet.of( index );
             Double distinctRowCount = mq.getDistinctRowCount( alg.getInput(), col, null );
             if ( distinctRowCount == null ) {
                 return null;
             } else {
-                return numDistinctVals( distinctRowCount, mq.getRowCount( alg ) );
+                return numDistinctVals( distinctRowCount, mq.getTupleCount( alg ) );
             }
         }
 
 
         @Override
         public Double visitLiteral( RexLiteral literal ) {
-            return numDistinctVals( 1.0, mq.getRowCount( alg ) );
+            return numDistinctVals( 1.0, mq.getTupleCount( alg ) );
         }
 
 
         @Override
         public Double visitCall( RexCall call ) {
             Double distinctRowCount;
-            Double rowCount = mq.getRowCount( alg );
+            Double rowCount = mq.getTupleCount( alg );
             if ( call.isA( Kind.MINUS_PREFIX ) ) {
                 distinctRowCount = cardOfProjExpr( mq, alg, call.getOperands().get( 0 ) );
             } else if ( call.isA( ImmutableList.of( Kind.PLUS, Kind.MINUS ) ) ) {

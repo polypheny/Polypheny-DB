@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,23 +18,18 @@ package org.polypheny.db.languages.mql;
 
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.PlacementType;
-import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.languages.mql.Mql.Type;
 import org.polypheny.db.nodes.ExecutableStatement;
-import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -54,45 +49,31 @@ public class MqlCreateView extends MqlNode implements ExecutableStatement {
 
 
     @Override
-    public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        Catalog catalog = Catalog.getInstance();
-        String database = ((MqlQueryParameters) parameters).getDatabase();
+    public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
+        Long database = parsedQueryContext.getQueryNode().orElseThrow().getNamespaceId();
 
-        long schemaId;
-        try {
-            schemaId = catalog.getSchema( context.getDatabaseId(), database ).id;
-        } catch ( UnknownSchemaException e ) {
-            throw new RuntimeException( "Poly schema was not found." );
-        }
-
-        Node mqlNode = statement.getTransaction()
-                .getProcessor( QueryLanguage.from( "mongo" ) )
-                .parse( buildQuery() )
-                .get( 0 );
+        long schemaId = context.getSnapshot().getNamespace( database ).orElseThrow().id;
 
         AlgRoot algRoot = statement.getTransaction()
                 .getProcessor( QueryLanguage.from( "mongo" ) )
-                .translate( statement, mqlNode, parameters );
+                .translate( statement, parsedQueryContext );
         PlacementType placementType = PlacementType.AUTOMATIC;
 
         AlgNode algNode = algRoot.alg;
         AlgCollation algCollation = algRoot.collation;
 
-        try {
-            DdlManager.getInstance().createView(
-                    name,
-                    schemaId,
-                    algNode,
-                    algCollation,
-                    true,
-                    statement,
-                    placementType,
-                    algRoot.alg.getRowType().getFieldNames(),
-                    buildQuery(),
-                    QueryLanguage.from( "mongo" ) );
-        } catch ( EntityAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {
-            throw new RuntimeException( e );
-        } // we just added the table/column, so it has to exist, or we have an internal problem
+        DdlManager.getInstance().createView(
+                name,
+                schemaId,
+                algNode,
+                algCollation,
+                true,
+                statement,
+                placementType,
+                algRoot.alg.getTupleType().getFieldNames(),
+                buildQuery(),
+                QueryLanguage.from( "mongo" ) );
+
     }
 
 
@@ -110,6 +91,12 @@ public class MqlCreateView extends MqlNode implements ExecutableStatement {
     @Override
     public Type getMqlKind() {
         return Type.CREATE_VIEW;
+    }
+
+
+    @Override
+    public @Nullable String getEntity() {
+        return name;
     }
 
 }

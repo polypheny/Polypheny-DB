@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,14 +43,14 @@ public class JavaRecordType extends AlgRecordType {
     public boolean equals( Object obj ) {
         return this == obj
                 || obj instanceof JavaRecordType
-                && fieldList.equals( ((JavaRecordType) obj).fieldList )
+                && fields.equals( ((JavaRecordType) obj).fields )
                 && clazz == ((JavaRecordType) obj).clazz;
     }
 
 
     @Override
     public int hashCode() {
-        return Objects.hash( fieldList, clazz );
+        return Objects.hash( fields, clazz );
     }
 
 }

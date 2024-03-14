@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,8 +40,8 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
-import org.polypheny.db.algebra.logical.relational.LogicalJoin;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptUtil;
@@ -84,7 +84,7 @@ public class JoinPushThroughJoinRule extends AlgOptRule {
      */
     public static final AlgOptRule RIGHT = new JoinPushThroughJoinRule(
             "JoinPushThroughJoinRule:right",
-            true, LogicalJoin.class,
+            true, LogicalRelJoin.class,
             AlgFactories.LOGICAL_BUILDER );
 
     /**
@@ -92,7 +92,7 @@ public class JoinPushThroughJoinRule extends AlgOptRule {
      */
     public static final AlgOptRule LEFT = new JoinPushThroughJoinRule(
             "JoinPushThroughJoinRule:left",
-            false, LogicalJoin.class,
+            false, LogicalRelJoin.class,
             AlgFactories.LOGICAL_BUILDER );
 
     private final boolean right;
@@ -123,7 +123,7 @@ public class JoinPushThroughJoinRule extends AlgOptRule {
         final AlgNode algC = call.alg( 2 );
         final AlgNode algA = bottomJoin.getLeft();
         final AlgNode algB = bottomJoin.getRight();
-        final AlgOptCluster cluster = topJoin.getCluster();
+        final AlgCluster cluster = topJoin.getCluster();
 
         //        topJoin
         //        /     \
@@ -131,9 +131,9 @@ public class JoinPushThroughJoinRule extends AlgOptRule {
         //    /    \
         //   A      B
 
-        final int aCount = algA.getRowType().getFieldCount();
-        final int bCount = algB.getRowType().getFieldCount();
-        final int cCount = algC.getRowType().getFieldCount();
+        final int aCount = algA.getTupleType().getFieldCount();
+        final int bCount = algB.getTupleType().getFieldCount();
+        final int cCount = algC.getTupleType().getFieldCount();
         final ImmutableBitSet bBitSet = ImmutableBitSet.range( aCount, aCount + bCount );
 
         // becomes
@@ -212,7 +212,7 @@ public class JoinPushThroughJoinRule extends AlgOptRule {
         final AlgNode algC = call.alg( 2 );
         final AlgNode algA = bottomJoin.getLeft();
         final AlgNode algB = bottomJoin.getRight();
-        final AlgOptCluster cluster = topJoin.getCluster();
+        final AlgCluster cluster = topJoin.getCluster();
 
         //        topJoin
         //        /     \
@@ -220,9 +220,9 @@ public class JoinPushThroughJoinRule extends AlgOptRule {
         //    /    \
         //   A      B
 
-        final int aCount = algA.getRowType().getFieldCount();
-        final int bCount = algB.getRowType().getFieldCount();
-        final int cCount = algC.getRowType().getFieldCount();
+        final int aCount = algA.getTupleType().getFieldCount();
+        final int bCount = algB.getTupleType().getFieldCount();
+        final int cCount = algC.getTupleType().getFieldCount();
         final ImmutableBitSet aBitSet = ImmutableBitSet.range( aCount );
 
         // becomes

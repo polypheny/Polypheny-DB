@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,11 +27,13 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.type.entity.PolyString;
 
 
 public abstract class LpgMatch extends SingleAlg implements LpgAlg {
@@ -39,14 +41,14 @@ public abstract class LpgMatch extends SingleAlg implements LpgAlg {
     @Getter
     protected final List<RexCall> matches;
     @Getter
-    protected final List<String> names;
+    protected final List<PolyString> names;
 
 
     /**
      * Creates a {@link LpgMatch}.
-     * {@link org.polypheny.db.schema.ModelTrait#GRAPH} node, which represents a <code>MATCH</code> operator.
+     * {@link ModelTrait#GRAPH} node, which represents a <code>MATCH</code> operator.
      */
-    protected LpgMatch( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<RexCall> matches, List<String> names ) {
+    protected LpgMatch( AlgCluster cluster, AlgTraitSet traits, AlgNode input, List<RexCall> matches, List<PolyString> names ) {
         super( cluster, traits, input );
         this.matches = matches;
         this.names = names;
@@ -59,7 +61,7 @@ public abstract class LpgMatch extends SingleAlg implements LpgAlg {
 
         int i = 0;
         for ( RexNode match : matches ) {
-            fields.add( new AlgDataTypeFieldImpl( names.get( i ), i, match.getType() ) );
+            fields.add( new AlgDataTypeFieldImpl( -1L, names.get( i ).value, i, match.getType() ) );
             i++;
         }
         return new AlgRecordType( fields );
@@ -68,10 +70,10 @@ public abstract class LpgMatch extends SingleAlg implements LpgAlg {
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() +
-                "$" + matches.hashCode() +
-                "$" + names.hashCode() +
-                "$" + input.algCompareString();
+        return getClass().getSimpleName() + "$" +
+                matches.hashCode() + "$" +
+                names.hashCode() + "$" +
+                input.algCompareString() + "&";
     }
 
 

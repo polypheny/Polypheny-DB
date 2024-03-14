@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,18 +19,16 @@ package org.polypheny.db.languages.mql;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.bson.BsonDocument;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.PlacementType;
-import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.languages.mql.Mql.Type;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -62,34 +60,30 @@ public class MqlCreateCollection extends MqlNode implements ExecutableStatement 
 
 
     @Override
-    public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        Catalog catalog = Catalog.getInstance();
+    public @Nullable String getEntity() {
+        return name;
+    }
+
+
+    @Override
+    public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
         AdapterManager adapterManager = AdapterManager.getInstance();
 
-        long schemaId;
-        try {
-            schemaId = catalog.getSchema( Catalog.defaultDatabaseId, ((MqlQueryParameters) parameters).getDatabase() ).id;
-        } catch ( UnknownSchemaException e ) {
-            throw new RuntimeException( "The used document database (Polypheny Schema) is not available." );
-        }
+        long namespaceId = parsedQueryContext.getNamespaceId();
 
         PlacementType placementType = PlacementType.AUTOMATIC;
 
-        try {
-            List<DataStore> dataStores = stores
-                    .stream()
-                    .map( store -> (DataStore) adapterManager.getAdapter( store ) )
-                    .collect( Collectors.toList() );
-            DdlManager.getInstance().createCollection(
-                    schemaId,
-                    name,
-                    true,
-                    dataStores.size() == 0 ? null : dataStores,
-                    placementType,
-                    statement );
-        } catch ( EntityAlreadyExistsException e ) {
-            throw new RuntimeException( "The generation of the collection was not possible, due to: " + e.getMessage() );
-        }
+        List<DataStore<?>> dataStores = stores
+                .stream()
+                .map( store -> adapterManager.getStore( store ).orElseThrow() )
+                .collect( Collectors.toList() );
+        DdlManager.getInstance().createCollection(
+                namespaceId,
+                name,
+                true,
+                dataStores.isEmpty() ? null : dataStores,
+                placementType,
+                statement );
     }
 
 }

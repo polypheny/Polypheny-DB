@@ -44,7 +44,7 @@ select next value for "my_seq" as c from (values 1, 2);
 C BIGINT(19) NOT NULL
 !type
 
-# Qualified with schema name
+# Qualified with namespace name
 select next value for "s"."my_seq" as c from (values 1, 2);
 C BIGINT(19) NOT NULL
 !type
@@ -53,7 +53,7 @@ select next value for "unknown_seq" as c from (values 1, 2);
 From line 1, column 23 to line 1, column 35: Table 'unknown_seq' not found
 !error
 
-# Qualified with bad schema name
+# Qualified with bad namespace name
 select next value for "unknown_schema"."my_seq" as c from (values 1, 2);
 From line 1, column 23 to line 1, column 47: Table 'unknown_schema.my_seq' not found
 !error

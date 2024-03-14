@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,45 +16,39 @@
 
 package org.polypheny.db.hsqldb.stores;
 
-import com.google.common.collect.ImmutableMap;
-import java.util.Map;
-import org.pf4j.Plugin;
-import org.pf4j.PluginWrapper;
-import org.polypheny.db.catalog.Adapter;
+import org.polypheny.db.adapter.AdapterManager;
+import org.polypheny.db.plugins.PluginContext;
+import org.polypheny.db.plugins.PolyPlugin;
+import org.polypheny.db.sql.language.SqlDialectRegistry;
 
-public class HsqldbPlugin extends Plugin {
+@SuppressWarnings("unused")
+public class HsqldbPlugin extends PolyPlugin {
 
 
     public static final String ADAPTER_NAME = "HSQLDB";
+    private long id;
 
 
     /**
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to be successfully loaded by manager.
      */
-    public HsqldbPlugin( PluginWrapper wrapper ) {
-        super( wrapper );
+    public HsqldbPlugin( PluginContext context ) {
+        super( context );
     }
 
 
     @Override
-    public void start() {
-        Map<String, String> settings = ImmutableMap.copyOf( Map.of(
-                "type", "Memory",
-                "mode", "embedded",
-                "tableType", "Memory",
-                "maxConnections", "25",
-                "trxControlMode", "mvcc",
-                "trxIsolationLevel", "read_committed"
-        ) );
-
-        Adapter.addAdapter( HsqldbStore.class, ADAPTER_NAME, settings );
+    public void afterCatalogInit() {
+        SqlDialectRegistry.registerDialect( "HSQLDB", HsqldbSqlDialect.DEFAULT );
+        this.id = AdapterManager.addAdapterTemplate( HsqldbStore.class, ADAPTER_NAME, HsqldbStore::new );
     }
 
 
     @Override
     public void stop() {
-        Adapter.removeAdapter( HsqldbStore.class, ADAPTER_NAME );
+        SqlDialectRegistry.unregisterDialect( "HSQLDB" );
+        AdapterManager.removeAdapterTemplate( this.id );
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ import org.polypheny.db.rex.RexUtil;
 
 
 /**
- * Predicates that are known to hold in the output of a particular relational expression.
+ * Predicates that are known to hold in the output of a particular algebra expression.
  *
  * <b>Pulled up predicates</b> (field {@link #pulledUpPredicates} are predicates that apply to every row output by the relational expression. They are inferred from the input relational
  * expression(s) and the relational operator.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,7 +112,7 @@ public class AggregateFilterTransposeRule extends AlgOptRule {
                 aggregate.getAggCallList() );
         final TargetMapping mapping = Mappings.target(
                 newGroupSet::indexOf,
-                input.getRowType().getFieldCount(),
+                input.getTupleType().getFieldCount(),
                 newGroupSet.cardinality() );
         final RexNode newCondition =
                 RexUtil.apply( mapping, filter.getCondition() );

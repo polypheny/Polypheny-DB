@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,18 +22,17 @@ import org.polypheny.db.monitoring.events.metrics.DdlDataPoint;
 public class DdlEventAnalyzer {
 
     public static DdlDataPoint analyze( DdlEvent ddlEvent ) {
-        DdlDataPoint metric = DdlDataPoint
+
+        return DdlDataPoint
                 .builder()
                 .Id( ddlEvent.getId() )
                 .recordedTimestamp( ddlEvent.getRecordedTimestamp() )
                 .isCommitted( ddlEvent.isCommitted() )
                 .tableId( ddlEvent.getTableId() )
                 .monitoringType( ddlEvent.getMonitoringType() )
-                .schemaId( ddlEvent.getSchemaId() )
+                .namespaceId( ddlEvent.getNamespaceId() )
                 .columnId( ddlEvent.getColumnId() )
                 .build();
-
-        return metric;
     }
 
 }

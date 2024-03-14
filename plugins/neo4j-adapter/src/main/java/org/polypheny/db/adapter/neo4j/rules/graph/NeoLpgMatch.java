@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,12 +29,13 @@ import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.NeoStatement;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.lpg.LpgMatch;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.schema.graph.PolyNode;
-import org.polypheny.db.schema.graph.PolyPath;
+import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.util.Pair;
 
 public class NeoLpgMatch extends LpgMatch implements NeoGraphAlg {
@@ -43,10 +44,10 @@ public class NeoLpgMatch extends LpgMatch implements NeoGraphAlg {
      * Creates a {@link org.polypheny.db.adapter.neo4j.NeoConvention} of a {@link LpgMatch}.
      *
      * @param cluster Cluster this expression belongs to
-     * @param traits Traits active for this node, including {@link org.polypheny.db.schema.ModelTrait#GRAPH}
+     * @param traits Traits active for this node, including {@link ModelTrait#GRAPH}
      * @param input Input algebraic expression
      */
-    public NeoLpgMatch( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<RexCall> matches, List<String> names ) {
+    public NeoLpgMatch( AlgCluster cluster, AlgTraitSet traits, AlgNode input, List<RexCall> matches, List<PolyString> names ) {
         super( cluster, traits, input, matches, names );
     }
 
@@ -56,21 +57,21 @@ public class NeoLpgMatch extends LpgMatch implements NeoGraphAlg {
         implementor.visitChild( 0, getInput() );
 
         List<NeoStatement> neoMatches = new ArrayList<>();
-        for ( Pair<String, RexCall> match : Pair.zip( names, matches ) ) {
+        for ( Pair<PolyString, RexCall> match : Pair.zip( names, matches ) ) {
             String mappingLabel = implementor.getGraph().mappingLabel;
             switch ( match.right.op.getOperatorName() ) {
                 case CYPHER_NODE_EXTRACT:
-                    neoMatches.add( node_( match.left, labels_( mappingLabel ) ) );
+                    neoMatches.add( node_( match.left, labels_( PolyString.of( mappingLabel ) ) ) );
                     break;
                 case CYPHER_NODE_MATCH:
-                    PolyNode node = ((RexLiteral) match.right.operands.get( 1 )).getValueAs( PolyNode.class );
-                    if ( !match.left.equals( "" ) ) {
+                    PolyNode node = ((RexLiteral) match.right.operands.get( 1 )).value.asNode();
+                    if ( !match.left.value.isEmpty() ) {
                         node = new PolyNode( node.id, node.properties, node.labels, match.left );
                     }
-                    neoMatches.add( node_( node, mappingLabel, false ) );
+                    neoMatches.add( node_( node, PolyString.of( mappingLabel ), false ) );
                     break;
                 case CYPHER_PATH_MATCH:
-                    neoMatches.add( path_( match.left, ((RexLiteral) match.right.operands.get( 1 )).getValueAs( PolyPath.class ), mappingLabel, false ) );
+                    neoMatches.add( path_( match.left, ((RexLiteral) match.right.operands.get( 1 )).value.asPath(), PolyString.of( mappingLabel ), false ) );
                     break;
             }
         }

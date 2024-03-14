@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,18 +19,20 @@ package org.polypheny.db.avatica;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import java.io.Serializable;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -41,11 +43,14 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.StreamSupport;
+import javax.annotation.Nonnull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.AvaticaSeverity;
 import org.apache.calcite.avatica.AvaticaUtils;
 import org.apache.calcite.avatica.ColumnMetaData;
+import org.apache.calcite.avatica.ColumnMetaData.Rep;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.avatica.MetaImpl.MetaTypeInfo;
@@ -53,61 +58,76 @@ import org.apache.calcite.avatica.NoSuchStatementException;
 import org.apache.calcite.avatica.QueryState;
 import org.apache.calcite.avatica.proto.Common;
 import org.apache.calcite.avatica.proto.Requests.UpdateBatch;
-import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
 import org.apache.calcite.avatica.remote.ProtobufMeta;
 import org.apache.calcite.avatica.remote.TypedValue;
 import org.apache.calcite.avatica.util.Unsafe;
+import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
+import org.apache.calcite.linq4j.function.Function1;
+import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.EntityType;
-import org.polypheny.db.catalog.Catalog.EntityType.PrimitiveTableType;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.Catalog.Pattern;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogColumn.PrimitiveCatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogDatabase;
-import org.polypheny.db.catalog.entity.CatalogDatabase.PrimitiveCatalogDatabase;
-import org.polypheny.db.catalog.entity.CatalogForeignKey;
-import org.polypheny.db.catalog.entity.CatalogForeignKey.CatalogForeignKeyColumn;
-import org.polypheny.db.catalog.entity.CatalogForeignKey.CatalogForeignKeyColumn.PrimitiveCatalogForeignKeyColumn;
-import org.polypheny.db.catalog.entity.CatalogIndex;
-import org.polypheny.db.catalog.entity.CatalogIndex.CatalogIndexColumn;
-import org.polypheny.db.catalog.entity.CatalogIndex.CatalogIndexColumn.PrimitiveCatalogIndexColumn;
-import org.polypheny.db.catalog.entity.CatalogObject;
-import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogPrimaryKey.CatalogPrimaryKeyColumn;
-import org.polypheny.db.catalog.entity.CatalogPrimaryKey.CatalogPrimaryKeyColumn.PrimitiveCatalogPrimaryKeyColumn;
-import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogSchema.PrimitiveCatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.entity.CatalogTable.PrimitiveCatalogTable;
-import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.catalog.entity.LogicalUser;
+import org.polypheny.db.catalog.entity.PolyObject;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn.PrimitiveCatalogColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
+import org.polypheny.db.catalog.entity.logical.LogicalForeignKey.LogicalForeignKeyField;
+import org.polypheny.db.catalog.entity.logical.LogicalForeignKey.LogicalForeignKeyField.PrimitiveCatalogForeignKeyColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalIndex;
+import org.polypheny.db.catalog.entity.logical.LogicalIndex.LogicalIndexField;
+import org.polypheny.db.catalog.entity.logical.LogicalIndex.LogicalIndexField.PrimitiveCatalogIndexColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace.PrimitiveCatalogSchema;
+import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
+import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey.LogicalPrimaryKeyField;
+import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey.LogicalPrimaryKeyField.PrimitiveCatalogPrimaryKeyColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTable.PrimitiveCatalogTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.logistic.EntityType.PrimitiveTableType;
+import org.polypheny.db.catalog.logistic.Pattern;
+import org.polypheny.db.functions.TemporalFunctions;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
+import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
+import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.processing.Processor;
+import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyBinary;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyNull;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyFloat;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.temporal.PolyDate;
+import org.polypheny.db.type.entity.temporal.PolyTime;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
 
@@ -115,17 +135,11 @@ import org.polypheny.db.util.Pair;
 @Slf4j
 public class DbmsMeta implements ProtobufMeta {
 
-    /**
-     * Special value for {@code Statement#getLargeMaxRows()} that means fetch an unlimited number of rows in a single batch.
-     *
-     * Any other negative value will return an unlimited number of rows but will do it in the default batch size, namely 100.
-     */
-    public static final int UNLIMITED_COUNT = -2;
-
     public static final boolean SEND_FIRST_FRAME_WITH_RESPONSE = false;
+    public static final JavaTypeFactoryImpl TYPE_FACTORY = new JavaTypeFactoryImpl();
 
-    private final ConcurrentMap<String, PolyphenyDbConnectionHandle> openConnections = new ConcurrentHashMap<>();
-    private final ConcurrentMap<String, PolyphenyDbStatementHandle> openStatements = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, PolyConnectionHandle> openConnections = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, PolyStatementHandle<Object>> openStatements = new ConcurrentHashMap<>();
 
     final Calendar calendar = Unsafe.localCalendar();
     private final Catalog catalog = Catalog.getInstance();
@@ -164,7 +178,7 @@ public class DbmsMeta implements ProtobufMeta {
             try {
                 propertyValue = p.method.invoke( metaData );
             } catch ( IllegalAccessException | InvocationTargetException e ) {
-                throw new RuntimeException( e );
+                throw new GenericRuntimeException( e );
             }
         } else {
             propertyValue = p.defaultValue;
@@ -179,59 +193,55 @@ public class DbmsMeta implements ProtobufMeta {
             final StatementHandle statementHandle,
             Map<String, Object> internalParameters,
             List<ColumnMetaData> columns,
-            CursorFactory cursorFactory,
-            final Frame firstFrame ) {
-        final PolyphenyDbSignature<Object> signature =
-                new PolyphenyDbSignature<Object>(
+            final Iterable<PolyValue[]> firstFrame ) {
+        final PolySignature signature =
+                new PolySignature(
                         "",
                         ImmutableList.of(),
                         internalParameters,
                         null,
                         columns,
-                        cursorFactory,
-                        null,
+                        CursorFactory.LIST,
                         ImmutableList.of(),
                         -1,
                         null,
                         StatementType.SELECT,
                         new ExecutionTimeMonitor(),
-                        NamespaceType.RELATIONAL ) {
-                    /*@Override
-                    public Enumerable<Object> enumerable( DataContext dataContext ) {
-                        return Linq4j.asEnumerable( firstFrame.rows );
-                    }*/
+                        DataModel.RELATIONAL ) {
+                    @Override
+                    public Enumerable<PolyValue[]> enumerable( DataContext dataContext ) {
+                        return Linq4j.asEnumerable( firstFrame );
+                    }
                 };
-        return MetaResultSet.create( ch.id, statementHandle.id, true, signature, firstFrame );
+        // changed with th branch
+        List<Object> list = StreamSupport.stream( firstFrame.spliterator(), false ).map( vs -> (Object) Arrays.stream( vs ).map( v -> v == null ? null : v.toJava() ).toArray( Object[]::new ) ).toList();
+        return MetaResultSet.create( ch.id, statementHandle.id, true, signature, Meta.Frame.create( 0, false, list ) );
     }
 
 
-    private <E> MetaResultSet createMetaResultSet( final ConnectionHandle ch, final StatementHandle statementHandle, Enumerable<E> enumerable, Class clazz, String... names ) {
+    private MetaResultSet createMetaResultSet( final ConnectionHandle ch, final StatementHandle statementHandle, Enumerable<PolyValue[]> enumerable, Class<?> clazz, String... names ) {
         final List<ColumnMetaData> columns = new ArrayList<>();
-        final List<Field> fields = new ArrayList<>();
-        //final List<String> fieldNames = new ArrayList<>();
+
+        int i = 0;
         for ( String name : names ) {
-            final int index = fields.size();
             final String fieldName = AvaticaUtils.toCamelCase( name );
-            final Field field;
+            final Class<?> type;
             try {
-                field = clazz.getField( fieldName );
-            } catch ( NoSuchFieldException e ) {
-                throw new RuntimeException( e );
+                type = clazz.isRecord() ? clazz.getMethod( fieldName ).getReturnType() : clazz.getField( fieldName ).getType();
+            } catch ( NoSuchFieldException | NoSuchMethodException e ) {
+                throw new GenericRuntimeException( e );
             }
-            columns.add( MetaImpl.columnMetaData( name, index, field.getType(), false ) );
-            fields.add( field );
-            //fieldNames.add( fieldName );
+            columns.add( MetaImpl.columnMetaData( name, i, type, false ) );
+            i++;
         }
-        //noinspection unchecked
-        final Iterable<Object> iterable = (Iterable<Object>) enumerable;
-        //return createMetaResultSet( ch, statementHandle, Collections.emptyMap(), columns, CursorFactory.record( clazz, fields, fieldNames ), new Frame( 0, true, iterable ) );
-        return createMetaResultSet( ch, statementHandle, Collections.emptyMap(), columns, CursorFactory.LIST, new Frame( 0, true, iterable ) );
+
+        return createMetaResultSet( ch, statementHandle, new HashMap<>(), columns, enumerable );
     }
 
 
-    private Enumerable<Object> toEnumerable( final List<? extends CatalogObject> entities ) {
-        final List<Object> objects = new LinkedList<>();
-        for ( CatalogObject entity : entities ) {
+    private Enumerable<PolyValue[]> toEnumerable( final List<? extends PolyObject> entities ) {
+        final List<PolyValue[]> objects = new ArrayList<>();
+        for ( PolyObject entity : entities ) {
             objects.add( entity.getParameterArray() );
         }
         return Linq4j.asEnumerable( objects );
@@ -240,12 +250,12 @@ public class DbmsMeta implements ProtobufMeta {
 
     /**
      * Returns a map of static database properties.
-     *
+     * <p>
      * The provider can omit properties whose value is the same as the default.
      */
     @Override
     public Map<DatabaseProperty, Object> getDatabaseProperties( ConnectionHandle ch ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        final PolyConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getDatabaseProperties( ConnectionHandle {} )", ch );
@@ -263,17 +273,13 @@ public class DbmsMeta implements ProtobufMeta {
     // TODO: typeList is ignored
     @Override
     public MetaResultSet getTables( final ConnectionHandle ch, final String database, final Pat schemaPattern, final Pat tablePattern, final List<String> typeList ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        final PolyConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getTables( ConnectionHandle {}, String {}, Pat {}, Pat {}, List<String> {} )", ch, database, schemaPattern, tablePattern, typeList );
             }
 
-            final List<CatalogTable> tables = catalog.getTables(
-                    database == null ? null : new Pattern( database ),
-                    (schemaPattern == null || schemaPattern.s == null) ? null : new Pattern( schemaPattern.s ),
-                    (tablePattern == null || tablePattern.s == null) ? null : new Pattern( tablePattern.s )
-            );
+            final List<LogicalTable> tables = getLogicalTables( schemaPattern, tablePattern );
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
                     ch,
@@ -298,19 +304,32 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
+    @Nonnull
+    private List<LogicalTable> getLogicalTables( Pat schemaPattern, Pat tablePattern ) {
+        return getLogicalTables( (schemaPattern == null || schemaPattern.s == null) ? null : new Pattern( schemaPattern.s ),
+                (tablePattern == null || tablePattern.s == null) ? null : new Pattern( tablePattern.s ) );
+    }
+
+
+    @Nonnull
+    private List<LogicalTable> getLogicalTables( Pattern schemaPattern, Pattern tablePattern ) {
+        //List<LogicalNamespace> namespaces = catalog.getSnapshot().getNamespaces( schemaPattern );
+
+        return catalog.getSnapshot().rel().getTables( schemaPattern, tablePattern );
+    }
+
+
     @Override
     public MetaResultSet getColumns( final ConnectionHandle ch, final String database, final Pat schemaPattern, final Pat tablePattern, final Pat columnPattern ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        final PolyConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
-                log.trace( "getColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, database, schemaPattern, tablePattern, columnPattern );
+                log.trace( "getAllocColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, database, schemaPattern, tablePattern, columnPattern );
             }
-            final List<CatalogColumn> columns = catalog.getColumns(
-                    database == null ? null : new Pattern( database ),
-                    (schemaPattern == null || schemaPattern.s == null) ? null : new Pattern( schemaPattern.s ),
+            final List<LogicalColumn> columns = getLogicalTables( schemaPattern, tablePattern ).stream().flatMap( t -> catalog.getSnapshot().rel().getColumns(
                     (tablePattern == null || tablePattern.s == null) ? null : new Pattern( tablePattern.s ),
                     (columnPattern == null || columnPattern.s == null) ? null : new Pattern( columnPattern.s )
-            );
+            ).stream() ).toList();
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
                     ch,
@@ -345,13 +364,12 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getSchemas( final ConnectionHandle ch, final String database, final Pat schemaPattern ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        final PolyConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
-                log.trace( "getSchemas( ConnectionHandle {}, String {}, Pat {} )", ch, database, schemaPattern );
+                log.trace( "getNamespaces( ConnectionHandle {}, String {}, Pat {} )", ch, database, schemaPattern );
             }
-            final List<CatalogSchema> schemas = catalog.getSchemas(
-                    database == null ? null : new Pattern( database ),
+            final List<LogicalNamespace> schemas = catalog.getSnapshot().getNamespaces(
                     (schemaPattern == null || schemaPattern.s == null) ? null : new Pattern( schemaPattern.s )
             );
             StatementHandle statementHandle = createStatement( ch );
@@ -373,18 +391,19 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getCatalogs( final ConnectionHandle ch ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        final PolyConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getCatalogs( ConnectionHandle {} )", ch );
             }
-            final List<CatalogDatabase> databases = catalog.getDatabases( null );
+            //final List<CatalogDatabase> databases = Linq4j.asEnumerable( new String[]{ "APP", "system", "public" } );
+            List<PolyValue[]> databases = Collections.singletonList( new PolyValue[]{ PolyString.of( Catalog.DATABASE_NAME ), PolyString.of( "system" ), PolyString.of( Catalog.DEFAULT_NAMESPACE_NAME ) } );
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
                     ch,
                     statementHandle,
-                    toEnumerable( databases ),
-                    PrimitiveCatalogDatabase.class,
+                    Linq4j.asEnumerable( databases ),
+                    PrimitiveDatabase.class,
                     // According to JDBC standard:
                     "TABLE_CAT",
                     // Polypheny-DB specific extensions:
@@ -397,16 +416,16 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getTableTypes( final ConnectionHandle ch ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        final PolyConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getTableTypes( ConnectionHandle {} )", ch );
             }
-            final List<Object> objects = new LinkedList<>();
+            final List<PolyValue[]> objects = new LinkedList<>();
             for ( EntityType tt : EntityType.values() ) {
                 objects.add( tt.getParameterArray() );
             }
-            Enumerable<Object> enumerable = Linq4j.asEnumerable( objects );
+            Enumerable<PolyValue[]> enumerable = Linq4j.asEnumerable( objects );
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
                     ch,
@@ -421,7 +440,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getProcedures( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat procedureNamePattern ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        final PolyConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getProcedures( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, procedureNamePattern );
@@ -435,7 +454,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getProcedureColumns( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat procedureNamePattern, final Pat columnNamePattern ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        final PolyConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getProcedureColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, procedureNamePattern, columnNamePattern );
@@ -449,7 +468,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getColumnPrivileges( final ConnectionHandle ch, final String catalog, final String schema, final String table, final Pat columnNamePattern ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        final PolyConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getColumnPrivileges( ConnectionHandle {}, String {}, String {}, String {}, Pat {} )", ch, catalog, schema, table, columnNamePattern );
@@ -465,7 +484,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getTablePrivileges( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat tableNamePattern ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        final PolyConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getTablePrivileges( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern );
@@ -481,7 +500,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getBestRowIdentifier( final ConnectionHandle ch, final String catalog, final String schema, final String table, final int scope, final boolean nullable ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        final PolyConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getBestRowIdentifier( ConnectionHandle {}, String {}, String {}, String {}, int {}, boolean {} )", ch, catalog, schema, table, scope, nullable );
@@ -495,7 +514,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getVersionColumns( final ConnectionHandle ch, final String catalog, final String schema, final String table ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        final PolyConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getVersionColumns( ConnectionHandle {}, String {}, String {}, String {} )", ch, catalog, schema, table );
@@ -509,19 +528,18 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getPrimaryKeys( final ConnectionHandle ch, final String database, final String schema, final String table ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        final PolyConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getPrimaryKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, database, schema, table );
             }
             final Pattern tablePattern = table == null ? null : new Pattern( table );
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
-            final Pattern databasePattern = database == null ? null : new Pattern( database );
-            final List<CatalogTable> catalogEntities = catalog.getTables( databasePattern, schemaPattern, tablePattern );
-            List<CatalogPrimaryKeyColumn> primaryKeyColumns = new LinkedList<>();
-            for ( CatalogTable catalogTable : catalogEntities ) {
+            final List<LogicalTable> catalogEntities = getLogicalTables( schemaPattern, tablePattern );
+            List<LogicalPrimaryKeyField> primaryKeyColumns = new LinkedList<>();
+            for ( LogicalTable catalogTable : catalogEntities ) {
                 if ( catalogTable.primaryKey != null ) {
-                    final CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
+                    final LogicalPrimaryKey primaryKey = catalog.getSnapshot().rel().getPrimaryKey( catalogTable.primaryKey ).orElseThrow();
                     primaryKeyColumns.addAll( primaryKey.getCatalogPrimaryKeyColumns() );
                 }
             }
@@ -546,19 +564,18 @@ public class DbmsMeta implements ProtobufMeta {
     @SuppressWarnings("Duplicates")
     @Override
     public MetaResultSet getImportedKeys( final ConnectionHandle ch, final String database, final String schema, final String table ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        final PolyConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getImportedKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, database, schema, table );
             }
             final Pattern tablePattern = table == null ? null : new Pattern( table );
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
-            final Pattern databasePattern = database == null ? null : new Pattern( database );
-            final List<CatalogTable> catalogEntities = catalog.getTables( databasePattern, schemaPattern, tablePattern );
-            List<CatalogForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
-            for ( CatalogTable catalogTable : catalogEntities ) {
-                List<CatalogForeignKey> importedKeys = catalog.getForeignKeys( catalogTable.id );
-                importedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyColumns() ) );
+            final List<LogicalTable> catalogEntities = getLogicalTables( schemaPattern, tablePattern );
+            List<LogicalForeignKeyField> foreignKeyColumns = new LinkedList<>();
+            for ( LogicalTable catalogTable : catalogEntities ) {
+                List<LogicalForeignKey> importedKeys = catalog.getSnapshot().rel().getForeignKeys( catalogTable.id );
+                importedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyFields() ) );
             }
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
@@ -589,19 +606,19 @@ public class DbmsMeta implements ProtobufMeta {
     @SuppressWarnings("Duplicates")
     @Override
     public MetaResultSet getExportedKeys( final ConnectionHandle ch, final String database, final String schema, final String table ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        final PolyConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getExportedKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, database, schema, table );
             }
             final Pattern tablePattern = table == null ? null : new Pattern( table );
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
-            final Pattern databasePattern = database == null ? null : new Pattern( database );
-            final List<CatalogTable> catalogEntities = catalog.getTables( databasePattern, schemaPattern, tablePattern );
-            List<CatalogForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
-            for ( CatalogTable catalogTable : catalogEntities ) {
-                List<CatalogForeignKey> exportedKeys = catalog.getExportedKeys( catalogTable.id );
-                exportedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyColumns() ) );
+
+            final List<LogicalTable> catalogEntities = getLogicalTables( schemaPattern, tablePattern );
+            List<LogicalForeignKeyField> foreignKeyColumns = new LinkedList<>();
+            for ( LogicalTable catalogTable : catalogEntities ) {
+                List<LogicalForeignKey> exportedKeys = catalog.getSnapshot().rel().getExportedKeys( catalogTable.id );
+                exportedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyFields() ) );
             }
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
@@ -631,7 +648,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getCrossReference( final ConnectionHandle ch, final String parentCatalog, final String parentSchema, final String parentTable, final String foreignCatalog, final String foreignSchema, final String foreignTable ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        final PolyConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getCrossReference( ConnectionHandle {}, String {}, String {}, String {}, String {}, String {}, String {} )", ch, parentCatalog, parentSchema, parentTable, foreignCatalog, foreignSchema, foreignTable );
@@ -647,35 +664,35 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getTypeInfo( final ConnectionHandle ch ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        final PolyConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getTypeInfo( ConnectionHandle {} )", ch );
             }
             final StatementHandle statementHandle = createStatement( ch );
             final AlgDataTypeSystem typeSystem = AlgDataTypeSystem.DEFAULT;
-            final List<Object> objects = new LinkedList<>();
+            final List<PolyValue[]> objects = new ArrayList<>();
             for ( PolyType polyType : PolyType.values() ) {
                 objects.add(
-                        new Serializable[]{
-                                polyType.getName(),
-                                polyType.getJdbcOrdinal(),
-                                typeSystem.getMaxPrecision( polyType ),
-                                typeSystem.getLiteral( polyType, true ),
-                                typeSystem.getLiteral( polyType, false ),
+                        new PolyValue[]{
+                                PolyString.of( polyType.getName() ),
+                                PolyInteger.of( polyType.getJdbcOrdinal() ),
+                                PolyInteger.of( typeSystem.getMaxPrecision( polyType ) ),
+                                PolyString.of( typeSystem.getLiteral( polyType, true ) ),
+                                PolyString.of( typeSystem.getLiteral( polyType, false ) ),
                                 null,
-                                (short) DatabaseMetaData.typeNullable, // All types are nullable
-                                typeSystem.isCaseSensitive( polyType ),
-                                (short) DatabaseMetaData.typeSearchable, // Making all type searchable; we may want to be specific and declare under PolyType
-                                false,
-                                false,
-                                typeSystem.isAutoincrement( polyType ),
-                                polyType.getName(),
-                                (short) polyType.getMinScale(),
-                                (short) typeSystem.getMaxScale( polyType ),
+                                PolyInteger.of( DatabaseMetaData.typeNullable ), // All types are nullable
+                                PolyBoolean.of( typeSystem.isCaseSensitive( polyType ) ),
+                                PolyInteger.of( DatabaseMetaData.typeSearchable ), // Making all type searchable; we may want to be specific and declare under PolyType
+                                PolyBoolean.FALSE,
+                                PolyBoolean.FALSE,
+                                PolyBoolean.of( typeSystem.isAutoincrement( polyType ) ),
+                                PolyString.of( polyType.getName() ),
+                                PolyInteger.of( polyType.getMinScale() ),
+                                PolyInteger.of( typeSystem.getMaxScale( polyType ) ),
                                 null,
                                 null,
-                                typeSystem.getNumTypeRadix( polyType ) == 0 ? null : typeSystem.getNumTypeRadix( polyType ) } );
+                                PolyInteger.of( typeSystem.getNumTypeRadix( polyType ) == 0 ? null : typeSystem.getNumTypeRadix( polyType ) ) } );
             }
             return createMetaResultSet(
                     ch,
@@ -705,26 +722,25 @@ public class DbmsMeta implements ProtobufMeta {
 
 
     @Override
-    public MetaResultSet getIndexInfo( final ConnectionHandle ch, final String database, final String schema, final String table, final boolean unique, final boolean approximate ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+    public MetaResultSet getIndexInfo( final ConnectionHandle ch, final String database, final String namespace, final String table, final boolean unique, final boolean approximate ) {
+        final PolyConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
-                log.trace( "getIndexInfo( ConnectionHandle {}, String {}, String {}, String {}, boolean {}, boolean {} )", ch, database, schema, table, unique, approximate );
+                log.trace( "getIndexInfo( ConnectionHandle {}, String {}, String {}, String {}, boolean {}, boolean {} )", ch, database, namespace, table, unique, approximate );
             }
             final Pattern tablePattern = table == null ? null : new Pattern( table );
-            final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
-            final Pattern databasePattern = database == null ? null : new Pattern( database );
-            final List<CatalogTable> catalogEntities = catalog.getTables( databasePattern, schemaPattern, tablePattern );
-            List<CatalogIndexColumn> catalogIndexColumns = new LinkedList<>();
-            for ( CatalogTable catalogTable : catalogEntities ) {
-                List<CatalogIndex> catalogIndexInfos = catalog.getIndexes( catalogTable.id, unique );
-                catalogIndexInfos.forEach( info -> catalogIndexColumns.addAll( info.getCatalogIndexColumns() ) );
+            final Pattern namespacePattern = namespace == null ? null : new Pattern( namespace );
+            final List<LogicalTable> entities = getLogicalTables( namespacePattern, tablePattern );
+            List<LogicalIndexField> logicalIndexFields = new ArrayList<>();
+            for ( LogicalTable entity : entities ) {
+                List<LogicalIndex> logicalIndexInfos = catalog.getSnapshot().rel().getIndexes( entity.id, unique );
+                logicalIndexInfos.forEach( info -> logicalIndexFields.addAll( info.getIndexFields() ) );
             }
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
                     ch,
                     statementHandle,
-                    toEnumerable( catalogIndexColumns ),
+                    toEnumerable( logicalIndexFields ),
                     PrimitiveCatalogIndexColumn.class,
                     // According to JDBC standard:
                     "TABLE_CAT",    // The name of the database in which the specified table resides.
@@ -750,7 +766,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getUDTs( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat typeNamePattern, final int[] types ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        final PolyConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getUDTs( ConnectionHandle {}, String {}, Pat {}, Pat {}, int[] {} )", ch, catalog, schemaPattern, typeNamePattern, types );
@@ -764,7 +780,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getSuperTypes( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat typeNamePattern ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        final PolyConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getSuperTypes( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, typeNamePattern );
@@ -778,7 +794,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getSuperTables( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat tableNamePattern ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        final PolyConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getSuperTables( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern );
@@ -792,7 +808,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getAttributes( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat typeNamePattern, final Pat attributeNamePattern ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        final PolyConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getAttributes( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, typeNamePattern, attributeNamePattern );
@@ -806,7 +822,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getClientInfoProperties( final ConnectionHandle ch ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        final PolyConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getClientInfoProperties( ConnectionHandle {} )", ch );
@@ -820,7 +836,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getFunctions( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat functionNamePattern ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        final PolyConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getFunctions( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, functionNamePattern );
@@ -834,7 +850,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getFunctionColumns( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat functionNamePattern, final Pat columnNamePattern ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        final PolyConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getFunctionColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, functionNamePattern, columnNamePattern );
@@ -848,7 +864,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getPseudoColumns( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat tableNamePattern, final Pat columnNamePattern ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        final PolyConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getPseudoColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern, columnNamePattern );
@@ -869,47 +885,50 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public ExecuteBatchResult executeBatchProtobuf( final StatementHandle h, final List<UpdateBatch> parameterValues ) throws NoSuchStatementException {
-        final PolyphenyDbConnectionHandle connection = openConnections.get( h.connectionId );
+        final PolyConnectionHandle connection = openConnections.get( h.connectionId );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "executeBatchProtobuf( StatementHandle {}, List<UpdateBatch> {} )", h, parameterValues );
             }
 
-            final PolyphenyDbStatementHandle statementHandle = getPolyphenyDbStatementHandle( h );
+            final PolyStatementHandle<?> statementHandle = getPolyphenyDbStatementHandle( h );
 
             long[] updateCounts = new long[parameterValues.size()];
-            Map<Long, List<Object>> values = new HashMap<>();
+            Map<Long, List<PolyValue>> values = new HashMap<>();
+            List<AlgDataType> types = new ArrayList<>();
             for ( UpdateBatch updateBatch : parameterValues ) {
                 List<Common.TypedValue> list = updateBatch.getParameterValuesList();
                 long index = 0;
                 for ( Common.TypedValue v : list ) {
                     long i = index++;
                     if ( !values.containsKey( i ) ) {
-                        values.put( i, new LinkedList<>() );
+                        values.put( i, new ArrayList<>() );
                     }
-                    if ( "ARRAY".equals( v.getType().name() ) ) {
-                        values.get( i ).add( convertList( (List<Object>) TypedValue.fromProto( v ).toLocal() ) );
+                    if ( v.getType() == Common.Rep.ARRAY ) {
+                        values.get( i ).add( convertList( (List<TypedValue>) TypedValue.fromProto( v ).toLocal() ) );
                     } else {
-                        values.get( i ).add( TypedValue.fromProto( v ).toJdbc( calendar ) );
+                        values.get( i ).add( toPolyValue( TypedValue.fromProto( v ) ) );
                     }
+                    types.add( (int) i, toPolyAlgType( TypedValue.fromProto( v ), TYPE_FACTORY ) );
                 }
             }
 
             try {
-                if ( values.size() == 0 ) {
+                if ( values.isEmpty() ) {
                     // Nothing to execute
                     return new ExecuteBatchResult( new long[0] );
                 }
                 statementHandle.setStatement( connection.getCurrentOrCreateNewTransaction().createStatement() );
-                for ( Entry<Long, List<Object>> valuesList : values.entrySet() ) {
-                    statementHandle.getStatement().getDataContext().addParameterValues( valuesList.getKey(), null, valuesList.getValue() );
+                int i = 0;
+                for ( Entry<Long, List<PolyValue>> valuesList : values.entrySet() ) {
+                    statementHandle.getStatement().getDataContext().addParameterValues( valuesList.getKey(), types.get( i++ ), valuesList.getValue() );
                 }
                 prepare( h, statementHandle.getPreparedQuery() );
                 updateCounts[0] = execute( h, connection, statementHandle, -1 ).size();
             } catch ( Throwable e ) {
                 log.error( "Exception while preparing query", e );
                 String message = e.getLocalizedMessage();
-                throw new AvaticaRuntimeException( message == null ? "null" : message, -1, "", AvaticaSeverity.ERROR );
+                throw new GenericRuntimeException( message == null ? "null" : message, -1, "", AvaticaSeverity.ERROR );
             }
 
             return new ExecuteBatchResult( updateCounts );
@@ -919,19 +938,19 @@ public class DbmsMeta implements ProtobufMeta {
 
     /**
      * Creates an iterable for a result set.
-     *
-     * The default implementation just returns {@code iterable}, which it requires to be not null; derived classes may instead choose to execute the relational
+     * <p>
+     * The default implementation just returns {@code iterable}, which it requires to be not null; derived classes may instead choose to execute the algebra
      * expression in {@code signature}.
      */
     @Override
     public Iterable<Object> createIterable( final StatementHandle h, final QueryState state, final Signature signature, final List<TypedValue> parameters, final Frame firstFrame ) {
-        final PolyphenyDbConnectionHandle connection = openConnections.get( h.connectionId );
+        final PolyConnectionHandle connection = openConnections.get( h.connectionId );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
-                log.trace( "createIterable( StatementHandle {}, QueryState {}, Signature {}, List<TypedValue> {}, Frame {} )", h, state, signature, parameters, firstFrame );
+                log.trace( "createExternalIterable( StatementHandle {}, QueryState {}, Signature {}, List<TypedValue> {}, Frame {} )", h, state, signature, parameters, firstFrame );
             }
 
-            log.error( "[NOT IMPLEMENTED YET] createIterable( StatementHandle {}, QueryState {}, Signature {}, List<TypedValue> {}, Frame {} )", h, state, signature, parameters, firstFrame );
+            log.error( "[NOT IMPLEMENTED YET] createExternalIterable( StatementHandle {}, QueryState {}, Signature {}, List<TypedValue> {}, Frame {} )", h, state, signature, parameters, firstFrame );
             return null;
         }
     }
@@ -947,18 +966,18 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public StatementHandle prepare( final ConnectionHandle ch, final String sql, final long maxRowCount ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        final PolyConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "prepare( ConnectionHandle {}, String {}, long {} )", ch, sql, maxRowCount );
             }
 
             StatementHandle h = createStatement( ch );
-            PolyphenyDbStatementHandle polyphenyDbStatement;
+            PolyStatementHandle<?> polyphenyDbStatement;
             try {
                 polyphenyDbStatement = getPolyphenyDbStatementHandle( h );
             } catch ( NoSuchStatementException e ) {
-                throw new RuntimeException( e );
+                throw new GenericRuntimeException( e );
             }
             polyphenyDbStatement.setPreparedQuery( sql );
 
@@ -973,12 +992,11 @@ public class DbmsMeta implements ProtobufMeta {
 
             List<AvaticaParameter> avaticaParameters = deriveAvaticaParameters( parameterRowType );
 
-            PolyphenyDbSignature signature = new PolyphenyDbSignature<>(
+            PolySignature signature = new PolySignature(
                     sql,
                     avaticaParameters,
                     ImmutableMap.of(),
                     parameterRowType,
-                    null,
                     null,
                     null,
                     ImmutableList.of(),
@@ -986,7 +1004,7 @@ public class DbmsMeta implements ProtobufMeta {
                     null,
                     StatementType.SELECT,
                     null,
-                    NamespaceType.RELATIONAL );
+                    DataModel.RELATIONAL );
             h.signature = signature;
             polyphenyDbStatement.setSignature( signature );
 
@@ -1027,16 +1045,16 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public ExecuteResult prepareAndExecute( final StatementHandle h, final String sql, final long maxRowCount, final int maxRowsInFirstFrame, final PrepareCallback callback ) throws NoSuchStatementException {
-        final PolyphenyDbConnectionHandle connection = openConnections.get( h.connectionId );
+        final PolyConnectionHandle connection = openConnections.get( h.connectionId );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "prepareAndExecute( StatementHandle {}, String {}, long {}, int {}, PrepareCallback {} )", h, sql, maxRowCount, maxRowsInFirstFrame, callback );
             }
 
-            PolyphenyDbStatementHandle statementHandle = getPolyphenyDbStatementHandle( h );
+            PolyStatementHandle<?> statementHandle = getPolyphenyDbStatementHandle( h );
             statementHandle.setPreparedQuery( sql );
             statementHandle.setStatement( connection.getCurrentOrCreateNewTransaction().createStatement() );
-            return execute( h, new LinkedList<>(), maxRowsInFirstFrame, connection );
+            return execute( h, new ArrayList<>(), maxRowsInFirstFrame, connection );
         }
     }
 
@@ -1050,7 +1068,7 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public ExecuteBatchResult prepareAndExecuteBatch( final StatementHandle h, final List<String> sqlCommands ) throws NoSuchStatementException {
-        final PolyphenyDbConnectionHandle connection = openConnections.get( h.connectionId );
+        final PolyConnectionHandle connection = openConnections.get( h.connectionId );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "prepareAndExecuteBatch( StatementHandle {}, List<String> {} )", h, sqlCommands );
@@ -1071,7 +1089,7 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public ExecuteBatchResult executeBatch( final StatementHandle h, final List<List<TypedValue>> parameterValues ) throws NoSuchStatementException {
-        final PolyphenyDbConnectionHandle connection = openConnections.get( h.connectionId );
+        final PolyConnectionHandle connection = openConnections.get( h.connectionId );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "executeBatch( StatementHandle {}, List<List<TypedValue>> {} )", h, parameterValues );
@@ -1085,7 +1103,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     /**
      * Returns a frame of rows.
-     *
+     * <p>
      * The frame describes whether there may be another frame. If there is not another frame, the current iteration is done when we have finished the rows in the this frame.
      *
      * @param h Statement handle
@@ -1095,18 +1113,22 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public Frame fetch( final StatementHandle h, final long offset, final int fetchMaxRowCount ) throws NoSuchStatementException {
-        final PolyphenyDbConnectionHandle connection = openConnections.get( h.connectionId );
+        final PolyConnectionHandle connection = openConnections.get( h.connectionId );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "fetch( StatementHandle {}, long {}, int {} )", h, offset, fetchMaxRowCount );
             }
 
-            final PolyphenyDbStatementHandle statementHandle = getPolyphenyDbStatementHandle( h );
+            final PolyStatementHandle<Object> statementHandle = getPolyphenyDbStatementHandle( h );
 
-            final PolyphenyDbSignature signature = statementHandle.getSignature();
+            final PolySignature signature = statementHandle.getSignature();
             final Iterator<Object> iterator;
+            if ( statementHandle.getStatement() == null ) {
+                // this is a hotfix for catalog methods of dbmsmeta todo dl diff in jdbc bench
+                return new Frame( 0, true, new ArrayList<>() );
+            }
             if ( statementHandle.getOpenResultSet() == null ) {
-                final Iterable<Object> iterable = createIterable( statementHandle.getStatement().getDataContext(), signature );
+                final Iterable<Object> iterable = createExternalIterable( statementHandle.getStatement().getDataContext(), signature );
                 iterator = iterable.iterator();
                 statementHandle.setOpenResultSet( iterator );
                 statementHandle.getExecutionStopWatch().start();
@@ -1114,11 +1136,11 @@ public class DbmsMeta implements ProtobufMeta {
                 iterator = statementHandle.getOpenResultSet();
                 statementHandle.getExecutionStopWatch().resume();
             }
-            final List rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, fetchMaxRowCount ), new ArrayList<>() );
+
+            final List<?> rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, fetchMaxRowCount ), new ArrayList<>() );
             statementHandle.getExecutionStopWatch().suspend();
             boolean done = fetchMaxRowCount == 0 || rows.size() < fetchMaxRowCount;
-            @SuppressWarnings("unchecked")
-            List<Object> rows1 = (List<Object>) rows;
+
             if ( done ) {
                 statementHandle.getExecutionStopWatch().stop();
                 signature.getExecutionTimeMonitor().setExecutionTime( statementHandle.getExecutionStopWatch().getNanoTime() );
@@ -1130,15 +1152,13 @@ public class DbmsMeta implements ProtobufMeta {
                     log.error( "Exception while closing result iterator", e );
                 }
             }
-            return new Meta.Frame( offset, done, rows1 );
+            return new Meta.Frame( offset, done, (Iterable<Object>) rows );
         }
     }
 
 
-    private Iterable<Object> createIterable( DataContext dataContext, PolyphenyDbSignature signature ) {
-        //noinspection unchecked
-        final PolyphenyDbSignature<Object> polyphenyDbSignature = (PolyphenyDbSignature<Object>) signature;
-        return polyphenyDbSignature.enumerable( dataContext );
+    private Iterable<Object> createExternalIterable( DataContext dataContext, PolySignature signature ) {
+        return externalize( signature.enumerable( dataContext ), signature.rowType );
     }
 
 
@@ -1172,33 +1192,25 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public ExecuteResult execute( final StatementHandle h, final List<TypedValue> parameterValues, final int maxRowsInFirstFrame ) throws NoSuchStatementException {
-        final PolyphenyDbConnectionHandle connection = openConnections.get( h.connectionId );
+        final PolyConnectionHandle connection = openConnections.get( h.connectionId );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "execute( StatementHandle {}, List<TypedValue> {}, int {} )", h, parameterValues, maxRowsInFirstFrame );
             }
-            final PolyphenyDbStatementHandle statementHandle = getPolyphenyDbStatementHandle( h );
+            final PolyStatementHandle<?> statementHandle = getPolyphenyDbStatementHandle( h );
             statementHandle.setStatement( connection.getCurrentOrCreateNewTransaction().createStatement() );
             return execute( h, parameterValues, maxRowsInFirstFrame, connection );
         }
     }
 
 
-    private ExecuteResult execute( StatementHandle h, List<TypedValue> parameterValues, int maxRowsInFirstFrame, PolyphenyDbConnectionHandle connection ) throws NoSuchStatementException {
-        final PolyphenyDbStatementHandle statementHandle = getPolyphenyDbStatementHandle( h );
+    private ExecuteResult execute( StatementHandle h, List<TypedValue> parameterValues, int maxRowsInFirstFrame, PolyConnectionHandle connection ) throws NoSuchStatementException {
+        final PolyStatementHandle<?> statementHandle = getPolyphenyDbStatementHandle( h );
 
         long index = 0;
         for ( TypedValue v : parameterValues ) {
             if ( v != null ) {
-                Object o;
-                if ( "ARRAY".equals( v.type.name() ) ) {
-                    o = convertList( (List<Object>) v.toLocal() );
-                } else {
-                    o = v.toJdbc( calendar );
-                }
-                List<Object> list = new LinkedList<>();
-                list.add( o );
-                statementHandle.getStatement().getDataContext().addParameterValues( index++, null, list );
+                statementHandle.getStatement().getDataContext().addParameterValues( index++, toPolyAlgType( v, connection.getCurrentTransaction().getTypeFactory() ), List.of( toPolyValue( v ) ) );
             }
         }
 
@@ -1211,7 +1223,7 @@ public class DbmsMeta implements ProtobufMeta {
                 } catch ( Exception e ) {
                     rollback( connection.getHandle() );
 
-                    throw new RuntimeException( "Error on auto-commit, transaction was rolled back.\n\n" + e );
+                    throw new GenericRuntimeException( "Error on auto-commit, transaction was rolled back.\n\n" + e );
                 }
             }
 
@@ -1219,51 +1231,143 @@ public class DbmsMeta implements ProtobufMeta {
         } catch ( Throwable e ) {
             log.error( "Exception while preparing query", e );
             String message = e.getLocalizedMessage();
-            throw new AvaticaRuntimeException( message == null ? "null" : message, -1, "", AvaticaSeverity.ERROR );
+            throw new GenericRuntimeException( message == null ? "null" : message, -1, "", AvaticaSeverity.ERROR );
         }
     }
 
 
-    private List<Object> convertList( List<Object> list ) {
-        List<Object> newList = new LinkedList<>();
-        for ( Object o : list ) {
-            if ( o instanceof List ) {
-                newList.add( convertList( list ) );
-            } else if ( o instanceof TypedValue ) {
-                newList.add( ((TypedValue) o).toJdbc( calendar ) );
-            }
+    private AlgDataType toPolyAlgType( TypedValue value, JavaTypeFactory typeFactory ) {
+        if ( value.value == null ) {
+            return typeFactory.createPolyType( PolyType.NULL );
         }
-        return newList;
+        PolyType type = toPolyType( value.type );
+
+        if ( type == PolyType.ARRAY ) {
+            return typeFactory.createArrayType( typeFactory.createPolyType( toPolyType( value.componentType ) ), -1 );
+        }
+
+        return typeFactory.createPolyType( type );
+    }
+
+
+    private PolyType toPolyType( Rep type ) {
+        if ( type == Rep.ARRAY ) {
+            return PolyType.ARRAY;
+        }
+        switch ( type ) {
+            case SHORT:
+            case BYTE:
+                return PolyType.TINYINT; // cache this
+            case LONG:
+                return PolyType.BIGINT;
+            case NUMBER:
+                return PolyType.DECIMAL;
+            case JAVA_SQL_TIME:
+                return PolyType.TIME;
+            case JAVA_SQL_DATE:
+                return PolyType.DATE;
+            case JAVA_SQL_TIMESTAMP:
+                return PolyType.TIMESTAMP;
+            case BOOLEAN:
+                return PolyType.BOOLEAN;
+            case DOUBLE:
+                return PolyType.DOUBLE;
+            case INTEGER:
+                return PolyType.INTEGER;
+            case FLOAT:
+                return PolyType.FLOAT;
+            case STRING:
+                return PolyType.VARCHAR;
+            case BYTE_STRING:
+                return PolyType.BINARY;
+            case OBJECT:
+                return PolyType.OTHER;
+        }
+        throw new NotImplementedException( "sql to polyType " + type );
+    }
+
+
+    private PolyList<PolyValue> convertList( List<TypedValue> list ) {
+        List<PolyValue> newList = new ArrayList<>();
+        for ( TypedValue o : list ) {
+            newList.add( toPolyValue( o ) );
+        }
+        return PolyList.of( newList );
+    }
+
+
+    private PolyValue toPolyValue( TypedValue value ) {
+        if ( value.type == Rep.ARRAY ) {
+            return convertList( (List<TypedValue>) value.toLocal() );
+        }
+        if ( value.value == null ) {
+            return PolyNull.NULL;
+        }
+
+        Object jdbc = value.toJdbc( calendar );
+        return switch ( value.type ) {
+            case FLOAT -> PolyFloat.of( (Number) jdbc );
+            case INTEGER -> PolyInteger.of( (Number) jdbc );
+            case LONG -> PolyLong.of( (Number) jdbc );
+            case STRING -> PolyString.of( (String) jdbc );
+            case BOOLEAN -> PolyBoolean.of( (Boolean) jdbc );
+            case JAVA_SQL_DATE -> PolyDate.of( (Date) jdbc );
+            case JAVA_SQL_TIME -> PolyTime.of( (Time) jdbc );
+            case JAVA_SQL_TIMESTAMP -> PolyTimestamp.of( ((Timestamp) jdbc).getTime() + TemporalFunctions.LOCAL_TZ.getRawOffset() );
+            case NUMBER -> PolyBigDecimal.of( (BigDecimal) jdbc );
+            case DOUBLE -> PolyDouble.of( (Double) jdbc );
+            case SHORT -> PolyInteger.of( (Short) jdbc );
+            case BYTE -> PolyInteger.of( (byte) jdbc );
+            case BYTE_STRING -> PolyBinary.of( (byte[]) jdbc );
+            default -> throw new NotImplementedException( "dbms to poly " + value.type );
+        };
     }
 
 
     private void prepare( StatementHandle h, String sql ) throws NoSuchStatementException {
-        PolyphenyDbStatementHandle statementHandle = getPolyphenyDbStatementHandle( h );
-        Processor sqlProcessor = statementHandle.getStatement().getTransaction().getProcessor( QueryLanguage.from( "sql" ) );
+        PolyStatementHandle<?> statementHandle = getPolyphenyDbStatementHandle( h );
+        QueryLanguage language = QueryLanguage.from( "sql" );
+        QueryContext context = QueryContext.builder()
+                .query( sql )
+                .language( language )
+                .origin( "DBMS Meta" )
+                .transactionManager( transactionManager )
+                .build();
 
-        Node parsed = sqlProcessor.parse( sql ).get( 0 );
-
-        PolyphenyDbSignature<?> signature;
-        if ( parsed.isA( Kind.DDL ) ) {
-            signature = PolyphenyDbSignature.from( sqlProcessor.prepareDdl( statementHandle.getStatement(), parsed, new QueryParameters( sql, NamespaceType.RELATIONAL ) ) );
-        } else {
-            Pair<Node, AlgDataType> validated = sqlProcessor.validate(
-                    statementHandle.getStatement().getTransaction(),
-                    parsed,
-                    RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
-            AlgRoot logicalRoot = sqlProcessor.translate( statementHandle.getStatement(), validated.left, null );
-            AlgDataType parameterRowType = sqlProcessor.getParameterRowType( validated.left );
-
-            // Prepare
-            signature = PolyphenyDbSignature.from( statementHandle.getStatement().getQueryProcessor().prepareQuery( logicalRoot, parameterRowType, true ) );
-        }
+        PolySignature signature = PolySignature.from( LanguageManager.getINSTANCE().anyPrepareQuery( context, statementHandle.getStatement() ).get( 0 ) );
 
         h.signature = signature;
         statementHandle.setSignature( signature );
     }
 
 
-    private List<MetaResultSet> execute( StatementHandle h, PolyphenyDbConnectionHandle connection, PolyphenyDbStatementHandle statementHandle, int maxRowsInFirstFrame ) {
+    private Enumerable<Object> externalize( Enumerable<PolyValue[]> enumerable, AlgDataType rowType ) {
+        return new AbstractEnumerable<>() {
+            @Override
+            public Enumerator<Object> enumerator() {
+                List<Function1<PolyValue, Object>> transform = new ArrayList<>();
+                for ( AlgDataTypeField field : rowType.getFields() ) {
+                    transform.add( PolyValue.wrapNullableIfNecessary( PolyValue.getPolyToJava( field.getType(), true ), field.getType().isNullable() ) );
+                }
+                boolean isSingle = rowType.getFieldCount() == 1;
+
+                return Linq4j.transform( enumerable.enumerator(), row -> {
+                    if ( isSingle ) {
+                        return transform.get( 0 ).apply( row[0] );
+                    }
+
+                    Object[] objects = new Object[row.length];
+                    for ( int i = 0, rowLength = objects.length; i < rowLength; i++ ) {
+                        objects[i] = transform.get( i ).apply( row[i] );
+                    }
+                    return objects;
+                } );
+            }
+        };
+    }
+
+
+    private List<MetaResultSet> execute( StatementHandle h, PolyConnectionHandle connection, PolyStatementHandle<?> statementHandle, int maxRowsInFirstFrame ) {
         List<MetaResultSet> resultSets;
         if ( statementHandle.getSignature().statementType == StatementType.OTHER_DDL ) {
             MetaResultSet resultSet = MetaResultSet.count( statementHandle.getConnection().getConnectionId().toString(), h.id, 1 );
@@ -1291,12 +1395,12 @@ public class DbmsMeta implements ProtobufMeta {
                         // TODO MV:  Due to the performance benefits of sending data together with the first frame, this issue should be addressed
                         //  Remember that fetch is synchronized
                         maxRowsInFirstFrame != 0 && SEND_FIRST_FRAME_WITH_RESPONSE
-                                ? fetch( h, 0, (int) Math.min( Math.max( statementHandle.getMaxRowCount(), maxRowsInFirstFrame ), Integer.MAX_VALUE ) )
+                                ? fetch( h, 0, Math.max( statementHandle.getMaxRowCount(), maxRowsInFirstFrame ) )
                                 : null //Frame.MORE // Send first frame to together with the response to save a fetch call
                 ) );
             } catch ( NoSuchStatementException e ) {
                 String message = e.getLocalizedMessage();
-                throw new AvaticaRuntimeException( message == null ? "null" : message, -1, "", AvaticaSeverity.ERROR );
+                throw new GenericRuntimeException( message == null ? "null" : message, -1, "", AvaticaSeverity.ERROR );
             }
         }
         return resultSets;
@@ -1310,16 +1414,16 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public StatementHandle createStatement( ConnectionHandle ch ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        final PolyConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "createStatement( ConnectionHandle {} )", ch );
             }
 
-            final PolyphenyDbStatementHandle statement;
+            final PolyStatementHandle<Object> statement;
 
             final int id = statementIdGenerator.getAndIncrement();
-            statement = new PolyphenyDbStatementHandle( connection, id );
+            statement = new PolyStatementHandle<>( connection, id );
             openStatements.put( ch.id + "::" + id, statement );
 
             StatementHandle h = new StatementHandle( ch.id, statement.getStatementId(), null );
@@ -1331,20 +1435,20 @@ public class DbmsMeta implements ProtobufMeta {
 
     /**
      * Closes a statement.
-     *
+     * <p>
      * If the statement handle is not known, or is already closed, does nothing.
      *
      * @param statementHandle Statement handle
      */
     @Override
     public void closeStatement( final StatementHandle statementHandle ) {
-        final PolyphenyDbConnectionHandle connection = openConnections.get( statementHandle.connectionId );
+        final PolyConnectionHandle connection = openConnections.get( statementHandle.connectionId );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "closeStatement( StatementHandle {} )", statementHandle );
             }
 
-            final PolyphenyDbStatementHandle toClose = openStatements.remove( statementHandle.connectionId + "::" + Integer.toString( statementHandle.id ) );
+            final PolyStatementHandle<?> toClose = openStatements.remove( statementHandle.connectionId + "::" + statementHandle.id );
             if ( toClose != null ) {
                 if ( toClose.getOpenResultSet() != null && toClose.getOpenResultSet() instanceof AutoCloseable ) {
                     try {
@@ -1377,65 +1481,50 @@ public class DbmsMeta implements ProtobufMeta {
             if ( log.isDebugEnabled() ) {
                 log.debug( "Key {} is already present in the OPEN_CONNECTIONS map.", ch.id );
             }
-            throw new IllegalStateException( "Forbidden attempt to open the connection `" + ch.id + "` twice!" );
+            throw new IllegalStateException( "Forbidden attempt to execute the connection `" + ch.id + "` twice!" );
         }
 
         if ( log.isDebugEnabled() ) {
             log.debug( "Creating a new connection." );
         }
 
-        final CatalogUser user;
+        final LogicalUser user;
         try {
             user = authenticator.authenticate(
                     connectionParameters.getOrDefault( "username", connectionParameters.get( "user" ) ),
                     connectionParameters.getOrDefault( "password", "" ) );
         } catch ( AuthenticationException e ) {
-            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+            throw new GenericRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
         }
         // assert user != null;
 
         String databaseName = connectionParameters.getOrDefault( "database", connectionParameters.get( "db" ) );
         if ( databaseName == null || databaseName.isEmpty() ) {
-            databaseName = "APP";
+            databaseName = Catalog.DATABASE_NAME;
         }
         String defaultSchemaName = connectionParameters.get( "schema" );
         if ( defaultSchemaName == null || defaultSchemaName.isEmpty() ) {
-            defaultSchemaName = "public";
+            defaultSchemaName = Catalog.DEFAULT_NAMESPACE_NAME;
         }
 
         // Create transaction
-        Transaction transaction = transactionManager.startTransaction( user, null, null, false, "AVATICA Interface" );
+        Transaction transaction = transactionManager.startTransaction( user.id, false, "AVATICA Interface" );
 
-        // Check database access
-        final CatalogDatabase database;
-        try {
-            database = catalog.getDatabase( databaseName );
-        } catch ( UnknownDatabaseException e ) {
-            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
-        }
-        assert database != null;
-
-//            Authorizer.hasAccess( user, database );
+        //Authorizer.hasAccess( user, database );
 
         // Check schema access
-        final CatalogSchema schema;
-        try {
-            schema = catalog.getSchema( database.id, defaultSchemaName );
-        } catch ( UnknownSchemaException e ) {
-            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
-        }
-        assert schema != null;
+        final LogicalNamespace namespace = catalog.getSnapshot().getNamespace( defaultSchemaName ).orElseThrow();
 
-//            Authorizer.hasAccess( user, schema );
+        //Authorizer.hasAccess( user, schema );
 
         // commit transaction
         try {
             transaction.commit();
         } catch ( TransactionException e ) {
-            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+            throw new GenericRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
         }
 
-        openConnections.put( ch.id, new PolyphenyDbConnectionHandle( ch, user, ch.id, database, schema, transactionManager ) );
+        openConnections.put( ch.id, new PolyConnectionHandle( ch, user, ch.id, namespace, transactionManager ) );
     }
 
 
@@ -1444,13 +1533,13 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public void closeConnection( ConnectionHandle ch ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        final PolyConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "closeConnection( ConnectionHandle {} )", ch );
             }
 
-            final PolyphenyDbConnectionHandle connectionToClose = openConnections.remove( ch.id );
+            final PolyConnectionHandle connectionToClose = openConnections.remove( ch.id );
             if ( connectionToClose == null ) {
                 if ( log.isDebugEnabled() ) {
                     log.debug( "Connection {} already closed.", ch.id );
@@ -1466,13 +1555,13 @@ public class DbmsMeta implements ProtobufMeta {
                 try {
                     transaction.rollback();
                 } catch ( TransactionException e ) {
-                    throw new RuntimeException( e );
+                    throw new GenericRuntimeException( e );
                 }
             }
 
             for ( final String key : openStatements.keySet() ) {
                 if ( key.startsWith( ch.id ) ) {
-                    PolyphenyDbStatementHandle statementHandle = openStatements.remove( key );
+                    PolyStatementHandle<?> statementHandle = openStatements.remove( key );
                     statementHandle.unset();
                 }
             }
@@ -1482,7 +1571,7 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    private PolyphenyDbConnectionHandle getPolyphenyDbConnectionHandle( String connectionId ) {
+    private PolyConnectionHandle getPolyphenyDbConnectionHandle( String connectionId ) {
         if ( openConnections.containsKey( connectionId ) ) {
             return openConnections.get( connectionId );
         } else {
@@ -1491,10 +1580,10 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    private PolyphenyDbStatementHandle getPolyphenyDbStatementHandle( StatementHandle h ) throws NoSuchStatementException {
-        final PolyphenyDbStatementHandle statement;
-        if ( openStatements.containsKey( h.connectionId + "::" + Integer.toString( h.id ) ) ) {
-            statement = openStatements.get( h.connectionId + "::" + Integer.toString( h.id ) );
+    private PolyStatementHandle<Object> getPolyphenyDbStatementHandle( StatementHandle h ) throws NoSuchStatementException {
+        final PolyStatementHandle<Object> statement;
+        if ( openStatements.containsKey( h.connectionId + "::" + h.id ) ) {
+            statement = openStatements.get( h.connectionId + "::" + h.id );
         } else {
             throw new NoSuchStatementException( h );
         }
@@ -1523,7 +1612,7 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public void commit( final ConnectionHandle ch ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        final PolyConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "commit( ConnectionHandle {} )", ch );
@@ -1532,15 +1621,15 @@ public class DbmsMeta implements ProtobufMeta {
 
             if ( transaction == null || !transaction.isActive() ) {
                 if ( log.isTraceEnabled() ) {
-                    log.trace( "No open transaction for ConnectionHandle {}", connection );
+                    log.trace( "No execute transaction for ConnectionHandle {}", connection );
                 }
                 return;
             }
 
             try {
                 transaction.commit();
-            } catch ( TransactionException e ) {
-                throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+            } catch ( Throwable e ) {
+                throw new GenericRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
             } finally {
                 connection.endCurrentTransaction();
             }
@@ -1553,7 +1642,7 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public void rollback( final ConnectionHandle ch ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        final PolyConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "rollback( ConnectionHandle {} )", ch );
@@ -1562,7 +1651,7 @@ public class DbmsMeta implements ProtobufMeta {
 
             if ( transaction == null || !transaction.isActive() ) {
                 if ( log.isTraceEnabled() ) {
-                    log.trace( "No open transaction for ConnectionHandle {}", connection );
+                    log.trace( "No execute transaction for ConnectionHandle {}", connection );
                 }
                 return;
             }
@@ -1570,7 +1659,7 @@ public class DbmsMeta implements ProtobufMeta {
             try {
                 transaction.rollback();
             } catch ( TransactionException e ) {
-                throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+                throw new GenericRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
             } finally {
                 connection.endCurrentTransaction();
             }
@@ -1580,24 +1669,24 @@ public class DbmsMeta implements ProtobufMeta {
 
     /**
      * Synchronizes client and server view of connection properties.
-     *
+     * <p>
      * Note: this interface is considered "experimental" and may undergo further changes as this functionality is extended to other aspects of state management for
      * {@link Connection}, {@link Statement}, and {@link ResultSet}.
      */
     @Override
     public ConnectionProperties connectionSync( ConnectionHandle ch, ConnectionProperties connProps ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        final PolyConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "connectionSync( ConnectionHandle {}, ConnectionProperties {} )", ch, connProps );
             }
 
-            final PolyphenyDbConnectionHandle connectionToSync = openConnections.get( ch.id );
+            final PolyConnectionHandle connectionToSync = openConnections.get( ch.id );
             if ( connectionToSync == null ) {
                 if ( log.isDebugEnabled() ) {
-                    log.debug( "Connection {} is not open.", ch.id );
+                    log.debug( "Connection {} is not execute.", ch.id );
                 }
-                throw new IllegalStateException( "Attempt to synchronize the connection `" + ch.id + "` with is either has not been open yet or is already closed." );
+                throw new IllegalStateException( "Attempt to synchronize the connection `" + ch.id + "` with is either has not been execute yet or is already closed." );
             }
 
             return connection.mergeConnectionProperties( connProps );
@@ -1611,14 +1700,14 @@ public class DbmsMeta implements ProtobufMeta {
         } else if ( e instanceof Error ) {
             throw (Error) e;
         } else {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 
 
     public List<AvaticaParameter> deriveAvaticaParameters( AlgDataType parameterRowType ) {
         final List<AvaticaParameter> parameters = new ArrayList<>();
-        for ( AlgDataTypeField field : parameterRowType.getFieldList() ) {
+        for ( AlgDataTypeField field : parameterRowType.getFields() ) {
             AlgDataType type = field.getType();
             parameters.add(
                     new AvaticaParameter(
@@ -1685,9 +1774,9 @@ public class DbmsMeta implements ProtobufMeta {
         public void updateConnectionListTable() {
             connectionListTable.reset();
 
-            for ( Entry<String, PolyphenyDbConnectionHandle> entry : openConnections.entrySet() ) {
+            for ( Entry<String, PolyConnectionHandle> entry : openConnections.entrySet() ) {
                 String connectionId = entry.getKey();
-                PolyphenyDbConnectionHandle connectionHandle = entry.getValue();
+                PolyConnectionHandle connectionHandle = entry.getValue();
                 Transaction currentTx = connectionHandle.getCurrentTransaction();
                 String txId = "-";
                 if ( currentTx != null ) {

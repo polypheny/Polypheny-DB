@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package org.polypheny.db.webui.crud;
 
-import com.google.gson.Gson;
 import io.javalin.http.Context;
 import java.sql.Timestamp;
 import java.util.List;
@@ -29,8 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.RuntimeConfig;
@@ -48,7 +46,6 @@ public class StatisticCrud {
     private static Crud crud;
     @Getter
     private boolean activeTracking = false;
-    private final StatisticsManager statisticsManager = StatisticsManager.getInstance();
 
 
     public StatisticCrud( Crud crud ) {
@@ -86,26 +83,18 @@ public class StatisticCrud {
 
     public void getTableStatistics( Context ctx ) {
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
-        long tableId;
-        long schemaId;
-        try {
-            schemaId = Catalog.getInstance().getSchema( 1, request.tableId.split( "\\." )[0] ).id;
-            tableId = Catalog.getInstance().getTable( schemaId, request.tableId.split( "\\." )[1] ).id;
+        LogicalTable table = Catalog.getInstance().getSnapshot().rel().getTable( request.entityId ).orElseThrow();
 
-            ctx.json( statisticsManager.getTableStatistic( schemaId, tableId ) );
-        } catch ( UnknownTableException | UnknownSchemaException e ) {
-            throw new RuntimeException( "Schema: " + request.tableId.split( "\\." )[0] + " or Table: "
-                    + request.tableId.split( "\\." )[1] + "is unknown." );
-        }
+        ctx.json( StatisticsManager.getInstance().getEntityStatistic( table.namespaceId, table.id ) );
     }
 
 
     /**
      * Return all available statistics to the client
      */
-    public void getStatistics( final Context ctx, Gson gsonExpose ) {
+    public void getStatistics( final Context ctx ) {
         if ( RuntimeConfig.DYNAMIC_QUERYING.getBoolean() ) {
-            ctx.result( gsonExpose.toJson( statisticsManager.getQualifiedStatisticMap() ) );
+            ctx.json( StatisticsManager.getInstance().getQualifiedStatisticMap() );
         } else {
             ctx.json( new ConcurrentHashMap<>() );
         }
@@ -116,7 +105,7 @@ public class StatisticCrud {
      * General information for the UI dashboard.
      */
     public void getDashboardInformation( Context ctx ) {
-        ctx.json( statisticsManager.getDashboardInformation() );
+        ctx.json( StatisticsManager.getInstance().getDashboardInformation() );
     }
 
 
@@ -128,20 +117,20 @@ public class StatisticCrud {
         String selectInterval = request.selectInterval;
         List<QueryDataPointImpl> queryData = MonitoringServiceProvider.getInstance().getAllDataPoints( QueryDataPointImpl.class );
         List<DmlDataPoint> dmlData = MonitoringServiceProvider.getInstance().getAllDataPoints( DmlDataPoint.class );
-        TreeMap<Timestamp, Pair<Integer, Integer>> eachInfo = new TreeMap<>();
+        TreeMap<Timestamp, Pair<Integer, Integer>> eachInfo;
 
         Timestamp endTime = new Timestamp( System.currentTimeMillis() );
         Timestamp startTimeAll;
-        long interval60min = convertIntervalMinuteToLong( 60 );
 
-        if ( queryData.size() > 0 && dmlData.size() > 0 ) {
+        if ( !queryData.isEmpty() && !dmlData.isEmpty() ) {
             startTimeAll = (queryData.get( queryData.size() - 1 ).getRecordedTimestamp().getTime() < dmlData.get( dmlData.size() - 1 ).getRecordedTimestamp().getTime()) ? queryData.get( queryData.size() - 1 ).getRecordedTimestamp() : dmlData.get( dmlData.size() - 1 ).getRecordedTimestamp();
-        } else if ( dmlData.size() > 0 ) {
+        } else if ( !dmlData.isEmpty() ) {
             startTimeAll = dmlData.get( dmlData.size() - 1 ).getRecordedTimestamp();
-        } else if ( queryData.size() > 0 ) {
+        } else if ( !queryData.isEmpty() ) {
             startTimeAll = queryData.get( queryData.size() - 1 ).getRecordedTimestamp();
         } else {
-            throw new RuntimeException( "No Data available for Dashboard Diagram" );
+            ctx.json( new TreeMap<>() );
+            return;
         }
 
         if ( NumberUtils.isCreatable( selectInterval ) ) {

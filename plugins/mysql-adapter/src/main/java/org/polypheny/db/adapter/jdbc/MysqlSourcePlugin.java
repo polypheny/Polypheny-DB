@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,53 +17,52 @@
 package org.polypheny.db.adapter.jdbc;
 
 
-import com.google.common.collect.ImmutableMap;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.pf4j.Plugin;
-import org.pf4j.PluginWrapper;
-import org.polypheny.db.adapter.Adapter.AdapterProperties;
-import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
-import org.polypheny.db.adapter.Adapter.AdapterSettingList;
-import org.polypheny.db.adapter.Adapter.AdapterSettingString;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.annotations.AdapterProperties;
+import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
+import org.polypheny.db.adapter.annotations.AdapterSettingList;
+import org.polypheny.db.adapter.annotations.AdapterSettingString;
 import org.polypheny.db.adapter.jdbc.sources.AbstractJdbcSource;
-import org.polypheny.db.catalog.Adapter;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.schema.Schema;
-import org.polypheny.db.schema.Table;
+import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
+import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.plugins.PluginContext;
+import org.polypheny.db.plugins.PolyPlugin;
+import org.polypheny.db.prepare.Context;
 import org.polypheny.db.sql.language.dialect.MysqlSqlDialect;
 
-public class MysqlSourcePlugin extends Plugin {
+public class MysqlSourcePlugin extends PolyPlugin {
 
 
-    public static final String ADAPTER_NAME = "MYSQL";
+    public static final String ADAPTER_NAME = "MySQL";
+    private long id;
 
 
     /**
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to be successfully loaded by manager.
      */
-    public MysqlSourcePlugin( PluginWrapper wrapper ) {
-        super( wrapper );
+    public MysqlSourcePlugin( PluginContext context ) {
+        super( context );
     }
 
 
     @Override
-    public void start() {
-        Map<String, String> settings = ImmutableMap.of();
-
-        Adapter.addAdapter( MysqlSource.class, ADAPTER_NAME, settings );
+    public void afterCatalogInit() {
+        this.id = AdapterManager.addAdapterTemplate( MysqlSource.class, ADAPTER_NAME, MysqlSource::new );
     }
 
 
     @Override
     public void stop() {
-        Adapter.removeAdapter( MysqlSource.class, ADAPTER_NAME );
+        AdapterManager.removeAdapterTemplate( this.id );
     }
 
 
@@ -71,7 +70,8 @@ public class MysqlSourcePlugin extends Plugin {
     @AdapterProperties(
             name = "MySQL",
             description = "Data source adapter for the relational database systems MariaDB and MySQL.",
-            usedModes = DeployMode.REMOTE)
+            usedModes = DeployMode.REMOTE,
+            defaultMode = DeployMode.REMOTE)
     @AdapterSettingString(name = "host", defaultValue = "localhost", position = 1,
             description = "Hostname or IP address of the remote MariaDB / MySQL instance.")
     @AdapterSettingInteger(name = "port", defaultValue = 3306, position = 2,
@@ -90,20 +90,26 @@ public class MysqlSourcePlugin extends Plugin {
             description = "List of tables which should be imported. The names must to be separated by a comma.")
     public static class MysqlSource extends AbstractJdbcSource {
 
-        public MysqlSource( int storeId, String uniqueName, final Map<String, String> settings ) {
+        public MysqlSource( long storeId, String uniqueName, final Map<String, String> settings ) {
             super( storeId, uniqueName, settings, "org.mariadb.jdbc.Driver", MysqlSqlDialect.DEFAULT, false );
         }
 
 
         @Override
-        public Table createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
-            return currentJdbcSchema.createJdbcTable( catalogTable, columnPlacementsOnStore, partitionPlacement );
-        }
+        public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
+            PhysicalTable table = adapterCatalog.createTable(
+                    logical.table.getNamespaceName(),
+                    logical.table.name,
+                    logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
+                    logical.table,
+                    logical.columns.stream().collect( Collectors.toMap( t -> t.id, t -> t ) ),
+                    logical.pkIds, allocation );
 
+            JdbcTable physical = currentJdbcSchema.createJdbcTable( table );
 
-        @Override
-        public Schema getCurrentSchema() {
-            return currentJdbcSchema;
+            adapterCatalog.replacePhysical( physical );
+
+            return List.of( physical );
         }
 
 

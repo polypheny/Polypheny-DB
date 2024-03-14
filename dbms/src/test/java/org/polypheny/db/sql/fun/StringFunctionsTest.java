@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,25 +23,21 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.polypheny.db.AdapterTestSuite;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.db.excluded.CassandraExcluded;
-import org.polypheny.db.excluded.MonetdbExcluded;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
-@Category({ AdapterTestSuite.class, CassandraExcluded.class })
+@Tag("adapter")
 public class StringFunctionsTest {
 
 
-    @BeforeClass
+    @BeforeAll
     public static void start() throws SQLException {
         // Ensures that Polypheny-DB is running
         //noinspection ResultOfMethodCallIgnored
@@ -75,7 +71,7 @@ public class StringFunctionsTest {
     }
 
 
-    @AfterClass
+    @AfterAll
     public static void stop() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
@@ -203,7 +199,6 @@ public class StringFunctionsTest {
     }
 
 
-    @Ignore
     @Test
     public void stringTrim() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
@@ -212,12 +207,12 @@ public class StringFunctionsTest {
                 // TRIM( { BOTH | LEADING | TRAILING } string1 FROM string2) Removes the longest string containing only the characters in string1 from the start/end/both ends of string1
                 // TODO check whitespace
                 List<Object[]> expectedResult = ImmutableList.of(
-                        new Object[]{ 1, "Seventh" },
+                        new Object[]{ 1, " Sevent" },
                         new Object[]{ 2, "Eighth " },
                         new Object[]{ 3, " ninth " }
                 );
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT U.id, TRIM(TRAILING 'th' FROM U.dataC) FROM TableC AS U " ),
+                        statement.executeQuery( "SELECT U.id, TRIM(TRAILING 'h' FROM U.dataC) FROM TableC AS U " ),
                         expectedResult,
                         true );
             }
@@ -226,7 +221,6 @@ public class StringFunctionsTest {
 
 
     @Test
-    @Category(MonetdbExcluded.class)
     public void stringOverlay() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -288,7 +282,6 @@ public class StringFunctionsTest {
     }
 
 
-    @Ignore
     @Test
     public void stringInitcap() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {

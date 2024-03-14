@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,46 +37,108 @@ package org.polypheny.db.adapter.jdbc.rel2sql;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.SortedSet;
+import java.util.function.Function;
+import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.polypheny.db.adapter.jdbc.JdbcTable;
+import org.polypheny.db.adapter.jdbc.rel2sql.SqlImplementor.Result;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgProducingVisitor;
 import org.polypheny.db.algebra.constant.JoinConditionType;
 import org.polypheny.db.algebra.constant.JoinType;
-import org.polypheny.db.algebra.core.*;
+import org.polypheny.db.algebra.core.Aggregate;
+import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.core.Calc;
+import org.polypheny.db.algebra.core.CorrelationId;
+import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.Intersect;
+import org.polypheny.db.algebra.core.Join;
+import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.core.Match;
+import org.polypheny.db.algebra.core.Minus;
+import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.core.Union;
+import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.core.relational.RelModify;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;
-import org.polypheny.db.rex.*;
-import org.polypheny.db.sql.language.*;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexLocalRef;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexProgram;
+import org.polypheny.db.sql.language.SqlCall;
+import org.polypheny.db.sql.language.SqlDelete;
+import org.polypheny.db.sql.language.SqlDialect;
+import org.polypheny.db.sql.language.SqlIdentifier;
+import org.polypheny.db.sql.language.SqlInsert;
+import org.polypheny.db.sql.language.SqlIntervalLiteral;
+import org.polypheny.db.sql.language.SqlJoin;
+import org.polypheny.db.sql.language.SqlLiteral;
+import org.polypheny.db.sql.language.SqlMatchRecognize;
+import org.polypheny.db.sql.language.SqlNode;
+import org.polypheny.db.sql.language.SqlNodeList;
+import org.polypheny.db.sql.language.SqlSelect;
+import org.polypheny.db.sql.language.SqlSetOperator;
+import org.polypheny.db.sql.language.SqlUpdate;
+import org.polypheny.db.sql.language.fun.SqlMinMaxAggFunction;
 import org.polypheny.db.sql.language.fun.SqlRowOperator;
 import org.polypheny.db.sql.language.fun.SqlSingleValueAggFunction;
 import org.polypheny.db.sql.language.validate.SqlValidatorUtil;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.ReflectUtil;
-import org.polypheny.db.util.ReflectiveVisitor;
-
-import java.util.*;
-import java.util.stream.Collectors;
 
 
 /**
- * Utility to convert relational expressions to SQL abstract syntax tree.
+ * Utility to convert algebra expressions to SQL abstract syntax tree.
  */
-public abstract class AlgToSqlConverter extends SqlImplementor implements ReflectiveVisitor {
+public abstract class AlgToSqlConverter extends SqlImplementor implements AlgProducingVisitor<Result> {
 
     /**
      * Similar to {@link OperatorRegistry ROW }, but does not print "ROW".
      */
     private static final SqlRowOperator ANONYMOUS_ROW = new SqlRowOperator( " " );
 
-    private final ReflectUtil.MethodDispatcher<Result> dispatcher;
-
     private final Deque<Frame> stack = new ArrayDeque<>();
 
     private boolean isUnion = false;
+
+    @Getter
+    private ImmutableMap<Class<? extends AlgNode>, Function<AlgNode, Result>> handlers = ImmutableMap.copyOf(
+            new HashMap<>() {{
+                put( Join.class, a -> visit( (Join) a ) );
+                put( Filter.class, a -> visit( (Filter) a ) );
+                put( Project.class, a -> visit( (Project) a ) );
+                put( Aggregate.class, a -> visit( (Aggregate) a ) );
+                put( Values.class, a -> visit( (Values) a ) );
+                put( Union.class, a -> visit( (Union) a ) );
+                put( Intersect.class, a -> visit( (Intersect) a ) );
+                put( Minus.class, a -> visit( (Minus) a ) );
+                put( Calc.class, a -> visit( (Calc) a ) );
+                put( Sort.class, a -> visit( (Sort) a ) );
+                put( RelScan.class, a -> visit( (RelScan<?>) a ) );
+                put( RelModify.class, a -> visit( (RelModify<?>) a ) );
+                put( Match.class, a -> visit( (Match) a ) );
+            }}
+    );
+
+    @Getter
+    private Function<AlgNode, Result> defaultHandler = this::visit;
 
 
     /**
@@ -84,15 +146,6 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
      */
     public AlgToSqlConverter( SqlDialect dialect ) {
         super( dialect );
-        dispatcher = ReflectUtil.createMethodDispatcher( Result.class, this, "visit", AlgNode.class );
-    }
-
-
-    /**
-     * Dispatches a call to the {@code visit(Xxx e)} method where {@code Xxx} most closely matches the runtime type of the argument.
-     */
-    protected Result dispatch( AlgNode e ) {
-        return dispatcher.invoke( e );
     }
 
 
@@ -100,24 +153,18 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
     public Result visitChild( int i, AlgNode e ) {
         try {
             stack.push( new Frame( i, e ) );
-            return dispatch( e );
+            return this.handle( e );
         } finally {
             stack.pop();
         }
     }
 
 
-    /**
-     * @see #dispatch
-     */
     public Result visit( AlgNode e ) {
         throw new AssertionError( "Need to implement " + e.getClass().getName() );
     }
 
 
-    /**
-     * @see #dispatch
-     */
     public Result visit( Join e ) {
         final Result leftResult = visitChild( 0, e.getLeft() ).resetAlias();
         final Result rightResult = visitChild( 1, e.getRight() ).resetAlias();
@@ -134,7 +181,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
                     e.getCondition(),
                     leftContext,
                     rightContext,
-                    e.getLeft().getRowType().getFieldCount() );
+                    e.getLeft().getTupleType().getFieldCount() );
         }
         SqlNode join =
                 new SqlJoin(
@@ -149,16 +196,13 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
     }
 
 
-    /**
-     * @see #dispatch
-     */
     public Result visit( Filter e ) {
         final AlgNode input = e.getInput();
         Result x = visitChild( 0, input );
         parseCorrelTable( e, x );
         if ( input instanceof Aggregate ) {
             final Builder builder;
-            if ( ((Aggregate) input).getInput() instanceof Project ) {
+            if ( input.unwrap( Aggregate.class ).orElseThrow().getInput() instanceof Project ) {
                 builder = x.builder( e, true );
                 builder.clauses.add( Clause.HAVING );
             } else {
@@ -174,20 +218,17 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
     }
 
 
-    /**
-     * @see #dispatch
-     */
     public Result visit( Project e ) {
         Result x = visitChild( 0, e.getInput() );
         parseCorrelTable( e, x );
-        if ( isStar( e.getChildExps(), e.getInput().getRowType(), e.getRowType() ) ) {
+        if ( isStar( e.getChildExps(), e.getInput().getTupleType(), e.getTupleType() ) ) {
             return x;
         }
         final Builder builder = x.builder( e, false, Clause.SELECT );
         final List<SqlNode> selectList = new ArrayList<>();
         for ( RexNode ref : e.getChildExps() ) {
             SqlNode sqlExpr = builder.context.toSql( null, ref );
-            addSelect( selectList, sqlExpr, e.getRowType() );
+            addSelect( selectList, sqlExpr, e.getTupleType() );
         }
 
         builder.setSelect( new SqlNodeList( selectList, POS ) );
@@ -195,9 +236,6 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
     }
 
 
-    /**
-     * @see #dispatch
-     */
     public Result visit( Aggregate e ) {
         // "select a, b, sum(x) from ( ... ) group by a, b"
         final Result x = visitChild( 0, e.getInput() );
@@ -208,45 +246,40 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
         } else {
             builder = x.builder( e, true, Clause.GROUP_BY );
         }
-        List<SqlNode> groupByList = Expressions.list();
+        List<SqlNode> groupBys = Expressions.list();
         final List<SqlNode> selectList = new ArrayList<>();
         for ( int group : e.getGroupSet() ) {
             final SqlNode field = builder.context.field( group );
-            addSelect( selectList, field, e.getRowType() );
-            groupByList.add( field );
+            addSelect( selectList, field, e.getTupleType() );
+            groupBys.add( field );
         }
         for ( AggregateCall aggCall : e.getAggCallList() ) {
             SqlNode aggCallSqlNode = builder.context.toSql( aggCall );
             if ( aggCall.getAggregation() instanceof SqlSingleValueAggFunction ) {
                 aggCallSqlNode = dialect.rewriteSingleValueExpr( aggCallSqlNode );
             }
-            addSelect( selectList, aggCallSqlNode, e.getRowType() );
+            if ( aggCall.getAggregation() instanceof SqlMinMaxAggFunction ) {
+                aggCallSqlNode = dialect.rewriteMinMax( aggCallSqlNode );
+            }
+            addSelect( selectList, aggCallSqlNode, e.getTupleType() );
         }
         builder.setSelect( new SqlNodeList( selectList, POS ) );
-        if ( !groupByList.isEmpty() || e.getAggCallList().isEmpty() ) {
+        if ( !groupBys.isEmpty() || e.getAggCallList().isEmpty() ) {
             // Some databases don't support "GROUP BY ()". We can omit it as long as there is at least one aggregate function.
-            builder.setGroupBy( new SqlNodeList( groupByList, POS ) );
+            builder.setGroupBy( new SqlNodeList( groupBys, POS ) );
         }
         return builder.result();
     }
 
 
-    /**
-     * @see #dispatch
-     */
-    public Result visit( Scan e ) {
-        //final SqlIdentifier identifier = getPhysicalTableName( e.getTable().getQualifiedName() );
-        return result(
-                new SqlIdentifier( e.getTable().getQualifiedName(), ParserPos.ZERO ),
+    public Result visit( RelScan<?> e ) {
+        return result( new SqlIdentifier( List.of( e.getEntity().unwrap( LogicalTable.class ).orElseThrow().getNamespaceName(), e.getEntity().name ), ParserPos.ZERO ),
                 ImmutableList.of( Clause.FROM ),
                 e,
                 null );
     }
 
 
-    /**
-     * @see #dispatch
-     */
     public Result visit( Union e ) {
         isUnion = true;
         Result result = setOpToSql( (SqlSetOperator) (e.all
@@ -257,9 +290,6 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
     }
 
 
-    /**
-     * @see #dispatch
-     */
     public Result visit( Intersect e ) {
         return setOpToSql( (SqlSetOperator) (e.all
                 ? OperatorRegistry.get( OperatorName.INTERSECT_ALL )
@@ -267,9 +297,6 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
     }
 
 
-    /**
-     * @see #dispatch
-     */
     public Result visit( Minus e ) {
         return setOpToSql( (SqlSetOperator) (e.all
                 ? OperatorRegistry.get( OperatorName.EXCEPT_ALL )
@@ -277,9 +304,6 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
     }
 
 
-    /**
-     * @see #dispatch
-     */
     public Result visit( Calc e ) {
         Result x = visitChild( 0, e.getInput() );
         parseCorrelTable( e, x );
@@ -292,7 +316,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
             final List<SqlNode> selectList = new ArrayList<>();
             for ( RexLocalRef ref : program.getProjectList() ) {
                 SqlNode sqlExpr = builder.context.toSql( program, ref );
-                addSelect( selectList, sqlExpr, e.getRowType() );
+                addSelect( selectList, sqlExpr, e.getTupleType() );
             }
             builder.setSelect( new SqlNodeList( selectList, POS ) );
         }
@@ -304,16 +328,13 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
     }
 
 
-    /**
-     * @see #dispatch
-     */
     public Result visit( Values e ) {
         final List<Clause> clauses = ImmutableList.of( Clause.SELECT );
         final Map<String, AlgDataType> pairs = ImmutableMap.of();
         final Context context = aliasContext( pairs, false );
         SqlNode query;
-        final boolean rename = stack.size() <= 1 || !(Iterables.get( stack, 1 ).r instanceof Modify);
-        final List<String> fieldNames = e.getRowType().getFieldNames();
+        final boolean rename = stack.size() <= 1 || !(Iterables.get( stack, 1 ).r instanceof RelModify);
+        final List<String> fieldNames = e.getTupleType().getFieldNames();
         if ( !dialect.supportsAliasedValues() && rename ) {
             // Oracle does not support "AS t (c1, c2)". So instead of
             //   (VALUES (v0, v1), (v2, v3)) AS t (c0, c1)
@@ -371,17 +392,14 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
     }
 
 
-    /**
-     * @see #dispatch
-     */
     public Result visit( Sort e ) {
         Result x = visitChild( 0, e.getInput() );
         Builder builder = x.builder( e, false, Clause.ORDER_BY );
         if ( stack.size() != 1 && builder.select.getSqlSelectList() == null ) {
             // Generates explicit column names instead of start(*) for non-root ORDER BY to avoid ambiguity.
             final List<SqlNode> selectList = Expressions.list();
-            for ( AlgDataTypeField field : e.getRowType().getFieldList() ) {
-                addSelect( selectList, builder.context.field( field.getIndex() ), e.getRowType() );
+            for ( AlgDataTypeField field : e.getTupleType().getFields() ) {
+                addSelect( selectList, builder.context.field( field.getIndex() ), e.getTupleType() );
             }
             builder.select.setSelectList( new SqlNodeList( selectList, POS ) );
         }
@@ -407,16 +425,12 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
     }
 
 
-    /**
-     * @see #dispatch
-     */
-    public Result visit( Modify modify ) {
+    public Result visit( RelModify<?> modify ) {
         final Map<String, AlgDataType> pairs = ImmutableMap.of();
         final Context context = aliasContext( pairs, false );
 
         // Target Table Name
-        //final SqlIdentifier sqlTargetTable = new SqlIdentifier( modify.getTable().getQualifiedName(), POS );
-        final SqlIdentifier sqlTargetTable = getPhysicalTableName( modify.getTable().getQualifiedName() );
+        final SqlIdentifier sqlTargetTable = getPhysicalTableName( modify.getEntity().unwrap( JdbcTable.class ).orElseThrow() );
 
         switch ( modify.getOperation() ) {
             case INSERT: {
@@ -429,8 +443,8 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
                         sqlTargetTable,
                         sqlSource,
                         physicalIdentifierList(
-                                modify.getTable().getQualifiedName(),
-                                modify.getInput().getRowType().getFieldNames() ) );
+                                modify.getEntity().unwrap( JdbcTable.class ).orElseThrow(),
+                                modify.getInput().getTupleType().getFieldNames() ) );
                 return result( sqlInsert, ImmutableList.of(), modify, null );
             }
             case UPDATE: {
@@ -438,8 +452,8 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
                 final SqlUpdate sqlUpdate = new SqlUpdate(
                         POS,
                         sqlTargetTable,
-                        physicalIdentifierList( modify.getTable().getQualifiedName(), modify.getUpdateColumnList() ),
-                        exprList( context, modify.getSourceExpressionList() ),
+                        physicalIdentifierList( modify.getEntity().unwrap( JdbcTable.class ).orElseThrow(), modify.getUpdateColumns() ),
+                        exprList( context, modify.getSourceExpressions() ),
                         ((SqlSelect) input.node).getWhere(),
                         input.asSelect(),
                         null );
@@ -466,7 +480,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
      * Converts a list of {@link RexNode} expressions to {@link SqlNode} expressions.
      */
     private SqlNodeList exprList( final Context context, List<? extends RexNode> exprs ) {
-        return new SqlNodeList( exprs.stream().map( e -> context.toSql( null, e ) ).collect( Collectors.toList() ), POS );
+        return new SqlNodeList( exprs.stream().map( e -> context.toSql( null, e ) ).toList(), POS );
     }
 
 
@@ -474,21 +488,18 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
      * Converts a list of names expressions to a list of single-part {@link SqlIdentifier}s.
      */
     private SqlNodeList identifierList( List<String> names ) {
-        return new SqlNodeList( names.stream().map( name -> new SqlIdentifier( name, POS ) ).collect( Collectors.toList() ), POS );
+        return new SqlNodeList( names.stream().map( name -> new SqlIdentifier( name, POS ) ).toList(), POS );
     }
 
 
     /**
      * Converts a list of names expressions to a list of single-part {@link SqlIdentifier}s.
      */
-    private SqlNodeList physicalIdentifierList( List<String> tableName, List<String> columnNames ) {
-        return new SqlNodeList( columnNames.stream().map( columnName -> getPhysicalColumnName( tableName, columnName ) ).collect( Collectors.toList() ), POS );
+    private SqlNodeList physicalIdentifierList( JdbcTable entity, List<String> columnNames ) {
+        return new SqlNodeList( entity.columns.stream().filter( c -> columnNames.contains( c.logicalName ) ).map( c -> new SqlIdentifier( c.name, ParserPos.ZERO ) ).toList(), POS );
     }
 
 
-    /**
-     * @see #dispatch
-     */
     public Result visit( Match e ) {
         final AlgNode input = e.getInput();
         final Result x = visitChild( 0, input );
@@ -527,11 +538,11 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
 
         final SqlNode after;
         if ( e.getAfter() instanceof RexLiteral ) {
-            SqlMatchRecognize.AfterOption value = (SqlMatchRecognize.AfterOption) ((RexLiteral) e.getAfter()).getValue2();
+            SqlMatchRecognize.AfterOption value = (SqlMatchRecognize.AfterOption) ((RexLiteral) e.getAfter()).getValue().asSymbol().value;
             after = SqlLiteral.createSymbol( value, POS );
         } else {
             RexCall call = (RexCall) e.getAfter();
-            String operand = RexLiteral.stringValue( call.getOperands().get( 0 ) );
+            String operand = RexLiteral.stringValue( call.getOperands().get( 0 ) ).value;
             after = (SqlNode) call.getOperator().createCall( POS, new SqlIdentifier( operand, POS ) );
         }
 
@@ -597,9 +608,9 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
     @Override
     public void addSelect( List<SqlNode> selectList, SqlNode node, AlgDataType rowType ) {
         //String name = rowType.getFieldNames().get( selectList.size() );
-        String name = rowType.getFieldList().get( selectList.size() ).getPhysicalName();
+        String name = rowType.getFields().get( selectList.size() ).getPhysicalName();
         if ( name == null ) {
-            name = rowType.getFieldList().get( selectList.size() ).getName();
+            name = rowType.getFields().get( selectList.size() ).getName();
         }
         String alias = SqlValidatorUtil.getAlias( node, -1 );
         final String lowerName = name.toLowerCase( Locale.ROOT );
@@ -623,51 +634,16 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
     }
 
 
-    public abstract SqlIdentifier getPhysicalTableName( List<String> tableName );
-
-
-    public abstract SqlIdentifier getPhysicalColumnName( List<String> tableName, String columnName );
+    public abstract SqlIdentifier getPhysicalTableName( JdbcTable tableName );
 
 
     /**
      * Stack frame.
      */
-    private static class Frame {
-
-        private final int ordinalInParent;
-        private final AlgNode r;
-
-
-        Frame( int ordinalInParent, AlgNode r ) {
-            this.ordinalInParent = ordinalInParent;
-            this.r = r;
-        }
+    private record Frame(int ordinalInParent, AlgNode r) {
 
     }
 
-
-    public static class PlainAlgToSqlConverter extends AlgToSqlConverter {
-
-        /**
-         * Creates a AlgToSqlConverter.
-         */
-        public PlainAlgToSqlConverter( SqlDialect dialect ) {
-            super( dialect );
-        }
-
-
-        @Override
-        public SqlIdentifier getPhysicalTableName( List<String> tableNames ) {
-            return new SqlIdentifier( tableNames, POS );
-        }
-
-
-        @Override
-        public SqlIdentifier getPhysicalColumnName( List<String> tableName, String columnName ) {
-            return new SqlIdentifier( columnName, POS );
-        }
-
-    }
 
 }
 

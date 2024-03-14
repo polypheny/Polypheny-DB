@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,28 +32,29 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.UUID;
 import javax.inject.Inject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.StatusService.ErrorConfig;
-import org.polypheny.db.StatusService.StatusType;
-import org.polypheny.db.adapter.AdapterManager;
+import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.StatusNotificationService.ErrorConfig;
+import org.polypheny.db.StatusNotificationService.StatusType;
 import org.polypheny.db.adapter.index.IndexManager;
-import org.polypheny.db.catalog.Adapter;
+import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.impl.PolyCatalog;
+import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.cli.PolyModesConverter;
+import org.polypheny.db.config.Config;
+import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManagerImpl;
+import org.polypheny.db.ddl.DefaultInserter;
 import org.polypheny.db.docker.AutoDocker;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.gui.GuiUtils;
@@ -61,10 +62,12 @@ import org.polypheny.db.gui.SplashHelper;
 import org.polypheny.db.gui.TrayGui;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterfaceManager;
-import org.polypheny.db.information.HostInformation;
-import org.polypheny.db.information.JavaInformation;
+import org.polypheny.db.information.StatusService;
 import org.polypheny.db.languages.LanguageManager;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
+import org.polypheny.db.monitoring.information.HostInformation;
+import org.polypheny.db.monitoring.information.JavaInformation;
 import org.polypheny.db.monitoring.statistics.StatisticQueryProcessor;
 import org.polypheny.db.monitoring.statistics.StatisticsManagerImpl;
 import org.polypheny.db.partition.FrequencyMap;
@@ -72,20 +75,22 @@ import org.polypheny.db.partition.FrequencyMapImpl;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.PartitionManagerFactoryImpl;
 import org.polypheny.db.plugins.PolyPluginManager;
+import org.polypheny.db.processing.AlgProcessor;
 import org.polypheny.db.processing.AuthenticatorImpl;
 import org.polypheny.db.processing.ConstraintEnforceAttacher.ConstraintTracker;
-import org.polypheny.db.processing.JsonRelProcessorImpl;
+import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.transaction.TransactionManagerImpl;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
+import org.polypheny.db.util.RunMode;
 import org.polypheny.db.view.MaterializedViewManager;
 import org.polypheny.db.view.MaterializedViewManagerImpl;
-import org.polypheny.db.webui.ConfigServer;
+import org.polypheny.db.webui.ConfigService;
 import org.polypheny.db.webui.HttpServer;
-import org.polypheny.db.webui.InformationServer;
+import org.polypheny.db.webui.InformationService;
 import org.polypheny.db.webui.UiTestingConfigPage;
 import org.polypheny.db.webui.UiTestingMonitoringPage;
 
@@ -111,10 +116,10 @@ public class PolyphenyDb {
     public boolean resetPlugins = false;
 
     @Option(name = { "-memoryCatalog" }, description = "Store catalog only in-memory")
-    public boolean memoryCatalog = false;
+    public static boolean memoryCatalog = false;
 
-    @Option(name = { "-testMode" }, description = "Special catalog configuration for running tests")
-    public boolean testMode = false;
+    @Option(name = { "-mode" }, description = "Special system configuration for running tests", typeConverterProvider = PolyModesConverter.class)
+    public static RunMode mode = RunMode.PRODUCTION;
 
     @Option(name = { "-gui" }, description = "Show splash screen on startup and add taskbar gui")
     public boolean desktopMode = false;
@@ -122,11 +127,11 @@ public class PolyphenyDb {
     @Option(name = { "-daemon" }, description = "Disable splash screen")
     public boolean daemonMode = false;
 
-    @Option(name = { "-defaultStore" }, description = "Type of default store")
+    @Option(name = { "-defaultStore" }, description = "Type of default storeId")
     public String defaultStoreName = "hsqldb";
 
     @Option(name = { "-defaultSource" }, description = "Type of default source")
-    public String defaultSourceName = "csv";
+    public static String defaultSourceName = "csv";
 
     @Option(name = { "-c", "--config" }, description = "Path to the configuration file", type = OptionType.GLOBAL)
     protected String applicationConfPath;
@@ -138,7 +143,6 @@ public class PolyphenyDb {
     @Getter
     private volatile boolean isReady = false;
     private SplashHelper splashScreen;
-    private Catalog catalog;
 
 
     public static void main( final String[] args ) {
@@ -146,11 +150,12 @@ public class PolyphenyDb {
             if ( log.isDebugEnabled() ) {
                 log.debug( "PolyphenyDb.main( {} )", java.util.Arrays.toString( args ) );
             }
+            TimeZone.setDefault( TimeZone.getTimeZone( "UTC" ) );
             final SingleCommand<PolyphenyDb> parser = SingleCommand.singleCommand( PolyphenyDb.class );
             final PolyphenyDb polyphenyDb = parser.parse( args );
 
-            StatusService.addSubscriber( log::info, StatusType.INFO );
-            StatusService.addSubscriber( log::error, StatusType.ERROR );
+            StatusNotificationService.addSubscriber( log::info, StatusType.INFO );
+            StatusNotificationService.addSubscriber( log::error, StatusType.ERROR );
 
             // Hide dock icon on macOS systems
             System.setProperty( "apple.awt.UIElement", "true" );
@@ -165,12 +170,14 @@ public class PolyphenyDb {
             }
 
             polyphenyDb.runPolyphenyDb();
-        } catch ( ParseException e ) {
+        } catch (
+                ParseException e ) {
             log.error( "Error parsing command line parameters: " + e.getMessage() );
-        } catch ( Throwable uncaught ) {
+        } catch (
+                Throwable uncaught ) {
             if ( log.isErrorEnabled() ) {
                 log.error( "Uncaught Throwable.", uncaught );
-                StatusService.printError(
+                StatusNotificationService.printError(
                         "Error: " + uncaught.getMessage(),
                         ErrorConfig.builder().func( ErrorConfig.DO_NOTHING ).doExit( true ).showButton( true ).buttonMessage( "Exit" ).build() );
             }
@@ -178,13 +185,13 @@ public class PolyphenyDb {
     }
 
 
-    public void runPolyphenyDb() throws GenericCatalogException {
+    public void runPolyphenyDb() {
         if ( resetDocker ) {
             log.warn( "[-resetDocker] option is set, this option is only for development." );
         }
 
         // Configuration shall not be persisted
-        ConfigManager.memoryMode = (testMode || memoryCatalog);
+        ConfigManager.memoryMode = (mode == RunMode.TEST || memoryCatalog);
         ConfigManager.resetCatalogOnStartup = resetCatalog;
 
         // Select behavior depending on arguments
@@ -214,6 +221,11 @@ public class PolyphenyDb {
             this.splashScreen = new SplashHelper();
         }
 
+        // we have to set the mode before checking
+        PolyphenyHomeDirManager dirManager = PolyphenyHomeDirManager.setModeAndGetInstance( mode );
+
+        initializeStatusNotificationService();
+
         // Check if Polypheny is already running
         if ( GuiUtils.checkPolyphenyAlreadyRunning() ) {
             if ( openUiInBrowser ) {
@@ -224,31 +236,7 @@ public class PolyphenyDb {
         }
 
         // Restore content of Polypheny folder
-        PolyphenyHomeDirManager phdm = PolyphenyHomeDirManager.getInstance();
-        if ( phdm.checkIfExists( "_test_backup" ) && phdm.getFileIfExists( "_test_backup" ).isDirectory() ) {
-            File backupFolder = phdm.getFileIfExists( "_test_backup" );
-            // Cleanup Polypheny folder
-            for ( File item : phdm.getRootPath().listFiles() ) {
-                if ( item.getName().equals( "_test_backup" ) ) {
-                    continue;
-                }
-                if ( phdm.getFileIfExists( item.getName() ).isFile() ) {
-                    phdm.deleteFile( item.getName() );
-                } else {
-                    phdm.recursiveDeleteFolder( item.getName() );
-                }
-            }
-            // Restore contents from backup
-            for ( File item : backupFolder.listFiles() ) {
-                if ( phdm.checkIfExists( "_test_backup/" + item.getName() ) ) {
-                    if ( !item.renameTo( new File( phdm.getRootPath(), item.getName() ) ) ) {
-                        throw new RuntimeException( "Unable to restore the Polypheny folder." );
-                    }
-                }
-            }
-            backupFolder.delete();
-            log.info( "Restoring the data folder." );
-        }
+        restoreHomeFolderIfNecessary( dirManager );
 
         // Reset catalog, data and configuration
         if ( resetCatalog ) {
@@ -262,17 +250,17 @@ public class PolyphenyDb {
         }
 
         // Backup content of Polypheny folder
-        if ( testMode || memoryCatalog ) {
-            if ( phdm.checkIfExists( "_test_backup" ) ) {
-                throw new RuntimeException( "Unable to backup the Polypheny folder since there is already a backup folder." );
+        if ( mode == RunMode.TEST || memoryCatalog ) {
+            if ( dirManager.getHomeFile( "_test_backup" ).isPresent() ) {
+                throw new GenericRuntimeException( "Unable to backup the Polypheny folder since there is already a backup folder." );
             }
-            File backupFolder = phdm.registerNewFolder( "_test_backup" );
-            for ( File item : phdm.getRootPath().listFiles() ) {
+            File backupFolder = dirManager.registerNewFolder( "_test_backup" );
+            for ( File item : dirManager.getRootPath().listFiles() ) {
                 if ( item.getName().equals( "_test_backup" ) ) {
                     continue;
                 }
                 if ( !item.renameTo( new File( backupFolder, item.getName() ) ) ) {
-                    throw new RuntimeException( "Unable to backup the Polypheny folder." );
+                    throw new GenericRuntimeException( "Unable to backup the Polypheny folder." );
                 }
             }
             log.info( "Restoring the Polypheny folder." );
@@ -280,35 +268,35 @@ public class PolyphenyDb {
 
         // Enables Polypheny to be started with a different config.
         // Otherwise, Config at default location is used.
-        if ( applicationConfPath != null && PolyphenyHomeDirManager.getInstance().checkIfExists( applicationConfPath ) ) {
+        if ( applicationConfPath != null && PolyphenyHomeDirManager.getInstance().getHomeFile( applicationConfPath ).isPresent() ) {
             ConfigManager.getInstance();
             ConfigManager.setApplicationConfFile( new File( applicationConfPath ) );
         }
 
         // Generate UUID for Polypheny (if there isn't one already)
         String uuid;
-        if ( !PolyphenyHomeDirManager.getInstance().checkIfExists( "uuid" ) ) {
+        if ( PolyphenyHomeDirManager.getInstance().getGlobalFile( "uuid" ).isEmpty() ) {
             UUID id = UUID.randomUUID();
-            File f = PolyphenyHomeDirManager.getInstance().registerNewFile( "uuid" );
+            File f = PolyphenyHomeDirManager.getInstance().registerNewGlobalFile( "uuid" );
 
             try ( FileOutputStream out = new FileOutputStream( f ) ) {
                 out.write( id.toString().getBytes( StandardCharsets.UTF_8 ) );
             } catch ( IOException e ) {
-                throw new RuntimeException( "Failed to store UUID " + e );
+                throw new GenericRuntimeException( "Failed to store UUID " + e );
             }
 
             uuid = id.toString();
         } else {
-            Path path = PolyphenyHomeDirManager.getInstance().getFileIfExists( "uuid" ).toPath();
+            Path path = PolyphenyHomeDirManager.getInstance().getGlobalFile( "uuid" ).orElseThrow().toPath();
 
             try ( BufferedReader in = Files.newBufferedReader( path, StandardCharsets.UTF_8 ) ) {
                 uuid = UUID.fromString( in.readLine() ).toString();
             } catch ( IOException e ) {
-                throw new RuntimeException( "Failed to load UUID " + e );
+                throw new GenericRuntimeException( "Failed to load UUID " + e );
             }
         }
 
-        if ( testMode ) {
+        if ( mode == RunMode.TEST ) {
             uuid = "polypheny-test";
         }
 
@@ -366,9 +354,13 @@ public class PolyphenyDb {
         final ShutdownHelper sh = new ShutdownHelper();
         // shutdownHookId = addShutdownHook( "Component Terminator", sh );
 
+        // Start Polypheny-UI
+        final Authenticator authenticator = new AuthenticatorImpl();
+        final HttpServer server = startHttpServer( authenticator, transactionManager );
+
         // Start config server and information server
-        new ConfigServer( RuntimeConfig.CONFIG_SERVER_PORT.getInteger() );
-        new InformationServer( RuntimeConfig.INFORMATION_SERVER_PORT.getInteger() );
+        new ConfigService( server.getServer() );
+        new InformationService( server.getServer() );
 
         try {
             new JavaInformation();
@@ -376,26 +368,49 @@ public class PolyphenyDb {
             log.error( "Unable to retrieve java runtime information." );
         }
         try {
-            new HostInformation();
+            HostInformation.getINSTANCE();
         } catch ( Exception e ) {
             log.error( "Unable to retrieve host information." );
         }
 
-        /*ThreadManager.getComponent().addShutdownHook( "[ShutdownHook] HttpServerDispatcher.stop()", () -> {
-            try {
-                httpServerDispatcher.stop();
-            } catch ( Exception e ) {
-                GLOBAL_LOGGER.warn( "Exception during HttpServerDispatcher shutdown", e );
-            }
-        } );*/
+        // Status service which pipes msgs to the start ui or the console
+        StatusService.initialize( transactionManager, server.getServer() );
 
-        final Authenticator authenticator = new AuthenticatorImpl();
+        log.debug( "Setting Docker Timeouts" );
+        RuntimeConfig.DOCKER_TIMEOUT.setInteger( mode == RunMode.DEVELOPMENT || mode == RunMode.TEST ? 5 : RuntimeConfig.DOCKER_TIMEOUT.getInteger() );
+        if ( initializeDockerManager() ) {
+            return;
+        }
+
+        // Initialize plugin manager
+        PolyPluginManager.init( resetPlugins );
+
+        // Startup and restore catalog
+        Catalog catalog = startCatalog();
 
         // Initialize interface manager
         QueryInterfaceManager.initialize( transactionManager, authenticator );
 
-        // Initialize plugin manager
-        PolyPluginManager.init( resetPlugins );
+        // Call DockerManager once to remove old containers
+        DockerManager.getInstance();
+
+        // Initialize PartitionMangerFactory
+        PartitionManagerFactory.setAndGetInstance( new PartitionManagerFactoryImpl() );
+        FrequencyMap.setAndGetInstance( new FrequencyMapImpl( catalog ) );
+
+        // temporary add sql and rel here
+        QueryLanguage language = new QueryLanguage(
+                DataModel.RELATIONAL,
+                "alg",
+                List.of( "alg", "algebra" ),
+                null,
+                AlgProcessor::new,
+                null,
+                q -> null );
+        LanguageManager.getINSTANCE().addQueryLanguage( language );
+
+        // Initialize index manager
+        initializeIndexManager();
 
         // Initialize statistic manager
         final StatisticQueryProcessor statisticQueryProcessor = new StatisticQueryProcessor( transactionManager, authenticator );
@@ -404,98 +419,11 @@ public class PolyphenyDb {
         // Initialize MaterializedViewManager
         MaterializedViewManager.setAndGetInstance( new MaterializedViewManagerImpl( transactionManager ) );
 
-        // Startup and restore catalog
-        Transaction trx = null;
-
-        try {
-            Catalog.resetCatalog = resetCatalog;
-            Catalog.memoryCatalog = memoryCatalog;
-            Catalog.testMode = testMode;
-            Catalog.resetDocker = resetDocker;
-            Catalog.defaultStore = Adapter.fromString( defaultStoreName, AdapterType.STORE );
-            Catalog.defaultSource = Adapter.fromString( defaultSourceName, AdapterType.SOURCE );
-            catalog = PolyPluginManager.getCATALOG_SUPPLIER().get();
-            if ( catalog == null ) {
-                throw new RuntimeException( "There was no catalog submitted, aborting." );
-            }
-
-            if ( AutoDocker.getInstance().isAvailable() ) {
-                if ( testMode ) {
-                    resetDocker = true;
-                    Catalog.resetDocker = true;
-                }
-                boolean success = AutoDocker.getInstance().doAutoConnect();
-                if ( testMode && !success ) {
-                    // AutoDocker does not work in Windows containers
-                    if ( !System.getenv( "RUNNER_OS" ).equals( "Windows" ) ) {
-                        log.error( "Failed to connect to docker instance" );
-                        return;
-                    }
-                }
-            }
-
-            trx = transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, false, "Catalog Startup" );
-            AdapterManager.getInstance().restoreAdapters();
-            loadDefaults();
-            QueryInterfaceManager.getInstance().restoreInterfaces( catalog );
-            trx.commit();
-            trx = transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, false, "Catalog Startup" );
-            catalog.restoreColumnPlacements( trx );
-            catalog.restoreViews( trx );
-            trx.commit();
-        } catch ( UnknownDatabaseException | UnknownUserException | UnknownSchemaException | TransactionException e ) {
-            if ( trx != null ) {
-                try {
-                    trx.rollback();
-                } catch ( TransactionException ex ) {
-                    log.error( "Error while rolling back the transaction", e );
-                }
-            }
-            throw new RuntimeException( "Something went wrong while restoring stores from the catalog.", e );
-        }
-
         // Initialize DDL Manager
         DdlManager.setAndGetInstance( new DdlManagerImpl( catalog ) );
 
-        // Initialize PartitionMangerFactory
-        PartitionManagerFactory.setAndGetInstance( new PartitionManagerFactoryImpl() );
-        FrequencyMap.setAndGetInstance( new FrequencyMapImpl( catalog ) );
-
-        // Initialize statistic settings
-        StatisticsManager.getInstance().initializeStatisticSettings();
-
-        // Start Polypheny-UI
-        final HttpServer httpServer = new HttpServer( transactionManager, authenticator );
-        Thread polyphenyUiThread = new Thread( httpServer );
-        polyphenyUiThread.start();
-        try {
-            polyphenyUiThread.join();
-        } catch ( InterruptedException e ) {
-            log.warn( "Interrupted on join()", e );
-        }
-
-        // temporary add sql and rel here
-        LanguageManager.getINSTANCE().addQueryLanguage(
-                NamespaceType.RELATIONAL,
-                "rel",
-                List.of( "rel", "relational" ),
-                null,
-                JsonRelProcessorImpl::new,
-                null );
-
-        // Initialize index manager
-        try {
-            IndexManager.getInstance().initialize( transactionManager );
-            IndexManager.getInstance().restoreIndexes();
-        } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException | UnknownTableException | TransactionException | UnknownKeyException e ) {
-            throw new RuntimeException( "Something went wrong while initializing index manager.", e );
-        }
-
-        // Call DockerManager once to remove old containers
-        DockerManager.getInstance();
-
         // Add config and monitoring test page for UI testing
-        if ( testMode ) {
+        if ( mode == RunMode.TEST ) {
             new UiTestingConfigPage();
             new UiTestingMonitoringPage();
         }
@@ -510,7 +438,13 @@ public class PolyphenyDb {
             TrayGui.getInstance();
         }
 
-        PolyPluginManager.startUp( transactionManager, authenticator );
+        PolyPluginManager.initAfterCatalog();
+        //noinspection ResultOfMethodCallIgnored
+        RoutingManager.getInstance();
+
+        PolyPluginManager.initAfterTransaction( transactionManager );
+
+        restore( authenticator, catalog );
 
         // Add tracker, which rechecks constraints after enabling
         ConstraintTracker tracker = new ConstraintTracker( transactionManager );
@@ -523,6 +457,9 @@ public class PolyphenyDb {
         log.info( "                                       http://localhost:{}", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
         log.info( "****************************************************************************************************" );
         isReady = true;
+
+        // Initialize statistic settings
+        StatisticsManager.getInstance().initializeStatisticSettings();
 
         // Close splash screen
         if ( showSplashScreen ) {
@@ -547,8 +484,167 @@ public class PolyphenyDb {
     }
 
 
-    public void loadDefaults() {
-        Catalog.getInstance().restoreInterfacesIfNecessary();
+    private boolean initializeDockerManager() {
+        if ( AutoDocker.getInstance().isAvailable() ) {
+            if ( mode == RunMode.TEST ) {
+                resetDocker = true;
+                Catalog.resetDocker = true;
+            }
+            boolean success = AutoDocker.getInstance().doAutoConnect();
+            if ( mode == RunMode.TEST && !success ) {
+                // AutoDocker does not work in Windows containers
+                if ( !System.getenv( "RUNNER_OS" ).equals( "Windows" ) ) {
+                    log.error( "Failed to connect to docker instance" );
+                    return true;
+                }
+            }
+        }
+        return false;
     }
+
+
+    private static void initializeStatusNotificationService() {
+        StatusNotificationService.setPort( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
+        RuntimeConfig.WEBUI_SERVER_PORT.addObserver( new ConfigListener() {
+            @Override
+            public void onConfigChange( Config c ) {
+                StatusNotificationService.setPort( c.getInt() );
+            }
+
+
+            @Override
+            public void restart( Config c ) {
+                StatusNotificationService.setPort( c.getInt() );
+            }
+        } );
+    }
+
+
+    private void initializeIndexManager() {
+        try {
+            IndexManager.getInstance().initialize( transactionManager );
+            IndexManager.getInstance().restoreIndexes();
+        } catch ( TransactionException e ) {
+            throw new GenericRuntimeException( "Something went wrong while initializing index manager.", e );
+        }
+    }
+
+
+    private static void restoreHomeFolderIfNecessary( PolyphenyHomeDirManager dirManager ) {
+        if ( dirManager.getHomeFile( "_test_backup" ).isPresent() && dirManager.getHomeFile( "_test_backup" ).get().isDirectory() ) {
+            File backupFolder = dirManager.getHomeFile( "_test_backup" ).get();
+            // Cleanup Polypheny folder
+            for ( File item : dirManager.getRootPath().listFiles() ) {
+                if ( item.getName().equals( "_test_backup" ) ) {
+                    continue;
+                }
+                if ( dirManager.getHomeFile( item.getName() ).orElseThrow().isFile() ) {
+                    dirManager.deleteFile( item.getName() );
+                } else {
+                    dirManager.recursiveDeleteFolder( item.getName() );
+                }
+            }
+            // Restore contents from backup
+            for ( File item : backupFolder.listFiles() ) {
+                if ( dirManager.getHomeFile( "_test_backup/" + item.getName() ).isPresent() ) {
+                    if ( !item.renameTo( new File( dirManager.getRootPath(), item.getName() ) ) ) {
+                        throw new GenericRuntimeException( "Unable to restore the Polypheny folder." );
+                    }
+                }
+            }
+            //noinspection ResultOfMethodCallIgnored
+            backupFolder.delete();
+            log.info( "Restoring the data folder." );
+        }
+    }
+
+
+    private HttpServer startHttpServer( Authenticator authenticator, TransactionManager transactionManager ) {
+        final HttpServer httpServer = new HttpServer( transactionManager, authenticator );
+        Thread polyphenyUiThread = new Thread( httpServer );
+        polyphenyUiThread.start();
+        try {
+            polyphenyUiThread.join();
+        } catch ( InterruptedException e ) {
+            log.warn( "Interrupted on join()", e );
+        }
+        return httpServer;
+    }
+
+
+    @NotNull
+    private Catalog startCatalog() {
+        Catalog.resetCatalog = resetCatalog;
+        Catalog.memoryCatalog = memoryCatalog;
+        Catalog.mode = mode;
+        Catalog.resetDocker = resetDocker;
+        Catalog catalog = Catalog.setAndGetInstance( new PolyCatalog() );
+        if ( catalog == null ) {
+            throw new GenericRuntimeException( "There was no catalog submitted, aborting." );
+        }
+        catalog.init();
+        return catalog;
+    }
+
+
+    /**
+     * Restores the previous state of Polypheny, which is provided by the catalog.
+     *
+     * @param authenticator the authenticator, which is not used atm
+     * @param catalog the current catalog, which provides the last state
+     */
+    private void restore( Authenticator authenticator, Catalog catalog ) {
+        PolyPluginManager.startUp( transactionManager, authenticator );
+
+        if ( !resetCatalog && mode != RunMode.TEST ) {
+            Catalog.getInstance().restore();
+        }
+        Catalog.getInstance().updateSnapshot();
+
+        Catalog.defaultStore = AdapterTemplate.fromString( defaultStoreName, AdapterType.STORE );
+        Catalog.defaultSource = AdapterTemplate.fromString( defaultSourceName, AdapterType.SOURCE );
+        restoreDefaults( catalog, mode );
+
+        QueryInterfaceManager.getInstance().restoreInterfaces( catalog.getSnapshot() );
+
+        commitRestore();
+    }
+
+
+    /**
+     * Tries to commit the restored catalog.
+     */
+    private void commitRestore() {
+        Transaction trx = null;
+        try {
+            trx = transactionManager.startTransaction(
+                    Catalog.defaultUserId,
+                    Catalog.defaultNamespaceId,
+                    false,
+                    "Catalog Startup" );
+            trx.commit();
+        } catch ( TransactionException e ) {
+            try {
+                trx.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Error while rolling back the transaction", e );
+            }
+            throw new GenericRuntimeException( "Something went wrong while restoring stores from the catalog.", e );
+        }
+    }
+
+
+    /**
+     * Restores the default structure, interfaces, adapters.
+     *
+     * @param catalog the current catalog
+     * @param mode the current mode
+     */
+    private static void restoreDefaults( Catalog catalog, RunMode mode ) {
+        catalog.updateSnapshot();
+        DefaultInserter.resetData( DdlManager.getInstance(), mode );
+        DefaultInserter.restoreInterfacesIfNecessary();
+    }
+
 
 }

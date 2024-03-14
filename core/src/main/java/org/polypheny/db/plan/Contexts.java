@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,8 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import org.jetbrains.annotations.NotNull;
 
 
 /**
@@ -143,14 +145,6 @@ public class Contexts {
             this.target = Objects.requireNonNull( target );
         }
 
-
-        @Override
-        public <T> T unwrap( Class<T> clazz ) {
-            if ( clazz.isInstance( target ) ) {
-                return clazz.cast( target );
-            }
-            return null;
-        }
     }
 
 
@@ -160,8 +154,8 @@ public class Contexts {
     public static class EmptyContext implements Context {
 
         @Override
-        public <T> T unwrap( Class<T> clazz ) {
-            return null;
+        public @NotNull <T> Optional<T> unwrap( Class<T> clazz ) {
+            return Optional.empty();
         }
     }
 
@@ -181,16 +175,5 @@ public class Contexts {
             }
         }
 
-
-        @Override
-        public <T> T unwrap( Class<T> clazz ) {
-            for ( Context context : contexts ) {
-                final T t = context.unwrap( clazz );
-                if ( t != null ) {
-                    return t;
-                }
-            }
-            return null;
-        }
     }
 }

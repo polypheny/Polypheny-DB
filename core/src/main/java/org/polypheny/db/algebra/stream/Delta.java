@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,22 +37,22 @@ package org.polypheny.db.algebra.stream;
 import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
-import org.polypheny.db.algebra.core.Scan;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.algebra.core.relational.RelScan;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
 
 /**
  * Relational operator that converts a relation to a stream.
  *
- * For example, if {@code Orders} is a table, and {@link Scan}(Orders) is a relational operator that returns the current contents of the table, then {@link Delta}(Scan(Orders)) is a relational operator that returns
+ * For example, if {@code Orders} is a table, and {@link RelScan}(Orders) is a relational operator that returns the current contents of the table, then {@link Delta}(Scan(Orders)) is a relational operator that returns
  * all inserts into the table.
  *
  * If unrestricted, Delta returns all previous inserts into the table (from time -&infin; to now) and all future inserts into the table (from now to +&infin;) and never terminates.
  */
 public abstract class Delta extends SingleAlg {
 
-    protected Delta( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input ) {
+    protected Delta( AlgCluster cluster, AlgTraitSet traits, AlgNode input ) {
         super( cluster, traits, input );
     }
 

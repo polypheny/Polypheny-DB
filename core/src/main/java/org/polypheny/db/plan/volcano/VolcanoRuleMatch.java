@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -142,7 +142,7 @@ class VolcanoRuleMatch extends VolcanoRuleCall {
      * @return description of this rule match
      */
     private String computeDigest() {
-        StringBuilder buf = new StringBuilder( "rule [" + getRule() + "] rels [" );
+        StringBuilder buf = new StringBuilder( "rule [" + getRule() + "] alg [" );
         for ( int i = 0; i < algs.length; i++ ) {
             if ( i > 0 ) {
                 buf.append( ", " );

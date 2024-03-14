@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,26 +40,29 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.Adapter.AdapterProperties;
-import org.polypheny.db.adapter.Adapter.AdapterSettingBoolean;
-import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
-import org.polypheny.db.adapter.Adapter.AdapterSettingString;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.RelationalScanDelegate;
+import org.polypheny.db.adapter.annotations.AdapterProperties;
+import org.polypheny.db.adapter.annotations.AdapterSettingBoolean;
+import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
+import org.polypheny.db.adapter.annotations.AdapterSettingString;
 import org.polypheny.db.adapter.googlesheet.util.PolyphenyTokenStoreFactory;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
+import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
+import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.schema.Schema;
-import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
@@ -70,7 +73,8 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 @AdapterProperties(
         name = "GoogleSheets",
         description = "An adapter for querying online Google Sheets, using the Google Sheets Java API. Currently, this adapter only supports read operations.",
-        usedModes = DeployMode.REMOTE)
+        usedModes = DeployMode.REMOTE,
+        defaultMode = DeployMode.REMOTE)
 @AdapterSettingString(name = "sheetsURL", description = "The URL of the Google Sheet to query.", defaultValue = "", position = 1)
 @AdapterSettingInteger(name = "maxStringLength", defaultValue = 255, position = 2,
         description = "Which length (number of characters including whitespace) should be used for the varchar columns. Make sure this is equal or larger than the longest string in any of the columns.")
@@ -80,7 +84,10 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 @AdapterSettingString(name = "oAuth-Client-ID", description = "Authentication credentials used for GoogleSheets API. Not the account credentials.", defaultValue = "", position = 5)
 @AdapterSettingString(name = "oAuth-Client-Key", description = "Authentication credentials used for GoogleSheets API. Not the account credentials.", defaultValue = "")
 @AdapterSettingString(name = "sheetName", description = "Name of sheet to use.", defaultValue = "")
-public class GoogleSheetSource extends DataSource {
+public class GoogleSheetSource extends DataSource<RelAdapterCatalog> {
+
+    @Delegate(excludes = Excludes.class)
+    private final RelationalScanDelegate delegate;
 
     static final String APPLICATION_NAME = "POLYPHENY GOOGLE SHEET";
     static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
@@ -92,7 +99,9 @@ public class GoogleSheetSource extends DataSource {
     public final String sheet;
     private URL sheetsUrl;
     private final int querySize;
-    private GoogleSheetSchema currentSchema;
+
+    @Getter
+    private GoogleSheetNamespace currentNamespace;
     private final int maxStringLength;
 
     @Getter
@@ -100,19 +109,19 @@ public class GoogleSheetSource extends DataSource {
     Credential credentials;
 
 
-    public GoogleSheetSource( final int storeId, final String uniqueName, final Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, true );
+    public GoogleSheetSource( final long storeId, final String uniqueName, final Map<String, String> settings ) {
+        super( storeId, uniqueName, settings, true, new RelAdapterCatalog( storeId ) );
 
         this.clientId = getSettingOrFail( "oAuth-Client-ID", settings );
         this.clientKey = getSettingOrFail( "oAuth-Client-Key", settings );
         this.sheet = getSettingOrFail( "sheetName", settings );
         maxStringLength = Integer.parseInt( settings.get( "maxStringLength" ) );
         if ( maxStringLength < 1 ) {
-            throw new RuntimeException( "Invalid value for maxStringLength: " + maxStringLength );
+            throw new GenericRuntimeException( "Invalid value for maxStringLength: " + maxStringLength );
         }
         querySize = Integer.parseInt( settings.get( "querySize" ) );
         if ( querySize < 1 ) {
-            throw new RuntimeException( "Invalid value for querySize: " + querySize );
+            throw new GenericRuntimeException( "Invalid value for querySize: " + querySize );
         }
         setSheetsUrl( settings );
 
@@ -122,6 +131,7 @@ public class GoogleSheetSource extends DataSource {
             GoogleSheetReader r = new GoogleSheetReader( sheetsUrl, querySize, this );
             r.deleteToken();
         }
+        this.delegate = new RelationalScanDelegate( this, adapterCatalog );
     }
 
 
@@ -164,14 +174,14 @@ public class GoogleSheetSource extends DataSource {
                     .setApplicationName( APPLICATION_NAME )
                     .build();
         } catch ( GeneralSecurityException | IOException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 
 
     private String getSettingOrFail( String key, Map<String, String> settings ) {
         if ( !settings.containsKey( key ) ) {
-            throw new RuntimeException( "Settings do not contain required key: " + key );
+            throw new GenericRuntimeException( "Settings do not contain required key: " + key );
         }
         return settings.get( key );
     }
@@ -181,7 +191,7 @@ public class GoogleSheetSource extends DataSource {
         try {
             sheetsUrl = new URL( settings.get( "sheetsURL" ) );
         } catch ( MalformedURLException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 
@@ -270,7 +280,7 @@ public class GoogleSheetSource extends DataSource {
                             length = 0;
                             break;
                         default:
-                            throw new RuntimeException( "Unknown type: " + colType.toLowerCase() );
+                            throw new GenericRuntimeException( "Unknown type: " + colType.toLowerCase() );
                     }
                 }
 
@@ -314,26 +324,28 @@ public class GoogleSheetSource extends DataSource {
 
 
     @Override
-    public void createNewSchema( SchemaPlus rootSchema, String name ) {
-        currentSchema = new GoogleSheetSchema( this.sheetsUrl, this.querySize );
+    public void updateNamespace( String name, long id ) {
+        currentNamespace = new GoogleSheetNamespace( id, adapterId, this.sheetsUrl, this.querySize, this );
     }
 
 
     @Override
-    public Table createTableSchema( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
-        return currentSchema.createGoogleSheetTable( combinedTable, columnPlacementsOnStore, this );
+    public void truncate( Context context, long allocId ) {
+        throw new GenericRuntimeException( "Google Sheet adapter does not support truncate" );
     }
 
 
     @Override
-    public Schema getCurrentSchema() {
-        return currentSchema;
-    }
-
-
-    @Override
-    public void truncate( Context context, CatalogTable table ) {
-        throw new RuntimeException( "Google Sheet adapter does not support truncate" );
+    public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
+        PhysicalTable table = adapterCatalog.createTable(
+                logical.table.getNamespaceName(),
+                logical.table.name,
+                logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
+                logical.table,
+                logical.columns.stream().collect( Collectors.toMap( t -> t.id, t -> t ) ),
+                logical.pkIds, allocation );
+        adapterCatalog.replacePhysical( currentNamespace.createGoogleSheetTable( table, this ) );
+        return List.of( table );
     }
 
 
@@ -353,6 +365,15 @@ public class GoogleSheetSource extends DataSource {
     @Override
     public void rollback( PolyXid xid ) {
         log.debug( "Google Sheet adapter does not support rollback()." );
+    }
+
+
+    private interface Excludes {
+
+        void refreshTable( long allocId );
+
+        void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation );
+
     }
 
 }

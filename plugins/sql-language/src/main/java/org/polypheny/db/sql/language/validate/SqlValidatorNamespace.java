@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ import java.util.List;
 import org.polypheny.db.algebra.constant.Modality;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.nodes.validate.ValidatorNamespace;
-import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.util.Pair;
@@ -54,7 +54,7 @@ public interface SqlValidatorNamespace extends ValidatorNamespace {
     /**
      * Returns the underlying table, or null if there is none.
      */
-    ValidatorTable getTable();
+    Entity getEntity();
 
     /**
      * Returns the type of this namespace.
@@ -93,7 +93,7 @@ public interface SqlValidatorNamespace extends ValidatorNamespace {
     /**
      * Returns the parse tree node at the root of this namespace.
      *
-     * @return parse tree node; null for {@link TableNamespace}
+     * @return parse tree node; null for {@link EntityNamespace}
      */
     SqlNode getNode();
 
@@ -150,7 +150,7 @@ public interface SqlValidatorNamespace extends ValidatorNamespace {
     /**
      * If this namespace resolves to another namespace, returns that namespace, following links to the end of the chain.
      *
-     * A {@code WITH}) clause defines table names that resolve to queries (the body of the with-item). An {@link IdentifierNamespace} typically resolves to a {@link TableNamespace}.
+     * A {@code WITH}) clause defines table names that resolve to queries (the body of the with-item). An {@link IdentifierNamespace} typically resolves to a {@link EntityNamespace}.
      *
      * You must not call this method before {@link #validate(AlgDataType)} has completed.
      */

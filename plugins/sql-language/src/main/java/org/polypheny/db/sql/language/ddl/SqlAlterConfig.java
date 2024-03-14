@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,13 @@ import java.util.List;
 import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.sql.language.SqlAlter;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlOperator;
@@ -48,7 +49,7 @@ public class SqlAlterConfig extends SqlAlter {
 
 
     /**
-     * Creates a SqlAlterSchemaOwner.
+     * Creates a SqlAlterConfig.
      */
     public SqlAlterConfig( ParserPos pos, SqlNode key, SqlNode value ) {
         super( OPERATOR, pos );
@@ -80,7 +81,7 @@ public class SqlAlterConfig extends SqlAlter {
 
 
     @Override
-    public void execute( Context context, Statement statement, QueryParameters parameters ) {
+    public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
         String keyStr = key.toString();
         String valueStr = value.toString();
         if ( keyStr.startsWith( "'" ) ) {
@@ -97,7 +98,7 @@ public class SqlAlterConfig extends SqlAlter {
         }
         Config config = ConfigManager.getInstance().getConfig( keyStr );
         if ( config == null ) {
-            throw new RuntimeException( "Unknown config key: " + keyStr );
+            throw new GenericRuntimeException( "Unknown config key: " + keyStr );
         }
         config.parseStringAndSetValue( valueStr );
     }

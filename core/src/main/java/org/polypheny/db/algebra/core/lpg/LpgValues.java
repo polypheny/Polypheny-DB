@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,11 @@ import java.util.Collection;
 import lombok.Getter;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.schema.graph.PolyEdge;
-import org.polypheny.db.schema.graph.PolyNode;
+import org.polypheny.db.type.entity.graph.PolyEdge;
+import org.polypheny.db.type.entity.graph.PolyNode;
 
 
 @Getter
@@ -40,7 +40,7 @@ public abstract class LpgValues extends AbstractAlgNode implements LpgAlg {
      * Creates an {@link LpgValues}.
      * Which are either one or multiple nodes or edges, or literal values.
      */
-    public LpgValues( AlgOptCluster cluster, AlgTraitSet traitSet, Collection<PolyNode> nodes, Collection<PolyEdge> edges, ImmutableList<ImmutableList<RexLiteral>> values, AlgDataType rowType ) {
+    public LpgValues( AlgCluster cluster, AlgTraitSet traitSet, Collection<PolyNode> nodes, Collection<PolyEdge> edges, ImmutableList<ImmutableList<RexLiteral>> values, AlgDataType rowType ) {
         super( cluster, traitSet );
         this.nodes = ImmutableList.copyOf( nodes );
         this.edges = ImmutableList.copyOf( edges );
@@ -57,7 +57,10 @@ public abstract class LpgValues extends AbstractAlgNode implements LpgAlg {
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + nodes.hashCode() + "$" + edges.hashCode() + "$" + values.hashCode();
+        return getClass().getSimpleName() + "$"
+                + nodes.hashCode() + "$"
+                + edges.hashCode() + "$"
+                + values.hashCode() + "&";
     }
 
 }

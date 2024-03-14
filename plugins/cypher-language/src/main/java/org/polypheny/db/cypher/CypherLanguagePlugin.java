@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,31 +16,17 @@
 
 package org.polypheny.db.cypher;
 
-import java.util.ArrayList;
 import java.util.List;
-import org.eclipse.jetty.websocket.api.Session;
-import org.pf4j.Plugin;
-import org.pf4j.PluginWrapper;
-import org.polypheny.db.PolyImplementation;
-import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.cypher.parser.CypherParserImpl;
-import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.nodes.Node;
+import org.polypheny.db.plugins.PluginContext;
+import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.plugins.PolyPluginManager;
-import org.polypheny.db.processing.AutomaticDdlProcessor;
-import org.polypheny.db.processing.ExtendedQueryParameters;
-import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.TransactionManager;
-import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.crud.LanguageCrud;
-import org.polypheny.db.webui.models.Result;
-import org.polypheny.db.webui.models.requests.QueryRequest;
 
-public class CypherLanguagePlugin extends Plugin {
+public class CypherLanguagePlugin extends PolyPlugin {
 
 
     public static final String NAME = "cypher";
@@ -50,15 +36,23 @@ public class CypherLanguagePlugin extends Plugin {
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to be successfully loaded by manager.
      */
-    public CypherLanguagePlugin( PluginWrapper wrapper ) {
-        super( wrapper );
+    public CypherLanguagePlugin( PluginContext context ) {
+        super( context );
     }
 
 
     @Override
     public void start() {
-        PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.getCrud().languageCrud.addLanguage( NAME, CypherLanguagePlugin::anyCypherQuery ) );
-        LanguageManager.getINSTANCE().addQueryLanguage( NamespaceType.GRAPH, NAME, List.of( NAME, "opencypher" ), CypherParserImpl.FACTORY, CypherProcessorImpl::new, null );
+        QueryLanguage language = new QueryLanguage(
+                DataModel.GRAPH,
+                NAME,
+                List.of( NAME, "opencypher" ),
+                CypherParserImpl.FACTORY,
+                CypherProcessor::new,
+                null,
+                LanguageManager::toQueryNodes );
+        LanguageManager.getINSTANCE().addQueryLanguage( language );
+        PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.addToResult( language, LanguageCrud::getGraphResult ) );
 
         if ( !CypherRegisterer.isInit() ) {
             CypherRegisterer.registerOperators();
@@ -68,7 +62,8 @@ public class CypherLanguagePlugin extends Plugin {
 
     @Override
     public void stop() {
-        LanguageCrud.getCrud().languageCrud.removeLanguage( NAME );
+        QueryLanguage language = QueryLanguage.from( NAME );
+        LanguageCrud.deleteToResult( language );
         LanguageManager.removeQueryLanguage( NAME );
 
         if ( CypherRegisterer.isInit() ) {
@@ -76,93 +71,5 @@ public class CypherLanguagePlugin extends Plugin {
         }
     }
 
-
-    public static List<Result> anyCypherQuery(
-            Session session,
-            QueryRequest request,
-            TransactionManager transactionManager,
-            long userId,
-            long databaseId,
-            Crud crud ) {
-
-        String query = request.query;
-
-        Transaction transaction = Crud.getTransaction( request.analyze, request.cache, transactionManager, userId, databaseId, "HTTP Interface Cypher" );
-        AutomaticDdlProcessor cypherProcessor = (AutomaticDdlProcessor) transaction.getProcessor( QueryLanguage.from( NAME ) );
-
-        List<Result> results = new ArrayList<>();
-
-        InformationManager queryAnalyzer = null;
-        long executionTime = 0;
-        try {
-            if ( request.analyze ) {
-                transaction.getQueryAnalyzer().setSession( session );
-            }
-
-            queryAnalyzer = LanguageCrud.attachAnalyzerIfSpecified( request, crud, transaction );
-
-            executionTime = System.nanoTime();
-
-            Statement statement = transaction.createStatement();
-            ExtendedQueryParameters parameters = new ExtendedQueryParameters( query, NamespaceType.GRAPH, request.database );
-
-            if ( transaction.isAnalyze() ) {
-                statement.getOverviewDuration().start( "Parsing" );
-            }
-            List<? extends Node> statements = cypherProcessor.parse( query );
-            if ( transaction.isAnalyze() ) {
-                statement.getOverviewDuration().stop( "Parsing" );
-            }
-
-            int i = 0;
-            List<String> splits = List.of( query.split( ";" ) );
-            assert statements.size() <= splits.size();
-            for ( Node node : statements ) {
-                CypherStatement stmt = (CypherStatement) node;
-
-                if ( cypherProcessor.needsDdlGeneration( node, parameters ) ) {
-                    cypherProcessor.autoGenerateDDL(
-                            Crud.getTransaction( request.analyze, request.cache, transactionManager, userId, databaseId, "HTTP Interface Cypher (auto)" ).createStatement(),
-                            node,
-                            parameters );
-                }
-
-                if ( stmt.isDDL() ) {
-                    cypherProcessor.prepareDdl( statement, node, parameters );
-                    Result result = new Result( 1 ).setGeneratedQuery( splits.get( i ) ).setXid( transaction.getXid().toString() );
-                    results.add( result );
-                } else {
-                    if ( transaction.isAnalyze() ) {
-                        statement.getOverviewDuration().start( "Translation" );
-                    }
-                    AlgRoot logicalRoot = cypherProcessor.translate( statement, stmt, parameters );
-                    if ( transaction.isAnalyze() ) {
-                        statement.getOverviewDuration().stop( "Translation" );
-                    }
-
-                    // Prepare
-                    PolyImplementation polyImplementation = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
-
-                    if ( transaction.isAnalyze() ) {
-                        statement.getOverviewDuration().start( "Execution" );
-                    }
-                    results.add( LanguageCrud.getResult( QueryLanguage.from( NAME ), statement, request, query, polyImplementation, transaction, query.toLowerCase().contains( " limit " ) ).setNamespaceName( request.database ) );
-                    if ( transaction.isAnalyze() ) {
-                        statement.getOverviewDuration().stop( "Execution" );
-                    }
-                }
-                i++;
-            }
-
-
-        } catch ( Throwable t ) {
-            LanguageCrud.printLog( t, request );
-            LanguageCrud.attachError( transaction, results, query, t );
-        }
-
-        LanguageCrud.commitAndFinish( transaction, queryAnalyzer, results, executionTime );
-
-        return results;
-    }
 
 }

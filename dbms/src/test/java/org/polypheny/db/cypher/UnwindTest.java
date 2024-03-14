@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,14 @@
 
 package org.polypheny.db.cypher;
 
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.helper.TestLiteral;
-import org.polypheny.db.webui.models.Result;
+import org.polypheny.db.webui.models.results.GraphResult;
 
 public class UnwindTest extends CypherTestTemplate {
 
-    @Before
+    @BeforeEach
     public void reset() {
         tearDown();
         createGraph();
@@ -33,7 +32,7 @@ public class UnwindTest extends CypherTestTemplate {
 
     @Test
     public void simpleUnwindTest() {
-        Result res = execute( "UNWIND [1, 3, null] AS x RETURN x, 'val' AS y" );
+        GraphResult res = execute( "UNWIND [1, 3, null] AS x RETURN x, 'val' AS y" );
 
         assert containsRows( res, true, true,
                 Row.of( TestLiteral.from( 1 ), TestLiteral.from( "val" ) ),
@@ -45,7 +44,7 @@ public class UnwindTest extends CypherTestTemplate {
 
     @Test
     public void emptyUnwind() {
-        Result res = execute( "UNWIND [] AS x RETURN x, 'val' AS y" );
+        GraphResult res = execute( "UNWIND [] AS x RETURN x, 'val' AS y" );
 
         assertEmpty( res );
     }
@@ -53,7 +52,7 @@ public class UnwindTest extends CypherTestTemplate {
 
     @Test
     public void nullUnwind() {
-        Result res = execute( "UNWIND null AS x RETURN x, 'val' AS y" );
+        GraphResult res = execute( "UNWIND null AS x RETURN x, 'val' AS y" );
 
         assertEmpty( res );
     }
@@ -61,7 +60,7 @@ public class UnwindTest extends CypherTestTemplate {
 
     @Test
     public void listOfListUnwind() {
-        Result res = execute( "WITH [[1], [2, 4], 3] AS nested UNWIND nested AS x UNWIND x AS y RETURN y" );
+        GraphResult res = execute( "WITH [[1], [2, 4], 3] AS nested UNWIND nested AS x UNWIND x AS y RETURN y" );
 
         containsRows( res, true, true,
                 Row.of( TestLiteral.from( 1 ) ),
@@ -72,10 +71,9 @@ public class UnwindTest extends CypherTestTemplate {
 
 
     @Test
-    @Ignore
     public void nodePropertyUnwind() {
         execute( "CREATE (n {key: [3,1]})" );
-        Result res = execute( "MATCH (n) UNWIND n.key AS x RETURN x" );
+        GraphResult res = execute( "MATCH (n) UNWIND n.key AS x RETURN x" );
 
         containsRows( res, true, false,
                 Row.of( TestLiteral.from( 3 ) ),

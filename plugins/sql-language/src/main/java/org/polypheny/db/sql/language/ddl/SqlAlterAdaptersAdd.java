@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,13 +23,14 @@ import java.util.Map;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
+import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.sql.language.SqlAlter;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlOperator;
@@ -90,16 +91,17 @@ public class SqlAlterAdaptersAdd extends SqlAlter {
 
 
     @Override
-    public void execute( Context context, Statement statement, QueryParameters parameters ) {
+    public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
 
         @SuppressWarnings("unchecked")
         Map<String, String> configMap = new Gson().fromJson( removeQuotationMarks( config.toString() ), Map.class );
 
-        DdlManager.getInstance().addAdapter(
+        DdlManager.getInstance().createAdapter(
                 removeQuotationMarks( uniqueName.toString() ),
                 removeQuotationMarks( adapterName.toString() ),
                 AdapterType.valueOf( removeQuotationMarks( adapterType.toString().toUpperCase() ) ),
-                configMap );
+                configMap,
+                configMap.containsKey( "mode" ) ? DeployMode.valueOf( configMap.get( "mode" ).toUpperCase() ) : DeployMode.EMBEDDED );
     }
 
 

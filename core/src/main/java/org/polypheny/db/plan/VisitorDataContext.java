@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,6 @@
 package org.polypheny.db.plan;
 
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
@@ -42,18 +41,18 @@ import org.apache.calcite.linq4j.QueryProvider;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.logical.relational.LogicalFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.nodes.Function;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.nodes.Function.FunctionType;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.util.NlsString;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
 
@@ -72,7 +71,7 @@ public class VisitorDataContext implements DataContext {
 
 
     @Override
-    public SchemaPlus getRootSchema() {
+    public Snapshot getSnapshot() {
         throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
     }
 
@@ -112,7 +111,7 @@ public class VisitorDataContext implements DataContext {
 
 
     @Override
-    public void addParameterValues( long index, AlgDataType type, List<Object> data ) {
+    public void addParameterValues( long index, AlgDataType type, List<PolyValue> data ) {
         throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
     }
 
@@ -124,13 +123,13 @@ public class VisitorDataContext implements DataContext {
 
 
     @Override
-    public List<Map<Long, Object>> getParameterValues() {
+    public List<Map<Long, PolyValue>> getParameterValues() {
         throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
     }
 
 
     @Override
-    public void setParameterValues( List<Map<Long, Object>> values ) {
+    public void setParameterValues( List<Map<Long, PolyValue>> values ) {
         throw new UnsupportedOperationException( "This operation is not supported for " + getClass().getSimpleName() );
     }
 
@@ -147,13 +146,13 @@ public class VisitorDataContext implements DataContext {
     }
 
 
-    public static DataContext of( AlgNode targetRel, LogicalFilter queryRel ) {
-        return of( targetRel.getRowType(), queryRel.getCondition() );
+    public static DataContext of( AlgNode targetRel, LogicalRelFilter queryRel ) {
+        return of( targetRel.getTupleType(), queryRel.getCondition() );
     }
 
 
     public static DataContext of( AlgDataType rowType, RexNode rex ) {
-        final int size = rowType.getFieldList().size();
+        final int size = rowType.getFields().size();
         final Object[] values = new Object[size];
         final List<RexNode> operands = ((RexCall) rex).getOperands();
         final RexNode firstOperand = operands.get( 0 );
@@ -169,11 +168,11 @@ public class VisitorDataContext implements DataContext {
     }
 
 
-    public static DataContext of( AlgDataType rowType, List<Pair<RexInputRef, RexNode>> usageList ) {
-        final int size = rowType.getFieldList().size();
-        final Object[] values = new Object[size];
-        for ( Pair<RexInputRef, RexNode> elem : usageList ) {
-            Pair<Integer, ?> value = getValue( elem.getKey(), elem.getValue() );
+    public static DataContext of( AlgDataType rowType, List<Pair<RexIndexRef, RexNode>> usageList ) {
+        final int size = rowType.getFields().size();
+        final PolyValue[] values = new PolyValue[size];
+        for ( Pair<RexIndexRef, RexNode> elem : usageList ) {
+            Pair<Integer, PolyValue> value = getValue( elem.getKey(), elem.getValue() );
             if ( value == null ) {
                 log.warn( "{} is not handled for {} for checking implication", elem.getKey(), elem.getValue() );
                 return null;
@@ -185,52 +184,30 @@ public class VisitorDataContext implements DataContext {
     }
 
 
-    public static Pair<Integer, ?> getValue( RexNode inputRef, RexNode literal ) {
+    public static Pair<Integer, PolyValue> getValue( RexNode inputRef, RexNode literal ) {
         inputRef = removeCast( inputRef );
         literal = removeCast( literal );
 
-        if ( inputRef instanceof RexInputRef && literal instanceof RexLiteral ) {
-            final int index = ((RexInputRef) inputRef).getIndex();
+        if ( inputRef instanceof RexIndexRef && literal instanceof RexLiteral ) {
+            final int index = ((RexIndexRef) inputRef).getIndex();
             final RexLiteral rexLiteral = (RexLiteral) literal;
             final AlgDataType type = inputRef.getType();
 
             if ( type.getPolyType() == null ) {
-                log.warn( "{} returned null PolyType", inputRef.toString() );
+                log.warn( "{} returned null PolyType", inputRef );
                 return null;
             }
 
             switch ( type.getPolyType() ) {
-                case INTEGER:
-                    return Pair.of( index, rexLiteral.getValueAs( Integer.class ) );
-                case DOUBLE:
-                    return Pair.of( index, rexLiteral.getValueAs( Double.class ) );
-                case REAL:
-                    return Pair.of( index, rexLiteral.getValueAs( Float.class ) );
-                case BIGINT:
-                    return Pair.of( index, rexLiteral.getValueAs( Long.class ) );
-                case SMALLINT:
-                    return Pair.of( index, rexLiteral.getValueAs( Short.class ) );
-                case TINYINT:
-                    return Pair.of( index, rexLiteral.getValueAs( Byte.class ) );
-                case DECIMAL:
-                    return Pair.of( index, rexLiteral.getValueAs( BigDecimal.class ) );
-                case DATE:
-                case TIME:
-                    return Pair.of( index, rexLiteral.getValueAs( Integer.class ) );
-                case TIMESTAMP:
-                    return Pair.of( index, rexLiteral.getValueAs( Long.class ) );
-                case CHAR:
-                    return Pair.of( index, rexLiteral.getValueAs( Character.class ) );
-                case VARCHAR:
-                    return Pair.of( index, rexLiteral.getValueAs( String.class ) );
+                case INTEGER, DOUBLE, REAL, BIGINT, SMALLINT, TINYINT, DECIMAL, DATE, TIME, TIMESTAMP, CHAR, VARCHAR:
+                    return Pair.of( index, rexLiteral.getValue() );
                 default:
                     // TODO: Support few more supported cases
                     log.warn( "{} for value of class {} is being handled in default way", type.getPolyType(), rexLiteral.getValue().getClass() );
-                    if ( rexLiteral.getValue() instanceof NlsString ) {
-                        return Pair.of( index, ((NlsString) rexLiteral.getValue()).getValue() );
-                    } else {
-                        return Pair.of( index, rexLiteral.getValue() );
+                    if ( rexLiteral.getValue().isString() ) {
+                        return Pair.of( index, PolyString.of( rexLiteral.getValue().asString().value ) );
                     }
+                    return Pair.of( index, rexLiteral.getValue() );
             }
         }
 
@@ -240,10 +217,9 @@ public class VisitorDataContext implements DataContext {
 
 
     private static RexNode removeCast( RexNode inputRef ) {
-        if ( inputRef instanceof RexCall ) {
-            final RexCall castedRef = (RexCall) inputRef;
+        if ( inputRef instanceof RexCall castedRef ) {
             final Operator operator = castedRef.getOperator();
-            if ( ((Function) operator).getFunctionType() == FunctionType.CAST ) {
+            if ( operator.getFunctionType() == FunctionType.CAST ) {
                 inputRef = castedRef.getOperands().get( 0 );
             }
         }

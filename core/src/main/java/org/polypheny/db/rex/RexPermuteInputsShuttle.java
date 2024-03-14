@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,10 +57,10 @@ public class RexPermuteInputsShuttle extends RexShuttle {
      * Creates a RexPermuteInputsShuttle.
      *
      * The mapping provides at most one target for every source. If a source has no targets and is referenced in the expression, {@link TargetMapping#getTarget(int)}
-     * will give an error. Otherwise the mapping gives a unique target.
+     * will give an error. Otherwise, the mapping gives a unique target.
      *
      * @param mapping Mapping
-     * @param inputs Input relational expressions
+     * @param inputs Input algebra expressions
      */
     public RexPermuteInputsShuttle( TargetMapping mapping, AlgNode... inputs ) {
         this( mapping, fields( inputs ) );
@@ -84,27 +84,27 @@ public class RexPermuteInputsShuttle extends RexShuttle {
     private static ImmutableList<AlgDataTypeField> fields( AlgNode[] inputs ) {
         final ImmutableList.Builder<AlgDataTypeField> fields = ImmutableList.builder();
         for ( AlgNode input : inputs ) {
-            fields.addAll( input.getRowType().getFieldList() );
+            fields.addAll( input.getTupleType().getFields() );
         }
         return fields.build();
     }
 
 
     @Override
-    public RexNode visitInputRef( RexInputRef local ) {
+    public RexNode visitIndexRef( RexIndexRef local ) {
         final int index = local.getIndex();
         int target = mapping.getTarget( index );
-        return new RexInputRef( target, local.getType() );
+        return new RexIndexRef( target, local.getType() );
     }
 
 
     @Override
     public RexNode visitCall( RexCall call ) {
         if ( call.getOperator().equals( RexBuilder.GET_OPERATOR ) ) {
-            final String name = (String) ((RexLiteral) call.getOperands().get( 1 )).getValue2();
+            final String name = ((RexLiteral) call.getOperands().get( 1 )).getValue().asString().value;
             final int i = lookup( fields, name );
             if ( i >= 0 ) {
-                return RexInputRef.of( i, fields );
+                return RexIndexRef.of( i, fields );
             }
         }
         return super.visitCall( call );

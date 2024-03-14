@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,11 @@
 package org.polypheny.db.processing;
 
 import java.util.HashSet;
+import java.util.Set;
 import lombok.Getter;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexPatternFieldRef;
 import org.polypheny.db.rex.RexShuttle;
@@ -33,7 +34,7 @@ public class LogicalAlgAnalyzeRexShuttle extends RexShuttle {
 
 
     @Getter
-    protected final HashSet<Integer> usedIds = new HashSet<>();
+    protected final Set<Integer> usedIds = new HashSet<>();
 
 
     @Override
@@ -44,13 +45,13 @@ public class LogicalAlgAnalyzeRexShuttle extends RexShuttle {
 
 
     @Override
-    public RexNode visitInputRef( RexInputRef inputRef ) {
+    public RexNode visitIndexRef( RexIndexRef inputRef ) {
         // Add accessed value
         if ( inputRef != null ) {
             this.usedIds.add( inputRef.getIndex() );
         }
 
-        return super.visitInputRef( inputRef );
+        return super.visitIndexRef( inputRef );
     }
 
 

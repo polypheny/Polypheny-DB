@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,11 @@
 package org.polypheny.db.sql.language.dialect;
 
 
+import java.util.Objects;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.constant.NullCollation;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.sql.language.SqlAbstractDateTimeLiteral;
@@ -44,8 +46,8 @@ public class MssqlSqlDialect extends SqlDialect {
     public static final SqlDialect DEFAULT =
             new MssqlSqlDialect(
                     EMPTY_CONTEXT
-                            .withDatabaseProduct( DatabaseProduct.MSSQL )
-                            .withIdentifierQuoteString( "[" ) );
+                            .withIdentifierQuoteString( "[" )
+                            .withNullCollation( NullCollation.HIGH ) );
 
     private static final SqlFunction MSSQL_SUBSTRING =
             new SqlFunction(
@@ -79,17 +81,14 @@ public class MssqlSqlDialect extends SqlDialect {
             }
             SqlUtil.unparseFunctionSyntax( MSSQL_SUBSTRING, writer, call );
         } else {
-            switch ( call.getKind() ) {
-                case FLOOR:
-                    if ( call.operandCount() != 2 ) {
-                        super.unparseCall( writer, call, leftPrec, rightPrec );
-                        return;
-                    }
-                    unparseFloor( writer, call );
-                    break;
-
-                default:
+            if ( Objects.requireNonNull( call.getKind() ) == Kind.FLOOR ) {
+                if ( call.operandCount() != 2 ) {
                     super.unparseCall( writer, call, leftPrec, rightPrec );
+                    return;
+                }
+                unparseFloor( writer, call );
+            } else {
+                super.unparseCall( writer, call, leftPrec, rightPrec );
             }
         }
     }
@@ -110,7 +109,7 @@ public class MssqlSqlDialect extends SqlDialect {
      */
     private void unparseFloor( SqlWriter writer, SqlCall call ) {
         SqlLiteral node = call.operand( 1 );
-        TimeUnitRange unit = (TimeUnitRange) node.getValue();
+        TimeUnitRange unit = node.value.asSymbol().asEnum( TimeUnitRange.class );
 
         switch ( unit ) {
             case YEAR:
@@ -151,7 +150,7 @@ public class MssqlSqlDialect extends SqlDialect {
         SqlNode operand = call.operand( 1 );
         if ( operand instanceof SqlIntervalLiteral ) {
             //There is no DATESUB method available, so change the sign.
-            unparseSqlIntervalLiteralMssql( writer, (SqlIntervalLiteral) operand, Kind == Kind.MINUS ? -1 : 1 );
+            unparseSqlIntervalLiteralMssql( writer, (SqlIntervalLiteral) operand, Kind == org.polypheny.db.algebra.constant.Kind.MINUS ? -1 : 1 );
         } else {
             operand.unparse( writer, leftPrec, rightPrec );
         }
@@ -212,7 +211,7 @@ public class MssqlSqlDialect extends SqlDialect {
         ((SqlNode) call.operand( 0 )).unparse( writer, 0, 0 );
         writer.print( ", 126)" );
 
-        if ( offset.length() > 0 ) {
+        if ( !offset.isEmpty() ) {
             writer.print( "+'" + offset + "'" );
         }
         writer.endList( frame );

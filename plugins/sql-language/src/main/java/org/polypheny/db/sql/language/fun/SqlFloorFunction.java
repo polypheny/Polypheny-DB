@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlUtil;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.inference.ReturnTypes;
 
 
@@ -88,7 +89,7 @@ public class SqlFloorFunction extends SqlMonotonicUnaryFunction {
      * @return Modified call
      */
     public static SqlCall replaceTimeUnitOperand( SqlCall call, String literal, ParserPos pos ) {
-        SqlLiteral literalNode = SqlLiteral.createCharString( literal, null, pos );
+        SqlLiteral literalNode = SqlLiteral.createCharString( PolyString.of( literal ), pos );
         return (SqlCall) call.getOperator().createCall( call.getFunctionQuantifier(), pos, call.getOperandList().get( 0 ), literalNode );
     }
 

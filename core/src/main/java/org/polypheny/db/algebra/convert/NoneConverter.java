@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,8 +37,8 @@ package org.polypheny.db.algebra.convert;
 import java.util.List;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.ConventionTraitDef;
@@ -51,7 +51,7 @@ import org.polypheny.db.util.Util;
 public class NoneConverter extends ConverterImpl {
 
 
-    public NoneConverter( AlgOptCluster cluster, AlgNode child ) {
+    public NoneConverter( AlgCluster cluster, AlgNode child ) {
         super( cluster, ConventionTraitDef.INSTANCE, cluster.traitSetOf( Convention.NONE ), child );
     }
 
@@ -63,7 +63,7 @@ public class NoneConverter extends ConverterImpl {
     }
 
 
-    public static void init( AlgOptPlanner planner ) {
+    public static void init( AlgPlanner planner ) {
         // we can't convert from any conventions, therefore no rules to register
         Util.discard( planner );
     }

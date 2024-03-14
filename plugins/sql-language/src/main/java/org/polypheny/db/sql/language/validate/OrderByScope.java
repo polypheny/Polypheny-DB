@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import org.polypheny.db.sql.language.SqlNodeList;
 import org.polypheny.db.sql.language.SqlSelect;
 import org.polypheny.db.util.Moniker;
 import org.polypheny.db.util.NameMatcher;
+import org.polypheny.db.util.NameMatchers;
 
 
 /**
@@ -75,9 +76,9 @@ public class OrderByScope extends DelegatingScope {
         if ( identifier.isSimple() && validator.getConformance().isSortByAlias() ) {
             final String name = identifier.names.get( 0 );
             final SqlValidatorNamespace selectNs = validator.getSqlNamespace( select );
-            final AlgDataType rowType = selectNs.getRowType();
+            final AlgDataType rowType = selectNs.getTupleType();
 
-            final NameMatcher nameMatcher = validator.catalogReader.nameMatcher();
+            final NameMatcher nameMatcher = NameMatchers.withCaseSensitive( false );
             final AlgDataTypeField field = nameMatcher.field( rowType, name );
             final int aliasCount = aliasCount( nameMatcher, name );
             if ( aliasCount > 1 ) {
@@ -111,8 +112,8 @@ public class OrderByScope extends DelegatingScope {
     @Override
     public AlgDataType resolveColumn( String name, SqlNode ctx ) {
         final SqlValidatorNamespace selectNs = validator.getSqlNamespace( select );
-        final AlgDataType rowType = selectNs.getRowType();
-        final NameMatcher nameMatcher = validator.catalogReader.nameMatcher();
+        final AlgDataType rowType = selectNs.getTupleType();
+        final NameMatcher nameMatcher = NameMatchers.withCaseSensitive( false );
         final AlgDataTypeField field = nameMatcher.field( rowType, name );
         if ( field != null ) {
             return field.getType();

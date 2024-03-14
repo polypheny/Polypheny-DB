@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.polypheny.db.sql.language.fun;
 
 
+import java.util.Objects;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
@@ -26,6 +27,7 @@ import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlFunction;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.Util;
@@ -69,12 +71,14 @@ public class SqlExtractFunction extends SqlFunction {
 
     @Override
     public Monotonicity getMonotonicity( OperatorBinding call ) {
-        switch ( call.getOperandLiteralValue( 0, TimeUnitRange.class ) ) {
-            case YEAR:
+        ///0, , TimeUnitRange.class ) ) {
+        if ( call.getOperandLiteralValue( 0, PolyType.INTERVAL_DAY ).isInterval() ) {
+            if ( Objects.requireNonNull( call.getOperandLiteralValue( 0, PolyType.INTERVAL_DAY ).asInterval().qualifier.getTimeUnitRange() ) == TimeUnitRange.YEAR ) {
                 return call.getOperandMonotonicity( 1 ).unstrict();
-            default:
-                return Monotonicity.NOT_MONOTONIC;
+            }
         }
+
+        return Monotonicity.NOT_MONOTONIC;
     }
 
 }

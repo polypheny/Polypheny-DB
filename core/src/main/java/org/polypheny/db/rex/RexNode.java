@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import java.util.Collection;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.nodes.Node;
+import org.polypheny.db.util.Wrapper;
 
 
 /**
@@ -50,7 +51,7 @@ import org.polypheny.db.nodes.Node;
  *
  * All sub-classes of RexNode are immutable.
  */
-public abstract class RexNode {
+public abstract class RexNode implements Wrapper {
 
     // Effectively final. Set in each sub-class constructor, and never re-set.
     protected String digest;
@@ -101,14 +102,14 @@ public abstract class RexNode {
 
 
     /**
-     * Accepts a visitor, dispatching to the right overloaded {@link RexVisitor#visitInputRef visitXxx} method.
+     * Accepts a visitor, dispatching to the right overloaded {@link RexVisitor#visitIndexRef visitXxx} method.
      *
      * Also see {@link RexUtil#apply(RexVisitor, java.util.List, RexNode)}, which applies a visitor to several expressions simultaneously.
      */
     public abstract <R> R accept( RexVisitor<R> visitor );
 
     /**
-     * Accepts a visitor with a payload, dispatching to the right overloaded {@link RexBiVisitor#visitInputRef(RexInputRef, Object)} visitXxx} method.
+     * Accepts a visitor with a payload, dispatching to the right overloaded {@link RexBiVisitor#visitInputRef(RexIndexRef, Object)} visitXxx} method.
      */
     public abstract <R, P> R accept( RexBiVisitor<R, P> visitor, P arg );
 

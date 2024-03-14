@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,15 +17,15 @@
 package org.polypheny.db.cypher;
 
 import java.util.List;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.webui.models.Result;
+import org.polypheny.db.webui.models.results.GraphResult;
 
 public class DmlDeleteTest extends CypherTestTemplate {
 
-    @Before
+    @BeforeEach
     public void reset() {
         tearDown();
         createGraph();
@@ -37,7 +37,7 @@ public class DmlDeleteTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( "MATCH (p:Person)\n"
                 + "DELETE p" );
-        Result res = matchAndReturnAllNodes();
+        GraphResult res = matchAndReturnAllNodes();
         assertEmpty( res );
     }
 
@@ -47,7 +47,7 @@ public class DmlDeleteTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( "MATCH (p:Person {name: 'Max'})\n"
                 + "DELETE p" );
-        Result res = matchAndReturnAllNodes();
+        GraphResult res = matchAndReturnAllNodes();
         assertEmpty( res );
     }
 
@@ -58,7 +58,7 @@ public class DmlDeleteTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_2 );
         execute( "MATCH (p:Person {name: 'Max'})\n"
                 + "DELETE p" );
-        Result res = matchAndReturnAllNodes();
+        GraphResult res = matchAndReturnAllNodes();
         assert containsRows( res, true, false,
                 Row.of( TestNode.from( List.of( "Person" ), Pair.of( "name", "Hans" ) ) ) );
     }
@@ -70,7 +70,7 @@ public class DmlDeleteTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_2 );
         execute( "MATCH (p:Person {name: 'Max'}), (h:Person {name: 'Hans'})\n"
                 + "DELETE p, h" );
-        Result res = matchAndReturnAllNodes();
+        GraphResult res = matchAndReturnAllNodes();
         assertEmpty( res );
     }
 
@@ -81,7 +81,7 @@ public class DmlDeleteTest extends CypherTestTemplate {
         execute( "MATCH (:Person {name: 'Max'})-[rel:OWNER_OF]->(:Animal {name: 'Kira'}) \n"
                 + "DELETE rel" );
 
-        Result res = matchAndReturnAllNodes();
+        GraphResult res = matchAndReturnAllNodes();
         assert containsRows( res, true, false,
                 Row.of( TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ) ) ),
                 Row.of( TestNode.from(

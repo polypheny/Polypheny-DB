@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 package org.polypheny.db;
 
-import static org.reflections.Reflections.log;
-
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,18 +25,24 @@ import java.util.Map;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.Meta.CursorFactory;
 import org.apache.calcite.avatica.Meta.StatementType;
-import org.apache.calcite.avatica.MetaImpl;
+import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
-import org.apache.commons.lang3.time.StopWatch;
+import org.apache.calcite.linq4j.Enumerator;
+import org.apache.calcite.linq4j.Linq4j;
+import org.apache.calcite.linq4j.function.Function1;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.interpreter.BindableConvention;
+import org.polypheny.db.monitoring.events.MonitoringType;
 import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.Convention;
@@ -48,36 +52,40 @@ import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.util.LimitIterator;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyNumber;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
 
 
 @Getter
+@Slf4j
 public class PolyImplementation {
 
-    public final AlgDataType rowType;
+    public final AlgDataType tupleType;
     private final long maxRowCount = -1;
     private final Kind kind;
-    private Bindable<Object> bindable;
-    private final NamespaceType namespaceType;
+    private Bindable<PolyValue[]> bindable;
+    private final DataModel dataModel;
     private final ExecutionTimeMonitor executionTimeMonitor;
     private CursorFactory cursorFactory;
     private final Convention resultConvention;
-    private List<ColumnMetaData> columns;
-    private final PreparedResult preparedResult;
+    private List<ColumnMetaData> fields;
+    private final PreparedResult<PolyValue> preparedResult;
     private final Statement statement;
-    @Accessors(fluent = true)
-    private boolean hasMoreRows;
+
     @Accessors(fluent = true)
     private final boolean isDDL;
+    private Iterator<PolyValue[]> iterator;
 
 
     /**
      * {@link PolyImplementation} should serve as a jack-of-all-trades results implementation of the results of a query.
      * It should minimize the needed variables to be instantiated and defer access of more complex information
-     * on access e.g. {@link #getColumns()}
+     * on access e.g. {@link #getFields()}
      *
-     * @param rowType defines the types of the result
-     * @param namespaceType type of the
+     * @param tupleType defines the types of the result
+     * @param dataModel type of the
      * @param executionTimeMonitor to keep track of different execution times
      * @param preparedResult nullable result, which holds all info from the execution
      * @param kind of initial query, which is used to get type of result e.g. DDL, DQL,...
@@ -85,34 +93,50 @@ public class PolyImplementation {
      * @param resultConvention the nullable result convention
      */
     public PolyImplementation(
-            @Nullable AlgDataType rowType,
-            NamespaceType namespaceType,
+            @Nullable AlgDataType tupleType,
+            DataModel dataModel,
             ExecutionTimeMonitor executionTimeMonitor,
-            @Nullable PreparedResult preparedResult,
+            @Nullable PreparedResult<PolyValue> preparedResult,
             Kind kind,
             Statement statement,
             @Nullable Convention resultConvention ) {
-        this.rowType = rowType;
-        this.namespaceType = namespaceType;
+
+        this.dataModel = dataModel;
         this.executionTimeMonitor = executionTimeMonitor;
         this.preparedResult = preparedResult;
         this.kind = kind;
         this.statement = statement;
         this.resultConvention = resultConvention;
         this.isDDL = Kind.DDL.contains( kind );
+
         if ( this.isDDL ) {
-            this.columns = ImmutableList.of();
+            this.fields = ImmutableList.of();
+            Builder builder = statement.getTransaction().getTypeFactory().builder();
+            builder.add( "ROWTYPE", null, PolyType.BIGINT );
+            this.tupleType = builder.build();
+        } else {
+            this.tupleType = tupleType;
         }
     }
 
 
-    public Enumerable<Object> enumerable( DataContext dataContext ) {
+    public Enumerable<PolyValue[]> enumerable( DataContext dataContext ) {
         return enumerable( getBindable(), dataContext );
     }
 
 
-    public static <T> Enumerable<T> enumerable( Bindable<T> bindable, DataContext dataContext ) {
+    public static Enumerable<PolyValue[]> enumerable( Bindable<PolyValue[]> bindable, DataContext dataContext ) {
         return bindable.bind( dataContext );
+    }
+
+
+    public static <T> Enumerable<Object> enumerable( Bindable<T> bindable, DataContext dataContext, Function1<T, Object> rowTransform ) {
+        return new AbstractEnumerable<>() {
+            @Override
+            public Enumerator<Object> enumerator() {
+                return Linq4j.transform( bindable.bind( dataContext ).enumerator(), rowTransform );
+            }
+        };
     }
 
 
@@ -135,15 +159,15 @@ public class PolyImplementation {
 
         cursorFactory = resultConvention == BindableConvention.INSTANCE
                 ? CursorFactory.ARRAY
-                : CursorFactory.deduce( getColumns(), getResultClass() );
+                : CursorFactory.deduce( getFields(), getResultClass() );
 
         return cursorFactory;
     }
 
 
-    public Bindable<Object> getBindable() {
+    public Bindable<PolyValue[]> getBindable() {
         if ( Kind.DDL.contains( kind ) ) {
-            return null;
+            return dataContext -> Linq4j.singletonEnumerable( new PolyInteger[]{ PolyInteger.of( 1 ) } );
         }
 
         if ( bindable != null ) {
@@ -154,108 +178,73 @@ public class PolyImplementation {
     }
 
 
-    public List<ColumnMetaData> getColumns() {
-        if ( columns != null ) {
-            return columns;
+    public boolean hasMoreRows() {
+        if ( iterator == null ) {
+            throw new GenericRuntimeException( "Implementation was not opened" );
+        }
+        return iterator.hasNext();
+    }
+
+
+    public List<ColumnMetaData> getFields() {
+        if ( fields != null ) {
+            return fields;
         }
 
-        final AlgDataType x;
-        switch ( kind ) {
-            case INSERT:
-            case DELETE:
-            case UPDATE:
-            case EXPLAIN:
+        final AlgDataType x = switch ( kind ) {
+            case INSERT, DELETE, UPDATE, EXPLAIN ->
                 // FIXME: getValidatedNodeType is wrong for DML
-                x = AlgOptUtil.createDmlRowType( kind, statement.getTransaction().getTypeFactory() );
-                break;
-            default:
-                x = rowType;
-        }
+                    AlgOptUtil.createDmlRowType( kind, statement.getTransaction().getTypeFactory() );
+            default -> tupleType;
+        };
         final List<ColumnMetaData> columns = QueryProcessorHelpers.getColumnMetaDataList(
                 statement.getTransaction().getTypeFactory(),
                 x,
                 QueryProcessorHelpers.makeStruct( statement.getTransaction().getTypeFactory(), x ),
                 preparedResult.getFieldOrigins() );
 
-        this.columns = columns;
+        this.fields = columns;
         return columns;
 
     }
 
 
-    public List<List<Object>> getRows( Statement statement, int size ) {
-        return getRows( statement, size, false, false );
+    public ResultIterator execute( Statement statement, int batch ) {
+        return execute( statement, batch, false, false, false );
     }
 
 
-    public List<List<Object>> getRows( Statement statement, int size, boolean isTimed, boolean isAnalyzed ) {
-        return getRows( statement, size, isTimed, isAnalyzed, null, false );
+    public ResultIterator execute( Statement statement, int batch, boolean isAnalyzed, boolean isTimed, boolean isIndex ) {
+        return new ResultIterator(
+                createIterator( getBindable(), statement, isAnalyzed ),
+                statement,
+                batch,
+                isTimed,
+                isIndex,
+                isAnalyzed,
+                tupleType,
+                executionTimeMonitor,
+                this );
     }
 
 
-    public List<List<Object>> getRows( Statement statement, int size, boolean isTimed, boolean isAnalyzed, StatementEvent statementEvent, boolean isIndex ) {
-        Iterator<Object> iterator = null;
-        StopWatch stopWatch = null;
-        try {
-            iterator = createIterator( getBindable(), statement, isAnalyzed );
-            List<List<Object>> res;
-
-            if ( isTimed ) {
-                stopWatch = new StopWatch();
-                stopWatch.start();
-            }
-            if ( size != -1 ) {
-                res = MetaImpl.collect( cursorFactory, LimitIterator.of( iterator, size ), new ArrayList<>() );
-            } else {
-                res = MetaImpl.collect( cursorFactory, iterator, new ArrayList<>() );
-            }
-            this.hasMoreRows = iterator.hasNext();
-            if ( isTimed ) {
-                stopWatch.stop();
-                executionTimeMonitor.setExecutionTime( stopWatch.getNanoTime() );
-            }
-
-            // Only if it is an index
-            if ( statementEvent != null && isIndex ) {
-                statementEvent.setIndexSize( res.size() );
-            }
-
-            return res;
-        } catch ( Throwable t ) {
-            if ( iterator != null ) {
-                try {
-                    if ( iterator instanceof AutoCloseable ) {
-                        ((AutoCloseable) iterator).close();
-                    }
-                } catch ( Exception e ) {
-                    log.error( "Exception while closing result iterator", e );
-                }
-            }
-            throw new RuntimeException( t );
-        } finally {
-            if ( iterator != null ) {
-                try {
-                    if ( iterator instanceof AutoCloseable ) {
-                        ((AutoCloseable) iterator).close();
-                    }
-                } catch ( Exception e ) {
-                    log.error( "Exception while closing result iterator", e );
-                }
-            }
+    private Iterator<PolyValue[]> createIterator( Bindable<PolyValue[]> bindable, Statement statement, boolean isAnalyzed ) {
+        if ( iterator != null ) {
+            return this.iterator;
         }
-    }
 
-
-    private static Iterator<Object> createIterator( Bindable<Object> bindable, Statement statement, boolean isAnalyzed ) {
         if ( isAnalyzed ) {
             statement.getOverviewDuration().start( "Execution" );
         }
-        final Enumerable<Object> enumerable = enumerable( bindable, statement.getDataContext() );
+        final Enumerable<PolyValue[]> enumerable = enumerable( bindable, statement.getDataContext() );
+
         if ( isAnalyzed ) {
             statement.getOverviewDuration().stop( "Execution" );
         }
 
-        return enumerable.iterator();
+        this.iterator = enumerable.iterator();
+
+        return this.iterator;
     }
 
 
@@ -268,7 +257,7 @@ public class PolyImplementation {
             return Meta.StatementType.IS_DML;
         }
 
-        throw new RuntimeException( "Statement type does not exist." );
+        throw new GenericRuntimeException( "Illegal statement type: " + kind.name() );
     }
 
 
@@ -277,29 +266,7 @@ public class PolyImplementation {
     }
 
 
-    public int getRowsChanged( Statement statement ) throws Exception {
-        if ( Kind.DDL.contains( getKind() ) ) {
-            return 1;
-        } else if ( Kind.DML.contains( getKind() ) ) {
-            int rowsChanged;
-            try {
-                Iterator<?> iterator = enumerable( statement.getDataContext() ).iterator();
-                rowsChanged = getRowsChanged( statement, iterator, getKind().name() );
-            } catch ( RuntimeException e ) {
-                if ( e.getCause() != null ) {
-                    throw new Exception( e.getCause().getMessage(), e );
-                } else {
-                    throw new Exception( e.getMessage(), e );
-                }
-            }
-            return rowsChanged;
-        } else {
-            throw new Exception( "Unknown result type: " + getKind() );
-        }
-    }
-
-
-    public static int getRowsChanged( Statement statement, Iterator<?> iterator, String kind ) throws Exception {
+    public static int getRowsChanged( Statement statement, Iterator<?> iterator, MonitoringType kind ) {
         int rowsChanged = -1;
         Object object;
         while ( iterator.hasNext() ) {
@@ -307,15 +274,11 @@ public class PolyImplementation {
             int num;
             if ( object != null && object.getClass().isArray() ) {
                 Object[] o = (Object[]) object;
-                num = ((Number) o[0]).intValue();
+                num = ((PolyNumber) o[0]).intValue();
             } else if ( object != null ) {
-                num = ((Number) object).intValue();
+                num = ((PolyNumber) object).intValue();
             } else {
-                throw new Exception( "Result is null" );
-            }
-            // Check if num is equal for all adapters
-            if ( rowsChanged != -1 && rowsChanged != num ) {
-                //throw new QueryExecutionException( "The number of changed rows is not equal for all stores!" );
+                throw new GenericRuntimeException( "Result is null" );
             }
             rowsChanged = num;
         }
@@ -331,35 +294,36 @@ public class PolyImplementation {
     }
 
 
-    public static void addMonitoringInformation( Statement statement, String kind, int rowsChanged ) {
+    public static void addMonitoringInformation( Statement statement, MonitoringType kind, int rowsChanged ) {
         StatementEvent eventData = statement.getMonitoringEvent();
         if ( rowsChanged > 0 ) {
             eventData.setRowCount( rowsChanged );
         }
-        if ( Kind.INSERT.name().equals( kind ) || Kind.DELETE.name().equals( kind ) ) {
+        if ( MonitoringType.INSERT == kind || MonitoringType.DELETE == kind ) {
 
-            HashMap<Long, List<Object>> ordered = new HashMap<>();
+            Map<Long, List<PolyValue>> ordered = new HashMap<>();
 
-            List<Map<Long, Object>> values = statement.getDataContext().getParameterValues();
-            if ( values.size() > 0 ) {
+            List<Map<Long, PolyValue>> values = statement.getDataContext().getParameterValues();
+            if ( !values.isEmpty() ) {
                 for ( long i = 0; i < statement.getDataContext().getParameterValues().get( 0 ).size(); i++ ) {
                     ordered.put( i, new ArrayList<>() );
                 }
             }
 
-            for ( Map<Long, Object> longObjectMap : statement.getDataContext().getParameterValues() ) {
+            for ( Map<Long, PolyValue> longObjectMap : statement.getDataContext().getParameterValues() ) {
                 longObjectMap.forEach( ( k, v ) -> {
                     ordered.get( k ).add( v );
                 } );
             }
 
             eventData.getChangedValues().putAll( ordered );
-            if ( Kind.INSERT.name().equals( kind ) ) {
+            if ( MonitoringType.INSERT == kind ) {
                 if ( rowsChanged >= 0 ) {
                     eventData.setRowCount( statement.getDataContext().getParameterValues().size() );
                 }
             }
         }
     }
+
 
 }

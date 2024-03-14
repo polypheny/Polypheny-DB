@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,11 @@
 package org.polypheny.db.adapter.cottontail.rules;
 
 
-import java.util.function.Predicate;
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailToEnumerableConverter;
-import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
@@ -30,21 +29,21 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 public class CottontailToEnumerableConverterRule extends ConverterRule {
 
 
-    public CottontailToEnumerableConverterRule( CottontailConvention in, AlgBuilderFactory algBuilderFactory ) {
+    public CottontailToEnumerableConverterRule( AlgBuilderFactory algBuilderFactory ) {
         super(
                 AlgNode.class,
-                (Predicate<AlgNode>) r -> true,
-                in,
+                r -> true,
+                CottontailConvention.INSTANCE,
                 EnumerableConvention.INSTANCE,
                 algBuilderFactory,
-                "CottontailToEnumerableConverterRule:" + in.getName() );
+                "CottontailToEnumerableConverterRule" );
     }
 
 
     @Override
-    public AlgNode convert( AlgNode rel ) {
-        AlgTraitSet newTraitSet = rel.getTraitSet().replace( getOutTrait() );
-        return new CottontailToEnumerableConverter( rel.getCluster(), newTraitSet, rel );
+    public AlgNode convert( AlgNode alg ) {
+        AlgTraitSet newTraitSet = alg.getTraitSet().replace( getOutTrait() );
+        return new CottontailToEnumerableConverter( alg.getCluster(), newTraitSet, alg );
     }
 
 }

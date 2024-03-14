@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,11 +30,12 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.NodeVisitor;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Litmus;
 
+@Getter
 public abstract class CypherNode implements Node {
 
-    @Getter
     public final ParserPos pos;
 
     public static final List<CypherKind> DDL = ImmutableList.of( CypherKind.CREATE_DATABASE, CypherKind.DROP, CypherKind.ADMIN_COMMAND );
@@ -47,11 +48,16 @@ public abstract class CypherNode implements Node {
 
     @Override
     public Kind getKind() {
-        return Kind.OTHER;
+        return isDdl() ? Kind.OTHER_DDL : Kind.OTHER;
     }
 
 
     public abstract CypherKind getCypherKind();
+
+
+    public boolean isFullScan() {
+        return false;
+    }
 
 
     @Override
@@ -89,7 +95,8 @@ public abstract class CypherNode implements Node {
     }
 
 
-    public boolean isDDL() {
+    @Override
+    public boolean isDdl() {
         return DDL.contains( getCypherKind() );
     }
 
@@ -104,6 +111,17 @@ public abstract class CypherNode implements Node {
         }
         return input.getRight().getName();
 
+    }
+
+
+    @Override
+    public @Nullable String getEntity() {
+        return null;
+    }
+
+
+    public List<PolyString> getUnderlyingLabels() {
+        return List.of();
     }
 
 
@@ -128,7 +146,34 @@ public abstract class CypherNode implements Node {
         MATCH,
         MERGE,
         ORDER_ITEM,
-        RETURN, SET, SHOW, TRANSACTION, UNWIND, USE, WAIT, WHERE, WITH, MAP_PROJECTION, YIELD, EITHER, RESOURCE, PRIVILEGE, PATH_LENGTH, CALL_RESULT, HINT, PATH, PERIODIC_COMMIT, UNION, SINGLE, NAMED_PATTERN, NODE_PATTERN, REL_PATTERN, SHORTEST_PATTERN, LITERAL, SET_ITEM
+        RETURN,
+        SET,
+        SHOW,
+        TRANSACTION,
+        UNWIND,
+        USE,
+        WAIT,
+        WHERE,
+        WITH,
+        MAP_PROJECTION,
+        YIELD,
+        EITHER,
+        RESOURCE,
+        PRIVILEGE,
+        PATH_LENGTH,
+        CALL_RESULT,
+        HINT,
+        PATH,
+        PERIODIC_COMMIT,
+        UNION,
+        SINGLE,
+        NAMED_PATTERN,
+        NODE_PATTERN,
+        REL_PATTERN,
+        SHORTEST_PATTERN,
+        LITERAL,
+        FULL,
+        SET_ITEM
     }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,14 +21,20 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.enumerable.EnumerableBindable.EnumerableToBindableConverterRule;
-import org.polypheny.db.adapter.enumerable.EnumerableInterpreterRule;
-import org.polypheny.db.adapter.enumerable.EnumerableRules;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
+import org.polypheny.db.algebra.enumerable.EnumerableInterpreterRule;
+import org.polypheny.db.algebra.enumerable.EnumerableRules;
+import org.polypheny.db.algebra.enumerable.common.EnumerableBindable.EnumerableToBindableConverterRule;
+import org.polypheny.db.algebra.enumerable.common.EnumerableModifyToStreamerRule;
+import org.polypheny.db.algebra.enumerable.document.DocumentAggregateToAggregateRule;
+import org.polypheny.db.algebra.enumerable.document.DocumentFilterToCalcRule;
+import org.polypheny.db.algebra.enumerable.document.DocumentProjectToCalcRule;
+import org.polypheny.db.algebra.enumerable.document.DocumentSortToSortRule;
 import org.polypheny.db.algebra.rules.AggregateExpandDistinctAggregatesRule;
 import org.polypheny.db.algebra.rules.AggregateReduceFunctionsRule;
 import org.polypheny.db.algebra.rules.AggregateValuesRule;
-import org.polypheny.db.algebra.rules.DocumentAggregateToAggregateRule;
+import org.polypheny.db.algebra.rules.AllocationToPhysicalModifyRule;
+import org.polypheny.db.algebra.rules.AllocationToPhysicalScanRule;
 import org.polypheny.db.algebra.rules.FilterAggregateTransposeRule;
 import org.polypheny.db.algebra.rules.FilterJoinRule;
 import org.polypheny.db.algebra.rules.FilterProjectTransposeRule;
@@ -57,14 +63,15 @@ import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.plan.volcano.VolcanoCost;
 import org.polypheny.db.plan.volcano.VolcanoPlanner;
+import org.polypheny.db.plan.volcano.VolcanoPlannerPhase;
 import org.polypheny.db.rex.RexExecutorImpl;
-import org.polypheny.db.schema.ModelTraitDef;
+import org.polypheny.db.schema.trait.ModelTraitDef;
 import org.polypheny.db.transaction.Statement;
 
 
+@Getter
 public class VolcanoQueryProcessor extends AbstractQueryProcessor {
 
-    @Getter
     private final VolcanoPlanner planner;
 
 
@@ -81,6 +88,10 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     EnumerableRules.ENUMERABLE_CALC_RULE,
                     EnumerableRules.ENUMERABLE_FILTER_TO_CALC_RULE,
                     EnumerableRules.ENUMERABLE_PROJECT_TO_CALC_RULE,
+                    DocumentProjectToCalcRule.INSTANCE,
+                    DocumentFilterToCalcRule.INSTANCE,
+                    DocumentAggregateToAggregateRule.INSTANCE,
+                    DocumentSortToSortRule.INSTANCE,
                     EnumerableRules.ENUMERABLE_PROJECT_RULE,
                     EnumerableRules.ENUMERABLE_FILTER_RULE,
                     EnumerableRules.ENUMERABLE_AGGREGATE_RULE,
@@ -92,23 +103,36 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     EnumerableRules.ENUMERABLE_MODIFY_COLLECT_RULE,
                     EnumerableRules.ENUMERABLE_INTERSECT_RULE,
                     EnumerableRules.ENUMERABLE_MINUS_RULE,
-                    EnumerableRules.ENUMERABLE_TABLE_MODIFICATION_RULE,
-                    EnumerableRules.ENUMERABLE_TABLE_MODIFY_TO_STREAMER_RULE,
+                    EnumerableModifyToStreamerRule.REL_INSTANCE,
+                    EnumerableModifyToStreamerRule.DOC_INSTANCE,
+                    EnumerableModifyToStreamerRule.GRAPH_INSTANCE,
                     EnumerableRules.ENUMERABLE_STREAMER_RULE,
                     EnumerableRules.ENUMERABLE_CONTEXT_SWITCHER_RULE,
                     EnumerableRules.ENUMERABLE_VALUES_RULE,
+                    EnumerableRules.ENUMERABLE_DOCUMENT_VALUES_RULE,
                     EnumerableRules.ENUMERABLE_WINDOW_RULE,
                     EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE,
                     EnumerableRules.ENUMERABLE_TABLE_FUNCTION_SCAN_RULE,
                     EnumerableRules.ENUMERABLE_TRANSFORMER_RULE,
                     EnumerableRules.ENUMERABLE_GRAPH_MATCH_RULE,
                     EnumerableRules.ENUMERABLE_UNWIND_RULE,
-                    EnumerableRules.ENUMERABLE_GRAPH_TRANSFORMER_RULE,
-                    EnumerableRules.ENUMERABLE_DOCUMENT_TRANSFORMER_RULE );
+                    EnumerableRules.ENUMERABLE_DOCUMENT_UNWIND_RULE,
+                    EnumerableRules.ENUMERABLE_GRAPH_TRANSFORMER_RULE );
+
+    public static final List<AlgOptRule> PRE_PROCESS_RULES =
+            ImmutableList.of(
+                    AllocationToPhysicalScanRule.REL_INSTANCE,
+                    AllocationToPhysicalScanRule.DOC_INSTANCE,
+                    AllocationToPhysicalScanRule.GRAPH_INSTANCE,
+                    AllocationToPhysicalModifyRule.REL_INSTANCE,
+                    AllocationToPhysicalModifyRule.DOC_INSTANCE,
+                    AllocationToPhysicalModifyRule.GRAPH_INSTANCE,
+                    ScanRule.INSTANCE
+            );
+
 
     public static final List<AlgOptRule> DEFAULT_RULES =
             ImmutableList.of(
-                    ScanRule.INSTANCE,
                     RuntimeConfig.JOIN_COMMUTE.getBoolean()
                             ? JoinAssociateRule.INSTANCE
                             : ProjectMergeRule.INSTANCE,
@@ -118,6 +142,7 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     FilterJoinRule.FILTER_ON_JOIN,
                     JoinPushExpressionsRule.INSTANCE,
                     DocumentAggregateToAggregateRule.INSTANCE,
+                    DocumentSortToSortRule.INSTANCE,
                     AggregateExpandDistinctAggregatesRule.INSTANCE,
                     AggregateReduceFunctionsRule.INSTANCE,
                     FilterAggregateTransposeRule.INSTANCE,
@@ -148,17 +173,18 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
         planner.addAlgTraitDef( ConventionTraitDef.INSTANCE );
         if ( ENABLE_COLLATION_TRAIT ) {
             planner.addAlgTraitDef( AlgCollationTraitDef.INSTANCE );
-            planner.registerAbstractRelationalRules();
-        }
-        if ( ENABLE_MODEL_TRAIT ) {
-            planner.addAlgTraitDef( ModelTraitDef.INSTANCE );
-            planner.registerModelRules();
+            planner.registerAbstractAlgebraRules();
         }
 
         AlgOptUtil.registerAbstractAlgs( planner );
+        for ( AlgOptRule preProcessRule : PRE_PROCESS_RULES ) {
+            planner.addRule( preProcessRule, VolcanoPlannerPhase.PRE_PROCESS );
+        }
+
         for ( AlgOptRule rule : DEFAULT_RULES ) {
             planner.addRule( rule );
         }
+
         if ( ENABLE_BINDABLE ) {
             for ( AlgOptRule rule : Bindables.RULES ) {
                 planner.addRule( rule );
@@ -167,6 +193,11 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
         planner.addRule( Bindables.BINDABLE_TABLE_SCAN_RULE );
         planner.addRule( ProjectScanRule.INSTANCE );
         planner.addRule( ProjectScanRule.INTERPRETER );
+
+        if ( ENABLE_MODEL_TRAIT ) {
+            planner.addAlgTraitDef( ModelTraitDef.INSTANCE );
+            planner.registerModelRules();
+        }
 
         if ( ENABLE_ENUMERABLE ) {
             for ( AlgOptRule rule : ENUMERABLE_RULES ) {
