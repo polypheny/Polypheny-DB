@@ -53,7 +53,7 @@ public class SimpleRouter extends AbstractDqlRouter {
     @Override
     protected List<RoutedAlgBuilder> handleNonePartitioning( AlgNode node, CatalogTable catalogTable, Statement statement, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
         // Get placements and convert into placement distribution
-        final Map<Long, List<CatalogColumnPlacement>> placements = selectPlacement( catalogTable );
+        final Map<Long, List<CatalogColumnPlacement>> placements = selectPlacementWithPreference( catalogTable );
 
         // Only one builder available
         builders.get( 0 ).addPhysicalInfo( placements );

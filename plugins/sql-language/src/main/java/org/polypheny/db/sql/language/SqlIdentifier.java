@@ -64,6 +64,8 @@ public class SqlIdentifier extends SqlNode implements Identifier {
     protected ImmutableList<ParserPos> componentPositions;
 
 
+    public String preferredPlacement;
+
     /**
      * Creates a compound identifier, for example <code>foo.bar</code>.
      *
@@ -314,6 +316,11 @@ public class SqlIdentifier extends SqlNode implements Identifier {
             }
             i++;
         }
+
+	if ( preferredPlacement != null ) {
+	    writer.print(" @ ");
+	    writer.identifier( preferredPlacement );
+	}
 
         if ( null != collation ) {
             collation.unparse( writer, leftPrec, rightPrec );

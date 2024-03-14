@@ -1969,6 +1969,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         final String datasetName = datasetStack.isEmpty() ? null : datasetStack.peek();
         final boolean[] usedDataset = { false };
         AlgOptTable table = SqlValidatorUtil.getAlgOptTable( fromNamespace, catalogReader, datasetName, usedDataset );
+	table.setPreferredPlacement( id.preferredPlacement );
         if ( extendedColumns != null && extendedColumns.size() > 0 ) {
             assert table != null;
             final ValidatorTable validatorTable = table.unwrap( ValidatorTable.class );

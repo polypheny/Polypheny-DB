@@ -135,6 +135,8 @@ public interface AlgOptTable extends Wrapper {
      */
     List<ColumnStrategy> getColumnStrategies();
 
+    void setPreferredPlacement( String placement );
+    String getPreferredPlacement();
 
     default Table getTable() {
         return null;

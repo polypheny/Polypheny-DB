@@ -17,10 +17,15 @@
 package org.polypheny.db.routing.routers;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
@@ -43,7 +48,10 @@ import org.polypheny.db.algebra.logical.relational.LogicalScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
+import org.polypheny.db.catalog.entity.CatalogAdapter;
+import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.exceptions.UnknownAdapterIdRuntimeException;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.prepare.AlgOptTableImpl;
 import org.polypheny.db.rex.RexBuilder;
@@ -82,6 +90,8 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
      */
     protected boolean cancelQuery = false;
 
+    // catalogTable.id -> unique placement name
+    final Map<Long, String> preferencePerTable = new HashMap<>();
 
     /**
      * Abstract methods which will determine routing strategy. Not implemented in abstract class.
@@ -113,6 +123,45 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
             AlgOptCluster cluster,
             LogicalQueryInformation queryInformation );
 
+    /* Copied from BaseRouter.java, with added awarness of placement preference */
+    public Map<Long, List<CatalogColumnPlacement>> selectPlacementWithPreference( CatalogTable table ) {
+        // Find the adapter with the most column placements
+        int adapterIdWithMostPlacements = -1;
+        int numOfPlacements = 0;
+        final String preferredPlacement = preferencePerTable.getOrDefault( table.id, null );
+        for ( Entry<Integer, ImmutableList<Long>> entry : catalog.getColumnPlacementsByAdapter( table.id ).entrySet() ) {
+            if ( preferredPlacement != null ) {
+                    try {
+                        final CatalogAdapter adapter = catalog.getAdapter( entry.getKey() );
+                        if ( ! preferredPlacement.equals( adapter.uniqueName ) ) {
+                            continue;
+                        }
+                    } catch (UnknownAdapterIdRuntimeException e) {
+                        // getColumnplacementsByAdapter can return id
+                        // values which are not valid
+                        continue;
+                    }
+            }
+            if ( entry.getValue().size() > numOfPlacements ) {
+                adapterIdWithMostPlacements = entry.getKey();
+                numOfPlacements = entry.getValue().size();
+            }
+        }
+
+        // Take the adapter with most placements as base and add missing column placements
+        List<CatalogColumnPlacement> placementList = new LinkedList<>();
+        for ( long cid : table.fieldIds ) {
+            if ( catalog.getDataPlacement( adapterIdWithMostPlacements, table.id ).columnPlacementsOnAdapter.contains( cid ) ) {
+                placementList.add( Catalog.getInstance().getColumnPlacement( adapterIdWithMostPlacements, cid ) );
+            } else {
+                placementList.add( Catalog.getInstance().getColumnPlacement( cid ).get( 0 ) );
+            }
+        }
+
+        return new HashMap<>() {{
+            put( table.partitionProperty.partitionIds.get( 0 ), placementList );
+        }};
+    }
 
     /**
      * Abstract router only routes DQL queries.
@@ -225,6 +274,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
             }
 
             CatalogTable catalogTable = catalog.getTable( logicalTable.getTableId() );
+            preferencePerTable.put( catalogTable.id, table.getPreferredPlacement() );
 
             // Check if table is even horizontal partitioned
             if ( catalogTable.partitionProperty.isPartitioned ) {

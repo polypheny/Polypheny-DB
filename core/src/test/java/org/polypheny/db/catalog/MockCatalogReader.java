@@ -390,6 +390,17 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         }
 
 
+	@Override
+	public void setPreferredPlacement( String placement ) {
+	}
+
+
+	@Override
+	public String getPreferredPlacement() {
+	    return null;
+	}
+
+
         public static MockTable create( MockCatalogReader catalogReader, MockSchema schema, String name, boolean stream, double rowCount ) {
             return create( catalogReader, schema, name, stream, rowCount, null );
         }
