@@ -781,6 +781,8 @@ public class MqlFunctions {
                 return doc.asDocument().entrySet().stream().collect( Collectors.toMap( Entry::getKey, e -> transformBsonToPrimitive( e.getValue() ) ) );
             case ARRAY:
                 return doc.asArray().stream().map( MqlFunctions::transformBsonToPrimitive ).collect( Collectors.toList() );
+            case BOOLEAN:
+                return doc.asBoolean().getValue();
             default:
                 return null;
         }

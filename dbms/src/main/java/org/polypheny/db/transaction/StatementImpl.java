@@ -35,6 +35,8 @@ import org.polypheny.db.processing.DataContextImpl;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.processing.QueryProviderImpl;
 import org.polypheny.db.processing.VolcanoQueryProcessor;
+import org.polypheny.db.stream.StreamProcessor;
+import org.polypheny.db.stream.StreamProcessorImpl;
 import org.polypheny.db.util.FileInputHandle;
 
 public class StatementImpl implements Statement {
@@ -70,6 +72,12 @@ public class StatementImpl implements Statement {
             queryProcessor = new VolcanoQueryProcessor( this );
         }
         return queryProcessor;
+    }
+
+
+    @Override
+    public StreamProcessor getStreamProcessor(String message) {
+        return new StreamProcessorImpl(message);
     }
 
 

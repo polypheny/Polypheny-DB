@@ -38,6 +38,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.BsonUtil;
@@ -77,7 +78,7 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
      * @param tuples the documents in their native BSON format
      */
     public LogicalDocumentValues( AlgOptCluster cluster, AlgDataType defaultRowType, AlgTraitSet traitSet, ImmutableList<BsonValue> tuples ) {
-        super( cluster, traitSet, defaultRowType, tuples );
+        super( cluster, traitSet.replace( ModelTrait.DOCUMENT ), defaultRowType, tuples );
     }
 
 

@@ -1,0 +1,105 @@
+group "org.polypheny"
+
+configurations {
+    tests {
+        extendsFrom testRuntimeOnly
+    }
+}
+
+dependencies {
+    compileOnly project(":core")
+    compileOnly project(":dbms")
+    compileOnly project(":monitoring")
+    compileOnly project(":plugins:mql-language")
+
+    // https://mvnrepository.com/artifact/com.hivemq/hivemq-mqtt-client
+    implementation group: 'com.hivemq', name: 'hivemq-mqtt-client', version: hivemq_mqttclient_version
+
+    implementation group: "org.mongodb", name: "mongodb-driver-sync", version: mongodb_driver_sync_version  // Apache 2.0
+
+    // --- Test Compile ---
+    testImplementation project(path: ":dbms", configuration: "test")
+    testImplementation project(path: ":dbms")
+    testImplementation project(path: ":core", configuration: "tests")
+    testImplementation project(path: ":core")
+    testImplementation project(":plugins:mql-language")
+    testCompileOnly group: 'org.pf4j', name: 'pf4j', version: pf4jVersion
+    testImplementation group: "junit", name: "junit", version: junit_version
+    testImplementation group: "org.mockito", name: "mockito-core", version: mockito_core_version
+
+    // --- Test Compile ---
+
+}
+
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ["src/main/java", "build/generated-sources"]
+            outputDir = file(project.buildDir.absolutePath + "/classes")
+        }
+        resources {
+            srcDirs = ["src/main/resources"]
+            exclude "version/*.properties"
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
+    }
+    test {
+        java {
+            srcDirs = ["src/test/java"]
+            outputDir = file(project.buildDir.absolutePath + "/test-classes")
+        }
+        resources {
+            // We need the main resources for the tests as well.
+            srcDirs = ["src/test/resources", "src/main/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
+    }
+}
+
+task mqttTests(type: Test) {
+    description = 'Runs MQTT client tests.'
+    group = 'verification'
+    useJUnit {
+        includeCategories 'org.polypheny.db.mqtt.MqttClientBrokerTest'
+    }
+    shouldRunAfter(tasks.named('test'))
+}
+mqttTests.dependsOn(testClasses)
+
+compileJava {
+    dependsOn(":config:processResources")
+    dependsOn(":core:processResources")
+    dependsOn(":information:processResources")
+    dependsOn(":monitoring:processResources")
+    dependsOn(":plugins:mql-language:processResources")
+}
+
+delombok {
+    dependsOn(":monitoring:processResources")
+}
+
+
+/**
+ * JARs
+ */
+jar {
+    manifest {
+        attributes "Manifest-Version": "1.0"
+        attributes "Copyright": "The Polypheny Project (polypheny.org)"
+        attributes "Version": "$project.version"
+    }
+}
+
+java {
+    withJavadocJar();
+    withSourcesJar();
+}
+
+licensee {
+    allow('Apache-2.0')
+    allowUrl('http://www.apache.org/license/LICENSE-2.0.txt')
+    allow('MIT-0')
+
+
+}

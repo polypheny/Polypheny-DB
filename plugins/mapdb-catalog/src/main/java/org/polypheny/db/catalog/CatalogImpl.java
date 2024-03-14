@@ -2420,7 +2420,7 @@ public class CatalogImpl extends Catalog {
                 collectionId,
                 name,
                 List.of(),
-                EntityType.ENTITY,
+                entity,
                 null );
 
         synchronized ( this ) {
@@ -4012,6 +4012,21 @@ public class CatalogImpl extends Catalog {
         } catch ( NullPointerException e ) {
             throw new UnknownQueryInterfaceRuntimeException( ifaceId );
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void updateQueryInterfaceSettings( int queryInterfaceId, Map<String, String> newSettings ) {
+        CatalogQueryInterface old = getQueryInterface( queryInterfaceId );
+        Map<String, String> temp = new HashMap<>();
+        newSettings.forEach( temp::put );
+        CatalogQueryInterface queryInterface = new CatalogQueryInterface( old.id, old.name, old.clazz, temp );
+        synchronized ( this ) {
+            queryInterfaces.put( queryInterface.id, queryInterface );
+            queryInterfaceNames.put( queryInterface.name, queryInterface );
+        }
+        listeners.firePropertyChange( "queryInterface", old, queryInterface );
     }
 
 

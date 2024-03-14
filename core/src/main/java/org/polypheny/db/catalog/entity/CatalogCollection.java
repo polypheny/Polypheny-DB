@@ -61,13 +61,13 @@ public class CatalogCollection implements CatalogObject {
     public CatalogCollection addPlacement( int adapterId ) {
         List<Integer> placements = new ArrayList<>( this.placements );
         placements.add( adapterId );
-        return new CatalogCollection( databaseId, namespaceId, id, name, placements, EntityType.ENTITY, physicalName );
+        return new CatalogCollection( databaseId, namespaceId, id, name, placements, entityType, physicalName );
     }
 
 
     public CatalogCollection removePlacement( int adapterId ) {
         List<Integer> placements = this.placements.stream().filter( id -> id != adapterId ).collect( Collectors.toList() );
-        return new CatalogCollection( databaseId, namespaceId, id, name, placements, EntityType.ENTITY, physicalName );
+        return new CatalogCollection( databaseId, namespaceId, id, name, placements, entityType, physicalName );
     }
 
 

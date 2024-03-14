@@ -159,21 +159,21 @@ public enum RuntimeConfig {
     DYNAMIC_QUERYING(
             "statistics/useDynamicQuerying",
             "Use statistics for query assistance.",
-            true,
+            false,
             ConfigType.BOOLEAN,
             "statisticSettingsGroup" ),
 
     STATISTICS_ON_STARTUP(
             "statistics/statisticsOnStartup",
             "Whether to build statistics for all stored data on system startup.",
-            true,
+            false,
             ConfigType.BOOLEAN,
             "statisticSettingsGroup" ),
 
     ACTIVE_TRACKING(
             "statistics/activeTracking",
             "All transactions are tracked and statistics collected during execution.",
-            true,
+            false,
             ConfigType.BOOLEAN,
             "statisticSettingsGroup" ),
 
@@ -418,7 +418,7 @@ public enum RuntimeConfig {
     MONITORING_QUEUE_ACTIVE(
             "runtime/monitoringQueueActive",
             "Enables automatic monitoring of executed events in workload monitoring. If disabled no events are captured, hence the queue remains empty. This also effects routing!",
-            true,
+            false,
             ConfigType.BOOLEAN,
             "monitoringSettingsQueueGroup" ),
 

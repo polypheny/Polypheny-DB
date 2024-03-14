@@ -29,6 +29,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import org.bson.BsonArray;
 import org.bson.BsonBoolean;
@@ -217,6 +218,7 @@ public class MqlToAlgConverter {
         operators.add( "$all" );
         operators.add( "$elemMatch" );
         operators.add( "$size" );
+        operators.add( "$$ROOT" );
     }
 
 
@@ -260,7 +262,8 @@ public class MqlToAlgConverter {
         this.parameters = (MqlQueryParameters) parameters;
         this.defaultDatabase = ((MqlQueryParameters) parameters).getDatabase();
         if ( query instanceof MqlCollectionStatement ) {
-            return convert( (MqlCollectionStatement) query );
+            AlgNode scanNode = createScan( (MqlCollectionStatement) query );
+            return convert( (MqlCollectionStatement) query, scanNode );
         }
         throw new RuntimeException( "DML or DQL need a collection" );
     }
@@ -270,25 +273,15 @@ public class MqlToAlgConverter {
      * Converts the initial MongoQl by stepping through it iteratively
      *
      * @param query the query in MqlNode format
+     * @param input the input that should be queried
      * @return the {@link AlgNode} format of the initial query
      */
-    public AlgRoot convert( MqlCollectionStatement query ) {
+    public AlgRoot convert( MqlCollectionStatement query, AlgNode input ) {
         Type kind = query.getMqlKind();
-        this.entity = getEntity( query, defaultDatabase );
-        if ( entity == null ) {
-            throw new RuntimeException( "The used collection does not exist." );
-        }
 
-        AlgNode node;
-
-        if ( entity.getTable().getSchemaType() == NamespaceType.RELATIONAL ) {
-            _dataExists = false;
-        }
-
-        node = LogicalDocumentScan.create( cluster, entity );
         this.usesDocumentModel = true;
 
-        AlgDataType rowType = entity.getRowType();
+        AlgDataType rowType = input.getRowType();
 
         this.builder = new RexBuilder( cluster.getTypeFactory() );
 
@@ -296,15 +289,15 @@ public class MqlToAlgConverter {
 
         switch ( kind ) {
             case FIND:
-                AlgNode find = convertFind( (MqlFind) query, rowType, node );
+                AlgNode find = convertFind( (MqlFind) query, rowType, input );
                 root = AlgRoot.of( find, find.getRowType(), Kind.SELECT );
                 break;
             case COUNT:
-                AlgNode count = convertCount( (MqlCount) query, rowType, node );
+                AlgNode count = convertCount( (MqlCount) query, rowType, input );
                 root = AlgRoot.of( count, count.getRowType(), Kind.SELECT );
                 break;
             case AGGREGATE:
-                AlgNode aggregate = convertAggregate( (MqlAggregate) query, rowType, node );
+                AlgNode aggregate = convertAggregate( (MqlAggregate) query, rowType, input );
                 root = AlgRoot.of( aggregate, Kind.SELECT );
                 break;
             /// dmls
@@ -313,10 +306,10 @@ public class MqlToAlgConverter {
                 break;
             case DELETE:
             case FIND_DELETE:
-                root = AlgRoot.of( convertDelete( (MqlDelete) query, entity, node ), Kind.DELETE );
+                root = AlgRoot.of( convertDelete( (MqlDelete) query, entity, input ), Kind.DELETE );
                 break;
             case UPDATE:
-                root = AlgRoot.of( convertUpdate( (MqlUpdate) query, entity, node ), Kind.UPDATE );
+                root = AlgRoot.of( convertUpdate( (MqlUpdate) query, entity, input ), Kind.UPDATE );
                 break;
             default:
                 throw new IllegalStateException( "Unexpected value: " + kind );
@@ -325,6 +318,20 @@ public class MqlToAlgConverter {
             root.usesDocumentModel = true;
         }*/
         return root;
+    }
+
+
+    private AlgNode createScan( MqlCollectionStatement query ) {
+        this.entity = getEntity( query, defaultDatabase );
+        if ( entity == null ) {
+            throw new RuntimeException( "The used collection does not exist." );
+        }
+
+        if ( entity.getTable().getSchemaType() == NamespaceType.RELATIONAL ) {
+            _dataExists = false;
+        }
+
+        return LogicalDocumentScan.create( cluster, entity );
     }
 
 
@@ -1479,6 +1486,8 @@ public class MqlToAlgConverter {
                         return convertElemMatch( bsonValue, parentKey, rowType );
                     } else if ( key.equals( "$size" ) ) {
                         return convertSize( bsonValue, parentKey, rowType );
+                    } else if ( key.equals( "$$ROOT" ) ) {
+                        return convertField( parentKey == null ? key : parentKey + "." + key, bsonValue, rowType );
                     }
                     return translateLogical( key, parentKey, bsonValue, rowType );
                 }
