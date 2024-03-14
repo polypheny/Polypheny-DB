@@ -31,7 +31,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.monitoring.events.QueryEvent;
-import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.transaction.Statement;
 
@@ -70,15 +69,8 @@ class MonitoringQueueImplIntegrationTest {
 
         // -- Assert --
 
-        List<QueryDataPoint> result = sut.getAllDataPoints( QueryDataPoint.class );
-        // As this test is not deterministic, we wait for the result to be filled
-        for ( int i = 0; i < 5; i++ ) {
-            if ( result.size() == 15 ) {
-                break;
-            }
-            Thread.sleep( 5000L );
-        }
-        assertEquals( 15, result.size() );
+        assertEquals( 15, statisticRepo.count );
+        assertEquals( 15, persistentRepo.count );
     }
 
 
