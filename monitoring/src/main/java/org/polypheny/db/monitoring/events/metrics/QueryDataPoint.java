@@ -16,6 +16,7 @@
 
 package org.polypheny.db.monitoring.events.metrics;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -32,6 +33,7 @@ import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 @Value
 public class QueryDataPoint implements MonitoringDataPoint, Serializable {
 
+    @Serial
     private static final long serialVersionUID = 9063080671064507812L;
 
     List<String> tables = new ArrayList<>();
