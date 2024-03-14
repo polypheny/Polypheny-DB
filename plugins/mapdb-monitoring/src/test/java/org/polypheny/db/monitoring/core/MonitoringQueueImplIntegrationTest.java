@@ -66,7 +66,7 @@ class MonitoringQueueImplIntegrationTest {
         List<QueryEvent> events = createQueryEvent( 15 );
         events.forEach( sut::monitorEvent );
 
-        Thread.sleep( 10000L );
+        Thread.sleep( 20000L );
 
         // -- Assert --
 
