@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.protointerface.proto.IndexedParameters;
 import org.polypheny.db.protointerface.proto.ProtoBigDecimal;
 import org.polypheny.db.protointerface.proto.ProtoValue;
@@ -92,7 +93,7 @@ public class ProtoValueDeserializer {
             case NULL -> deserializeToPolyNull();
             case BIG_DECIMAL -> deserializeToPolyBigDecimal( protoValue );
             case LIST -> deserializeToPolyList( protoValue );
-            default -> throw new RuntimeException( "Should never be thrown" );
+            default -> throw new GenericRuntimeException( "Should never be thrown" );
         };
     }
 
