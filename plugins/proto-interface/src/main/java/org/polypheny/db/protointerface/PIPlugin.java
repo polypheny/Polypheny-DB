@@ -136,7 +136,7 @@ public class PIPlugin extends PolyPlugin {
             clientManager = new ClientManager( this );
             // protoInterfaceServer = new PIServer( port, protoInterfaceService, clientManager );
             try {
-                protoInterfaceServer = new PIServer( clientManager );
+                protoInterfaceServer = new PIServer( clientManager, port );
             } catch ( IOException e ) {
                 log.error( "Proto interface server could not be started: {}", e.getMessage() );
                 throw new GenericRuntimeException( e );

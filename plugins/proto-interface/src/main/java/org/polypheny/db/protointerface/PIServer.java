@@ -41,11 +41,10 @@ import org.polypheny.db.util.Util;
 public class PIServer {
 
     private final List<ServerSocketChannel> servers = new ArrayList<>();
-    private final int port = 20590; // TODO: configurable
     private final static AtomicLong ID_COUNTER = new AtomicLong();
 
 
-    public PIServer( ClientManager clientManager ) throws IOException {
+    public PIServer( ClientManager clientManager,  int port ) throws IOException {
         startServer( createInetServer( port ), clientManager, "Plain", PlainTransport::accept );
         startServer( createUnixServer( "polypheny-proto.sock" ), clientManager, "Unix", UnixTransport::accept );
     }
