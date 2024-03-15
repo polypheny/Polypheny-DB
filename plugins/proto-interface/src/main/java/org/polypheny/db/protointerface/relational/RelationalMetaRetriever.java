@@ -140,6 +140,7 @@ public class RelationalMetaRetriever {
                     .setElementType( elementTypeMeta )
                     .build();
             return TypeMeta.newBuilder()
+                    .setProtoValueType( ProtoPolyType.ARRAY )
                     .setArrayMeta( arrayMeta )
                     .build();
         } else {
@@ -156,8 +157,9 @@ public class RelationalMetaRetriever {
                         //TODO TH: handle structured type meta in a useful way
                         .build();
             }
+            ProtoPolyType type = getFromPolyType( polyType );
             return TypeMeta.newBuilder()
-                    .setProtoValueType( getFromPolyType( polyType ) )
+                    .setProtoValueType( type )
                     .build();
         }
     }
