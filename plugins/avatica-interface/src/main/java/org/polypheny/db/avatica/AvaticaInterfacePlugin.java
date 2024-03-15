@@ -94,8 +94,8 @@ public class AvaticaInterfacePlugin extends PolyPlugin {
         private final HttpServerDispatcher httpServerDispatcher;
 
 
-        public AvaticaInterface( TransactionManager transactionManager, Authenticator authenticator, long ifaceId, String uniqueName, Map<String, String> settings ) {
-            super( transactionManager, authenticator, ifaceId, uniqueName, settings, true, true );
+        public AvaticaInterface( TransactionManager transactionManager, Authenticator authenticator, String uniqueName, Map<String, String> settings ) {
+            super( transactionManager, authenticator, uniqueName, settings, true, true );
             metricsSystemConfiguration = NoopMetricsSystemConfiguration.getInstance();
             metricsSystem = NoopMetricsSystem.getInstance();
 

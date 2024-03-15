@@ -18,6 +18,7 @@ package org.polypheny.db.snapshot;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
@@ -107,7 +108,7 @@ public class MockSnapshot implements Snapshot {
 
 
     @Override
-    public @NotNull List<LogicalQueryInterface> getQueryInterfaces() {
+    public @NotNull Map<Long, LogicalQueryInterface> getQueryInterfaces() {
         throw new UnsupportedOperationException();
     }
 

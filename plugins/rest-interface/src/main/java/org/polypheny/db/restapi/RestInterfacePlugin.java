@@ -129,8 +129,8 @@ public class RestInterfacePlugin extends PolyPlugin {
         private Javalin restServer;
 
 
-        public HttpRestServer( TransactionManager transactionManager, Authenticator authenticator, long ifaceId, String uniqueName, Map<String, String> settings ) {
-            super( transactionManager, authenticator, ifaceId, uniqueName, settings, true, false );
+        public HttpRestServer( TransactionManager transactionManager, Authenticator authenticator, String uniqueName, Map<String, String> settings ) {
+            super( transactionManager, authenticator, uniqueName, settings, true, false );
             this.requestParser = new RequestParser( transactionManager, authenticator, Catalog.USER_NAME, Catalog.DATABASE_NAME );
             this.uniqueName = uniqueName;
             this.port = Integer.parseInt( settings.get( "port" ) );

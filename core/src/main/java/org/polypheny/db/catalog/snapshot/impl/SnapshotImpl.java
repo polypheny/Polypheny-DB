@@ -167,8 +167,8 @@ public class SnapshotImpl implements Snapshot {
 
 
     @Override
-    public @NotNull List<LogicalQueryInterface> getQueryInterfaces() {
-        return interfaces.values().asList();
+    public @NotNull Map<Long, LogicalQueryInterface> getQueryInterfaces() {
+        return ImmutableMap.copyOf( interfaces );
     }
 
 
