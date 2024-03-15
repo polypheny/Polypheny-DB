@@ -62,7 +62,10 @@ public class PIPreparedNamedStatement extends PIPreparedStatement {
         synchronized ( client ) {
             if ( statement == null ) {
                 statement = client.getCurrentOrCreateNewTransaction().createStatement();
+            } else {
+                statement.getDataContext().resetParameterValues();
             }
+            closeResults();
             List<PolyValue> valueList = namedValueProcessor.transformValueMap( values );
             for ( int i = 0; i < valueList.size(); i++ ) {
                 statement.getDataContext().addParameterValues( i, null, List.of( valueList.get( i ) ) );

@@ -18,7 +18,6 @@ package org.polypheny.db.protointerface.statements;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.PolyImplementation;
@@ -62,6 +61,7 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
             } else {
                 statement.getDataContext().resetParameterValues();
             }
+            closeResults();
             List<AlgDataType> types = valuesBatch.stream()
                     .map( v -> v.get( 0 ).getType() )
                     .map( v -> statement.getTransaction().getTypeFactory().createPolyType( v ) )
@@ -80,7 +80,6 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
     @SuppressWarnings("Duplicates")
     public StatementResult execute( List<PolyValue> values, int fetchSize ) {
         synchronized ( client ) {
-            Transaction transaction;
             if ( statement == null ) {
                 statement = client.getCurrentOrCreateNewTransaction().createStatement();
             } else {
