@@ -475,6 +475,34 @@ public class JdbcPreparedStatementsTest {
 
 
     @Test
+    public void nullInNotNullableThrowsTest() {
+        assertThrows( SQLException.class, () -> {
+            try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
+                Connection connection = polyphenyDbConnection.getConnection();
+                try ( Statement statement = connection.createStatement() ) {
+                    statement.executeUpdate( SCHEMA_SQL );
+                    try {
+                        PreparedStatement preparedInsert2 = connection.prepareStatement( "INSERT INTO pstest(tinteger,tvarchar) VALUES (?, ?)" );
+
+                        preparedInsert2.setInt( 1, 3 );
+                        preparedInsert2.setNull( 2, SqlType.VARCHAR.id );
+                        preparedInsert2.execute();
+
+                        preparedInsert2.setInt( 1, 4 );
+                        preparedInsert2.setNull( 2, SqlType.VARCHAR.id );
+                        preparedInsert2.execute();
+
+                        connection.commit();
+                    } finally {
+                        statement.executeUpdate( "DROP TABLE pstest" );
+                    }
+                }
+            }
+        } );
+    }
+
+
+    @Test
     public void nullValueTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -499,23 +527,6 @@ public class JdbcPreparedStatementsTest {
                     TestHelper.checkResultSet(
                             preparedSelect.executeQuery(),
                             ImmutableList.of( new Object[]{ 1, null, "Alice" } ) );
-
-                    boolean exceptionThrown = false;
-                    try {
-                        PreparedStatement preparedInsert2 = connection.prepareStatement( "INSERT INTO pstest(tinteger,tvarchar) VALUES (?, ?)" );
-
-                        preparedInsert2.setInt( 1, 3 );
-                        preparedInsert2.setNull( 2, SqlType.VARCHAR.id );
-                        preparedInsert2.execute();
-
-                        preparedInsert2.setInt( 1, 4 );
-                        preparedInsert2.setNull( 2, SqlType.VARCHAR.id );
-                        preparedInsert2.execute();
-                    } catch ( Exception e ) {
-                        exceptionThrown = true;
-                    }
-
-                    assertTrue( exceptionThrown, "Excepted null value for a non-nullable column" );
 
                     connection.commit();
                 } finally {
@@ -627,6 +638,7 @@ public class JdbcPreparedStatementsTest {
             }
         }
     }
+
 
     @Test
     public void doubleValueTest() throws SQLException {
@@ -776,7 +788,7 @@ public class JdbcPreparedStatementsTest {
                     preparedSelect.setString( 12, (String) TEST_DATA[11] );
                     TestHelper.checkResultSet(
                             preparedSelect.executeQuery(),
-                            ImmutableList.of( TEST_DATA ));
+                            ImmutableList.of( TEST_DATA ) );
 
                 } finally {
                     statement.executeUpdate( "DROP TABLE pstest" );
@@ -852,7 +864,7 @@ public class JdbcPreparedStatementsTest {
     }
 
 
-    //@Test
+    @Test
     public void nullTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
