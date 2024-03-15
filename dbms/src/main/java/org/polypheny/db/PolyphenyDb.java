@@ -32,6 +32,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import java.util.TimeZone;
 import java.util.UUID;
 import javax.inject.Inject;
@@ -274,27 +275,7 @@ public class PolyphenyDb {
         }
 
         // Generate UUID for Polypheny (if there isn't one already)
-        String uuid;
-        if ( PolyphenyHomeDirManager.getInstance().getGlobalFile( "uuid" ).isEmpty() ) {
-            UUID id = UUID.randomUUID();
-            File f = PolyphenyHomeDirManager.getInstance().registerNewGlobalFile( "uuid" );
-
-            try ( FileOutputStream out = new FileOutputStream( f ) ) {
-                out.write( id.toString().getBytes( StandardCharsets.UTF_8 ) );
-            } catch ( IOException e ) {
-                throw new GenericRuntimeException( "Failed to store UUID " + e );
-            }
-
-            uuid = id.toString();
-        } else {
-            Path path = PolyphenyHomeDirManager.getInstance().getGlobalFile( "uuid" ).orElseThrow().toPath();
-
-            try ( BufferedReader in = Files.newBufferedReader( path, StandardCharsets.UTF_8 ) ) {
-                uuid = UUID.fromString( in.readLine() ).toString();
-            } catch ( IOException e ) {
-                throw new GenericRuntimeException( "Failed to load UUID " + e );
-            }
-        }
+        String uuid = generateOrLoadPolyphenyUUID();
 
         if ( mode == RunMode.TEST ) {
             uuid = "polypheny-test";
@@ -555,6 +536,31 @@ public class PolyphenyDb {
             //noinspection ResultOfMethodCallIgnored
             backupFolder.delete();
             log.info( "Restoring the data folder." );
+        }
+    }
+
+
+    private String generateOrLoadPolyphenyUUID() {
+        Optional<File> uuidFile = PolyphenyHomeDirManager.getInstance().getGlobalFile( "uuid" );
+        if ( uuidFile.isEmpty() ) {
+            UUID id = UUID.randomUUID();
+            File f = PolyphenyHomeDirManager.getInstance().registerNewGlobalFile( "uuid" );
+
+            try ( FileOutputStream out = new FileOutputStream( f ) ) {
+                out.write( id.toString().getBytes( StandardCharsets.UTF_8 ) );
+            } catch ( IOException e ) {
+                throw new GenericRuntimeException( "Failed to store UUID " + e );
+            }
+
+            return id.toString();
+        } else {
+            Path path = uuidFile.get().toPath();
+
+            try ( BufferedReader in = Files.newBufferedReader( path, StandardCharsets.UTF_8 ) ) {
+                return UUID.fromString( in.readLine() ).toString();
+            } catch ( IOException e ) {
+                throw new GenericRuntimeException( "Failed to load UUID " + e );
+            }
         }
     }
 
