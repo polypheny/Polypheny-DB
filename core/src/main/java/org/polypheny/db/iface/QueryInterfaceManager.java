@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalQueryInterface;
@@ -69,18 +70,15 @@ public class QueryInterfaceManager {
 
 
     public static void addInterfaceTemplate( String interfaceName, String description,
-            List<QueryInterfaceSetting> availableSettings, Function6<TransactionManager, Authenticator, Long, String, Map<String, String>, QueryInterface> deployer ) {
+            List<QueryInterfaceSetting> availableSettings, Function5<TransactionManager, Authenticator, String, Map<String, String>, QueryInterface> deployer ) {
         Catalog.getInstance().createInterfaceTemplate( interfaceName, new QueryInterfaceTemplate( interfaceName, description,
                 deployer, availableSettings ) );
     }
 
 
     public static void removeInterfaceType( String interfaceName ) {
-
-        for ( LogicalQueryInterface queryInterface : Catalog.getInstance().getSnapshot().getQueryInterfaces() ) {
-            if ( queryInterface.interfaceName.equals( interfaceName ) ) {
-                throw new GenericRuntimeException( "Cannot remove the interface type, there is still a interface active." );
-            }
+        if ( Catalog.snapshot().getQueryInterfaces().values().stream().anyMatch( i -> i.getInterfaceName().equals( interfaceName ) ) ) {
+            throw new GenericRuntimeException( "Cannot remove the interface type, there is still a interface active." );
         }
         Catalog.getInstance().dropInterfaceTemplate( interfaceName );
     }
@@ -101,8 +99,10 @@ public class QueryInterfaceManager {
     }
 
 
-    private void startInterface( QueryInterface instance ) {
+    private void startInterface( QueryInterface instance, String interfaceName, Long id ) {
         Thread thread = new Thread( instance );
+        AtomicReference<Throwable> error = new AtomicReference<>();
+        thread.setUncaughtExceptionHandler( ( Thread t, Throwable e ) -> error.set( e ) );
         thread.start();
 
         try {
@@ -110,10 +110,16 @@ public class QueryInterfaceManager {
         } catch ( InterruptedException e ) {
             log.warn( "Interrupted on join()", e );
         }
+        if ( error.get() != null ) {
+            throw new GenericRuntimeException( error.get() );
+        }
 
+        if ( id == null ) {
+            id = Catalog.getInstance().createQueryInterface( instance.getUniqueName(), interfaceName, instance.getCurrentSettings() );
+        }
         interfaceByName.put( instance.getUniqueName(), instance );
-        interfaceById.put( instance.getQueryInterfaceId(), instance );
-        interfaceThreadById.put( instance.getQueryInterfaceId(), thread );
+        interfaceById.put( id, instance );
+        interfaceThreadById.put( id, thread );
     }
 
 
@@ -121,12 +127,14 @@ public class QueryInterfaceManager {
      * Restores query interfaces from catalog
      */
     public void restoreInterfaces( Snapshot snapshot ) {
-        List<LogicalQueryInterface> interfaces = snapshot.getQueryInterfaces();
-        for ( LogicalQueryInterface iface : interfaces ) {
-            QueryInterfaceTemplate template = Catalog.snapshot().getInterfaceTemplate( iface.getInterfaceName() ).orElseThrow();
-            QueryInterface instance = template.deployer().get( transactionManager, authenticator, iface.id, iface.name, iface.settings );
-            startInterface( instance );
-        }
+        Map<Long, LogicalQueryInterface> interfaces = snapshot.getQueryInterfaces();
+        interfaces.forEach( ( id, l ) -> {
+                    QueryInterface q = Catalog.snapshot().getInterfaceTemplate( l.interfaceName )
+                            .map( t -> t.deployer.get( transactionManager, authenticator, l.name, l.settings ) )
+                            .orElseThrow();
+                    startInterface( q, l.interfaceName, id );
+                }
+        );
     }
 
 
@@ -137,9 +145,12 @@ public class QueryInterfaceManager {
         }
         QueryInterface instance;
         QueryInterfaceTemplate template = Catalog.snapshot().getInterfaceTemplate( interfaceName ).orElseThrow();
-        long ifaceId = Catalog.getInstance().createQueryInterface( uniqueName, interfaceName, settings );
-        instance = template.deployer().get( transactionManager, authenticator, ifaceId, uniqueName, settings );
-        startInterface( instance );
+        try {
+            instance = template.deployer().get( transactionManager, authenticator, uniqueName, settings );
+        } catch ( GenericRuntimeException e ) {
+            throw new GenericRuntimeException( "Failed to deploy query interface: " + e.getMessage() );
+        }
+        startInterface( instance, interfaceName, null );
 
         return instance;
     }
@@ -179,7 +190,7 @@ public class QueryInterfaceManager {
     public record QueryInterfaceTemplate(
             @JsonSerialize String interfaceName,
             @JsonSerialize String description,
-            Function6<TransactionManager, Authenticator, Long, String, Map<String, String>, QueryInterface> deployer,
+            Function5<TransactionManager, Authenticator, String, Map<String, String>, QueryInterface> deployer,
             @JsonSerialize List<QueryInterfaceSetting> availableSettings) {
 
         public Map<String, String> getDefaultSettings() {
@@ -192,9 +203,9 @@ public class QueryInterfaceManager {
 
 
     @FunctionalInterface
-    public interface Function6<P1, P2, P3, P4, P5, R> {
+    public interface Function5<P1, P2, P3, P4, R> {
 
-        R get( P1 p1, P2 p2, P3 p3, P4 p4, P5 p5 );
+        R get( P1 p1, P2 p2, P3 p3, P4 p4 );
 
     }
 

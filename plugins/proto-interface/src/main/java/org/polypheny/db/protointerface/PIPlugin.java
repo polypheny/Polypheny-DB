@@ -78,8 +78,8 @@ public class PIPlugin extends PolyPlugin {
         private PIServer protoInterfaceServer;
 
 
-        public ProtoInterface( TransactionManager transactionManager, Authenticator authenticator, long queryInterfaceId, String uniqueName, Map<String, String> settings ) {
-            super( transactionManager, authenticator, queryInterfaceId, uniqueName, settings, true, true );
+        public ProtoInterface( TransactionManager transactionManager, Authenticator authenticator, String uniqueName, Map<String, String> settings ) {
+            super( transactionManager, authenticator, uniqueName, settings, true, true );
             this.authenticator = authenticator;
             this.transactionManager = transactionManager;
             this.port = Integer.parseInt( settings.get( "port" ) );
@@ -139,6 +139,7 @@ public class PIPlugin extends PolyPlugin {
                 protoInterfaceServer = new PIServer( clientManager );
             } catch ( IOException e ) {
                 log.error( "Proto interface server could not be started: {}", e.getMessage() );
+                throw new GenericRuntimeException( e );
             }
         }
 

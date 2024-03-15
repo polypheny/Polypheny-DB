@@ -40,8 +40,6 @@ public abstract class QueryInterface implements Runnable, PropertyChangeListener
     protected final transient Authenticator authenticator;
 
     @Getter
-    private final long queryInterfaceId;
-    @Getter
     private final String uniqueName;
 
     @Getter
@@ -55,14 +53,12 @@ public abstract class QueryInterface implements Runnable, PropertyChangeListener
     public QueryInterface(
             final TransactionManager transactionManager,
             final Authenticator authenticator,
-            final long queryInterfaceId,
             final String uniqueName,
             final Map<String, String> settings,
             final boolean supportsDml,
             final boolean supportsDdl ) {
         this.transactionManager = transactionManager;
         this.authenticator = authenticator;
-        this.queryInterfaceId = queryInterfaceId;
         this.uniqueName = uniqueName;
         this.settings = new HashMap<>( settings );
         this.supportsDml = supportsDml;

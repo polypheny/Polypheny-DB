@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.snapshot;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import org.jetbrains.annotations.NotNull;
@@ -105,12 +106,12 @@ public interface Snapshot extends OperatorTable {
 
 
     /*
-     * Get list of all query interfaces
+     * Get map of all query interfaces
      *
-     * @return List of query interfaces
+     * @return Map of query interfaces
      */
     @NotNull
-    List<LogicalQueryInterface> getQueryInterfaces();
+    Map<Long, LogicalQueryInterface> getQueryInterfaces();
 
     /**
      * Get a query interface by its unique name
