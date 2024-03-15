@@ -20,6 +20,7 @@ package org.polypheny.db.iface;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -63,7 +64,7 @@ public abstract class QueryInterface implements Runnable, PropertyChangeListener
         this.authenticator = authenticator;
         this.queryInterfaceId = queryInterfaceId;
         this.uniqueName = uniqueName;
-        this.settings = settings;
+        this.settings = new HashMap<>( settings );
         this.supportsDml = supportsDml;
         this.supportsDdl = supportsDdl;
 
@@ -139,6 +140,9 @@ public abstract class QueryInterface implements Runnable, PropertyChangeListener
         public final boolean required;
         public final boolean modifiable;
 
+
+        public abstract String getDefault();
+
     }
 
 
@@ -152,7 +156,13 @@ public abstract class QueryInterface implements Runnable, PropertyChangeListener
             this.defaultValue = defaultValue;
         }
 
+
+        public String getDefault() {
+            return defaultValue.toString();
+        }
+
     }
+
 
     public static class QueryInterfaceSettingLong extends QueryInterfaceSetting {
 
@@ -162,6 +172,11 @@ public abstract class QueryInterface implements Runnable, PropertyChangeListener
         public QueryInterfaceSettingLong( String name, boolean canBeNull, boolean required, boolean modifiable, Long defaultValue ) {
             super( name, canBeNull, required, modifiable );
             this.defaultValue = defaultValue;
+        }
+
+
+        public String getDefault() {
+            return defaultValue.toString();
         }
 
     }
@@ -177,6 +192,11 @@ public abstract class QueryInterface implements Runnable, PropertyChangeListener
             this.defaultValue = defaultValue;
         }
 
+
+        public String getDefault() {
+            return defaultValue;
+        }
+
     }
 
 
@@ -190,17 +210,29 @@ public abstract class QueryInterface implements Runnable, PropertyChangeListener
             this.defaultValue = defaultValue;
         }
 
+
+        public String getDefault() {
+            return Boolean.toString( defaultValue );
+        }
+
     }
 
 
     public static class QueryInterfaceSettingList extends QueryInterfaceSetting {
 
         public final List<String> options;
+        public final String defaultValue;
 
 
-        public QueryInterfaceSettingList( String name, boolean canBeNull, boolean required, boolean modifiable, List<String> options ) {
+        public QueryInterfaceSettingList( String name, boolean canBeNull, boolean required, boolean modifiable, List<String> options, String defaultValue ) {
             super( name, canBeNull, required, modifiable );
             this.options = options;
+            this.defaultValue = defaultValue;
+        }
+
+
+        public String getDefault() {
+            return defaultValue;
         }
 
     }

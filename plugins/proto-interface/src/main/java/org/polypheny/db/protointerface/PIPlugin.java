@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
@@ -44,16 +43,12 @@ public class PIPlugin extends PolyPlugin {
 
     @Override
     public void afterCatalogInit() {
-        Map<String, String> settings = new HashMap<>();
-        settings.put( "port", "20590" );
-        settings.put( "requires heartbeat", "false" );
-        settings.put( "heartbeat interval", "0" );
-        QueryInterfaceManager.addInterfaceType( "proto-interface", ProtoInterface.class, settings );
+        QueryInterfaceManager.addInterfaceTemplate( ProtoInterface.INTERFACE_NAME, ProtoInterface.INTERFACE_DESCRIPTION, ProtoInterface.AVAILABLE_SETTINGS, ProtoInterface::new );
     }
 
 
     public void stop() {
-        QueryInterfaceManager.removeInterfaceType( ProtoInterface.class );
+        QueryInterfaceManager.removeInterfaceType( ProtoInterface.INTERFACE_NAME );
     }
 
 

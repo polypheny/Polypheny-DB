@@ -85,20 +85,16 @@ public class RestInterfacePlugin extends PolyPlugin {
     }
 
 
-
     @Override
     public void afterCatalogInit() {
         // Add REST interface
-        Map<String, String> restSettings = new HashMap<>();
-        restSettings.put( "port", "8089" );
-        restSettings.put( "maxUploadSizeMb", "10000" );
-        QueryInterfaceManager.addInterfaceType( "rest", HttpRestServer.class, restSettings );
+        QueryInterfaceManager.addInterfaceTemplate( HttpRestServer.INTERFACE_NAME, HttpRestServer.INTERFACE_DESCRIPTION, HttpRestServer.AVAILABLE_SETTINGS, HttpRestServer::new );
     }
 
 
     @Override
     public void stop() {
-        QueryInterfaceManager.removeInterfaceType( HttpRestServer.class );
+        QueryInterfaceManager.removeInterfaceType( HttpRestServer.INTERFACE_NAME );
     }
 
 

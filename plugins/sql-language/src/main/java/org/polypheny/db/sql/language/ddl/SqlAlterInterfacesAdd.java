@@ -24,7 +24,6 @@ import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.languages.ParserPos;
@@ -95,7 +94,7 @@ public class SqlAlterInterfacesAdd extends SqlAlter {
         Map<String, String> configMap = null;
         try {
             configMap = mapper.readValue( removeQuotationMarks( config.toString() ), Map.class );
-            QueryInterfaceManager.getInstance().addQueryInterface( Catalog.getInstance(), clazzNameStr, uniqueNameStr, configMap );
+            QueryInterfaceManager.getInstance().createQueryInterface( clazzNameStr, uniqueNameStr, configMap );
         } catch ( Exception e ) {
             throw new GenericRuntimeException( "Unable to deploy query interface", e );
         }

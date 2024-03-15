@@ -181,7 +181,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public long createQueryInterface( String uniqueName, String clazz, Map<String, String> settings ) {
+    public long createQueryInterface( String uniqueName, String interfaceName, Map<String, String> settings ) {
         throw new NotImplementedException();
     }
 
