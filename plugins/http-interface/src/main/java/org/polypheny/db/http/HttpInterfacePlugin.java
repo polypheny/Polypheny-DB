@@ -76,16 +76,14 @@ public class HttpInterfacePlugin extends PolyPlugin {
     @Override
     public void afterCatalogInit() {
         // Add HTTP interface
-        Map<String, String> httpSettings = new HashMap<>();
-        httpSettings.put( "port", "13137" );
-        httpSettings.put( "maxUploadSizeMb", "10000" );
-        QueryInterfaceManager.addInterfaceType( "http", HttpInterface.class, httpSettings );
+        QueryInterfaceManager.addInterfaceTemplate( HttpInterface.INTERFACE_NAME, HttpInterface.INTERFACE_DESCRIPTION,
+                HttpInterface.AVAILABLE_SETTINGS, HttpInterface::new );
     }
 
 
     @Override
     public void stop() {
-        QueryInterfaceManager.removeInterfaceType( HttpInterface.class );
+        QueryInterfaceManager.removeInterfaceType( HttpInterface.INTERFACE_NAME );
     }
 
 

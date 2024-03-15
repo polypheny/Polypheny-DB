@@ -218,11 +218,11 @@ public abstract class Catalog implements ExtensionPoint {
      * Add a query interface
      *
      * @param uniqueName The unique name of the query interface
-     * @param clazz The class name of the query interface
+     * @param interfaceName The class name of the query interface
      * @param settings The configuration of the query interface
      * @return The id of the newly added query interface
      */
-    public abstract long createQueryInterface( String uniqueName, String clazz, Map<String, String> settings );
+    public abstract long createQueryInterface( String uniqueName, String interfaceName, Map<String, String> settings );
 
     /**
      * Delete a query interface

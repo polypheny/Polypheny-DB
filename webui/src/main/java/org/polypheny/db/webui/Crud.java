@@ -135,8 +135,8 @@ import org.polypheny.db.docker.DockerSetupHelper.DockerUpdateResult;
 import org.polypheny.db.docker.HandshakeManager;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
-import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceInformation;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceInformationRequest;
+import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationObserver;
@@ -2214,47 +2214,42 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     void getAvailableQueryInterfaces( final Context ctx ) {
         QueryInterfaceManager qim = QueryInterfaceManager.getInstance();
-        List<QueryInterfaceInformation> interfaces = qim.getAvailableQueryInterfaceTypes();
-        ctx.result( QueryInterfaceInformation.toJson( interfaces.toArray( new QueryInterfaceInformation[0] ) ) );
+        List<QueryInterfaceTemplate> interfaces = qim.getAvailableQueryInterfaceTemplates();
+        ctx.json( interfaces );
     }
 
 
     void addQueryInterface( final Context ctx ) {
-        QueryInterfaceManager qim = QueryInterfaceManager.getInstance();
         QueryInterfaceInformationRequest request = ctx.bodyAsClass( QueryInterfaceInformationRequest.class );
-        String generatedQuery = String.format( "ALTER INTERFACES ADD \"%s\" USING '%s' WITH '%s'", request.uniqueName, request.clazzName, gson.toJson( request.currentSettings ) );
         try {
-            qim.addQueryInterface( Catalog.getInstance(), request.clazzName, request.uniqueName, request.currentSettings );
-            ctx.json( RelationalResult.builder().affectedTuples( 1 ).query( generatedQuery ).build() );
+            QueryInterfaceManager.getInstance().createQueryInterface( request.interfaceName(), request.uniqueName(), request.currentSettings() );
+            ctx.status( 200 );
         } catch ( RuntimeException e ) {
             log.error( "Exception while deploying query interface", e );
-            ctx.json( RelationalResult.builder().error( e.getMessage() ).query( generatedQuery ).build() );
+            ctx.status( 500 ).result( e.getMessage() );
         }
     }
 
 
     void updateQueryInterfaceSettings( final Context ctx ) {
         QueryInterfaceModel request = ctx.bodyAsClass( QueryInterfaceModel.class );
-        QueryInterfaceManager qim = QueryInterfaceManager.getInstance();
         try {
-            qim.getQueryInterface( request.uniqueName ).updateSettings( request.currentSettings );
-            ctx.json( RelationalResult.builder().affectedTuples( 1 ).build() );
+            QueryInterfaceManager.getInstance().getQueryInterface( request.uniqueName ).updateSettings( request.currentSettings );
+            ctx.status( 200 );
         } catch ( Exception e ) {
-            ctx.json( RelationalResult.builder().error( e.getMessage() ).build() );
+            ctx.status( 500 ).result( e.getMessage() );
         }
     }
 
 
     void removeQueryInterface( final Context ctx ) {
         String uniqueName = ctx.body();
-        QueryInterfaceManager qim = QueryInterfaceManager.getInstance();
-        String generatedQuery = String.format( "ALTER INTERFACES DROP \"%s\"", uniqueName );
         try {
-            qim.removeQueryInterface( Catalog.getInstance(), uniqueName );
-            ctx.json( RelationalResult.builder().affectedTuples( 1 ).query( generatedQuery ).build() );
+            QueryInterfaceManager.getInstance().removeQueryInterface( Catalog.getInstance(), uniqueName );
+            ctx.status( 200 );
         } catch ( RuntimeException e ) {
             log.error( "Could not remove query interface {}", ctx.body(), e );
-            ctx.json( RelationalResult.builder().error( e.getMessage() ).query( generatedQuery ).build() );
+            ctx.status( 500 ).result( e.getMessage() );
         }
     }
 

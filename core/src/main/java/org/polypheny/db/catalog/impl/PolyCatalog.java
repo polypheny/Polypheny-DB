@@ -398,10 +398,15 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     @Override
-    public long createQueryInterface( String uniqueName, String clazz, Map<String, String> settings ) {
+    public long createQueryInterface( String uniqueName, String interfaceName, Map<String, String> settings ) {
         long id = idBuilder.getNewInterfaceId();
 
-        interfaces.put( id, new LogicalQueryInterface( id, uniqueName, clazz, settings ) );
+        synchronized ( this ) {
+            if ( interfaces.values().stream().anyMatch( l -> l.name.equals( uniqueName ) ) ) {
+                throw new GenericRuntimeException( "There is already a query interface with name " + uniqueName );
+            }
+            interfaces.put( id, new LogicalQueryInterface( id, uniqueName, interfaceName, settings ) );
+        }
 
         change();
         return id;

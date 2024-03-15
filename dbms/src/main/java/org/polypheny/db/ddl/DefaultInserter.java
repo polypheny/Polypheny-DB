@@ -97,18 +97,9 @@ public class DefaultInserter {
         if ( !Catalog.getInstance().getInterfaces().isEmpty() ) {
             return;
         }
-        Catalog.getInstance().getInterfaceTemplates().values().forEach( i -> Catalog.getInstance().createQueryInterface( i.interfaceName, i.clazz.getName(), i.defaultSettings ) );
+        Catalog.getInstance().getInterfaceTemplates().values().forEach( i -> Catalog.getInstance().createQueryInterface( i.interfaceName().toLowerCase(), i.interfaceName(), i.getDefaultSettings() ) );
         Catalog.getInstance().commit();
 
-    }
-
-
-    public static void restoreAvatica() {
-        if ( Catalog.snapshot().getQueryInterface( "avatica" ).isPresent() ) {
-            return;
-        }
-        QueryInterfaceTemplate avatica = Catalog.snapshot().getInterfaceTemplate( "AvaticaInterface" ).orElseThrow();
-        Catalog.getInstance().createQueryInterface( "avatica", avatica.clazz.getName(), avatica.defaultSettings );
     }
 
 }
