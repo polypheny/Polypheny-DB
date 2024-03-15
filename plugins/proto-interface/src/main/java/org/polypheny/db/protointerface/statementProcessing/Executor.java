@@ -30,6 +30,7 @@ public abstract class Executor {
             return;
         }
         if ( stopWatch.isStopped() ) {
+            stopWatch.reset();
             stopWatch.start();
         }
     }
