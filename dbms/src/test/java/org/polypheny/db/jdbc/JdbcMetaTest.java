@@ -249,50 +249,50 @@ public class JdbcMetaTest {
     }
 
 
-    @Test(expected = SQLFeatureNotSupportedException.class)
-    public void testColumnPrivilegesThrowsExceptionIfStrict() throws SQLException {
-        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false, true );
-                Connection connection = polyphenyDbConnection.getConnection() ) {
-            DatabaseMetaData metadata = connection.getMetaData();
-            ResultSet rs = metadata.getColumnPrivileges( null, null, null, null );
-        }
+    @Test
+    public void testColumnPrivilegesThrowsExceptionIfStrict() {
+        assertThrows( SQLFeatureNotSupportedException.class, () -> {
+            try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false, true );
+                    Connection connection = polyphenyDbConnection.getConnection() ) {
+                DatabaseMetaData metadata = connection.getMetaData();
+                ResultSet rs = metadata.getColumnPrivileges( null, null, null, null );
+            }
+        } );
     }
 
 
     @Test
-    public void testColumnPrivilegesReturnsDummy() {
-        assertThrows( SQLFeatureNotSupportedException.class, () -> {
-            try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false, true ) ) {
-                Connection connection = polyphenyDbConnection.getConnection();
-                ResultSet resultSet = connection.getMetaData().getColumnPrivileges( null, "test", null, null );
-                ResultSetMetaData rsmd = resultSet.getMetaData();
+    public void testColumnPrivilegesReturnsDummy() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false, false ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            ResultSet resultSet = connection.getMetaData().getColumnPrivileges( null, "test", null, null );
+            ResultSetMetaData rsmd = resultSet.getMetaData();
 
-                // Check number of columns
-                int totalColumns = rsmd.getColumnCount();
-                assertEquals( 4, totalColumns, "Wrong number of columns" );
+            // Check number of columns
+            int totalColumns = rsmd.getColumnCount();
+            assertEquals( 8, totalColumns, "Wrong number of columns" );
 
-                // Check column names
-                assertEquals( rsmd.getColumnName( 1 ), "TABLE_CAT", "Wrong column name" );
-                assertEquals( rsmd.getColumnName( 2 ), "TABLE_SCHEM", "Wrong column name" );
-                assertEquals( rsmd.getColumnName( 3 ), "TABLE_NAME", "Wrong column name" );
-                assertEquals( rsmd.getColumnName( 4 ), "COLUMN_NAME", "Wrong column name" );
-                assertEquals( rsmd.getColumnName( 5 ), "GRANTOR", "Wrong column name" );
-                assertEquals( rsmd.getColumnName( 6 ), "GRANTEE", "Wrong column name" );
-                assertEquals( rsmd.getColumnName( 7 ), "PRIVILEGE", "Wrong column name" );
-                assertEquals( rsmd.getColumnName( 8 ), "IS_GRANTABLE", "Wrong column name" );
+            // Check column names
+            assertEquals( rsmd.getColumnName( 1 ), "TABLE_CAT", "Wrong column name" );
+            assertEquals( rsmd.getColumnName( 2 ), "TABLE_SCHEM", "Wrong column name" );
+            assertEquals( rsmd.getColumnName( 3 ), "TABLE_NAME", "Wrong column name" );
+            assertEquals( rsmd.getColumnName( 4 ), "COLUMN_NAME", "Wrong column name" );
+            assertEquals( rsmd.getColumnName( 5 ), "GRANTOR", "Wrong column name" );
+            assertEquals( rsmd.getColumnName( 6 ), "GRANTEE", "Wrong column name" );
+            assertEquals( rsmd.getColumnName( 7 ), "PRIVILEGE", "Wrong column name" );
+            assertEquals( rsmd.getColumnName( 8 ), "IS_GRANTABLE", "Wrong column name" );
 
-                // Check data
-                final List<Object[]> expected = new LinkedList<>();
-                expected.add( new Object[]{ "APP", "test", "foo2", "name", null, "pa", "INSERT", "NO" } );
-                expected.add( new Object[]{ "APP", "test", "foo2", "name", null, "pa", "REFERENCE", "NO" } );
-                expected.add( new Object[]{ "APP", "test", "foo2", "name", null, "pa", "SELECT", "NO" } );
-                expected.add( new Object[]{ "APP", "test", "foo2", "name", null, "pa", "UPDATE", "NO" } );
+            // Check data
+            final List<Object[]> expected = new LinkedList<>();
+            expected.add( new Object[]{ "APP", "test", "foo2", "name", null, "pa", "INSERT", "NO" } );
+            expected.add( new Object[]{ "APP", "test", "foo2", "name", null, "pa", "REFERENCE", "NO" } );
+            expected.add( new Object[]{ "APP", "test", "foo2", "name", null, "pa", "SELECT", "NO" } );
+            expected.add( new Object[]{ "APP", "test", "foo2", "name", null, "pa", "UPDATE", "NO" } );
 
-                TestHelper.checkResultSet(
-                        connection.getMetaData().getColumnPrivileges( null, "test", "foo2", "name" ),
-                        expected );
-            }
-        } );
+            TestHelper.checkResultSet(
+                    connection.getMetaData().getColumnPrivileges( null, "test", "foo2", "name" ),
+                    expected );
+        }
     }
 
 
@@ -664,15 +664,19 @@ public class JdbcMetaTest {
             TestHelper.checkResultSet(
                     connection.getMetaData().getIndexInfo( "APP", "public", "foo", false, false ),
                     ImmutableList.of( index1 ) );
+                    System.out.println("BIMS");
             TestHelper.checkResultSet(
                     connection.getMetaData().getIndexInfo( "AP_", "tes_", "foo_", false, false ),
                     ImmutableList.of( index2a, index2b ), true );
+            System.out.println("BAMS");
             TestHelper.checkResultSet(
                     connection.getMetaData().getIndexInfo( "%", "%", "%", false, false ),
                     ImmutableList.of( index1, index2a, index2b ), true );
+            System.out.println("WIMS");
             TestHelper.checkResultSet(
                     connection.getMetaData().getIndexInfo( null, null, null, false, false ),
                     ImmutableList.of( index1, index2a, index2b ), true );
+            System.out.println("WUMS");
             TestHelper.checkResultSet(
                     connection.getMetaData().getIndexInfo( null, "%", null, true, false ),
                     ImmutableList.of( index1 ) );
