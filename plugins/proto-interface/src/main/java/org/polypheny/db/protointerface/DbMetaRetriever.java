@@ -147,7 +147,7 @@ public class DbMetaRetriever {
         }
         tableBuilder.addAllForeignKeys( getForeignKeys( logicalTable ) );
         tableBuilder.addAllExportedKeys( getExportedKeys( logicalTable ) );
-        tableBuilder.addAllIndexes( getIndexes( logicalTable, true ) );
+        tableBuilder.addAllIndexes( getIndexes( logicalTable, false ) );
         return tableBuilder.build();
     }
 
