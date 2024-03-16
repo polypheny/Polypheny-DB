@@ -30,12 +30,16 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaSqlException;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.jdbc.ProtoInterfaceServiceException;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
@@ -82,10 +86,10 @@ public class JdbcDdlTest {
             1.999999,
             9876,
             0.3333f,
-            45,
+            (short) 45,
             Time.valueOf( "11:59:32" ),
             Timestamp.valueOf( "2021-01-01 10:11:15" ),
-            22,
+            (byte) 22,
             "hallo" };
 
 
@@ -446,7 +450,7 @@ public class JdbcDdlTest {
                     boolean failed = false;
                     try {
                         statement.executeUpdate( "INSERT INTO ddltest(tprimary) VALUES ( null, null, null, null, null, 1, null, null, null, null, null )" );
-                    } catch ( AvaticaSqlException e ) {
+                    } catch ( ProtoInterfaceServiceException e) {
                         failed = true;
                     }
                     assertTrue( failed );
@@ -728,13 +732,13 @@ public class JdbcDdlTest {
                     statement.executeUpdate( "ALTER TABLE ddltest MODIFY COLUMN tsmallint SET TYPE INTEGER" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT tsmallint FROM ddltest" ),
-                            ImmutableList.of( new Object[]{ (int) (short) DDLTEST_DATA[7] } ) );
+                            ImmutableList.of( new Object[]{ (short) DDLTEST_DATA[7] } ) );
 
                     // TinyInt --> SmallInt
                     statement.executeUpdate( "ALTER TABLE ddltest MODIFY COLUMN ttinyint SET TYPE SMALLINT" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT ttinyint FROM ddltest" ),
-                            ImmutableList.of( new Object[]{ (short) (byte) DDLTEST_DATA[10] } ) );
+                            ImmutableList.of( new Object[]{ (byte) DDLTEST_DATA[10] } ) );
                 } finally {
                     // Drop ddltest table
                     statement.executeUpdate( "DROP TABLE ddltest" );
