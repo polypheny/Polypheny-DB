@@ -41,6 +41,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.type.PolySerializable;
+import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyDictionary.PolyDictionaryDeserializer;
@@ -88,7 +89,7 @@ public class PolyDictionary extends PolyMap<PolyString, PolyValue> {
             } ).writeValueAsString( this );
         } catch ( JsonProcessingException e ) {
             log.warn( "Error on serializing typed JSON." );
-            return null;
+            return PolyNull.NULL.toTypedJson();
         }
     }
 

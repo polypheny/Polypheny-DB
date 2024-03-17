@@ -123,7 +123,7 @@ import org.polypheny.db.util.BsonUtil;
         PolyNode.class,
         PolyEdge.class,
         PolyPath.class }) // add on Constructor already exists exception
-@JsonTypeInfo(use = Id.CLASS) // to allow typed json serialization
+@JsonTypeInfo(use = Id.NAME) // to allow typed json serialization
 @JsonSubTypes({
         @JsonSubTypes.Type(value = PolyList.class, name = "LIST"),
         @JsonSubTypes.Type(value = PolyBigDecimal.class, name = "DECIMAL"),

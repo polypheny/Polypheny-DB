@@ -31,7 +31,6 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.jsontype.TypeDeserializer;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.activej.serializer.BinaryInput;
@@ -57,6 +56,7 @@ import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
@@ -73,7 +73,7 @@ import org.polypheny.db.util.Pair;
 @JsonDeserialize(using = PolyMapDeserializer.class)
 public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue implements Map<K, V> {
 
-    public static final PolyMap<?,?> EMPTY_MAP = PolyMap.of( Map.of() );
+    public static final PolyMap<?, ?> EMPTY_MAP = PolyMap.of( Map.of() );
 
     @Delegate
     @Serialize
@@ -204,7 +204,7 @@ public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue
             } ).writeValueAsString( this );
         } catch ( JsonProcessingException e ) {
             log.warn( "Error on serializing typed JSON." );
-            return null;
+            return PolyNull.NULL.toTypedJson();
         }
     }
 
@@ -260,11 +260,16 @@ public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue
     }
 
 
-    static class PolyMapSerializer extends JsonSerializer<PolyMap<?, ?>> {
+    static class PolyMapSerializer<K extends PolyValue, V extends PolyValue> extends JsonSerializer<PolyMap<K, V>> {
+
+
+        private TypeSerializer keySerializer = null;
+        private TypeSerializer valueSerializer = null;
+
 
         @Override
-        public void serializeWithType( PolyMap<?, ?> value, JsonGenerator gen, SerializerProvider serializers, TypeSerializer typeSer ) throws IOException {
-            serialize( value, gen, serializers );
+        public void serializeWithType( PolyMap<K, V> value, JsonGenerator gen, SerializerProvider serializers, TypeSerializer typeSer ) throws IOException {
+            serializeGeneric( value, gen, serializers, "@type", value.getMapType().name() );
         }
 
 
@@ -272,19 +277,27 @@ public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue
          * [{_k:{}, _v{}},{_k:{}, _v{}},...]
          */
         @Override
-        public void serialize( PolyMap<?, ?> value, JsonGenerator gen, SerializerProvider serializers ) throws IOException {
+        public void serialize( PolyMap<K, V> value, JsonGenerator gen, SerializerProvider serializers ) throws IOException {
+            serializeGeneric( value, gen, serializers, "@class", value.getClass().getCanonicalName() );
+        }
+
+
+        private void serializeGeneric( PolyMap<K, V> value, JsonGenerator gen, SerializerProvider serializers, String typeKey, String typeValue ) throws IOException {
             gen.writeStartObject();
-            gen.writeFieldName( "@class" );
-            gen.writeString( value.getClass().getCanonicalName() );
+            gen.writeFieldName( typeKey );
+            gen.writeString( typeValue );
             gen.writeFieldName( "_ps" );
             gen.writeStartArray();
             for ( Entry<?, ?> pair : value.entrySet() ) {
-                gen.writeStartObject();
-                gen.writeFieldName( "_k" );
-                serializers.findValueSerializer( pair.getKey().getClass() ).serializeWithType( pair.getKey(), gen, serializers, serializers.findTypeSerializer( JSON_WRAPPER.constructType( pair.getKey().getClass() ) ) );
-                gen.writeFieldName( "_v" );
-                serializers.findValueSerializer( pair.getValue().getClass() ).serializeWithType( pair.getValue(), gen, serializers, serializers.findTypeSerializer( JSON_WRAPPER.constructType( pair.getValue().getClass() ) ) );
-                gen.writeEndObject();
+                if ( keySerializer == null ) {
+                    this.keySerializer = serializers.findTypeSerializer( JSON_WRAPPER.constructType( pair.getKey().getClass() ) );
+                    this.valueSerializer = serializers.findTypeSerializer( JSON_WRAPPER.constructType( pair.getValue().getClass() ) );
+                }
+
+                gen.writeStartArray();
+                serializers.findValueSerializer( pair.getKey().getClass() ).serializeWithType( pair.getKey(), gen, serializers, keySerializer );
+                serializers.findValueSerializer( pair.getValue().getClass() ).serializeWithType( pair.getValue(), gen, serializers, valueSerializer );
+                gen.writeEndArray();
             }
             gen.writeEndArray();
             gen.writeEndObject();
@@ -302,27 +315,21 @@ public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue
 
 
         @Override
-        public Object deserializeWithType( JsonParser p, DeserializationContext ctxt, TypeDeserializer typeDeserializer ) throws IOException {
-            return deserialize( p, ctxt );
-        }
-
-
-        @Override
         public PolyMap<?, ?> deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException, JacksonException {
             JsonNode node = p.getCodec().readTree( p );
             Map<PolyValue, PolyValue> values = new HashMap<>();
             ArrayNode elements = node.withArray( "_ps" );
             for ( JsonNode element : elements ) {
-                Pair<PolyValue, PolyValue> el = deserializeElement( ctxt, element );
+                Pair<PolyValue, PolyValue> el = deserializeElement( ctxt, (ArrayNode) element );
                 values.put( el.getKey(), el.getValue() );
             }
             return PolyMap.of( values, MapType.MAP );
         }
 
 
-        private Pair<PolyValue, PolyValue> deserializeElement( DeserializationContext ctxt, JsonNode element ) throws IOException {
-            PolyValue key = ctxt.readTreeAsValue( element.get( "_k" ), PolyValue.class );
-            PolyValue value = ctxt.readTreeAsValue( element.get( "_v" ), PolyValue.class );
+        private Pair<PolyValue, PolyValue> deserializeElement( DeserializationContext ctxt, ArrayNode element ) throws IOException {
+            PolyValue key = ctxt.readTreeAsValue( element.get( 0 ), PolyValue.class );
+            PolyValue value = ctxt.readTreeAsValue( element.get( 1 ), PolyValue.class );
             return Pair.of( key, value );
         }
 
