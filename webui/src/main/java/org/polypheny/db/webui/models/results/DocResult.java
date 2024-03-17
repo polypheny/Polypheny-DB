@@ -59,6 +59,5 @@ public class DocResult extends Result<String, FieldDefinition> {
                 affectedTuples );
     }
 
-    // public Throwable exception;
 
 }

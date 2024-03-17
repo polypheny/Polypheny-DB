@@ -50,6 +50,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationObserver;
@@ -401,7 +402,7 @@ public class LanguageCrud {
             boolean hasMoreRows = context.getIterator().hasMoreRows();
 
             return DocResult.builder()
-                    .header( context.getIterator().getImplementation().tupleType.getFields().stream().map( FieldDefinition::of ).toArray( FieldDefinition[]::new ) )
+                    .header( new FieldDefinition[]{ FieldDefinition.builder().name( "Document" ).dataType( DataModel.DOCUMENT.name() ).build() } )
                     .data( data.stream().map( d -> d.get( 0 ).toJson() ).toArray( String[]::new ) )
                     .query( context.getQuery().getQuery() )
                     .language( context.getQuery().getLanguage() )

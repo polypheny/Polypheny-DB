@@ -95,7 +95,7 @@ public abstract class DocumentProject extends SingleAlg implements DocumentAlg {
                         PolyList.copyOf( includes.keySet().stream().filter( Objects::nonNull ).map( v -> PolyList.copyOf( Arrays.stream( v.split( "\\." ) ).map( PolyString::of ).collect( Collectors.toList() ) ) )
                                 .collect( Collectors.toList() ) ),
                         builder.getTypeFactory().createArrayType( builder.getTypeFactory().createPolyType( PolyType.CHAR, 255 ), -1 ), PolyType.ARRAY ) );
-        nodes.addAll( includes.entrySet().stream().filter( o -> Objects.nonNull( o.getKey() ) ).map( Entry::getValue ).collect( Collectors.toList() ) );
+        nodes.addAll( includes.entrySet().stream().filter( o -> Objects.nonNull( o.getKey() ) ).map( Entry::getValue ).toList() );
 
         if ( !includes.isEmpty() ) {
             doc = builder.makeCall( getTupleType(), OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_MERGE ), nodes );

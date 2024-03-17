@@ -135,7 +135,6 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
     protected abstract String getConnectionUrl( final String dbHostname, final int dbPort, final String dbName );
 
 
-
     @Override
     public void truncate( Context context, long allocId ) {
         PhysicalTable table = adapterCatalog.getTable( allocId );
@@ -304,8 +303,23 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
     }
 
 
+    protected void updateNativePhysical( long allocId ) {
+        PhysicalTable table = adapterCatalog.fromAllocation( allocId );
+        adapterCatalog.replacePhysical( this.currentJdbcSchema.createJdbcTable( table ) );
+    }
+
+
+    @Override
+    public void renameLogicalColumn( long id, String newColumnName ) {
+        adapterCatalog.renameLogicalColumn( id, newColumnName );
+        adapterCatalog.fields.values().stream().filter( c -> c.id == id ).forEach( c -> updateNativePhysical( c.allocId ) );
+    }
+
+
     @SuppressWarnings("unused")
     public interface Exclude {
+
+        void renameLogicalColumn( long id, String newColumnName );
 
         void updateTable( long allocId );
 

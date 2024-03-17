@@ -359,8 +359,23 @@ public class CsvSource extends DataSource<RelAdapterCatalog> {
     }
 
 
+    protected void updateNativePhysical( long allocId ) {
+        PhysicalTable table = adapterCatalog.fromAllocation( allocId );
+        adapterCatalog.replacePhysical( this.currentNamespace.createCsvTable( table.id, table, this ) );
+    }
+
+
+    @Override
+    public void renameLogicalColumn( long id, String newColumnName ) {
+        adapterCatalog.renameLogicalColumn( id, newColumnName );
+        adapterCatalog.fields.values().stream().filter( c -> c.id == id ).forEach( c -> updateNativePhysical( c.allocId ) );
+    }
+
+
     @SuppressWarnings("unused")
     private interface Excludes {
+
+        void renameLogicalColumn( long id, String newColumnName );
 
         void refreshTable( long allocId );
 
