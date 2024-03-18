@@ -16,6 +16,7 @@
 
 package org.polypheny.db.webui.models.catalog;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import javax.annotation.Nullable;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -26,11 +27,15 @@ import org.polypheny.db.catalog.Catalog;
 @NoArgsConstructor
 @Data
 public class IdEntity {
+
+    @JsonProperty
     public final long snapshotId = Catalog.snapshot().id();
 
+    @JsonProperty
     @Nullable
     public Long id;
 
+    @JsonProperty
     @Nullable
     public String name;
 }

@@ -82,7 +82,6 @@ import org.polypheny.db.util.RunMode;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.models.results.DocResult;
 import org.polypheny.db.webui.models.results.GraphResult;
-import org.polypheny.db.webui.models.results.RelationalResult;
 
 
 @Slf4j
@@ -714,51 +713,33 @@ public class TestHelper {
     public static class JdbcConnection implements AutoCloseable {
 
         private final static String dbHost = "localhost";
-        private final static int port = 20590;
+        private final static int port = 20591;
 
-        private final Connection conn;
+        private final Connection connection;
 
-    public JdbcConnection (boolean autoCommit, boolean strictMode) throws SQLException {
-        try {
-            Class.forName( "org.polypheny.jdbc.PolyphenyDriver" );
-        } catch ( ClassNotFoundException e ) {
-            log.error( "Polypheny JDBC Driver not found", e );
-        }
-        final String url = "jdbc:polypheny://" + dbHost + ":" + port + "/?strict=" + strictMode;
-        log.debug( "Connecting to database @ {}", url );
-
-        conn = DriverManager.getConnection( url, "pa", "" );
-        conn.setAutoCommit( autoCommit );
-    }
 
         public JdbcConnection( boolean autoCommit ) throws SQLException {
             try {
-                Class.forName( "org.polypheny.jdbc.PolyphenyDriver" );
+                Class.forName( "org.polypheny.jdbc.Driver" );
             } catch ( ClassNotFoundException e ) {
                 log.error( "Polypheny JDBC Driver not found", e );
             }
-            final String url = "jdbc:polypheny://" + dbHost + ":" + port + "/?strict=false";
+            final String url = "jdbc:polypheny:http://" + dbHost + ":" + port;
             log.debug( "Connecting to database @ {}", url );
 
-            conn = DriverManager.getConnection( url, "pa", "" );
-            conn.setAutoCommit( autoCommit );
-        }
+            Properties props = new Properties();
+            props.setProperty( "user", "pa" );
+            props.setProperty( "serialization", "PROTOBUF" );
 
-
-        public Connection getConnection() {
-            return conn;
+            connection = DriverManager.getConnection( url, props );
+            connection.setAutoCommit( autoCommit );
         }
 
 
         @Override
         public void close() throws SQLException {
-            if ( conn.isClosed() ) {
-                return;
-            }
-            if ( !conn.getAutoCommit() ) {
-                conn.commit();
-            }
-            conn.close();
+            connection.commit();
+            connection.close();
         }
 
     }

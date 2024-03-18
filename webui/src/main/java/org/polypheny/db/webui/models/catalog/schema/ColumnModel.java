@@ -16,6 +16,7 @@
 
 package org.polypheny.db.webui.models.catalog.schema;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
@@ -31,33 +32,49 @@ import org.polypheny.db.type.PolyType;
 @Value
 public class ColumnModel extends FieldModel {
 
+    @JsonProperty
     @JsonSerialize(using = PolyTypeSerializer.class)
     public PolyType type;
 
+    @JsonProperty
     @JsonSerialize(using = PolyTypeSerializer.class)
     public PolyType collectionsType;
+
+    @JsonProperty
     public Integer precision;
+
+    @JsonProperty
     public Integer scale;
+
+    @JsonProperty
     public String defaultValue;
+
+    @JsonProperty
     public Integer dimension;
+
+    @JsonProperty
     public Integer cardinality;
+
+    @JsonProperty
     public boolean nullable;
+
+    @JsonProperty
     public int position;
 
 
     public ColumnModel(
-            @Nullable Long id,
-            @Nullable String name,
-            long tableId,
-            PolyType type,
-            PolyType collectionsType,
-            Integer precision,
-            Integer scale,
-            String defaultValue,
-            Integer dimension,
-            Integer cardinality,
-            boolean nullable,
-            int position ) {
+            @JsonProperty("id") @Nullable Long id,
+            @JsonProperty("name") @Nullable String name,
+            @JsonProperty("tableId") long tableId,
+            @JsonProperty("type") PolyType type,
+            @JsonProperty("collectionsType") PolyType collectionsType,
+            @JsonProperty("precision") Integer precision,
+            @JsonProperty("scale") Integer scale,
+            @JsonProperty("defaultValue") String defaultValue,
+            @JsonProperty("dimension") Integer dimension,
+            @JsonProperty("cardinality") Integer cardinality,
+            @JsonProperty("nullable") boolean nullable,
+            @JsonProperty("position") int position ) {
         super( id, name, tableId );
         this.type = type;
         this.nullable = nullable;

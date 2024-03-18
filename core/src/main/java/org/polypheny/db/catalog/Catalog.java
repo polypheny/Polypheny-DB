@@ -108,7 +108,6 @@ public abstract class Catalog implements ExtensionPoint {
 
     public abstract void commit();
 
-
     public abstract void rollback();
 
     public abstract LogicalRelationalCatalog getLogicalRel( long namespaceId );

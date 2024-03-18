@@ -16,18 +16,28 @@
 
 package org.polypheny.db.webui.models.catalog.schema;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.webui.models.catalog.IdEntity;
 
+@EqualsAndHashCode(callSuper = true)
+@Value
 public class AllocationPlacementModel extends IdEntity {
 
-    public final long logicalEntityId;
+    @JsonProperty
+    public long logicalEntityId;
 
-    public final long adapterId;
+    @JsonProperty
+    public long adapterId;
 
 
-    public AllocationPlacementModel( @Nullable Long id, long logicalEntityId, long adapterId ) {
+    public AllocationPlacementModel(
+            @JsonProperty("id") @Nullable Long id,
+            @JsonProperty("logicalEntityId") long logicalEntityId,
+            @JsonProperty("adapterId") long adapterId ) {
         super( id, null );
         this.logicalEntityId = logicalEntityId;
         this.adapterId = adapterId;

@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -39,7 +40,7 @@ public class InMemoryRepository implements PersistentMonitoringRepository {
 
     private static final String FILE_PATH = "simpleBackendDb";
     private static final String FOLDER_NAME = "monitoring";
-    protected final Map<Class<?>, Map<UUID, MonitoringDataPoint>> data = new HashMap<>();
+    protected final Map<Class<?>, Map<UUID, MonitoringDataPoint>> data = new ConcurrentHashMap<>();
     protected Map<String, QueryPostCostImpl> queryPostCosts;
 
 
@@ -141,7 +142,6 @@ public class InMemoryRepository implements PersistentMonitoringRepository {
             return;
         }
         data.clear();
-        //this.simpleBackendDb.commit();
     }
 
 
@@ -189,7 +189,6 @@ public class InMemoryRepository implements PersistentMonitoringRepository {
             queryPostCosts.replace( physicalQueryClass, new QueryPostCostImpl( physicalQueryClass, newTime, samples ) );
         }
 
-        //this.simpleBackendDb.commit();
     }
 
 
@@ -199,21 +198,16 @@ public class InMemoryRepository implements PersistentMonitoringRepository {
             return;
         }
         queryPostCosts.clear();
-        //this.simpleBackendDb.commit();
     }
 
 
     protected void initialize( String filePath, String folderName, boolean resetRepository ) {
-        /*if ( simpleBackendDb != null ) {
-            simpleBackendDb.close();
-        }*/
 
         synchronized ( this ) {
             File folder = PolyphenyHomeDirManager.getInstance().registerNewFolder( folderName );
 
 
             // Assume that file is locked
-            boolean fileLocked = true;
             long secondsToWait = 30;
 
             long timeThreshold = secondsToWait * 1000;
@@ -228,7 +222,6 @@ public class InMemoryRepository implements PersistentMonitoringRepository {
                         + "Wait a few seconds or stop the locking process and try again. " );
             }
 
-            // simpleBackendDb.getStore().fileLoad();
         }
     }
 

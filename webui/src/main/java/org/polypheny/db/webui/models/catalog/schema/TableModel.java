@@ -16,15 +16,26 @@
 
 package org.polypheny.db.webui.models.catalog.schema;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 
+@EqualsAndHashCode(callSuper = true)
+@Value
 public class TableModel extends EntityModel {
 
 
-    public TableModel( @Nullable Long id, @Nullable String name, Long namespaceId, boolean modifiable, DataModel dataModel, EntityType entityType ) {
+    public TableModel(
+            @JsonProperty("id") @Nullable Long id,
+            @JsonProperty("name") @Nullable String name,
+            @JsonProperty("namespaceId") Long namespaceId,
+            @JsonProperty("modifiable") boolean modifiable,
+            @JsonProperty("dataModel") DataModel dataModel,
+            @JsonProperty("entityType") EntityType entityType ) {
         super( id, name, namespaceId, modifiable, dataModel, entityType );
     }
 

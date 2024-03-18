@@ -16,18 +16,29 @@
 
 package org.polypheny.db.webui.models.catalog.schema;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.webui.models.catalog.IdEntity;
 
+@EqualsAndHashCode(callSuper = true)
+@Value
 public class NamespaceModel extends IdEntity {
 
-    public final boolean caseSensitive;
+    @JsonProperty
+    public boolean caseSensitive;
 
-    public final DataModel dataModel;
+    @JsonProperty
+    public DataModel dataModel;
 
 
-    public NamespaceModel( long id, String name, DataModel type, boolean caseSensitive ) {
+    public NamespaceModel(
+            @JsonProperty("id") long id,
+            @JsonProperty("name") String name,
+            @JsonProperty("type") DataModel type,
+            @JsonProperty("caseSensitive") boolean caseSensitive ) {
         super( id, name );
         this.dataModel = type;
         this.caseSensitive = caseSensitive;

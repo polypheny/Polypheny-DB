@@ -316,5 +316,4 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
 
     void deleteKey( long id );
 
-
 }

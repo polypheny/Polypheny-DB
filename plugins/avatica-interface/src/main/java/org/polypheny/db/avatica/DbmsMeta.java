@@ -67,7 +67,6 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.commons.lang3.NotImplementedException;
-import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
@@ -914,7 +913,6 @@ public class DbmsMeta implements ProtobufMeta {
                 }
             }
 
-
             try {
                 if ( values.isEmpty() ) {
                     // Nothing to execute
@@ -967,7 +965,7 @@ public class DbmsMeta implements ProtobufMeta {
      * @return Signature of prepared statement
      */
     @Override
-    public StatementHandle prepare( final @NotNull ConnectionHandle ch, final String sql, final long maxRowCount ) {
+    public StatementHandle prepare( final ConnectionHandle ch, final String sql, final long maxRowCount ) {
         final PolyConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {

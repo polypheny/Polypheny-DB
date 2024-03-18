@@ -16,25 +16,42 @@
 
 package org.polypheny.db.webui.models.catalog.schema;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
+import lombok.experimental.NonFinal;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.webui.models.catalog.IdEntity;
 
+@EqualsAndHashCode(callSuper = true)
+@Value
+@NonFinal
 public class EntityModel extends IdEntity {
 
 
-    public final DataModel dataModel;
+    @JsonProperty
+    public DataModel dataModel;
 
-    public final EntityType entityType;
+    @JsonProperty
+    public EntityType entityType;
 
-    public final Long namespaceId;
+    @JsonProperty
+    public Long namespaceId;
 
-    public final boolean modifiable;
+    @JsonProperty
+    public boolean modifiable;
 
 
-    public EntityModel( @Nullable Long id, @Nullable String name, @Nullable Long namespaceId, boolean modifiable, DataModel dataModel, EntityType entityType ) {
+    public EntityModel(
+            @JsonProperty("id") @Nullable Long id,
+            @JsonProperty("name") @Nullable String name,
+            @JsonProperty("namespaceId") @Nullable Long namespaceId,
+            @JsonProperty("modifiable") boolean modifiable,
+            @JsonProperty("dataModel") DataModel dataModel,
+            @JsonProperty("entityType") EntityType entityType ) {
         super( id, name );
         this.namespaceId = namespaceId;
         this.dataModel = dataModel;

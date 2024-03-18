@@ -47,7 +47,7 @@ public class DmlTest extends MqlTestTemplate {
     @Test
     public void emptyTest() {
         String name = "test";
-        execute( "db.createPhysicalCollection(\"" + name + "\")" );
+        execute( "db.createCollection(\"" + name + "\")" );
 
         DocResult result = find( "{}", "{}" );
 

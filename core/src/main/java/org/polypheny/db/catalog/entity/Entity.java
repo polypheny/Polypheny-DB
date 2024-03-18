@@ -61,6 +61,7 @@ public abstract class Entity implements PolyObject, Wrapper, Serializable, Catal
 
     @Serialize
     public long namespaceId;
+
     @Serialize
     public boolean modifiable;
 

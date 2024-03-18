@@ -91,8 +91,6 @@ public class PolyTime extends PolyTemporal {
     }
 
 
-
-
     public Time asSqlTime() {
         return new Time( ofDay );
     }

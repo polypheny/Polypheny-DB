@@ -46,7 +46,6 @@ include 'plugins:jdbc-adapter-framework'
 include 'plugins:avatica-interface'
 include 'plugins:rest-interface'
 include 'plugins:http-interface'
-include 'plugins:proto-interface'
 
 // adapters plugins
 include 'plugins:hsqldb-adapter'
@@ -65,5 +64,3 @@ include 'plugins:excel-adapter'
 
 // other plugins
 include 'plugins:notebooks'
-
-
