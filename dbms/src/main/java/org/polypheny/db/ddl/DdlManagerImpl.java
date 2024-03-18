@@ -176,6 +176,11 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public long createNamespace( String name, DataModel type, boolean ifNotExists, boolean replace, Statement statement ) {
+        // Check that name is not blocked
+        if ( blockedNamespaceNames.contains( name.toLowerCase() ) ) {
+            throw new GenericRuntimeException( String.format( "Namespace name %s is not allowed.", name ) );
+        }
+
         // Check if there is already a namespace with this name
         Optional<LogicalNamespace> optionalNamespace = catalog.getSnapshot().getNamespace( name );
         if ( optionalNamespace.isPresent() ) {

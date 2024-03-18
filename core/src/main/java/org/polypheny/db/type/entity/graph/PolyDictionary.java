@@ -17,14 +17,20 @@
 package org.polypheny.db.type.entity.graph;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.jsontype.TypeDeserializer;
+import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -45,11 +51,13 @@ import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyDictionary.PolyDictionaryDeserializer;
+import org.polypheny.db.type.entity.graph.PolyDictionary.PolyDictionarySerializer;
 import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.util.BuiltInMethod;
 
 @Slf4j
 @JsonDeserialize(using = PolyDictionaryDeserializer.class)
+@JsonSerialize(using = PolyDictionarySerializer.class)
 public class PolyDictionary extends PolyMap<PolyString, PolyValue> {
 
 
@@ -131,11 +139,43 @@ public class PolyDictionary extends PolyMap<PolyString, PolyValue> {
     }
 
 
-    static class PolyDictionaryDeserializer extends StdDeserializer<PolyDictionary> {
+    static class PolyDictionarySerializer extends JsonSerializer<PolyDictionary> {
+
+
+        @Override
+        public void serializeWithType( PolyDictionary value, JsonGenerator gen, SerializerProvider serializers, TypeSerializer typeSer ) throws IOException {
+            serialize( value, gen, serializers );
+        }
+
+
+        /**
+         * [{_k:{}, _v{}},{_k:{}, _v{}},...]
+         */
+        @Override
+        public void serialize( PolyDictionary value, JsonGenerator gen, SerializerProvider serializers ) throws IOException {
+            gen.writeStartObject();
+            gen.writeFieldName( "@type" );
+            gen.writeString( value.mapType.name() );
+            gen.writeFieldName( "_ps" );
+            gen.writeStartArray();
+            for ( Entry<?, ?> pair : value.entrySet() ) {
+                gen.writeStartArray();
+                gen.writeString( pair.getKey().toString() );
+                serializers.findValueSerializer( pair.getValue().getClass() ).serializeWithType( pair.getValue(), gen, serializers, serializers.findTypeSerializer( JSON_WRAPPER.constructType( pair.getValue().getClass() ) ) );
+                gen.writeEndArray();
+            }
+            gen.writeEndArray();
+            gen.writeEndObject();
+        }
+
+    }
+
+
+    static class PolyDictionaryDeserializer<K extends PolyValue, V extends PolyValue> extends StdDeserializer<PolyDictionary> {
 
 
         protected PolyDictionaryDeserializer() {
-            super( PolyDictionary.class );
+            super( PolyMap.class );
         }
 
 
@@ -148,8 +188,15 @@ public class PolyDictionary extends PolyMap<PolyString, PolyValue> {
         @Override
         public PolyDictionary deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException {
             JsonNode node = p.getCodec().readTree( p );
-            PolyMap<PolyString, PolyValue> value = ctxt.readTreeAsValue( node, PolyMap.class );
-            return new PolyDictionary( value );
+            Map<PolyString, PolyValue> values = new HashMap<>();
+            ArrayNode elements = node.withArray( "_ps" );
+            for ( JsonNode element : elements ) {
+                values.put(
+                        PolyString.of( element.get( 0 ).asText() ),
+                        ctxt.readTreeAsValue( element.get( 1 ), PolyValue.class )
+                );
+            }
+            return PolyDictionary.ofDict( values );
         }
 
 

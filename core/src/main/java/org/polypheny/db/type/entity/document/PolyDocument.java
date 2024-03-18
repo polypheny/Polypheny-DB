@@ -17,7 +17,6 @@
 package org.polypheny.db.type.entity.document;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -31,6 +30,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.jsontype.TypeDeserializer;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -54,15 +54,15 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.document.PolyDocument.PolyDocDeserializer;
-import org.polypheny.db.type.entity.document.PolyDocument.PolyDocSerializer;
+import org.polypheny.db.type.entity.document.PolyDocument.PolyDocumentDeserializer;
+import org.polypheny.db.type.entity.document.PolyDocument.PolyDocumentSerializer;
 import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.util.Pair;
 
 @Slf4j
 @EqualsAndHashCode(callSuper = true)
-@JsonDeserialize(using = PolyDocDeserializer.class)
-@JsonSerialize(using = PolyDocSerializer.class)
+@JsonDeserialize(using = PolyDocumentDeserializer.class)
+@JsonSerialize(using = PolyDocumentSerializer.class)
 public class PolyDocument extends PolyMap<PolyString, PolyValue> {
 
     public static final PolyDocument EMPTY_DOCUMENT = PolyDocument.ofDocument( Map.of() );
@@ -191,7 +191,7 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
     }
 
 
-    static class PolyDocSerializer extends JsonSerializer<PolyDocument> {
+    static class PolyDocumentSerializer extends JsonSerializer<PolyDocument> {
 
 
         @Override
@@ -200,38 +200,55 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
         }
 
 
+        /**
+         * [{_k:{}, _v{}},{_k:{}, _v{}},...]
+         */
         @Override
         public void serialize( PolyDocument value, JsonGenerator gen, SerializerProvider serializers ) throws IOException {
             gen.writeStartObject();
             gen.writeFieldName( "@type" );
-            gen.writeString( MapType.DOCUMENT.name() );
-            gen.writeFieldName( "_v" );
-            gen.writeString( value.toJson() );
+            gen.writeString( value.mapType.name() );
+            gen.writeFieldName( "_ps" );
+            gen.writeStartArray();
+            for ( Entry<PolyString, PolyValue> pair : value.entrySet() ) {
+                gen.writeStartArray();
+                gen.writeString( pair.getKey().value );
+                serializers.findValueSerializer( pair.getValue().getClass() ).serializeWithType( pair.getValue(), gen, serializers, serializers.findTypeSerializer( JSON_WRAPPER.constructType( pair.getValue().getClass() ) ) );
+                gen.writeEndArray();
+            }
+            gen.writeEndArray();
             gen.writeEndObject();
         }
 
     }
 
 
-    static class PolyDocDeserializer extends StdDeserializer<PolyDocument> {
+    static class PolyDocumentDeserializer extends StdDeserializer<PolyDocument> {
 
 
-        protected PolyDocDeserializer() {
+        protected PolyDocumentDeserializer() {
             super( PolyMap.class );
         }
 
 
         @Override
         public Object deserializeWithType( JsonParser p, DeserializationContext ctxt, TypeDeserializer typeDeserializer ) throws IOException {
-            JsonNode node = p.getCodec().readTree( p );
-            return PolyValue.fromJson( node.get( "_v" ).asText() ).asDocument();
+            return deserialize( p, ctxt );
         }
 
 
         @Override
-        public PolyDocument deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException, JacksonException {
+        public PolyDocument deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException {
             JsonNode node = p.getCodec().readTree( p );
-            return PolyValue.fromJson( node.get( "_v" ).asText() ).asDocument();
+            Map<PolyString, PolyValue> values = new HashMap<>();
+            ArrayNode elements = node.withArray( "_ps" );
+            for ( JsonNode element : elements ) {
+                values.put(
+                        PolyString.of( element.get( 0 ).asText() ),
+                        ctxt.readTreeAsValue( element.get( 1 ), PolyValue.class )
+                );
+            }
+            return PolyDocument.ofDocument( values );
         }
 
 

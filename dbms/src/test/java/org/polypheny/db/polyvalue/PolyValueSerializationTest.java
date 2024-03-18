@@ -158,7 +158,9 @@ public class PolyValueSerializationTest {
 
     @Test
     public void simpleMixedMapTest() {
-        PolyMap<PolyValue, PolyValue> d1 = PolyMap.of( Map.of( PolyString.of( "test" ), PolyFloat.of( 3.f ), PolyFloat.of( 4.5f ), PolyDouble.of( 3d ) ) );
+        PolyMap<PolyValue, PolyValue> d1 = PolyMap.of( Map.of(
+                PolyString.of( "test" ), PolyFloat.of( 3.f ),
+                PolyFloat.of( 4.5f ), PolyDouble.of( 3d ) ) );
 
         assertEqualAfterSerialization( d1 );
     }

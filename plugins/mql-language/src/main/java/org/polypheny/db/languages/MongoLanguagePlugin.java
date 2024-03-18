@@ -136,6 +136,11 @@ public class MongoLanguagePlugin extends PolyPlugin {
     }
 
 
+    public String preprocessing( String query, QueryContext context ) {
+        return query;
+    }
+
+
     public static void registerOperators() {
         if ( isInit ) {
             throw new GenericRuntimeException( "Mql operators were already registered." );

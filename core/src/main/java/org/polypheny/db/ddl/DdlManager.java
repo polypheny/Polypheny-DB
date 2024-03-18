@@ -59,6 +59,9 @@ public abstract class DdlManager {
     public static DdlManager INSTANCE = null;
 
 
+    public static final List<String> blockedNamespaceNames = List.of( "namespace", "db", "schema", "graph" );
+
+
     /**
      * Sets a new DdlManager and returns it.
      *
@@ -458,7 +461,6 @@ public abstract class DdlManager {
 
     /**
      * Adds a new constraint to a table
-     *
      */
     public abstract void createConstraint( ConstraintInformation information, long namespaceId, List<Long> columnIds, long tableId );
 

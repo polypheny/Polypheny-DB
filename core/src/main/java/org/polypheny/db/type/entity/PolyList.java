@@ -331,8 +331,8 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
             }
             gen.writeBoolean( false );
 
-            gen.writeFieldName( "@class" );
-            gen.writeString( PolyList.class.getCanonicalName() );
+            gen.writeFieldName( "@type" );
+            gen.writeString( "LIST" );
             gen.writeFieldName( "_es" );
             gen.writeStartArray();
             for ( PolyValue value : values ) {
