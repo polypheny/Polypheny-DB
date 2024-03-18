@@ -20,7 +20,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.document.DocumentFilter;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
@@ -36,7 +36,7 @@ public class EnumerableDocumentFilter extends DocumentFilter implements Enumerab
      * @param input
      * @param condition
      */
-    protected EnumerableDocumentFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
+    protected EnumerableDocumentFilter( AlgCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
         super( cluster, traits, input, condition );
     }
 
