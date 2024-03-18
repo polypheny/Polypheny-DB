@@ -50,7 +50,7 @@ public class PIServer {
     }
 
 
-    void startServer( ServerSocketChannel server, ClientManager clientManager, String name, Function<SocketChannel, Transport> createTransport ) throws IOException {
+    private void startServer( ServerSocketChannel server, ClientManager clientManager, String name, Function<SocketChannel, Transport> createTransport ) throws IOException {
         log.info( "Proto Interface started and is listening for {} connections on {}", name.toLowerCase(), server.getLocalAddress() );
         Thread acceptor = new Thread( () -> acceptLoop( server, clientManager, name, createTransport ), "ProtoInterface" + name + "Server" );
         acceptor.start();
@@ -58,13 +58,13 @@ public class PIServer {
     }
 
 
-    ServerSocketChannel createInetServer( int port ) throws IOException {
+    private ServerSocketChannel createInetServer( int port ) throws IOException {
         return ServerSocketChannel.open( StandardProtocolFamily.INET )
                 .bind( new InetSocketAddress( Inet4Address.getLoopbackAddress(), port ) );
     }
 
 
-    ServerSocketChannel createUnixServer( String path ) throws IOException {
+    private ServerSocketChannel createUnixServer( String path ) throws IOException {
         PolyphenyHomeDirManager phm = PolyphenyHomeDirManager.getInstance();
         File f = phm.registerNewFile( path );
         f.delete();
