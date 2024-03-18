@@ -31,8 +31,8 @@ import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
+import org.polypheny.db.protointerface.PIPlugin.ProtoInterface.Transport;
 import org.polypheny.db.transaction.TransactionManager;
-import org.polypheny.db.util.Util;
 
 public class PIPlugin extends PolyPlugin {
 
@@ -43,7 +43,10 @@ public class PIPlugin extends PolyPlugin {
 
     @Override
     public void afterCatalogInit() {
-        QueryInterfaceManager.addInterfaceTemplate( ProtoInterface.INTERFACE_NAME, ProtoInterface.INTERFACE_DESCRIPTION, ProtoInterface.AVAILABLE_SETTINGS, ProtoInterface::new );
+        QueryInterfaceManager.addInterfaceTemplate( ProtoInterface.INTERFACE_NAME + " (Plain transport)",
+                ProtoInterface.INTERFACE_DESCRIPTION, ProtoInterface.AVAILABLE_PLAIN_SETTINGS, ( a, b, c, d ) -> new ProtoInterface( a, b, c, Transport.PLAIN, d ) );
+        QueryInterfaceManager.addInterfaceTemplate( ProtoInterface.INTERFACE_NAME + " (Unix transport)",
+                ProtoInterface.INTERFACE_DESCRIPTION, ProtoInterface.AVAILABLE_UNIX_SETTINGS, ( a, b, c, d ) -> new ProtoInterface( a, b, c, Transport.UNIX, d ) );
     }
 
 
@@ -58,13 +61,15 @@ public class PIPlugin extends PolyPlugin {
 
         public static final String INTERFACE_NAME = "Proto Interface";
         public static final String INTERFACE_DESCRIPTION = "proto-interface query interface supporting the PolySQL dialect.";
-        public static final List<QueryInterfaceSetting> AVAILABLE_SETTINGS = ImmutableList.of(
+        public static final List<QueryInterfaceSetting> AVAILABLE_PLAIN_SETTINGS = ImmutableList.of(
                 new QueryInterfaceSettingInteger( "port", false, true, false, 20590 ),
                 new QueryInterfaceSettingBoolean( "requires heartbeat", false, true, false, false ),
                 new QueryInterfaceSettingLong( "heartbeat interval", false, true, false, 300000L )
         );
-        @Getter
-        private final int port;
+        public static final List<QueryInterfaceSetting> AVAILABLE_UNIX_SETTINGS = ImmutableList.of(
+                new QueryInterfaceSettingString( "path", false, true, false, "polypheny-proto.sock" )
+        );
+
         @Getter
         private final boolean requiresHeartbeat;
         @Getter
@@ -78,23 +83,36 @@ public class PIPlugin extends PolyPlugin {
         private PIServer protoInterfaceServer;
 
 
-        public ProtoInterface( TransactionManager transactionManager, Authenticator authenticator, String uniqueName, Map<String, String> settings ) {
+        enum Transport {
+            PLAIN,
+            UNIX,
+        }
+
+
+        private Transport transport;
+
+
+        private ProtoInterface( TransactionManager transactionManager, Authenticator authenticator, String uniqueName, Transport transport, Map<String, String> settings ) {
             super( transactionManager, authenticator, uniqueName, settings, true, true );
             this.authenticator = authenticator;
             this.transactionManager = transactionManager;
-            this.port = Integer.parseInt( settings.get( "port" ) );
-            if ( !Util.checkIfPortIsAvailable( port ) ) {
-                // Port is already in use
-                throw new GenericRuntimeException( "Unable to start " + INTERFACE_NAME + " on port " + port + "! The port is already in use." );
+            this.transport = transport;
+            if ( getAvailableSettings().stream().anyMatch( s -> s.name.equals( "requires heartbeat" ) ) ) {
+                this.requiresHeartbeat = Boolean.getBoolean( settings.get( "requires heartbeat" ) );
+                this.heartbeatInterval = Long.parseLong( settings.get( "heartbeat interval" ) );
+            } else {
+                this.requiresHeartbeat = false;
+                this.heartbeatInterval = 0;
             }
-            this.requiresHeartbeat = Boolean.getBoolean( settings.get( "requires heartbeat" ) );
-            this.heartbeatInterval = Long.parseLong( settings.get( "heartbeat interval" ) );
         }
 
 
         @Override
         public List<QueryInterfaceSetting> getAvailableSettings() {
-            return AVAILABLE_SETTINGS;
+            return switch ( transport ) {
+                case PLAIN -> AVAILABLE_PLAIN_SETTINGS;
+                case UNIX -> AVAILABLE_UNIX_SETTINGS;
+            };
         }
 
 
@@ -134,9 +152,8 @@ public class PIPlugin extends PolyPlugin {
         @Override
         public void run() {
             clientManager = new ClientManager( this );
-            // protoInterfaceServer = new PIServer( port, protoInterfaceService, clientManager );
             try {
-                protoInterfaceServer = new PIServer( clientManager, port );
+                protoInterfaceServer = PIServer.startServer( clientManager, transport, settings );
             } catch ( IOException e ) {
                 log.error( "Proto interface server could not be started: {}", e.getMessage() );
                 throw new GenericRuntimeException( e );

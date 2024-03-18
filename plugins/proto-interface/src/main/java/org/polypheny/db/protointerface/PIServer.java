@@ -25,12 +25,14 @@ import java.net.StandardProtocolFamily;
 import java.net.UnixDomainSocketAddress;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
-import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.protointerface.PIPlugin.ProtoInterface;
 import org.polypheny.db.protointerface.transport.PlainTransport;
 import org.polypheny.db.protointerface.transport.Transport;
 import org.polypheny.db.protointerface.transport.UnixTransport;
@@ -40,37 +42,52 @@ import org.polypheny.db.util.Util;
 @Slf4j
 public class PIServer {
 
-    private final List<ServerSocketChannel> servers = new ArrayList<>();
+    private final ServerSocketChannel server;
     private final static AtomicLong ID_COUNTER = new AtomicLong();
 
 
-    public PIServer( ClientManager clientManager,  int port ) throws IOException {
-        startServer( createInetServer( port ), clientManager, "Plain", PlainTransport::accept );
-        startServer( createUnixServer( "polypheny-proto.sock" ), clientManager, "Unix", UnixTransport::accept );
-    }
-
-
-    private void startServer( ServerSocketChannel server, ClientManager clientManager, String name, Function<SocketChannel, Transport> createTransport ) throws IOException {
+    private PIServer( ServerSocketChannel server, ClientManager clientManager, String name, Function<SocketChannel, Transport> createTransport ) throws IOException {
+        this.server = server;
         log.info( "Proto Interface started and is listening for {} connections on {}", name.toLowerCase(), server.getLocalAddress() );
         Thread acceptor = new Thread( () -> acceptLoop( server, clientManager, name, createTransport ), "ProtoInterface" + name + "Server" );
         acceptor.start();
-        servers.add( server );
+
     }
 
 
-    private ServerSocketChannel createInetServer( int port ) throws IOException {
+    static PIServer startServer( ClientManager clientManager, ProtoInterface.Transport transport, Map<String, String> settings ) throws IOException {
+        return switch ( transport ) {
+            case PLAIN -> new PIServer( createInetServer( Integer.parseInt( settings.get( "port" ) ) ), clientManager, "Plain", PlainTransport::accept );
+            case UNIX -> new PIServer( createUnixServer( settings.get( "path" ) ), clientManager, "Unix", UnixTransport::accept );
+        };
+    }
+
+
+    private static ServerSocketChannel createInetServer( int port ) throws IOException {
         return ServerSocketChannel.open( StandardProtocolFamily.INET )
                 .bind( new InetSocketAddress( Inet4Address.getLoopbackAddress(), port ) );
     }
 
 
-    private ServerSocketChannel createUnixServer( String path ) throws IOException {
-        PolyphenyHomeDirManager phm = PolyphenyHomeDirManager.getInstance();
-        File f = phm.registerNewFile( path );
-        f.delete();
+    private static ServerSocketChannel createUnixServer( String path ) throws IOException {
+        File socket;
+        if ( !path.endsWith( ".sock" ) ) {
+            throw new IOException( "Socket paths must end with .sock" );
+        }
+        Path p = Paths.get( path );
+        if ( p.isAbsolute() ) {
+            socket = p.toFile();
+        } else {
+            if ( p.getNameCount() != 1 ) {
+                throw new IOException( "Relative socket paths may not contain directory separators" );
+            }
+            PolyphenyHomeDirManager phm = PolyphenyHomeDirManager.getInstance();
+            socket = phm.registerNewFile( path );
+        }
+        socket.delete();
         ServerSocketChannel s = ServerSocketChannel.open( StandardProtocolFamily.UNIX )
-                .bind( UnixDomainSocketAddress.of( f.getAbsolutePath() ) );
-        f.setWritable( true, false );
+                .bind( UnixDomainSocketAddress.of( socket.getAbsolutePath() ) );
+        socket.setWritable( true, false );
         return s;
     }
 
@@ -124,7 +141,7 @@ public class PIServer {
         if ( log.isTraceEnabled() ) {
             log.trace( "proto-interface server shutdown requested" );
         }
-        servers.forEach( Util::closeNoThrow );
+        Util.closeNoThrow( server );
     }
 
 }
