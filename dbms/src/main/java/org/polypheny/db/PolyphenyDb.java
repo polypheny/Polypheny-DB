@@ -377,6 +377,7 @@ public class PolyphenyDb {
         StatusService.initialize( transactionManager, server.getServer() );
 
         log.debug( "Setting Docker Timeouts" );
+        Catalog.resetDocker = resetDocker;
         RuntimeConfig.DOCKER_TIMEOUT.setInteger( mode == RunMode.DEVELOPMENT || mode == RunMode.TEST ? 5 : RuntimeConfig.DOCKER_TIMEOUT.getInteger() );
         if ( initializeDockerManager() ) {
             return;
