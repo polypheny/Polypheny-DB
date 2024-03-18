@@ -33,7 +33,9 @@
 
 package org.polypheny.db.algebra.logical.relational;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
@@ -43,6 +45,10 @@ import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.Parameter;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
+import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -122,6 +128,16 @@ public final class LogicalRelProject extends Project implements RelAlg {
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {
         return shuttle.visit( this );
+    }
+
+
+    @Override
+    public Map<Parameter, PolyAlgArg> prepareAttributes() {
+        PolyAlgArg projectsArg = new ListArg<>( exps.stream().map( RexArg::new ).toList(), rowType.getFieldNames(), this );
+
+        Map<Parameter, PolyAlgArg> attributes = new HashMap<>();
+        attributes.put( getPolyAlgDeclaration().getPos( 0 ), projectsArg );
+        return attributes;
     }
 
 }

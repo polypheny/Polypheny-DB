@@ -34,7 +34,9 @@
 package org.polypheny.db.algebra.logical.relational;
 
 import com.google.common.collect.ImmutableList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
@@ -42,6 +44,11 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.relational.RelAlg;
+import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration;
+import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.Parameter;
+import org.polypheny.db.algebra.polyalg.arguments.CollationArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
+import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -91,6 +98,18 @@ public final class LogicalRelSort extends Sort implements RelAlg {
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {
         return shuttle.visit( this );
+    }
+
+
+    @Override
+    public Map<Parameter, PolyAlgArg> prepareAttributes() {
+        PolyAlgDeclaration decl = getPolyAlgDeclaration();
+        Map<Parameter, PolyAlgArg> attributes = new HashMap<>();
+
+        attributes.put( decl.getPos( 0 ), new CollationArg( collation, this ) );
+        attributes.put( decl.getParam( "fetch" ), new RexArg( fetch ) );
+        attributes.put( decl.getParam( "offset" ), new RexArg( offset ) );
+        return attributes;
     }
 
 }

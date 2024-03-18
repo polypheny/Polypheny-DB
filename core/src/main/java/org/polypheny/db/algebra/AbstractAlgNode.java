@@ -41,6 +41,7 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Getter;
@@ -52,6 +53,10 @@ import org.polypheny.db.algebra.externalize.AlgWriterImpl;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.metadata.Metadata;
 import org.polypheny.db.algebra.metadata.MetadataFactory;
+import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration;
+import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.Parameter;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgRegistry;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.plan.AlgCluster;
@@ -343,6 +348,50 @@ public abstract class AbstractAlgNode implements AlgNode {
             return pw.item( "model", trait.dataModel().name() );
         }
         return pw;
+    }
+
+
+    @Override
+    public void buildPolyAlgebra( StringBuilder sb ) {
+        PolyAlgDeclaration decl = getPolyAlgDeclaration();
+        sb.append( decl.opName );
+        sb.append( decl.serializeArguments( prepareAttributes() ) );
+
+        int size = getInputs().size();
+        if ( size == 0 ) {
+            return;  // skip parentheses for leaves
+        }
+
+        sb.append( "(\n" );
+        for ( AlgNode child : getInputs() ) {
+            child.buildPolyAlgebra( sb );
+
+            size--;
+            if ( size > 0 ) {
+                sb.append( ", " );
+            }
+        }
+        sb.append( "\n)" );
+    }
+
+
+    /**
+     * If a declaration should be shared by multiple implementations,
+     * this method must be redefined.
+     * Otherwise, this implementation should cover most cases.
+     *
+     * @return The declaration associated with the runtime class of the instance.
+     */
+    @Override
+    public PolyAlgDeclaration getPolyAlgDeclaration() {
+        return PolyAlgRegistry.getDeclaration( getClass(), getInputs().size() );
+    }
+
+
+    @Override
+    public Map<Parameter, PolyAlgArg> prepareAttributes() {
+        // TODO: Move implementation from abstract class into child classes
+        return Collections.emptyMap();
     }
 
 

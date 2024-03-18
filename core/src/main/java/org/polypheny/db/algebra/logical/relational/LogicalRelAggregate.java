@@ -34,12 +34,20 @@
 package org.polypheny.db.algebra.logical.relational;
 
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.relational.RelAlg;
+import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration;
+import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.Parameter;
+import org.polypheny.db.algebra.polyalg.arguments.AggArg;
+import org.polypheny.db.algebra.polyalg.arguments.FieldArg;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
 import org.polypheny.db.algebra.rules.AggregateProjectPullUpConstantsRule;
 import org.polypheny.db.algebra.rules.AggregateReduceFunctionsRule;
 import org.polypheny.db.plan.AlgCluster;
@@ -110,6 +118,27 @@ public final class LogicalRelAggregate extends Aggregate implements RelAlg {
         return shuttle.visit( this );
     }
 
+
+    @Override
+    public Map<Parameter, PolyAlgArg> prepareAttributes() {
+        PolyAlgDeclaration decl = getPolyAlgDeclaration();
+        Map<Parameter, PolyAlgArg> attributes = new HashMap<>();
+
+        PolyAlgArg groupArg = new ListArg<>( groupSet.asList().stream().map( FieldArg::new ).toList() );
+        PolyAlgArg aggsArg = new ListArg<>( aggCalls.stream().map( AggArg::new ).toList(), this );
+
+        attributes.put( decl.getPos( 0 ), groupArg );
+        attributes.put( decl.getPos( 1 ), aggsArg );
+        if ( getGroupType() != Group.SIMPLE ) {
+            PolyAlgArg groupSetArg = new ListArg<>( groupSets.stream().map( set ->
+                    new ListArg<>( set.asList().stream().map( FieldArg::new ).toList() )
+            ).toList() );
+
+            attributes.put( decl.getParam( "groups" ), groupSetArg );
+        }
+
+        return attributes;
+    }
 
 }
 
