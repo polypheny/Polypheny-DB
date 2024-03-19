@@ -4,7 +4,7 @@ Messages related to relational frames as used to represent the results form the 
 
 syntax = "proto3";
 
-import "value.proto";
+import "polyprism/value.proto";
 
 option java_multiple_files = true;
 option java_package = "org.polypheny.db.protointerface.proto";

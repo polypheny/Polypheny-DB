@@ -4,7 +4,7 @@ Messages related to statements in a query language and their results.
 
 syntax = "proto3";
 
-import "value.proto";
+import "polyprism/value.proto";
 
 option java_multiple_files = true;
 option java_package = "org.polypheny.db.protointerface.proto";
