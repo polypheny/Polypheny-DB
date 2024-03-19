@@ -45,8 +45,8 @@ public class MqlUpdate extends MqlCollectionStatement implements MqlQueryStateme
     private final boolean onlyOne;
 
 
-    public MqlUpdate( ParserPos pos, String collection, BsonDocument query, BsonValue updateOrPipeline, BsonDocument options, boolean onlyOne ) {
-        super( collection, pos );
+    public MqlUpdate( ParserPos pos, String collection, String namespace, BsonDocument query, BsonValue updateOrPipeline, BsonDocument options, boolean onlyOne ) {
+        super( collection, namespace, pos );
         this.query = query;
         if ( updateOrPipeline.isArray() ) {
             this.pipeline = updateOrPipeline.asArray();

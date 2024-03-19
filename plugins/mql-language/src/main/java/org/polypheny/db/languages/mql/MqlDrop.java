@@ -33,8 +33,8 @@ import org.polypheny.db.transaction.Statement;
 
 public class MqlDrop extends MqlCollectionStatement implements ExecutableStatement {
 
-    public MqlDrop( ParserPos pos, String collection ) {
-        super( collection, pos );
+    public MqlDrop( ParserPos pos, String collection, String namespace ) {
+        super( collection, namespace, pos );
     }
 
 
@@ -51,12 +51,12 @@ public class MqlDrop extends MqlCollectionStatement implements ExecutableStateme
 
         Optional<LogicalNamespace> optionalNamespace = context.getSnapshot().getNamespace( namespaceId );
         if ( optionalNamespace.isEmpty() ) {
-            // dropping a document database( Polyschema ), which does not exist, which is a no-op
+            // dropping a document database( namespace ), which does not exist, which is a no-op
             return;
         }
 
         LogicalNamespace namespace = optionalNamespace.get();
-        List<LogicalCollection> collections = context.getSnapshot().doc().getCollections( namespace.id, new Pattern( getCollection() ) );
+        List<LogicalCollection> collections = context.getSnapshot().doc().getCollections( namespace.id, new Pattern( collection ) );
         if ( collections.size() != 1 ) {
             // dropping a collection, which does not exist, which is a no-op
             return;

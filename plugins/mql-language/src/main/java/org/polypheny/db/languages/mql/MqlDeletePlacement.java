@@ -34,8 +34,8 @@ import org.polypheny.db.transaction.Statement;
 
 public class MqlDeletePlacement extends MqlCollectionStatement implements ExecutableStatement {
 
-    public MqlDeletePlacement( ParserPos pos, String collection, List<String> stores ) {
-        super( collection, pos );
+    public MqlDeletePlacement( ParserPos pos, String collection, String namespace, List<String> stores ) {
+        super( collection, namespace, pos );
         this.stores = stores;
     }
 

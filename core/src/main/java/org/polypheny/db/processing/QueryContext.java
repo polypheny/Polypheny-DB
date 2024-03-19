@@ -86,6 +86,12 @@ public class QueryContext {
 
 
         public static ParsedQueryContext fromQuery( String query, Node queryNode, QueryContext context ) {
+            long namespaceId = context.namespaceId;
+
+            if ( queryNode.getNamespaceName() != null ) {
+                namespaceId = Catalog.snapshot().getNamespace( queryNode.getNamespaceName() ).map( n -> n.id ).orElse( queryNode.getNamespaceId() );
+            }
+
             return ParsedQueryContext.builder()
                     .query( query )
                     .queryNode( queryNode )
@@ -95,7 +101,7 @@ public class QueryContext {
                     .userId( context.userId )
                     .origin( context.getOrigin() )
                     .batch( context.batch )
-                    .namespaceId( context.namespaceId )
+                    .namespaceId( namespaceId )
                     .transactions( context.transactions )
                     .transactionManager( context.transactionManager )
                     .informationTarget( context.informationTarget ).build();

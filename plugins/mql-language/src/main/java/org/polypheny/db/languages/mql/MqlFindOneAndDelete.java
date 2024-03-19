@@ -22,16 +22,15 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.mql.Mql.Type;
 
 
+@Getter
 public class MqlFindOneAndDelete extends MqlDelete implements MqlQueryStatement {
 
-    @Getter
     private final BsonDocument sort;
-    @Getter
     private final BsonDocument collation;
 
 
-    public MqlFindOneAndDelete( ParserPos pos, String collection, BsonDocument query, BsonDocument options ) {
-        super( pos, collection, query, options, true );
+    public MqlFindOneAndDelete( ParserPos pos, String collection, String namespace, BsonDocument query, BsonDocument options ) {
+        super( pos, collection, namespace, query, options, true );
         this.sort = getDocumentOrNull( options, "sort" );
         this.collation = getDocumentOrNull( options, "collation" );
     }
