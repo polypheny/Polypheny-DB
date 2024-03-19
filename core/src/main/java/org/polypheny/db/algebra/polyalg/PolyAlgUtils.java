@@ -24,6 +24,14 @@ import org.polypheny.db.rex.RexNode;
 
 public class PolyAlgUtils {
 
+    /**
+     * Replaces all occurrences of '$' followed by some number corresponding to a field in the inputs of alg
+     * with the name of that field.
+     *
+     * @param alg the AlgNode whose inputs contain the field names
+     * @param str String whose occurrences of '$' + field number should be replaced
+     * @return str with field numbers replaced with their names.
+     */
     public static String replaceWithFieldNames( AlgNode alg, String str ) {
         if ( str.contains( "$" ) ) {
             int offset = 0;
@@ -41,10 +49,11 @@ public class PolyAlgUtils {
         return str;
     }
 
-    public static String getFieldNameFromIndex(AlgNode alg, int idx) {
+
+    public static String getFieldNameFromIndex( AlgNode alg, int idx ) {
         for ( AlgNode input : alg.getInputs() ) {
             List<AlgDataTypeField> fields = input.getTupleType().getFields();
-            if (idx < fields.size()) {
+            if ( idx < fields.size() ) {
                 return fields.get( idx ).getName();
             }
             idx += fields.size();
@@ -59,7 +68,8 @@ public class PolyAlgUtils {
                 .toList();
     }
 
-    public static String appendAlias(String exp, String alias) {
+
+    public static String appendAlias( String exp, String alias ) {
         if ( !alias.equals( exp ) ) {
             exp += " AS " + alias;
         }
@@ -80,7 +90,7 @@ public class PolyAlgUtils {
         assert exps.size() == aliases.size();
         List<String> list = new ArrayList<>();
         for ( int i = 0; i < exps.size(); i++ ) {
-            list.add( appendAlias(exps.get( i ), aliases.get( i )) );
+            list.add( appendAlias( exps.get( i ), aliases.get( i ) ) );
         }
         return list;
     }

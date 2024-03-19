@@ -16,10 +16,6 @@
 
 package org.polypheny.db.algebra.polyalg.arguments;
 
-import java.util.Iterator;
-import java.util.List;
-import java.util.StringJoiner;
-import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
@@ -27,11 +23,11 @@ import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
 
 public class CollationArg implements PolyAlgArg {
 
-    private final AlgCollation arg;
+    private final AlgFieldCollation arg;
     private final AlgNode algNode;
 
 
-    public CollationArg( AlgCollation arg, AlgNode fieldNameProvider ) {
+    public CollationArg( AlgFieldCollation arg, AlgNode fieldNameProvider ) {
         this.arg = arg;
         this.algNode = fieldNameProvider;
     }
@@ -45,27 +41,11 @@ public class CollationArg implements PolyAlgArg {
 
     @Override
     public String toPolyAlg() {
-        List<AlgFieldCollation> colls = arg.getFieldCollations();
-        if ( colls.isEmpty() ) {
-            return "";
+        String str = PolyAlgUtils.getFieldNameFromIndex( algNode, arg.getFieldIndex() );
+        if ( arg.direction != AlgFieldCollation.Direction.ASCENDING || arg.nullDirection != arg.direction.defaultNullDirection() ) {
+            str += " " + arg.shortString();
         }
-
-        StringJoiner joiner;
-        if ( colls.size() == 1 ) {
-            joiner = new StringJoiner( "" );
-        } else {
-            joiner = new StringJoiner( ", ", "[", "]" );
-        }
-
-        for ( AlgFieldCollation coll : colls ) {
-            String str = PolyAlgUtils.getFieldNameFromIndex( algNode, coll.getFieldIndex() );
-            if ( coll.direction != AlgFieldCollation.Direction.ASCENDING || coll.nullDirection != coll.direction.defaultNullDirection() ) {
-                str += " " + coll.shortString();
-            }
-            joiner.add( str );
-        }
-
-        return joiner.toString();
+        return str;
     }
 
 }

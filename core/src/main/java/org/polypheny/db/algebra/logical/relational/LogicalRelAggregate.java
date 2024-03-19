@@ -124,15 +124,13 @@ public final class LogicalRelAggregate extends Aggregate implements RelAlg {
         PolyAlgDeclaration decl = getPolyAlgDeclaration();
         Map<Parameter, PolyAlgArg> attributes = new HashMap<>();
 
-        PolyAlgArg groupArg = new ListArg<>( groupSet.asList().stream().map( FieldArg::new ).toList() );
-        PolyAlgArg aggsArg = new ListArg<>( aggCalls.stream().map( AggArg::new ).toList(), this );
+        PolyAlgArg groupArg = new ListArg<>( groupSet.asList(), FieldArg::new );
+        PolyAlgArg aggsArg = new ListArg<>( aggCalls, a -> new AggArg( a, this ) );
 
         attributes.put( decl.getPos( 0 ), groupArg );
         attributes.put( decl.getPos( 1 ), aggsArg );
         if ( getGroupType() != Group.SIMPLE ) {
-            PolyAlgArg groupSetArg = new ListArg<>( groupSets.stream().map( set ->
-                    new ListArg<>( set.asList().stream().map( FieldArg::new ).toList() )
-            ).toList() );
+            PolyAlgArg groupSetArg = new ListArg<>( groupSets, set -> new ListArg<>( set.asList(), FieldArg::new ) );
 
             attributes.put( decl.getParam( "groups" ), groupSetArg );
         }

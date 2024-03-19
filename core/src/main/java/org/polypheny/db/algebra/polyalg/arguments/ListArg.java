@@ -17,6 +17,7 @@
 package org.polypheny.db.algebra.polyalg.arguments;
 
 import java.util.List;
+import java.util.function.Function;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
@@ -28,22 +29,30 @@ public class ListArg<E extends PolyAlgArg> implements PolyAlgArg {
     private final AlgNode algNode;
 
 
-    public ListArg( List<E> args ) {
-        this( args, null, null );
-    }
-
-    public ListArg( List<E> args, List<String> aliases ) {
-        this(args, aliases, null);
-    }
-
-    public ListArg( List<E> args, AlgNode fieldNameProvider ) {
-        this(args, null, fieldNameProvider);
-    }
-
     public ListArg( List<E> args, List<String> aliases, AlgNode fieldNameProvider ) {
         this.args = args;
         this.aliases = aliases;
         this.algNode = fieldNameProvider;
+    }
+
+
+    public <T> ListArg( List<T> rawArgs, Function<T, E> converter ) {
+        this( rawArgs, converter, null, null );
+    }
+
+
+    public <T> ListArg( List<T> rawArgs, Function<T, E> converter, AlgNode fieldNameProvider ) {
+        this( rawArgs, converter, null, fieldNameProvider );
+    }
+
+
+    public <T> ListArg( List<T> rawArgs, Function<T, E> converter, List<String> aliases ) {
+        this( rawArgs, converter, aliases, null );
+    }
+
+
+    public <T> ListArg( List<T> rawArgs, Function<T, E> converter, List<String> aliases, AlgNode fieldNameProvider ) {
+        this( rawArgs.stream().map( converter ).toList(), aliases, fieldNameProvider );
     }
 
 
@@ -59,7 +68,7 @@ public class ListArg<E extends PolyAlgArg> implements PolyAlgArg {
     @Override
     public String toPolyAlg() {
         List<String> strArgs = args.stream().map( PolyAlgArg::toPolyAlg ).toList();
-        if (algNode != null) {
+        if ( algNode != null ) {
             strArgs = PolyAlgUtils.replaceWithFieldNames( algNode, strArgs );
         }
         if ( aliases != null ) {

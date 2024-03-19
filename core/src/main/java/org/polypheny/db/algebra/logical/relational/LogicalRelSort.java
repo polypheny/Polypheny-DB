@@ -47,6 +47,7 @@ import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.Parameter;
 import org.polypheny.db.algebra.polyalg.arguments.CollationArg;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
 import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.plan.AlgCluster;
@@ -106,7 +107,9 @@ public final class LogicalRelSort extends Sort implements RelAlg {
         PolyAlgDeclaration decl = getPolyAlgDeclaration();
         Map<Parameter, PolyAlgArg> attributes = new HashMap<>();
 
-        attributes.put( decl.getPos( 0 ), new CollationArg( collation, this ) );
+        PolyAlgArg collArg = new ListArg<>( collation.getFieldCollations(), c -> new CollationArg( c, this ) );
+
+        attributes.put( decl.getPos( 0 ), collArg );
         attributes.put( decl.getParam( "fetch" ), new RexArg( fetch ) );
         attributes.put( decl.getParam( "offset" ), new RexArg( offset ) );
         return attributes;

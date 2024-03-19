@@ -133,7 +133,7 @@ public final class LogicalRelFilter extends Filter implements RelAlg {
     public Map<Parameter, PolyAlgArg> prepareAttributes() {
         PolyAlgDeclaration decl = getPolyAlgDeclaration();
         Map<Parameter, PolyAlgArg> attributes = new HashMap<>();
-        PolyAlgArg varArg = new ListArg<>( variablesSet.stream().map( AnyArg::new ).toList() );
+        PolyAlgArg varArg = new ListArg<>( variablesSet.asList(), AnyArg::new );
 
         attributes.put( decl.getPos( 0 ), new RexArg( condition, this ) );
         attributes.put( decl.getParam( "variables" ), varArg );

@@ -46,11 +46,11 @@ public class AggArg implements PolyAlgArg {
 
     @Override
     public String toPolyAlg() {
-        String str = PolyAlgUtils.appendAlias( agg.toString(), agg.getName() );
-        if ( algNode == null ) {
-            return str;
+        String str = agg.toString();
+        if ( algNode != null ) {
+            str = PolyAlgUtils.replaceWithFieldNames( algNode, str );
         }
-        return PolyAlgUtils.replaceWithFieldNames( algNode, str );
+        return PolyAlgUtils.appendAlias( str, agg.getName() );
     }
 
 }
