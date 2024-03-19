@@ -254,7 +254,23 @@ Represents an interval value using a BigDecimal.
 message ProtoInterval {
   // The BigDecimal value of the interval.
   ProtoBigDecimal value = 1;
-  
+  enum IntervalQualifier {
+    UNSPECIFIED = 0;
+    SECOND = 1;
+    MINUTE_SECOND = 2;
+    MINUTE = 3;
+    HOUR_SECOND = 4;
+    HOUR_MINUTE = 5;
+    HOUR = 6;
+    DAY_SECOND = 7;
+    DAY_MINUTE = 8;
+    DAY_HOUR = 9;
+    DAY = 10;
+    MONTH = 11;
+    YEAR_MONTH = 12;
+    YEAR = 13;
+  }
+  IntervalQualifier qualifier = 2;
 }
 
 /*
