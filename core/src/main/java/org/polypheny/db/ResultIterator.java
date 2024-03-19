@@ -139,7 +139,7 @@ public class ResultIterator implements AutoCloseable {
 
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         try {
             if ( iterator instanceof AutoCloseable ) {
                 ((AutoCloseable) iterator).close();
