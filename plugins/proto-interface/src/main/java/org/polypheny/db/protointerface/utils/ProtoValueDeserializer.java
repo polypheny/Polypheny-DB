@@ -128,7 +128,7 @@ public class ProtoValueDeserializer {
 
 
     private static PolyDate deserializeToPolyDate( ProtoValue protoValue ) {
-        return new PolyDate( protoValue.getDate().getDate() );
+        return PolyDate.ofDays( (int) protoValue.getDate().getDate() );
     }
 
 

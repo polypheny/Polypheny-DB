@@ -458,7 +458,7 @@ public class PolyValueSerializer {
 
     public static ProtoValue serializeAsProtoDate( PolyDate polyDate ) {
         ProtoDate protoDate = ProtoDate.newBuilder()
-                .setDate( polyDate.getMillisSinceEpoch() )
+                .setDate( polyDate.getDaysSinceEpoch() )
                 .build();
         return ProtoValue.newBuilder()
                 .setDate( protoDate )
