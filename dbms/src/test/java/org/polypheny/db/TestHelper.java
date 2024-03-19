@@ -715,31 +715,51 @@ public class TestHelper {
         private final static String dbHost = "localhost";
         private final static int port = 20591;
 
-        private final Connection connection;
+        private final Connection conn;
+
+
+        public JdbcConnection( boolean autoCommit, boolean strictMode ) throws SQLException {
+            try {
+                Class.forName( "org.polypheny.jdbc.PolyphenyDriver" );
+            } catch ( ClassNotFoundException e ) {
+                log.error( "Polypheny JDBC Driver not found", e );
+            }
+            final String url = "jdbc:polypheny://" + dbHost + ":" + port + "/?strict=" + strictMode;
+            log.debug( "Connecting to database @ {}", url );
+
+            conn = DriverManager.getConnection( url, "pa", "" );
+            conn.setAutoCommit( autoCommit );
+        }
 
 
         public JdbcConnection( boolean autoCommit ) throws SQLException {
             try {
-                Class.forName( "org.polypheny.jdbc.Driver" );
+                Class.forName( "org.polypheny.jdbc.PolyphenyDriver" );
             } catch ( ClassNotFoundException e ) {
                 log.error( "Polypheny JDBC Driver not found", e );
             }
-            final String url = "jdbc:polypheny:http://" + dbHost + ":" + port;
+            final String url = "jdbc:polypheny://" + dbHost + ":" + port + "/?strict=false";
             log.debug( "Connecting to database @ {}", url );
 
-            Properties props = new Properties();
-            props.setProperty( "user", "pa" );
-            props.setProperty( "serialization", "PROTOBUF" );
+            conn = DriverManager.getConnection( url, "pa", "" );
+            conn.setAutoCommit( autoCommit );
+        }
 
-            connection = DriverManager.getConnection( url, props );
-            connection.setAutoCommit( autoCommit );
+
+        public Connection getConnection() {
+            return conn;
         }
 
 
         @Override
         public void close() throws SQLException {
-            connection.commit();
-            connection.close();
+            if ( conn.isClosed() ) {
+                return;
+            }
+            if ( !conn.getAutoCommit() ) {
+                conn.commit();
+            }
+            conn.close();
         }
 
     }
