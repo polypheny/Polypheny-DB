@@ -278,7 +278,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     public String toTypedJson() {
         try {
             return JSON_WRAPPER.writeValueAsString( this );
-        } catch ( Exception e ) {
+        } catch ( JsonProcessingException e ) {
             log.warn( "Error on serializing typed JSON." );
             return PolyNull.NULL.toTypedJson();
         }

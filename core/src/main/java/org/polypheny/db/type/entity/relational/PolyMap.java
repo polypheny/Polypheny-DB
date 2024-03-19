@@ -24,15 +24,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.jsontype.TypeDeserializer;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -56,6 +55,7 @@ import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
@@ -202,7 +202,7 @@ public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue
             } ).writeValueAsString( this );
         } catch ( JsonProcessingException e ) {
             log.warn( "Error on serializing typed JSON." );
-            return null;
+            return PolyNull.NULL.toTypedJson();
         }
     }
 
@@ -261,7 +261,6 @@ public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue
     static class PolyMapSerializer<K extends PolyValue, V extends PolyValue> extends JsonSerializer<PolyMap<K, V>> {
 
 
-
         @Override
         public void serializeWithType( PolyMap<K, V> value, JsonGenerator gen, SerializerProvider serializers, TypeSerializer typeSer ) throws IOException {
             serialize( value, gen, serializers );
@@ -308,18 +307,26 @@ public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue
 
         @Override
         public PolyMap<K, V> deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException {
-            JsonNode node = p.getCodec().readTree( p );
             Map<K, V> values = new HashMap<>();
-            ArrayNode elements = node.withArray( "_ps" );
-            for ( JsonNode element : elements ) {
-                values.put(
-                        (K) ctxt.readTreeAsValue( element.get( 0 ), PolyValue.class ),
-                        (V) ctxt.readTreeAsValue( element.get( 1 ), PolyValue.class )
-                );
+            ObjectMapper mapper = (ObjectMapper) p.getCodec();
+
+            JsonToken token;
+            while ( (token = p.nextToken()) != JsonToken.END_OBJECT ) {
+                if ( token == JsonToken.FIELD_NAME && p.currentName().equals( "_ps" ) ) {
+                    p.nextToken(); // Move to the start of the array
+                    while ( p.nextToken() != JsonToken.END_ARRAY ) {
+                        p.nextToken(); // open array
+                        K key = mapper.readValue( p, ctxt.constructType( PolyValue.class ) );
+                        p.nextToken(); // Move to next value
+                        V value = mapper.readValue( p, ctxt.constructType( PolyValue.class ) );
+                        values.put( key, value );
+                        p.nextToken(); // close array
+                    }
+
+                }
             }
             return PolyMap.of( values, MapType.MAP );
         }
-
 
 
     }

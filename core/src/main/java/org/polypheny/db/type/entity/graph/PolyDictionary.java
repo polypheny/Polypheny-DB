@@ -20,17 +20,17 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.jsontype.TypeDeserializer;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -187,14 +187,23 @@ public class PolyDictionary extends PolyMap<PolyString, PolyValue> {
 
         @Override
         public PolyDictionary deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException {
-            JsonNode node = p.getCodec().readTree( p );
             Map<PolyString, PolyValue> values = new HashMap<>();
-            ArrayNode elements = node.withArray( "_ps" );
-            for ( JsonNode element : elements ) {
-                values.put(
-                        PolyString.of( element.get( 0 ).asText() ),
-                        ctxt.readTreeAsValue( element.get( 1 ), PolyValue.class )
-                );
+            ObjectMapper mapper = (ObjectMapper) p.getCodec();
+
+            JsonToken token;
+            while ( (token = p.nextToken()) != JsonToken.END_OBJECT ) {
+                if ( token == JsonToken.FIELD_NAME && p.currentName().equals( "_ps" ) ) {
+                    p.nextToken(); // Move to the start of the array
+                    while ( p.nextToken() != JsonToken.END_ARRAY ) {
+                        p.nextToken(); // open array
+                        PolyString key = PolyString.of( p.getValueAsString() );
+                        p.nextToken(); // Move to next value
+                        PolyValue value = mapper.readValue( p, ctxt.constructType( PolyValue.class ) );
+                        values.put( key, value );
+                        p.nextToken(); // close array
+                    }
+
+                }
             }
             return PolyDictionary.ofDict( values );
         }
