@@ -73,6 +73,8 @@ public class DdlTest extends MqlTestTemplate {
 
         execute( "db." + name + ".find({})" );
 
+        execute( name + ".find({})" );
+
         execute( namespace + "." + name + ".find({})" );
 
         execute( String.format( "%s.%s.drop()", namespace, name ) );
