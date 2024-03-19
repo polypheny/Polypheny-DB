@@ -26,7 +26,8 @@ public enum MonitoringType {
     DROP_COLUMN,
     DROP_TABLE,
     SET_ROW_COUNT,
-    DELETE, SELECT, UPDATE;
+    DELETE, SELECT, UPDATE,
+    NONE;
 
 
     public static MonitoringType from( Kind kind ) {
