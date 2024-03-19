@@ -14,19 +14,14 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.algebra.polyalg.arguments;
+package org.polypheny.db.algebra.polyalg;
 
 import com.google.common.collect.ImmutableList;
 import java.util.HashMap;
 import java.util.Map;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.relational.RelScan;
-import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
-import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalRelMinus;
-import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
-import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
-import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration;
+import org.polypheny.db.algebra.logical.relational.*;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.Parameter;
 
@@ -49,7 +44,7 @@ public class PolyAlgRegistry {
         declarations.put( LogicalRelAggregate.class, new PolyAlgDeclaration( "AGG", 1, ImmutableList.of(
                 new Parameter( "group", ParamType.FIELD, true ),
                 new Parameter( "groups", ParamType.ANY, true, "" ),
-                new Parameter( "aggs", ParamType.AGGREGATE, true ) ) ) );
+                new Parameter( "aggs", ParamType.AGGREGATE, true, "" ) ) ) );
 
         declarations.put( LogicalRelMinus.class, new PolyAlgDeclaration( "MINUS", 2, ImmutableList.of(
                 new Parameter( "all", ParamType.BOOLEAN, false, "false" ) ) ) );
@@ -58,6 +53,13 @@ public class PolyAlgRegistry {
                 new Parameter( "collation", ParamType.COLLATION, false ),
                 new Parameter( "fetch", ParamType.SIMPLE_REX, false, "" ),
                 new Parameter( "offset", ParamType.SIMPLE_REX, false, "" ) ) ) );
+
+        declarations.put( LogicalRelJoin.class, new PolyAlgDeclaration( "JOIN", 2, ImmutableList.of(
+                new Parameter( "condition", ParamType.SIMPLE_REX, false ),
+                new Parameter( "type", ParamType.ANY, false, "INNER" ),
+                new Parameter( "variables", ParamType.CORR_ID, true, "" ),
+                new Parameter( "semiJoinDone", ParamType.BOOLEAN, false, "FALSE" ),
+                new Parameter( "sysFields", ParamType.ANY, true, "" ) ) ) );
     }
 
 

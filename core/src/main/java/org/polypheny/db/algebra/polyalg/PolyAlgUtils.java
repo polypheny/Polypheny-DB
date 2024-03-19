@@ -18,6 +18,7 @@ package org.polypheny.db.algebra.polyalg;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.rex.RexNode;
@@ -35,15 +36,26 @@ public class PolyAlgUtils {
     public static String replaceWithFieldNames( AlgNode alg, String str ) {
         if ( str.contains( "$" ) ) {
             int offset = 0;
-            for ( AlgNode input : alg.getInputs() ) {
-                for ( AlgDataTypeField field : input.getTupleType().getFields() ) {
+            for (AlgNode input : alg.getInputs()) {
+                offset += input.getTupleType().getFields().size();
+            }
+            // iterate in reverse order to make sure "$13" is replaced before $1
+            for ( int i = alg.getInputs().size() - 1; i >= 0; i-- ) {
+                AlgNode input = alg.getInputs().get( i );
+                List<AlgDataTypeField> fields = input.getTupleType().getFields();
+                offset -= fields.size();
+                for ( int j = fields.size() - 1; j >= 0; j-- ) {
+                    AlgDataTypeField field = fields.get( j );
                     String searchStr = "$" + (offset + field.getIndex());
                     int position = str.indexOf( searchStr );
-                    if ( position >= 0 && (str.length() >= position + searchStr.length()) ) {
+                    int nextCharPosition = position + searchStr.length();
+                    if ( nextCharPosition < str.length() && Character.isDigit( str.charAt( nextCharPosition ) ) ) {
+                        continue;
+                    }
+                    if ( position >= 0 && str.length() >= position + searchStr.length() ) {
                         str = str.replace( searchStr, field.getName() );
                     }
                 }
-                offset = input.getTupleType().getFields().size();
             }
         }
         return str;

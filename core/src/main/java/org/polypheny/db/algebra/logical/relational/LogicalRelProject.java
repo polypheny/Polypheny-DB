@@ -133,7 +133,7 @@ public final class LogicalRelProject extends Project implements RelAlg {
 
     @Override
     public Map<Parameter, PolyAlgArg> prepareAttributes() {
-        PolyAlgArg projectsArg = new ListArg<>( exps.stream().map( RexArg::new ).toList(), rowType.getFieldNames(), this );
+        PolyAlgArg projectsArg = new ListArg<>( exps, RexArg::new, rowType.getFieldNames(), this );
 
         Map<Parameter, PolyAlgArg> attributes = new HashMap<>();
         attributes.put( getPolyAlgDeclaration().getPos( 0 ), projectsArg );

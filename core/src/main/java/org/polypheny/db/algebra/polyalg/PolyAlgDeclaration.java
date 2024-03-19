@@ -175,7 +175,12 @@ public class PolyAlgDeclaration {
         /**
          *
          */
-        COLLATION
+        COLLATION,
+
+        /**
+         * Correlation ID
+         */
+        CORR_ID
     }
 
 }

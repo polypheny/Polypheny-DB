@@ -35,7 +35,7 @@ import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.Parameter;
 import org.polypheny.db.algebra.polyalg.arguments.EntityArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
-import org.polypheny.db.algebra.polyalg.arguments.PolyAlgRegistry;
+import org.polypheny.db.algebra.polyalg.PolyAlgRegistry;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.DocumentType;

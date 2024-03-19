@@ -34,6 +34,11 @@
 package org.polypheny.db.algebra.logical.relational;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
@@ -42,6 +47,14 @@ import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.relational.RelAlg;
+import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.Parameter;
+import org.polypheny.db.algebra.polyalg.arguments.AnyArg;
+import org.polypheny.db.algebra.polyalg.arguments.BooleanArg;
+import org.polypheny.db.algebra.polyalg.arguments.CorrelationArg;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
+import org.polypheny.db.algebra.polyalg.arguments.RexArg;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -64,6 +77,8 @@ public final class LogicalRelJoin extends Join implements RelAlg {
     // NOTE jvs 14-Mar-2006:  Normally we don't use state like this to control rule firing, but due to the non-local nature of semijoin optimizations, it's pretty much required.
     private final boolean semiJoinDone;
 
+    private final ImmutableList<AlgDataTypeField> systemFieldList;
+
 
     /**
      * Creates a LogicalJoin.
@@ -78,27 +93,29 @@ public final class LogicalRelJoin extends Join implements RelAlg {
      * @param joinType Join type
      * @param variablesSet Set of variables that are set by the LHS and used by the RHS and are not available to nodes above this LogicalJoin in the tree
      * @param semiJoinDone Whether this join has been translated to a semi-join
+     * @param systemFieldList List of system fields that will be prefixed to output row type; typically empty but must not be null
      * @see #isSemiJoinDone()
      */
-    public LogicalRelJoin( AlgCluster cluster, AlgTraitSet traitSet, AlgNode left, AlgNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinAlgType joinType, boolean semiJoinDone ) {
+    public LogicalRelJoin( AlgCluster cluster, AlgTraitSet traitSet, AlgNode left, AlgNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinAlgType joinType, boolean semiJoinDone, ImmutableList<AlgDataTypeField> systemFieldList ) {
         super( cluster, traitSet.replace( ModelTrait.RELATIONAL ), left, right, condition, variablesSet, joinType );
         this.semiJoinDone = semiJoinDone;
+        this.systemFieldList = Objects.requireNonNull( systemFieldList );
     }
 
 
     /**
      * Creates a LogicalJoin, flagged with whether it has been translated to a semi-join.
      */
-    public static LogicalRelJoin create( AlgNode left, AlgNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinAlgType joinType, boolean semiJoinDone ) {
+    public static LogicalRelJoin create( AlgNode left, AlgNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinAlgType joinType, boolean semiJoinDone, ImmutableList<AlgDataTypeField> systemFieldList ) {
         final AlgCluster cluster = left.getCluster();
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
-        return new LogicalRelJoin( cluster, traitSet, left, right, condition, variablesSet, joinType, semiJoinDone );
+        return new LogicalRelJoin( cluster, traitSet, left, right, condition, variablesSet, joinType, semiJoinDone, systemFieldList );
     }
 
 
     @Deprecated // to be removed before 2.0
-    public static LogicalRelJoin create( AlgNode left, AlgNode right, RexNode condition, JoinAlgType joinType, Set<String> variablesStopped, boolean semiJoinDone ) {
-        return create( left, right, condition, CorrelationId.setOf( variablesStopped ), joinType, semiJoinDone );
+    public static LogicalRelJoin create( AlgNode left, AlgNode right, RexNode condition, JoinAlgType joinType, Set<String> variablesStopped, boolean semiJoinDone, ImmutableList<AlgDataTypeField> systemFieldList ) {
+        return create( left, right, condition, CorrelationId.setOf( variablesStopped ), joinType, semiJoinDone, systemFieldList );
     }
 
 
@@ -106,20 +123,20 @@ public final class LogicalRelJoin extends Join implements RelAlg {
      * Creates a LogicalJoin.
      */
     public static LogicalRelJoin create( AlgNode left, AlgNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinAlgType joinType ) {
-        return create( left, right, condition, variablesSet, joinType, false );
+        return create( left, right, condition, variablesSet, joinType, false, ImmutableList.of() );
     }
 
 
     @Deprecated // to be removed before 2.0
     public static LogicalRelJoin create( AlgNode left, AlgNode right, RexNode condition, JoinAlgType joinType, Set<String> variablesStopped ) {
-        return create( left, right, condition, CorrelationId.setOf( variablesStopped ), joinType, false );
+        return create( left, right, condition, CorrelationId.setOf( variablesStopped ), joinType, false, ImmutableList.of() );
     }
 
 
     @Override
     public LogicalRelJoin copy( AlgTraitSet traitSet, RexNode conditionExpr, AlgNode left, AlgNode right, JoinAlgType joinType, boolean semiJoinDone ) {
         assert traitSet.containsIfApplicable( Convention.NONE );
-        return new LogicalRelJoin( getCluster(), getCluster().traitSetOf( Convention.NONE ).replace( ModelTrait.RELATIONAL ), left, right, conditionExpr, variablesSet, joinType, semiJoinDone );
+        return new LogicalRelJoin( getCluster(), getCluster().traitSetOf( Convention.NONE ).replace( ModelTrait.RELATIONAL ), left, right, conditionExpr, variablesSet, joinType, semiJoinDone, systemFieldList );
     }
 
 
@@ -142,4 +159,25 @@ public final class LogicalRelJoin extends Join implements RelAlg {
     }
 
 
+    @Override
+    public List<AlgDataTypeField> getSystemFieldList() {
+        return systemFieldList;
+    }
+
+
+    @Override
+    public Map<Parameter, PolyAlgArg> prepareAttributes() {
+        Map<Parameter, PolyAlgArg> attributes = new HashMap<>();
+        PolyAlgArg varsArg = new ListArg<>( variablesSet.asList(), CorrelationArg::new );
+        PolyAlgArg sysFieldsArg = new ListArg<>( systemFieldList, AnyArg::new );
+
+        attributes.put( getPolyAlgDeclaration().getPos( 0 ), new RexArg( condition, this ) );
+        attributes.put( getPolyAlgDeclaration().getParam( "type" ), new AnyArg( joinType.name() ) );
+        attributes.put( getPolyAlgDeclaration().getParam( "variables" ), varsArg );
+        attributes.put( getPolyAlgDeclaration().getParam( "semiJoinDone" ), new BooleanArg( semiJoinDone ) );
+        attributes.put( getPolyAlgDeclaration().getParam( "sysFields" ), sysFieldsArg );
+        return attributes;
+    }
+
 }
+

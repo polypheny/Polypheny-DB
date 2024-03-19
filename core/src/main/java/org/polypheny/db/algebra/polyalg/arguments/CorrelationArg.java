@@ -16,32 +16,28 @@
 
 package org.polypheny.db.algebra.polyalg.arguments;
 
-import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
-import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
 
-public class FieldArg implements PolyAlgArg {
+public class CorrelationArg implements PolyAlgArg{
 
-    private final int field;
-    private final AlgNode algNode;
+    private final CorrelationId arg;
 
-    public FieldArg( int field, AlgNode fieldNameProvider ) {
-        this.field = field;
-        this.algNode = fieldNameProvider;
+
+    public CorrelationArg( CorrelationId arg ) {
+        this.arg = arg;
     }
+
 
     @Override
     public ParamType getType() {
-        return ParamType.FIELD;
+        return ParamType.CORR_ID;
     }
 
 
     @Override
     public String toPolyAlg() {
-        if ( algNode != null ) {
-            return PolyAlgUtils.getFieldNameFromIndex( algNode, field );
-        }
-        return Integer.toString( field );
+        return arg.toString();
     }
 
 }
