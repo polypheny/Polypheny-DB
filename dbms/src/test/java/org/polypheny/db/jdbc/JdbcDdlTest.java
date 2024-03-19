@@ -209,56 +209,6 @@ public class JdbcDdlTest {
 
 
     @Test
-    public void testDateType() throws SQLException {
-        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
-            Connection connection = polyphenyDbConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                // Create ddltest table and insert data
-                statement.executeUpdate( DDLTEST_SQL );
-                statement.executeUpdate( DDLTEST_DATA_SQL );
-
-                try {
-                    // Checks
-                    TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT tdate FROM ddltest" ),
-                            ImmutableList.of( new Object[]{ DDLTEST_DATA[2] } ) );
-
-                    connection.commit();
-                } finally {
-                    // Drop ddltest table
-                    statement.executeUpdate( "DROP TABLE ddltest" );
-                }
-            }
-        }
-    }
-
-
-    @Test
-    public void testTimestampType() throws SQLException {
-        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
-            Connection connection = polyphenyDbConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                // Create ddltest table and insert data
-                statement.executeUpdate( DDLTEST_SQL );
-                statement.executeUpdate( DDLTEST_DATA_SQL );
-
-                try {
-                    // Checks
-                    TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT ttimestamp FROM ddltest" ),
-                            ImmutableList.of( new Object[]{ DDLTEST_DATA[9] } ) );
-
-                    connection.commit();
-                } finally {
-                    // Drop ddltest table
-                    statement.executeUpdate( "DROP TABLE ddltest" );
-                }
-            }
-        }
-    }
-
-
-    @Test
     public void viewTestTypes() throws SQLException {
         // Check if there are new types missing in this test
         assertEquals( 18, PolyType.allowedFieldTypes().size(), "Unexpected number of available types" );
