@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.HashMap;
 import java.util.Map;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.logical.relational.*;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
@@ -46,8 +47,14 @@ public class PolyAlgRegistry {
                 new Parameter( "groups", ParamType.ANY, true, "" ),
                 new Parameter( "aggs", ParamType.AGGREGATE, true, "" ) ) ) );
 
-        declarations.put( LogicalRelMinus.class, new PolyAlgDeclaration( "MINUS", 2, ImmutableList.of(
-                new Parameter( "all", ParamType.BOOLEAN, false, "false" ) ) ) );
+        declarations.put( LogicalRelMinus.class, new PolyAlgDeclaration( "MINUS", 2,
+                new Parameter( "all", ParamType.BOOLEAN, false, "FALSE" ) ) );
+
+        declarations.put( LogicalRelUnion.class, new PolyAlgDeclaration( "UNION", 2,
+                new Parameter( "all", ParamType.BOOLEAN, false, "FALSE" ) ) );
+
+        declarations.put( LogicalRelIntersect.class, new PolyAlgDeclaration( "INTERSECT", 2,
+                new Parameter( "all", ParamType.BOOLEAN, false, "FALSE" ) ) );
 
         declarations.put( LogicalRelSort.class, new PolyAlgDeclaration( "SORT", 1, ImmutableList.of(
                 new Parameter( "collation", ParamType.COLLATION, false ),
@@ -56,10 +63,15 @@ public class PolyAlgRegistry {
 
         declarations.put( LogicalRelJoin.class, new PolyAlgDeclaration( "JOIN", 2, ImmutableList.of(
                 new Parameter( "condition", ParamType.SIMPLE_REX, false ),
-                new Parameter( "type", ParamType.ANY, false, "INNER" ),
+                new Parameter( "type", ParamType.JOIN_TYPE_ENUM, false, JoinAlgType.INNER.name() ),
                 new Parameter( "variables", ParamType.CORR_ID, true, "" ),
                 new Parameter( "semiJoinDone", ParamType.BOOLEAN, false, "FALSE" ),
                 new Parameter( "sysFields", ParamType.ANY, true, "" ) ) ) );
+
+        declarations.put( LogicalCalc.class, new PolyAlgDeclaration( "CALC", 1, ImmutableList.of(
+                new Parameter( "exps", ParamType.SIMPLE_REX, true ),
+                new Parameter( "projects", ParamType.SIMPLE_REX, true ),
+                new Parameter( "condition", ParamType.SIMPLE_REX, false, "" ) ) ) );
     }
 
 

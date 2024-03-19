@@ -368,10 +368,10 @@ public abstract class AbstractAlgNode implements AlgNode {
 
             size--;
             if ( size > 0 ) {
-                sb.append( ", " );
+                sb.append( ", \n" );
             }
         }
-        sb.append( "\n)" );
+        sb.append( ")" );
     }
 
 

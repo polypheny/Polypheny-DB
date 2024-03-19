@@ -35,11 +35,15 @@ package org.polypheny.db.algebra.logical.relational;
 
 
 import java.util.List;
+import java.util.Map;
 import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.relational.RelAlg;
+import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.Parameter;
+import org.polypheny.db.algebra.polyalg.arguments.BooleanArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -88,6 +92,12 @@ public final class LogicalRelUnion extends Union implements RelAlg {
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {
         return shuttle.visit( this );
+    }
+
+
+    @Override
+    public Map<Parameter, PolyAlgArg> prepareAttributes() {
+        return Map.of( getPolyAlgDeclaration().getParam( "all" ), new BooleanArg( all ) );
     }
 
 }

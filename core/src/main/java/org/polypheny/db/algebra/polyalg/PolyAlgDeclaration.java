@@ -76,13 +76,17 @@ public class PolyAlgDeclaration {
 
         for ( Parameter p : posParams ) {
             assert preparedAttributes.containsKey( p );
-            joiner.add( preparedAttributes.get( p ).toPolyAlg() );
+            PolyAlgArg arg = preparedAttributes.get( p );
+            assert arg.getType() == p.type;
+            joiner.add( arg.toPolyAlg() );
         }
         for ( Parameter p : kwParams ) {
             if ( preparedAttributes.containsKey( p ) ) {
-                String attribute = preparedAttributes.get( p ).toPolyAlg();
-                if ( !p.defaultValue.equals( attribute ) ) {
-                    joiner.add( p.name + "=" + attribute );
+                PolyAlgArg arg = preparedAttributes.get( p );
+                assert arg.getType() == p.type;
+                String value = arg.toPolyAlg();
+                if ( !p.defaultValue.equals( value ) ) {
+                    joiner.add( p.name + "=" + value );
                 }
             }
         }
@@ -162,6 +166,8 @@ public class PolyAlgDeclaration {
         BOOLEAN_REX,
         ENTITY,
 
+        JOIN_TYPE_ENUM( true ),
+
         /**
          * A specific field (= column in the relational data model).
          */
@@ -180,7 +186,25 @@ public class PolyAlgDeclaration {
         /**
          * Correlation ID
          */
-        CORR_ID
+        CORR_ID;
+
+        private final boolean isEnum;
+
+
+        ParamType() {
+            this.isEnum = false;
+        }
+
+
+        ParamType( boolean isEnum ) {
+            this.isEnum = isEnum;
+        }
+
+
+        public boolean isEnum() {
+            return isEnum;
+        }
+
     }
 
 }
