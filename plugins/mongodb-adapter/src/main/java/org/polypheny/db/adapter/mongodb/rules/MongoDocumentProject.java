@@ -54,7 +54,7 @@ public class MongoDocumentProject extends DocumentProject implements MongoAlg {
         implementor.visitChild( 0, getInput() );
         List<Pair<String, String>> projects = new ArrayList<>();
 
-        final RexToMongoTranslator translator = new RexToMongoTranslator( getCluster().getTypeFactory(), List.of(), implementor, DataModel.DOCUMENT );
+        final RexToMongoTranslator translator = new RexToMongoTranslator( List.of(), implementor, DataModel.DOCUMENT );
 
         // is it something which interacts with root?
         if ( excludes.isEmpty() && includes.size() == 1 && includes.containsKey( null ) ) {
