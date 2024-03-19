@@ -36,7 +36,7 @@ public abstract class Executor {
 
 
     protected boolean hasInvalidNamespaceType( PIStatement piStatement ) {
-        return piStatement.getLanguage().getDataModel() != getDataModel();
+        return piStatement.getLanguage().dataModel() != getDataModel();
     }
 
 

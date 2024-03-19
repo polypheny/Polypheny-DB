@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.NotImplementedException;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.protointerface.proto.ProtoBigDecimal;
 import org.polypheny.db.protointerface.proto.ProtoBinary;
 import org.polypheny.db.protointerface.proto.ProtoBoolean;
@@ -295,14 +296,14 @@ public class PolyValueSerializer {
         return ProtoSegment.newBuilder()
                 .setId( serializeToProtoString( polySegment.getId() ) )
                 .setVariableName( serializeToProtoString( polySegment.getVariableName() ) )
-                .setSourceId( serializeToProtoString( polySegment.getSourceId() ) )
-                .setEdgeId( serializeToProtoString( polySegment.getEdgeId() ) )
-                .setTargetId( serializeToProtoString( polySegment.getTargetId() ) )
-                .setSource( serializeToProtoNode( polySegment.getSource() ) )
-                .setEdge( serializeToProtoEdge( polySegment.getEdge() ) )
-                .setTarget( serializeToProtoNode( polySegment.getTarget() ) )
-                .setIsRef( polySegment.isRef() )
-                .setEdgeDirection( getEdgeDirection( polySegment.getDirection() ) )
+                .setSourceId( serializeToProtoString( polySegment.sourceId ) )
+                .setEdgeId( serializeToProtoString( polySegment.edgeId ) )
+                .setTargetId( serializeToProtoString( polySegment.targetId ) )
+                .setSource( serializeToProtoNode( polySegment.source ) )
+                .setEdge( serializeToProtoEdge( polySegment.edge ) )
+                .setTarget( serializeToProtoNode( polySegment.target ) )
+                .setIsRef( polySegment.isRef )
+                .setEdgeDirection( getEdgeDirection( polySegment.direction ) )
                 .build();
     }
 
@@ -384,13 +385,7 @@ public class PolyValueSerializer {
 
 
     private static ProtoValue serializeAsProtoUserDefinedType( PolyUserDefinedValue userDefinedValue ) {
-        ProtoUserDefinedType protoUserDefinedType = ProtoUserDefinedType.newBuilder()
-                .putAllTemplate( convertTypeMap( userDefinedValue.getTemplate() ) )
-                .putAllValue( serializeValueMap( userDefinedValue.getValue() ) )
-                .build();
-        return ProtoValue.newBuilder()
-                .setUserDefinedType( protoUserDefinedType )
-                .build();
+        throw new GenericRuntimeException( "PolyUserDefinedValues are not supported at the moment" );
     }
 
 
@@ -446,7 +441,7 @@ public class PolyValueSerializer {
 
     public static ProtoValue serializeAsProtoBinary( PolyBinary polyBinary ) {
         ProtoBinary protoBinary = ProtoBinary.newBuilder()
-                .setBinary( ByteString.copyFrom( polyBinary.getValue().getBytes() ) )
+                .setBinary( ByteString.copyFrom( polyBinary.getValue() ) )
                 .build();
         return ProtoValue.newBuilder()
                 .setBinary( protoBinary )

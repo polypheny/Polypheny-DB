@@ -46,7 +46,7 @@ public class DocumentExecutor extends Executor {
     StatementResult executeAndGetResult( PIStatement piStatement ) {
         if ( hasInvalidNamespaceType( piStatement ) ) {
             throw new PIServiceException( "The results of type "
-                    + piStatement.getLanguage().getDataModel()
+                    + piStatement.getLanguage().dataModel()
                     + "returned by this statement can't be retrieved by a document retriever.",
                     "I9000",
                     9000
@@ -76,7 +76,7 @@ public class DocumentExecutor extends Executor {
     StatementResult executeAndGetResult( PIStatement piStatement, int fetchSize ) throws Exception {
         if ( hasInvalidNamespaceType( piStatement ) ) {
             throw new PIServiceException( "The results of type "
-                    + piStatement.getLanguage().getDataModel()
+                    + piStatement.getLanguage().dataModel()
                     + "returned by this statement can't be retrieved by a document retriever.",
                     "I9000",
                     9000
@@ -110,7 +110,7 @@ public class DocumentExecutor extends Executor {
     Frame fetch( PIStatement piStatement, int fetchSize ) {
         if ( hasInvalidNamespaceType( piStatement ) ) {
             throw new PIServiceException( "The results of type "
-                    + piStatement.getLanguage().getDataModel()
+                    + piStatement.getLanguage().dataModel()
                     + "returned by this statement can't be retrieved by a document retriever.",
                     "I9000",
                     9000

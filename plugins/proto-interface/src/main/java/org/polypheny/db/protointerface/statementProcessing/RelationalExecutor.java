@@ -23,6 +23,7 @@ import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.monitoring.events.MonitoringType;
 import org.polypheny.db.protointerface.PIClient;
 import org.polypheny.db.protointerface.PIServiceException;
 import org.polypheny.db.protointerface.proto.ColumnMeta;
@@ -49,7 +50,7 @@ public class RelationalExecutor extends Executor {
     StatementResult executeAndGetResult( PIStatement piStatement ) throws Exception {
         if ( hasInvalidNamespaceType( piStatement ) ) {
             throw new PIServiceException( "The results of type "
-                    + piStatement.getLanguage().getDataModel()
+                    + piStatement.getLanguage().dataModel()
                     + "returned by this statement can't be retrieved by a relational retriever.",
                     "I9000",
                     9000
@@ -72,7 +73,9 @@ public class RelationalExecutor extends Executor {
         PIClient client = piStatement.getClient();
         StatementResult.Builder resultBuilder = StatementResult.newBuilder();
         if ( implementation.isDDL() || Kind.DML.contains( implementation.getKind() ) ) {
-            resultBuilder.setScalar( implementation.getRowsChanged( statement ) );
+            try ( ResultIterator iterator = implementation.execute( statement, -1 ) ) {
+                resultBuilder.setScalar( PolyImplementation.getRowsChanged( statement, iterator.getIterator(), MonitoringType.NONE ) );
+            }
             client.commitCurrentTransactionIfAuto();
             return resultBuilder.build();
         }
@@ -86,7 +89,7 @@ public class RelationalExecutor extends Executor {
     public StatementResult executeAndGetResult( PIStatement piStatement, int fetchSize ) throws Exception {
         if ( hasInvalidNamespaceType( piStatement ) ) {
             throw new PIServiceException( "The results of type "
-                    + piStatement.getLanguage().getDataModel()
+                    + piStatement.getLanguage().dataModel()
                     + "returned by this statement can't be retrieved by a relational retriever.",
                     "I9000",
                     9000
@@ -113,7 +116,9 @@ public class RelationalExecutor extends Executor {
             return resultBuilder.build();
         }
         if ( Kind.DML.contains( implementation.getKind() ) ) {
-            resultBuilder.setScalar( implementation.getRowsChanged( statement ) );
+            try ( ResultIterator iterator = implementation.execute( statement, -1 ) ) {
+                resultBuilder.setScalar( PolyImplementation.getRowsChanged( statement, iterator.getIterator(), MonitoringType.NONE ) );
+            }
             client.commitCurrentTransactionIfAuto();
             return resultBuilder.build();
         }
@@ -132,7 +137,7 @@ public class RelationalExecutor extends Executor {
     public Frame fetch( PIStatement piStatement, int fetchSize ) {
         if ( hasInvalidNamespaceType( piStatement ) ) {
             throw new PIServiceException( "The results of type "
-                    + piStatement.getLanguage().getDataModel()
+                    + piStatement.getLanguage().dataModel()
                     + "returned by this statement can't be retrieved by a relational retriever.",
                     "I9000",
                     9000

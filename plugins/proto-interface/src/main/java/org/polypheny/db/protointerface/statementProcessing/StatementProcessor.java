@@ -59,10 +59,10 @@ public class StatementProcessor {
 
 
     public static StatementResult executeAndGetResult( PIStatement piStatement ) throws Exception {
-        Executor executor = RESULT_RETRIEVERS.get( piStatement.getLanguage().getDataModel() );
+        Executor executor = RESULT_RETRIEVERS.get( piStatement.getLanguage().dataModel() );
         if ( executor == null ) {
             throw new PIServiceException( "No result retriever registered for namespace type "
-                    + piStatement.getLanguage().getDataModel(),
+                    + piStatement.getLanguage().dataModel(),
                     "I9004",
                     9004
             );
@@ -72,10 +72,10 @@ public class StatementProcessor {
 
 
     public static StatementResult executeAndGetResult( PIStatement piStatement, int fetchSize ) throws Exception {
-        Executor executor = RESULT_RETRIEVERS.get( piStatement.getLanguage().getDataModel() );
+        Executor executor = RESULT_RETRIEVERS.get( piStatement.getLanguage().dataModel() );
         if ( executor == null ) {
             throw new PIServiceException( "No result retriever registered for namespace type "
-                    + piStatement.getLanguage().getDataModel(),
+                    + piStatement.getLanguage().dataModel(),
                     "I9004",
                     9004
             );
@@ -85,10 +85,10 @@ public class StatementProcessor {
 
 
     public static Frame fetch( PIStatement piStatement, int fetchSize ) {
-        Executor executor = RESULT_RETRIEVERS.get( piStatement.getLanguage().getDataModel() );
+        Executor executor = RESULT_RETRIEVERS.get( piStatement.getLanguage().dataModel() );
         if ( executor == null ) {
             throw new PIServiceException( "No result retriever registered for namespace type "
-                    + piStatement.getLanguage().getDataModel(),
+                    + piStatement.getLanguage().dataModel(),
                     "I9004",
                     9004
             );

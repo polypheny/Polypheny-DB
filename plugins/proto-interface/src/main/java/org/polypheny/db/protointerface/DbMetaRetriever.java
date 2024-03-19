@@ -87,8 +87,6 @@ public class DbMetaRetriever {
     private static Namespace getNamespaceMeta( LogicalNamespace logicalNamespace ) {
         Namespace.Builder namespaceBuilder = Namespace.newBuilder();
         namespaceBuilder.setNamespaceName( logicalNamespace.getName() );
-        namespaceBuilder.setDatabaseName( logicalNamespace.getDatabaseName() );
-        namespaceBuilder.setOwnerName( logicalNamespace.getOwnerName() );
         Optional.ofNullable( logicalNamespace.getDataModel() ).ifPresent( p -> namespaceBuilder.setNamespaceType( p.name() ) );
         return namespaceBuilder.build();
     }
@@ -140,11 +138,9 @@ public class DbMetaRetriever {
 
     private static Table getTableMeta( LogicalTable logicalTable ) {
         Table.Builder tableBuilder = Table.newBuilder();
-        tableBuilder.setSourceDatabaseName( logicalTable.getDatabaseName() );
         tableBuilder.setNamespaceName( logicalTable.getNamespaceName() );
         tableBuilder.setTableName( logicalTable.getName() );
         tableBuilder.setTableType( logicalTable.getEntityType().name() );
-        tableBuilder.setOwnerName( logicalTable.getOwnerName() );
         tableBuilder.addAllColumns( getColumns( logicalTable ) );
         if ( hasPrimaryKey( logicalTable ) ) {
             tableBuilder.setPrimaryKey( getPrimaryKeyMeta( logicalTable ) );
@@ -181,13 +177,12 @@ public class DbMetaRetriever {
 
 
     private static List<Column> getColumns( LogicalKey logicalKey ) {
-        return logicalKey.getColumns().stream().map( DbMetaRetriever::getColumnMeta ).collect( Collectors.toList() );
+        return logicalKey.fieldIds.stream().map( id -> Catalog.snapshot().rel().getColumn( id ).orElseThrow() ).map( DbMetaRetriever::getColumnMeta ).toList();
     }
 
 
     private static Column getColumnMeta( LogicalColumn logicalColumn ) {
         Column.Builder columnBuilder = Column.newBuilder();
-        columnBuilder.setDatabaseName( logicalColumn.getDatabaseName() );
         columnBuilder.setNamespaceName( logicalColumn.getNamespaceName() );
         columnBuilder.setTableName( logicalColumn.getTableName() );
         columnBuilder.setColumnName( logicalColumn.getName() );
@@ -212,9 +207,8 @@ public class DbMetaRetriever {
 
     private static ForeignKey getForeignKeyMeta( LogicalForeignKey logicalForeignKey ) {
         ForeignKey.Builder foreignKeyBuilder = ForeignKey.newBuilder();
-        foreignKeyBuilder.setReferencedNamespaceName( logicalForeignKey.getReferencedKeySchemaName() );
-        foreignKeyBuilder.setReferencedDatabaseName( logicalForeignKey.getReferencedKeySchemaName() );
-        foreignKeyBuilder.setReferencedTableName( logicalForeignKey.getReferencedKeyTableName() );
+        foreignKeyBuilder.setReferencedNamespaceName( logicalForeignKey.getReferencedKeyNamespaceName() );
+        foreignKeyBuilder.setReferencedTableName( logicalForeignKey.getReferencedKeyEntityName() );
         foreignKeyBuilder.setUpdateRule( logicalForeignKey.getUpdateRule().getId() );
         foreignKeyBuilder.setDeleteRule( logicalForeignKey.getDeleteRule().getId() );
         Optional.ofNullable( logicalForeignKey.getName() ).ifPresent( foreignKeyBuilder::setKeyName );
@@ -225,7 +219,7 @@ public class DbMetaRetriever {
 
 
     private static List<Column> getReferencedColumns( LogicalForeignKey logicalForeignKey ) {
-        return logicalForeignKey.getReferencedKeyColumnIds().stream().map( id -> Catalog.snapshot().rel().getColumn( id ).orElseThrow() ).map( DbMetaRetriever::getColumnMeta ).collect( Collectors.toList() );
+        return logicalForeignKey.referencedKeyFieldIds.stream().map( id -> Catalog.snapshot().rel().getColumn( id ).orElseThrow() ).map( DbMetaRetriever::getColumnMeta ).collect( Collectors.toList() );
     }
 
 
@@ -243,7 +237,6 @@ public class DbMetaRetriever {
 
     private static Index getIndexMeta( LogicalIndex logicalIndex ) {
         Index.Builder importedKeyBuilder = Index.newBuilder();
-        importedKeyBuilder.setDatabaseName( logicalIndex.getDatabaseName() );
         importedKeyBuilder.setNamespaceName( logicalIndex.getKey().getSchemaName() );
         importedKeyBuilder.setTableName( logicalIndex.getKey().getTableName() );
         importedKeyBuilder.setUnique( logicalIndex.isUnique() );

@@ -229,7 +229,7 @@ public class StatementManager {
     public boolean isSupportedLanguage( String statementLanguageName ) {
         return LanguageManager.getLanguages()
                 .stream()
-                .map( QueryLanguage::getSerializedName )
+                .map( QueryLanguage::serializedName )
                 .collect( Collectors.toSet() )
                 .contains( statementLanguageName );
     }

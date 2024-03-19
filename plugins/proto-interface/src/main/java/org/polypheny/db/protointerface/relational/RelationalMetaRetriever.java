@@ -174,7 +174,7 @@ public class RelationalMetaRetriever {
                 JavaTypeFactory typeFactory = polyImplementation.getStatement().getTransaction().getTypeFactory();
                 return AlgOptUtil.createDmlRowType( kind, typeFactory );
             default:
-                return polyImplementation.getRowType();
+                return polyImplementation.tupleType;
         }
     }
 
