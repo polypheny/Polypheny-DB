@@ -222,7 +222,7 @@ message ProtoBinary {
 Represents a date as a 64-bit integer.
 */
 message ProtoDate {
-  // Milliseconds since epoch till start of the specified day.
+  // Days since epoch till start of the specified day.
   int64 date = 1;
 }
 

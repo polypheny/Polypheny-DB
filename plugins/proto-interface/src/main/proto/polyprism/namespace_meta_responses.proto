@@ -32,10 +32,6 @@ The Namespace message provides detailed information about a specific namespace.
 message Namespace {
   // The name of the namespace.
   string namespace_name = 1;
-  // The name of the database to which this namespace belongs.
-  string database_name = 2;
-  // The name of the owner of the namespace.
-  string owner_name = 3;
   // Indicates if the namespace name is case sensitive.
   bool is_case_sensitive = 4;
   // An optional field providing the type of the namespace, if applicable.
@@ -65,16 +61,12 @@ message Entity {
 The Table message provides comprehensive information about a specific table within a database.
 */
 message Table {
-  // The source database where the table resides.
-  string source_database_name = 1;
   // The namespace or schema where the table is located.
   string namespace_name = 2;
   // The name of the table.
   string table_name = 3;
   // The type of the table (e.g., BASE TABLE, VIEW).
   string table_type = 4;
-  // The owner of the table.
-  string owner_name = 5;
   // A list of Column messages providing information about each column in the table.
   repeated Column columns = 6;
   // An optional PrimaryKey message, providing details about the primary key of the table.
@@ -91,8 +83,6 @@ message Table {
 The Column message describes the attributes of a specific column within a table.
 */
 message Column {
-  // The database where the column’s table is located.
-  string database_name = 1;
   // The namespace or schema of the column’s table.
   string namespace_name = 2;
   // The table to which this column belongs.
@@ -153,11 +143,6 @@ This relationship is crucial for maintaining referential integrity within the da
 */
 message ForeignKey {
   /*
-  The database of the referenced table.
-  his field specifies which database contains the table that this foreign key references.
-  */
-  optional string referenced_database_name = 1;
-  /*
   The namespace or schema of the referenced table.
   This indicates the specific namespace or schema within the database where the referenced table resides.
   */
@@ -195,11 +180,6 @@ message ForeignKey {
 The Index message provides details about an index defined on a table. Indexes are crucial for improving the performance of data retrieval operations by effectively organizing the data stored in a database table. This message includes information about the index's database, namespace (or schema), table, uniqueness, name, columns involved, physical location, and type.
 */
 message Index {
-  /*
-  The database where the indexed table is located.
-  This field specifies the database containing the table on which the index is defined.
-  */
-  string database_name = 1;
   /*
   The namespace or schema of the indexed table.
   This indicates the specific namespace or schema within the database where the indexed table resides.
