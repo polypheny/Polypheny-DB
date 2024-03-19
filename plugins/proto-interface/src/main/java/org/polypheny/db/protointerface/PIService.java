@@ -177,8 +177,8 @@ public class PIService {
         Response r;
         try {
             r = handleMessage( req );
-        } catch ( TransactionException | AuthenticationException | IOException e ) {
-            r = createErrorResponse( req.getId(), e.getMessage() );
+        } catch ( Throwable t ) {
+            r = createErrorResponse( req.getId(), t.getMessage() );
         }
         try {
             sendOneMessage( r );
