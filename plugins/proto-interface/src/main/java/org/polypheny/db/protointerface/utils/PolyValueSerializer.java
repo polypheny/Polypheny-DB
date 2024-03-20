@@ -121,29 +121,17 @@ public class PolyValueSerializer {
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                 return serializeAsProtoTimestamp( polyValue.asTimestamp() );
             case INTERVAL_SECOND:
-                // used by PolyInterval
             case INTERVAL_MINUTE_SECOND:
-                // used by PolyInterval
             case INTERVAL_MINUTE:
-                // used by PolyInterval
             case INTERVAL_HOUR_SECOND:
-                // used by PolyInterval
             case INTERVAL_HOUR_MINUTE:
-                // used by PolyInterval
             case INTERVAL_HOUR:
-                // used by PolyInterval
             case INTERVAL_DAY_SECOND:
-                // used by PolyInterval
             case INTERVAL_DAY_MINUTE:
-                // used by PolyInterval
             case INTERVAL_DAY_HOUR:
-                // used by PolyInterval
             case INTERVAL_DAY:
-                // used by PolyInterval
             case INTERVAL_MONTH:
-                // used by PolyInterval
             case INTERVAL_YEAR_MONTH:
-                // used by PolyInterval
             case INTERVAL_YEAR:
                 return serializeAsProtoInterval( polyValue.asInterval() );
             case CHAR:
