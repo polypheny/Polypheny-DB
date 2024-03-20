@@ -33,7 +33,6 @@ import org.polypheny.db.protointerface.proto.ProtoEntry;
 import org.polypheny.db.protointerface.proto.ProtoFloat;
 import org.polypheny.db.protointerface.proto.ProtoInteger;
 import org.polypheny.db.protointerface.proto.ProtoInterval;
-import org.polypheny.db.protointerface.proto.ProtoInterval.IntervalQualifier;
 import org.polypheny.db.protointerface.proto.ProtoList;
 import org.polypheny.db.protointerface.proto.ProtoLong;
 import org.polypheny.db.protointerface.proto.ProtoMap;
@@ -250,33 +249,32 @@ public class PolyValueSerializer {
     }
 
 
-    private static IntervalQualifier getIntervalQualifier( PolyInterval polyInterval ) {
-        return switch ( polyInterval.getType() ) {
-            case INTERVAL_SECOND -> IntervalQualifier.SECOND;
-            case INTERVAL_MINUTE_SECOND -> IntervalQualifier.MINUTE_SECOND;
-            case INTERVAL_MINUTE -> IntervalQualifier.MINUTE;
-            case INTERVAL_HOUR_SECOND -> IntervalQualifier.HOUR_SECOND;
-            case INTERVAL_HOUR_MINUTE -> IntervalQualifier.HOUR_MINUTE;
-            case INTERVAL_HOUR -> IntervalQualifier.HOUR;
-            case INTERVAL_DAY_SECOND -> IntervalQualifier.DAY_SECOND;
-            case INTERVAL_DAY_MINUTE -> IntervalQualifier.DAY_MINUTE;
-            case INTERVAL_DAY_HOUR -> IntervalQualifier.DAY_HOUR;
-            case INTERVAL_DAY -> IntervalQualifier.DAY;
-            case INTERVAL_MONTH -> IntervalQualifier.MONTH;
-            case INTERVAL_YEAR_MONTH -> IntervalQualifier.YEAR_MONTH;
-            case INTERVAL_YEAR -> IntervalQualifier.YEAR;
-            default -> throw new GenericRuntimeException( "Invalid type for PolyInterval: " + polyInterval.getType().getTypeName() );
-        };
+    private static ProtoInterval getInterval( PolyInterval polyInterval ) {
+        switch ( polyInterval.getType() ) {
+            case INTERVAL_SECOND:
+            case INTERVAL_MINUTE_SECOND:
+            case INTERVAL_MINUTE:
+            case INTERVAL_HOUR_SECOND:
+            case INTERVAL_HOUR_MINUTE:
+            case INTERVAL_HOUR:
+            case INTERVAL_DAY_SECOND:
+            case INTERVAL_DAY_MINUTE:
+            case INTERVAL_DAY_HOUR:
+            case INTERVAL_DAY:
+                return ProtoInterval.newBuilder().setMilliseconds( polyInterval.getValue().longValue() ).build();
+            case INTERVAL_MONTH:
+            case INTERVAL_YEAR_MONTH:
+            case INTERVAL_YEAR:
+                return ProtoInterval.newBuilder().setMonths( polyInterval.getValue().longValue() ).build();
+            default:
+                throw new GenericRuntimeException( "Invalid type for PolyInterval: " + polyInterval.getType().getTypeName() );
+        }
     }
 
 
     private static ProtoValue serializeAsProtoInterval( PolyInterval polyInterval ) {
-        ProtoInterval protoInterval = ProtoInterval.newBuilder()
-                .setValue( serializeBigDecimal( polyInterval.getValue() ) )
-                .setQualifier( getIntervalQualifier( polyInterval ) )
-                .build();
         return ProtoValue.newBuilder()
-                .setInterval( protoInterval )
+                .setInterval( getInterval( polyInterval ) )
                 .build();
     }
 
