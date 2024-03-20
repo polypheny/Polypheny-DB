@@ -13,6 +13,14 @@ option java_outer_classname = "StatementRequests";
 package polypheny.protointerface;
 
 /*
+Closes the result set of the statement matching the specified statement id. If no such statmeent exists, or the result is already closed, this request is ignored.
+ */
+message CloseResultRequest {
+  // The id of the statement of which the result set should be closed.
+  int32 statement_id = 1;
+}
+
+/*
 Represents a request to execute a statement without any parameters.
 This message includes details about the language in which the statement is written, the statement itself, and optional attributes such as fetch size and namespace name to control how the statement is executed.
 */
