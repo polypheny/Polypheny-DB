@@ -75,6 +75,9 @@ public class PolyTypeAssignmentRules {
         for ( PolyType interval : PolyType.COMPLEX_INTERVAL_TYPES ) {
             rules.add( interval, PolyType.COMPLEX_INTERVAL_TYPES );
         }
+        for ( PolyType interval : PolyType.SIMPLE_INTERVAL_TYPES ) {
+            rules.add( interval, PolyType.SIMPLE_INTERVAL_TYPES );
+        }
 
         // MULTISET is assignable from...
         rules.add( PolyType.MULTISET, EnumSet.of( PolyType.MULTISET ) );

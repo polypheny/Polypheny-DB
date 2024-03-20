@@ -324,7 +324,7 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
             case FLOAT: // sic
             case TIMESTAMP:
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-            case INTERVAL_MILLISECONDS:
+            case INTERVAL_MILLISECOND:
                 return 8d;
             case BINARY:
                 return (double) type.getPrecision();
@@ -361,7 +361,7 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
             case BOOLEAN, TINYINT -> 1d;
             case SMALLINT -> 2d;
             case INTEGER, FLOAT, REAL, DATE, TIME, TIME_WITH_LOCAL_TIME_ZONE, INTERVAL_MONTH -> 4d;
-            case BIGINT, DOUBLE, TIMESTAMP, TIMESTAMP_WITH_LOCAL_TIME_ZONE, INTERVAL_MILLISECONDS -> 8d;
+            case BIGINT, DOUBLE, TIMESTAMP, TIMESTAMP_WITH_LOCAL_TIME_ZONE, INTERVAL_MILLISECOND -> 8d;
             case BINARY, VARBINARY -> ((ByteString) value).length();
             case CHAR, JSON, VARCHAR -> ((NlsString) value).getValue().length() * BYTES_PER_CHARACTER;
             default -> 32;

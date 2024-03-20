@@ -26,6 +26,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Litmus;
 
@@ -80,7 +81,7 @@ public class SqlIntervalLiteral extends SqlLiteral {
     /**
      * A Interval value.
      */
-    public static class IntervalValue extends PolyValue {
+    public static class IntervalValue extends PolyInterval {
 
         @Getter
         private final SqlIntervalQualifier intervalQualifier;
@@ -97,13 +98,28 @@ public class SqlIntervalLiteral extends SqlLiteral {
          * @param intervalStr Interval string
          */
         IntervalValue( SqlIntervalQualifier intervalQualifier, int sign, String intervalStr ) {
-            super( null );
+            super( toNumber( intervalQualifier ), intervalQualifier );
             assert (sign == -1) || (sign == 1);
-            assert intervalQualifier != null;
             assert intervalStr != null;
             this.intervalQualifier = intervalQualifier;
             this.sign = sign;
             this.intervalStr = intervalStr;
+        }
+
+
+        private static Long toNumber( SqlIntervalQualifier intervalQualifier ) {
+            return switch ( intervalQualifier.timeUnitRange ) {
+                case YEAR -> 365L * 24 * 60 * 60 * 1000;
+                case HOUR -> 60L * 60 * 1000;
+                case MINUTE -> 60L * 1000;
+                case SECOND -> 1000L;
+                case MILLISECOND -> 1L;
+                case DAY, DOW, DOY -> 24L * 60 * 60 * 1000;
+                case WEEK -> 7L * 24 * 60 * 60 * 1000;
+                case QUARTER -> 3L * 30 * 24 * 60 * 60 * 1000;
+                case MONTH -> 1L;
+                default -> throw new UnsupportedOperationException( "Not implemented yet" );
+            };
         }
 
 

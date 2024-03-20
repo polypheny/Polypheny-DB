@@ -476,7 +476,7 @@ public class RexBuilder {
             PolyType typeName = literal.getPolyType();
             if ( canRemoveCastFromLiteral( type, value, typeName ) ) {
                 switch ( typeName ) {
-                    case INTERVAL_MILLISECONDS:
+                    case INTERVAL_MILLISECOND:
                     case INTERVAL_MONTH:
                         assert value.isInterval();
                         typeName = type.getPolyType();
@@ -1226,7 +1226,7 @@ public class RexBuilder {
                 return makeTimestampLiteral( poly.asTimestamp(), type.getPrecision() );
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                 return makeTimestampWithLocalTimeZoneLiteral( poly.asTimestamp(), type.getPrecision() );
-            case INTERVAL_MILLISECONDS:
+            case INTERVAL_MILLISECOND:
             case INTERVAL_MONTH:
                 return makeLiteral( poly, type, type.getPolyType() );
             case MAP:
@@ -1303,7 +1303,7 @@ public class RexBuilder {
             case BIGINT:
             case DECIMAL:
             case INTERVAL_MONTH:
-            case INTERVAL_MILLISECONDS:
+            case INTERVAL_MILLISECOND:
                 if ( o instanceof PolyBigDecimal value ) {
                     return value;
                 }

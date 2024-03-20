@@ -135,7 +135,7 @@ public class PostgresqlSqlDialect extends SqlDialect {
                     default -> "_" + t.getName() + brackets;
                 };
                 break;
-            case INTERVAL_MILLISECONDS:
+            case INTERVAL_MILLISECOND:
             case INTERVAL_MONTH:
                 castSpec = "interval";
                 break;

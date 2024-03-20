@@ -36,7 +36,6 @@ package org.polypheny.db.type;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import java.math.BigDecimal;
 import java.sql.Types;
@@ -154,7 +153,7 @@ public enum PolyType {
             PolyTypeFamily.INTERVAL_YEAR_MONTH ),
 
 
-    INTERVAL_MILLISECONDS(
+    INTERVAL_MILLISECOND(
             PrecScale.NO_NO | PrecScale.YES_NO | PrecScale.YES_YES,
             false,
             Types.OTHER,
@@ -401,14 +400,13 @@ public enum PolyType {
     public static final List<PolyType> BLOB_TYPES = ImmutableList.of( FILE, AUDIO, IMAGE, VIDEO );
 
     public static final Set<PolyType> COMPLEX_INTERVAL_TYPES =
-            Sets.immutableEnumSet(
-                    PolyType.INTERVAL_MONTH );
+            Sets.immutableEnumSet( PolyType.INTERVAL_MONTH );
 
     public static final Set<PolyType> SIMPLE_INTERVAL_TYPES =
-            Sets.immutableEnumSet( PolyType.INTERVAL_MILLISECONDS );
+            Sets.immutableEnumSet( PolyType.INTERVAL_MILLISECOND );
 
 
-    public static final Set<PolyType> INTERVAL_TYPES = Sets.immutableEnumSet( Iterables.concat( COMPLEX_INTERVAL_TYPES, SIMPLE_INTERVAL_TYPES ) );
+    public static final List<PolyType> INTERVAL_TYPES = List.of( INTERVAL_MILLISECOND, INTERVAL_MONTH );
 
     private static final Map<Integer, PolyType> JDBC_TYPE_TO_NAME =
             ImmutableMap.<Integer, PolyType>builder()
@@ -454,13 +452,11 @@ public enum PolyType {
     private final boolean special;
     /**
      * -- GETTER --
-     *
      */
     private final int jdbcOrdinal;
     /**
      * -- GETTER --
      * Gets the SqlTypeFamily containing this PolyType.
-     *
      */
     private final PolyTypeFamily family;
 
@@ -538,7 +534,7 @@ public enum PolyType {
     public int getDefaultScale() {
         return switch ( this ) {
             case DECIMAL -> 0;
-            case INTERVAL_MONTH, INTERVAL_MILLISECONDS -> DEFAULT_INTERVAL_FRACTIONAL_SECOND_PRECISION;
+            case INTERVAL_MONTH, INTERVAL_MILLISECOND -> DEFAULT_INTERVAL_FRACTIONAL_SECOND_PRECISION;
             default -> -1;
         };
     }
@@ -876,7 +872,7 @@ public enum PolyType {
     public int getMinPrecision() {
         return switch ( this ) {
             case DECIMAL, JSON, VARCHAR, CHAR, VARBINARY, BINARY, TIME, TIME_WITH_LOCAL_TIME_ZONE, TIMESTAMP, TIMESTAMP_WITH_LOCAL_TIME_ZONE -> 1;
-            case INTERVAL_MONTH, INTERVAL_MILLISECONDS -> MIN_INTERVAL_START_PRECISION;
+            case INTERVAL_MONTH, INTERVAL_MILLISECOND -> MIN_INTERVAL_START_PRECISION;
             default -> -1;
         };
     }
@@ -891,7 +887,7 @@ public enum PolyType {
     public int getMinScale() {
         return switch ( this ) {
             // TODO: Minimum numeric scale for decimal
-            case INTERVAL_MONTH, INTERVAL_MILLISECONDS -> MIN_INTERVAL_FRACTIONAL_SECOND_PRECISION;
+            case INTERVAL_MONTH, INTERVAL_MILLISECOND -> MIN_INTERVAL_FRACTIONAL_SECOND_PRECISION;
             default -> -1;
         };
     }
@@ -903,7 +899,7 @@ public enum PolyType {
     public TimeUnit getStartUnit() {
         return switch ( this ) {
             case INTERVAL_MONTH -> TimeUnit.MONTH;
-            case INTERVAL_MILLISECONDS -> TimeUnit.MILLISECOND;
+            case INTERVAL_MILLISECOND -> TimeUnit.MILLISECOND;
             default -> throw new AssertionError( this );
         };
     }
@@ -915,7 +911,7 @@ public enum PolyType {
     public TimeUnit getEndUnit() {
         return switch ( this ) {
             case INTERVAL_MONTH -> TimeUnit.MONTH;
-            case INTERVAL_MILLISECONDS -> TimeUnit.MILLISECOND;
+            case INTERVAL_MILLISECOND -> TimeUnit.MILLISECOND;
             default -> throw new AssertionError( this );
         };
     }

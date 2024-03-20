@@ -371,7 +371,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case TIME_WITH_LOCAL_TIME_ZONE -> PolyTime.class;
             case TIMESTAMP -> PolyTimestamp.class;
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE -> PolyTimestamp.class;
-            case INTERVAL_MILLISECONDS -> PolyInterval.class;
+            case INTERVAL_MILLISECOND -> PolyInterval.class;
             case INTERVAL_MONTH -> PolyInterval.class;
             case CHAR -> PolyString.class;
             case VARCHAR -> PolyString.class;

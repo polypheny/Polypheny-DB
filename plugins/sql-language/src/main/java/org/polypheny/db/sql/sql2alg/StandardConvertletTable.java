@@ -816,7 +816,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                     final PolyType polyType = operands.get( 0 ).getType().getPolyType();
                     switch ( polyType ) {
                         case INTERVAL_MONTH:
-                        case INTERVAL_MILLISECONDS:
+                        case INTERVAL_MILLISECOND:
                             operands = ImmutableList.of( operands.get( 1 ), operands.get( 0 ) );
                     }
                 }
@@ -1384,6 +1384,10 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                                 rexBuilder.makeIntervalLiteral( 1L, qualifier ),
                                 op1 ),
                         BigDecimal.ONE.divide( unit.multiplier, RoundingMode.UNNECESSARY ) );
+                case YEAR -> multiply(
+                        rexBuilder,
+                        rexBuilder.makeIntervalLiteral( 1L, qualifier ),
+                        op1 );
                 default -> multiply(
                         rexBuilder,
                         rexBuilder.makeIntervalLiteral( unit.multiplier.longValue(), qualifier ),

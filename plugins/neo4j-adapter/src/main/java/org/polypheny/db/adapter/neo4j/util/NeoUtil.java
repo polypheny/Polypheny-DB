@@ -118,7 +118,7 @@ public interface NeoUtil {
             case DOUBLE:
                 return v -> PolyDouble.of( v.asNumber() );
             case INTERVAL_MONTH:
-            case INTERVAL_MILLISECONDS:
+            case INTERVAL_MILLISECOND:
                 break;
             case ANY:
                 return v -> PolyString.of( v.asObject().toString() );
@@ -286,7 +286,7 @@ public interface NeoUtil {
                 return literal.value.asNumber().toString();
             case BIGINT:
             case INTERVAL_MONTH:
-            case INTERVAL_MILLISECONDS:
+            case INTERVAL_MILLISECOND:
                 return literal.getValue().toString();
             case TIMESTAMP:
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:

@@ -55,7 +55,7 @@ public abstract class AlgDataTypeSystemImpl implements AlgDataTypeSystem {
     public int getMaxScale( PolyType typeName ) {
         return switch ( typeName ) {
             case DECIMAL -> getMaxNumericScale();
-            case INTERVAL_MILLISECONDS, INTERVAL_MONTH -> PolyType.MAX_INTERVAL_FRACTIONAL_SECOND_PRECISION;
+            case INTERVAL_MILLISECOND, INTERVAL_MONTH -> PolyType.MAX_INTERVAL_FRACTIONAL_SECOND_PRECISION;
             default -> -1;
         };
     }
@@ -75,7 +75,7 @@ public abstract class AlgDataTypeSystemImpl implements AlgDataTypeSystem {
             case DECIMAL:
                 return getMaxNumericPrecision();
             case INTERVAL_MONTH:
-            case INTERVAL_MILLISECONDS:
+            case INTERVAL_MILLISECOND:
                 return PolyType.DEFAULT_INTERVAL_START_PRECISION;
             case BOOLEAN:
                 return 1;
@@ -125,7 +125,7 @@ public abstract class AlgDataTypeSystemImpl implements AlgDataTypeSystem {
             case TIMESTAMP:
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                 return PolyType.MAX_DATETIME_PRECISION;
-            case INTERVAL_MILLISECONDS:
+            case INTERVAL_MILLISECOND:
             case INTERVAL_MONTH:
                 return PolyType.MAX_INTERVAL_START_PRECISION;
             default:
@@ -153,7 +153,7 @@ public abstract class AlgDataTypeSystemImpl implements AlgDataTypeSystem {
             case BINARY -> isPrefix ? "x'" : "'";
             case TIMESTAMP -> isPrefix ? "TIMESTAMP '" : "'";
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE -> isPrefix ? "TIMESTAMP WITH LOCAL TIME ZONE '" : "'";
-            case INTERVAL_MILLISECONDS -> isPrefix ? "INTERVAL '" : "' DAY";
+            case INTERVAL_MILLISECOND -> isPrefix ? "INTERVAL '" : "' DAY";
             case INTERVAL_MONTH -> isPrefix ? "INTERVAL '" : "' YEAR TO MONTH";
             case TIME -> isPrefix ? "TIME '" : "'";
             case TIME_WITH_LOCAL_TIME_ZONE -> isPrefix ? "TIME WITH LOCAL TIME ZONE '" : "'";

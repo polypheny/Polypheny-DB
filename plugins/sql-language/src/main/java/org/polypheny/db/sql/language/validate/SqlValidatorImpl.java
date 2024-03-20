@@ -1602,19 +1602,14 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         }
 
         if ( shouldExpandIdentifiers() ) {
-            if ( resolvedConstructor != null ) {
-                ((SqlBasicCall) call).setOperator( resolvedConstructor );
-            } else {
-                // fake a fully-qualified call to the default constructor
-                ((SqlBasicCall) call).setOperator(
-                        new SqlFunction(
-                                new SqlIdentifier( type.getFieldNames(), ParserPos.ZERO ),
-                                ReturnTypes.explicit( type ),
-                                null,
-                                null,
-                                null,
-                                FunctionCategory.USER_DEFINED_CONSTRUCTOR ) );
-            }
+            // fake a fully-qualified call to the default constructor
+            ((SqlBasicCall) call).setOperator( Objects.requireNonNullElseGet( resolvedConstructor, () -> new SqlFunction(
+                    new SqlIdentifier( type.getFieldNames(), ParserPos.ZERO ),
+                    ReturnTypes.explicit( type ),
+                    null,
+                    null,
+                    null,
+                    FunctionCategory.USER_DEFINED_CONSTRUCTOR ) ) );
         }
         return type;
     }
@@ -2806,7 +2801,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 }
                 break;
 
-            case INTERVAL_MILLISECONDS:
+            case INTERVAL_MILLISECOND:
             case INTERVAL_MONTH:
                 if ( literal instanceof SqlIntervalLiteral ) {
                     SqlIntervalLiteral.IntervalValue interval = (SqlIntervalLiteral.IntervalValue) literal.getValue();

@@ -97,7 +97,7 @@ public class PolyTypeExplicitPrecedenceList implements AlgDataTypePrecedenceList
                     .put( PolyType.TIME, list( PolyType.TIME ) )
                     .put( PolyType.TIMESTAMP, list( PolyType.TIMESTAMP, PolyType.DATE, PolyType.TIME ) )
                     .put( PolyType.INTERVAL_MONTH, list( PolyType.COMPLEX_INTERVAL_TYPES ) )
-                    .put( PolyType.INTERVAL_MILLISECONDS, list( PolyType.COMPLEX_INTERVAL_TYPES ) )
+                    .put( PolyType.INTERVAL_MILLISECOND, list( PolyType.COMPLEX_INTERVAL_TYPES ) )
                     .build();
 
 

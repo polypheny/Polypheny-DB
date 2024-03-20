@@ -177,7 +177,7 @@ public class SqlLiteral extends SqlNode implements Literal {
             case DATE -> value instanceof PolyDate;
             case TIME -> value instanceof PolyTime;
             case TIMESTAMP -> value instanceof PolyTimestamp;
-            case INTERVAL_MILLISECONDS, INTERVAL_MONTH -> value instanceof PolyInterval || value instanceof IntervalValue;
+            case INTERVAL_MILLISECOND, INTERVAL_MONTH -> value instanceof PolyInterval || value instanceof IntervalValue;
             case BINARY -> value instanceof PolyBinary;
             case CHAR -> value instanceof PolyString;
             case SYMBOL -> (value instanceof SqlSampleSpec) || value instanceof PolySymbol;
@@ -274,7 +274,7 @@ public class SqlLiteral extends SqlNode implements Literal {
                     return clazz.cast( valMonth.getIntervalQualifier().timeUnitRange );
                 }
                 break;
-            case INTERVAL_MILLISECONDS:
+            case INTERVAL_MILLISECOND:
                 final SqlIntervalLiteral.IntervalValue valTime = (SqlIntervalLiteral.IntervalValue) value;
                 if ( clazz == Long.class ) {
                     return clazz.cast( valTime.getSign() * SqlParserUtil.intervalToMillis( valTime ) );
@@ -681,7 +681,7 @@ public class SqlLiteral extends SqlNode implements Literal {
                 type = typeFactory.createTypeWithCharsetAndCollation( type, charset, collation );
                 return type;
 
-            case INTERVAL_MILLISECONDS:
+            case INTERVAL_MILLISECOND:
             case INTERVAL_MONTH:
                 SqlIntervalLiteral.IntervalValue intervalValue = (SqlIntervalLiteral.IntervalValue) value;
                 return typeFactory.createIntervalType( intervalValue.getIntervalQualifier() );

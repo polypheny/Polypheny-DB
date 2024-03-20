@@ -209,7 +209,7 @@ public class BsonUtil {
             case BINARY -> new BsonString( new ByteString( obj.asBinary().value ).toBase64String() );
             case AUDIO, IMAGE, VIDEO, FILE -> handleMultimedia( bucket, obj );
             case INTERVAL_MONTH -> handleMonthInterval( obj );
-            case INTERVAL_MILLISECONDS -> handleMillisInterval( obj );
+            case INTERVAL_MILLISECOND -> handleMillisInterval( obj );
             case JSON -> handleDocument( obj );
             default -> new BsonString( obj.toString() );
         };
@@ -260,7 +260,7 @@ public class BsonUtil {
             case BINARY -> BsonUtil::handleBinary;
             case AUDIO, IMAGE, VIDEO, FILE -> ( o ) -> handleMultimedia( bucket, o );
             case INTERVAL_MONTH -> BsonUtil::handleMonthInterval;
-            case INTERVAL_MILLISECONDS -> BsonUtil::handleMillisInterval;
+            case INTERVAL_MILLISECOND -> BsonUtil::handleMillisInterval;
             case JSON -> BsonUtil::handleDocument;
             case ARRAY -> {
                 Function<PolyValue, BsonValue> transformer = getBsonTransformer( types, bucket );

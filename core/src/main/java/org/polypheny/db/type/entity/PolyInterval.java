@@ -18,6 +18,7 @@ package org.polypheny.db.type.entity;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -32,6 +33,7 @@ import org.polypheny.db.type.PolySerializable;
 @EqualsAndHashCode(callSuper = true)
 @Value
 @Slf4j
+@NonFinal
 public class PolyInterval extends PolyValue {
 
 

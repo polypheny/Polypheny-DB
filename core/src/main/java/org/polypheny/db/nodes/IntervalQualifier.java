@@ -30,7 +30,7 @@ public interface IntervalQualifier extends Visitable, Expressible {
     static PolyType getRangePolyType( TimeUnitRange timeUnitRange ) {
         return switch ( timeUnitRange ) {
             case YEAR_TO_MONTH, MONTH, QUARTER -> PolyType.INTERVAL_MONTH;
-            default -> PolyType.INTERVAL_MILLISECONDS;
+            default -> PolyType.INTERVAL_MILLISECOND;
         };
     }
 

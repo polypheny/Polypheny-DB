@@ -176,7 +176,6 @@ public abstract class OperatorBinding {
      * </ul>
      *
      * @param ordinal zero-based ordinal of operand of interest
-     * @param type
      * @return value of operand
      */
     public PolyValue getOperandLiteralValue( int ordinal, PolyType type ) {

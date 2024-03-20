@@ -121,7 +121,7 @@ import org.polypheny.db.util.Util;
  * </tr>
  * <tr>
  * <td>{@link PolyType#INTERVAL_MONTH},
- * {@link PolyType#INTERVAL_MILLISECONDS}</td>
+ * {@link PolyType#INTERVAL_MILLISECOND}</td>
  * <td>Interval, for example <code>INTERVAL '4:3:2' HOUR TO SECOND</code></td>
  * <td>{@link BigDecimal}; also {@link Long} (milliseconds)</td>
  * </tr>
@@ -276,7 +276,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
             case DATE -> value.isDate();
             case TIME, TIME_WITH_LOCAL_TIME_ZONE -> value.isTime();
             case TIMESTAMP, TIMESTAMP_WITH_LOCAL_TIME_ZONE -> value.isTimestamp();
-            case INTERVAL_MILLISECONDS, INTERVAL_MONTH ->
+            case INTERVAL_MILLISECOND, INTERVAL_MONTH ->
                 // The value of a DAY-TIME interval (whatever the start and end units, even say HOUR TO MINUTE) is in milliseconds (perhaps fractional milliseconds). The value of a YEAR-MONTH interval is in months.
                     value.isInterval();
             case VARBINARY -> // not allowed -- use Binary
@@ -519,7 +519,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
                 pw.print( value.asTimestamp() );
                 break;
             case INTERVAL_MONTH:
-            case INTERVAL_MILLISECONDS:
+            case INTERVAL_MILLISECOND:
                 assert value.isInterval();
                 pw.print( value.asInterval().getValue().toString() );
                 break;

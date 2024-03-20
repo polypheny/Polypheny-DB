@@ -2122,7 +2122,7 @@ public class RexImpTable {
                 case ISOYEAR:
                 case WEEK:
                     switch ( polyType ) {
-                        case INTERVAL_MILLISECONDS:
+                        case INTERVAL_MILLISECOND:
                         case INTERVAL_MONTH:
                             break;
                         case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
@@ -2161,7 +2161,7 @@ public class RexImpTable {
                                     operand,
                                     Expressions.call( BuiltInMethod.TIME_ZONE.method, translator.getRoot() ) );
                             return EnumUtils.wrapPolyValue( call.type.getPolyType(), Expressions.divide( EnumUtils.unwrapPolyValue( operand, "longValue" ), Expressions.constant( TimeUnit.SECOND.multiplier.longValue() ) ) );
-                        case INTERVAL_MILLISECONDS:
+                        case INTERVAL_MILLISECOND:
                         case INTERVAL_MONTH:
                             // no convertlet conversion, pass it as extract
                             throw new AssertionError( "unexpected " + polyType );
@@ -2679,7 +2679,7 @@ public class RexImpTable {
                                 long.class );
                     } else {
                         trop1 = switch ( typeName1 ) {
-                            case INTERVAL_MILLISECONDS -> Expressions.convert_( Expressions.divide( trop1, Expressions.constant( DateTimeUtils.MILLIS_PER_DAY ) ), int.class );
+                            case INTERVAL_MILLISECOND -> Expressions.convert_( Expressions.divide( trop1, Expressions.constant( DateTimeUtils.MILLIS_PER_DAY ) ), int.class );
                             default -> trop1;
                         };
                     }
@@ -2702,7 +2702,7 @@ public class RexImpTable {
                                     : BuiltInMethod.ADD_MONTHS_INT;
                     return Expressions.call( method.method, EnumUtils.convertPolyValue( typeName, trop0 ), trop1 );
 
-                case INTERVAL_MILLISECONDS:
+                case INTERVAL_MILLISECOND:
                     return switch ( call.getKind() ) {
                         case MINUS -> normalize( typeName, Expressions.subtract( trop0, trop1 ) );
                         default -> normalize( typeName, Expressions.add( trop0, trop1 ) );

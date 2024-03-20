@@ -234,7 +234,7 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                 case TIMESTAMP:
                 case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                     return PolyTimestamp.class;
-                case INTERVAL_MILLISECONDS:
+                case INTERVAL_MILLISECOND:
                 case INTERVAL_MONTH:
                     return PolyInterval.class;
                 case BOOLEAN:
