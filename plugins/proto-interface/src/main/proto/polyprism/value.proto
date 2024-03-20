@@ -39,31 +39,7 @@ enum ProtoPolyType {
   // Timestamp with local timezone.
   TIMESTAMP_WITH_LOCAL_TIME_ZONE = 14;
   // Interval in seconds.
-  INTERVAL_SECOND = 15;
-  // Interval in minutes to seconds.
-  INTERVAL_MINUTE_SECOND = 16;
-  // Interval in minutes.
-  INTERVAL_MINUTE = 17;
-  // Interval in hours to seconds.
-  INTERVAL_HOUR_SECOND = 18;
-  // Interval in hours to minutes.
-  INTERVAL_HOUR_MINUTE = 19;
-  // Interval in hours.
-  INTERVAL_HOUR = 20;
-  // Interval in days to seconds.
-  INTERVAL_DAY_SECOND = 21;
-  // Interval in days to minutes.
-  INTERVAL_DAY_MINUTE = 22;
-  // Interval in days to hours.
-  INTERVAL_DAY_HOUR = 23;
-  // Interval in days.
-  INTERVAL_DAY = 24;
-  // Interval in months.
-  INTERVAL_MONTH = 25;
-  // Interval in years to months.
-  INTERVAL_YEAR_MONTH = 26;
-  // Interval in years.
-  INTERVAL_YEAR = 27;
+  INTERVAL = 59;
   // Fixed length character string.
   CHAR = 28;
   // Variable length character string.
