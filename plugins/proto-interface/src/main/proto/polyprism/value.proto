@@ -140,8 +140,6 @@ message ProtoValue {
     ProtoNull null = 11;
     // Field used to represent a list. If set, all other fields must be empty.
     ProtoList list = 16;
-    // Field used to represent a map. If set, all other fields must be empty.
-    ProtoMap map = 17;
     // Field used to represent a document. If set, all other fields must be empty.
     ProtoDocument document = 18;
   }
@@ -262,14 +260,6 @@ Represents a list of ProtoValue items.
 message ProtoList {
   // The list of ProtoValue items.
   repeated ProtoValue values = 1;
-}
-
-/*
-Represents a map of ProtoEntry items.
-*/
-message ProtoMap {
-  // The list of ProtoEntry items forming the map.
-  repeated ProtoEntry entries = 1;
 }
 
 /*
