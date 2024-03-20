@@ -16,24 +16,20 @@
 
 package org.polypheny.db.protointerface;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.polypheny.db.AdapterTestSuite;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.jdbc.PolyConnection;
 import org.polypheny.jdbc.multimodel.PolyStatement;
 import org.polypheny.jdbc.multimodel.Result;
 import org.polypheny.jdbc.multimodel.Result.ResultType;
-import org.polypheny.jdbc.multimodel.ScalarResult;
 
-@Category({ AdapterTestSuite.class, CassandraExcluded.class })
+//@Category({ AdapterTestSuite.class, CassandraExcluded.class })
 public class MqlTest {
 
     private static final String MQL_LANGUAGE_NAME = "mongo";
@@ -52,6 +48,7 @@ public class MqlTest {
         }
     }
 
+
     @Test
     public void simpleMqlTest() throws ClassNotFoundException {
         try ( Connection connection = new JdbcConnection( true ).getConnection() ) {
@@ -65,4 +62,5 @@ public class MqlTest {
             throw new RuntimeException( e );
         }
     }
+
 }
