@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.protointerface.proto.IndexedParameters;
 import org.polypheny.db.protointerface.proto.ProtoBigDecimal;
+import org.polypheny.db.protointerface.proto.ProtoEntry;
 import org.polypheny.db.protointerface.proto.ProtoValue;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
@@ -39,6 +40,7 @@ import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
@@ -93,8 +95,20 @@ public class ProtoValueDeserializer {
             case BINARY -> deserializeToPolyBinary( protoValue );
             case NULL -> deserializeToPolyNull();
             case LIST -> deserializeToPolyList( protoValue );
+            case MAP -> deserializeToPolyMap(protoValue);
             default -> throw new GenericRuntimeException( "Should never be thrown" );
         };
+    }
+
+
+    private static PolyValue deserializeToPolyMap( ProtoValue protoValue ) {
+        HashMap<PolyValue, PolyValue> entries = new HashMap<>();
+        for ( ProtoEntry entry : protoValue.getMap().getEntriesList() ) {
+            PolyValue key = deserializeProtoValue( entry.getKey() );
+            PolyValue value = deserializeProtoValue( entry.getValue() );
+            entries.put( key, value );
+        }
+        return PolyMap.of(entries);
     }
 
 
