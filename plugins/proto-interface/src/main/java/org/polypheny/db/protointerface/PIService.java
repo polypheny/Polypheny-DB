@@ -31,10 +31,11 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.protointerface.PIPlugin.ProtoInterface;
 import org.polypheny.db.protointerface.proto.ClientInfoProperties;
 import org.polypheny.db.protointerface.proto.ClientInfoPropertiesRequest;
 import org.polypheny.db.protointerface.proto.ClientInfoPropertiesResponse;
+import org.polypheny.db.protointerface.proto.CloseResultRequest;
+import org.polypheny.db.protointerface.proto.CloseResultResponse;
 import org.polypheny.db.protointerface.proto.CloseStatementRequest;
 import org.polypheny.db.protointerface.proto.CloseStatementResponse;
 import org.polypheny.db.protointerface.proto.CommitRequest;
@@ -306,6 +307,7 @@ public class PIService {
             case ROLLBACK_REQUEST -> rollbackTransaction( req.getRollbackRequest(), new ResponseMaker<>( req, "rollback_response" ) );
             case CONNECTION_PROPERTIES_UPDATE_REQUEST -> updateConnectionProperties( req.getConnectionPropertiesUpdateRequest(), new ResponseMaker<>( req, "connection_properties_update_response" ) );
             case TYPE_NOT_SET -> throw new NotImplementedException( "Unsupported call " + req.getTypeCase() );
+            case CLOSE_RESULT_REQUEST -> closeResult( req.getCloseResultRequest(), new ResponseMaker<>( req, "close_result_response" ) );
         };
     }
 
@@ -567,6 +569,14 @@ public class PIService {
         PIClient client = getClient();
         client.getStatementManager().closeStatementOrBatch( request.getStatementId() );
         return responseObserver.makeResponse( CloseStatementResponse.newBuilder().build() );
+    }
+
+
+    public Response closeResult( CloseResultRequest request, ResponseMaker<CloseResultResponse> responseObserver ) {
+        PIClient client = getClient();
+        PIStatement statement = client.getStatementManager().getStatement( request.getStatementId() );
+        statement.closeResults();
+        return responseObserver.makeResponse( CloseResultResponse.newBuilder().build() );
     }
 
 
