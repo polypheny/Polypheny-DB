@@ -29,15 +29,11 @@ import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.AvaticaSqlException;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
 
@@ -450,7 +446,7 @@ public class JdbcDdlTest {
                     boolean failed = false;
                     try {
                         statement.executeUpdate( "INSERT INTO ddltest(tprimary) VALUES ( null, null, null, null, null, 1, null, null, null, null, null )" );
-                    } catch ( ProtoInterfaceServiceException e) {
+                    } catch ( ProtoInterfaceServiceException e ) {
                         failed = true;
                     }
                     assertTrue( failed );
