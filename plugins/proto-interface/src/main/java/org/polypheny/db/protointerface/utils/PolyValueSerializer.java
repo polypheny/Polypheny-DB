@@ -35,7 +35,6 @@ import org.polypheny.db.protointerface.proto.ProtoInteger;
 import org.polypheny.db.protointerface.proto.ProtoInterval;
 import org.polypheny.db.protointerface.proto.ProtoList;
 import org.polypheny.db.protointerface.proto.ProtoLong;
-import org.polypheny.db.protointerface.proto.ProtoMap;
 import org.polypheny.db.protointerface.proto.ProtoNull;
 import org.polypheny.db.protointerface.proto.ProtoPolyType;
 import org.polypheny.db.protointerface.proto.ProtoString;
@@ -148,10 +147,6 @@ public class PolyValueSerializer {
             case ARRAY:
                 // used by PolyList
                 return serializeAsProtoList( polyValue.asList() );
-            case MAP:
-                // used by PolyDictionary
-                // used by PolyMap
-                return serializeAsProtoMap( polyValue.asMap() );
             case DOCUMENT:
                 // used by PolyDocument
                 return serializeAsProtoDocument( polyValue.asDocument() );
@@ -161,6 +156,7 @@ public class PolyValueSerializer {
             case FILE:
                 // used by PolyFile
                 return serializeAsProtoFile( polyValue.asBlob() );
+            case MAP:
             case GRAPH:
             case NODE:
             case EDGE:
@@ -194,20 +190,6 @@ public class PolyValueSerializer {
     private static ProtoValue serializeAsProtoDocument( PolyDocument polyDocument ) {
         return ProtoValue.newBuilder()
                 .setDocument( buildProtoDocument( polyDocument ) )
-                .build();
-    }
-
-
-    private static ProtoValue serializeAsProtoMap( PolyMap<PolyValue, PolyValue> polyMap ) {
-        return ProtoValue.newBuilder()
-                .setMap( serializeToProtoMap( polyMap ) )
-                .build();
-    }
-
-
-    private static ProtoMap serializeToProtoMap( PolyMap<PolyValue, PolyValue> polyMap ) {
-        return ProtoMap.newBuilder()
-                .addAllEntries( serializeToProtoEntryList( polyMap ) )
                 .build();
     }
 
