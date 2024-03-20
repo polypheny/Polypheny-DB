@@ -26,6 +26,10 @@ dependencies {
     implementation group: "com.fasterxml.jackson.core", name: "jackson-core", version: jackson_core_version // Apache 2.0
     implementation group: "com.fasterxml.jackson.core", name: "jackson-annotations", version: jackson_annotations_version // Apache 2.0
 
+    annotationProcessor group: "io.javalin-rfc", name: "openapi-annotation-processor", version: openapi
+    
+    implementation group: "io.javalin-rfc", name: "javalin-openapi-plugin", version: openapi
+    implementation group: "io.javalin-rfc", name: "javalin-swagger-plugin", version: openapi
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")

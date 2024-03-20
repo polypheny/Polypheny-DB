@@ -67,6 +67,10 @@ import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Part;
+import io.javalin.openapi.HttpMethod;
+import io.javalin.openapi.OpenApi;
+import io.javalin.openapi.OpenApiContent;
+import io.javalin.openapi.OpenApiRequestBody;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -2058,6 +2062,13 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     /**
      * Deploy a new adapter
      */
+    @OpenApi(
+            path = "/createAdapter",
+            summary = "Deploy a new adapter",
+            tags = { "Adapter" },
+            methods = {HttpMethod.POST},
+            requestBody = @OpenApiRequestBody(content = @OpenApiContent(from = AdapterModel.class))
+    )
     void addAdapter( final Context ctx ) {
         AdapterModel a = ctx.bodyAsClass( AdapterModel.class );
         Map<String, String> settings = new HashMap<>();
