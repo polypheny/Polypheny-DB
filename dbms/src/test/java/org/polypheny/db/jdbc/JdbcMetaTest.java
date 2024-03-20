@@ -122,7 +122,7 @@ public class JdbcMetaTest {
 
             // Check number of columns
             int totalColumns = rsmd.getColumnCount();
-            assertEquals( 11, totalColumns, "Wrong number of columns" );
+            assertEquals( 10, totalColumns, "Wrong number of columns" );
 
             // Check column names
             assertEquals( "TABLE_CAT", rsmd.getColumnName( 1 ), "Wrong column name" );
@@ -135,11 +135,10 @@ public class JdbcMetaTest {
             assertEquals( "TYPE_NAME", rsmd.getColumnName( 8 ), "Wrong column name" );
             assertEquals( "SELF_REFERENCING_COL_NAME", rsmd.getColumnName( 9 ), "Wrong column name" );
             assertEquals( "REF_GENERATION", rsmd.getColumnName( 10 ), "Wrong column name" );
-            assertEquals( "OWNER", rsmd.getColumnName( 11 ), "Wrong column name" );
 
             // Check data
-            final Object[] tableFoo = new Object[]{ "APP", "public", "foo", "ENTITY", "", null, null, null, null, null, "pa" };
-            final Object[] tableFoo2 = new Object[]{ "APP", "test", "foo2", "ENTITY", "", null, null, null, null, null, "pa" };
+            final Object[] tableFoo = new Object[]{ null, "public", "foo", "ENTITY", "", null, null, null, null, null };
+            final Object[] tableFoo2 = new Object[]{ null, "test", "foo2", "ENTITY", "", null, null, null, null, null, };
             TestHelper.checkResultSet(
                     connection.getMetaData().getTables( "APP", null, "foo", null ),
                     ImmutableList.of( tableFoo ) );
@@ -160,55 +159,6 @@ public class JdbcMetaTest {
 
 
     @Test
-    public void testMetaGetColumns2() throws SQLException {
-        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
-            Connection connection = polyphenyDbConnection.getConnection();
-            ResultSet resultSet = connection.getMetaData().getColumns( null, null, null, null );
-            ResultSetMetaData rsmd = resultSet.getMetaData();
-
-            // Check number of columns
-            int totalColumns = rsmd.getColumnCount();
-            assertEquals( 19, totalColumns, "Wrong number of columns" );
-
-            // Check column names
-            assertEquals( "TABLE_CAT", rsmd.getColumnName( 1 ) );
-            assertEquals( "TABLE_SCHEM", rsmd.getColumnName( 2 ) );
-            assertEquals( "TABLE_NAME", rsmd.getColumnName( 3 ) );
-            assertEquals( "COLUMN_NAME", rsmd.getColumnName( 4 ) );
-            assertEquals( "DATA_TYPE", rsmd.getColumnName( 5 ) );
-            assertEquals( "TYPE_NAME", rsmd.getColumnName( 6 ) );
-            assertEquals( "COLUMN_SIZE", rsmd.getColumnName( 7 ) );
-            assertEquals( "BUFFER_LENGTH", rsmd.getColumnName( 8 ) );
-            assertEquals( "DECIMAL_DIGITS", rsmd.getColumnName( 9 ) );
-            assertEquals( "NUM_PREC_RADIX", rsmd.getColumnName( 10 ) );
-            assertEquals( "NULLABLE", rsmd.getColumnName( 11 ) );
-            assertEquals( "REMARKS", rsmd.getColumnName( 12 ) );
-            assertEquals( "COLUMN_DEF", rsmd.getColumnName( 13 ) );
-            assertEquals( "SQL_DATA_TYPE", rsmd.getColumnName( 14 ) );
-            assertEquals( "SQL_DATETIME_SUB", rsmd.getColumnName( 15 ) );
-            assertEquals( "CHAR_OCTET_LENGTH", rsmd.getColumnName( 16 ) );
-            assertEquals( "ORDINAL_POSITION", rsmd.getColumnName( 17 ) );
-            assertEquals( "IS_NULLABLE", rsmd.getColumnName( 18 ) );
-            assertEquals( "COLLATION", rsmd.getColumnName( 19 ) );
-
-            // Check data
-            final Object[] columnId = new Object[]{ "APP", "public", "foo", "id", 4, "INTEGER", null, null, null, null, 0, "", null, null, null, null, 1, "NO", null };
-            final Object[] columnName = new Object[]{ "APP", "public", "foo", "name", 12, "VARCHAR", 20, null, null, null, 1, "", null, null, null, null, 2, "YES", "CASE_INSENSITIVE" };
-            final Object[] columnBar = new Object[]{ "APP", "public", "foo", "bar", 12, "VARCHAR", 33, null, null, null, 1, "", null, null, null, null, 3, "YES", "CASE_SENSITIVE" };
-            TestHelper.checkResultSet(
-                    connection.getMetaData().getColumns( "APP", null, "foo", null ),
-                    ImmutableList.of( columnId, columnName, columnBar ) );
-            TestHelper.checkResultSet(
-                    connection.getMetaData().getColumns( "APP", null, "foo", "id" ),
-                    ImmutableList.of( columnId ) );
-            TestHelper.checkResultSet(
-                    connection.getMetaData().getColumns( "APP", null, "foo", "id%" ),
-                    ImmutableList.of( columnId ) );
-        }
-    }
-
-
-    @Test
     public void testMetaGetSchemas() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -217,18 +167,17 @@ public class JdbcMetaTest {
 
             // Check number of columns
             int totalColumns = rsmd.getColumnCount();
-            assertEquals( 4, totalColumns, "Wrong number of columns" );
+            assertEquals( 3, totalColumns, "Wrong number of columns" );
 
             // Check column names
             assertEquals( "TABLE_SCHEM", rsmd.getColumnName( 1 ) );
             assertEquals( "TABLE_CATALOG", rsmd.getColumnName( 2 ) );
-            assertEquals( "OWNER", rsmd.getColumnName( 3 ) );
-            assertEquals( "SCHEMA_TYPE", rsmd.getColumnName( 4 ) );
+            assertEquals( "SCHEMA_TYPE", rsmd.getColumnName( 3 ) );
 
             // Check data
-            final Object[] schemaPublic = new Object[]{ "public", "APP", "pa", "RELATIONAL" };
+            final Object[] schemaPublic = new Object[]{ "public", null, "RELATIONAL" };
             //final Object[] schemaDoc = new Object[]{ "doc", "APP", "pa", "DOCUMENT" };
-            final Object[] schemaTest = new Object[]{ "test", "APP", "pa", "RELATIONAL" };
+            final Object[] schemaTest = new Object[]{ "test", null, "RELATIONAL" };
 
             TestHelper.checkResultSet(
                     connection.getMetaData().getSchemas( "APP", null ),
@@ -284,10 +233,10 @@ public class JdbcMetaTest {
 
             // Check data
             final List<Object[]> expected = new LinkedList<>();
-            expected.add( new Object[]{ "APP", "test", "foo2", "name", null, "pa", "INSERT", "NO" } );
-            expected.add( new Object[]{ "APP", "test", "foo2", "name", null, "pa", "REFERENCE", "NO" } );
-            expected.add( new Object[]{ "APP", "test", "foo2", "name", null, "pa", "SELECT", "NO" } );
-            expected.add( new Object[]{ "APP", "test", "foo2", "name", null, "pa", "UPDATE", "NO" } );
+            expected.add( new Object[]{ null, "test", "foo2", "name", null, "pa", "INSERT", "NO" } );
+            expected.add( new Object[]{ null, "test", "foo2", "name", null, "pa", "REFERENCE", "NO" } );
+            expected.add( new Object[]{ null, "test", "foo2", "name", null, "pa", "SELECT", "NO" } );
+            expected.add( new Object[]{ null, "test", "foo2", "name", null, "pa", "UPDATE", "NO" } );
 
             TestHelper.checkResultSet(
                     connection.getMetaData().getColumnPrivileges( null, "test", "foo2", "name" ),
@@ -434,9 +383,9 @@ public class JdbcMetaTest {
             assertEquals( "COLLATION", rsmd.getColumnName( 25 ), "Wrong column name" );
 
             // Check data
-            final Object[] columnId = new Object[]{ "APP", "public", "foo", "id", 4, "INTEGER", null, null, null, null, 0, "", null, null, null, null, 1, "NO", null, null, null, null, "No", "No", null };
-            final Object[] columnName = new Object[]{ "APP", "public", "foo", "name", 12, "VARCHAR", 20, null, null, null, 1, "", null, null, null, null, 2, "YES", null, null, null, null, "No", "No", "CASE_INSENSITIVE" };
-            final Object[] columnBar = new Object[]{ "APP", "public", "foo", "bar", 12, "VARCHAR", 33, null, null, null, 1, "", null, null, null, null, 3, "YES", null, null, null, null, "No", "No", "CASE_SENSITIVE" };
+            final Object[] columnId = new Object[]{ null, "public", "foo", "id", 4, "INTEGER", null, null, null, null, 0, "", null, null, null, null, 1, "NO", null, null, null, null, "No", "No", null };
+            final Object[] columnName = new Object[]{ null, "public", "foo", "name", 12, "VARCHAR", 20, null, null, null, 1, "", null, null, null, null, 2, "YES", null, null, null, null, "No", "No", "CASE_INSENSITIVE" };
+            final Object[] columnBar = new Object[]{ null, "public", "foo", "bar", 12, "VARCHAR", 33, null, null, null, 1, "", null, null, null, null, 3, "YES", null, null, null, null, "No", "No", "CASE_SENSITIVE" };
             TestHelper.checkResultSet(
                     connection.getMetaData().getColumns( "APP", null, "foo", null ),
                     ImmutableList.of( columnId, columnName, columnBar ) );
@@ -470,9 +419,9 @@ public class JdbcMetaTest {
             assertEquals( "PK_NAME", rsmd.getColumnName( 6 ) );
 
             // Check data
-            final Object[] primaryKey = new Object[]{ "APP", "public", "foo", "id", 1, null };
-            final Object[] compositePrimaryKey1 = new Object[]{ "APP", "test", "foo2", "id", 1, null };
-            final Object[] compositePrimaryKey2 = new Object[]{ "APP", "test", "foo2", "name", 2, null };
+            final Object[] primaryKey = new Object[]{ null, "public", "foo", "id", 1, null };
+            final Object[] compositePrimaryKey1 = new Object[]{ null, "test", "foo2", "id", 1, null };
+            final Object[] compositePrimaryKey2 = new Object[]{ null, "test", "foo2", "name", 2, null };
 
             TestHelper.checkResultSet(
                     connection.getMetaData().getPrimaryKeys( "APP", "public", "foo" ),
@@ -521,9 +470,9 @@ public class JdbcMetaTest {
             assertEquals( "DEFERRABILITY", rsmd.getColumnName( 14 ) );
 
             // Check data
-            final Object[] foreignKey1a = new Object[]{ "APP", "test", "foo2", "name", "APP", "public", "foo", "name", 1, 1, 1, "fk_foo_1", null, null };
-            final Object[] foreignKey1b = new Object[]{ "APP", "test", "foo2", "foobar", "APP", "public", "foo", "bar", 2, 1, 1, "fk_foo_1", null, null };
-            final Object[] foreignKey2 = new Object[]{ "APP", "public", "foo", "id", "APP", "test", "foo2", "id", 1, 1, 1, "fk_foo_2", null, null };
+            final Object[] foreignKey1a = new Object[]{ null, "test", "foo2", null, null, "public", "foo", "name", 1, 1, 1, "fk_foo_1", null, null };
+            final Object[] foreignKey1b = new Object[]{ null, "test", "foo2", null, null, "public", "foo", "bar", 2, 1, 1, "fk_foo_1", null, null };
+            final Object[] foreignKey2 = new Object[]{ null, "public", "foo", null, null, "test", "foo2", "id", 1, 1, 1, "fk_foo_2", null, null };
 
             TestHelper.checkResultSet(
                     connection.getMetaData().getImportedKeys( "APP", "public", "foo" ),
@@ -570,9 +519,9 @@ public class JdbcMetaTest {
             assertEquals( "DEFERRABILITY", rsmd.getColumnName( 14 ) );
 
             // Check data
-            final Object[] foreignKey1a = new Object[]{ "APP", "test", "foo2", "name", "APP", "public", "foo", "name", 1, 1, 1, "fk_foo_1", null, null };
-            final Object[] foreignKey1b = new Object[]{ "APP", "test", "foo2", "foobar", "APP", "public", "foo", "bar", 2, 1, 1, "fk_foo_1", null, null };
-            final Object[] foreignKey2 = new Object[]{ "APP", "public", "foo", "id", "APP", "test", "foo2", "id", 1, 1, 1, "fk_foo_2", null, null };
+            final Object[] foreignKey1a = new Object[]{ null, "test", "foo2", null, null, "public", "foo", "name", 1, 1, 1, "fk_foo_1", null, null };
+            final Object[] foreignKey1b = new Object[]{ null, "test", "foo2", null, null, "public", "foo", "bar", 2, 1, 1, "fk_foo_1", null, null };
+            final Object[] foreignKey2 = new Object[]{ null, "public", "foo", null, null, "test", "foo2", "id", 1, 1, 1, "fk_foo_2", null, null };
 
             TestHelper.checkResultSet(
                     connection.getMetaData().getExportedKeys( "APP", "public", "foo" ),
@@ -654,9 +603,9 @@ public class JdbcMetaTest {
             assertEquals( "INDEX_TYPE", rsmd.getColumnName( 15 ) );
 
             // Check data
-            final Object[] index1 = new Object[]{ "APP", "public", "foo", false, null, "i_foo", 0, 1, "id", null, -1, null, null, 0, 1 };
-            final Object[] index2a = new Object[]{ "APP", "test", "foo2", true, null, "i_foo2", 0, 1, "name", null, -1, null, null, 0, 1 };
-            final Object[] index2b = new Object[]{ "APP", "test", "foo2", true, null, "i_foo2", 0, 2, "foobar", null, -1, null, null, 0, 1 };
+            final Object[] index1 = new Object[]{ null, "public", "foo", false, null, "i_foo", 0, 1, "id", null, -1, null, null, 0, 1 };
+            final Object[] index2a = new Object[]{ null, "test", "foo2", true, null, "i_foo2", 0, 1, "name", null, -1, null, null, 0, 1 };
+            final Object[] index2b = new Object[]{ null, "test", "foo2", true, null, "i_foo2", 0, 2, "foobar", null, -1, null, null, 0, 1 };
 
             if ( !helper.storeSupportsIndex() ) {
                 return;
@@ -664,19 +613,19 @@ public class JdbcMetaTest {
             TestHelper.checkResultSet(
                     connection.getMetaData().getIndexInfo( "APP", "public", "foo", false, false ),
                     ImmutableList.of( index1 ) );
-                    System.out.println("BIMS");
+            System.out.println( "BIMS" );
             TestHelper.checkResultSet(
                     connection.getMetaData().getIndexInfo( "AP_", "tes_", "foo_", false, false ),
                     ImmutableList.of( index2a, index2b ), true );
-            System.out.println("BAMS");
+            System.out.println( "BAMS" );
             TestHelper.checkResultSet(
                     connection.getMetaData().getIndexInfo( "%", "%", "%", false, false ),
                     ImmutableList.of( index1, index2a, index2b ), true );
-            System.out.println("WIMS");
+            System.out.println( "WIMS" );
             TestHelper.checkResultSet(
                     connection.getMetaData().getIndexInfo( null, null, null, false, false ),
                     ImmutableList.of( index1, index2a, index2b ), true );
-            System.out.println("WUMS");
+            System.out.println( "WUMS" );
             TestHelper.checkResultSet(
                     connection.getMetaData().getIndexInfo( null, "%", null, true, false ),
                     ImmutableList.of( index1 ) );
