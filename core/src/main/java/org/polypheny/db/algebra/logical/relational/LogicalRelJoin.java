@@ -35,9 +35,7 @@ package org.polypheny.db.algebra.logical.relational;
 
 
 import com.google.common.collect.ImmutableList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import org.polypheny.db.algebra.AlgNode;
@@ -48,13 +46,13 @@ import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
-import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.Parameter;
 import org.polypheny.db.algebra.polyalg.arguments.AnyArg;
 import org.polypheny.db.algebra.polyalg.arguments.BooleanArg;
 import org.polypheny.db.algebra.polyalg.arguments.CorrelationArg;
 import org.polypheny.db.algebra.polyalg.arguments.EnumArg;
 import org.polypheny.db.algebra.polyalg.arguments.ListArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgCluster;
@@ -168,17 +166,17 @@ public final class LogicalRelJoin extends Join implements RelAlg {
 
 
     @Override
-    public Map<Parameter, PolyAlgArg> prepareAttributes() {
-        Map<Parameter, PolyAlgArg> attributes = new HashMap<>();
+    public PolyAlgArgs collectAttributes() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
         PolyAlgArg varsArg = new ListArg<>( variablesSet.asList(), CorrelationArg::new );
         PolyAlgArg sysFieldsArg = new ListArg<>( systemFieldList, AnyArg::new );
 
-        attributes.put( getPolyAlgDeclaration().getPos( 0 ), new RexArg( condition, this ) );
-        attributes.put( getPolyAlgDeclaration().getParam( "type" ), new EnumArg<>( joinType, ParamType.JOIN_TYPE_ENUM ) );
-        attributes.put( getPolyAlgDeclaration().getParam( "variables" ), varsArg );
-        attributes.put( getPolyAlgDeclaration().getParam( "semiJoinDone" ), new BooleanArg( semiJoinDone ) );
-        attributes.put( getPolyAlgDeclaration().getParam( "sysFields" ), sysFieldsArg );
-        return attributes;
+        args.put( 0, new RexArg( condition, this ) )
+                .put( "type", new EnumArg<>( joinType, ParamType.JOIN_TYPE_ENUM ) )
+                .put( "variables", varsArg )
+                .put( "semiJoinDone", new BooleanArg( semiJoinDone ) )
+                .put( "sysFields", sysFieldsArg );
+        return args;
     }
 
 }

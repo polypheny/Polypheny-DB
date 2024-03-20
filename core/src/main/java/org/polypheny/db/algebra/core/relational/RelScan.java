@@ -20,7 +20,6 @@ package org.polypheny.db.algebra.core.relational;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -32,10 +31,9 @@ import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.common.Scan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration;
-import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.Parameter;
 import org.polypheny.db.algebra.polyalg.arguments.EntityArg;
-import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
 import org.polypheny.db.algebra.polyalg.PolyAlgRegistry;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.DocumentType;
@@ -178,8 +176,9 @@ public abstract class RelScan<E extends Entity> extends Scan<E> implements RelAl
 
 
     @Override
-    public Map<Parameter, PolyAlgArg> prepareAttributes() {
-        return Map.of( getPolyAlgDeclaration().getPos( 0 ), new EntityArg( entity ) );
+    public PolyAlgArgs collectAttributes() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+        return args.put( 0, new EntityArg( entity ) );
     }
 
 }

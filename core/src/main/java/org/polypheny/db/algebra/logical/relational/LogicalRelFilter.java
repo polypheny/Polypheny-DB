@@ -35,8 +35,6 @@ package org.polypheny.db.algebra.logical.relational;
 
 
 import com.google.common.collect.ImmutableSet;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
@@ -50,11 +48,10 @@ import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMdDistribution;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration;
-import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.Parameter;
 import org.polypheny.db.algebra.polyalg.arguments.AnyArg;
 import org.polypheny.db.algebra.polyalg.arguments.ListArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -130,15 +127,13 @@ public final class LogicalRelFilter extends Filter implements RelAlg {
 
 
     @Override
-    public Map<Parameter, PolyAlgArg> prepareAttributes() {
-        PolyAlgDeclaration decl = getPolyAlgDeclaration();
-        Map<Parameter, PolyAlgArg> attributes = new HashMap<>();
+    public PolyAlgArgs collectAttributes() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
         PolyAlgArg varArg = new ListArg<>( variablesSet.asList(), AnyArg::new );
 
-        attributes.put( decl.getPos( 0 ), new RexArg( condition, this ) );
-        attributes.put( decl.getParam( "variables" ), varArg );
-
-        return attributes;
+        args.put( 0, new RexArg( condition, this ) );
+        args.put( "variables", varArg );
+        return args;
     }
 
 }

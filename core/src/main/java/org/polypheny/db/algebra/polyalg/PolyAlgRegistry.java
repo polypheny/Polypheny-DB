@@ -29,9 +29,16 @@ import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.Parameter;
 public class PolyAlgRegistry {
 
     private static final Map<Class<? extends AlgNode>, PolyAlgDeclaration> declarations = new HashMap<>();
+    private static final Map<String, Class<? extends AlgNode>> classes = new HashMap<>();
 
 
     static {
+        populateDeclarationsMap();
+        populateClassesMap();
+    }
+
+
+    private static void populateDeclarationsMap() {
         declarations.put( LogicalRelProject.class, new PolyAlgDeclaration( "PROJECT", 1,
                 new Parameter( "projects", ParamType.SIMPLE_REX, true ) ) );
 
@@ -72,6 +79,22 @@ public class PolyAlgRegistry {
                 new Parameter( "exps", ParamType.SIMPLE_REX, true ),
                 new Parameter( "projects", ParamType.SIMPLE_REX, true ),
                 new Parameter( "condition", ParamType.SIMPLE_REX, false, "" ) ) ) );
+
+    }
+
+
+    private static void populateClassesMap() {
+        for ( Map.Entry<Class<? extends AlgNode>, PolyAlgDeclaration> entry : declarations.entrySet() ) {
+            Class<? extends AlgNode> clazz = entry.getKey();
+            PolyAlgDeclaration declaration = entry.getValue();
+
+            assert !classes.containsKey( declaration.opName );
+            classes.put( declaration.opName, clazz );
+            for ( String alias : declaration.opAliases ) {
+                assert !classes.containsKey( alias );
+                classes.put( alias, clazz );
+            }
+        }
     }
 
 
@@ -93,6 +116,25 @@ public class PolyAlgRegistry {
         return declarations.getOrDefault(
                 clazz,
                 new PolyAlgDeclaration( clazz.getSimpleName(), numInputs ) );
+    }
+
+
+    public static Class<? extends AlgNode> getClass( String opName ) {
+        return classes.get( opName );
+    }
+
+
+    /**
+     * Retrieves the PolyAlgDeclaration associated with the specified operator
+     * or returns null if the operator is not known.
+     * It is also possible to use an alias for the operator name.
+     *
+     * @param opName The name of the operator or one of its aliases
+     * @return The PolyAlgDeclaration associated with the opName if it exists,
+     * or null otherwise.
+     */
+    public static PolyAlgDeclaration getDeclaration( String opName ) {
+        return declarations.get( getClass( opName ) );
     }
 
 }

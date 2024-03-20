@@ -34,20 +34,17 @@
 package org.polypheny.db.algebra.logical.relational;
 
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.relational.RelAlg;
-import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration;
-import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.Parameter;
 import org.polypheny.db.algebra.polyalg.arguments.AggArg;
 import org.polypheny.db.algebra.polyalg.arguments.FieldArg;
 import org.polypheny.db.algebra.polyalg.arguments.ListArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.rules.AggregateProjectPullUpConstantsRule;
 import org.polypheny.db.algebra.rules.AggregateReduceFunctionsRule;
 import org.polypheny.db.plan.AlgCluster;
@@ -120,15 +117,14 @@ public final class LogicalRelAggregate extends Aggregate implements RelAlg {
 
 
     @Override
-    public Map<Parameter, PolyAlgArg> prepareAttributes() {
-        PolyAlgDeclaration decl = getPolyAlgDeclaration();
-        Map<Parameter, PolyAlgArg> attributes = new HashMap<>();
+    public PolyAlgArgs collectAttributes() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
 
         PolyAlgArg groupArg = new ListArg<>( groupSet.asList(), f -> new FieldArg( f, this ) );
         PolyAlgArg aggsArg = new ListArg<>( aggCalls, a -> new AggArg( a, this ) );
 
-        attributes.put( decl.getPos( 0 ), groupArg );
-        attributes.put( decl.getParam( "aggs" ), aggsArg );
+        args.put( 0, groupArg );
+        args.put( "aggs", aggsArg );
         if ( getGroupType() != Group.SIMPLE ) {
             PolyAlgArg groupSetArg = new ListArg<>(
                     groupSets,
@@ -136,10 +132,10 @@ public final class LogicalRelAggregate extends Aggregate implements RelAlg {
                             set.asList(),
                             f -> new FieldArg( f, this ) ) );
 
-            attributes.put( decl.getParam( "groups" ), groupSetArg );
+            args.put( "groups", groupSetArg );
         }
 
-        return attributes;
+        return args;
     }
 
 }

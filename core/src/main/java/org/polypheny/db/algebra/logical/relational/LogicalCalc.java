@@ -34,8 +34,6 @@
 package org.polypheny.db.algebra.logical.relational;
 
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgDistributionTraitDef;
@@ -46,10 +44,9 @@ import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMdDistribution;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration;
-import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.Parameter;
 import org.polypheny.db.algebra.polyalg.arguments.ListArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.algebra.rules.FilterCalcMergeRule;
 import org.polypheny.db.algebra.rules.FilterToCalcRule;
@@ -118,16 +115,15 @@ public final class LogicalCalc extends Calc implements RelAlg {
 
 
     @Override
-    public Map<Parameter, PolyAlgArg> prepareAttributes() {
-        PolyAlgDeclaration decl = getPolyAlgDeclaration();
+    public PolyAlgArgs collectAttributes() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
         PolyAlgArg expsArg = new ListArg<>( program.getExprList(), RexArg::new, this );
         PolyAlgArg projectsArg = new ListArg<>( program.getProjectList(), RexArg::new, rowType.getFieldNames(), this );
 
-        Map<Parameter, PolyAlgArg> attributes = new HashMap<>();
-        attributes.put( decl.getPos( 0 ), expsArg );
-        attributes.put( decl.getPos( 1 ), projectsArg );
-        attributes.put( decl.getParam( "condition" ), new RexArg( program.getCondition(), this ) );
-        return attributes;
+        args.put( 0, expsArg );
+        args.put( 1, projectsArg );
+        args.put( "condition", new RexArg( program.getCondition(), this ) );
+        return args;
     }
 
 }

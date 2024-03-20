@@ -35,7 +35,6 @@ package org.polypheny.db.algebra;
 
 
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import org.jetbrains.annotations.Nullable;
@@ -45,8 +44,7 @@ import org.polypheny.db.algebra.externalize.AlgWriterImpl;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.metadata.Metadata;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration;
-import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.Parameter;
-import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.logistic.DataModel;
@@ -251,19 +249,20 @@ public interface AlgNode extends AlgOptNode, Cloneable {
     /**
      * Retrieves the PolyAlgDeclaration for this AlgNode implementation.
      * This method should be static.
+     *
      * @return PolyAlgDeclaration for this AlgNode implementation
      */
     PolyAlgDeclaration getPolyAlgDeclaration();
 
     /**
-     * Serializes the attributes of this instance for the purpose of creating the PolyAlgebra representation for this AlgNode.
-     * Each value in the returned map represents one serialized attribute of this AlgNode instance.
-     * The key is the corresponding parameter in the {@link org.polypheny.db.algebra.polyalg.PolyAlgDeclaration}.
-     * If no attributes exist, an empty map is returned.
+     * Collects the attributes characterizing this instance for the purpose of creating the PolyAlgebra representation.
+     * The returned PolyAlgArgs contains every {@link org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg} relevant for this AlgNode instance.
+     * The corresponding {@link org.polypheny.db.algebra.polyalg.PolyAlgDeclaration} must be identical to {@code getPolyAlgDeclaration()}.
+     * Its parameters can be used to retrieve corresponding argument values.
      *
-     * @return A map that maps parameters to serialized attributes of this AlgNode instance
+     * @return PolyAlgArgs that maps parameters of the declaration to {@link org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg} that wraps the corresponding attribute
      */
-    Map<Parameter, PolyAlgArg> prepareAttributes();
+    PolyAlgArgs collectAttributes();
 
     /**
      * Receives notification that this expression is about to be registered. The implementation of this method must at least register all child expressions.

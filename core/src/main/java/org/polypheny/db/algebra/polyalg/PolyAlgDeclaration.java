@@ -18,9 +18,6 @@ package org.polypheny.db.algebra.polyalg;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import java.util.Map;
-import java.util.StringJoiner;
-import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
 
 
 public class PolyAlgDeclaration {
@@ -68,29 +65,6 @@ public class PolyAlgDeclaration {
 
     public PolyAlgDeclaration( String opName, int numInputs, Parameter param ) {
         this( opName, ImmutableList.of(), numInputs, ImmutableList.of( param ) );
-    }
-
-
-    public String serializeArguments( Map<Parameter, PolyAlgArg> preparedAttributes ) {
-        StringJoiner joiner = new StringJoiner( ", ", "[", "]" );
-
-        for ( Parameter p : posParams ) {
-            assert preparedAttributes.containsKey( p );
-            PolyAlgArg arg = preparedAttributes.get( p );
-            assert arg.getType() == p.type;
-            joiner.add( arg.toPolyAlg() );
-        }
-        for ( Parameter p : kwParams ) {
-            if ( preparedAttributes.containsKey( p ) ) {
-                PolyAlgArg arg = preparedAttributes.get( p );
-                assert arg.getType() == p.type;
-                String value = arg.toPolyAlg();
-                if ( !p.defaultValue.equals( value ) ) {
-                    joiner.add( p.name + "=" + value );
-                }
-            }
-        }
-        return joiner.toString();
     }
 
 

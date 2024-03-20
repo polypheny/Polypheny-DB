@@ -41,7 +41,6 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Getter;
@@ -54,9 +53,8 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.metadata.Metadata;
 import org.polypheny.db.algebra.metadata.MetadataFactory;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration;
-import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.Parameter;
-import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
 import org.polypheny.db.algebra.polyalg.PolyAlgRegistry;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.plan.AlgCluster;
@@ -355,7 +353,7 @@ public abstract class AbstractAlgNode implements AlgNode {
     public void buildPolyAlgebra( StringBuilder sb ) {
         PolyAlgDeclaration decl = getPolyAlgDeclaration();
         sb.append( decl.opName );
-        sb.append( decl.serializeArguments( prepareAttributes() ) );
+        sb.append( collectAttributes().serializeArguments() );
 
         int size = getInputs().size();
         if ( size == 0 ) {
@@ -389,9 +387,9 @@ public abstract class AbstractAlgNode implements AlgNode {
 
 
     @Override
-    public Map<Parameter, PolyAlgArg> prepareAttributes() {
+    public PolyAlgArgs collectAttributes() {
         // TODO: Move implementation from abstract class into child classes
-        return Collections.emptyMap();
+        return new PolyAlgArgs( getPolyAlgDeclaration() );
     }
 
 
