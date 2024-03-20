@@ -408,13 +408,13 @@ public class RexToLixTranslator {
                                     BuiltInMethod.TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_STRING.method,
                                     operand,
                                     Expressions.call( BuiltInMethod.TIME_ZONE.method, root ) ) );
-                    case INTERVAL_YEAR, INTERVAL_YEAR_MONTH, INTERVAL_MONTH -> RexImpTable.optimize2(
+                    case INTERVAL_MONTH -> RexImpTable.optimize2(
                             operand,
                             Expressions.call(
                                     BuiltInMethod.INTERVAL_YEAR_MONTH_TO_STRING.method,
                                     operand,
                                     Expressions.constant( interval.getTimeUnitRange() ) ) );
-                    case INTERVAL_DAY, INTERVAL_DAY_HOUR, INTERVAL_DAY_MINUTE, INTERVAL_DAY_SECOND, INTERVAL_HOUR, INTERVAL_HOUR_MINUTE, INTERVAL_HOUR_SECOND, INTERVAL_MINUTE, INTERVAL_MINUTE_SECOND, INTERVAL_SECOND -> RexImpTable.optimize2(
+                    case INTERVAL_MILLISECONDS -> RexImpTable.optimize2(
                             operand,
                             Expressions.call(
                                     BuiltInMethod.INTERVAL_DAY_TIME_TO_STRING.method,
@@ -483,19 +483,8 @@ public class RexToLixTranslator {
                             Expressions.constant( (long) Math.pow( 10, 3 - targetScale ) ) );
                 }
                 break;
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
             case INTERVAL_MONTH:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
+            case INTERVAL_MILLISECONDS:
                 if ( Objects.requireNonNull( sourceType.getPolyType().getFamily() ) == PolyTypeFamily.NUMERIC ) {
                     final BigDecimal multiplier = targetType.getPolyType().getEndUnit().multiplier;
                     final BigDecimal divider = BigDecimal.ONE;
@@ -1096,19 +1085,8 @@ public class RexToLixTranslator {
     private static Expression scaleIntervalToNumber( AlgDataType sourceType, AlgDataType targetType, Expression operand ) {
         if ( Objects.requireNonNull( targetType.getPolyType().getFamily() ) == PolyTypeFamily.NUMERIC ) {
             switch ( sourceType.getPolyType() ) {
-                case INTERVAL_YEAR:
-                case INTERVAL_YEAR_MONTH:
+                case INTERVAL_MILLISECONDS:
                 case INTERVAL_MONTH:
-                case INTERVAL_DAY:
-                case INTERVAL_DAY_HOUR:
-                case INTERVAL_DAY_MINUTE:
-                case INTERVAL_DAY_SECOND:
-                case INTERVAL_HOUR:
-                case INTERVAL_HOUR_MINUTE:
-                case INTERVAL_HOUR_SECOND:
-                case INTERVAL_MINUTE:
-                case INTERVAL_MINUTE_SECOND:
-                case INTERVAL_SECOND:
                     // Scale to the given field.
                     final BigDecimal multiplier = BigDecimal.ONE;
                     final BigDecimal divider = sourceType.getPolyType().getEndUnit().multiplier;

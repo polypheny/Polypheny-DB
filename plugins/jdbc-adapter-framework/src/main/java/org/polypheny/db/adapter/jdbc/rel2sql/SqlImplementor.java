@@ -38,6 +38,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import java.math.BigDecimal;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -522,9 +523,9 @@ public abstract class SqlImplementor {
                         case BOOLEAN:
                             return SqlLiteral.createBoolean( literal.value.asBoolean().value, POS );
                         case INTERVAL_YEAR_MONTH:
-                        case INTERVAL_DAY_TIME:
-                            final boolean negative = literal.value.asInterval().value.signum() < 0;
-                            return SqlLiteral.createInterval( negative ? -1 : 1, literal.intervalString( literal.value.asInterval().value.abs() ), SqlIntervalQualifier.from( literal.getType().getIntervalQualifier() ), POS );
+                        case INTERVAL_TIME:
+                            final boolean negative = literal.value.asInterval().value < 0;
+                            return SqlLiteral.createInterval( negative ? -1 : 1, literal.intervalString( new BigDecimal( literal.value.asInterval().value ).abs() ), SqlIntervalQualifier.from( literal.getType().getIntervalQualifier() ), POS );
                         case DATE:
                             return SqlDateLiteral.createDate( literal.value.asDate(), POS );
                         case TIME:

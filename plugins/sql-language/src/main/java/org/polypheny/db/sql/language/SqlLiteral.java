@@ -133,7 +133,6 @@ import org.polypheny.db.util.Util;
  * <td>An {@link Enum}</td>
  * </tr>
  * <tr>
- * <td>{@link PolyType#INTERVAL_YEAR} .. {@link PolyType#INTERVAL_SECOND}</td>
  * <td>Interval, for example <code>INTERVAL '1:34' HOUR</code>.</td>
  * <td>{@link SqlIntervalLiteral.IntervalValue}.</td>
  * </tr>
@@ -178,7 +177,7 @@ public class SqlLiteral extends SqlNode implements Literal {
             case DATE -> value instanceof PolyDate;
             case TIME -> value instanceof PolyTime;
             case TIMESTAMP -> value instanceof PolyTimestamp;
-            case INTERVAL_YEAR, INTERVAL_YEAR_MONTH, INTERVAL_MONTH, INTERVAL_DAY, INTERVAL_DAY_HOUR, INTERVAL_DAY_MINUTE, INTERVAL_DAY_SECOND, INTERVAL_HOUR, INTERVAL_HOUR_MINUTE, INTERVAL_HOUR_SECOND, INTERVAL_MINUTE, INTERVAL_MINUTE_SECOND, INTERVAL_SECOND -> value instanceof PolyInterval || value instanceof IntervalValue;
+            case INTERVAL_MILLISECONDS, INTERVAL_MONTH -> value instanceof PolyInterval || value instanceof IntervalValue;
             case BINARY -> value instanceof PolyBinary;
             case CHAR -> value instanceof PolyString;
             case SYMBOL -> (value instanceof SqlSampleSpec) || value instanceof PolySymbol;
@@ -265,8 +264,6 @@ public class SqlLiteral extends SqlNode implements Literal {
                     return clazz.cast( value.asTemporal().toCalendar() );
                 }
                 break;
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
             case INTERVAL_MONTH:
                 final SqlIntervalLiteral.IntervalValue valMonth = (SqlIntervalLiteral.IntervalValue) value;
                 if ( clazz == Long.class ) {
@@ -277,16 +274,7 @@ public class SqlLiteral extends SqlNode implements Literal {
                     return clazz.cast( valMonth.getIntervalQualifier().timeUnitRange );
                 }
                 break;
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
+            case INTERVAL_MILLISECONDS:
                 final SqlIntervalLiteral.IntervalValue valTime = (SqlIntervalLiteral.IntervalValue) value;
                 if ( clazz == Long.class ) {
                     return clazz.cast( valTime.getSign() * SqlParserUtil.intervalToMillis( valTime ) );
@@ -362,7 +350,7 @@ public class SqlLiteral extends SqlNode implements Literal {
                 case INTERVAL_YEAR_MONTH:
                     final SqlIntervalLiteral.IntervalValue valMonth = (SqlIntervalLiteral.IntervalValue) literal.value;
                     return valMonth.getSign() * SqlParserUtil.intervalToMonths( valMonth );
-                case INTERVAL_DAY_TIME:
+                case INTERVAL_TIME:
                     final SqlIntervalLiteral.IntervalValue valTime = (SqlIntervalLiteral.IntervalValue) literal.value;
                     return valTime.getSign() * SqlParserUtil.intervalToMillis( valTime );
             }
@@ -693,19 +681,8 @@ public class SqlLiteral extends SqlNode implements Literal {
                 type = typeFactory.createTypeWithCharsetAndCollation( type, charset, collation );
                 return type;
 
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
+            case INTERVAL_MILLISECONDS:
             case INTERVAL_MONTH:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
                 SqlIntervalLiteral.IntervalValue intervalValue = (SqlIntervalLiteral.IntervalValue) value;
                 return typeFactory.createIntervalType( intervalValue.getIntervalQualifier() );
 
@@ -718,7 +695,7 @@ public class SqlLiteral extends SqlNode implements Literal {
             case VARBINARY: // should never happen
 
             default:
-                throw Util.needToImplement( toString() + ", operand=" + value );
+                throw Util.needToImplement( this + ", operand=" + value );
         }
     }
 

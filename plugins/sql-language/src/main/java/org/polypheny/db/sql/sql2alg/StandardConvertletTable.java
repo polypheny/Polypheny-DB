@@ -436,14 +436,14 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
             final SqlIntervalQualifier intervalQualifier = (SqlIntervalQualifier) right;
             if ( left instanceof SqlIntervalLiteral ) {
                 RexLiteral sourceInterval = (RexLiteral) cx.convertExpression( left );
-                BigDecimal sourceValue = sourceInterval.value.asInterval().value;
+                Long sourceValue = sourceInterval.value.asInterval().value;
                 RexLiteral castedInterval = cx.getRexBuilder().makeIntervalLiteral( sourceValue, intervalQualifier );
                 return castToValidatedType( cx, call, castedInterval );
             } else if ( left instanceof SqlNumericLiteral ) {
                 RexLiteral sourceInterval = (RexLiteral) cx.convertExpression( left );
-                BigDecimal sourceValue = sourceInterval.getValue().asNumber().bigDecimalValue();
-                final BigDecimal multiplier = intervalQualifier.getUnit().multiplier;
-                sourceValue = sourceValue.multiply( multiplier );
+                long sourceValue = sourceInterval.getValue().asNumber().longValue();
+                final Long multiplier = intervalQualifier.getUnit().multiplier.longValue();
+                sourceValue = sourceValue * multiplier;
                 RexLiteral castedInterval = cx.getRexBuilder().makeIntervalLiteral( sourceValue, intervalQualifier );
                 return castToValidatedType( cx, call, castedInterval );
             }
@@ -815,19 +815,8 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                 if ( operands.size() == 2 ) {
                     final PolyType polyType = operands.get( 0 ).getType().getPolyType();
                     switch ( polyType ) {
-                        case INTERVAL_YEAR:
-                        case INTERVAL_YEAR_MONTH:
                         case INTERVAL_MONTH:
-                        case INTERVAL_DAY:
-                        case INTERVAL_DAY_HOUR:
-                        case INTERVAL_DAY_MINUTE:
-                        case INTERVAL_DAY_SECOND:
-                        case INTERVAL_HOUR:
-                        case INTERVAL_HOUR_MINUTE:
-                        case INTERVAL_HOUR_SECOND:
-                        case INTERVAL_MINUTE:
-                        case INTERVAL_MINUTE_SECOND:
-                        case INTERVAL_SECOND:
+                        case INTERVAL_MILLISECONDS:
                             operands = ImmutableList.of( operands.get( 1 ), operands.get( 0 ) );
                     }
                 }
@@ -1392,12 +1381,12 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                         rexBuilder,
                         multiply(
                                 rexBuilder,
-                                rexBuilder.makeIntervalLiteral( BigDecimal.ONE, qualifier ),
+                                rexBuilder.makeIntervalLiteral( 1L, qualifier ),
                                 op1 ),
                         BigDecimal.ONE.divide( unit.multiplier, RoundingMode.UNNECESSARY ) );
                 default -> multiply(
                         rexBuilder,
-                        rexBuilder.makeIntervalLiteral( unit.multiplier, qualifier ),
+                        rexBuilder.makeIntervalLiteral( unit.multiplier.longValue(), qualifier ),
                         op1 );
             };
 

@@ -59,7 +59,7 @@ public abstract class DdlManager {
     public static DdlManager INSTANCE = null;
 
 
-    public static final List<String> blockedNamespaceNames = List.of( "namespace", "db", "schema", "graph" );
+    public static final List<String> blockedNamespaceNames = List.of( "namespace", "db", "schema", "graph", "database" );
 
 
     /**

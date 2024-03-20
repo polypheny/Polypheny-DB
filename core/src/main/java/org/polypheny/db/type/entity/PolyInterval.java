@@ -16,16 +16,17 @@
 
 package org.polypheny.db.type.entity;
 
-import java.math.BigDecimal;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.nodes.IntervalQualifier;
+import org.polypheny.db.nodes.IntervalQualifierImpl;
 import org.polypheny.db.type.PolySerializable;
 
 @EqualsAndHashCode(callSuper = true)
@@ -34,7 +35,8 @@ import org.polypheny.db.type.PolySerializable;
 public class PolyInterval extends PolyValue {
 
 
-    public BigDecimal value;
+    public Long value;
+
     public IntervalQualifier qualifier;
 
 
@@ -44,15 +46,20 @@ public class PolyInterval extends PolyValue {
      * @param value The amount of the range
      * @param qualifier The unit qualifier, e.g. YEAR, MONTH, DAY, etc.
      */
-    public PolyInterval( BigDecimal value, IntervalQualifier qualifier ) {
+    public PolyInterval( Long value, IntervalQualifier qualifier ) {
         super( qualifier.typeName() );
         this.value = value;
         this.qualifier = qualifier;
     }
 
 
-    public static PolyInterval of( BigDecimal value, IntervalQualifier type ) {
+    public static PolyInterval of( Long value, IntervalQualifier type ) {
         return new PolyInterval( value, type );
+    }
+
+
+    public static PolyInterval of( Long value ) {
+        return new PolyInterval( value, new IntervalQualifierImpl( TimeUnit.MILLISECOND, 0, TimeUnit.MILLISECOND, 0 ) );
     }
 
 
@@ -100,7 +107,6 @@ public class PolyInterval extends PolyValue {
 
 
     public long getMillis() {
-        log.warn( "might adjust" );
         return switch ( qualifier.getTimeUnitRange() ) {
             case YEAR -> value.longValue() * 24 * 60 * 60 * 1000;
             case MONTH -> value.longValue();

@@ -209,8 +209,7 @@ public class BsonUtil {
             case BINARY -> new BsonString( new ByteString( obj.asBinary().value ).toBase64String() );
             case AUDIO, IMAGE, VIDEO, FILE -> handleMultimedia( bucket, obj );
             case INTERVAL_MONTH -> handleMonthInterval( obj );
-            case INTERVAL_DAY -> handleDayInterval( obj );
-            case INTERVAL_YEAR -> handleYearInterval( obj );
+            case INTERVAL_MILLISECONDS -> handleMillisInterval( obj );
             case JSON -> handleDocument( obj );
             default -> new BsonString( obj.toString() );
         };
@@ -261,8 +260,7 @@ public class BsonUtil {
             case BINARY -> BsonUtil::handleBinary;
             case AUDIO, IMAGE, VIDEO, FILE -> ( o ) -> handleMultimedia( bucket, o );
             case INTERVAL_MONTH -> BsonUtil::handleMonthInterval;
-            case INTERVAL_DAY -> BsonUtil::handleDayInterval;
-            case INTERVAL_YEAR -> BsonUtil::handleYearInterval;
+            case INTERVAL_MILLISECONDS -> BsonUtil::handleMillisInterval;
             case JSON -> BsonUtil::handleDocument;
             case ARRAY -> {
                 Function<PolyValue, BsonValue> transformer = getBsonTransformer( types, bucket );
@@ -335,7 +333,7 @@ public class BsonUtil {
     }
 
 
-    private static BsonValue handleDayInterval( PolyValue obj ) {
+    private static BsonValue handleMillisInterval( PolyValue obj ) {
         return new BsonDecimal128( new Decimal128( obj.asInterval().value ) );
     }
 

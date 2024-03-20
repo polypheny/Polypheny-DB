@@ -53,26 +53,11 @@ public abstract class AlgDataTypeSystemImpl implements AlgDataTypeSystem {
 
     @Override
     public int getMaxScale( PolyType typeName ) {
-        switch ( typeName ) {
-            case DECIMAL:
-                return getMaxNumericScale();
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_MONTH:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
-                return PolyType.MAX_INTERVAL_FRACTIONAL_SECOND_PRECISION;
-            default:
-                return -1;
-        }
+        return switch ( typeName ) {
+            case DECIMAL -> getMaxNumericScale();
+            case INTERVAL_MILLISECONDS, INTERVAL_MONTH -> PolyType.MAX_INTERVAL_FRACTIONAL_SECOND_PRECISION;
+            default -> -1;
+        };
     }
 
 
@@ -89,19 +74,8 @@ public abstract class AlgDataTypeSystemImpl implements AlgDataTypeSystem {
                 return AlgDataType.PRECISION_NOT_SPECIFIED;
             case DECIMAL:
                 return getMaxNumericPrecision();
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
             case INTERVAL_MONTH:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
+            case INTERVAL_MILLISECONDS:
                 return PolyType.DEFAULT_INTERVAL_START_PRECISION;
             case BOOLEAN:
                 return 1;
@@ -151,19 +125,8 @@ public abstract class AlgDataTypeSystemImpl implements AlgDataTypeSystem {
             case TIMESTAMP:
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                 return PolyType.MAX_DATETIME_PRECISION;
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
+            case INTERVAL_MILLISECONDS:
             case INTERVAL_MONTH:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
                 return PolyType.MAX_INTERVAL_START_PRECISION;
             default:
                 return getDefaultPrecision( typeName );
@@ -185,44 +148,19 @@ public abstract class AlgDataTypeSystemImpl implements AlgDataTypeSystem {
 
     @Override
     public String getLiteral( PolyType typeName, boolean isPrefix ) {
-        switch ( typeName ) {
-            case VARBINARY:
-            case VARCHAR:
-            case JSON:
-            case CHAR:
-                return "'";
-            case BINARY:
-                return isPrefix ? "x'" : "'";
-            case TIMESTAMP:
-                return isPrefix ? "TIMESTAMP '" : "'";
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                return isPrefix ? "TIMESTAMP WITH LOCAL TIME ZONE '" : "'";
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
-                return isPrefix ? "INTERVAL '" : "' DAY";
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_MONTH:
-                return isPrefix ? "INTERVAL '" : "' YEAR TO MONTH";
-            case TIME:
-                return isPrefix ? "TIME '" : "'";
-            case TIME_WITH_LOCAL_TIME_ZONE:
-                return isPrefix ? "TIME WITH LOCAL TIME ZONE '" : "'";
-            case DATE:
-                return isPrefix ? "DATE '" : "'";
-            case ARRAY:
-                return isPrefix ? "(" : ")";
-            default:
-                return null;
-        }
+        return switch ( typeName ) {
+            case VARBINARY, VARCHAR, JSON, CHAR -> "'";
+            case BINARY -> isPrefix ? "x'" : "'";
+            case TIMESTAMP -> isPrefix ? "TIMESTAMP '" : "'";
+            case TIMESTAMP_WITH_LOCAL_TIME_ZONE -> isPrefix ? "TIMESTAMP WITH LOCAL TIME ZONE '" : "'";
+            case INTERVAL_MILLISECONDS -> isPrefix ? "INTERVAL '" : "' DAY";
+            case INTERVAL_MONTH -> isPrefix ? "INTERVAL '" : "' YEAR TO MONTH";
+            case TIME -> isPrefix ? "TIME '" : "'";
+            case TIME_WITH_LOCAL_TIME_ZONE -> isPrefix ? "TIME WITH LOCAL TIME ZONE '" : "'";
+            case DATE -> isPrefix ? "DATE '" : "'";
+            case ARRAY -> isPrefix ? "(" : ")";
+            default -> null;
+        };
     }
 
 

@@ -99,19 +99,8 @@ public class HsqldbSqlDialect extends SqlDialect {
                 // We need to flag the type with a underscore to flag the type (the underscore is removed in the unparse method)
                 castSpec = "_BLOB";
                 break;
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
+            case INTERVAL_MILLISECONDS:
             case INTERVAL_MONTH:
-            case INTERVAL_SECOND:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_YEAR:
                 castSpec = "INTERVAL";
                 break;
             default:

@@ -676,7 +676,7 @@ public class SqlWindow extends SqlCall implements Window {
                         case DATE:
                         case TIME:
                         case TIMESTAMP:
-                            if ( PolyTypeFamily.INTERVAL_DAY_TIME != bndTypeFam && PolyTypeFamily.INTERVAL_YEAR_MONTH != bndTypeFam ) {
+                            if ( PolyTypeFamily.INTERVAL_TIME != bndTypeFam && PolyTypeFamily.INTERVAL_YEAR_MONTH != bndTypeFam ) {
                                 throw validator.newValidationError( boundVal, Static.RESOURCE.orderByRangeMismatch() );
                             }
                             break;

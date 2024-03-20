@@ -120,21 +120,13 @@ import org.polypheny.db.util.Util;
  * <td>{@link TimestampString}; also {@link Calendar} (UTC time zone) and {@link Long} (milliseconds since POSIX epoch)</td>
  * </tr>
  * <tr>
- * <td>{@link PolyType#INTERVAL_DAY},
- * {@link PolyType#INTERVAL_DAY_HOUR},
- * {@link PolyType#INTERVAL_DAY_MINUTE},
- * {@link PolyType#INTERVAL_DAY_SECOND},
- * {@link PolyType#INTERVAL_HOUR},
- * {@link PolyType#INTERVAL_HOUR_MINUTE},
- * {@link PolyType#INTERVAL_HOUR_SECOND},
- * {@link PolyType#INTERVAL_MINUTE},
- * {@link PolyType#INTERVAL_MINUTE_SECOND},
- * {@link PolyType#INTERVAL_SECOND}</td>
+ * <td>{@link PolyType#INTERVAL_MONTH},
+ * {@link PolyType#INTERVAL_MILLISECONDS}</td>
  * <td>Interval, for example <code>INTERVAL '4:3:2' HOUR TO SECOND</code></td>
  * <td>{@link BigDecimal}; also {@link Long} (milliseconds)</td>
  * </tr>
  * <tr>
- * <td>{@link PolyType#INTERVAL_YEAR}, {@link PolyType#INTERVAL_YEAR_MONTH}, {@link PolyType#INTERVAL_MONTH}</td>
+ * <td> {@link PolyType#INTERVAL_MONTH}</td>
  * <td>Interval, for example <code>INTERVAL '2-3' YEAR TO MONTH</code></td>
  * <td>{@link BigDecimal}; also {@link Integer} (months)</td>
  * </tr>
@@ -284,7 +276,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
             case DATE -> value.isDate();
             case TIME, TIME_WITH_LOCAL_TIME_ZONE -> value.isTime();
             case TIMESTAMP, TIMESTAMP_WITH_LOCAL_TIME_ZONE -> value.isTimestamp();
-            case INTERVAL_YEAR, INTERVAL_YEAR_MONTH, INTERVAL_MONTH, INTERVAL_DAY, INTERVAL_DAY_HOUR, INTERVAL_DAY_MINUTE, INTERVAL_DAY_SECOND, INTERVAL_HOUR, INTERVAL_HOUR_MINUTE, INTERVAL_HOUR_SECOND, INTERVAL_MINUTE, INTERVAL_MINUTE_SECOND, INTERVAL_SECOND ->
+            case INTERVAL_MILLISECONDS, INTERVAL_MONTH ->
                 // The value of a DAY-TIME interval (whatever the start and end units, even say HOUR TO MINUTE) is in milliseconds (perhaps fractional milliseconds). The value of a YEAR-MONTH interval is in months.
                     value.isInterval();
             case VARBINARY -> // not allowed -- use Binary
@@ -526,19 +518,8 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
                 assert value.isTimestamp();
                 pw.print( value.asTimestamp() );
                 break;
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
             case INTERVAL_MONTH:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
+            case INTERVAL_MILLISECONDS:
                 assert value.isInterval();
                 pw.print( value.asInterval().getValue().toString() );
                 break;

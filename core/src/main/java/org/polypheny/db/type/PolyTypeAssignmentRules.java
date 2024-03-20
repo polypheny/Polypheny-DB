@@ -72,15 +72,8 @@ public class PolyTypeAssignmentRules {
         final Set<PolyType> rule = new HashSet<>();
 
         // IntervalYearMonth is assignable from...
-        for ( PolyType interval : PolyType.YEAR_INTERVAL_TYPES ) {
-            rules.add( interval, PolyType.YEAR_INTERVAL_TYPES );
-        }
-        for ( PolyType interval : PolyType.DAY_INTERVAL_TYPES ) {
-            rules.add( interval, PolyType.DAY_INTERVAL_TYPES );
-        }
-        for ( PolyType interval : PolyType.DAY_INTERVAL_TYPES ) {
-            final Set<PolyType> dayIntervalTypes = PolyType.DAY_INTERVAL_TYPES;
-            rules.add( interval, dayIntervalTypes );
+        for ( PolyType interval : PolyType.COMPLEX_INTERVAL_TYPES ) {
+            rules.add( interval, PolyType.COMPLEX_INTERVAL_TYPES );
         }
 
         // MULTISET is assignable from...

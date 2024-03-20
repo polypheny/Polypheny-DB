@@ -72,8 +72,8 @@ public class SqlExtractFunction extends SqlFunction {
     @Override
     public Monotonicity getMonotonicity( OperatorBinding call ) {
         ///0, , TimeUnitRange.class ) ) {
-        if ( call.getOperandLiteralValue( 0, PolyType.INTERVAL_DAY ).isInterval() ) {
-            if ( Objects.requireNonNull( call.getOperandLiteralValue( 0, PolyType.INTERVAL_DAY ).asInterval().qualifier.getTimeUnitRange() ) == TimeUnitRange.YEAR ) {
+        if ( call.getOperandLiteralValue( 0, PolyType.INTERVAL_MILLISECONDS ).isInterval() ) {
+            if ( Objects.requireNonNull( call.getOperandLiteralValue( 0, PolyType.INTERVAL_MILLISECONDS ).asInterval().qualifier.getTimeUnitRange() ) == TimeUnitRange.YEAR ) {
                 return call.getOperandMonotonicity( 1 ).unstrict();
             }
         }

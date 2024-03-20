@@ -175,9 +175,10 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public long createNamespace( String name, DataModel type, boolean ifNotExists, boolean replace, Statement statement ) {
+    public long createNamespace( String initialName, DataModel type, boolean ifNotExists, boolean replace, Statement statement ) {
+        String name = initialName.toLowerCase();
         // Check that name is not blocked
-        if ( blockedNamespaceNames.contains( name.toLowerCase() ) ) {
+        if ( blockedNamespaceNames.contains( name ) ) {
             throw new GenericRuntimeException( String.format( "Namespace name %s is not allowed.", name ) );
         }
 

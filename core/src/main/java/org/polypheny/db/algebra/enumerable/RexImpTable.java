@@ -2122,19 +2122,8 @@ public class RexImpTable {
                 case ISOYEAR:
                 case WEEK:
                     switch ( polyType ) {
-                        case INTERVAL_YEAR:
-                        case INTERVAL_YEAR_MONTH:
+                        case INTERVAL_MILLISECONDS:
                         case INTERVAL_MONTH:
-                        case INTERVAL_DAY:
-                        case INTERVAL_DAY_HOUR:
-                        case INTERVAL_DAY_MINUTE:
-                        case INTERVAL_DAY_SECOND:
-                        case INTERVAL_HOUR:
-                        case INTERVAL_HOUR_MINUTE:
-                        case INTERVAL_HOUR_SECOND:
-                        case INTERVAL_MINUTE:
-                        case INTERVAL_MINUTE_SECOND:
-                        case INTERVAL_SECOND:
                             break;
                         case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                             operand = Expressions.call(
@@ -2172,19 +2161,8 @@ public class RexImpTable {
                                     operand,
                                     Expressions.call( BuiltInMethod.TIME_ZONE.method, translator.getRoot() ) );
                             return EnumUtils.wrapPolyValue( call.type.getPolyType(), Expressions.divide( EnumUtils.unwrapPolyValue( operand, "longValue" ), Expressions.constant( TimeUnit.SECOND.multiplier.longValue() ) ) );
-                        case INTERVAL_YEAR:
-                        case INTERVAL_YEAR_MONTH:
+                        case INTERVAL_MILLISECONDS:
                         case INTERVAL_MONTH:
-                        case INTERVAL_DAY:
-                        case INTERVAL_DAY_HOUR:
-                        case INTERVAL_DAY_MINUTE:
-                        case INTERVAL_DAY_SECOND:
-                        case INTERVAL_HOUR:
-                        case INTERVAL_HOUR_MINUTE:
-                        case INTERVAL_HOUR_SECOND:
-                        case INTERVAL_MINUTE:
-                        case INTERVAL_MINUTE_SECOND:
-                        case INTERVAL_SECOND:
                             // no convertlet conversion, pass it as extract
                             throw new AssertionError( "unexpected " + polyType );
                     }
@@ -2701,7 +2679,7 @@ public class RexImpTable {
                                 long.class );
                     } else {
                         trop1 = switch ( typeName1 ) {
-                            case INTERVAL_DAY, INTERVAL_DAY_HOUR, INTERVAL_DAY_MINUTE, INTERVAL_DAY_SECOND, INTERVAL_HOUR, INTERVAL_HOUR_MINUTE, INTERVAL_HOUR_SECOND, INTERVAL_MINUTE, INTERVAL_MINUTE_SECOND, INTERVAL_SECOND -> Expressions.convert_( Expressions.divide( trop1, Expressions.constant( DateTimeUtils.MILLIS_PER_DAY ) ), int.class );
+                            case INTERVAL_MILLISECONDS -> Expressions.convert_( Expressions.divide( trop1, Expressions.constant( DateTimeUtils.MILLIS_PER_DAY ) ), int.class );
                             default -> trop1;
                         };
                     }
@@ -2711,8 +2689,6 @@ public class RexImpTable {
                     break;
             }
             switch ( typeName1 ) {
-                case INTERVAL_YEAR:
-                case INTERVAL_YEAR_MONTH:
                 case INTERVAL_MONTH:
                     if ( Objects.requireNonNull( call.getKind() ) == Kind.MINUS ) {
                         trop1 = Expressions.negate( trop1 );
@@ -2726,16 +2702,7 @@ public class RexImpTable {
                                     : BuiltInMethod.ADD_MONTHS_INT;
                     return Expressions.call( method.method, EnumUtils.convertPolyValue( typeName, trop0 ), trop1 );
 
-                case INTERVAL_DAY:
-                case INTERVAL_DAY_HOUR:
-                case INTERVAL_DAY_MINUTE:
-                case INTERVAL_DAY_SECOND:
-                case INTERVAL_HOUR:
-                case INTERVAL_HOUR_MINUTE:
-                case INTERVAL_HOUR_SECOND:
-                case INTERVAL_MINUTE:
-                case INTERVAL_MINUTE_SECOND:
-                case INTERVAL_SECOND:
+                case INTERVAL_MILLISECONDS:
                     return switch ( call.getKind() ) {
                         case MINUS -> normalize( typeName, Expressions.subtract( trop0, trop1 ) );
                         default -> normalize( typeName, Expressions.add( trop0, trop1 ) );
@@ -2744,11 +2711,8 @@ public class RexImpTable {
                 default:
                     return switch ( call.getKind() ) {
                         case MINUS -> {
-                            switch ( typeName ) {
-                                case INTERVAL_YEAR:
-                                case INTERVAL_YEAR_MONTH:
-                                case INTERVAL_MONTH:
-                                    yield Expressions.call( BuiltInMethod.SUBTRACT_MONTHS.method, trop0, trop1 );
+                            if ( Objects.requireNonNull( typeName ) == PolyType.INTERVAL_MONTH ) {
+                                yield Expressions.call( BuiltInMethod.SUBTRACT_MONTHS.method, trop0, trop1 );
                             }
                             TimeUnit fromUnit = typeName1 == PolyType.DATE ? TimeUnit.DAY : TimeUnit.MILLISECOND;
                             TimeUnit toUnit = TimeUnit.MILLISECOND;

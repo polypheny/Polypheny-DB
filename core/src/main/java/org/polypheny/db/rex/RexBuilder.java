@@ -476,19 +476,8 @@ public class RexBuilder {
             PolyType typeName = literal.getPolyType();
             if ( canRemoveCastFromLiteral( type, value, typeName ) ) {
                 switch ( typeName ) {
-                    case INTERVAL_YEAR:
-                    case INTERVAL_YEAR_MONTH:
+                    case INTERVAL_MILLISECONDS:
                     case INTERVAL_MONTH:
-                    case INTERVAL_DAY:
-                    case INTERVAL_DAY_HOUR:
-                    case INTERVAL_DAY_MINUTE:
-                    case INTERVAL_DAY_SECOND:
-                    case INTERVAL_HOUR:
-                    case INTERVAL_HOUR_MINUTE:
-                    case INTERVAL_HOUR_SECOND:
-                    case INTERVAL_MINUTE:
-                    case INTERVAL_MINUTE_SECOND:
-                    case INTERVAL_SECOND:
                         assert value.isInterval();
                         typeName = type.getPolyType();
                         switch ( typeName ) {
@@ -499,11 +488,6 @@ public class RexBuilder {
                             case FLOAT:
                             case REAL:
                             case DECIMAL:
-                                /*BigDecimal value2 = (BigDecimal) value;
-                                final BigDecimal multiplier = baseUnit( literal.getPolyType() ).multiplier;
-                                final BigDecimal divider = literal.getPolyType().getEndUnit().multiplier;
-                                value = value2.multiply( multiplier ).divide( divider, 0, RoundingMode.HALF_DOWN );*/
-
                         }
 
                         // Not all types are allowed for literals
@@ -1100,7 +1084,7 @@ public class RexBuilder {
     /**
      * Creates a literal representing an interval value, for example {@code INTERVAL '3-7' YEAR TO MONTH}.
      */
-    public RexLiteral makeIntervalLiteral( BigDecimal v, IntervalQualifier intervalQualifier ) {
+    public RexLiteral makeIntervalLiteral( Long v, IntervalQualifier intervalQualifier ) {
         return makeLiteral(
                 PolyInterval.of( v, intervalQualifier ),
                 typeFactory.createIntervalType( intervalQualifier ),
@@ -1242,19 +1226,8 @@ public class RexBuilder {
                 return makeTimestampLiteral( poly.asTimestamp(), type.getPrecision() );
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                 return makeTimestampWithLocalTimeZoneLiteral( poly.asTimestamp(), type.getPrecision() );
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
+            case INTERVAL_MILLISECONDS:
             case INTERVAL_MONTH:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
                 return makeLiteral( poly, type, type.getPolyType() );
             case MAP:
                 return makeMap( (Map<Object, Object>) value, type, allowCast );
@@ -1329,19 +1302,8 @@ public class RexBuilder {
             case INTEGER:
             case BIGINT:
             case DECIMAL:
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
             case INTERVAL_MONTH:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
+            case INTERVAL_MILLISECONDS:
                 if ( o instanceof PolyBigDecimal value ) {
                     return value;
                 }
