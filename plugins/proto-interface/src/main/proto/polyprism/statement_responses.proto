@@ -15,6 +15,14 @@ option java_outer_classname = "StatementResponses";
 package polypheny.protointerface;
 
 /*
+Response of the server on the request of a client to close the result set of a specific statement.
+This message has no fields. It merely serves as an acknowledgement.
+ */
+message CloseResultResponse {
+}
+
+
+/*
 Represents the response after executing a statement.
 This message contains the identifier of the executed statement and optionally, the result of the execution.
 The result can vary based on the type of statement executed, ranging from scalar values to complex data frames.
