@@ -579,7 +579,12 @@ public class PolyphenyDb {
         Catalog.memoryCatalog = memoryCatalog;
         Catalog.mode = mode;
         Catalog.resetDocker = resetDocker;
+
         Catalog catalog = Catalog.setAndGetInstance( new PolyCatalog() );
+        if ( !memoryCatalog && !resetCatalog ) {
+            catalog.restore();
+        }
+
         if ( catalog == null ) {
             throw new GenericRuntimeException( "There was no catalog submitted, aborting." );
         }

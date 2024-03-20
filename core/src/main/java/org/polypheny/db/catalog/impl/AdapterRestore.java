@@ -31,8 +31,7 @@ import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 public record AdapterRestore(
         long adapterId,
         Map<Long, List<PhysicalEntity>> physicals,
-        Map<Long, AllocationEntity> allocations
-) {
+        Map<Long, AllocationEntity> allocations) {
 
     public AdapterRestore(
             long adapterId,

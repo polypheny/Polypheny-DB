@@ -53,7 +53,6 @@ import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.LogicalQueryInterface;
 import org.polypheny.db.catalog.entity.LogicalUser;
-import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -184,19 +183,6 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         this.listeners.firePropertyChange( "snapshot", null, this.snapshot );
     }
 
-
-    private void addNamespaceIfNecessary( AllocationEntity entity ) {
-        Adapter<?> adapter = AdapterManager.getInstance().getAdapter( entity.adapterId ).orElseThrow();
-
-        if ( adapter.getCurrentNamespace() == null || adapter.getCurrentNamespace().getId() != entity.namespaceId ) {
-            adapter.updateNamespace( entity.name, entity.namespaceId );
-        }
-
-        // re-add physical namespace, we could check first, but not necessary
-
-        getAdapterCatalog( entity.adapterId ).ifPresent( e -> e.addNamespace( entity.namespaceId, adapter.getCurrentNamespace() ) );
-
-    }
 
 
     @Override
