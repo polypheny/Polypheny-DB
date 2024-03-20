@@ -24,6 +24,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
+import io.javalin.openapi.plugin.OpenApiConfiguration;
+import io.javalin.openapi.plugin.OpenApiPlugin;
+import io.javalin.openapi.plugin.swagger.SwaggerConfiguration;
+import io.javalin.openapi.plugin.swagger.SwaggerPlugin;
 import io.javalin.plugin.json.JavalinJackson;
 import io.javalin.websocket.WsConfig;
 import java.io.BufferedReader;
@@ -61,6 +65,7 @@ public class HttpServer implements Runnable {
     @Getter
     private WebSocket webSocketHandler;
 
+    String deprecatedDocsPath = "/swagger-docs";
 
     public static HttpServer getInstance() {
         if ( INSTANCE == null ) {
@@ -82,12 +87,30 @@ public class HttpServer implements Runnable {
             writerWithDefaultPrettyPrinter();
         }
     };
+    
+    
+    private OpenApiConfiguration getOpenApiConfiguration() {
+        OpenApiConfiguration openApiConfiguration = new OpenApiConfiguration();
+        openApiConfiguration.setTitle( "Polypheny-DB WebUI" );
+        openApiConfiguration.setDocumentationPath(deprecatedDocsPath); // by default it's /openapi
+        return openApiConfiguration;
+    }
+    
+    
+    private SwaggerConfiguration getSwaggerConfiguration() {
+        SwaggerConfiguration swaggerConfiguration = new SwaggerConfiguration();
+        swaggerConfiguration.setDocumentationPath(deprecatedDocsPath);
+        return swaggerConfiguration;
+    }
 
+    
     @Getter
     private final Javalin server = Javalin.create( config -> {
         config.jsonMapper( new JavalinJackson( mapper ) );
         config.enableCorsForAllOrigins();
         config.addStaticFiles( staticFileConfig -> staticFileConfig.directory = "webapp/" );
+        config.registerPlugin( new OpenApiPlugin( getOpenApiConfiguration() ) );
+        config.registerPlugin( new SwaggerPlugin( getSwaggerConfiguration() ) );
     } ).start( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
     private Crud crud;
 

@@ -78,6 +78,9 @@ allprojects {
         maven {
             url "https://oss.sonatype.org/content/repositories/snapshots/"
         }
+        maven{
+            url "https://maven.reposilite.com/releases/"
+        }
     }
 
     configurations.configureEach {
