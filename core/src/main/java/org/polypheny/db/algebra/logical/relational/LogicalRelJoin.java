@@ -168,14 +168,10 @@ public final class LogicalRelJoin extends Join implements RelAlg {
     @Override
     public PolyAlgArgs collectAttributes() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
-        PolyAlgArg varsArg = new ListArg<>( variablesSet.asList(), CorrelationArg::new );
-        PolyAlgArg sysFieldsArg = new ListArg<>( systemFieldList, AnyArg::new );
 
         args.put( 0, new RexArg( condition, this ) )
                 .put( "type", new EnumArg<>( joinType, ParamType.JOIN_TYPE_ENUM ) )
-                .put( "variables", varsArg )
-                .put( "semiJoinDone", new BooleanArg( semiJoinDone ) )
-                .put( "sysFields", sysFieldsArg );
+                .put( "semiJoinDone", new BooleanArg( semiJoinDone ) );
         return args;
     }
 

@@ -18,11 +18,13 @@ package org.polypheny.db.algebra.polyalg;
 
 import com.google.common.collect.ImmutableList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.logical.relational.*;
+import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.OperatorTag;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.Parameter;
 
@@ -39,46 +41,72 @@ public class PolyAlgRegistry {
 
 
     private static void populateDeclarationsMap() {
-        declarations.put( LogicalRelProject.class, new PolyAlgDeclaration( "PROJECT", 1,
-                new Parameter( "projects", ParamType.SIMPLE_REX, true ) ) );
+        ImmutableList<OperatorTag> logRelTags = ImmutableList.of( OperatorTag.LOGICAL, OperatorTag.REL );
 
-        declarations.put( RelScan.class, new PolyAlgDeclaration( "SCAN", 0,
-                new Parameter( "entity", ParamType.ENTITY ) ) );
+        declarations.put( LogicalRelProject.class, PolyAlgDeclaration.builder()
+                .opName( "PROJECT" ).opAlias( "P" ).numInputs( 1 ).opTags( logRelTags )
+                .param( Parameter.builder().name( "projects" ).isMultiValued( true ).type( ParamType.SIMPLE_REX ).build() )
+                .build() );
 
-        declarations.put( LogicalRelFilter.class, new PolyAlgDeclaration( "FILTER", 1, ImmutableList.of(
-                new Parameter( "condition", ParamType.SIMPLE_REX, false ),
-                new Parameter( "variables", ParamType.ANY, true, "" ) ) ) );
+        declarations.put( RelScan.class, PolyAlgDeclaration.builder()
+                .opName( "SCAN" ).numInputs( 0 ).opTags( logRelTags )
+                .param( Parameter.builder().name( "entity" ).type( ParamType.SIMPLE_REX ).build() )
+                .build() );
 
-        declarations.put( LogicalRelAggregate.class, new PolyAlgDeclaration( "AGG", 1, ImmutableList.of(
-                new Parameter( "group", ParamType.FIELD, true ),
-                new Parameter( "groups", ParamType.ANY, true, "" ),
-                new Parameter( "aggs", ParamType.AGGREGATE, true, "" ) ) ) );
+        declarations.put( LogicalRelFilter.class, PolyAlgDeclaration.builder()
+                .opName( "FILTER" ).numInputs( 1 ).opTags( logRelTags )
+                .param( Parameter.builder().name( "condition" ).type( ParamType.SIMPLE_REX ).build() )
+                .build() );
 
-        declarations.put( LogicalRelMinus.class, new PolyAlgDeclaration( "MINUS", 2,
-                new Parameter( "all", ParamType.BOOLEAN, false, "FALSE" ) ) );
+        declarations.put( LogicalRelAggregate.class, PolyAlgDeclaration.builder()
+                .opName( "AGG" ).numInputs( 1 ).opTags( logRelTags )
+                .param( Parameter.builder().name( "group" ).type( ParamType.FIELD ).isMultiValued( true ).build() )
+                .param( Parameter.builder().name( "groups" ).type( ParamType.ANY ).isMultiValued( true ).defaultValue( "" ).build() )
+                .param( Parameter.builder().name( "aggs" ).type( ParamType.AGGREGATE ).isMultiValued( true ).defaultValue( "" ).build() )
+                .build() );
 
-        declarations.put( LogicalRelUnion.class, new PolyAlgDeclaration( "UNION", 2,
-                new Parameter( "all", ParamType.BOOLEAN, false, "FALSE" ) ) );
+        declarations.put( LogicalRelMinus.class, PolyAlgDeclaration.builder()
+                .opName( "MINUS" ).numInputs( 2 ).opTags( logRelTags )
+                .param( Parameter.builder().name( "all" ).type( ParamType.BOOLEAN ).defaultValue( "FALSE" ).build() )
+                .build() );
 
-        declarations.put( LogicalRelIntersect.class, new PolyAlgDeclaration( "INTERSECT", 2,
-                new Parameter( "all", ParamType.BOOLEAN, false, "FALSE" ) ) );
+        declarations.put( LogicalRelUnion.class, PolyAlgDeclaration.builder()
+                .opName( "UNION" ).numInputs( 2 ).opTags( logRelTags )
+                .param( Parameter.builder().name( "all" ).type( ParamType.BOOLEAN ).defaultValue( "FALSE" ).build() )
+                .build() );
 
-        declarations.put( LogicalRelSort.class, new PolyAlgDeclaration( "SORT", 1, ImmutableList.of(
-                new Parameter( "collation", ParamType.COLLATION, false, "" ),
-                new Parameter( "fetch", ParamType.SIMPLE_REX, false, "" ),
-                new Parameter( "offset", ParamType.SIMPLE_REX, false, "" ) ) ) );
+        declarations.put( LogicalRelIntersect.class, PolyAlgDeclaration.builder()
+                .opName( "INTERSECT" ).numInputs( 2 ).opTags( logRelTags )
+                .param( Parameter.builder().name( "all" ).type( ParamType.BOOLEAN ).defaultValue( "FALSE" ).build() )
+                .build() );
 
-        declarations.put( LogicalRelJoin.class, new PolyAlgDeclaration( "JOIN", 2, ImmutableList.of(
-                new Parameter( "condition", ParamType.SIMPLE_REX, false ),
-                new Parameter( "type", ParamType.JOIN_TYPE_ENUM, false, JoinAlgType.INNER.name() ),
-                new Parameter( "variables", ParamType.CORR_ID, true, "" ),
-                new Parameter( "semiJoinDone", ParamType.BOOLEAN, false, "FALSE" ),
-                new Parameter( "sysFields", ParamType.ANY, true, "" ) ) ) );
+        declarations.put( LogicalRelSort.class, PolyAlgDeclaration.builder()
+                .opName( "SORT" ).numInputs( 1 ).opTags( logRelTags )
+                .param( Parameter.builder().name( "sort" ).aliases( List.of( "collation", "order" ) ).type( ParamType.COLLATION ).defaultValue( "" ).build() )
+                .param( Parameter.builder().name( "limit" ).alias( "fetch" ).type( ParamType.SIMPLE_REX ).defaultValue( "" ).build() )
+                .param( Parameter.builder().name( "offset" ).type( ParamType.SIMPLE_REX ).defaultValue( "" ).build() )
+                .build() );
 
-        declarations.put( LogicalCalc.class, new PolyAlgDeclaration( "CALC", 1, ImmutableList.of(
-                new Parameter( "exps", ParamType.SIMPLE_REX, true ),
-                new Parameter( "projects", ParamType.SIMPLE_REX, true ),
-                new Parameter( "condition", ParamType.SIMPLE_REX, false, "" ) ) ) );
+        declarations.put( LogicalRelJoin.class, PolyAlgDeclaration.builder()
+                .opName( "JOIN" ).numInputs( 2 ).opTags( logRelTags )
+                .param( Parameter.builder().name( "condition" ).type( ParamType.SIMPLE_REX ).build() )
+                .param( Parameter.builder().name( "type" ).type( ParamType.JOIN_TYPE_ENUM ).defaultValue( JoinAlgType.INNER.name() ).build() )
+                .param( Parameter.builder().name( "semiJoinDone" ).type( ParamType.BOOLEAN ).defaultValue( "FALSE" ).build() )
+                .build() );
+
+        declarations.put( LogicalCalc.class, PolyAlgDeclaration.builder()
+                .opName( "CALC" ).numInputs( 1 ).opTags( logRelTags )
+                .param( Parameter.builder().name( "exps" ).type( ParamType.SIMPLE_REX ).isMultiValued( true ).build() )
+                .param( Parameter.builder().name( "projects" ).type( ParamType.SIMPLE_REX ).isMultiValued( true ).build() )
+                .param( Parameter.builder().name( "condition" ).type( ParamType.SIMPLE_REX ).defaultValue( "" ).build() )
+                .build() );
+
+        /*
+        declarations.put( .class, PolyAlgDeclaration.builder()
+                .opName( "" ).numInputs(  ).opTags( logRelTags )
+                .param( Parameter.builder().name( "" ).type( ParamType. ).build() )
+                .build() );
+        */
 
     }
 
@@ -115,7 +143,7 @@ public class PolyAlgRegistry {
     public static PolyAlgDeclaration getDeclaration( Class<? extends AlgNode> clazz, int numInputs ) {
         return declarations.getOrDefault(
                 clazz,
-                new PolyAlgDeclaration( clazz.getSimpleName(), numInputs ) );
+                PolyAlgDeclaration.builder().opName( clazz.getSimpleName() ).numInputs( numInputs ).build() );
     }
 
 
