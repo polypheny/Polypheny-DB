@@ -16,7 +16,6 @@
 
 package org.polypheny.db.processing;
 
-import com.google.common.collect.ImmutableList;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.Project;
@@ -104,8 +103,7 @@ public class DeepCopyShuttle extends AlgShuttleImpl {
                 join.getCondition(),
                 join.getVariablesSet(),
                 join.getJoinType(),
-                join.isSemiJoinDone(),
-                ImmutableList.copyOf( join.getSystemFieldList() ) );
+                join.isSemiJoinDone() );
     }
 
 

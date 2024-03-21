@@ -450,7 +450,6 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
 
         final Join joinRel;
         final boolean isSemiJoin;
-        final int nSysFields;
         final int nFieldsLeft;
         final int nFieldsRight;
         final ImmutableBitSet leftFieldsBitSet;
@@ -477,10 +476,9 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
             this.simplify = simplify;
             nFieldsLeft = joinRel.getLeft().getTupleType().getFields().size();
             nFieldsRight = joinRel.getRight().getTupleType().getFields().size();
-            nSysFields = joinRel.getSystemFieldList().size();
-            leftFieldsBitSet = ImmutableBitSet.range( nSysFields, nSysFields + nFieldsLeft );
-            rightFieldsBitSet = ImmutableBitSet.range( nSysFields + nFieldsLeft, nSysFields + nFieldsLeft + nFieldsRight );
-            allFieldsBitSet = ImmutableBitSet.range( 0, nSysFields + nFieldsLeft + nFieldsRight );
+            leftFieldsBitSet = ImmutableBitSet.range( 0, nFieldsLeft );
+            rightFieldsBitSet = ImmutableBitSet.range( nFieldsLeft, nFieldsLeft + nFieldsRight );
+            allFieldsBitSet = ImmutableBitSet.range( 0, nFieldsLeft + nFieldsRight );
 
             exprFields = new HashMap<>();
             allExprs = new HashSet<>();
@@ -488,7 +486,7 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
             if ( leftPredicates == null ) {
                 leftChildPredicates = null;
             } else {
-                Mappings.TargetMapping leftMapping = Mappings.createShiftMapping( nSysFields + nFieldsLeft, nSysFields, 0, nFieldsLeft );
+                Mappings.TargetMapping leftMapping = Mappings.createShiftMapping( nFieldsLeft, 0, nFieldsLeft );
                 leftChildPredicates = leftPredicates.accept( new RexPermuteInputsShuttle( leftMapping, joinRel.getInput( 0 ) ) );
 
                 allExprs.add( leftChildPredicates );
@@ -500,7 +498,7 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
             if ( rightPredicates == null ) {
                 rightChildPredicates = null;
             } else {
-                Mappings.TargetMapping rightMapping = Mappings.createShiftMapping( nSysFields + nFieldsLeft + nFieldsRight, nSysFields + nFieldsLeft, 0, nFieldsRight );
+                Mappings.TargetMapping rightMapping = Mappings.createShiftMapping( nFieldsLeft + nFieldsRight, nFieldsLeft, 0, nFieldsRight );
                 rightChildPredicates = rightPredicates.accept( new RexPermuteInputsShuttle( rightMapping, joinRel.getInput( 1 ) ) );
 
                 allExprs.add( rightChildPredicates );
@@ -512,7 +510,7 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
 
             equivalence = new TreeMap<>();
             equalityPredicates = new HashSet<>();
-            for ( int i = 0; i < nSysFields + nFieldsLeft + nFieldsRight; i++ ) {
+            for ( int i = 0; i < nFieldsLeft + nFieldsRight; i++ ) {
                 equivalence.put( i, BitSets.of( i ) );
             }
 
@@ -562,9 +560,9 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
                     break;
             }
 
-            Mappings.TargetMapping rightMapping = Mappings.createShiftMapping( nSysFields + nFieldsLeft + nFieldsRight, 0, nSysFields + nFieldsLeft, nFieldsRight );
+            Mappings.TargetMapping rightMapping = Mappings.createShiftMapping( nFieldsLeft + nFieldsRight, 0, nFieldsLeft, nFieldsRight );
             final RexPermuteInputsShuttle rightPermute = new RexPermuteInputsShuttle( rightMapping, joinRel );
-            Mappings.TargetMapping leftMapping = Mappings.createShiftMapping( nSysFields + nFieldsLeft, 0, nSysFields, nFieldsLeft );
+            Mappings.TargetMapping leftMapping = Mappings.createShiftMapping( nFieldsLeft, 0, nFieldsLeft );
             final RexPermuteInputsShuttle leftPermute = new RexPermuteInputsShuttle( leftMapping, joinRel );
             final List<RexNode> leftInferredPredicates = new ArrayList<>();
             final List<RexNode> rightInferredPredicates = new ArrayList<>();
@@ -796,7 +794,7 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
 
 
             private void initializeMapping() {
-                nextMapping = Mappings.create( MappingType.PARTIAL_FUNCTION, nSysFields + nFieldsLeft + nFieldsRight, nSysFields + nFieldsLeft + nFieldsRight );
+                nextMapping = Mappings.create( MappingType.PARTIAL_FUNCTION, nFieldsLeft + nFieldsRight, nFieldsLeft + nFieldsRight );
                 for ( int i = 0; i < columnSets.length; i++ ) {
                     BitSet c = columnSets[i];
                     int t = c.nextSetBit( iterationIdx[i] );

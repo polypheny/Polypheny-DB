@@ -36,7 +36,6 @@ package org.polypheny.db.algebra.core;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -48,7 +47,6 @@ import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.rules.JoinAddRedundantSemiJoinRule;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgPlanner;
@@ -128,7 +126,7 @@ public abstract class Join extends BiAlg {
         if ( !super.isValid( litmus, context ) ) {
             return false;
         }
-        if ( getTupleType().getFieldCount() != getSystemFieldList().size() + left.getTupleType().getFieldCount() + (this instanceof SemiJoin ? 0 : right.getTupleType().getFieldCount()) ) {
+        if ( getTupleType().getFieldCount() != left.getTupleType().getFieldCount() + (this instanceof SemiJoin ? 0 : right.getTupleType().getFieldCount()) ) {
             return litmus.fail( "field count mismatch" );
         }
         if ( condition != null ) {
@@ -140,7 +138,6 @@ public abstract class Join extends BiAlg {
             RexChecker checker =
                     new RexChecker(
                             getCluster().getTypeFactory().builder()
-                                    .addAll( getSystemFieldList() )
                                     .addAll( getLeft().getTupleType().getFields() )
                                     .addAll( getRight().getTupleType().getFields() )
                                     .build(),
@@ -178,14 +175,13 @@ public abstract class Join extends BiAlg {
     public AlgWriter explainTerms( AlgWriter pw ) {
         return super.explainTerms( pw )
                 .item( "condition", condition )
-                .item( "joinType", joinType.lowerName )
-                .itemIf( "systemFields", getSystemFieldList(), !getSystemFieldList().isEmpty() );
+                .item( "joinType", joinType.lowerName );
     }
 
 
     @Override
     protected AlgDataType deriveRowType() {
-        return ValidatorUtil.deriveJoinRowType( left.getTupleType(), right.getTupleType(), joinType, getCluster().getTypeFactory(), null, getSystemFieldList() );
+        return ValidatorUtil.deriveJoinRowType( left.getTupleType(), right.getTupleType(), joinType, getCluster().getTypeFactory(), null );
     }
 
 
@@ -200,15 +196,6 @@ public abstract class Join extends BiAlg {
         return false;
     }
 
-
-    /**
-     * Returns a list of system fields that will be prefixed to output row type.
-     *
-     * @return list of system fields
-     */
-    public List<AlgDataTypeField> getSystemFieldList() {
-        return Collections.emptyList();
-    }
 
 
     @Override
