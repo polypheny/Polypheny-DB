@@ -1046,7 +1046,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
                 entityStatistic.put( tableId, statisticTable );
                 break;
             default:
-                log.error( "Currently, only SELECT, INSERT, DELETE and UPDATE are available in Statistics." );
+                log.warn( "Currently, only SELECT, INSERT, DELETE and UPDATE are available in Statistics." );
         }
     }
 

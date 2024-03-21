@@ -407,7 +407,8 @@ public class PolyphenyDb {
                 null,
                 AlgProcessor::new,
                 null,
-                q -> null );
+                q -> null,
+                c -> c );
         LanguageManager.getINSTANCE().addQueryLanguage( language );
 
         // Initialize index manager

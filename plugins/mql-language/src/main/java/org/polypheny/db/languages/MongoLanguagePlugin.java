@@ -83,7 +83,8 @@ public class MongoLanguagePlugin extends PolyPlugin {
                 MqlParserImpl.FACTORY,
                 MqlProcessor::new,
                 null,
-                MongoLanguagePlugin::anyQuerySplitter );
+                MongoLanguagePlugin::anyQuerySplitter,
+                c -> c );
         LanguageManager.getINSTANCE().addQueryLanguage( language );
 
         PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.addToResult( language, LanguageCrud::getDocResult ) );

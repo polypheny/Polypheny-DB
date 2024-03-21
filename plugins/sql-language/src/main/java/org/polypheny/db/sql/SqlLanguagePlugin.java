@@ -47,6 +47,8 @@ import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.plugins.PolyPluginManager;
+import org.polypheny.db.processing.QueryContext;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.sql.language.SqlAggFunction;
 import org.polypheny.db.sql.language.SqlAsOperator;
 import org.polypheny.db.sql.language.SqlBinaryOperator;
@@ -203,7 +205,8 @@ public class SqlLanguagePlugin extends PolyPlugin {
                 SqlParserImpl.FACTORY,
                 SqlProcessor::new,
                 SqlLanguagePlugin::getValidator,
-                LanguageManager::toQueryNodes );
+                SqlLanguagePlugin::toQueryNodes,
+                SqlLanguagePlugin::removeLimit );
         LanguageManager.getINSTANCE().addQueryLanguage( language );
         PolyPluginManager.AFTER_INIT.add( () -> {
             // add language to webui
@@ -213,6 +216,25 @@ public class SqlLanguagePlugin extends PolyPlugin {
         if ( !isInit() ) {
             registerOperators();
         }
+    }
+
+
+    private static QueryContext removeLimit( QueryContext queryContext ) {
+        String lowercase = queryContext.getQuery().toLowerCase();
+        String limit = "limit";
+        if ( !lowercase.contains( limit ) ) {
+            return queryContext;
+        }
+        int index = lowercase.indexOf( limit );
+
+        String query = queryContext.getQuery().substring( 0, index );
+        int batch = Integer.parseInt( lowercase.split( limit )[1].trim().replace( ";", "" ) );
+        return queryContext.toBuilder().query( queryContext.getQuery() ).batch( batch ).build();
+    }
+
+
+    public static List<ParsedQueryContext> toQueryNodes( QueryContext queries ) {
+        return LanguageManager.toQueryNodes( queries );
     }
 
 
