@@ -133,7 +133,7 @@ public class CsvSource extends DataSource<RelAdapterCatalog> {
 
 
     @Override
-    public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities ) {
+    public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context ) {
         PhysicalEntity table = entities.get( 0 );
         updateNamespace( table.namespaceName, table.namespaceId );
         adapterCatalog.addPhysical( alloc, currentNamespace.createCsvTable( table.id, table.unwrap( PhysicalTable.class ).orElseThrow(), this ) );

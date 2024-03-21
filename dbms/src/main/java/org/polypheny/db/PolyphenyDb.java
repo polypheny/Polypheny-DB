@@ -581,9 +581,6 @@ public class PolyphenyDb {
         Catalog.resetDocker = resetDocker;
 
         Catalog catalog = Catalog.setAndGetInstance( new PolyCatalog() );
-        if ( !memoryCatalog && !resetCatalog ) {
-            catalog.restore();
-        }
 
         if ( catalog == null ) {
             throw new GenericRuntimeException( "There was no catalog submitted, aborting." );
@@ -602,8 +599,13 @@ public class PolyphenyDb {
     private void restore( Authenticator authenticator, Catalog catalog ) {
         PolyPluginManager.startUp( transactionManager, authenticator );
 
-        if ( !resetCatalog && mode != RunMode.TEST ) {
-            Catalog.getInstance().restore();
+        Transaction trx = transactionManager.startTransaction(
+                Catalog.defaultUserId,
+                Catalog.defaultNamespaceId,
+                false,
+                "Catalog Startup" );
+        if ( !resetCatalog && !memoryCatalog && mode != RunMode.TEST ) {
+            Catalog.getInstance().restore( trx );
         }
         Catalog.getInstance().updateSnapshot();
 
@@ -613,21 +615,15 @@ public class PolyphenyDb {
 
         QueryInterfaceManager.getInstance().restoreInterfaces( catalog.getSnapshot() );
 
-        commitRestore();
+        commitRestore( trx );
     }
 
 
     /**
      * Tries to commit the restored catalog.
      */
-    private void commitRestore() {
-        Transaction trx = null;
+    private void commitRestore( Transaction trx ) {
         try {
-            trx = transactionManager.startTransaction(
-                    Catalog.defaultUserId,
-                    Catalog.defaultNamespaceId,
-                    false,
-                    "Catalog Startup" );
             trx.commit();
         } catch ( TransactionException e ) {
             try {

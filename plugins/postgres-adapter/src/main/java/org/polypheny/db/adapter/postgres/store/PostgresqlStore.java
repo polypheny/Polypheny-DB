@@ -419,7 +419,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
 
     @Override
-    public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities ) {
+    public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context ) {
         PhysicalEntity table = entities.get( 0 );
         updateNamespace( table.namespaceName, table.namespaceId );
         adapterCatalog.addPhysical( alloc, currentJdbcSchema.createJdbcTable( table.unwrap( PhysicalTable.class ).orElseThrow() ) );

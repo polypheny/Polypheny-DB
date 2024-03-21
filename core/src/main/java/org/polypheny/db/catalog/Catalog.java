@@ -49,6 +49,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.RunMode;
 
 public abstract class Catalog implements ExtensionPoint {
@@ -274,7 +275,7 @@ public abstract class Catalog implements ExtensionPoint {
     public abstract PropertyChangeListener getChangeListener();
 
 
-    public abstract void restore();
+    public abstract void restore( Transaction transaction );
 
 
     public abstract void attachCommitConstraint( Supplier<Boolean> constraintChecker, String description );
