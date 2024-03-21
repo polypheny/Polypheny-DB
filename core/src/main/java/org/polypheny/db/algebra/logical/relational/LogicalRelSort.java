@@ -105,7 +105,7 @@ public final class LogicalRelSort extends Sort implements RelAlg {
 
         PolyAlgArg collArg = new ListArg<>( collation.getFieldCollations(), c -> new CollationArg( c, this ) );
 
-        args.put( 0, collArg )
+        args.put( "collation", collArg )
                 .put( "fetch", new RexArg( fetch ) )
                 .put( "offset", new RexArg( offset ) );
         return args;

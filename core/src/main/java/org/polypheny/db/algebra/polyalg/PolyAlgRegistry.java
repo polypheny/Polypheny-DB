@@ -64,7 +64,7 @@ public class PolyAlgRegistry {
                 new Parameter( "all", ParamType.BOOLEAN, false, "FALSE" ) ) );
 
         declarations.put( LogicalRelSort.class, new PolyAlgDeclaration( "SORT", 1, ImmutableList.of(
-                new Parameter( "collation", ParamType.COLLATION, false ),
+                new Parameter( "collation", ParamType.COLLATION, false, "" ),
                 new Parameter( "fetch", ParamType.SIMPLE_REX, false, "" ),
                 new Parameter( "offset", ParamType.SIMPLE_REX, false, "" ) ) ) );
 
