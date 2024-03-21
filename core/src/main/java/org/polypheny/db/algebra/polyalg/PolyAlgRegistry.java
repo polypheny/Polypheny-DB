@@ -50,7 +50,7 @@ public class PolyAlgRegistry {
 
         declarations.put( RelScan.class, PolyAlgDeclaration.builder()
                 .opName( "SCAN" ).numInputs( 0 ).opTags( logRelTags )
-                .param( Parameter.builder().name( "entity" ).type( ParamType.SIMPLE_REX ).build() )
+                .param( Parameter.builder().name( "entity" ).type( ParamType.ENTITY ).build() )
                 .build() );
 
         declarations.put( LogicalRelFilter.class, PolyAlgDeclaration.builder()
