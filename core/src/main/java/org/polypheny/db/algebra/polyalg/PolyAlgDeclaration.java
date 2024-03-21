@@ -96,6 +96,18 @@ public class PolyAlgDeclaration {
 
 
     /**
+     * Checks whether this operator has exactly one positional parameter, which in addition must be multiValued.
+     * If this is the case, it is safe for the multiValued parameter to omit the brackets, as it is possible to
+     * infer that any positional argument must belong to the multiValued argument.
+     *
+     * @return whether it is safe to unpack the values of the (only) positional argument
+     */
+    public boolean canUnpackValues() {
+        return posParams.size() == 1 && getPos( 0 ).isMultiValued;
+    }
+
+
+    /**
      * Depending on whether a defaultValue is specified, a Parameter can result in two types of corresponding arguments:
      * <ul>
      *     <li>Positional arguments:

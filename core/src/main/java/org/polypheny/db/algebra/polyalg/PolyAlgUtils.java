@@ -18,10 +18,8 @@ package org.polypheny.db.algebra.polyalg;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.rex.RexNode;
 
 public class PolyAlgUtils {
 
@@ -36,7 +34,7 @@ public class PolyAlgUtils {
     public static String replaceWithFieldNames( AlgNode alg, String str ) {
         if ( str.contains( "$" ) ) {
             int offset = 0;
-            for (AlgNode input : alg.getInputs()) {
+            for ( AlgNode input : alg.getInputs() ) {
                 offset += input.getTupleType().getFields().size();
             }
             // iterate in reverse order to make sure "$13" is replaced before $1
@@ -113,17 +111,12 @@ public class PolyAlgUtils {
      * If values contains more than one element, the returned string is surrounded with brackets to represent a list.
      *
      * @param values the values to be joined
-     * @return a string either representing a list containing or values or a single value if values is of size 1.
+     * @param omitBrackets whether the surrounding brackets in the case of multiple values should be omitted
+     * @return a string either representing a list containing all entries of values or a single value if values is of size 1
      */
-    public static String joinMultiValued( List<String> values ) {
-        if ( values.isEmpty() ) {
-            return "";
-        }
-        if ( values.size() == 1 ) {
-            return values.get( 0 );
-        }
-
-        return "[" + String.join( ", ", values ) + "]";
+    public static String joinMultiValued( List<String> values, boolean omitBrackets ) {
+        String str = String.join( ", ", values );
+        return (omitBrackets || values.size() <= 1) ? str : "[" + str + "]";
     }
 
 }
