@@ -165,7 +165,7 @@ public final class LogicalRelJoin extends Join implements RelAlg {
     public PolyAlgArgs collectAttributes() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
 
-        args.put( 0, new RexArg( condition ) )
+        args.put( 0, new RexArg( condition, true ) )
                 .put( "type", new EnumArg<>( joinType, ParamType.JOIN_TYPE_ENUM ) )
                 .put( "semiJoinDone", new BooleanArg( semiJoinDone ) );
         return args;

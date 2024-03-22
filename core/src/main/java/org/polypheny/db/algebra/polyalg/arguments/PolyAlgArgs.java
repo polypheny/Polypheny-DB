@@ -42,7 +42,6 @@ public class PolyAlgArgs {
 
 
     public String serializeArguments( AlgNode context ) {
-        System.out.println( "\t" + decl.opName + ": " + PolyAlgUtils.getFieldNames( context ) );
         StringJoiner joiner = new StringJoiner( ", ", "[", "]" );
 
         for ( Parameter p : decl.posParams ) {

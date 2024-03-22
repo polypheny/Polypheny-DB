@@ -19,6 +19,7 @@ package org.polypheny.db.algebra.polyalg;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.rex.RexCall;
@@ -91,6 +92,25 @@ public class PolyAlgUtils {
     public static String joinMultiValued( List<String> values, boolean omitBrackets ) {
         String str = String.join( ", ", values );
         return (omitBrackets || values.size() <= 1) ? str : "[" + str + "]";
+    }
+
+
+    public static List<String> getAuxProjections( AlgNode child, Set<String> fieldNames) {
+        List<String> projections = new ArrayList<>();
+        for ( AlgDataTypeField field : child.getTupleType().getFields() ) {
+            String name = field.getName();
+            if ( fieldNames.contains( name ) ) {
+                int i = 0;
+                String prefix = name;
+                do {
+                    name = prefix + i;
+                    i++;
+                } while ( fieldNames.contains( name ) );
+                projections.add( prefix + " AS " + name );
+            }
+            fieldNames.add( name );
+        }
+        return projections;
     }
 
 

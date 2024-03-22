@@ -40,22 +40,29 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
+import org.checkerframework.checker.units.qual.A;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.externalize.AlgWriterImpl;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.metadata.Metadata;
 import org.polypheny.db.algebra.metadata.MetadataFactory;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration;
 import org.polypheny.db.algebra.polyalg.PolyAlgRegistry;
+import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
@@ -361,8 +368,23 @@ public abstract class AbstractAlgNode implements AlgNode {
         }
 
         sb.append( "(\n" );
+        Set<String> fieldNames = new HashSet<>();
         for ( AlgNode child : getInputs() ) {
-            child.buildPolyAlgebra( sb );
+
+            List<String> projections = PolyAlgUtils.getAuxProjections( child, fieldNames );
+
+            StringBuilder csb = new StringBuilder();
+            if ( projections.isEmpty() ) {
+                child.buildPolyAlgebra( csb );
+            } else {
+                csb.append( PolyAlgRegistry.getDeclaration( LogicalRelProject.class ).opName )
+                        .append( "*[" )
+                        .append( PolyAlgUtils.joinMultiValued( projections, true ) )
+                        .append( "](\n" );
+                child.buildPolyAlgebra( csb );
+                csb.append( ")" );
+            }
+            sb.append( csb );
 
             size--;
             if ( size > 0 ) {

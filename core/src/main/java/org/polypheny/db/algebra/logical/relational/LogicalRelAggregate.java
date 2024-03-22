@@ -123,7 +123,7 @@ public final class LogicalRelAggregate extends Aggregate implements RelAlg {
         PolyAlgArg groupArg = new ListArg<>( groupSet.asList(), FieldArg::new, args.getDecl().canUnpackValues() );
         PolyAlgArg aggsArg = new ListArg<>( aggCalls, AggArg::new );
 
-        args.put( 0, groupArg );
+        args.put( "group", groupArg );
         args.put( "aggs", aggsArg );
         if ( getGroupType() != Group.SIMPLE ) {
             PolyAlgArg groupSetArg = new ListArg<>(

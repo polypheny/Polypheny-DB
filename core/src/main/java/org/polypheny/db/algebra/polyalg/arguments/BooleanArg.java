@@ -36,7 +36,7 @@ public class BooleanArg implements PolyAlgArg {
 
     @Override
     public String toPolyAlg() {
-        return Boolean.toString( arg ).toUpperCase();
+        return Boolean.toString( arg );
     }
 
 }

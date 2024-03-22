@@ -60,24 +60,24 @@ public class PolyAlgRegistry {
 
         declarations.put( LogicalRelAggregate.class, PolyAlgDeclaration.builder()
                 .opName( "AGG" ).numInputs( 1 ).opTags( logRelTags )
-                .param( Parameter.builder().name( "group" ).type( ParamType.FIELD ).isMultiValued( true ).build() )
+                .param( Parameter.builder().name( "group" ).type( ParamType.FIELD ).isMultiValued( true ).defaultValue( "" ).build() )  // select count(*) has no group
                 .param( Parameter.builder().name( "groups" ).type( ParamType.ANY ).isMultiValued( true ).defaultValue( "" ).build() )
                 .param( Parameter.builder().name( "aggs" ).type( ParamType.AGGREGATE ).isMultiValued( true ).defaultValue( "" ).build() )
                 .build() );
 
         declarations.put( LogicalRelMinus.class, PolyAlgDeclaration.builder()
                 .opName( "MINUS" ).numInputs( 2 ).opTags( logRelTags )
-                .param( Parameter.builder().name( "all" ).type( ParamType.BOOLEAN ).defaultValue( "FALSE" ).build() )
+                .param( Parameter.builder().name( "all" ).type( ParamType.BOOLEAN ).defaultValue( "false" ).build() )
                 .build() );
 
         declarations.put( LogicalRelUnion.class, PolyAlgDeclaration.builder()
                 .opName( "UNION" ).numInputs( 2 ).opTags( logRelTags )
-                .param( Parameter.builder().name( "all" ).type( ParamType.BOOLEAN ).defaultValue( "FALSE" ).build() )
+                .param( Parameter.builder().name( "all" ).type( ParamType.BOOLEAN ).defaultValue( "false" ).build() )
                 .build() );
 
         declarations.put( LogicalRelIntersect.class, PolyAlgDeclaration.builder()
                 .opName( "INTERSECT" ).numInputs( 2 ).opTags( logRelTags )
-                .param( Parameter.builder().name( "all" ).type( ParamType.BOOLEAN ).defaultValue( "FALSE" ).build() )
+                .param( Parameter.builder().name( "all" ).type( ParamType.BOOLEAN ).defaultValue( "false" ).build() )
                 .build() );
 
         declarations.put( LogicalRelSort.class, PolyAlgDeclaration.builder()
@@ -91,7 +91,7 @@ public class PolyAlgRegistry {
                 .opName( "JOIN" ).numInputs( 2 ).opTags( logRelTags )
                 .param( Parameter.builder().name( "condition" ).type( ParamType.SIMPLE_REX ).build() )
                 .param( Parameter.builder().name( "type" ).type( ParamType.JOIN_TYPE_ENUM ).defaultValue( JoinAlgType.INNER.name() ).build() )
-                .param( Parameter.builder().name( "semiJoinDone" ).type( ParamType.BOOLEAN ).defaultValue( "FALSE" ).build() )
+                .param( Parameter.builder().name( "semiJoinDone" ).type( ParamType.BOOLEAN ).defaultValue( "false" ).build() )
                 .build() );
 
         declarations.put( LogicalCalc.class, PolyAlgDeclaration.builder()
