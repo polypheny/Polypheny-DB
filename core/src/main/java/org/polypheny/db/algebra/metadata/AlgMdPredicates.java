@@ -448,7 +448,7 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
      */
     static class JoinConditionBasedPredicateInference {
 
-        final Join joinRel;
+        final Join joinAlg;
         final boolean isSemiJoin;
         final int nFieldsLeft;
         final int nFieldsRight;
@@ -464,18 +464,18 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
         final RexSimplify simplify;
 
 
-        JoinConditionBasedPredicateInference( Join joinRel, RexNode leftPredicates, RexNode rightPredicates, RexSimplify simplify ) {
-            this( joinRel, joinRel instanceof SemiJoin, leftPredicates, rightPredicates, simplify );
+        JoinConditionBasedPredicateInference( Join joinAlg, RexNode leftPredicates, RexNode rightPredicates, RexSimplify simplify ) {
+            this( joinAlg, joinAlg instanceof SemiJoin, leftPredicates, rightPredicates, simplify );
         }
 
 
-        private JoinConditionBasedPredicateInference( Join joinRel, boolean isSemiJoin, RexNode leftPredicates, RexNode rightPredicates, RexSimplify simplify ) {
+        private JoinConditionBasedPredicateInference( Join joinAlg, boolean isSemiJoin, RexNode leftPredicates, RexNode rightPredicates, RexSimplify simplify ) {
             super();
-            this.joinRel = joinRel;
+            this.joinAlg = joinAlg;
             this.isSemiJoin = isSemiJoin;
             this.simplify = simplify;
-            nFieldsLeft = joinRel.getLeft().getTupleType().getFields().size();
-            nFieldsRight = joinRel.getRight().getTupleType().getFields().size();
+            nFieldsLeft = joinAlg.getLeft().getTupleType().getFields().size();
+            nFieldsRight = joinAlg.getRight().getTupleType().getFields().size();
             leftFieldsBitSet = ImmutableBitSet.range( 0, nFieldsLeft );
             rightFieldsBitSet = ImmutableBitSet.range( nFieldsLeft, nFieldsLeft + nFieldsRight );
             allFieldsBitSet = ImmutableBitSet.range( 0, nFieldsLeft + nFieldsRight );
@@ -486,8 +486,8 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
             if ( leftPredicates == null ) {
                 leftChildPredicates = null;
             } else {
-                Mappings.TargetMapping leftMapping = Mappings.createShiftMapping( nFieldsLeft, 0, nFieldsLeft );
-                leftChildPredicates = leftPredicates.accept( new RexPermuteInputsShuttle( leftMapping, joinRel.getInput( 0 ) ) );
+                Mappings.TargetMapping leftMapping = Mappings.createShiftMapping( nFieldsLeft, 0, 0, nFieldsLeft );
+                leftChildPredicates = leftPredicates.accept( new RexPermuteInputsShuttle( leftMapping, joinAlg.getInput( 0 ) ) );
 
                 allExprs.add( leftChildPredicates );
                 for ( RexNode r : AlgOptUtil.conjunctions( leftChildPredicates ) ) {
@@ -499,7 +499,7 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
                 rightChildPredicates = null;
             } else {
                 Mappings.TargetMapping rightMapping = Mappings.createShiftMapping( nFieldsLeft + nFieldsRight, nFieldsLeft, 0, nFieldsRight );
-                rightChildPredicates = rightPredicates.accept( new RexPermuteInputsShuttle( rightMapping, joinRel.getInput( 1 ) ) );
+                rightChildPredicates = rightPredicates.accept( new RexPermuteInputsShuttle( rightMapping, joinAlg.getInput( 1 ) ) );
 
                 allExprs.add( rightChildPredicates );
                 for ( RexNode r : AlgOptUtil.conjunctions( rightChildPredicates ) ) {
@@ -516,8 +516,8 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
 
             // Only process equivalences found in the join conditions.
             // Processing Equivalences from the left or right side infer predicates that are already present in the Tree below the join.
-            RexBuilder rexBuilder = joinRel.getCluster().getRexBuilder();
-            List<RexNode> exprs = AlgOptUtil.conjunctions( compose( rexBuilder, ImmutableList.of( joinRel.getCondition() ) ) );
+            RexBuilder rexBuilder = joinAlg.getCluster().getRexBuilder();
+            List<RexNode> exprs = AlgOptUtil.conjunctions( compose( rexBuilder, ImmutableList.of( joinAlg.getCondition() ) ) );
 
             final EquivalenceFinder eF = new EquivalenceFinder();
             exprs.forEach( input -> input.accept( eF ) );
@@ -538,7 +538,7 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
         public AlgOptPredicateList inferPredicates( boolean includeEqualityInference ) {
             final List<RexNode> inferredPredicates = new ArrayList<>();
             final Set<RexNode> allExprs = new HashSet<>( this.allExprs );
-            final JoinAlgType joinType = joinRel.getJoinType();
+            final JoinAlgType joinType = joinAlg.getJoinType();
             switch ( joinType ) {
                 case INNER:
                 case LEFT:
@@ -561,9 +561,9 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
             }
 
             Mappings.TargetMapping rightMapping = Mappings.createShiftMapping( nFieldsLeft + nFieldsRight, 0, nFieldsLeft, nFieldsRight );
-            final RexPermuteInputsShuttle rightPermute = new RexPermuteInputsShuttle( rightMapping, joinRel );
-            Mappings.TargetMapping leftMapping = Mappings.createShiftMapping( nFieldsLeft, 0, nFieldsLeft );
-            final RexPermuteInputsShuttle leftPermute = new RexPermuteInputsShuttle( leftMapping, joinRel );
+            final RexPermuteInputsShuttle rightPermute = new RexPermuteInputsShuttle( rightMapping, joinAlg );
+            Mappings.TargetMapping leftMapping = Mappings.createShiftMapping( nFieldsLeft, 0, 0, nFieldsLeft );
+            final RexPermuteInputsShuttle leftPermute = new RexPermuteInputsShuttle( leftMapping, joinAlg );
             final List<RexNode> leftInferredPredicates = new ArrayList<>();
             final List<RexNode> rightInferredPredicates = new ArrayList<>();
 
@@ -576,7 +576,7 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
                 }
             }
 
-            final RexBuilder rexBuilder = joinRel.getCluster().getRexBuilder();
+            final RexBuilder rexBuilder = joinAlg.getCluster().getRexBuilder();
             switch ( joinType ) {
                 case INNER:
                     Iterable<RexNode> pulledUpPredicates;
@@ -588,7 +588,7 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
                         pulledUpPredicates = Iterables.concat(
                                 AlgOptUtil.conjunctions( leftChildPredicates ),
                                 AlgOptUtil.conjunctions( rightChildPredicates ),
-                                RexUtil.retainDeterministic( AlgOptUtil.conjunctions( joinRel.getCondition() ) ),
+                                RexUtil.retainDeterministic( AlgOptUtil.conjunctions( joinAlg.getCondition() ) ),
                                 inferredPredicates );
                     }
                     return AlgOptPredicateList.of( rexBuilder, pulledUpPredicates,
@@ -624,7 +624,7 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
                     continue;
                 }
                 for ( Mapping m : mappings( r ) ) {
-                    RexNode tr = r.accept( new RexPermuteInputsShuttle( m, joinRel.getInput( 0 ), joinRel.getInput( 1 ) ) );
+                    RexNode tr = r.accept( new RexPermuteInputsShuttle( m, joinAlg.getInput( 0 ), joinAlg.getInput( 1 ) ) );
                     // Filter predicates can be already simplified, so we should work with simplified RexNode versions as well. It also allows prevent of having some duplicates in in result pulledUpPredicates
                     RexNode simplifiedTarget = simplify.simplifyFilterPredicates( AlgOptUtil.conjunctions( tr ) );
                     if ( checkTarget( inferringFields, allExprs, tr ) && checkTarget( inferringFields, allExprs, simplifiedTarget ) ) {
