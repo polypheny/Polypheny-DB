@@ -83,6 +83,7 @@ import org.polypheny.db.webui.models.requests.UIRequest;
 import org.polypheny.db.webui.models.results.DocResult;
 import org.polypheny.db.webui.models.results.GraphResult;
 import org.polypheny.db.webui.models.results.GraphResult.GraphResultBuilder;
+import org.polypheny.db.webui.models.results.QueryType;
 import org.polypheny.db.webui.models.results.RelationalResult;
 import org.polypheny.db.webui.models.results.Result;
 import org.polypheny.db.webui.models.results.Result.ResultBuilder;
@@ -315,6 +316,7 @@ public class LanguageCrud {
                 .namespace( request.namespace )
                 .language( context.getQuery().getLanguage() )
                 .affectedTuples( data.size() )
+                .queryType( QueryType.from( context.getImplementation().getKind() ) )
                 .hasMore( hasMoreRows )
                 .xid( statement.getTransaction().getXid().toString() )
                 .query( context.getQuery().getQuery() );
@@ -373,6 +375,7 @@ public class LanguageCrud {
                     .header( context.getIterator().getImplementation().tupleType.getFields().stream().map( FieldDefinition::of ).toArray( FieldDefinition[]::new ) )
                     .query( context.getQuery().getQuery() )
                     .language( context.getQuery().getLanguage() )
+                    .queryType( QueryType.from( context.getImplementation().getKind() ) )
                     .dataModel( context.getIterator().getImplementation().getDataModel() )
                     .affectedTuples( data.size() )
                     .xid( statement.getTransaction().getXid().toString() )
@@ -407,6 +410,7 @@ public class LanguageCrud {
                     .data( data.stream().map( d -> d.get( 0 ).toJson() ).toArray( String[]::new ) )
                     .query( context.getQuery().getQuery() )
                     .language( context.getQuery().getLanguage() )
+                    .queryType( QueryType.from( context.getImplementation().getKind() ) )
                     .hasMore( hasMoreRows )
                     .affectedTuples( data.size() )
                     .xid( statement.getTransaction().getXid().toString() )

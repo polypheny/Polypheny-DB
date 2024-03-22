@@ -36,6 +36,7 @@ public class GraphResult extends Result<String[], FieldDefinition> {
             @JsonProperty("header") FieldDefinition[] header,
             @JsonProperty("exception") Throwable exception,
             @JsonProperty("query") String query,
+            @JsonProperty("queryType") QueryType queryType,
             @JsonProperty("xid") String xid,
             @JsonProperty("error") String error,
             @JsonProperty("currentPage") int currentPage,
@@ -43,7 +44,21 @@ public class GraphResult extends Result<String[], FieldDefinition> {
             @JsonProperty("hasMore") boolean hasMore,
             @JsonProperty("language") QueryLanguage language,
             @JsonProperty("affectedTuples") int affectedTuples ) {
-        super( dataModel, namespace, data, header, exception, query, xid, error, currentPage, highestPage, hasMore, language, affectedTuples );
+        super(
+                dataModel,
+                namespace,
+                data,
+                header,
+                exception,
+                query,
+                queryType,
+                xid,
+                error,
+                currentPage,
+                highestPage,
+                hasMore,
+                language,
+                affectedTuples );
     }
 
     public static abstract class GraphResultBuilder<C extends GraphResult, B extends GraphResultBuilder<C, B>> extends ResultBuilder<String[], FieldDefinition, C, B> {

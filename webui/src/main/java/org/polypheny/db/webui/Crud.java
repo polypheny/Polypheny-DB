@@ -1001,9 +1001,12 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                             .dimension( logicalColumn.dimension )
                             .cardinality( logicalColumn.cardinality )
                             .primary( primaryColumns.contains( logicalColumn.name ) )
-                            .defaultValue( defaultValue ).build() );
+                            .defaultValue( defaultValue )
+                            .build() );
         }
-        RelationalResultBuilder<?, ?> result = RelationalResult.builder().header( cols.toArray( new UiColumnDefinition[0] ) );
+        RelationalResultBuilder<?, ?> result = RelationalResult
+                .builder()
+                .header( cols.toArray( new UiColumnDefinition[0] ) );
         if ( table.entityType == EntityType.ENTITY ) {
             result.type( ResultType.TABLE );
         } else if ( table.entityType == EntityType.MATERIALIZED_VIEW ) {
@@ -1019,12 +1022,12 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     void getDataSourceColumns( final Context ctx ) {
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
 
-        LogicalTable tablee = Catalog.snapshot().rel().getTable( request.entityId ).orElseThrow();
+        LogicalTable table = Catalog.snapshot().rel().getTable( request.entityId ).orElseThrow();
 
-        if ( tablee.entityType == EntityType.VIEW ) {
+        if ( table.entityType == EntityType.VIEW ) {
 
             List<UiColumnDefinition> columns = new ArrayList<>();
-            List<LogicalColumn> cols = Catalog.snapshot().rel().getColumns( tablee.id );
+            List<LogicalColumn> cols = Catalog.snapshot().rel().getColumns( table.id );
             for ( LogicalColumn col : cols ) {
                 columns.add( UiColumnDefinition.builder()
                         .name( col.name )
@@ -1043,16 +1046,16 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             }
             ctx.json( RelationalResult.builder().header( columns.toArray( new UiColumnDefinition[0] ) ).type( ResultType.VIEW ).build() );
         } else {
-            List<AllocationEntity> allocs = Catalog.snapshot().alloc().getFromLogical( tablee.id );
-            if ( Catalog.snapshot().alloc().getFromLogical( tablee.id ).size() != 1 ) {
+            List<AllocationEntity> allocs = Catalog.snapshot().alloc().getFromLogical( table.id );
+            if ( Catalog.snapshot().alloc().getFromLogical( table.id ).size() != 1 ) {
                 throw new GenericRuntimeException( "The table has an unexpected number of placements!" );
             }
 
             long adapterId = allocs.get( 0 ).adapterId;
-            LogicalPrimaryKey primaryKey = Catalog.snapshot().rel().getPrimaryKey( tablee.primaryKey ).orElseThrow();
+            LogicalPrimaryKey primaryKey = Catalog.snapshot().rel().getPrimaryKey( table.primaryKey ).orElseThrow();
             List<String> pkColumnNames = primaryKey.getFieldNames();
             List<UiColumnDefinition> columns = new ArrayList<>();
-            for ( AllocationColumn ccp : Catalog.snapshot().alloc().getColumnPlacementsOnAdapterPerEntity( adapterId, tablee.id ) ) {
+            for ( AllocationColumn ccp : Catalog.snapshot().alloc().getColumnPlacementsOnAdapterPerEntity( adapterId, table.id ) ) {
                 LogicalColumn col = Catalog.snapshot().rel().getColumn( ccp.columnId ).orElseThrow();
                 columns.add( UiColumnDefinition.builder()
                         .name( col.name )
