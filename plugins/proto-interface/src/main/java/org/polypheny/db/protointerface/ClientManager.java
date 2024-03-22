@@ -79,17 +79,18 @@ public class ClientManager {
         if ( log.isTraceEnabled() ) {
             log.trace( "User {} tries to establish connection via proto interface.", uuid );
         }
-        LogicalUser user;
-        Optional<LogicalUser> peer = t.getPeer().flatMap( u -> Catalog.getInstance().getSnapshot().getUser( u ) );
-        if ( peer.isPresent() ) {
-            user = peer.get();
-        } else {
-            String username = connectionRequest.hasUsername() ? connectionRequest.getUsername() : Catalog.USER_NAME;
-            String password = connectionRequest.hasPassword() ? connectionRequest.getPassword() : null;
-            if ( password == null ) {
+        final LogicalUser user;
+        if ( connectionRequest.hasUsername() ) {
+            String username = connectionRequest.getUsername();
+            if ( !connectionRequest.hasPassword() ) {
                 throw new AuthenticationException( "A password is required" );
             }
+            String password = connectionRequest.getPassword();
             user = authenticator.authenticate( username, password );
+        } else {
+            user = t.getPeer()
+                    .flatMap( u -> Catalog.getInstance().getSnapshot().getUser( u ) )
+                    .orElseThrow( () -> new AuthenticationException( "Peer authentication failed: No user with that name" ) );
         }
 
         Transaction transaction = transactionManager.startTransaction( user.id, false, "proto-interface" );
