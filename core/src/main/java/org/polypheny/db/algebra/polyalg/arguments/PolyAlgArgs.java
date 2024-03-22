@@ -20,8 +20,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.StringJoiner;
 import lombok.Getter;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.Parameter;
+import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
 
 /**
  * Represents the parameters with corresponding values (PolyAlgArg) for an AlgNode instance.
@@ -39,18 +41,19 @@ public class PolyAlgArgs {
     }
 
 
-    public String serializeArguments() {
+    public String serializeArguments( AlgNode context ) {
+        System.out.println( "\t" + decl.opName + ": " + PolyAlgUtils.getFieldNames( context ) );
         StringJoiner joiner = new StringJoiner( ", ", "[", "]" );
 
         for ( Parameter p : decl.posParams ) {
             assert args.containsKey( p );
             PolyAlgArg arg = getArg( p );
-            joiner.add( arg.toPolyAlg() );
+            joiner.add( arg.toPolyAlg( context ) );
         }
         for ( Parameter p : decl.kwParams ) {
             if ( args.containsKey( p ) ) {
                 PolyAlgArg arg = getArg( p );
-                String value = arg.toPolyAlg();
+                String value = arg.toPolyAlg( context );
                 if ( !p.defaultValue().equals( value ) ) {
                     joiner.add( p.name() + "=" + value );
                 }

@@ -26,50 +26,33 @@ public class ListArg<E extends PolyAlgArg> implements PolyAlgArg {
 
     private final List<E> args;
     private final List<String> aliases;
-    private final AlgNode algNode;
     private final boolean unpackValues;
 
 
-    public ListArg( List<E> args, List<String> aliases, AlgNode fieldNameProvider, boolean unpackValues ) {
+    public ListArg( List<E> args, List<String> aliases, boolean unpackValues ) {
         this.args = args;
         this.aliases = aliases;
-        this.algNode = fieldNameProvider;
         this.unpackValues = unpackValues;
     }
 
 
     public <T> ListArg( List<T> rawArgs, Function<T, E> converter ) {
-        this( rawArgs, converter, null, null, false );
+        this( rawArgs, converter, null, false );
     }
 
 
     public <T> ListArg( List<T> rawArgs, Function<T, E> converter, boolean unpackValues ) {
-        this( rawArgs, converter, null, null, unpackValues );
+        this( rawArgs, converter, null, unpackValues );
     }
 
 
-    public <T> ListArg( List<T> rawArgs, Function<T, E> converter, AlgNode fieldNameProvider ) {
-        this( rawArgs, converter, null, fieldNameProvider, false );
-    }
-
-
-    public <T> ListArg( List<T> rawArgs, Function<T, E> converter, AlgNode fieldNameProvider, boolean unpackValues ) {
-        this( rawArgs, converter, null, fieldNameProvider, unpackValues );
+    public <T> ListArg( List<T> rawArgs, Function<T, E> converter, List<String> aliases ) {
+        this( rawArgs.stream().map( converter ).toList(), aliases, false );
     }
 
 
     public <T> ListArg( List<T> rawArgs, Function<T, E> converter, List<String> aliases, boolean unpackValues ) {
-        this( rawArgs, converter, aliases, null, unpackValues );
-    }
-
-
-    public <T> ListArg( List<T> rawArgs, Function<T, E> converter, List<String> aliases, AlgNode fieldNameProvider ) {
-        this( rawArgs.stream().map( converter ).toList(), aliases, fieldNameProvider, false );
-    }
-
-
-    public <T> ListArg( List<T> rawArgs, Function<T, E> converter, List<String> aliases, AlgNode fieldNameProvider, boolean unpackValues ) {
-        this( rawArgs.stream().map( converter ).toList(), aliases, fieldNameProvider, unpackValues );
+        this( rawArgs.stream().map( converter ).toList(), aliases, unpackValues );
     }
 
 
@@ -84,10 +67,14 @@ public class ListArg<E extends PolyAlgArg> implements PolyAlgArg {
 
     @Override
     public String toPolyAlg() {
-        List<String> strArgs = args.stream().map( PolyAlgArg::toPolyAlg ).toList();
-        if ( algNode != null ) {
-            strArgs = PolyAlgUtils.replaceWithFieldNames( algNode, strArgs );
-        }
+        return toPolyAlg( null );
+    }
+
+
+    @Override
+    public String toPolyAlg( AlgNode context ) {
+        List<String> strArgs = args.stream().map( a -> a.toPolyAlg( context ) ).toList();
+
         if ( aliases != null ) {
             strArgs = PolyAlgUtils.appendAliases( strArgs, aliases );
         }

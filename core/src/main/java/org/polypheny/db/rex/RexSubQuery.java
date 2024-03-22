@@ -142,10 +142,17 @@ public class RexSubQuery extends RexCall {
     @Override
     protected @Nonnull
     String computeDigest( boolean withType ) {
+        return computeDigest( withType, null );
+    }
+
+
+    @Override
+    protected @Nonnull
+    String computeDigest( boolean withType, RexVisitor<String> visitor ) {
         final StringBuilder sb = new StringBuilder( op.getName() );
         sb.append( "(" );
         for ( RexNode operand : operands ) {
-            sb.append( operand );
+            sb.append( visitor == null ? operand : operand.accept( visitor ) );
             sb.append( ", " );
         }
         sb.append( "{\n" );

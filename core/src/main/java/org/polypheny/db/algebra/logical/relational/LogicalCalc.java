@@ -117,12 +117,12 @@ public final class LogicalCalc extends Calc implements RelAlg {
     @Override
     public PolyAlgArgs collectAttributes() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
-        PolyAlgArg expsArg = new ListArg<>( program.getExprList(), RexArg::new, this );
-        PolyAlgArg projectsArg = new ListArg<>( program.getProjectList(), RexArg::new, rowType.getFieldNames(), this );
+        PolyAlgArg expsArg = new ListArg<>( program.getExprList(), RexArg::new );
+        PolyAlgArg projectsArg = new ListArg<>( program.getProjectList(), RexArg::new, rowType.getFieldNames() );
 
         args.put( 0, expsArg );
         args.put( 1, projectsArg );
-        args.put( "condition", new RexArg( program.getCondition(), this ) );
+        args.put( "condition", new RexArg( program.getCondition() ) );
         return args;
     }
 

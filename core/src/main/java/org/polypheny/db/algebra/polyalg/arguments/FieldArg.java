@@ -23,11 +23,9 @@ import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
 public class FieldArg implements PolyAlgArg {
 
     private final int field;
-    private final AlgNode algNode;
 
-    public FieldArg( int field, AlgNode fieldNameProvider ) {
+    public FieldArg( int field ) {
         this.field = field;
-        this.algNode = fieldNameProvider;
     }
 
     @Override
@@ -38,8 +36,14 @@ public class FieldArg implements PolyAlgArg {
 
     @Override
     public String toPolyAlg() {
-        if ( algNode != null ) {
-            return PolyAlgUtils.getFieldNameFromIndex( algNode, field );
+        return toPolyAlg(null);
+    }
+
+
+    @Override
+    public String toPolyAlg( AlgNode context ) {
+        if ( context != null ) {
+            return PolyAlgUtils.getFieldNameFromIndex( context, field );
         }
         return Integer.toString( field );
     }

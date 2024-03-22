@@ -46,12 +46,8 @@ import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
-import org.polypheny.db.algebra.polyalg.arguments.AnyArg;
 import org.polypheny.db.algebra.polyalg.arguments.BooleanArg;
-import org.polypheny.db.algebra.polyalg.arguments.CorrelationArg;
 import org.polypheny.db.algebra.polyalg.arguments.EnumArg;
-import org.polypheny.db.algebra.polyalg.arguments.ListArg;
-import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -169,7 +165,7 @@ public final class LogicalRelJoin extends Join implements RelAlg {
     public PolyAlgArgs collectAttributes() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
 
-        args.put( 0, new RexArg( condition, this ) )
+        args.put( 0, new RexArg( condition ) )
                 .put( "type", new EnumArg<>( joinType, ParamType.JOIN_TYPE_ENUM ) )
                 .put( "semiJoinDone", new BooleanArg( semiJoinDone ) );
         return args;

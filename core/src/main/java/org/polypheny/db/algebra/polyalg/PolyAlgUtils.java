@@ -40,42 +40,6 @@ import org.polypheny.db.rex.RexVisitor;
 
 public class PolyAlgUtils {
 
-    /**
-     * Replaces all occurrences of '$' followed by some number corresponding to a field in the inputs of alg
-     * with the name of that field.
-     *
-     * @param alg the AlgNode whose inputs contain the field names
-     * @param str String whose occurrences of '$' + field number should be replaced
-     * @return str with field numbers replaced with their names.
-     */
-    public static String replaceWithFieldNames( AlgNode alg, String str ) {
-        if ( str.contains( "$" ) ) {
-            int offset = 0;
-            for ( AlgNode input : alg.getInputs() ) {
-                offset += input.getTupleType().getFields().size();
-            }
-            // iterate in reverse order to make sure "$13" is replaced before $1
-            for ( int i = alg.getInputs().size() - 1; i >= 0; i-- ) {
-                AlgNode input = alg.getInputs().get( i );
-                List<AlgDataTypeField> fields = input.getTupleType().getFields();
-                offset -= fields.size();
-                for ( int j = fields.size() - 1; j >= 0; j-- ) {
-                    AlgDataTypeField field = fields.get( j );
-                    String searchStr = "$" + (offset + field.getIndex());
-                    int position = str.indexOf( searchStr );
-                    int nextCharPosition = position + searchStr.length();
-                    if ( nextCharPosition < str.length() && Character.isDigit( str.charAt( nextCharPosition ) ) ) {
-                        continue;
-                    }
-                    if ( position >= 0 && str.length() >= position + searchStr.length() ) {
-                        str = str.replace( searchStr, field.getName() );
-                    }
-                }
-            }
-        }
-        return str;
-    }
-
 
     public static String getFieldNameFromIndex( AlgNode alg, int idx ) {
         for ( AlgNode input : alg.getInputs() ) {
@@ -89,18 +53,11 @@ public class PolyAlgUtils {
     }
 
 
-    public static List<String> replaceWithFieldNames( AlgNode alg, List<?> exps ) {
-        return exps.stream()
-                .map( exp -> replaceWithFieldNames( alg, exp.toString() ) )
-                .toList();
-    }
-
-
     public static String appendAlias( String exp, String alias ) {
-        if ( !alias.equals( exp ) ) {
-            exp += " AS " + alias;
+        if ( alias == null || alias.equals( exp ) ) {
+            return exp;
         }
-        return exp;
+        return exp + " AS " + alias;
     }
 
 
@@ -137,12 +94,19 @@ public class PolyAlgUtils {
     }
 
 
-    public static String digestWithNames( RexNode expr, AlgNode context ) {
-        List<String> fieldNames = context.getInputs().stream()
+    public static List<String> getFieldNames( AlgNode context ) {
+        if ( context == null ) {
+            return List.of();
+        }
+        return context.getInputs().stream()
                 .flatMap( node -> node.getTupleType().getFields().stream() )
                 .map( AlgDataTypeField::getName )
                 .toList();
-        return expr.accept( new NameReplacer( fieldNames ) );
+    }
+
+
+    public static String digestWithNames( RexNode expr, AlgNode context ) {
+        return expr.accept( new NameReplacer( getFieldNames( context ) ) );
     }
 
 
@@ -182,7 +146,7 @@ public class PolyAlgUtils {
 
         @Override
         public String visitOver( RexOver over ) {
-            return "over: " + over;
+            return over.toString( this );
         }
 
 
@@ -212,6 +176,10 @@ public class PolyAlgUtils {
 
         @Override
         public String visitSubQuery( RexSubQuery subQuery ) {
+            /* TODO: handling subquery when constructing PolyAlg representation
+                in method computeDigest( boolean withType, RexVisitor<String> visitor ),
+                sb.append( AlgOptUtil.toString( alg ) );
+                */
             return "subQuery: " + subQuery;
         }
 

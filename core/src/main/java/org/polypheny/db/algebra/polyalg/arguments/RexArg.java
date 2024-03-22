@@ -17,7 +17,6 @@
 package org.polypheny.db.algebra.polyalg.arguments;
 
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
 import org.polypheny.db.rex.RexNode;
@@ -25,17 +24,10 @@ import org.polypheny.db.rex.RexNode;
 public class RexArg implements PolyAlgArg {
 
     private final RexNode node;
-    private final AlgNode algNode;
 
 
     public RexArg( RexNode node ) {
-        this( node, null );
-    }
-
-
-    public RexArg( RexNode node, AlgNode fieldNameProvider ) {
         this.node = node;
-        this.algNode = fieldNameProvider;
     }
 
 
@@ -47,11 +39,17 @@ public class RexArg implements PolyAlgArg {
 
     @Override
     public String toPolyAlg() {
+        return toPolyAlg( null );
+    }
+
+
+    @Override
+    public String toPolyAlg( AlgNode context ) {
         String str = node == null ? "" : node.toString();
-        if ( algNode == null ) {
+        if ( context == null || node == null ) {
             return str;
         }
-        return PolyAlgUtils.replaceWithFieldNames( algNode, str ) + " { " + PolyAlgUtils.digestWithNames( node, algNode ) + " } ";
+        return PolyAlgUtils.digestWithNames( node, context );
     }
 
 }

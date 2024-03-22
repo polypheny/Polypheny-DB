@@ -16,6 +16,7 @@
 
 package org.polypheny.db.algebra.polyalg.arguments;
 
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 
 public interface PolyAlgArg {
@@ -23,5 +24,9 @@ public interface PolyAlgArg {
     ParamType getType();
 
     String toPolyAlg();
+
+    default String toPolyAlg( AlgNode context ) {
+        return toPolyAlg();
+    }
 
 }

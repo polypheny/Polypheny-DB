@@ -132,7 +132,7 @@ public final class LogicalRelProject extends Project implements RelAlg {
     @Override
     public PolyAlgArgs collectAttributes() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
-        PolyAlgArg projectsArg = new ListArg<>( exps, e -> new RexArg( e, this ), rowType.getFieldNames(), args.getDecl().canUnpackValues() );
+        PolyAlgArg projectsArg = new ListArg<>( exps, RexArg::new, rowType.getFieldNames(), args.getDecl().canUnpackValues() );
 
         args.put( 0, projectsArg );
         return args;

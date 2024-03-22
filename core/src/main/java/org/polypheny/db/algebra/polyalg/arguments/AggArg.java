@@ -17,6 +17,7 @@
 package org.polypheny.db.algebra.polyalg.arguments;
 
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
@@ -24,17 +25,10 @@ import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
 public class AggArg implements PolyAlgArg {
 
     private final AggregateCall agg;
-    private final AlgNode algNode;
 
 
     public AggArg( AggregateCall agg ) {
-        this( agg, null );
-    }
-
-
-    public AggArg( AggregateCall agg, AlgNode fieldNameProvider ) {
         this.agg = agg;
-        this.algNode = fieldNameProvider;
     }
 
 
@@ -46,11 +40,24 @@ public class AggArg implements PolyAlgArg {
 
     @Override
     public String toPolyAlg() {
-        String str = agg.toString();
-        if ( algNode != null ) {
-            str = PolyAlgUtils.replaceWithFieldNames( algNode, str );
+        return toPolyAlg( null );
+    }
+
+
+    @Override
+    public String toPolyAlg( AlgNode context ) {
+        String str = agg.toString( PolyAlgUtils.getFieldNames( context ) );
+        String name = agg.getName();
+        if ( name == null ) {
+            // TODO: make sure agg.getName() is never null
+            Aggregate instance = (Aggregate) context;
+            int i = instance.getAggCallList().indexOf( agg );
+            if ( i != -1 ) {
+                i += instance.getGroupSet().asList().size();
+            }
+            name = "$f" + i;
         }
-        return PolyAlgUtils.appendAlias( str, agg.getName() );
+        return PolyAlgUtils.appendAlias( str, name );
     }
 
 }
