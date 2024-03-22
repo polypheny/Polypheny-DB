@@ -17,6 +17,7 @@
 package org.polypheny.db.algebra.polyalg.arguments;
 
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
 import org.polypheny.db.rex.RexNode;
@@ -50,7 +51,7 @@ public class RexArg implements PolyAlgArg {
         if ( algNode == null ) {
             return str;
         }
-        return PolyAlgUtils.replaceWithFieldNames( algNode, str );
+        return PolyAlgUtils.replaceWithFieldNames( algNode, str ) + " { " + PolyAlgUtils.digestWithNames( node, algNode ) + " } ";
     }
 
 }

@@ -16,10 +16,27 @@
 
 package org.polypheny.db.algebra.polyalg;
 
+
 import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexCorrelVariable;
+import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexElementRef;
+import org.polypheny.db.rex.RexFieldAccess;
+import org.polypheny.db.rex.RexIndexRef;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexLocalRef;
+import org.polypheny.db.rex.RexNameRef;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexOver;
+import org.polypheny.db.rex.RexPatternFieldRef;
+import org.polypheny.db.rex.RexRangeRef;
+import org.polypheny.db.rex.RexSubQuery;
+import org.polypheny.db.rex.RexTableIndexRef;
+import org.polypheny.db.rex.RexVisitor;
 
 public class PolyAlgUtils {
 
@@ -117,6 +134,111 @@ public class PolyAlgUtils {
     public static String joinMultiValued( List<String> values, boolean omitBrackets ) {
         String str = String.join( ", ", values );
         return (omitBrackets || values.size() <= 1) ? str : "[" + str + "]";
+    }
+
+
+    public static String digestWithNames( RexNode expr, AlgNode context ) {
+        List<String> fieldNames = context.getInputs().stream()
+                .flatMap( node -> node.getTupleType().getFields().stream() )
+                .map( AlgDataTypeField::getName )
+                .toList();
+        return expr.accept( new NameReplacer( fieldNames ) );
+    }
+
+
+    public static class NameReplacer implements RexVisitor<String> {
+
+        private final List<String> names;
+
+
+        public NameReplacer( List<String> names ) {
+            this.names = names;
+        }
+
+
+        @Override
+        public String visitIndexRef( RexIndexRef inputRef ) {
+            return names.get( inputRef.getIndex() );
+        }
+
+
+        @Override
+        public String visitLocalRef( RexLocalRef localRef ) {
+            return "LocalRef: " + localRef;
+        }
+
+
+        @Override
+        public String visitLiteral( RexLiteral literal ) {
+            return literal.toString();
+        }
+
+
+        @Override
+        public String visitCall( RexCall call ) {
+            return call.toString( this );
+        }
+
+
+        @Override
+        public String visitOver( RexOver over ) {
+            return "over: " + over;
+        }
+
+
+        @Override
+        public String visitCorrelVariable( RexCorrelVariable correlVariable ) {
+            return "correlVariable: " + correlVariable;
+        }
+
+
+        @Override
+        public String visitDynamicParam( RexDynamicParam dynamicParam ) {
+            return "dynamicParam: " + dynamicParam;
+        }
+
+
+        @Override
+        public String visitRangeRef( RexRangeRef rangeRef ) {
+            return "rangeRef: " + rangeRef;
+        }
+
+
+        @Override
+        public String visitFieldAccess( RexFieldAccess fieldAccess ) {
+            return "fieldAccess: " + fieldAccess;
+        }
+
+
+        @Override
+        public String visitSubQuery( RexSubQuery subQuery ) {
+            return "subQuery: " + subQuery;
+        }
+
+
+        @Override
+        public String visitTableInputRef( RexTableIndexRef fieldRef ) {
+            return "tableInputRef: " + fieldRef;
+        }
+
+
+        @Override
+        public String visitPatternFieldRef( RexPatternFieldRef fieldRef ) {
+            return "patternFieldRef: " + fieldRef;
+        }
+
+
+        @Override
+        public String visitNameRef( RexNameRef nameRef ) {
+            return "nameRef: " + nameRef;
+        }
+
+
+        @Override
+        public String visitElementRef( RexElementRef rexElementRef ) {
+            return "elementRef: " + rexElementRef;
+        }
+
     }
 
 }
