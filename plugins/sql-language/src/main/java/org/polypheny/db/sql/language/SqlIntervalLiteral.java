@@ -110,14 +110,26 @@ public class SqlIntervalLiteral extends SqlLiteral {
         private static Long toNumber( SqlIntervalQualifier intervalQualifier ) {
             return switch ( intervalQualifier.timeUnitRange ) {
                 case YEAR -> 365L * 24 * 60 * 60 * 1000;
+                case DAY_TO_MINUTE, DAY_TO_SECOND -> 24L * 60 * 60 * 1000;
                 case HOUR -> 60L * 60 * 1000;
+                case HOUR_TO_MINUTE -> null;
+                case HOUR_TO_SECOND -> 60L * 60 * 1000;
                 case MINUTE -> 60L * 1000;
+                case MINUTE_TO_SECOND -> null;
                 case SECOND -> 1000L;
-                case MILLISECOND -> 1L;
+                case MILLISECOND, MONTH -> 1L;
                 case DAY, DOW, DOY -> 24L * 60 * 60 * 1000;
                 case WEEK -> 7L * 24 * 60 * 60 * 1000;
+                case ISOYEAR -> 12L;
                 case QUARTER -> 3L * 30 * 24 * 60 * 60 * 1000;
-                case MONTH -> 1L;
+                case YEAR_TO_MONTH -> 12L;
+                case DAY_TO_HOUR -> 24L * 60 * 60 * 1000;
+                case MICROSECOND -> 1000L;
+                case ISODOW -> 24L * 60 * 60 * 1000;
+                case EPOCH -> 1L;
+                case DECADE -> 1L;
+                case CENTURY -> 1L;
+                case MILLENNIUM -> 1L;
                 default -> throw new UnsupportedOperationException( "Not implemented yet" );
             };
         }

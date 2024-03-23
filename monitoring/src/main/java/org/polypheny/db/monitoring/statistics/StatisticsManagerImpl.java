@@ -1070,7 +1070,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
     @Override
     public Object getDashboardInformation() {
-        dashboardInformation.updatePolyphenyStatistic();
+        dashboardInformation.updateStatistic();
         return dashboardInformation;
     }
 

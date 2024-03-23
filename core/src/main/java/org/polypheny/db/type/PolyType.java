@@ -150,7 +150,7 @@ public enum PolyType {
             PrecScale.NO_NO,
             false,
             Types.OTHER,
-            PolyTypeFamily.INTERVAL_YEAR_MONTH ),
+            PolyTypeFamily.INTERVAL_TIME ),
 
 
     INTERVAL_MILLISECOND(
@@ -919,7 +919,7 @@ public enum PolyType {
 
     public boolean isYearMonth() {
         return switch ( this ) {
-            case INTERVAL_MONTH -> true;
+            case INTERVAL_MONTH, INTERVAL_MILLISECOND -> true;
             default -> false;
         };
     }

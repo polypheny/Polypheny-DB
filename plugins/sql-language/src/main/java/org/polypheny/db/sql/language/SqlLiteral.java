@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Objects;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.json.JsonEmptyOrError;
@@ -36,7 +35,7 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Literal;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.NodeVisitor;
-import org.polypheny.db.sql.language.SqlIntervalLiteral.IntervalValue;
+import org.polypheny.db.nodes.TimeUnitRange;
 import org.polypheny.db.sql.language.fun.SqlLiteralChainOperator;
 import org.polypheny.db.sql.language.parser.SqlParserUtil;
 import org.polypheny.db.sql.language.validate.SqlValidator;
@@ -67,12 +66,12 @@ import org.polypheny.db.util.Util;
 
 /**
  * A <code>SqlLiteral</code> is a constant. It is, appropriately, immutable.
- *
+ * <p>
  * How is the value stored? In that respect, the class is somewhat of a black box. There is a {@link #getValue} method which returns the value as an object, but the type of that value is implementation detail, and it is best
  * that your code does not depend upon that knowledge. It is better to use task-oriented methods such as {@link #toSqlString(SqlDialect)} and {@link #toValue}.
- *
+ * <p>
  * If you really need to access the value directly, you should switch on the value of the {@link #typeName} field, rather than making assumptions about the runtime type of the {@link #value}.
- *
+ * <p>
  * The allowable types and combinations are:
  *
  * <table>
@@ -177,7 +176,7 @@ public class SqlLiteral extends SqlNode implements Literal {
             case DATE -> value instanceof PolyDate;
             case TIME -> value instanceof PolyTime;
             case TIMESTAMP -> value instanceof PolyTimestamp;
-            case INTERVAL_MILLISECOND, INTERVAL_MONTH -> value instanceof PolyInterval || value instanceof IntervalValue;
+            case INTERVAL_MILLISECOND, INTERVAL_MONTH -> value instanceof PolyInterval;
             case BINARY -> value instanceof PolyBinary;
             case CHAR -> value instanceof PolyString;
             case SYMBOL -> (value instanceof SqlSampleSpec) || value instanceof PolySymbol;
@@ -337,7 +336,7 @@ public class SqlLiteral extends SqlNode implements Literal {
      * <li>Otherwise throws {@link IllegalArgumentException}.</li>
      * </ul>
      */
-    public static Comparable value( SqlNode node ) throws IllegalArgumentException {
+    public static Comparable<?> value( SqlNode node ) throws IllegalArgumentException {
         if ( node instanceof SqlLiteral literal ) {
             if ( literal.getTypeName() == PolyType.SYMBOL ) {
                 return literal.value.asSymbol().value;
@@ -481,7 +480,7 @@ public class SqlLiteral extends SqlNode implements Literal {
 
     /**
      * Creates a NULL literal.
-     *
+     * <p>
      * There's no singleton constant for a NULL literal. Instead, nulls must be instantiated via createNull(), because different instances have different context-dependent types.
      */
     public static SqlLiteral createNull( ParserPos pos ) {

@@ -983,14 +983,10 @@ public abstract class PolyTypeUtil {
         }
 
         // We can implicitly convert from character to date
-        if ( family1 == PolyTypeFamily.CHARACTER
+        return family1 == PolyTypeFamily.CHARACTER
                 && canConvertStringInCompare( family2 )
                 || family2 == PolyTypeFamily.CHARACTER
-                && canConvertStringInCompare( family1 ) ) {
-            return true;
-        }
-
-        return false;
+                && canConvertStringInCompare( family1 );
     }
 
 

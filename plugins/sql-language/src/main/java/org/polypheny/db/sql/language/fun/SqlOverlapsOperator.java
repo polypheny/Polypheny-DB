@@ -18,6 +18,7 @@ package org.polypheny.db.sql.language.fun;
 
 
 import com.google.common.collect.ImmutableList;
+import java.util.Objects;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -116,13 +117,10 @@ public class SqlOverlapsOperator extends SqlBinaryOperator {
             return false;
         }
         final PolySingleOperandTypeChecker rightChecker;
-        switch ( kind ) {
-            case CONTAINS:
-                rightChecker = OperandTypes.PERIOD_OR_DATETIME;
-                break;
-            default:
-                rightChecker = OperandTypes.PERIOD;
-                break;
+        if ( Objects.requireNonNull( kind ) == Kind.CONTAINS ) {
+            rightChecker = OperandTypes.PERIOD_OR_DATETIME;
+        } else {
+            rightChecker = OperandTypes.PERIOD;
         }
         if ( !rightChecker.checkSingleOperandType( callBinding, callBinding.operand( 1 ), 0, throwOnFailure ) ) {
             return false;

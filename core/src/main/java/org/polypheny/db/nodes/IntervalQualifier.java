@@ -16,7 +16,6 @@
 
 package org.polypheny.db.nodes;
 
-import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
@@ -28,6 +27,9 @@ public interface IntervalQualifier extends Visitable, Expressible {
     PolyType typeName();
 
     static PolyType getRangePolyType( TimeUnitRange timeUnitRange ) {
+        if ( timeUnitRange == null ) {
+            return PolyType.INTERVAL_MILLISECOND;
+        }
         return switch ( timeUnitRange ) {
             case YEAR_TO_MONTH, MONTH, QUARTER -> PolyType.INTERVAL_MONTH;
             default -> PolyType.INTERVAL_MILLISECOND;
