@@ -32,8 +32,6 @@ import lombok.With;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.SqlType;
-import org.apache.calcite.avatica.util.DateTimeUtils;
-import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.linq4j.function.Experimental;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -61,6 +59,8 @@ import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.util.temporal.DateTimeUtils;
+import org.polypheny.db.util.temporal.TimeUnit;
 
 
 /**
@@ -360,10 +360,12 @@ public class SqlDialect {
     public void unparseSqlIntervalLiteral( SqlWriter writer, SqlIntervalLiteral literal, int leftPrec, int rightPrec ) {
         SqlIntervalLiteral.IntervalValue interval = (SqlIntervalLiteral.IntervalValue) literal.getValue();
         writer.keyword( "INTERVAL" );
-        if ( interval.getSign() == -1 ) {
+        if ( interval.getSign() == -1 || interval.millis < 0 || interval.months < 0 ) {
             writer.print( "-" );
         }
-        writer.literal( "'" + literal.getValue().toString() + "'" );
+        String intervalStr = literal.getValue().toString();
+        intervalStr = intervalStr.startsWith( "-" ) ? intervalStr.substring( 1 ) : intervalStr;
+        writer.literal( "'" + intervalStr + "'" );
         unparseSqlIntervalQualifier( writer, interval.getIntervalQualifier(), AlgDataTypeSystem.DEFAULT );
     }
 

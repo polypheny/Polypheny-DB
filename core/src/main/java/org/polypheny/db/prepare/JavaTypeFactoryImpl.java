@@ -220,7 +220,6 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                 case DATE:
                     return PolyDate.class;
                 case TIME:
-                case TIME_WITH_LOCAL_TIME_ZONE:
                     return PolyTemporal.class;
                 case DOUBLE:
                 case FLOAT: // sic
@@ -232,10 +231,8 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                 case BIGINT:
                     return PolyNumber.class;
                 case TIMESTAMP:
-                case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                     return PolyTimestamp.class;
-                case INTERVAL_MILLISECOND:
-                case INTERVAL_MONTH:
+                case INTERVAL:
                     return PolyInterval.class;
                 case BOOLEAN:
                     return PolyBoolean.class;

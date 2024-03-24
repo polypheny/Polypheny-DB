@@ -5004,14 +5004,14 @@ public class SqlParserTest extends SqlLanguageDependent {
         checkExp( "interval '1234' year(4)", "INTERVAL '1234' YEAR(4)" );
 
         // sign
-        checkExp( "interval '+1' year", "INTERVAL '+1' YEAR" );
-        checkExp( "interval '-1' year", "INTERVAL '-1' YEAR" );
+        checkExp( "interval '+1' year", "INTERVAL '1' YEAR" );
+        checkExp( "interval '-1' year", "INTERVAL -'1' YEAR" );
         checkExp( "interval +'1' year", "INTERVAL '1' YEAR" );
-        checkExp( "interval +'+1' year", "INTERVAL '+1' YEAR" );
-        checkExp( "interval +'-1' year", "INTERVAL '-1' YEAR" );
+        checkExp( "interval +'+1' year", "INTERVAL '1' YEAR" );
+        checkExp( "interval +'-1' year", "INTERVAL -'1' YEAR" );
         checkExp( "interval -'1' year", "INTERVAL -'1' YEAR" );
-        checkExp( "interval -'+1' year", "INTERVAL -'+1' YEAR" );
-        checkExp( "interval -'-1' year", "INTERVAL -'-1' YEAR" );
+        checkExp( "interval -'+1' year", "INTERVAL -'1' YEAR" );
+        checkExp( "interval -'-1' year", "INTERVAL '1' YEAR" );
     }
 
 
@@ -5040,14 +5040,14 @@ public class SqlParserTest extends SqlLanguageDependent {
         checkExp( "interval '2006-2' year(4) to month", "INTERVAL '2006-2' YEAR(4) TO MONTH" );
 
         // sign
-        checkExp( "interval '-1-2' year to month", "INTERVAL '-1-2' YEAR TO MONTH" );
-        checkExp( "interval '+1-2' year to month", "INTERVAL '+1-2' YEAR TO MONTH" );
+        checkExp( "interval '-1-2' year to month", "INTERVAL -'1-2' YEAR TO MONTH" );
+        checkExp( "interval '+1-2' year to month", "INTERVAL '1-2' YEAR TO MONTH" );
         checkExp( "interval +'1-2' year to month", "INTERVAL '1-2' YEAR TO MONTH" );
-        checkExp( "interval +'-1-2' year to month", "INTERVAL '-1-2' YEAR TO MONTH" );
-        checkExp( "interval +'+1-2' year to month", "INTERVAL '+1-2' YEAR TO MONTH" );
+        checkExp( "interval +'-1-2' year to month", "INTERVAL -'1-2' YEAR TO MONTH" );
+        checkExp( "interval +'+1-2' year to month", "INTERVAL '1-2' YEAR TO MONTH" );
         checkExp( "interval -'1-2' year to month", "INTERVAL -'1-2' YEAR TO MONTH" );
-        checkExp( "interval -'-1-2' year to month", "INTERVAL -'-1-2' YEAR TO MONTH" );
-        checkExp( "interval -'+1-2' year to month", "INTERVAL -'+1-2' YEAR TO MONTH" );
+        checkExp( "interval -'-1-2' year to month", "INTERVAL '1-2' YEAR TO MONTH" );
+        checkExp( "interval -'+1-2' year to month", "INTERVAL -'1-2' YEAR TO MONTH" );
     }
 
 
@@ -5077,14 +5077,14 @@ public class SqlParserTest extends SqlLanguageDependent {
         checkExp( "interval '1234' month(4)", "INTERVAL '1234' MONTH(4)" );
 
         // sign
-        checkExp( "interval '+1' month", "INTERVAL '+1' MONTH" );
-        checkExp( "interval '-1' month", "INTERVAL '-1' MONTH" );
+        checkExp( "interval '+1' month", "INTERVAL '1' MONTH" );
+        checkExp( "interval '-1' month", "INTERVAL -'1' MONTH" );
         checkExp( "interval +'1' month", "INTERVAL '1' MONTH" );
-        checkExp( "interval +'+1' month", "INTERVAL '+1' MONTH" );
-        checkExp( "interval +'-1' month", "INTERVAL '-1' MONTH" );
+        checkExp( "interval +'+1' month", "INTERVAL '1' MONTH" );
+        checkExp( "interval +'-1' month", "INTERVAL -'1' MONTH" );
         checkExp( "interval -'1' month", "INTERVAL -'1' MONTH" );
-        checkExp( "interval -'+1' month", "INTERVAL -'+1' MONTH" );
-        checkExp( "interval -'-1' month", "INTERVAL -'-1' MONTH" );
+        checkExp( "interval -'+1' month", "INTERVAL -'1' MONTH" );
+        checkExp( "interval -'-1' month", "INTERVAL '1' MONTH" );
     }
 
 
@@ -5111,14 +5111,14 @@ public class SqlParserTest extends SqlLanguageDependent {
         checkExp( "interval '1234' day(4)", "INTERVAL '1234' DAY(4)" );
 
         // sign
-        checkExp( "interval '+1' day", "INTERVAL '+1' DAY" );
-        checkExp( "interval '-1' day", "INTERVAL '-1' DAY" );
+        checkExp( "interval '+1' day", "INTERVAL '1' DAY" );
+        checkExp( "interval '-1' day", "INTERVAL -'1' DAY" );
         checkExp( "interval +'1' day", "INTERVAL '1' DAY" );
-        checkExp( "interval +'+1' day", "INTERVAL '+1' DAY" );
-        checkExp( "interval +'-1' day", "INTERVAL '-1' DAY" );
+        checkExp( "interval +'+1' day", "INTERVAL '1' DAY" );
+        checkExp( "interval +'-1' day", "INTERVAL -'1' DAY" );
         checkExp( "interval -'1' day", "INTERVAL -'1' DAY" );
-        checkExp( "interval -'+1' day", "INTERVAL -'+1' DAY" );
-        checkExp( "interval -'-1' day", "INTERVAL -'-1' DAY" );
+        checkExp( "interval -'+1' day", "INTERVAL -'1' DAY" );
+        checkExp( "interval -'-1' day", "INTERVAL '1' DAY" );
     }
 
 
@@ -5147,14 +5147,14 @@ public class SqlParserTest extends SqlLanguageDependent {
         checkExp( "interval '2345 2' day(4) to hour", "INTERVAL '2345 2' DAY(4) TO HOUR" );
 
         // sign
-        checkExp( "interval '-1 2' day to hour", "INTERVAL '-1 2' DAY TO HOUR" );
-        checkExp( "interval '+1 2' day to hour", "INTERVAL '+1 2' DAY TO HOUR" );
+        checkExp( "interval '-1 2' day to hour", "INTERVAL -'1 2' DAY TO HOUR" );
+        checkExp( "interval '+1 2' day to hour", "INTERVAL '1 2' DAY TO HOUR" );
         checkExp( "interval +'1 2' day to hour", "INTERVAL '1 2' DAY TO HOUR" );
-        checkExp( "interval +'-1 2' day to hour", "INTERVAL '-1 2' DAY TO HOUR" );
-        checkExp( "interval +'+1 2' day to hour", "INTERVAL '+1 2' DAY TO HOUR" );
+        checkExp( "interval +'-1 2' day to hour", "INTERVAL -'1 2' DAY TO HOUR" );
+        checkExp( "interval +'+1 2' day to hour", "INTERVAL '1 2' DAY TO HOUR" );
         checkExp( "interval -'1 2' day to hour", "INTERVAL -'1 2' DAY TO HOUR" );
-        checkExp( "interval -'-1 2' day to hour", "INTERVAL -'-1 2' DAY TO HOUR" );
-        checkExp( "interval -'+1 2' day to hour", "INTERVAL -'+1 2' DAY TO HOUR" );
+        checkExp( "interval -'-1 2' day to hour", "INTERVAL '1 2' DAY TO HOUR" );
+        checkExp( "interval -'+1 2' day to hour", "INTERVAL -'1 2' DAY TO HOUR" );
     }
 
 
@@ -5183,14 +5183,14 @@ public class SqlParserTest extends SqlLanguageDependent {
         checkExp( "interval '2345 6:7' day(4) to minute", "INTERVAL '2345 6:7' DAY(4) TO MINUTE" );
 
         // sign
-        checkExp( "interval '-1 2:3' day to minute", "INTERVAL '-1 2:3' DAY TO MINUTE" );
-        checkExp( "interval '+1 2:3' day to minute", "INTERVAL '+1 2:3' DAY TO MINUTE" );
+        checkExp( "interval '-1 2:3' day to minute", "INTERVAL -'1 2:3' DAY TO MINUTE" );
+        checkExp( "interval '+1 2:3' day to minute", "INTERVAL '1 2:3' DAY TO MINUTE" );
         checkExp( "interval +'1 2:3' day to minute", "INTERVAL '1 2:3' DAY TO MINUTE" );
-        checkExp( "interval +'-1 2:3' day to minute", "INTERVAL '-1 2:3' DAY TO MINUTE" );
-        checkExp( "interval +'+1 2:3' day to minute", "INTERVAL '+1 2:3' DAY TO MINUTE" );
+        checkExp( "interval +'-1 2:3' day to minute", "INTERVAL -'1 2:3' DAY TO MINUTE" );
+        checkExp( "interval +'+1 2:3' day to minute", "INTERVAL '1 2:3' DAY TO MINUTE" );
         checkExp( "interval -'1 2:3' day to minute", "INTERVAL -'1 2:3' DAY TO MINUTE" );
-        checkExp( "interval -'-1 2:3' day to minute", "INTERVAL -'-1 2:3' DAY TO MINUTE" );
-        checkExp( "interval -'+1 2:3' day to minute", "INTERVAL -'+1 2:3' DAY TO MINUTE" );
+        checkExp( "interval -'-1 2:3' day to minute", "INTERVAL '1 2:3' DAY TO MINUTE" );
+        checkExp( "interval -'+1 2:3' day to minute", "INTERVAL -'1 2:3' DAY TO MINUTE" );
     }
 
 
@@ -5226,14 +5226,14 @@ public class SqlParserTest extends SqlLanguageDependent {
         checkExp( "interval '2345 6:7:8.9012' day(4) to second(4)", "INTERVAL '2345 6:7:8.9012' DAY(4) TO SECOND(4)" );
 
         // sign
-        checkExp( "interval '-1 2:3:4' day to second", "INTERVAL '-1 2:3:4' DAY TO SECOND" );
-        checkExp( "interval '+1 2:3:4' day to second", "INTERVAL '+1 2:3:4' DAY TO SECOND" );
+        checkExp( "interval '-1 2:3:4' day to second", "INTERVAL -'1 2:3:4' DAY TO SECOND" );
+        checkExp( "interval '+1 2:3:4' day to second", "INTERVAL '1 2:3:4' DAY TO SECOND" );
         checkExp( "interval +'1 2:3:4' day to second", "INTERVAL '1 2:3:4' DAY TO SECOND" );
-        checkExp( "interval +'-1 2:3:4' day to second", "INTERVAL '-1 2:3:4' DAY TO SECOND" );
-        checkExp( "interval +'+1 2:3:4' day to second", "INTERVAL '+1 2:3:4' DAY TO SECOND" );
+        checkExp( "interval +'-1 2:3:4' day to second", "INTERVAL -'1 2:3:4' DAY TO SECOND" );
+        checkExp( "interval +'+1 2:3:4' day to second", "INTERVAL '1 2:3:4' DAY TO SECOND" );
         checkExp( "interval -'1 2:3:4' day to second", "INTERVAL -'1 2:3:4' DAY TO SECOND" );
-        checkExp( "interval -'-1 2:3:4' day to second", "INTERVAL -'-1 2:3:4' DAY TO SECOND" );
-        checkExp( "interval -'+1 2:3:4' day to second", "INTERVAL -'+1 2:3:4' DAY TO SECOND" );
+        checkExp( "interval -'-1 2:3:4' day to second", "INTERVAL '1 2:3:4' DAY TO SECOND" );
+        checkExp( "interval -'+1 2:3:4' day to second", "INTERVAL -'1 2:3:4' DAY TO SECOND" );
     }
 
 
@@ -5260,14 +5260,14 @@ public class SqlParserTest extends SqlLanguageDependent {
         checkExp( "interval '1234' hour(4)", "INTERVAL '1234' HOUR(4)" );
 
         // sign
-        checkExp( "interval '+1' hour", "INTERVAL '+1' HOUR" );
-        checkExp( "interval '-1' hour", "INTERVAL '-1' HOUR" );
+        checkExp( "interval '+1' hour", "INTERVAL '1' HOUR" );
+        checkExp( "interval '-1' hour", "INTERVAL -'1' HOUR" );
         checkExp( "interval +'1' hour", "INTERVAL '1' HOUR" );
-        checkExp( "interval +'+1' hour", "INTERVAL '+1' HOUR" );
-        checkExp( "interval +'-1' hour", "INTERVAL '-1' HOUR" );
+        checkExp( "interval +'+1' hour", "INTERVAL '1' HOUR" );
+        checkExp( "interval +'-1' hour", "INTERVAL -'1' HOUR" );
         checkExp( "interval -'1' hour", "INTERVAL -'1' HOUR" );
-        checkExp( "interval -'+1' hour", "INTERVAL -'+1' HOUR" );
-        checkExp( "interval -'-1' hour", "INTERVAL -'-1' HOUR" );
+        checkExp( "interval -'+1' hour", "INTERVAL -'1' HOUR" );
+        checkExp( "interval -'-1' hour", "INTERVAL '1' HOUR" );
     }
 
 
@@ -5296,14 +5296,14 @@ public class SqlParserTest extends SqlLanguageDependent {
         checkExp( "interval '2345:7' hour(4) to minute", "INTERVAL '2345:7' HOUR(4) TO MINUTE" );
 
         // sign
-        checkExp( "interval '-1:3' hour to minute", "INTERVAL '-1:3' HOUR TO MINUTE" );
-        checkExp( "interval '+1:3' hour to minute", "INTERVAL '+1:3' HOUR TO MINUTE" );
+        checkExp( "interval '-1:3' hour to minute", "INTERVAL -'1:3' HOUR TO MINUTE" );
+        checkExp( "interval '+1:3' hour to minute", "INTERVAL '1:3' HOUR TO MINUTE" );
         checkExp( "interval +'2:3' hour to minute", "INTERVAL '2:3' HOUR TO MINUTE" );
-        checkExp( "interval +'-2:3' hour to minute", "INTERVAL '-2:3' HOUR TO MINUTE" );
-        checkExp( "interval +'+2:3' hour to minute", "INTERVAL '+2:3' HOUR TO MINUTE" );
+        checkExp( "interval +'-2:3' hour to minute", "INTERVAL -'2:3' HOUR TO MINUTE" );
+        checkExp( "interval +'+2:3' hour to minute", "INTERVAL '2:3' HOUR TO MINUTE" );
         checkExp( "interval -'2:3' hour to minute", "INTERVAL -'2:3' HOUR TO MINUTE" );
-        checkExp( "interval -'-2:3' hour to minute", "INTERVAL -'-2:3' HOUR TO MINUTE" );
-        checkExp( "interval -'+2:3' hour to minute", "INTERVAL -'+2:3' HOUR TO MINUTE" );
+        checkExp( "interval -'-2:3' hour to minute", "INTERVAL '2:3' HOUR TO MINUTE" );
+        checkExp( "interval -'+2:3' hour to minute", "INTERVAL -'2:3' HOUR TO MINUTE" );
     }
 
 
@@ -5339,14 +5339,14 @@ public class SqlParserTest extends SqlLanguageDependent {
         checkExp( "interval '2345:7:8.9012' hour(4) to second(4)", "INTERVAL '2345:7:8.9012' HOUR(4) TO SECOND(4)" );
 
         // sign
-        checkExp( "interval '-2:3:4' hour to second", "INTERVAL '-2:3:4' HOUR TO SECOND" );
-        checkExp( "interval '+2:3:4' hour to second", "INTERVAL '+2:3:4' HOUR TO SECOND" );
+        checkExp( "interval '-2:3:4' hour to second", "INTERVAL -'2:3:4' HOUR TO SECOND" );
+        checkExp( "interval '+2:3:4' hour to second", "INTERVAL '2:3:4' HOUR TO SECOND" );
         checkExp( "interval +'2:3:4' hour to second", "INTERVAL '2:3:4' HOUR TO SECOND" );
-        checkExp( "interval +'-2:3:4' hour to second", "INTERVAL '-2:3:4' HOUR TO SECOND" );
-        checkExp( "interval +'+2:3:4' hour to second", "INTERVAL '+2:3:4' HOUR TO SECOND" );
+        checkExp( "interval +'-2:3:4' hour to second", "INTERVAL -'2:3:4' HOUR TO SECOND" );
+        checkExp( "interval +'+2:3:4' hour to second", "INTERVAL '2:3:4' HOUR TO SECOND" );
         checkExp( "interval -'2:3:4' hour to second", "INTERVAL -'2:3:4' HOUR TO SECOND" );
-        checkExp( "interval -'-2:3:4' hour to second", "INTERVAL -'-2:3:4' HOUR TO SECOND" );
-        checkExp( "interval -'+2:3:4' hour to second", "INTERVAL -'+2:3:4' HOUR TO SECOND" );
+        checkExp( "interval -'-2:3:4' hour to second", "INTERVAL '2:3:4' HOUR TO SECOND" );
+        checkExp( "interval -'+2:3:4' hour to second", "INTERVAL -'2:3:4' HOUR TO SECOND" );
     }
 
 
@@ -5373,14 +5373,14 @@ public class SqlParserTest extends SqlLanguageDependent {
         checkExp( "interval '1234' minute(4)", "INTERVAL '1234' MINUTE(4)" );
 
         // sign
-        checkExp( "interval '+1' minute", "INTERVAL '+1' MINUTE" );
-        checkExp( "interval '-1' minute", "INTERVAL '-1' MINUTE" );
+        checkExp( "interval '+1' minute", "INTERVAL '1' MINUTE" );
+        checkExp( "interval '-1' minute", "INTERVAL -'1' MINUTE" );
         checkExp( "interval +'1' minute", "INTERVAL '1' MINUTE" );
-        checkExp( "interval +'+1' minute", "INTERVAL '+1' MINUTE" );
-        checkExp( "interval +'+1' minute", "INTERVAL '+1' MINUTE" );
+        checkExp( "interval +'+1' minute", "INTERVAL '1' MINUTE" );
+        checkExp( "interval +'+1' minute", "INTERVAL '1' MINUTE" );
         checkExp( "interval -'1' minute", "INTERVAL -'1' MINUTE" );
-        checkExp( "interval -'+1' minute", "INTERVAL -'+1' MINUTE" );
-        checkExp( "interval -'-1' minute", "INTERVAL -'-1' MINUTE" );
+        checkExp( "interval -'+1' minute", "INTERVAL -'1' MINUTE" );
+        checkExp( "interval -'-1' minute", "INTERVAL '1' MINUTE" );
     }
 
 
@@ -5416,14 +5416,14 @@ public class SqlParserTest extends SqlLanguageDependent {
         checkExp( "interval '2345:7.8901' minute(4) to second(4)", "INTERVAL '2345:7.8901' MINUTE(4) TO SECOND(4)" );
 
         // sign
-        checkExp( "interval '-3:4' minute to second", "INTERVAL '-3:4' MINUTE TO SECOND" );
-        checkExp( "interval '+3:4' minute to second", "INTERVAL '+3:4' MINUTE TO SECOND" );
+        checkExp( "interval '-3:4' minute to second", "INTERVAL -'3:4' MINUTE TO SECOND" );
+        checkExp( "interval '+3:4' minute to second", "INTERVAL '3:4' MINUTE TO SECOND" );
         checkExp( "interval +'3:4' minute to second", "INTERVAL '3:4' MINUTE TO SECOND" );
-        checkExp( "interval +'-3:4' minute to second", "INTERVAL '-3:4' MINUTE TO SECOND" );
-        checkExp( "interval +'+3:4' minute to second", "INTERVAL '+3:4' MINUTE TO SECOND" );
+        checkExp( "interval +'-3:4' minute to second", "INTERVAL -'3:4' MINUTE TO SECOND" );
+        checkExp( "interval +'+3:4' minute to second", "INTERVAL '3:4' MINUTE TO SECOND" );
         checkExp( "interval -'3:4' minute to second", "INTERVAL -'3:4' MINUTE TO SECOND" );
-        checkExp( "interval -'-3:4' minute to second", "INTERVAL -'-3:4' MINUTE TO SECOND" );
-        checkExp( "interval -'+3:4' minute to second", "INTERVAL -'+3:4' MINUTE TO SECOND" );
+        checkExp( "interval -'-3:4' minute to second", "INTERVAL '3:4' MINUTE TO SECOND" );
+        checkExp( "interval -'+3:4' minute to second", "INTERVAL -'3:4' MINUTE TO SECOND" );
     }
 
 
@@ -5455,14 +5455,14 @@ public class SqlParserTest extends SqlLanguageDependent {
         checkExp( "interval '1234.56789' second(4,5)", "INTERVAL '1234.56789' SECOND(4, 5)" );
 
         // sign
-        checkExp( "interval '+1' second", "INTERVAL '+1' SECOND" );
-        checkExp( "interval '-1' second", "INTERVAL '-1' SECOND" );
+        checkExp( "interval '+1' second", "INTERVAL '1' SECOND" );
+        checkExp( "interval '-1' second", "INTERVAL -'1' SECOND" );
         checkExp( "interval +'1' second", "INTERVAL '1' SECOND" );
-        checkExp( "interval +'+1' second", "INTERVAL '+1' SECOND" );
-        checkExp( "interval +'-1' second", "INTERVAL '-1' SECOND" );
+        checkExp( "interval +'+1' second", "INTERVAL '1' SECOND" );
+        checkExp( "interval +'-1' second", "INTERVAL -'1' SECOND" );
         checkExp( "interval -'1' second", "INTERVAL -'1' SECOND" );
-        checkExp( "interval -'+1' second", "INTERVAL -'+1' SECOND" );
-        checkExp( "interval -'-1' second", "INTERVAL -'-1' SECOND" );
+        checkExp( "interval -'+1' second", "INTERVAL -'1' SECOND" );
+        checkExp( "interval -'-1' second", "INTERVAL '1' SECOND" );
     }
 
 

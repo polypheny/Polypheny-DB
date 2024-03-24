@@ -24,8 +24,6 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import org.apache.calcite.avatica.util.DateTimeUtils;
-import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -87,6 +85,8 @@ import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.InitializerContext;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
+import org.polypheny.db.util.temporal.DateTimeUtils;
+import org.polypheny.db.util.temporal.TimeUnit;
 
 
 /**
@@ -436,7 +436,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
             final SqlIntervalQualifier intervalQualifier = (SqlIntervalQualifier) right;
             if ( left instanceof SqlIntervalLiteral ) {
                 RexLiteral sourceInterval = (RexLiteral) cx.convertExpression( left );
-                Long sourceValue = sourceInterval.value.asInterval().value;
+                Long sourceValue = sourceInterval.value.asInterval().millis;
                 RexLiteral castedInterval = cx.getRexBuilder().makeIntervalLiteral( sourceValue, intervalQualifier );
                 return castToValidatedType( cx, call, castedInterval );
             } else if ( left instanceof SqlNumericLiteral ) {
@@ -516,7 +516,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
 
     /**
      * Converts a call to the {@code EXTRACT} function.
-     *
+     * <p>
      * Called automatically via reflection.
      */
     public RexNode convertExtract( SqlRexContext cx, SqlExtractFunction op, SqlCall call ) {
@@ -652,7 +652,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
 
     /**
      * Converts a call to an operator into a {@link RexCall} to the same operator.
-     *
+     * <p>
      * Called automatically via reflection.
      *
      * @param cx Context
@@ -814,10 +814,8 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                 List<RexNode> operands = ((RexCall) rex).getOperands();
                 if ( operands.size() == 2 ) {
                     final PolyType polyType = operands.get( 0 ).getType().getPolyType();
-                    switch ( polyType ) {
-                        case INTERVAL_MONTH:
-                        case INTERVAL_MILLISECOND:
-                            operands = ImmutableList.of( operands.get( 1 ), operands.get( 0 ) );
+                    if ( Objects.requireNonNull( polyType ) == PolyType.INTERVAL ) {
+                        operands = ImmutableList.of( operands.get( 1 ), operands.get( 0 ) );
                     }
                 }
                 return rexBuilder.makeCall( rex.getType(), OperatorRegistry.get( OperatorName.DATETIME_PLUS ), operands );
@@ -836,7 +834,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
 
     /**
      * Converts a BETWEEN expression.
-     *
+     * <p>
      * Called automatically via reflection.
      */
     public RexNode convertBetween( SqlRexContext cx, SqlBetweenOperator op, SqlCall call ) {
@@ -879,7 +877,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
 
     /**
      * Converts a LiteralChain expression: that is, concatenates the operands immediately, to produce a single literal string.
-     *
+     * <p>
      * Called automatically via reflection.
      */
     public RexNode convertLiteralChain( SqlRexContext cx, SqlLiteralChainOperator op, SqlCall call ) {
@@ -892,7 +890,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
 
     /**
      * Converts a ROW.
-     *
+     * <p>
      * Called automatically via reflection.
      */
     public RexNode convertRow( SqlRexContext cx, SqlRowOperator op, SqlCall call ) {
@@ -911,7 +909,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
 
     /**
      * Converts a call to OVERLAPS.
-     *
+     * <p>
      * Called automatically via reflection.
      */
     public RexNode convertOverlaps( SqlRexContext cx, SqlOverlapsOperator op, SqlCall call ) {
@@ -1384,13 +1382,9 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                                 rexBuilder.makeIntervalLiteral( 1L, qualifier ),
                                 op1 ),
                         BigDecimal.ONE.divide( unit.multiplier, RoundingMode.UNNECESSARY ) );
-                case YEAR -> multiply(
-                        rexBuilder,
-                        rexBuilder.makeIntervalLiteral( 1L, qualifier ),
-                        op1 );
                 default -> multiply(
                         rexBuilder,
-                        rexBuilder.makeIntervalLiteral( unit.multiplier.longValue(), qualifier ),
+                        rexBuilder.makeIntervalLiteral( 1L, qualifier ),
                         op1 );
             };
 

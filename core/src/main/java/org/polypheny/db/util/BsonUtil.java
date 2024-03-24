@@ -172,11 +172,6 @@ public class BsonUtil {
     }
 
 
-    public static String getObjectId( String template ) {
-        return new ObjectId( template ).toHexString();
-    }
-
-
     /**
      * Direct transformation of an untyped input to the correct Bson format according to the
      * provided PolyType.
@@ -208,8 +203,7 @@ public class BsonUtil {
             case BOOLEAN -> new BsonBoolean( obj.asBoolean().value );
             case BINARY -> new BsonString( new ByteString( obj.asBinary().value ).toBase64String() );
             case AUDIO, IMAGE, VIDEO, FILE -> handleMultimedia( bucket, obj );
-            case INTERVAL_MONTH -> handleMonthInterval( obj );
-            case INTERVAL_MILLISECOND -> handleMillisInterval( obj );
+            case INTERVAL -> handleInterval( obj );
             case JSON -> handleDocument( obj );
             default -> new BsonString( obj.toString() );
         };
@@ -259,8 +253,7 @@ public class BsonUtil {
             case BOOLEAN -> BsonUtil::handleBoolean;
             case BINARY -> BsonUtil::handleBinary;
             case AUDIO, IMAGE, VIDEO, FILE -> ( o ) -> handleMultimedia( bucket, o );
-            case INTERVAL_MONTH -> BsonUtil::handleMonthInterval;
-            case INTERVAL_MILLISECOND -> BsonUtil::handleMillisInterval;
+            case INTERVAL -> BsonUtil::handleInterval;
             case JSON -> BsonUtil::handleDocument;
             case ARRAY -> {
                 Function<PolyValue, BsonValue> transformer = getBsonTransformer( types, bucket );
@@ -323,19 +316,10 @@ public class BsonUtil {
     }
 
 
-    private static BsonValue handleYearInterval( PolyValue obj ) {
-        return new BsonDecimal128( new Decimal128( obj.asInterval().value ) );
+    private static BsonValue handleInterval( PolyValue obj ) {
+        return new BsonDecimal128( new Decimal128( obj.asInterval().getMergedMillis() ) );
     }
 
-
-    private static BsonValue handleMonthInterval( PolyValue obj ) {
-        return new BsonDecimal128( new Decimal128( obj.asInterval().value ) );
-    }
-
-
-    private static BsonValue handleMillisInterval( PolyValue obj ) {
-        return new BsonDecimal128( new Decimal128( obj.asInterval().value ) );
-    }
 
 
     private static BsonValue handleDecimal( PolyValue obj ) {
@@ -422,8 +406,8 @@ public class BsonUtil {
             case FLOAT, REAL -> Float.class;
             case DOUBLE -> Double.class;
             case DATE -> Date.class;
-            case TIME, TIME_WITH_LOCAL_TIME_ZONE -> Time.class;
-            case TIMESTAMP, TIMESTAMP_WITH_LOCAL_TIME_ZONE -> Timestamp.class;
+            case TIME -> Time.class;
+            case TIMESTAMP -> Timestamp.class;
             case CHAR, VARCHAR, BINARY, VARBINARY -> String.class;
             case FILE, IMAGE, VIDEO, AUDIO -> PushbackInputStream.class;
             default -> throw new IllegalStateException( "Unexpected value: " + type );
@@ -484,7 +468,7 @@ public class BsonUtil {
         return switch ( type ) {
             case BOOLEAN -> 8;
             case TINYINT, SMALLINT, INTEGER -> 16;
-            case BIGINT, DATE, TIME, TIME_WITH_LOCAL_TIME_ZONE, TIMESTAMP, TIMESTAMP_WITH_LOCAL_TIME_ZONE -> 18;
+            case BIGINT, DATE, TIME, TIMESTAMP -> 18;
             case DECIMAL -> 19;
             case FLOAT, REAL, DOUBLE -> 1;
             case CHAR, VARCHAR, BINARY, VARBINARY -> 2;
@@ -517,7 +501,7 @@ public class BsonUtil {
             case BOOLEAN:
                 return value.asBoolean().getValue();
             case ARRAY:
-                return ComparableList.copyOf( value.asArray().stream().map( BsonUtil::getUnderlyingValue ).map( e -> (T) e ).collect( Collectors.toList() ).listIterator() );
+                return ComparableList.copyOf( value.asArray().stream().map( BsonUtil::getUnderlyingValue ).map( e -> (T) e ).toList().listIterator() );
             case DOCUMENT:
                 FlatMap<String, Comparable<?>> map = new FlatMap<>();
                 value.asDocument().forEach( ( key, val ) -> map.put( key, getUnderlyingValue( val ) ) );

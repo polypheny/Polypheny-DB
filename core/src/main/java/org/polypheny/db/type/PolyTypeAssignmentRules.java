@@ -71,13 +71,7 @@ public class PolyTypeAssignmentRules {
 
         final Set<PolyType> rule = new HashSet<>();
 
-        // IntervalYearMonth is assignable from...
-        for ( PolyType interval : PolyType.COMPLEX_INTERVAL_TYPES ) {
-            rules.add( interval, PolyType.COMPLEX_INTERVAL_TYPES );
-        }
-        for ( PolyType interval : PolyType.SIMPLE_INTERVAL_TYPES ) {
-            rules.add( interval, PolyType.SIMPLE_INTERVAL_TYPES );
-        }
+        rules.add( PolyType.INTERVAL, Set.of( PolyType.INTERVAL ) );
 
         // MULTISET is assignable from...
         rules.add( PolyType.MULTISET, EnumSet.of( PolyType.MULTISET ) );
@@ -207,14 +201,8 @@ public class PolyTypeAssignmentRules {
         rule.add( PolyType.DOCUMENT );
         rules.add( PolyType.DOCUMENT, rule );
 
-        // TIME WITH LOCAL TIME ZONE is assignable from...
-        rules.add( PolyType.TIME_WITH_LOCAL_TIME_ZONE, EnumSet.of( PolyType.TIME_WITH_LOCAL_TIME_ZONE ) );
-
         // TIMESTAMP is assignable from ...
         rules.add( PolyType.TIMESTAMP, EnumSet.of( PolyType.TIMESTAMP ) );
-
-        // TIMESTAMP WITH LOCAL TIME ZONE is assignable from...
-        rules.add( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE, EnumSet.of( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE ) );
 
         // GEOMETRY is assignable from ...
         rules.add( PolyType.GEOMETRY, EnumSet.of( PolyType.GEOMETRY ) );
@@ -333,7 +321,6 @@ public class PolyTypeAssignmentRules {
                 coerceRules.copyValues( PolyType.DATE )
                         .add( PolyType.DATE )
                         .add( PolyType.TIMESTAMP )
-                        .add( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE )
                         .add( PolyType.CHAR )
                         .add( PolyType.VARCHAR )
                         .build() );
@@ -343,21 +330,7 @@ public class PolyTypeAssignmentRules {
                 PolyType.TIME,
                 coerceRules.copyValues( PolyType.TIME )
                         .add( PolyType.TIME )
-                        .add( PolyType.TIME_WITH_LOCAL_TIME_ZONE )
                         .add( PolyType.TIMESTAMP )
-                        .add( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE )
-                        .add( PolyType.CHAR )
-                        .add( PolyType.VARCHAR )
-                        .build() );
-
-        // TIME WITH LOCAL TIME ZONE is castable from...
-        coerceRules.add(
-                PolyType.TIME_WITH_LOCAL_TIME_ZONE,
-                coerceRules.copyValues( PolyType.TIME_WITH_LOCAL_TIME_ZONE )
-                        .add( PolyType.TIME )
-                        .add( PolyType.TIME_WITH_LOCAL_TIME_ZONE )
-                        .add( PolyType.TIMESTAMP )
-                        .add( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE )
                         .add( PolyType.CHAR )
                         .add( PolyType.VARCHAR )
                         .build() );
@@ -367,23 +340,8 @@ public class PolyTypeAssignmentRules {
                 PolyType.TIMESTAMP,
                 coerceRules.copyValues( PolyType.TIMESTAMP )
                         .add( PolyType.TIMESTAMP )
-                        .add( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE )
                         .add( PolyType.DATE )
                         .add( PolyType.TIME )
-                        .add( PolyType.TIME_WITH_LOCAL_TIME_ZONE )
-                        .add( PolyType.CHAR )
-                        .add( PolyType.VARCHAR )
-                        .build() );
-
-        // TIMESTAMP WITH LOCAL TIME ZONE is castable from...
-        coerceRules.add(
-                PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE,
-                coerceRules.copyValues( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE )
-                        .add( PolyType.TIMESTAMP )
-                        .add( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE )
-                        .add( PolyType.DATE )
-                        .add( PolyType.TIME )
-                        .add( PolyType.TIME_WITH_LOCAL_TIME_ZONE )
                         .add( PolyType.CHAR )
                         .add( PolyType.VARCHAR )
                         .build() );

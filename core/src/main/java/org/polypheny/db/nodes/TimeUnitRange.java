@@ -12,6 +12,23 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.polypheny.db.nodes;
@@ -19,14 +36,13 @@ package org.polypheny.db.nodes;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.calcite.avatica.util.TimeUnit;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.temporal.TimeUnit;
 
 public enum TimeUnitRange {
     YEAR( TimeUnit.YEAR, null ),
     YEAR_TO_MONTH( TimeUnit.YEAR, TimeUnit.MONTH ),
-    YEAR_TO_MILLISECOND( TimeUnit.YEAR, TimeUnit.MILLISECOND ),
     MONTH( TimeUnit.MONTH, null ),
     DAY( TimeUnit.DAY, null ),
     DAY_TO_HOUR( TimeUnit.DAY, TimeUnit.HOUR ),
@@ -36,7 +52,6 @@ public enum TimeUnitRange {
     HOUR( TimeUnit.HOUR, null ),
     HOUR_TO_MINUTE( TimeUnit.HOUR, TimeUnit.MINUTE ),
     HOUR_TO_SECOND( TimeUnit.HOUR, TimeUnit.SECOND ),
-    HOUR_TO_MILLISECOND( TimeUnit.HOUR, TimeUnit.MILLISECOND ),
     MINUTE( TimeUnit.MINUTE, null ),
     MINUTE_TO_SECOND( TimeUnit.MINUTE, TimeUnit.SECOND ),
     MINUTE_TO_MILLISECOND( TimeUnit.MINUTE, TimeUnit.MILLISECOND ),
@@ -117,29 +132,24 @@ public enum TimeUnitRange {
         return switch ( startUnit ) {
             case YEAR -> switch ( endUnit ) {
                 case MONTH -> TimeUnitRange.YEAR_TO_MONTH;
-                case MILLISECOND -> TimeUnitRange.YEAR_TO_MILLISECOND;
                 default -> TimeUnitRange.YEAR;
             };
             case MONTH -> switch ( endUnit ) {
                 case YEAR, MONTH -> TimeUnitRange.YEAR_TO_MONTH;
-                case MILLISECOND -> TimeUnitRange.YEAR_TO_MILLISECOND;
                 default -> TimeUnitRange.MONTH;
             };
             case DAY -> switch ( endUnit ) {
                 case SECOND -> TimeUnitRange.DAY_TO_SECOND;
                 case MINUTE -> TimeUnitRange.DAY_TO_MINUTE;
                 case HOUR -> TimeUnitRange.DAY_TO_HOUR;
-                case MILLISECOND -> TimeUnitRange.DAY_TO_MILLISECOND;
                 default -> TimeUnitRange.DAY;
             };
             case HOUR -> switch ( endUnit ) {
                 case SECOND -> TimeUnitRange.HOUR_TO_SECOND;
                 case MINUTE -> TimeUnitRange.HOUR_TO_MINUTE;
-                case MICROSECOND -> TimeUnitRange.HOUR_TO_MILLISECOND;
                 default -> TimeUnitRange.HOUR;
             };
             case MINUTE -> switch ( endUnit ) {
-                case MILLISECOND -> TimeUnitRange.MINUTE_TO_MILLISECOND;
                 case SECOND -> TimeUnitRange.MINUTE_TO_SECOND;
                 default -> TimeUnitRange.MINUTE;
             };

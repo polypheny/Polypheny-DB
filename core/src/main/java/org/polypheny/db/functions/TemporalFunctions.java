@@ -19,10 +19,9 @@ package org.polypheny.db.functions;
 import java.sql.Timestamp;
 import java.util.Date;
 import java.util.TimeZone;
-import org.apache.calcite.avatica.util.DateTimeUtils;
-import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.linq4j.function.NonDeterministic;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.nodes.TimeUnitRange;
 import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
@@ -34,6 +33,7 @@ import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.TimeWithTimeZoneString;
 import org.polypheny.db.util.TimestampWithTimeZoneString;
+import org.polypheny.db.util.temporal.DateTimeUtils;
 
 public class TemporalFunctions {
 
@@ -60,13 +60,13 @@ public class TemporalFunctions {
 
     @SuppressWarnings("unused")
     public static PolyString intervalYearMonthToString( PolyInterval interval, TimeUnitRange unit ) {
-        return PolyString.of( DateTimeUtils.intervalYearMonthToString( interval.value.intValue(), unit ) );
+        return PolyString.of( DateTimeUtils.intervalYearMonthToString( interval.millis.intValue(), unit ) );
     }
 
 
     @SuppressWarnings("unused")
     public static PolyString intervalDayTimeToString( PolyInterval interval, TimeUnitRange unit, PolyNumber scale ) {
-        return PolyString.of( DateTimeUtils.intervalDayTimeToString( interval.value.intValue(), unit, scale.intValue() ) );
+        return PolyString.of( DateTimeUtils.intervalDayTimeToString( interval.millis.intValue(), unit, scale.intValue() ) );
     }
 
 

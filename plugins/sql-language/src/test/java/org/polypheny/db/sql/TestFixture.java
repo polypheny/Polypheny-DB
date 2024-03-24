@@ -240,11 +240,6 @@ public class TestFixture {
     }
 
 
-    public RexNode timestampLocalTzLiteral( TimestampString ts ) {
-        return rexBuilder.makeTimestampWithLocalTimeZoneLiteral( ts, timestampDataType.getPrecision() );
-    }
-
-
     public RexNode timeLiteral( TimeString t ) {
         return rexBuilder.makeTimeLiteral( t, timeDataType.getPrecision() );
     }

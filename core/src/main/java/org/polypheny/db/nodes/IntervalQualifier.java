@@ -26,16 +26,6 @@ public interface IntervalQualifier extends Visitable, Expressible {
 
     PolyType typeName();
 
-    static PolyType getRangePolyType( TimeUnitRange timeUnitRange ) {
-        if ( timeUnitRange == null ) {
-            return PolyType.INTERVAL_MILLISECOND;
-        }
-        return switch ( timeUnitRange ) {
-            case YEAR_TO_MONTH, MONTH, QUARTER -> PolyType.INTERVAL_MONTH;
-            default -> PolyType.INTERVAL_MILLISECOND;
-        };
-    }
-
     int getStartPrecisionPreservingDefault();
 
     int getFractionalSecondPrecision( AlgDataTypeSystem typeSystem );

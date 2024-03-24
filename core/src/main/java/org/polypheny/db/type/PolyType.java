@@ -36,7 +36,6 @@ package org.polypheny.db.type;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import java.math.BigDecimal;
 import java.sql.Types;
 import java.util.Arrays;
@@ -45,8 +44,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import lombok.Getter;
-import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.util.Util;
+import org.polypheny.db.util.temporal.TimeUnit;
 
 
 /**
@@ -127,37 +126,18 @@ public enum PolyType {
             Types.TIME,
             PolyTypeFamily.TIME ),
 
-    TIME_WITH_LOCAL_TIME_ZONE(
-            PrecScale.NO_NO | PrecScale.YES_NO,
-            false,
-            Types.OTHER,
-            PolyTypeFamily.TIME ),
-
     TIMESTAMP(
             PrecScale.NO_NO | PrecScale.YES_NO,
             false,
             Types.TIMESTAMP,
             PolyTypeFamily.TIMESTAMP ),
 
-    TIMESTAMP_WITH_LOCAL_TIME_ZONE(
-            PrecScale.NO_NO | PrecScale.YES_NO,
-            false,
-            Types.OTHER,
-            PolyTypeFamily.TIMESTAMP ),
-
-
-    INTERVAL_MONTH(
+    INTERVAL(
             PrecScale.NO_NO,
             false,
             Types.OTHER,
             PolyTypeFamily.INTERVAL_TIME ),
 
-
-    INTERVAL_MILLISECOND(
-            PrecScale.NO_NO | PrecScale.YES_NO | PrecScale.YES_YES,
-            false,
-            Types.OTHER,
-            PolyTypeFamily.INTERVAL_TIME ),
 
     CHAR(
             PrecScale.NO_NO | PrecScale.YES_NO,
@@ -366,8 +346,7 @@ public enum PolyType {
     public static final List<PolyType> ALL_TYPES =
             ImmutableList.of(
                     BOOLEAN, INTEGER, VARCHAR, JSON, DATE, TIME, TIMESTAMP, NULL, DECIMAL, ANY, CHAR, BINARY, VARBINARY, FILE, IMAGE, VIDEO, AUDIO,
-                    TINYINT, SMALLINT, BIGINT, REAL, DOUBLE, SYMBOL, INTERVAL_MONTH, TIME_WITH_LOCAL_TIME_ZONE,
-                    TIMESTAMP_WITH_LOCAL_TIME_ZONE, FLOAT, MULTISET, DISTINCT, STRUCTURED, ROW, CURSOR, COLUMN_LIST );
+                    TINYINT, SMALLINT, BIGINT, REAL, DOUBLE, SYMBOL, INTERVAL, FLOAT, MULTISET, DISTINCT, STRUCTURED, ROW, CURSOR, COLUMN_LIST );
 
     public static final List<PolyType> BOOLEAN_TYPES = ImmutableList.of( BOOLEAN );
 
@@ -387,7 +366,7 @@ public enum PolyType {
 
     public static final List<PolyType> STRING_TYPES = combine( CHAR_TYPES, BINARY_TYPES );
 
-    public static final List<PolyType> DATETIME_TYPES = ImmutableList.of( DATE, TIME, TIME_WITH_LOCAL_TIME_ZONE, TIMESTAMP, TIMESTAMP_WITH_LOCAL_TIME_ZONE );
+    public static final List<PolyType> DATETIME_TYPES = ImmutableList.of( DATE, TIME, TIMESTAMP );
 
     public static final List<PolyType> DOCUMENT_TYPES = ImmutableList.of( MAP, ARRAY, DOCUMENT );
 
@@ -399,14 +378,7 @@ public enum PolyType {
 
     public static final List<PolyType> BLOB_TYPES = ImmutableList.of( FILE, AUDIO, IMAGE, VIDEO );
 
-    public static final Set<PolyType> COMPLEX_INTERVAL_TYPES =
-            Sets.immutableEnumSet( PolyType.INTERVAL_MONTH );
-
-    public static final Set<PolyType> SIMPLE_INTERVAL_TYPES =
-            Sets.immutableEnumSet( PolyType.INTERVAL_MILLISECOND );
-
-
-    public static final List<PolyType> INTERVAL_TYPES = List.of( INTERVAL_MILLISECOND, INTERVAL_MONTH );
+    public static final List<PolyType> INTERVAL_TYPES = List.of( INTERVAL );
 
     private static final Map<Integer, PolyType> JDBC_TYPE_TO_NAME =
             ImmutableMap.<Integer, PolyType>builder()
@@ -534,7 +506,7 @@ public enum PolyType {
     public int getDefaultScale() {
         return switch ( this ) {
             case DECIMAL -> 0;
-            case INTERVAL_MONTH, INTERVAL_MILLISECOND -> DEFAULT_INTERVAL_FRACTIONAL_SECOND_PRECISION;
+            case INTERVAL -> DEFAULT_INTERVAL_FRACTIONAL_SECOND_PRECISION;
             default -> -1;
         };
     }
@@ -871,8 +843,8 @@ public enum PolyType {
      */
     public int getMinPrecision() {
         return switch ( this ) {
-            case DECIMAL, JSON, VARCHAR, CHAR, VARBINARY, BINARY, TIME, TIME_WITH_LOCAL_TIME_ZONE, TIMESTAMP, TIMESTAMP_WITH_LOCAL_TIME_ZONE -> 1;
-            case INTERVAL_MONTH, INTERVAL_MILLISECOND -> MIN_INTERVAL_START_PRECISION;
+            case DECIMAL, JSON, VARCHAR, CHAR, VARBINARY, BINARY, TIME, TIMESTAMP -> 1;
+            case INTERVAL -> MIN_INTERVAL_START_PRECISION;
             default -> -1;
         };
     }
@@ -887,7 +859,7 @@ public enum PolyType {
     public int getMinScale() {
         return switch ( this ) {
             // TODO: Minimum numeric scale for decimal
-            case INTERVAL_MONTH, INTERVAL_MILLISECOND -> MIN_INTERVAL_FRACTIONAL_SECOND_PRECISION;
+            case INTERVAL -> MIN_INTERVAL_FRACTIONAL_SECOND_PRECISION;
             default -> -1;
         };
     }
@@ -898,8 +870,7 @@ public enum PolyType {
      */
     public TimeUnit getStartUnit() {
         return switch ( this ) {
-            case INTERVAL_MONTH -> TimeUnit.MONTH;
-            case INTERVAL_MILLISECOND -> TimeUnit.MILLISECOND;
+            case INTERVAL -> TimeUnit.MONTH;
             default -> throw new AssertionError( this );
         };
     }
@@ -910,8 +881,7 @@ public enum PolyType {
      */
     public TimeUnit getEndUnit() {
         return switch ( this ) {
-            case INTERVAL_MONTH -> TimeUnit.MONTH;
-            case INTERVAL_MILLISECOND -> TimeUnit.MILLISECOND;
+            case INTERVAL -> TimeUnit.MILLISECOND;
             default -> throw new AssertionError( this );
         };
     }
@@ -919,7 +889,7 @@ public enum PolyType {
 
     public boolean isYearMonth() {
         return switch ( this ) {
-            case INTERVAL_MONTH, INTERVAL_MILLISECOND -> true;
+            case INTERVAL -> true;
             default -> false;
         };
     }

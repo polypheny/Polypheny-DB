@@ -35,12 +35,12 @@ package org.polypheny.db.type;
 
 
 import java.util.Objects;
-import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.nodes.IntervalQualifierImpl;
+import org.polypheny.db.util.temporal.TimeUnit;
 
 
 /**

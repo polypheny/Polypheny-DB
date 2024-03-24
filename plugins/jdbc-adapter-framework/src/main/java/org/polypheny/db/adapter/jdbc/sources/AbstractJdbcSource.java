@@ -249,16 +249,12 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
                                 scale = row.getInt( "DECIMAL_DIGITS" );
                                 break;
                             case TIME:
-                            case TIME_WITH_LOCAL_TIME_ZONE:
-                                type = PolyType.TIME;
                                 length = row.getInt( "DECIMAL_DIGITS" );
                                 if ( length > 3 ) {
                                     throw new GenericRuntimeException( "Unsupported precision for data type time: " + length );
                                 }
                                 break;
                             case TIMESTAMP:
-                            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                                type = PolyType.TIMESTAMP;
                                 length = row.getInt( "DECIMAL_DIGITS" );
                                 if ( length > 3 ) {
                                     throw new GenericRuntimeException( "Unsupported precision for data type timestamp: " + length );

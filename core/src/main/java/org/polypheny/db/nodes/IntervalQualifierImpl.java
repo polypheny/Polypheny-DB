@@ -20,10 +20,10 @@ import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.util.Objects;
 import lombok.Getter;
-import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.temporal.TimeUnit;
 
 @Getter
 public class IntervalQualifierImpl implements IntervalQualifier {
@@ -60,7 +60,7 @@ public class IntervalQualifierImpl implements IntervalQualifier {
 
     @Override
     public PolyType typeName() {
-        return IntervalQualifier.getRangePolyType( timeUnitRange );
+        return PolyType.INTERVAL;
     }
 
 

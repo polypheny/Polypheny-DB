@@ -17,18 +17,20 @@
 package org.polypheny.db.type.entity;
 
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.nodes.IntervalQualifier;
-import org.polypheny.db.nodes.IntervalQualifierImpl;
 import org.polypheny.db.type.PolySerializable;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.category.PolyNumber;
+import org.polypheny.db.util.temporal.TimeUnit;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
@@ -37,31 +39,84 @@ import org.polypheny.db.type.PolySerializable;
 public class PolyInterval extends PolyValue {
 
 
-    public Long value;
+    @NotNull
+    public Long millis;
 
-    public IntervalQualifier qualifier;
+    @Getter
+    @NotNull
+    public Long months;
 
 
     /**
-     * Creates a PolyInterval.
+     * Creates a PolyInterval, which includes a millis and a month value, to allow for combinations liki 7-1 Month to Day, which is 7 months and 7 days.
+     * And required for example by the SQL standard.
      *
-     * @param value The amount of the range
-     * @param qualifier The unit qualifier, e.g. YEAR, MONTH, DAY, etc.
+     * @param millis millis since Epoch.
+     * @param months months since Epoch.
      */
-    public PolyInterval( Long value, IntervalQualifier qualifier ) {
-        super( qualifier.typeName() );
-        this.value = value;
-        this.qualifier = qualifier;
+    public PolyInterval( @NotNull Long millis, @NotNull Long months ) {
+        super( PolyType.INTERVAL );
+        this.millis = millis;
+        this.months = months;
     }
 
 
-    public static PolyInterval of( Long value, IntervalQualifier type ) {
-        return new PolyInterval( value, type );
+    private static MonthsMilliseconds normalize( Long value, TimeUnit unit ) {
+        if ( unit == TimeUnit.YEAR ) {
+            return new MonthsMilliseconds( value, value * 12 );
+        } else if ( unit == TimeUnit.MONTH ) {
+            return new MonthsMilliseconds( value, value );
+        } else if ( unit == TimeUnit.DAY ) {
+            return new MonthsMilliseconds( value * 24 * 60 * 60 * 1000, value * 24 * 60 * 60 * 1000 / 1000 / 60 / 60 / 24 );
+        } else if ( unit == TimeUnit.HOUR ) {
+            return new MonthsMilliseconds( value * 60 * 60 * 1000, value * 60 * 60 * 1000 / 1000 / 60 / 60 );
+        } else if ( unit == TimeUnit.MINUTE ) {
+            return new MonthsMilliseconds( value * 60 * 1000, value * 60 * 1000 / 1000 / 60 );
+        } else if ( unit == TimeUnit.SECOND ) {
+            return new MonthsMilliseconds( value * 1000, value * 1000 / 1000 );
+        } else if ( unit == TimeUnit.MILLISECOND ) {
+            return new MonthsMilliseconds( value, value );
+        } else {
+            throw new NotImplementedException( "since Epoch" );
+
+        }
+
     }
 
 
-    public static PolyInterval of( Long value ) {
-        return new PolyInterval( value, new IntervalQualifierImpl( TimeUnit.MILLISECOND, 0, TimeUnit.MILLISECOND, 0 ) );
+    private static MonthsMilliseconds normalize( Long value, IntervalQualifier qualifier ) {
+        return switch ( qualifier.getTimeUnitRange() ) {
+            case DOW -> new MonthsMilliseconds( 0L, value * 24 * 60 * 60 * 1000 );
+            case DOY -> new MonthsMilliseconds( 0L, value * 24 * 60 * 60 * 1000 );
+            case QUARTER -> new MonthsMilliseconds( value * 3, 0L );
+            case YEAR -> new MonthsMilliseconds( value * 12, 0L );
+            case MONTH -> new MonthsMilliseconds( value, 0L );
+            case DAY -> new MonthsMilliseconds( 0L, value * 24 * 60 * 60 * 1000 );
+            case HOUR -> new MonthsMilliseconds( 0L, value * 60 * 60 * 1000 );
+            case MINUTE -> new MonthsMilliseconds( 0L, value * 60 * 1000 );
+            case SECOND -> new MonthsMilliseconds( 0L, value * 1000 );
+            case MILLISECOND -> new MonthsMilliseconds( 0L, value );
+            case WEEK -> new MonthsMilliseconds( 0L, value * 7 * 24 * 60 * 60 * 1000 );
+            case MINUTE_TO_SECOND -> new MonthsMilliseconds( 0L, value * 60 * 60 * 1000 );
+            default -> throw new NotImplementedException( "since Epoch" );
+        };
+    }
+
+
+    public static PolyInterval of( Long millis, Long months ) {
+        return new PolyInterval( millis, months );
+    }
+
+
+    public static PolyInterval of( Long value, TimeUnit type ) {
+        MonthsMilliseconds millisMonths = normalize( value, type );
+        return new PolyInterval( millisMonths.milliseconds, millisMonths.months );
+    }
+
+
+    public static PolyInterval of( Long value, IntervalQualifier qualifier ) {
+        MonthsMilliseconds millisMonths = normalize( value, qualifier );
+        return new PolyInterval( millisMonths.milliseconds, millisMonths.months );
     }
 
 
@@ -76,23 +131,13 @@ public class PolyInterval extends PolyValue {
 
     @Override
     public Expression asExpression() {
-        return Expressions.new_( PolyInterval.class, Expressions.constant( value ), qualifier.asExpression() );
+        return Expressions.new_( PolyInterval.class, Expressions.constant( millis ), Expressions.constant( months ) );
     }
 
 
     @Override
     public PolySerializable copy() {
         return PolySerializable.deserialize( serialize(), PolyInterval.class );
-    }
-
-
-    public Long getMonths() {
-        log.warn( "might adjust" );
-        return switch ( qualifier.getTimeUnitRange() ) {
-            case YEAR -> value.longValue();
-            case MONTH -> value.longValue();
-            default -> throw new NotImplementedException( "since Epoch" );
-        };
     }
 
 
@@ -104,16 +149,30 @@ public class PolyInterval extends PolyValue {
 
     @Override
     public Object toJava() {
-        return value;
+        return millis;
     }
 
 
-    public long getMillis() {
-        return switch ( qualifier.getTimeUnitRange() ) {
-            case YEAR -> value.longValue() * 24 * 60 * 60 * 1000;
-            case MONTH -> value.longValue();
-            default -> throw new NotImplementedException( "since Epoch" );
-        };
+    public Long getMergedMillis() {
+        return millis + months * 30 * 24 * 60 * 60 * 1000;
+    }
+
+
+    public PolyNumber getLeap( IntervalQualifier intervalQualifier ) {
+        switch ( intervalQualifier.getTimeUnitRange() ) {
+            case YEAR, QUARTER, MONTH, YEAR_TO_MONTH -> {
+                return PolyLong.of( months );
+            }
+            case DAY, DOW, DOY, HOUR, MINUTE, SECOND, MILLISECOND, MINUTE_TO_SECOND, HOUR_TO_MINUTE, WEEK -> {
+                return PolyLong.of( millis );
+            }
+            default -> throw new NotImplementedException( "get Leap" );
+        }
+    }
+
+
+    public record MonthsMilliseconds(long months, long milliseconds) {
+
     }
 
 }

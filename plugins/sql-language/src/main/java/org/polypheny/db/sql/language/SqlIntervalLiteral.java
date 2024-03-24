@@ -17,11 +17,12 @@
 package org.polypheny.db.sql.language;
 
 
+import static org.polypheny.db.sql.language.SqlIntervalQualifier.intervalString;
+
 import java.util.Objects;
 import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.type.PolySerializable;
@@ -49,8 +50,8 @@ import org.polypheny.db.util.Litmus;
 public class SqlIntervalLiteral extends SqlLiteral {
 
 
-    protected SqlIntervalLiteral( int sign, String intervalStr, SqlIntervalQualifier intervalQualifier, PolyType polyType, ParserPos pos ) {
-        this( new IntervalValue( intervalQualifier, sign, intervalStr ), polyType, pos );
+    protected SqlIntervalLiteral( PolyInterval interval, SqlIntervalQualifier intervalQualifier, PolyType polyType, ParserPos pos ) {
+        this( new IntervalValue( intervalQualifier, interval ), polyType, pos );
     }
 
 
@@ -94,45 +95,14 @@ public class SqlIntervalLiteral extends SqlLiteral {
          * Creates an interval value.
          *
          * @param intervalQualifier Interval qualifier
-         * @param sign Sign (+1 or -1)
-         * @param intervalStr Interval string
          */
-        IntervalValue( SqlIntervalQualifier intervalQualifier, int sign, String intervalStr ) {
-            super( toNumber( intervalQualifier ), intervalQualifier );
-            assert (sign == -1) || (sign == 1);
-            assert intervalStr != null;
+        IntervalValue( SqlIntervalQualifier intervalQualifier, PolyInterval interval ) {
+            super( interval.millis, interval.months );
             this.intervalQualifier = intervalQualifier;
-            this.sign = sign;
-            this.intervalStr = intervalStr;
+            this.sign = interval.millis < 0 ? -1 : 1;
+            this.intervalStr = intervalString( interval, intervalQualifier );
         }
 
-
-        private static Long toNumber( SqlIntervalQualifier intervalQualifier ) {
-            return switch ( intervalQualifier.timeUnitRange ) {
-                case YEAR -> 365L * 24 * 60 * 60 * 1000;
-                case DAY_TO_MINUTE, DAY_TO_SECOND -> 24L * 60 * 60 * 1000;
-                case HOUR -> 60L * 60 * 1000;
-                case HOUR_TO_MINUTE -> null;
-                case HOUR_TO_SECOND -> 60L * 60 * 1000;
-                case MINUTE -> 60L * 1000;
-                case MINUTE_TO_SECOND -> null;
-                case SECOND -> 1000L;
-                case MILLISECOND, MONTH -> 1L;
-                case DAY, DOW, DOY -> 24L * 60 * 60 * 1000;
-                case WEEK -> 7L * 24 * 60 * 60 * 1000;
-                case ISOYEAR -> 12L;
-                case QUARTER -> 3L * 30 * 24 * 60 * 60 * 1000;
-                case YEAR_TO_MONTH -> 12L;
-                case DAY_TO_HOUR -> 24L * 60 * 60 * 1000;
-                case MICROSECOND -> 1000L;
-                case ISODOW -> 24L * 60 * 60 * 1000;
-                case EPOCH -> 1L;
-                case DECADE -> 1L;
-                case CENTURY -> 1L;
-                case MILLENNIUM -> 1L;
-                default -> throw new UnsupportedOperationException( "Not implemented yet" );
-            };
-        }
 
 
         public boolean equals( Object obj ) {
@@ -159,7 +129,7 @@ public class SqlIntervalLiteral extends SqlLiteral {
             for ( int i = 0; i < intervalStr.length(); i++ ) {
                 char ch = intervalStr.charAt( i );
                 if ( ch >= '1' && ch <= '9' ) {
-                    // If non zero return sign.
+                    // If non-zero return sign.
                     return getSign();
                 }
             }
@@ -187,12 +157,6 @@ public class SqlIntervalLiteral extends SqlLiteral {
         @Override
         public PolySerializable copy() {
             throw new GenericRuntimeException( "Not allowed" );
-        }
-
-
-        @Override
-        public @Nullable Long deriveByteSize() {
-            return null;
         }
 
 

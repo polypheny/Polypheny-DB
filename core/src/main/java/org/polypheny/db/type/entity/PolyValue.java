@@ -368,11 +368,8 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case DOUBLE -> PolyDouble.class;
             case DATE -> PolyDate.class;
             case TIME -> PolyTime.class;
-            case TIME_WITH_LOCAL_TIME_ZONE -> PolyTime.class;
             case TIMESTAMP -> PolyTimestamp.class;
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE -> PolyTimestamp.class;
-            case INTERVAL_MILLISECOND -> PolyInterval.class;
-            case INTERVAL_MONTH -> PolyInterval.class;
+            case INTERVAL -> PolyInterval.class;
             case CHAR -> PolyString.class;
             case VARCHAR -> PolyString.class;
             case BINARY -> PolyBinary.class;
@@ -829,7 +826,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
                 }
                 throw new NotImplementedException();
             }
-            case TIME, TIME_WITH_LOCAL_TIME_ZONE -> {
+            case TIME -> {
                 if ( object instanceof Number number ) {
                     yield PolyTime.of( number );
                 } else if ( object instanceof Calendar calendar ) {
@@ -837,7 +834,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
                 }
                 throw new NotImplementedException();
             }
-            case TIMESTAMP, TIMESTAMP_WITH_LOCAL_TIME_ZONE -> {
+            case TIMESTAMP -> {
                 if ( object instanceof Timestamp timestamp ) {
                     yield PolyTimestamp.of( timestamp );
                 } else if ( object instanceof Calendar calendar ) {

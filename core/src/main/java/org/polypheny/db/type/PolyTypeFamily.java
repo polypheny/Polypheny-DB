@@ -142,8 +142,8 @@ public enum PolyTypeFamily implements AlgDataTypeFamily {
             case BINARY -> PolyType.BINARY_TYPES;
             case NUMERIC -> PolyType.NUMERIC_TYPES;
             case DATE -> ImmutableList.of( PolyType.DATE );
-            case TIME -> ImmutableList.of( PolyType.TIME, PolyType.TIME_WITH_LOCAL_TIME_ZONE );
-            case TIMESTAMP -> ImmutableList.of( PolyType.TIMESTAMP, PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE );
+            case TIME -> ImmutableList.of( PolyType.TIME );
+            case TIMESTAMP -> ImmutableList.of( PolyType.TIMESTAMP );
             case BOOLEAN -> PolyType.BOOLEAN_TYPES;
             case INTERVAL_YEAR_MONTH -> PolyType.INTERVAL_TYPES;
             case INTERVAL_TIME -> PolyType.INTERVAL_TYPES;

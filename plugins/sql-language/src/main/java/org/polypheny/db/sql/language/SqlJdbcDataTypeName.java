@@ -17,8 +17,8 @@
 package org.polypheny.db.sql.language;
 
 
-import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.TimeUnitRange;
 import org.polypheny.db.sql.language.fun.SqlConvertFunction;
 import org.polypheny.db.type.PolyType;
 
@@ -34,9 +34,7 @@ public enum SqlJdbcDataTypeName {
     SQL_VARCHAR( PolyType.VARCHAR ),
     SQL_DATE( PolyType.DATE ),
     SQL_TIME( PolyType.TIME ),
-    SQL_TIME_WITH_LOCAL_TIME_ZONE( PolyType.TIME_WITH_LOCAL_TIME_ZONE ),
     SQL_TIMESTAMP( PolyType.TIMESTAMP ),
-    SQL_TIMESTAMP_WITH_LOCAL_TIME_ZONE( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE ),
     SQL_DECIMAL( PolyType.DECIMAL ),
     SQL_NUMERIC( PolyType.DECIMAL ),
     SQL_BOOLEAN( PolyType.BOOLEAN ),

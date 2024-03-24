@@ -2800,9 +2800,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                     throw newValidationError( literal, RESOURCE.dateLiteralOutOfRange( literal.toString() ) );
                 }
                 break;
-
-            case INTERVAL_MILLISECOND:
-            case INTERVAL_MONTH:
+            case INTERVAL:
                 if ( literal instanceof SqlIntervalLiteral ) {
                     SqlIntervalLiteral.IntervalValue interval = (SqlIntervalLiteral.IntervalValue) literal.getValue();
                     SqlIntervalQualifier intervalQualifier = interval.getIntervalQualifier();

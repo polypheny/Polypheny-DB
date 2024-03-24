@@ -55,7 +55,7 @@ public abstract class AlgDataTypeSystemImpl implements AlgDataTypeSystem {
     public int getMaxScale( PolyType typeName ) {
         return switch ( typeName ) {
             case DECIMAL -> getMaxNumericScale();
-            case INTERVAL_MILLISECOND, INTERVAL_MONTH -> PolyType.MAX_INTERVAL_FRACTIONAL_SECOND_PRECISION;
+            case INTERVAL -> PolyType.MAX_INTERVAL_FRACTIONAL_SECOND_PRECISION;
             default -> -1;
         };
     }
@@ -64,73 +64,38 @@ public abstract class AlgDataTypeSystemImpl implements AlgDataTypeSystem {
     @Override
     public int getDefaultPrecision( PolyType typeName ) {
         // Following BasicPolyType precision as the default
-        switch ( typeName ) {
-            case CHAR:
-            case BINARY:
-                return 1;
-            case JSON:
-            case VARCHAR:
-            case VARBINARY:
-                return AlgDataType.PRECISION_NOT_SPECIFIED;
-            case DECIMAL:
-                return getMaxNumericPrecision();
-            case INTERVAL_MONTH:
-            case INTERVAL_MILLISECOND:
-                return PolyType.DEFAULT_INTERVAL_START_PRECISION;
-            case BOOLEAN:
-                return 1;
-            case TINYINT:
-                return 3;
-            case SMALLINT:
-                return 5;
-            case INTEGER:
-                return 10;
-            case BIGINT:
-                return 19;
-            case REAL:
-                return 7;
-            case FLOAT:
-            case DOUBLE:
-                return 15;
-            case TIME:
-            case TIME_WITH_LOCAL_TIME_ZONE:
-            case DATE:
-                return 0; // SQL99 part 2 section 6.1 syntax rule 30
-            case TIMESTAMP:
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+        return switch ( typeName ) {
+            case CHAR, BINARY -> 1;
+            case JSON, VARCHAR, VARBINARY -> AlgDataType.PRECISION_NOT_SPECIFIED;
+            case DECIMAL -> getMaxNumericPrecision();
+            case INTERVAL -> PolyType.DEFAULT_INTERVAL_START_PRECISION;
+            case BOOLEAN -> 1;
+            case TINYINT -> 3;
+            case SMALLINT -> 5;
+            case INTEGER -> 10;
+            case BIGINT -> 19;
+            case REAL -> 7;
+            case FLOAT, DOUBLE -> 15;
+            case TIME, DATE -> 0; // SQL99 part 2 section 6.1 syntax rule 30
+            case TIMESTAMP ->
                 // farrago supports only 0 (see
                 // PolyType.getDefaultPrecision), but it should be 6
                 // (microseconds) per SQL99 part 2 section 6.1 syntax rule 30.
-                return 0;
-            default:
-                return -1;
-        }
+                    0;
+            default -> -1;
+        };
     }
 
 
     @Override
     public int getMaxPrecision( PolyType typeName ) {
-        switch ( typeName ) {
-            case DECIMAL:
-                return getMaxNumericPrecision();
-            case JSON:
-            case VARCHAR:
-            case CHAR:
-                return 65536;
-            case VARBINARY:
-            case BINARY:
-                return 65536;
-            case TIME:
-            case TIME_WITH_LOCAL_TIME_ZONE:
-            case TIMESTAMP:
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                return PolyType.MAX_DATETIME_PRECISION;
-            case INTERVAL_MILLISECOND:
-            case INTERVAL_MONTH:
-                return PolyType.MAX_INTERVAL_START_PRECISION;
-            default:
-                return getDefaultPrecision( typeName );
-        }
+        return switch ( typeName ) {
+            case DECIMAL -> getMaxNumericPrecision();
+            case JSON, VARCHAR, CHAR, VARBINARY, BINARY -> 65536;
+            case TIME, TIMESTAMP -> PolyType.MAX_DATETIME_PRECISION;
+            case INTERVAL -> PolyType.MAX_INTERVAL_START_PRECISION;
+            default -> getDefaultPrecision( typeName );
+        };
     }
 
 
@@ -152,11 +117,8 @@ public abstract class AlgDataTypeSystemImpl implements AlgDataTypeSystem {
             case VARBINARY, VARCHAR, JSON, CHAR -> "'";
             case BINARY -> isPrefix ? "x'" : "'";
             case TIMESTAMP -> isPrefix ? "TIMESTAMP '" : "'";
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE -> isPrefix ? "TIMESTAMP WITH LOCAL TIME ZONE '" : "'";
-            case INTERVAL_MILLISECOND -> isPrefix ? "INTERVAL '" : "' DAY";
-            case INTERVAL_MONTH -> isPrefix ? "INTERVAL '" : "' YEAR TO MONTH";
+            case INTERVAL -> isPrefix ? "INTERVAL '" : "' SECOND";
             case TIME -> isPrefix ? "TIME '" : "'";
-            case TIME_WITH_LOCAL_TIME_ZONE -> isPrefix ? "TIME WITH LOCAL TIME ZONE '" : "'";
             case DATE -> isPrefix ? "DATE '" : "'";
             case ARRAY -> isPrefix ? "(" : ")";
             default -> null;
@@ -166,14 +128,10 @@ public abstract class AlgDataTypeSystemImpl implements AlgDataTypeSystem {
 
     @Override
     public boolean isCaseSensitive( PolyType typeName ) {
-        switch ( typeName ) {
-            case CHAR:
-            case JSON:
-            case VARCHAR:
-                return true;
-            default:
-                return false;
-        }
+        return switch ( typeName ) {
+            case CHAR, JSON, VARCHAR -> true;
+            default -> false;
+        };
     }
 
 

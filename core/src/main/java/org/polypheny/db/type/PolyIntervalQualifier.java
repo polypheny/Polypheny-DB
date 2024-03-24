@@ -167,7 +167,7 @@ public class PolyIntervalQualifier {
 
 
     public PolyType typeName() {
-        return IntervalQualifier.getRangePolyType( timeUnitRange );
+        return PolyType.INTERVAL;
     }
 
 }

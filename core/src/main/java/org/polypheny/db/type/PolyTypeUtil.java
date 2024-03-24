@@ -1194,7 +1194,7 @@ public abstract class PolyTypeUtil {
                 return char.class;
             case VARCHAR:
                 return String.class;
-            case BINARY, TIME_WITH_LOCAL_TIME_ZONE, TIMESTAMP_WITH_LOCAL_TIME_ZONE, INTERVAL_MILLISECOND, INTERVAL_MONTH, NULL, ANY, SYMBOL, MULTISET, ARRAY, MAP, DISTINCT, STRUCTURED, ROW, OTHER, CURSOR, COLUMN_LIST, DYNAMIC_STAR, GEOMETRY:
+            case BINARY, INTERVAL, NULL, ANY, SYMBOL, MULTISET, ARRAY, MAP, DISTINCT, STRUCTURED, ROW, OTHER, CURSOR, COLUMN_LIST, DYNAMIC_STAR, GEOMETRY:
                 break;
             case VARBINARY:
                 return byte[].class;
@@ -1232,22 +1232,6 @@ public abstract class PolyTypeUtil {
             return null;
         }
         return PolyValue.fromTypedJson( s, PolyValue.class );
-        /*Gson gson = new Gson();
-        return switch ( polyType.getType().getPolyType() ) {
-            case BOOLEAN -> PolyBoolean.of( gson.fromJson( s, Boolean.class ) );
-            case TINYINT, SMALLINT, INTEGER -> PolyInteger.of( Integer.parseInt( s ) );
-            case TIME -> PolyTime.of( Integer.parseInt( s ) );
-            case DATE -> PolyDate.of( Integer.parseInt( s ) );
-            case TIMESTAMP -> PolyTimestamp.of( Long.parseLong( s ) );
-            case BIGINT -> PolyLong.of( Long.parseLong( s ) );
-            case DOUBLE -> PolyDouble.of( Double.parseDouble( s ) );
-            case REAL, FLOAT -> PolyFloat.of( Float.parseFloat( s ) );
-            case DECIMAL -> PolyBigDecimal.of( new BigDecimal( s ) );
-            case VARCHAR, TEXT -> PolyString.of( s );
-            case ARRAY -> PolyValue.deserialize( s );
-            default -> throw new NotImplementedException();
-        };
-         */
     }
 
 }

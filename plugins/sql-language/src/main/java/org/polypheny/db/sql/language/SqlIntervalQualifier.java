@@ -17,14 +17,16 @@
 package org.polypheny.db.sql.language;
 
 
+import static org.polypheny.db.rex.RexLiteral.pad;
+import static org.polypheny.db.rex.RexLiteral.width;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.Getter;
-import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.languages.ParserPos;
@@ -37,9 +39,11 @@ import org.polypheny.db.sql.language.validate.SqlValidator;
 import org.polypheny.db.sql.language.validate.SqlValidatorScope;
 import org.polypheny.db.type.PolyIntervalQualifier;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Util;
+import org.polypheny.db.util.temporal.TimeUnit;
 
 
 /**
@@ -88,22 +92,18 @@ import org.polypheny.db.util.Util;
  * <p>An instance of this class is immutable.
  */
 public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
-    //~ Static fields/initializers ---------------------------------------------
 
     private static final BigDecimal ZERO = BigDecimal.ZERO;
     private static final BigDecimal THOUSAND = BigDecimal.valueOf( 1000 );
     private static final BigDecimal INT_MAX_VALUE_PLUS_ONE =
             BigDecimal.valueOf( Integer.MAX_VALUE ).add( BigDecimal.ONE );
 
-    //~ Instance fields --------------------------------------------------------
 
     private final int startPrecision;
     @Getter
     public final TimeUnitRange timeUnitRange;
     @Getter
     private final int fractionalSecondPrecision;
-
-    //~ Constructors -----------------------------------------------------------
 
 
     public SqlIntervalQualifier(
@@ -116,8 +116,7 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
         if ( endUnit == startUnit ) {
             endUnit = null;
         }
-        this.timeUnitRange =
-                TimeUnitRange.of( Objects.requireNonNull( startUnit ), endUnit );
+        this.timeUnitRange = TimeUnitRange.of( Objects.requireNonNull( startUnit ), endUnit );
         this.startPrecision = startPrecision;
         this.fractionalSecondPrecision = fractionalSecondPrecision;
     }
@@ -162,12 +161,10 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
                 ParserPos.ZERO );
     }
 
-    //~ Methods ----------------------------------------------------------------
-
 
     @Override
     public PolyType typeName() {
-        return IntervalQualifier.getRangePolyType( this.timeUnitRange );
+        return PolyType.INTERVAL;
     }
 
 
@@ -443,19 +440,11 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
         // YEAR and DAY can never be secondary units,
         // nor can unit be null.
         assert unit != null;
-        switch ( unit ) {
-            case YEAR:
-            case DAY:
-            default:
-                throw Util.unexpected( unit );
-
-                // Secondary field limits, as per section 4.6.3 of SQL2003 spec
-            case MONTH:
-            case HOUR:
-            case MINUTE:
-            case SECOND:
-                return unit.isValidValue( field );
-        }
+        // Secondary field limits, as per section 4.6.3 of SQL2003 spec
+        return switch ( unit ) {
+            default -> throw Util.unexpected( unit );
+            case MONTH, HOUR, MINUTE, SECOND -> unit.isValidValue( field );
+        };
     }
 
 
@@ -1236,6 +1225,65 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
                 pos,
                 RESOURCE.intervalFieldExceedsPrecision(
                         value, type.name() + "(" + precision + ")" ) );
+    }
+
+
+    /**
+     * Returns a list of the time units covered by an interval type such as HOUR TO SECOND.
+     * Adds MILLISECOND if the end is SECOND, to deal with fractional seconds.
+     */
+    private static List<TimeUnit> getTimeUnits( IntervalQualifier intervalQualifier ) {
+        return switch ( intervalQualifier.getTimeUnitRange() ) {
+            case MINUTE -> List.of( TimeUnit.MINUTE );
+            case DAY -> List.of( TimeUnit.DAY );
+            case HOUR -> List.of( TimeUnit.HOUR, TimeUnit.MINUTE );
+            case SECOND -> List.of( TimeUnit.SECOND );
+            case YEAR -> List.of( TimeUnit.YEAR );
+            case MONTH -> List.of( TimeUnit.MONTH );
+            case QUARTER -> List.of( TimeUnit.QUARTER );
+            case WEEK -> List.of( TimeUnit.WEEK );
+            case DOW -> List.of( TimeUnit.DOW );
+            case DOY -> List.of( TimeUnit.DOY );
+            case YEAR_TO_MONTH -> List.of( TimeUnit.YEAR, TimeUnit.MONTH );
+            case DAY_TO_HOUR -> List.of( TimeUnit.DAY, TimeUnit.HOUR );
+            case DAY_TO_MINUTE -> List.of( TimeUnit.DAY, TimeUnit.MINUTE );
+            case HOUR_TO_MINUTE -> List.of( TimeUnit.HOUR, TimeUnit.MINUTE );
+            case HOUR_TO_SECOND -> List.of( TimeUnit.HOUR, TimeUnit.SECOND, TimeUnit.MILLISECOND );
+            case MINUTE_TO_SECOND -> List.of( TimeUnit.MINUTE, TimeUnit.SECOND, TimeUnit.MILLISECOND );
+            default -> throw new AssertionError( intervalQualifier.getTimeUnitRange() );
+        };
+    }
+
+
+    public static String intervalString( PolyInterval value, IntervalQualifier intervalQualifier ) {
+        final List<TimeUnit> timeUnits = getTimeUnits( intervalQualifier );
+        final StringBuilder b = new StringBuilder();
+        BigDecimal v = value.getLeap( intervalQualifier ).bigDecimalValue().abs();
+
+        int sign = value.millis < 0 ? -1 : 1;
+        for ( TimeUnit timeUnit : timeUnits ) {
+            if ( timeUnit.multiplier == null ) {
+                // qualifier without timeunit are valid on their own (e.g. DOW, DOY)
+                break;
+            }
+            final BigDecimal[] result = v.divideAndRemainder( timeUnit.multiplier );
+            if ( !b.isEmpty() ) {
+                b.append( timeUnit.separator );
+            }
+            final int width = b.isEmpty() ? -1 : width( timeUnit ); // don't pad 1st
+            pad( b, result[0].toString(), width );
+            v = result[1];
+        }
+        if ( Util.last( timeUnits ) == TimeUnit.MILLISECOND ) {
+            while ( b.toString().matches( ".*\\.[0-9]*0" ) ) {
+                if ( b.toString().endsWith( ".0" ) ) {
+                    b.setLength( b.length() - 2 ); // remove ".0"
+                } else {
+                    b.setLength( b.length() - 1 ); // remove "0"
+                }
+            }
+        }
+        return sign == -1 ? "-" + b : b.toString();
     }
 
 }

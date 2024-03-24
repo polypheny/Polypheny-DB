@@ -104,6 +104,7 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
      *
      * @see AlgMetadataQuery#getAverageRowSize
      */
+    @SuppressWarnings("unused")
     public Double averageRowSize( AlgNode alg, AlgMetadataQuery mq ) {
         final List<Double> averageColumnSizes = mq.getAverageColumnSizes( alg );
         if ( averageColumnSizes == null ) {
@@ -127,21 +128,25 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
      *
      * @see AlgMetadataQuery#getAverageColumnSizes
      */
+    @SuppressWarnings("unused")
     public List<Double> averageColumnSizes( AlgNode alg, AlgMetadataQuery mq ) {
         return null; // absolutely no idea
     }
 
 
+    @SuppressWarnings("unused")
     public List<Double> averageColumnSizes( Filter alg, AlgMetadataQuery mq ) {
         return mq.getAverageColumnSizes( alg.getInput() );
     }
 
 
+    @SuppressWarnings("unused")
     public List<Double> averageColumnSizes( Sort alg, AlgMetadataQuery mq ) {
         return mq.getAverageColumnSizes( alg.getInput() );
     }
 
 
+    @SuppressWarnings("unused")
     public List<Double> averageColumnSizes( Exchange alg, AlgMetadataQuery mq ) {
         return mq.getAverageColumnSizes( alg.getInput() );
     }
@@ -191,6 +196,7 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
     }
 
 
+    @SuppressWarnings("unused")
     public List<Double> averageColumnSizes( Aggregate alg, AlgMetadataQuery mq ) {
         final List<Double> inputColumnSizes = mq.getAverageColumnSizesNotNull( alg.getInput() );
         final ImmutableList.Builder<Double> list = ImmutableList.builder();
@@ -316,15 +322,12 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
             case DECIMAL:
             case DATE:
             case TIME:
-            case TIME_WITH_LOCAL_TIME_ZONE:
-            case INTERVAL_MONTH:
+            case INTERVAL:
                 return 4d;
             case BIGINT:
             case DOUBLE:
             case FLOAT: // sic
             case TIMESTAMP:
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-            case INTERVAL_MILLISECOND:
                 return 8d;
             case BINARY:
                 return (double) type.getPrecision();
@@ -360,8 +363,8 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
         return switch ( type.getPolyType() ) {
             case BOOLEAN, TINYINT -> 1d;
             case SMALLINT -> 2d;
-            case INTEGER, FLOAT, REAL, DATE, TIME, TIME_WITH_LOCAL_TIME_ZONE, INTERVAL_MONTH -> 4d;
-            case BIGINT, DOUBLE, TIMESTAMP, TIMESTAMP_WITH_LOCAL_TIME_ZONE, INTERVAL_MILLISECOND -> 8d;
+            case INTEGER, FLOAT, REAL, DATE, TIME, INTERVAL -> 4d;
+            case BIGINT, DOUBLE, TIMESTAMP -> 8d;
             case BINARY, VARBINARY -> ((ByteString) value).length();
             case CHAR, JSON, VARCHAR -> ((NlsString) value).getValue().length() * BYTES_PER_CHARACTER;
             default -> 32;
@@ -374,8 +377,7 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
             case INPUT_REF -> inputColumnSizes.get( ((RexIndexRef) node).getIndex() );
             case LITERAL -> typeValueSize( node.getType(), ((RexLiteral) node).getValue() );
             default -> {
-                if ( node instanceof RexCall ) {
-                    RexCall call = (RexCall) node;
+                if ( node instanceof RexCall call ) {
                     for ( RexNode operand : call.getOperands() ) {
                         // It's a reasonable assumption that a function's result will have similar size to its argument of a similar type. For example, UPPER(c) has the same average size as c.
                         if ( operand.getType().getPolyType() == node.getType().getPolyType() ) {
