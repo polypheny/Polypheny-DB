@@ -1159,7 +1159,7 @@ public class Functions {
 
 
     public static PolyInterval multiply( PolyInterval b0, PolyNumber b1 ) {
-        return PolyInterval.of( b0.millis * b1.longValue(), b0.millis * b1.longValue() );
+        return PolyInterval.of( b0.millis * b1.longValue(), b0.months * b1.longValue() );
     }
 
 

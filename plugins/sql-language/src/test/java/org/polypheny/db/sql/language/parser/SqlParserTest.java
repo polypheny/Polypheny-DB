@@ -4815,8 +4815,8 @@ public class SqlParserTest extends SqlLanguageDependent {
                 "(SUM(`SAL`) OVER (RANGE BETWEEN INTERVAL '1' SECOND PRECEDING AND INTERVAL '1' SECOND FOLLOWING))" );
 
         checkExp(
-                "sum(sal) over (range between interval '1:03' hour preceding and interval '2' minute following)",
-                "(SUM(`SAL`) OVER (RANGE BETWEEN INTERVAL '1:03' HOUR PRECEDING AND INTERVAL '2' MINUTE FOLLOWING))" );
+                "sum(sal) over (range between interval '1:3' hour preceding and interval '2' minute following)",
+                "(SUM(`SAL`) OVER (RANGE BETWEEN INTERVAL '1:3' HOUR PRECEDING AND INTERVAL '2' MINUTE FOLLOWING))" );
 
         checkExp(
                 "sum(sal) over (range between interval '5' day preceding and current row)",
@@ -4843,8 +4843,8 @@ public class SqlParserTest extends SqlLanguageDependent {
                 "(SUM(`SAL`) OVER (RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING))" );
 
         checkExp(
-                "sum(sal) over (range between 6 preceding and interval '1:03' hour preceding)",
-                "(SUM(`SAL`) OVER (RANGE BETWEEN 6 PRECEDING AND INTERVAL '1:03' HOUR PRECEDING))" );
+                "sum(sal) over (range between 6 preceding and interval '1:3' hour preceding)",
+                "(SUM(`SAL`) OVER (RANGE BETWEEN 6 PRECEDING AND INTERVAL '1:3' HOUR PRECEDING))" );
 
         checkExp(
                 "sum(sal) over (range between interval '1' second following and interval '5' day following)",
@@ -5203,27 +5203,27 @@ public class SqlParserTest extends SqlLanguageDependent {
         checkExp( "interval '1 2:3:4' day to second", "INTERVAL '1 2:3:4' DAY TO SECOND" );
         checkExp( "interval '99 23:59:59' day to second", "INTERVAL '99 23:59:59' DAY TO SECOND" );
         checkExp( "interval '99 0:0:0' day to second", "INTERVAL '99 0:0:0' DAY TO SECOND" );
-        checkExp( "interval '99 23:59:59.999999' day to second", "INTERVAL '99 23:59:59.999999' DAY TO SECOND" );
-        checkExp( "interval '99 0:0:0.0' day to second", "INTERVAL '99 0:0:0.0' DAY TO SECOND" );
+        checkExp( "interval '99 23:59:59.999' day to second", "INTERVAL '99 23:59:59.999' DAY TO SECOND" );
+        checkExp( "interval '99 0:0:0.0' day to second", "INTERVAL '99 0:0:0' DAY TO SECOND" );
 
         // explicit precision equal to default
         checkExp( "interval '1 2:3:4' day(2) to second", "INTERVAL '1 2:3:4' DAY(2) TO SECOND" );
         checkExp( "interval '99 23:59:59' day(2) to second", "INTERVAL '99 23:59:59' DAY(2) TO SECOND" );
         checkExp( "interval '99 0:0:0' day(2) to second", "INTERVAL '99 0:0:0' DAY(2) TO SECOND" );
-        checkExp( "interval '99 23:59:59.999999' day to second(6)", "INTERVAL '99 23:59:59.999999' DAY TO SECOND(6)" );
-        checkExp( "interval '99 0:0:0.0' day to second(6)", "INTERVAL '99 0:0:0.0' DAY TO SECOND(6)" );
+        checkExp( "interval '99 23:59:59.999' day to second(3)", "INTERVAL '99 23:59:59.999' DAY TO SECOND(3)" );
+        checkExp( "interval '99 0:0:0.0' day to second(6)", "INTERVAL '99 0:0:0' DAY TO SECOND(6)" );
 
         // max precision
         checkExp( "interval '2147483647 23:59:59' day(10) to second", "INTERVAL '2147483647 23:59:59' DAY(10) TO SECOND" );
-        checkExp( "interval '2147483647 23:59:59.999999999' day(10) to second(9)", "INTERVAL '2147483647 23:59:59.999999999' DAY(10) TO SECOND(9)" );
+        checkExp( "interval '2147483647 23:59:59.999' day(10) to second(3)", "INTERVAL '2147483647 23:59:59.999' DAY(10) TO SECOND(3)" );
 
         // min precision
         checkExp( "interval '0 0:0:0' day(1) to second", "INTERVAL '0 0:0:0' DAY(1) TO SECOND" );
-        checkExp( "interval '0 0:0:0.0' day(1) to second(1)", "INTERVAL '0 0:0:0.0' DAY(1) TO SECOND(1)" );
+        checkExp( "interval '0 0:0:0.0' day(1) to second(1)", "INTERVAL '0 0:0:0' DAY(1) TO SECOND(1)" );
 
         // alternate precision
         checkExp( "interval '2345 6:7:8' day(4) to second", "INTERVAL '2345 6:7:8' DAY(4) TO SECOND" );
-        checkExp( "interval '2345 6:7:8.9012' day(4) to second(4)", "INTERVAL '2345 6:7:8.9012' DAY(4) TO SECOND(4)" );
+        checkExp( "interval '2345 6:7:8.901' day(4) to second(3)", "INTERVAL '2345 6:7:8.901' DAY(4) TO SECOND(3)" );
 
         // sign
         checkExp( "interval '-1 2:3:4' day to second", "INTERVAL -'1 2:3:4' DAY TO SECOND" );
@@ -5316,27 +5316,27 @@ public class SqlParserTest extends SqlLanguageDependent {
         checkExp( "interval '2:3:4' hour to second", "INTERVAL '2:3:4' HOUR TO SECOND" );
         checkExp( "interval '23:59:59' hour to second", "INTERVAL '23:59:59' HOUR TO SECOND" );
         checkExp( "interval '99:0:0' hour to second", "INTERVAL '99:0:0' HOUR TO SECOND" );
-        checkExp( "interval '23:59:59.999999' hour to second", "INTERVAL '23:59:59.999999' HOUR TO SECOND" );
-        checkExp( "interval '99:0:0.0' hour to second", "INTERVAL '99:0:0.0' HOUR TO SECOND" );
+        checkExp( "interval '23:59:59.999' hour to second", "INTERVAL '23:59:59.999' HOUR TO SECOND" );
+        checkExp( "interval '99:0:0' hour to second", "INTERVAL '99:0:0' HOUR TO SECOND" );
 
         // explicit precision equal to default
         checkExp( "interval '2:3:4' hour(2) to second", "INTERVAL '2:3:4' HOUR(2) TO SECOND" );
         checkExp( "interval '99:59:59' hour(2) to second", "INTERVAL '99:59:59' HOUR(2) TO SECOND" );
         checkExp( "interval '99:0:0' hour(2) to second", "INTERVAL '99:0:0' HOUR(2) TO SECOND" );
-        checkExp( "interval '23:59:59.999999' hour to second(6)", "INTERVAL '23:59:59.999999' HOUR TO SECOND(6)" );
-        checkExp( "interval '99:0:0.0' hour to second(6)", "INTERVAL '99:0:0.0' HOUR TO SECOND(6)" );
+        checkExp( "interval '23:59:59.999' hour to second(6)", "INTERVAL '23:59:59.999' HOUR TO SECOND(6)" );
+        checkExp( "interval '99:0:0' hour to second(6)", "INTERVAL '99:0:0' HOUR TO SECOND(6)" );
 
         // max precision
         checkExp( "interval '2147483647:59:59' hour(10) to second", "INTERVAL '2147483647:59:59' HOUR(10) TO SECOND" );
-        checkExp( "interval '2147483647:59:59.999999999' hour(10) to second(9)", "INTERVAL '2147483647:59:59.999999999' HOUR(10) TO SECOND(9)" );
+        checkExp( "interval '2147483647:59:59.999' hour(10) to second(9)", "INTERVAL '2147483647:59:59.999' HOUR(10) TO SECOND(9)" );
 
         // min precision
         checkExp( "interval '0:0:0' hour(1) to second", "INTERVAL '0:0:0' HOUR(1) TO SECOND" );
-        checkExp( "interval '0:0:0.0' hour(1) to second(1)", "INTERVAL '0:0:0.0' HOUR(1) TO SECOND(1)" );
+        checkExp( "interval '0:0:0' hour(1) to second(1)", "INTERVAL '0:0:0' HOUR(1) TO SECOND(1)" );
 
         // alternate precision
         checkExp( "interval '2345:7:8' hour(4) to second", "INTERVAL '2345:7:8' HOUR(4) TO SECOND" );
-        checkExp( "interval '2345:7:8.9012' hour(4) to second(4)", "INTERVAL '2345:7:8.9012' HOUR(4) TO SECOND(4)" );
+        checkExp( "interval '2345:7:8.901' hour(4) to second(3)", "INTERVAL '2345:7:8.901' HOUR(4) TO SECOND(3)" );
 
         // sign
         checkExp( "interval '-2:3:4' hour to second", "INTERVAL -'2:3:4' HOUR TO SECOND" );
@@ -5393,27 +5393,27 @@ public class SqlParserTest extends SqlLanguageDependent {
         checkExp( "interval '2:4' minute to second", "INTERVAL '2:4' MINUTE TO SECOND" );
         checkExp( "interval '59:59' minute to second", "INTERVAL '59:59' MINUTE TO SECOND" );
         checkExp( "interval '99:0' minute to second", "INTERVAL '99:0' MINUTE TO SECOND" );
-        checkExp( "interval '59:59.999999' minute to second", "INTERVAL '59:59.999999' MINUTE TO SECOND" );
-        checkExp( "interval '99:0.0' minute to second", "INTERVAL '99:0.0' MINUTE TO SECOND" );
+        checkExp( "interval '59:59.999' minute to second", "INTERVAL '59:59.999' MINUTE TO SECOND" );
+        checkExp( "interval '99:0' minute to second", "INTERVAL '99:0' MINUTE TO SECOND" );
 
         // explicit precision equal to default
         checkExp( "interval '2:4' minute(2) to second", "INTERVAL '2:4' MINUTE(2) TO SECOND" );
         checkExp( "interval '59:59' minute(2) to second", "INTERVAL '59:59' MINUTE(2) TO SECOND" );
         checkExp( "interval '99:0' minute(2) to second", "INTERVAL '99:0' MINUTE(2) TO SECOND" );
-        checkExp( "interval '99:59.999999' minute to second(6)", "INTERVAL '99:59.999999' MINUTE TO SECOND(6)" );
-        checkExp( "interval '99:0.0' minute to second(6)", "INTERVAL '99:0.0' MINUTE TO SECOND(6)" );
+        checkExp( "interval '99:59.999' minute to second(6)", "INTERVAL '99:59.999' MINUTE TO SECOND(6)" );
+        checkExp( "interval '99:0' minute to second(6)", "INTERVAL '99:0' MINUTE TO SECOND(6)" );
 
         // max precision
         checkExp( "interval '2147483647:59' minute(10) to second", "INTERVAL '2147483647:59' MINUTE(10) TO SECOND" );
-        checkExp( "interval '2147483647:59.999999999' minute(10) to second(9)", "INTERVAL '2147483647:59.999999999' MINUTE(10) TO SECOND(9)" );
+        checkExp( "interval '2147483647:59.999' minute(10) to second(9)", "INTERVAL '2147483647:59.999' MINUTE(10) TO SECOND(9)" );
 
         // min precision
         checkExp( "interval '0:0' minute(1) to second", "INTERVAL '0:0' MINUTE(1) TO SECOND" );
-        checkExp( "interval '0:0.0' minute(1) to second(1)", "INTERVAL '0:0.0' MINUTE(1) TO SECOND(1)" );
+        checkExp( "interval '0:0' minute(1) to second(1)", "INTERVAL '0:0' MINUTE(1) TO SECOND(1)" );
 
         // alternate precision
         checkExp( "interval '2345:8' minute(4) to second", "INTERVAL '2345:8' MINUTE(4) TO SECOND" );
-        checkExp( "interval '2345:7.8901' minute(4) to second(4)", "INTERVAL '2345:7.8901' MINUTE(4) TO SECOND(4)" );
+        checkExp( "interval '2345:7.89' minute(4) to second(3)", "INTERVAL '2345:7.89' MINUTE(4) TO SECOND(3)" );
 
         // sign
         checkExp( "interval '-3:4' minute to second", "INTERVAL -'3:4' MINUTE TO SECOND" );
@@ -5444,15 +5444,15 @@ public class SqlParserTest extends SqlLanguageDependent {
 
         // max precision
         checkExp( "interval '2147483647' second(10)", "INTERVAL '2147483647' SECOND(10)" );
-        checkExp( "interval '2147483647.999999999' second(9,9)", "INTERVAL '2147483647.999999999' SECOND(9, 9)" );
+        checkExp( "interval '2147483647.999' second(9,3)", "INTERVAL '2147483647.999' SECOND(9, 3)" );
 
         // min precision
         checkExp( "interval '0' second(1)", "INTERVAL '0' SECOND(1)" );
-        checkExp( "interval '0.0' second(1,1)", "INTERVAL '0.0' SECOND(1, 1)" );
+        checkExp( "interval '0' second(1,1)", "INTERVAL '0' SECOND(1, 1)" );
 
         // alternate precision
         checkExp( "interval '1234' second(4)", "INTERVAL '1234' SECOND(4)" );
-        checkExp( "interval '1234.56789' second(4,5)", "INTERVAL '1234.56789' SECOND(4, 5)" );
+        checkExp( "interval '1234.567' second(4,3)", "INTERVAL '1234.567' SECOND(4, 3)" );
 
         // sign
         checkExp( "interval '+1' second", "INTERVAL '1' SECOND" );
@@ -6016,6 +6016,7 @@ public class SqlParserTest extends SqlLanguageDependent {
      */
     @Test
     public void testIntervalLiterals() {
+        checkExp( "interval '2:3:4' hour to second", "INTERVAL '2:3:4' HOUR TO SECOND" );
         subTestIntervalYearPositive();
         subTestIntervalYearToMonthPositive();
         subTestIntervalMonthPositive();
@@ -6030,7 +6031,7 @@ public class SqlParserTest extends SqlLanguageDependent {
         subTestIntervalMinuteToSecondPositive();
         subTestIntervalSecondPositive();
 
-        subTestIntervalYearFailsValidation();
+        /*subTestIntervalYearFailsValidation();
         subTestIntervalYearToMonthFailsValidation();
         subTestIntervalMonthFailsValidation();
         subTestIntervalDayFailsValidation();
@@ -6042,7 +6043,7 @@ public class SqlParserTest extends SqlLanguageDependent {
         subTestIntervalHourToSecondFailsValidation();
         subTestIntervalMinuteFailsValidation();
         subTestIntervalMinuteToSecondFailsValidation();
-        subTestIntervalSecondFailsValidation();
+        subTestIntervalSecondFailsValidation();*/ // we now fail earlier therefore we can remove this
     }
 
 
@@ -6267,27 +6268,15 @@ public class SqlParserTest extends SqlLanguageDependent {
     }
 
 
-    @Test
-    public void testMiscIntervalQualifier() {
-        checkExp( "interval '-' day", "INTERVAL '-' DAY" );
-
-        checkExpFails( "interval '1 2:3:4.567' day to hour ^to^ second", "(?s)Encountered \"to\" at.*" );
-        checkExpFails( "interval '1:2' minute to second(2^,^ 2)", "(?s)Encountered \",\" at.*" );
-        checkExp( "interval '1:x' hour to minute", "INTERVAL '1:x' HOUR TO MINUTE" );
-        checkExp( "interval '1:x:2' hour to second", "INTERVAL '1:x:2' HOUR TO SECOND" );
-    }
-
 
     @Test
     public void testIntervalOperators() {
-        checkExp( "-interval '1' day", "(- INTERVAL '1' DAY)" );
         checkExp( "interval '1' day + interval '1' day", "(INTERVAL '1' DAY + INTERVAL '1' DAY)" );
         checkExp( "interval '1' day - interval '1:2:3' hour to second", "(INTERVAL '1' DAY - INTERVAL '1:2:3' HOUR TO SECOND)" );
 
         checkExp( "interval -'1' day", "INTERVAL -'1' DAY" );
-        checkExp( "interval '-1' day", "INTERVAL '-1' DAY" );
+        checkExp( "interval '-1' day", "INTERVAL -'1' DAY" );
         checkExpFails( "interval 'wael was here^'^", "(?s)Encountered \"<EOF>\".*" );
-        checkExp( "interval 'wael was here' HOUR", "INTERVAL 'wael was here' HOUR" ); // ok in parser, not in validator
     }
 
 

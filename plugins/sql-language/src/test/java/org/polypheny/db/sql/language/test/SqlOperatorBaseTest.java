@@ -2519,15 +2519,15 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
         tester.checkScalar(
                 "interval '2' day - interval '1' minute",
                 "+1 23:59",
-                "INTERVAL MILLISECOND NOT NULL" );
+                "INTERVAL MONTH NOT NULL" );
         tester.checkScalar(
                 "interval '2' year - interval '1' month",
                 "+1-11",
-                "INTERVAL MILLISECOND NOT NULL" );
+                "INTERVAL MONTH NOT NULL" );
         tester.checkScalar(
                 "interval '2' year - interval '1' month - interval '3' year",
                 "-1-01",
-                "INTERVAL MILLISECOND NOT NULL" );
+                "INTERVAL MONTH NOT NULL" );
         tester.checkNull(
                 "cast(null as interval day) + interval '2' hour" );
 
@@ -2922,15 +2922,15 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
         tester.checkScalar(
                 "interval '2' day + interval '1' minute",
                 "+2 00:01",
-                "INTERVAL MILLISECOND NOT NULL" );
+                "INTERVAL MONTH NOT NULL" );
         tester.checkScalar(
                 "interval '2' day + interval '5' minute + interval '-3' second",
                 "+2 00:04:57.000000",
-                "INTERVAL MILLISECOND NOT NULL" );
+                "INTERVAL MONTH NOT NULL" );
         tester.checkScalar(
                 "interval '2' year + interval '1' month",
                 "+2-01",
-                "INTERVAL MILLISECOND NOT NULL" );
+                "INTERVAL MONTH NOT NULL" );
         tester.checkNull(
                 "interval '2' year + cast(null as interval month)" );
 

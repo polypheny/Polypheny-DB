@@ -163,7 +163,7 @@ public class PolyInterval extends PolyValue {
             case YEAR, QUARTER, MONTH, YEAR_TO_MONTH -> {
                 return PolyLong.of( months );
             }
-            case DAY, DOW, DOY, HOUR, MINUTE, SECOND, MILLISECOND, MINUTE_TO_SECOND, HOUR_TO_MINUTE, WEEK -> {
+            case DAY, DOW, DOY, HOUR, MINUTE, SECOND, MILLISECOND, MINUTE_TO_SECOND, HOUR_TO_MINUTE, WEEK, DAY_TO_HOUR, DAY_TO_MINUTE, DAY_TO_MILLISECOND, DAY_TO_SECOND, HOUR_TO_SECOND -> {
                 return PolyLong.of( millis );
             }
             default -> throw new NotImplementedException( "get Leap" );

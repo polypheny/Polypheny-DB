@@ -17,6 +17,7 @@
 package org.polypheny.db.languages;
 
 
+import java.io.Serial;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
@@ -126,6 +127,7 @@ public class NodeParseException extends Exception implements PolyphenyDbParserEx
      * SqlParseException is serializable but is not available on the client.
      * This implementation converts this SqlParseException into a vanilla {@link RuntimeException} with the same message.
      */
+    @Serial
     private Object writeReplace() {
         return new RuntimeException( getClass().getName() + ": " + getMessage() );
     }
