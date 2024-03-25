@@ -61,6 +61,7 @@ public abstract class PIStatement {
         }
         try {
             iterator.close();
+            iterator = null;
         } catch ( Exception e ) {
             throw new GenericRuntimeException( "Closing of open result iterator failed" );
         }

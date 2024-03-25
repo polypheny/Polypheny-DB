@@ -59,13 +59,12 @@ public class PIPreparedNamedStatement extends PIPreparedStatement {
 
     @SuppressWarnings("Duplicates")
     public StatementResult execute( Map<String, PolyValue> values, int fetchSize ) throws Exception {
-        synchronized ( client ) {
+        synchronized ( this ) {
             if ( statement == null ) {
                 statement = client.getCurrentOrCreateNewTransaction().createStatement();
             } else {
                 statement.getDataContext().resetParameterValues();
             }
-            closeResults();
             List<PolyValue> valueList = namedValueProcessor.transformValueMap( values );
             for ( int i = 0; i < valueList.size(); i++ ) {
                 statement.getDataContext().addParameterValues( i, null, List.of( valueList.get( i ) ) );
