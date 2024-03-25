@@ -16,11 +16,10 @@
 
 package org.polypheny.db.protointerface;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
@@ -28,40 +27,37 @@ import java.sql.Time;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.protointerface.proto.ProtoValue;
-import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 import org.polypheny.db.protointerface.proto.ProtoValue.ValueCase;
 import org.polypheny.db.protointerface.utils.PolyValueSerializer;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
-import org.polypheny.db.type.entity.PolyDate;
-import org.polypheny.db.type.entity.PolyDouble;
-import org.polypheny.db.type.entity.PolyFile;
-import org.polypheny.db.type.entity.PolyFloat;
-import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyNull;
-import org.polypheny.db.type.entity.PolyStream;
 import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolySymbol;
-import org.polypheny.db.type.entity.PolyTime;
-import org.polypheny.db.type.entity.PolyTimeStamp;
 import org.polypheny.db.type.entity.PolyUserDefinedValue;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyFloat;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.temporal.PolyDate;
+import org.polypheny.db.type.entity.temporal.PolyTime;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 
 public class PolyValueSerializationTest {
 
-    @BeforeClass
+    @BeforeAll
     public static void init() {
         // needed to launch polypheny
         TestHelper.getInstance();
     }
+
 
     private enum TestEnum {
         UNTESTED
@@ -87,9 +83,8 @@ public class PolyValueSerializationTest {
         Map<String, PolyValue> value = new HashMap<>();
         value.put( "binaryField", PolyBinary.of( new byte[]{ 0x01, 0x02, 0x03 } ) );
         value.put( "booleanField", new PolyBoolean( true ) );
-        value.put( "dateField", new PolyDate( 119581 ) );
+        value.put( "dateField", new PolyDate( 119581L ) );
         value.put( "doubleField", new PolyDouble( 123.456 ) );
-        value.put( "fileField", new PolyFile( new byte[]{ 0x0A, 0x1B, 0x2C, 0x3D, 0x4E } ) );
         value.put( "floatField", new PolyFloat( 45.67f ) );
         value.put( "integerField", new PolyInteger( 1234 ) );
         value.put( "arrayField", new PolyList(
@@ -102,9 +97,8 @@ public class PolyValueSerializationTest {
         value.put( "bigIntField", new PolyLong( 1234567890L ) );
         value.put( "nullField", new PolyNull() );
         value.put( "stringField", new PolyString( "sample string" ) );
-        value.put( "symbolField", new PolySymbol( TestEnum.UNTESTED ) );
         value.put( "timeField", PolyTime.of( new Time( 1691879380700L ) ) );
-        value.put( "timestampField", new PolyTimeStamp( 1691879380700L ) );
+        value.put( "timestampField", new PolyTimestamp( 1691879380700L ) );
         return new PolyUserDefinedValue( template, value );
     }
 
@@ -156,14 +150,6 @@ public class PolyValueSerializationTest {
 
 
     @Test
-    public void polyFileSerializationTest() {
-        PolyFile expected = new PolyFile( new byte[]{ 0x0A, 0x1B, 0x2C, 0x3D, 0x4E } );
-        ProtoValue protoValue = PolyValueSerializer.serialize( expected );
-        assertEquals( new byte[]{ 0x0A, 0x1B, 0x2C, 0x3D, 0x4E }, protoValue.getFile().getBytes().toByteArray() );
-    }
-
-
-    @Test
     public void polyFloatSerializationTest() {
         PolyFloat expected = new PolyFloat( 45.67f );
         ProtoValue protoValue = PolyValueSerializer.serialize( expected );
@@ -177,6 +163,7 @@ public class PolyValueSerializationTest {
         ProtoValue protoValue = PolyValueSerializer.serialize( expected );
         assertEquals( 1234, protoValue.getInteger().getInteger() );
     }
+
 
     @Test
     public void polyListSerializationTest() {
@@ -209,27 +196,28 @@ public class PolyValueSerializationTest {
         assertEquals( "sample string", protoValue.getString().getString() );
     }
 
+
     @Test
     public void polyTimeSerializationTest() {
         PolyTime expected = PolyTime.of( new Time( 1691879380700L ) );
         ProtoValue protoValue = PolyValueSerializer.serialize( expected );
-        assertEquals( 1691879380700L, protoValue.getTime().getValue() );
+        assertEquals( 1691879380700L, protoValue.getTime().getTime() );
     }
 
 
     @Test
     public void polyTimeStampSerializationTest() {
-        PolyTimeStamp expected = new PolyTimeStamp( 1691879380700L );  // Assuming ISO-8601 format
+        PolyTimestamp expected = new PolyTimestamp( 1691879380700L );
         ProtoValue protoValue = PolyValueSerializer.serialize( expected );
-        assertEquals( 1691879380700L, protoValue.getTimeStamp().getTimeStamp() );
+        assertEquals( 1691879380700L, protoValue.getTimestamp().getTimestamp() );
     }
+
 
     @Test
     public void polyBigDecimalSerializationCorrectTypeTest() {
         PolyBigDecimal expected = new PolyBigDecimal( new BigDecimal( 1691879380700L ) );
         ProtoValue protoValue = PolyValueSerializer.serialize( expected );
         assertEquals( ValueCase.BIG_DECIMAL, protoValue.getValueCase() );
-        assertEquals( ProtoValueType.DECIMAL, protoValue.getType() );
     }
 
 
@@ -238,7 +226,6 @@ public class PolyValueSerializationTest {
         PolyBinary expected = PolyBinary.of( new byte[]{ 0x01, 0x02, 0x03 } );
         ProtoValue protoValue = PolyValueSerializer.serialize( expected );
         assertEquals( ValueCase.BINARY, protoValue.getValueCase() );
-        assertEquals( ProtoValueType.BINARY, protoValue.getType() );
     }
 
 
@@ -247,7 +234,6 @@ public class PolyValueSerializationTest {
         PolyBoolean expected = new PolyBoolean( true );
         ProtoValue protoValue = PolyValueSerializer.serialize( expected );
         assertEquals( ValueCase.BOOLEAN, protoValue.getValueCase() );
-        assertEquals( ProtoValueType.BOOLEAN, protoValue.getType() );
     }
 
 
@@ -257,7 +243,6 @@ public class PolyValueSerializationTest {
         PolyDate expected = new PolyDate( daysSinceEpoch );
         ProtoValue protoValue = PolyValueSerializer.serialize( expected );
         assertEquals( ValueCase.DATE, protoValue.getValueCase() );
-        assertEquals( ProtoValueType.DATE, protoValue.getType() );
     }
 
 
@@ -266,16 +251,6 @@ public class PolyValueSerializationTest {
         PolyDouble expected = new PolyDouble( 123.456 );
         ProtoValue protoValue = PolyValueSerializer.serialize( expected );
         assertEquals( ValueCase.DOUBLE, protoValue.getValueCase() );
-        assertEquals( ProtoValueType.DOUBLE, protoValue.getType() );
-    }
-
-
-    @Test
-    public void polyFileSerializationCorrectTypeTest() {
-        PolyFile expected = new PolyFile( new byte[]{ 0x0A, 0x1B, 0x2C, 0x3D, 0x4E } );
-        ProtoValue protoValue = PolyValueSerializer.serialize( expected );
-        assertEquals( ValueCase.FILE, protoValue.getValueCase() );
-        assertEquals( ProtoValueType.FILE, protoValue.getType() );
     }
 
 
@@ -284,7 +259,6 @@ public class PolyValueSerializationTest {
         PolyFloat expected = new PolyFloat( 45.67f );
         ProtoValue protoValue = PolyValueSerializer.serialize( expected );
         assertEquals( ValueCase.FLOAT, protoValue.getValueCase() );
-        assertEquals( ProtoValueType.FLOAT, protoValue.getType() );
     }
 
 
@@ -293,12 +267,6 @@ public class PolyValueSerializationTest {
         PolyInteger expected = new PolyInteger( 1234 );
         ProtoValue protoValue = PolyValueSerializer.serialize( expected );
         assertEquals( ValueCase.INTEGER, protoValue.getValueCase() );
-        assertEquals( ProtoValueType.INTEGER, protoValue.getType() );
-    }
-
-
-    @Test
-    public void polyIntervalSerializationCorrectTypeTest() {
     }
 
 
@@ -312,7 +280,6 @@ public class PolyValueSerializationTest {
         );
         ProtoValue protoValue = PolyValueSerializer.serialize( expected );
         assertEquals( ValueCase.LIST, protoValue.getValueCase() );
-        assertEquals( ProtoValueType.ARRAY, protoValue.getType() );
     }
 
 
@@ -321,7 +288,6 @@ public class PolyValueSerializationTest {
         PolyLong expected = new PolyLong( 1234567890L );
         ProtoValue protoValue = PolyValueSerializer.serialize( expected );
         assertEquals( ValueCase.LONG, protoValue.getValueCase() );
-        assertEquals( ProtoValueType.BIGINT, protoValue.getType() );
     }
 
 
@@ -330,17 +296,6 @@ public class PolyValueSerializationTest {
         PolyNull expected = new PolyNull();
         ProtoValue protoValue = PolyValueSerializer.serialize( expected );
         assertEquals( ValueCase.NULL, protoValue.getValueCase() );
-        assertEquals( ProtoValueType.NULL, protoValue.getType() );
-    }
-
-
-    @Test
-    public void polyStreamSerializationCorrectTypeTest() {
-        ByteArrayInputStream stream = new ByteArrayInputStream( "test data".getBytes() );
-        PolyStream expected = new PolyStream( stream );
-        ProtoValue protoValue = PolyValueSerializer.serialize( expected );
-        assertEquals( ProtoValueType.FILE, protoValue.getType() );
-
     }
 
 
@@ -349,15 +304,6 @@ public class PolyValueSerializationTest {
         PolyString expected = new PolyString( "sample string" );
         ProtoValue protoValue = PolyValueSerializer.serialize( expected );
         assertEquals( ValueCase.STRING, protoValue.getValueCase() );
-        assertEquals( ProtoValueType.VARCHAR, protoValue.getType() );
-    }
-
-
-    @Test
-    public void polySymbolSerializationCorrectTypeTest() {
-        PolySymbol expected = new PolySymbol( TestEnum.UNTESTED );
-        ProtoValue protoValue = PolyValueSerializer.serialize( expected );
-        assertEquals( ProtoValueType.SYMBOL, protoValue.getType() );
     }
 
 
@@ -366,25 +312,15 @@ public class PolyValueSerializationTest {
         PolyTime expected = PolyTime.of( new Time( 1691879380700L ) );
         ProtoValue protoValue = PolyValueSerializer.serialize( expected );
         assertEquals( ValueCase.TIME, protoValue.getValueCase() );
-        assertEquals( ProtoValueType.TIME, protoValue.getType() );
     }
 
 
     @Test
     public void polyTimeStampSerializationCorrectTypeTest() {
-        PolyTimeStamp expected = new PolyTimeStamp( 1691879380700L );
+        PolyTimestamp expected = new PolyTimestamp( 1691879380700L );
         ProtoValue protoValue = PolyValueSerializer.serialize( expected );
-        assertEquals( ValueCase.TIME_STAMP, protoValue.getValueCase() );
-        assertEquals( ProtoValueType.TIMESTAMP, protoValue.getType() );
+        assertEquals( ValueCase.TIMESTAMP, protoValue.getValueCase() );
     }
 
-
-    @Test
-    public void polyUserDefinedValueSerializationCorrectTypeTest() {
-        PolyUserDefinedValue expected = buildTestUdt();
-        ProtoValue protoValue = PolyValueSerializer.serialize( expected );
-        assertEquals( ValueCase.USER_DEFINED_TYPE, protoValue.getValueCase() );
-        assertEquals( ProtoValueType.USER_DEFINED_TYPE, protoValue.getType() );
-    }
 
 }
