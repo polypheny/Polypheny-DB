@@ -827,7 +827,7 @@ public class RexToLixTranslator {
             } else if ( toType == PolyTime.class ) {
                 return Expressions.call( PolyTime.class, "convert", operand );
             }
-            log.warn( "Converter missing " + toType );
+            log.debug( "Converter missing " + toType );
         }
 
         return Expressions.convert_( operand, toType );

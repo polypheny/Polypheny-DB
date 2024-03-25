@@ -24,7 +24,6 @@ import com.fasterxml.jackson.core.TreeNode;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -240,13 +239,12 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
 
         @Override
         public PolyDocument deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException {
-            Map<PolyString, PolyValue> values = new HashMap<>();
-            ObjectMapper mapper = (ObjectMapper) p.getCodec();
+            TreeNode n = JSON_WRAPPER.readTree( p );
 
-            TreeNode n = mapper.readTree( p );
+            Map<PolyString, PolyValue> values = new HashMap<>();
             ((ArrayNode) n.get( "_ps" )).forEach( e -> {
                 PolyString key = PolyString.of( e.get( 0 ).asText() );
-                PolyValue value = mapper.convertValue( e.get( 1 ), PolyValue.class );
+                PolyValue value = JSON_WRAPPER.convertValue( e.get( 1 ), PolyValue.class );
                 values.put( key, value );
             } );
 

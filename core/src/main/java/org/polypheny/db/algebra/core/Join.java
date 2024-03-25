@@ -133,7 +133,7 @@ public abstract class Join extends BiAlg {
             if ( condition.getType().getPolyType() != PolyType.BOOLEAN ) {
                 return litmus.fail( "condition must be boolean: {}", condition.getType() );
             }
-            // The input to the condition is a row type consisting of system fields, left fields, and right fields. Very similar to the output row type, except that fields
+            // The input to the condition is a row type consisting of left fields, and right fields. Very similar to the output row type, except that fields
             // have not yet been made due to outer joins.
             RexChecker checker =
                     new RexChecker(

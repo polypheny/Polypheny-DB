@@ -222,7 +222,7 @@ public class LanguageCrud {
             return new PolyGraph( PolyMap.of( new HashMap<>() ), PolyMap.of( new HashMap<>() ) );
         }
 
-        ResultIterator iterator = context.execute( transaction.createStatement() ).getIterator();
+        ResultIterator iterator = context.execute( context.getStatement() ).getIterator();
         List<List<PolyValue>> res = iterator.getNextBatch();
 
         try {
@@ -232,7 +232,11 @@ public class LanguageCrud {
             throw new GenericRuntimeException( "Error while committing graph retrieval query." );
         }
 
-        return res.get( 0 ).get( 0 ).asGraph();
+        if ( res.size() == 1 && res.get( 0 ).size() == 1 && res.get( 0 ).get( 0 ).isGraph() ) {
+            return res.get( 0 ).get( 0 ).asGraph();
+        }
+
+        throw new GenericRuntimeException( "Error while retrieving graph." );
     }
 
 

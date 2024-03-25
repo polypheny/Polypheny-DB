@@ -275,7 +275,7 @@ public class AlgMetadataQuery {
      * Returns the {@link BuiltInMetadata.CumulativeCost#getCumulativeCost()} statistic.
      *
      * @param alg the relational expression
-     * @return estimated cost, or null if no algiable estimate can be determined
+     * @return estimated cost, or null if no reliable estimate can be determined
      */
     public AlgOptCost getCumulativeCost( AlgNode alg ) {
         for ( ; ; ) {
@@ -292,7 +292,7 @@ public class AlgMetadataQuery {
      * Returns the {@link BuiltInMetadata.NonCumulativeCost#getNonCumulativeCost()} statistic.
      *
      * @param alg the relational expression
-     * @return estimated cost, or null if no algiable estimate can be determined
+     * @return estimated cost, or null if no reliable estimate can be determined
      */
     public AlgOptCost getNonCumulativeCost( AlgNode alg ) {
         for ( ; ; ) {
@@ -309,7 +309,7 @@ public class AlgMetadataQuery {
      * Returns the {@link BuiltInMetadata.PercentageOriginalRows#getPercentageOriginalRows()} statistic.
      *
      * @param alg the relational expression
-     * @return estimated percentage (between 0.0 and 1.0), or null if no algiable estimate can be determined
+     * @return estimated percentage (between 0.0 and 1.0), or null if no reliable estimate can be determined
      */
     public Double getPercentageOriginalRows( AlgNode alg ) {
         for ( ; ; ) {
@@ -411,7 +411,7 @@ public class AlgMetadataQuery {
      *
      * @param alg the relational expression
      * @param predicate predicate whose selectivity is to be estimated against {@code alg}'s output
-     * @return estimated selectivity (between 0.0 and 1.0), or null if no algiable estimate can be determined
+     * @return estimated selectivity (between 0.0 and 1.0), or null if no reliable estimate can be determined
      */
     public Double getSelectivity( AlgNode alg, RexNode predicate ) {
         for ( ; ; ) {
@@ -537,7 +537,7 @@ public class AlgMetadataQuery {
      *
      * @param alg the relational expression
      * @param groupKey column mask representing the subset of columns for which the row count will be determined
-     * @return distinct row count for the given groupKey, or null if no algiable estimate can be determined
+     * @return distinct row count for the given groupKey, or null if no reliable estimate can be determined
      */
     public Double getPopulationSize(
             AlgNode alg,
@@ -689,7 +689,7 @@ public class AlgMetadataQuery {
      * @param alg the relational expression
      * @param groupKey column mask representing group by columns
      * @param predicate pre-filtered predicates
-     * @return distinct row count for groupKey, filtered by predicate, or null if no algiable estimate can be determined
+     * @return distinct row count for groupKey, filtered by predicate, or null if no reliable estimate can be determined
      */
     public Double getDistinctRowCount( AlgNode alg, ImmutableBitSet groupKey, RexNode predicate ) {
         for ( ; ; ) {
