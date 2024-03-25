@@ -55,13 +55,12 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
 
     public List<Long> executeBatch( List<List<PolyValue>> valuesBatch ) {
         List<Long> updateCounts = new LinkedList<>();
-        synchronized ( client ) {
+        synchronized ( this ) {
             if ( statement == null ) {
                 statement = client.getCurrentOrCreateNewTransaction().createStatement();
             } else {
                 statement.getDataContext().resetParameterValues();
             }
-            closeResults();
             List<AlgDataType> types = valuesBatch.stream()
                     .map( v -> v.get( 0 ).getType() )
                     .map( v -> statement.getTransaction().getTypeFactory().createPolyType( v ) )
@@ -79,7 +78,7 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
 
     @SuppressWarnings("Duplicates")
     public StatementResult execute( List<PolyValue> values, int fetchSize ) {
-        synchronized ( client ) {
+        synchronized ( this ) {
             if ( statement == null ) {
                 statement = client.getCurrentOrCreateNewTransaction().createStatement();
             } else {
