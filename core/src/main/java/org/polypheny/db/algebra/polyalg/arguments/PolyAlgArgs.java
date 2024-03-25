@@ -23,7 +23,6 @@ import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.Parameter;
-import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
 
 /**
  * Represents the parameters with corresponding values (PolyAlgArg) for an AlgNode instance.
@@ -53,8 +52,8 @@ public class PolyAlgArgs {
             if ( args.containsKey( p ) ) {
                 PolyAlgArg arg = getArg( p );
                 String value = arg.toPolyAlg( context );
-                if ( !p.defaultValue().equals( value ) ) {
-                    joiner.add( p.name() + "=" + value );
+                if ( !p.getDefaultValue().equals( value ) ) {
+                    joiner.add( p.getName() + "=" + value );
                 }
             }
         }
@@ -73,7 +72,7 @@ public class PolyAlgArgs {
 
 
     private PolyAlgArgs put( Parameter p, PolyAlgArg arg ) {
-        assert p.type() == arg.getType();
+        assert p.getType() == arg.getType();
 
         args.put( p, arg );
         return this;

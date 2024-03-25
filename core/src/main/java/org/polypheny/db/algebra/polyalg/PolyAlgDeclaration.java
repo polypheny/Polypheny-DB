@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Builder;
+import lombok.Data;
 import lombok.NonNull;
 import lombok.Singular;
 
@@ -115,15 +116,23 @@ public class PolyAlgDeclaration {
      *     <li>Keyword arguments: Arguments are preceded by the name of the parameter. Keyword arguments can be omitted, in which case the defaultValue is used.</li>
      * </ul>
      *
-     * @param name The name of this Parameter
-     * @param aliases List of alias names that can additionally be used to identify this parameter.
-     * @param tags List of ParameterTags associated with this Parameter
-     * @param type The type of this Parameter
-     * @param isMultiValued Boolean indicating whether an argument consisting of multiple values can be specified
-     * @param defaultValue The default value for this Parameter or null if it has no default value (if it should have a default value of null, use an empty string instead)
+     * The boolean isMultiValued indicates whether an argument can consist of a list of values of the specified type.
      */
     @Builder
-    public record Parameter(@NonNull String name, @Singular ImmutableList<String> aliases, @Singular ImmutableList<ParameterTag> tags, @NonNull ParamType type, boolean isMultiValued, String defaultValue) {
+    @Data
+    public static class Parameter {
+
+        @NonNull
+        private final String name;
+        @Singular
+        private final ImmutableList<String> aliases;
+        @Singular
+        private final ImmutableList<ParameterTag> tags;
+        @NonNull
+        private final ParamType type;
+        private final boolean isMultiValued;
+        private final String defaultValue;
+
 
         public boolean isPositional() {
             return defaultValue == null;
