@@ -209,7 +209,9 @@ public class AdapterManager {
         // Check if the store has any placements
         List<AllocationEntity> placements = Catalog.getInstance().getSnapshot().alloc().getEntitiesOnAdapter( logicalAdapter.id ).orElseThrow( () -> new GenericRuntimeException( "There is still data placed on this data store" ) );
         if ( !placements.isEmpty() ) {
-            throw new GenericRuntimeException( "There is still data placed on this data store" );
+            if ( adapterInstance instanceof DataStore<?> ) {
+                throw new GenericRuntimeException( "There is still data placed on this data store" );
+            }
         }
 
         // Shutdown store

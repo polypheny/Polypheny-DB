@@ -284,7 +284,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void dropAdapter( String name, Statement statement ) {
-        long defaultNamespaceId = 1;
+        long defaultNamespaceId = Catalog.defaultNamespaceId;
         name = name.replace( "'", "" );
 
         LogicalAdapter adapter = catalog.getSnapshot().getAdapter( name ).orElseThrow();
@@ -318,6 +318,9 @@ public class DdlManagerImpl extends DdlManager {
                     for ( AllocationColumn column : allocation.unwrap( AllocationTable.class ).get().getColumns() ) {
                         catalog.getAllocRel( defaultNamespaceId ).deleteColumn( allocation.id, column.columnId );
                     }
+
+                    // delete allocation
+                    catalog.getAllocRel( defaultNamespaceId ).deleteAllocation( allocation.id );
 
                     // Remove primary keys
                     catalog.getLogicalRel( defaultNamespaceId ).deletePrimaryKey( table.id );

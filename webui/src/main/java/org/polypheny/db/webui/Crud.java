@@ -17,6 +17,7 @@
 package org.polypheny.db.webui;
 
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
@@ -2063,8 +2064,21 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     /**
      * Deploy a new adapter
      */
-    void addAdapter( final Context ctx ) {
-        AdapterModel a = ctx.bodyAsClass( AdapterModel.class );
+    void addAdapter( final Context ctx ) throws ServletException, IOException {
+        initMultipart( ctx );
+        String body = "";
+        Map<String, InputStream> inputStreams = new HashMap<>();
+
+        // collect all files e.g. csv files
+        for ( Part part : ctx.req.getParts() ) {
+            if ( part.getName().equals( "body" ) ) {
+                body = IOUtils.toString( ctx.req.getPart( "body" ).getInputStream(), StandardCharsets.UTF_8 );
+            } else {
+                inputStreams.put( part.getName(), part.getInputStream() );
+            }
+        }
+
+        AdapterModel a = HttpServer.mapper.readValue( body, AdapterModel.class );
         Map<String, String> settings = new HashMap<>();
 
         ConnectionMethod method = ConnectionMethod.UPLOAD;
@@ -2086,10 +2100,14 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         ctx.json( RelationalResult.builder().exception( e ).build() );
                         return;
                     }
+                    settings.put( set.name, entry.value() );
                 } else {
-                    handleUploadFiles( null, a, setting );
+                    List<String> fileNames = HttpServer.mapper.readValue( entry.value(), new TypeReference<>() {
+                    } );
+                    String directory = handleUploadFiles( inputStreams, fileNames, setting, a );
+                    settings.put( set.name, directory );
                 }
-                settings.put( set.name, entry.value() );
+
 
             } else {
                 settings.put( set.name, entry.value() );
@@ -2133,8 +2151,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    private static void handleUploadFiles( Map<String, InputStream> inputStreams, AdapterModel a, AbstractAdapterSettingDirectory setting ) {
-        for ( String fileName : setting.fileNames ) {
+    private static String handleUploadFiles( Map<String, InputStream> inputStreams, List<String> fileNames, AbstractAdapterSettingDirectory setting, AdapterModel a ) {
+        for ( String fileName : fileNames ) {
             setting.inputStreams.put( fileName, inputStreams.get( fileName ) );
         }
         File path = PolyphenyHomeDirManager.getInstance().registerNewFolder( "data/csv/" + a.name );
@@ -2146,7 +2164,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 throw new GenericRuntimeException( e );
             }
         }
-        setting.setDirectory( path.getAbsolutePath() );
+        return path.getAbsolutePath();
     }
 
 
