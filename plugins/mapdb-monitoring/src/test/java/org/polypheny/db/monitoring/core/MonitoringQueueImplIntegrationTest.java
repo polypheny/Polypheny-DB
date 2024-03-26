@@ -69,7 +69,7 @@ class MonitoringQueueImplIntegrationTest {
 
         for ( int i = 0; i < 8; i++ ) {
             if ( statisticRepo.count != 15 ) {
-                Thread.sleep( 5000L );
+                Thread.sleep( 8000L );
             }
         }
 
