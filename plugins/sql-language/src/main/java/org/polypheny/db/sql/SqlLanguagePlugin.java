@@ -23,6 +23,8 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
@@ -169,6 +171,7 @@ import org.polypheny.db.webui.crud.LanguageCrud;
 @Slf4j
 public class SqlLanguagePlugin extends PolyPlugin {
 
+    public static final String LIMIT = "limit";
     @Getter
     @VisibleForTesting
     private static boolean isInit = false;
@@ -220,13 +223,27 @@ public class SqlLanguagePlugin extends PolyPlugin {
 
     private static QueryContext removeLimit( QueryContext queryContext ) {
         String lowercase = queryContext.getQuery().toLowerCase();
-        String limit = "limit";
-        if ( !lowercase.contains( limit ) ) {
+        if ( !lowercase.contains( LIMIT ) ) {
             return queryContext;
         }
 
-        int batch = Integer.parseInt( lowercase.split( limit )[1].trim().replace( ";", "" ) );
-        return queryContext.toBuilder().query( queryContext.getQuery() ).batch( batch ).build();
+        // ends with "LIMIT <number>" or "LIMIT <number>;" with optional whitespace, matches <number>
+        Pattern pattern = Pattern.compile( "LIMIT\\s+(\\d+)\\s*(?:;\\s*\\z|$)", Pattern.CASE_INSENSITIVE );
+        String limitClause = null;
+        Matcher matcher = pattern.matcher( lowercase );
+        if ( matcher.find() && matcher.groupCount() > 0 ) {
+            limitClause = matcher.group( 1 );
+        }
+        if ( limitClause == null ) {
+            return queryContext;
+        }
+        try {
+            int limit = Integer.parseInt( limitClause.trim() );
+            return queryContext.toBuilder().query( queryContext.getQuery() ).batch( limit ).build();
+        } catch ( NumberFormatException e ) {
+            log.error( "Could not parse limit clause: {}", limitClause );
+            return queryContext;
+        }
     }
 
 

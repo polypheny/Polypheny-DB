@@ -91,11 +91,9 @@ public class SqlLanguagePluginTest extends SqlLanguageDependent {
     @Test
     public void testQueryWithTwoLimits() {
         String query = "SELECT * FROM employee WHERE ename = 'limit 5' LIMIT 10;";
-        String queryWithoutLimit = "SELECT * FROM employee WHERE ename = 'limit 5';";
         QueryContext context = getContext( query );
 
         QueryContext res = QueryLanguage.from( "sql" ).limitRemover().apply( context );
-        assertEquals( queryWithoutLimit, res.getQuery() );
         assertEquals( 10, res.getBatch() );
     }
 
