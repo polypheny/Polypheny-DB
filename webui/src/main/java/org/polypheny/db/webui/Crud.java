@@ -609,11 +609,13 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 .query( query )
                 .language( language )
                 .origin( ORIGIN )
+                .statement( statement )
+                .transactions( new ArrayList<>( List.of( transaction ) ) )
                 .transactionManager( transactionManager )
                 .build();
 
         UIRequest request = UIRequest.builder().build();
-        Result<?, ?> result = LanguageCrud.anyQueryResult( context, request ).get( 0 );//executeSqlUpdate( statement, transaction, query );
+        Result<?, ?> result = LanguageCrud.anyQueryResult( context, request ).get( 0 );
         ctx.json( result );
 
     }
@@ -2682,13 +2684,14 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
     void getFile( final Context ctx ) {
-        getFile( ctx, ".polypheny/tmp/", true );
+        getFile( ctx, "tmp", true );
     }
 
 
     private File getFile( Context ctx, String location, boolean sendBack ) {
         String fileName = ctx.pathParam( "file" );
-        File f = new File( System.getProperty( "user.home" ), location + fileName );
+        File folder = PolyphenyHomeDirManager.getInstance().registerNewFolder( location );
+        File f = PolyphenyHomeDirManager.getInstance().registerNewFile( folder, fileName );
         if ( !f.exists() ) {
             ctx.status( 404 );
             ctx.result( "" );

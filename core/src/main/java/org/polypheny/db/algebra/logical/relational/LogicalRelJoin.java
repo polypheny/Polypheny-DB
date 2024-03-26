@@ -79,7 +79,6 @@ public final class LogicalRelJoin extends Join implements RelAlg {
      * @param joinType Join type
      * @param variablesSet Set of variables that are set by the LHS and used by the RHS and are not available to nodes above this LogicalJoin in the tree
      * @param semiJoinDone Whether this join has been translated to a semi-join
-     * @param systemFieldList List of system fields that will be prefixed to output row type; typically empty but must not be null
      * @see #isSemiJoinDone()
      */
     public LogicalRelJoin( AlgCluster cluster, AlgTraitSet traitSet, AlgNode left, AlgNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinAlgType joinType, boolean semiJoinDone ) {

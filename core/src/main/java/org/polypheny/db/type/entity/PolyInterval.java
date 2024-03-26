@@ -63,19 +63,19 @@ public class PolyInterval extends PolyValue {
 
     private static MonthsMilliseconds normalize( Long value, TimeUnit unit ) {
         if ( unit == TimeUnit.YEAR ) {
-            return new MonthsMilliseconds( value, value * 12 );
+            return new MonthsMilliseconds( value * 12, 0 );
         } else if ( unit == TimeUnit.MONTH ) {
-            return new MonthsMilliseconds( value, value );
+            return new MonthsMilliseconds( value, 0 );
         } else if ( unit == TimeUnit.DAY ) {
-            return new MonthsMilliseconds( value * 24 * 60 * 60 * 1000, value * 24 * 60 * 60 * 1000 / 1000 / 60 / 60 / 24 );
+            return new MonthsMilliseconds( 0, value * 24 * 60 * 60 * 1000 );
         } else if ( unit == TimeUnit.HOUR ) {
-            return new MonthsMilliseconds( value * 60 * 60 * 1000, value * 60 * 60 * 1000 / 1000 / 60 / 60 );
+            return new MonthsMilliseconds( 0, value * 60 * 60 * 1000 );
         } else if ( unit == TimeUnit.MINUTE ) {
-            return new MonthsMilliseconds( value * 60 * 1000, value * 60 * 1000 / 1000 / 60 );
+            return new MonthsMilliseconds( 0, value * 60 * 1000 );
         } else if ( unit == TimeUnit.SECOND ) {
-            return new MonthsMilliseconds( value * 1000, value * 1000 / 1000 );
+            return new MonthsMilliseconds( 0, value * 1000 );
         } else if ( unit == TimeUnit.MILLISECOND ) {
-            return new MonthsMilliseconds( value, value );
+            return new MonthsMilliseconds( 0, value );
         } else {
             throw new NotImplementedException( "since Epoch" );
 

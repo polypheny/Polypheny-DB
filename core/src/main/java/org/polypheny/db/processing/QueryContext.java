@@ -31,6 +31,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Node;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
 
@@ -54,6 +55,9 @@ public class QueryContext {
 
     @Builder.Default
     long userId = Catalog.defaultUserId;
+
+    @Builder.Default
+    Statement statement = null;
 
     @NotNull
     String origin;

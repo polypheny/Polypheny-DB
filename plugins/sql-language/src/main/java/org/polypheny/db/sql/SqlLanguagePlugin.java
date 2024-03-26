@@ -225,9 +225,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
         if ( !lowercase.contains( limit ) ) {
             return queryContext;
         }
-        int index = lowercase.indexOf( limit );
 
-        String query = queryContext.getQuery().substring( 0, index );
         int batch = Integer.parseInt( lowercase.split( limit )[1].trim().replace( ";", "" ) );
         return queryContext.toBuilder().query( queryContext.getQuery() ).batch( batch ).build();
     }
@@ -270,9 +268,6 @@ public class SqlLanguagePlugin extends PolyPlugin {
             case "oracle":
                 tables.add( OracleSqlOperatorTable.instance() );
                 return;
-            //case "spatial":
-            //    tables.add( PolyphenyDbCatalogReader.operatorTable( GeoFunctions.class.getName() ) );
-            //    return;
             default:
                 throw new IllegalArgumentException( "Unknown operator table: " + s );
         }
