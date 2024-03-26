@@ -84,6 +84,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.polyalg.parser.PolyAlgParser;
 import org.polypheny.db.algebra.rules.AggregateProjectPullUpConstantsRule;
 import org.polypheny.db.algebra.rules.DateRangeRules;
 import org.polypheny.db.algebra.rules.FilterMergeRule;
@@ -1363,10 +1364,11 @@ public abstract class AlgOptUtil {
         //TODO: Delete lines for testing PolyAlg serialization
         StringBuilder sb = new StringBuilder();
         alg.buildPolyAlgebra( sb );
-        System.out.println(header);
-        System.out.println(sb);
+        System.out.println( "===== " + header + " =====" );
+        System.out.println( sb );
+        System.out.print( "----> " );
+        PolyAlgParser.parse( sb.toString() );
         System.out.println();
-
 
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter( sw );

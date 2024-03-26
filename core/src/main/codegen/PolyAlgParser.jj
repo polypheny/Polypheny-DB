@@ -1,0 +1,193 @@
+
+options {
+    STATIC = false;
+    IGNORE_CASE = true;
+    UNICODE_INPUT = true;
+}
+
+PARSER_BEGIN(PolyAlgParser)
+
+package org.polypheny.db.algebra.polyalg.parser;
+
+import java.io.StringReader;
+
+/**
+ * Parses Poly Algebra.
+ */
+public class PolyAlgParser {
+
+    /** Main entry point. */
+    public static void parse(String str) {
+        PolyAlgParser parser = new PolyAlgParser(new StringReader(str));
+
+
+        try {
+          parser.Input();
+          System.out.println("Successfully parsed input!");
+        } catch (Exception e) {
+          System.out.println("Could not parse input correctly:");
+          System.out.println(e.getMessage());
+          e.printStackTrace();
+        }
+    }
+
+}
+
+PARSER_END(PolyAlgParser)
+
+SKIP :
+{
+  " "
+| "\t"
+| "\n"
+| "\r"
+| "\f"
+}
+
+TOKEN :
+{
+  <LCURL: "{">
+| <RCURL: "}">
+| <LPAR: "(">
+| <RPAR: ")">
+| <LBRACK: "[">
+| <RBRACK: "]">
+| <SEP: ",">
+| <EQUALS: "=">
+| <AS: "AS">
+| <IDENTIFIER: (<LETTER> | <IDENTIFIER_SYMBOL>) (<LETTER> | <DIGIT> | <IDENTIFIER_SYMBOL>)+>
+| <NUMBER: (<DIGIT>)+ (".")? (<DIGIT>)*>
+| <#LETTER: ["_","a"-"z","A"-"Z","ö", "Ö", "ä", "Ä", "ü", "Ü", "à", "À", "ç","Ç", "á", "Á", "è", "È","í","Í", "î", "Î","ó","Ó","ò", "ô", "Ô", "Ò" , "í", "Í", "ë", "Ë", "â", "Â", "ï", "Ï", "é", "É", "ñ", "Ñ", "ß"] >
+| <#DIGIT: ["0"-"9"]>
+| <#IDENTIFIER_SYMBOL: ["#", "@", "$", "."]>
+| <SYMBOL: ~[",","{","}","(",")","[", "]", "\"", "'", "="]>
+| <QUOTED:
+      "\""
+      (
+           "\\" ~[]     //any escaped character
+      |                 //or
+          ~["\"","\\"]  //any character except quote or backslash
+      )*
+      "\""
+      |
+      "'"
+      (
+           "\\" ~[]     //any escaped character
+      |                 //or
+          ~["'","\\"]  //any character except single-quote or backslash
+      )*
+      "'">
+}
+
+/** Root production. */
+void Input() :
+{}
+{
+    Operator() <EOF>
+}
+
+
+void Operator() :
+{}
+{
+    OpName() <LBRACK> [Arguments()] <RBRACK> [<LPAR> [ChildOperators()] <RPAR>]
+}
+
+void ChildOperators() :
+{}
+{
+    Operator() (<SEP> Operator())*
+}
+
+void Arguments() :
+{}
+{
+    NamedArgument() (<SEP> NamedArgument())*
+}
+
+void NamedArgument() :
+{}
+{
+    [LOOKAHEAD(2) ParamName() <EQUALS> ] AliasedArgument()
+}
+
+
+void AliasedArgument() :
+{}
+{
+     Argument() [<AS> AliasName() ]
+}
+
+void Argument() :
+{}
+{
+     OuterExpression()
+     |
+     ListArgument()
+}
+
+void ListArgument() :
+{}
+{
+     <LBRACK> AliasedArgument() (<SEP> AliasedArgument())* <RBRACK>
+}
+
+void OuterExpression() :
+{}
+{
+    (
+        <LPAR> InnerExpression() <RPAR>
+        |
+        <LCURL> InnerExpression() <RCURL>
+        |
+        Literal()
+    ) [OuterExpression()]  // outer expressions cannot contain separators, as they could not always be differentiated from a ListArgument
+}
+
+void InnerExpression() : // An expression which appears within parentheses
+{}
+{
+    (
+        <LPAR> InnerExpression() <RPAR>
+        |
+        <LCURL> InnerExpression() <RCURL>
+        |
+        Literal()
+        |
+        <AS>  // inner expressions can contain <AS>, since we know it cannot be an alias for an argument
+    ) (<SEP>)* [InnerExpression()]  // inner expressions can contain separators!
+}
+
+void Literal() :
+{}
+{
+     <IDENTIFIER>
+     |
+     <NUMBER>
+     |
+     <SYMBOL>
+     |
+     <QUOTED>
+     |
+     <EQUALS>
+}
+
+void OpName() :
+{}
+{
+    <IDENTIFIER>
+    |
+    <QUOTED>
+}
+
+void AliasName() :
+{}
+{
+    OpName()
+}
+
+void ParamName() :
+{}
+{
+    OpName()
+}
