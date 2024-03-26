@@ -47,7 +47,6 @@ import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.processing.QueryContext;
-import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.sql.language.SqlAggFunction;
 import org.polypheny.db.sql.language.SqlAsOperator;
 import org.polypheny.db.sql.language.SqlBinaryOperator;
@@ -205,7 +204,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                 SqlParserImpl.FACTORY,
                 SqlProcessor::new,
                 SqlLanguagePlugin::getValidator,
-                SqlLanguagePlugin::toQueryNodes,
+                LanguageManager::toQueryNodes,
                 SqlLanguagePlugin::removeLimit );
         LanguageManager.getINSTANCE().addQueryLanguage( language );
         PolyPluginManager.AFTER_INIT.add( () -> {
@@ -230,11 +229,6 @@ public class SqlLanguagePlugin extends PolyPlugin {
         String query = queryContext.getQuery().substring( 0, index );
         int batch = Integer.parseInt( lowercase.split( limit )[1].trim().replace( ";", "" ) );
         return queryContext.toBuilder().query( queryContext.getQuery() ).batch( batch ).build();
-    }
-
-
-    public static List<ParsedQueryContext> toQueryNodes( QueryContext queries ) {
-        return LanguageManager.toQueryNodes( queries );
     }
 
 
