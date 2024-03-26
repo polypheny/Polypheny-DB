@@ -16,6 +16,7 @@
 
 package org.polypheny.db.algebra.polyalg.arguments;
 
+import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
@@ -23,6 +24,7 @@ import org.polypheny.db.rex.RexNode;
 
 public class RexArg implements PolyAlgArg {
 
+    @Getter
     private final RexNode node;
     private boolean omitTrue = false;
 
@@ -31,8 +33,9 @@ public class RexArg implements PolyAlgArg {
         this.node = node;
     }
 
+
     public RexArg( RexNode node, boolean omitTrue ) {
-        this(node);
+        this( node );
         this.omitTrue = omitTrue;
     }
 
@@ -52,7 +55,7 @@ public class RexArg implements PolyAlgArg {
     @Override
     public String toPolyAlg( AlgNode context ) {
         String str = node == null ? "" : node.toString();
-        if (omitTrue && str.equals( "true" )) {
+        if ( omitTrue && str.equals( "true" ) ) {
             return "";
         }
         if ( context == null || node == null ) {

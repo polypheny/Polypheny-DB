@@ -18,13 +18,16 @@ package org.polypheny.db.algebra.polyalg.arguments;
 
 import java.util.List;
 import java.util.function.Function;
+import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
 
 public class ListArg<E extends PolyAlgArg> implements PolyAlgArg {
 
+    @Getter
     private final List<E> args;
+    @Getter
     private final List<String> aliases;
     private final boolean unpackValues;
 

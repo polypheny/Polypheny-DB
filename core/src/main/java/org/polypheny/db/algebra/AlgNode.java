@@ -34,6 +34,8 @@
 package org.polypheny.db.algebra;
 
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -248,7 +250,7 @@ public interface AlgNode extends AlgOptNode, Cloneable {
 
     /**
      * Retrieves the PolyAlgDeclaration for this AlgNode implementation.
-     * This method should be static.
+     * This declaration is read only and can thus be a static object.
      *
      * @return PolyAlgDeclaration for this AlgNode implementation
      */
@@ -263,6 +265,26 @@ public interface AlgNode extends AlgOptNode, Cloneable {
      * @return PolyAlgArgs that maps parameters of the declaration to {@link org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg} that wraps the corresponding attribute
      */
     PolyAlgArgs collectAttributes();
+
+    /**
+     * Creates an instance of {@code AlgNode} using reflection, based on the provided class, arguments, and children.
+     * Implementations of this interface should implement {@code public static AlgNode create(PolyAlgArgs args, List<AlgNode> children)}.
+     * Otherwise, it will result in a NoSuchMethodException.
+     *
+     * @param clazz The class representing the implementation of {@code AlgNode}.
+     * @param args The arguments required for instantiation, whose {@code PolyAlgDeclaration} must correspond to the provided class.
+     * @param children The list of child nodes or an empty list if this node has no children
+     * @return A new instance of the provided class
+     * @throws RuntimeException If there is no method with the specified signature or an error occurred during instance creation
+     */
+    static AlgNode create( Class<? extends AlgNode> clazz, PolyAlgArgs args, List<AlgNode> children ) {
+        try {
+            Method method = clazz.getMethod( "create", PolyAlgArgs.class, List.class );
+            return (AlgNode) method.invoke( null, args, children );
+        } catch ( NoSuchMethodException | IllegalAccessException | InvocationTargetException e ) {
+            throw new RuntimeException( e );
+        }
+    }
 
     /**
      * Receives notification that this expression is about to be registered. The implementation of this method must at least register all child expressions.

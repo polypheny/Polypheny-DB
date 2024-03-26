@@ -104,6 +104,15 @@ public final class LogicalRelProject extends Project implements RelAlg {
     }
 
 
+    public static AlgNode create(PolyAlgArgs args, List<AlgNode> children) {
+        System.out.println("Creating AlgNode from LogicalRelProject");
+        ListArg<RexArg> projects= args.getArg( 0, ListArg.class );
+
+
+        return create( children.get( 0 ), projects.getArgs().stream().map( RexArg::getNode ).toList(), projects.getAliases() );
+    }
+
+
     public static LogicalRelProject identity( final AlgNode input ) {
         return create(
                 input,
