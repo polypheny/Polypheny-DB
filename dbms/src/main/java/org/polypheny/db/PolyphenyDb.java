@@ -32,6 +32,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.TimeZone;
 import java.util.UUID;
 import javax.inject.Inject;
@@ -447,6 +448,18 @@ public class PolyphenyDb {
         PolyPluginManager.initAfterTransaction( transactionManager );
 
         restore( authenticator, catalog );
+
+        // For convenience, try to start a unix listener directly in the .polypheny folder
+        if ( Catalog.mode == RunMode.TEST || Catalog.mode == RunMode.DEVELOPMENT ) {
+            try {
+                QueryInterfaceManager.getInstance().createQueryInterface( "Proto Interface (Unix transport)",
+                        "proto-interface-homedir-unix",
+                        Map.of( "path", PolyphenyHomeDirManager.getInstance().registerNewGlobalFile( "polypheny-proto.sock" ).getAbsolutePath() ) );
+            } catch ( Throwable t ) {
+                // As this is a convenience feature, we do not abort if it fails
+                log.info( "Could not start homedir unix listener: " + t.getMessage() );
+            }
+        }
 
         // Add tracker, which rechecks constraints after enabling
         ConstraintTracker tracker = new ConstraintTracker( transactionManager );
