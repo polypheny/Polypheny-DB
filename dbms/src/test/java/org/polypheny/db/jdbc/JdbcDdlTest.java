@@ -35,7 +35,7 @@ import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.jdbc.ProtoInterfaceServiceException;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
@@ -446,7 +446,7 @@ public class JdbcDdlTest {
                     boolean failed = false;
                     try {
                         statement.executeUpdate( "INSERT INTO ddltest(tprimary) VALUES ( null, null, null, null, null, 1, null, null, null, null, null )" );
-                    } catch ( ProtoInterfaceServiceException e ) {
+                    } catch ( PrismInterfaceServiceException e ) {
                         failed = true;
                     }
                     assertTrue( failed );
