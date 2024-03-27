@@ -110,7 +110,7 @@ public class PIServer {
                 return;
             }
             if ( e.getCause() instanceof IOException ) {
-                log.info( "accept {} connection: {}", name, e.getCause().getMessage() );
+                log.error( "accept {} connection: {}", name, e.getCause().getMessage() );
                 return;
             }
             throw e;
