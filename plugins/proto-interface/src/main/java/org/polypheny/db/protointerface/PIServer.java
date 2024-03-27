@@ -23,13 +23,18 @@ import java.net.Inet4Address;
 import java.net.InetSocketAddress;
 import java.net.StandardProtocolFamily;
 import java.net.UnixDomainSocketAddress;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.protointerface.PIPlugin.ProtoInterface;
@@ -44,21 +49,30 @@ public class PIServer {
 
     private final ServerSocketChannel server;
     private final static AtomicLong ID_COUNTER = new AtomicLong();
+    private final FileLock fileLock; // Needed for unix servers to keep a lock on the socket
 
 
-    private PIServer( ServerSocketChannel server, ClientManager clientManager, String name, Function<SocketChannel, Transport> createTransport ) throws IOException {
+    private PIServer( ServerSocketChannel server, ClientManager clientManager, String name, Function<SocketChannel, Transport> createTransport, @Nullable FileLock fileLock ) throws IOException {
         this.server = server;
+        this.fileLock = fileLock;
         log.info( "Proto Interface started and is listening for {} connections on {}", name.toLowerCase(), server.getLocalAddress() );
         Thread acceptor = new Thread( () -> acceptLoop( server, clientManager, name, createTransport ), "ProtoInterface" + name + "Server" );
         acceptor.start();
+    }
 
+
+    private PIServer( ServerSocketChannel server, ClientManager clientManager, String name, Function<SocketChannel, Transport> createTransport ) throws IOException {
+        this( server, clientManager, name, createTransport, null );
     }
 
 
     static PIServer startServer( ClientManager clientManager, ProtoInterface.Transport transport, Map<String, String> settings ) throws IOException {
         return switch ( transport ) {
             case PLAIN -> new PIServer( createInetServer( Integer.parseInt( settings.get( "port" ) ) ), clientManager, "Plain", PlainTransport::accept );
-            case UNIX -> new PIServer( createUnixServer( settings.get( "path" ) ), clientManager, "Unix", UnixTransport::accept );
+            case UNIX -> {
+                ServerAndLock sl = createUnixServer( settings.get( "path" ) );
+                yield new PIServer( sl.server, clientManager, "Unix", UnixTransport::accept, sl.lock );
+            }
         };
     }
 
@@ -69,26 +83,35 @@ public class PIServer {
     }
 
 
-    private static ServerSocketChannel createUnixServer( String path ) throws IOException {
+    private static ServerAndLock createUnixServer( String path ) throws IOException {
         File socket;
         if ( !path.endsWith( ".sock" ) ) {
             throw new IOException( "Socket paths must end with .sock" );
         }
         Path p = Paths.get( path );
+        Path lockPath;
         if ( p.isAbsolute() ) {
             socket = p.toFile();
+            lockPath = Paths.get( path + ".lock" );
         } else {
             if ( p.getNameCount() != 1 ) {
                 throw new IOException( "Relative socket paths may not contain directory separators" );
             }
             PolyphenyHomeDirManager phm = PolyphenyHomeDirManager.getInstance();
             socket = phm.registerNewFile( path );
+            lockPath = phm.registerNewFile( path + ".lock" ).toPath();
         }
-        socket.delete();
-        ServerSocketChannel s = ServerSocketChannel.open( StandardProtocolFamily.UNIX )
-                .bind( UnixDomainSocketAddress.of( socket.getAbsolutePath() ) );
-        socket.setWritable( true, false );
-        return s;
+        FileChannel fileChannel = FileChannel.open( lockPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE );
+        Optional<FileLock> fileLock = Optional.ofNullable( fileChannel.tryLock() );
+        if ( fileLock.isPresent() ) {
+            socket.delete();
+            ServerSocketChannel s = ServerSocketChannel.open( StandardProtocolFamily.UNIX )
+                    .bind( UnixDomainSocketAddress.of( socket.getAbsolutePath() ) );
+            socket.setWritable( true, false );
+            return new ServerAndLock( s, fileLock.get() );
+        } else {
+            throw new IOException( "There is already a Polypheny instance listening at " + socket.getPath() );
+        }
     }
 
 
@@ -141,7 +164,15 @@ public class PIServer {
         if ( log.isTraceEnabled() ) {
             log.trace( "proto-interface server shutdown requested" );
         }
+        if ( fileLock != null ) {
+            fileLock.release();
+        }
         Util.closeNoThrow( server );
+    }
+
+
+    private record ServerAndLock(ServerSocketChannel server, FileLock lock) {
+
     }
 
 }
