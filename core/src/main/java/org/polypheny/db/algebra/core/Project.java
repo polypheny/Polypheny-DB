@@ -35,7 +35,6 @@ package org.polypheny.db.algebra.core;
 
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -45,7 +44,6 @@ import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
-import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -54,9 +52,7 @@ import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexChecker;
-import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
@@ -174,14 +170,6 @@ public abstract class Project extends SingleAlg {
         if ( !Util.isDistinct( rowType.getFieldNames() ) ) {
             return litmus.fail( "field names not distinct: {}", rowType );
         }
-        //CHECKSTYLE: IGNORE 1
-        if ( false && !Util.isDistinct( Lists.transform( exps, RexNode::toString ) ) ) {
-            // Projecting the same expression twice is usually a bad idea, because it may create expressions downstream which are equivalent but which look different.
-            // We can't ban duplicate projects, because we need to allow
-            //
-            //  SELECT a, b FROM c UNION SELECT x, x FROM z
-            return litmus.fail( "duplicate expressions: {}", exps );
-        }
         return litmus.succeed();
     }
 
@@ -209,13 +197,6 @@ public abstract class Project extends SingleAlg {
                 }
                 pw.item( fieldName, exps.get( field.i ) );
             }
-        }
-
-        // If we're generating a digest, include the rowtype. If two projects differ in return type, we don't want to regard them as equivalent, otherwise we will try to put rels
-        // of different types into the same planner equivalence set.
-        //CHECKSTYLE: IGNORE 2
-        if ( (pw.getDetailLevel() == ExplainLevel.DIGEST_ATTRIBUTES) && false ) {
-            pw.item( "type", rowType );
         }
 
         return pw;
@@ -333,15 +314,7 @@ public abstract class Project extends SingleAlg {
     public String algCompareString() {
         String types = "";
         if ( exps != null ) {
-            // use the real data types to exclude wrong cache usage:
-            // <FUNCTION_NAME>(?1:CHAR, ?2:INTEGER)
-            // - second usage of the same function will clip the string because unclear what is the size of CHAR
-            // should be <FUNCTION_NAME>(?1:CHAR(<LENGTH>), ?2:INTEGER)
-            types = "$" + exps.stream().filter( RexCall.class::isInstance )
-                    .flatMap( call -> ((RexCall) call).operands.stream() )
-                    .filter( RexDynamicParam.class::isInstance )
-                    .map( param -> param + "(" + param.getType().getFullTypeString() + ")" )
-                    .collect( Collectors.joining( "$" ) );
+            types = "$" + exps.stream().map( e -> e.accept( new AlgComparatorBuilder() ) ).collect( Collectors.joining( "$" ) );
         }
         return this.getClass().getSimpleName() + "$" + input.algCompareString() + "$" +
                 (exps != null ? exps.stream().map( Objects::hashCode ).map( Objects::toString )

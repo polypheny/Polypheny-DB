@@ -47,7 +47,6 @@ public class AdapterTemplate {
     public long id;
     public String description;
 
-
     public AdapterTemplate( long id, Class<?> clazz, String adapterName, List<AbstractAdapterSetting> settings, List<DeployMode> modes, String description, Function4<Long, String, Map<String, String>, Adapter<?>> deployer ) {
         this.id = id;
         this.adapterName = adapterName;

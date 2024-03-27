@@ -103,10 +103,8 @@ public interface NeoUtil {
             case DATE:
                 return v -> PolyDate.of( v.asNumber() );
             case TIME:
-            case TIME_WITH_LOCAL_TIME_ZONE:
                 return v -> PolyTime.of( v.asNumber() );
             case TIMESTAMP:
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                 return v -> PolyTimestamp.of( v.asNumber() );
             case BIGINT:
                 return v -> PolyBigDecimal.of( v.asLong() );
@@ -117,19 +115,7 @@ public interface NeoUtil {
                 return v -> PolyFloat.of( v.asNumber() );
             case DOUBLE:
                 return v -> PolyDouble.of( v.asNumber() );
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_MONTH:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
+            case INTERVAL:
                 break;
             case ANY:
                 return v -> PolyString.of( v.asObject().toString() );
@@ -293,25 +279,11 @@ public interface NeoUtil {
             case INTEGER:
             case DATE:
             case TIME:
-            case TIME_WITH_LOCAL_TIME_ZONE:
                 return literal.value.asNumber().toString();
             case BIGINT:
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_MONTH:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
+            case INTERVAL:
                 return literal.getValue().toString();
             case TIMESTAMP:
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                 return literal.value.asTemporal().getMillisSinceEpoch().toString();
             case DECIMAL:
             case FLOAT:

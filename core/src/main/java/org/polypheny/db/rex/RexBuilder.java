@@ -47,12 +47,11 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.ByteString;
-import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.Spaces;
-import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.commons.lang3.NotImplementedException;
 import org.bson.BsonValue;
 import org.polypheny.db.algebra.AlgNode;
@@ -99,6 +98,8 @@ import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.Util;
+import org.polypheny.db.util.temporal.DateTimeUtils;
+import org.polypheny.db.util.temporal.TimeUnit;
 
 
 /**
@@ -475,41 +476,23 @@ public class RexBuilder {
             PolyValue value = literal.value;
             PolyType typeName = literal.getPolyType();
             if ( canRemoveCastFromLiteral( type, value, typeName ) ) {
-                switch ( typeName ) {
-                    case INTERVAL_YEAR:
-                    case INTERVAL_YEAR_MONTH:
-                    case INTERVAL_MONTH:
-                    case INTERVAL_DAY:
-                    case INTERVAL_DAY_HOUR:
-                    case INTERVAL_DAY_MINUTE:
-                    case INTERVAL_DAY_SECOND:
-                    case INTERVAL_HOUR:
-                    case INTERVAL_HOUR_MINUTE:
-                    case INTERVAL_HOUR_SECOND:
-                    case INTERVAL_MINUTE:
-                    case INTERVAL_MINUTE_SECOND:
-                    case INTERVAL_SECOND:
-                        assert value.isInterval();
-                        typeName = type.getPolyType();
-                        switch ( typeName ) {
-                            case BIGINT:
-                            case INTEGER:
-                            case SMALLINT:
-                            case TINYINT:
-                            case FLOAT:
-                            case REAL:
-                            case DECIMAL:
-                                /*BigDecimal value2 = (BigDecimal) value;
-                                final BigDecimal multiplier = baseUnit( literal.getPolyType() ).multiplier;
-                                final BigDecimal divider = literal.getPolyType().getEndUnit().multiplier;
-                                value = value2.multiply( multiplier ).divide( divider, 0, RoundingMode.HALF_DOWN );*/
+                if ( Objects.requireNonNull( typeName ) == PolyType.INTERVAL ) {
+                    assert value.isInterval();
+                    typeName = type.getPolyType();
+                    switch ( typeName ) {
+                        case BIGINT:
+                        case INTEGER:
+                        case SMALLINT:
+                        case TINYINT:
+                        case FLOAT:
+                        case REAL:
+                        case DECIMAL:
+                    }
 
-                        }
-
-                        // Not all types are allowed for literals
-                        if ( typeName == PolyType.INTEGER ) {
-                            typeName = PolyType.BIGINT;
-                        }
+                    // Not all types are allowed for literals
+                    if ( typeName == PolyType.INTEGER ) {
+                        typeName = PolyType.BIGINT;
+                    }
                 }
                 final RexLiteral literal2 = makeLiteral( value, type, typeName );
                 if ( type.isNullable()
@@ -1031,24 +1014,6 @@ public class RexBuilder {
     }
 
 
-    /**
-     * Creates a Time with local time-zone literal.
-     */
-    public RexLiteral makeTimeWithLocalTimeZoneLiteral( TimeString time, int precision ) {
-        return makeLiteral(
-                PolyTime.of( (long) time.getMillisOfDay() ),
-                typeFactory.createPolyType( PolyType.TIME_WITH_LOCAL_TIME_ZONE, precision ),
-                PolyType.TIME_WITH_LOCAL_TIME_ZONE );
-    }
-
-
-    public RexLiteral makeTimeWithLocalTimeZoneLiteral( PolyTime time, int precision ) {
-        return makeLiteral(
-                time,
-                typeFactory.createPolyType( PolyType.TIME_WITH_LOCAL_TIME_ZONE, precision ),
-                PolyType.TIME_WITH_LOCAL_TIME_ZONE );
-    }
-
 
     /**
      * Creates a Timestamp literal.
@@ -1070,25 +1035,6 @@ public class RexBuilder {
 
 
     /**
-     * Creates a Timestamp with local time-zone literal.
-     */
-    public RexLiteral makeTimestampWithLocalTimeZoneLiteral( TimestampString timestamp, int precision ) {
-        return makeLiteral(
-                PolyTimestamp.of( timestamp.getMillisSinceEpoch() ),
-                typeFactory.createPolyType( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE, precision ),
-                PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE );
-    }
-
-
-    private RexNode makeTimestampWithLocalTimeZoneLiteral( PolyTimestamp timeStamp, int precision ) {
-        return makeLiteral(
-                timeStamp,
-                typeFactory.createPolyType( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE, precision ),
-                PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE );
-    }
-
-
-    /**
      * Creates a literal representing an interval type, for example {@code YEAR TO MONTH} or {@code DOW}.
      */
     public RexLiteral makeIntervalLiteral( IntervalQualifier intervalQualifier ) {
@@ -1100,9 +1046,17 @@ public class RexBuilder {
     /**
      * Creates a literal representing an interval value, for example {@code INTERVAL '3-7' YEAR TO MONTH}.
      */
-    public RexLiteral makeIntervalLiteral( BigDecimal v, IntervalQualifier intervalQualifier ) {
+    public RexLiteral makeIntervalLiteral( Long v, IntervalQualifier intervalQualifier ) {
         return makeLiteral(
                 PolyInterval.of( v, intervalQualifier ),
+                typeFactory.createIntervalType( intervalQualifier ),
+                intervalQualifier.typeName() );
+    }
+
+
+    public RexLiteral makeIntervalLiteral( PolyInterval interval, IntervalQualifier intervalQualifier ) {
+        return makeLiteral(
+                interval,
                 typeFactory.createIntervalType( intervalQualifier ),
                 intervalQualifier.typeName() );
     }
@@ -1179,8 +1133,6 @@ public class RexBuilder {
             case TINYINT, SMALLINT, INTEGER, BIGINT, DECIMAL, FLOAT, REAL, DOUBLE -> BigDecimal.ZERO;
             case BOOLEAN -> false;
             case TIME, DATE, TIMESTAMP -> DateTimeUtils.ZERO_CALENDAR;
-            case TIME_WITH_LOCAL_TIME_ZONE -> new TimeString( 0, 0, 0 );
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE -> new TimestampString( 0, 0, 0, 0, 0, 0 );
             default -> throw Util.unexpected( type.getPolyType() );
         };
     }
@@ -1234,27 +1186,11 @@ public class RexBuilder {
                 return poly.asBoolean().value ? booleanTrue : booleanFalse;
             case TIME:
                 return makeTimeLiteral( poly.asTime(), type.getPrecision() );
-            case TIME_WITH_LOCAL_TIME_ZONE:
-                return makeTimeWithLocalTimeZoneLiteral( poly.asTime(), type.getPrecision() );
             case DATE:
                 return makeDateLiteral( poly.asDate() );
             case TIMESTAMP:
                 return makeTimestampLiteral( poly.asTimestamp(), type.getPrecision() );
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                return makeTimestampWithLocalTimeZoneLiteral( poly.asTimestamp(), type.getPrecision() );
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_MONTH:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
+            case INTERVAL:
                 return makeLiteral( poly, type, type.getPolyType() );
             case MAP:
                 return makeMap( (Map<Object, Object>) value, type, allowCast );
@@ -1329,19 +1265,7 @@ public class RexBuilder {
             case INTEGER:
             case BIGINT:
             case DECIMAL:
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_MONTH:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
+            case INTERVAL:
                 if ( o instanceof PolyBigDecimal value ) {
                     return value;
                 }
@@ -1366,7 +1290,6 @@ public class RexBuilder {
                 }
                 break;
             case TIME:
-            case TIME_WITH_LOCAL_TIME_ZONE:
                 if ( o instanceof PolyTime time ) {
                     return time;
                 } else if ( o instanceof PolyTimestamp value ) {
@@ -1406,9 +1329,8 @@ public class RexBuilder {
 
                 break;
             case TIMESTAMP:
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                 // we have to shift it to utc
-                Function<Integer, Integer> offset = in -> type.getPolyType() == PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE ? in : 0;
+                Function<Integer, Integer> offset = in -> 0;
                 if ( o instanceof PolyTimestamp value ) {
                     return value;
                 } else if ( o instanceof Calendar calendar ) {
@@ -1500,6 +1422,7 @@ public class RexBuilder {
     /**
      * Returns a string padded with spaces to make it at least a given length.
      */
+    @SuppressWarnings("unused")
     private static String padRight( String s, int length ) {
         if ( s.length() >= length ) {
             return s;

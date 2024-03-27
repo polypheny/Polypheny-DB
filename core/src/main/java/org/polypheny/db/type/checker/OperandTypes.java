@@ -26,6 +26,7 @@ import java.util.function.Predicate;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeComparability;
 import org.polypheny.db.nodes.CallBinding;
+import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.nodes.Literal;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.Operator;
@@ -117,6 +118,59 @@ public abstract class OperandTypes {
      */
     public static FamilyOperandTypeChecker family( PolyTypeFamily... families ) {
         return new FamilyOperandTypeChecker( ImmutableList.copyOf( families ), i -> false );
+    }
+
+
+    public static PolyOperandTypeChecker INTERVAL_CONTAINS() {
+        return new PolyOperandTypeChecker() {
+            @Override
+            public boolean checkOperandTypes( CallBinding callBinding, boolean throwOnFailure ) {
+                if ( callBinding.getOperandCount() != 2 ) {
+                    return false;
+                }
+
+                Node unit = callBinding.operands().get( 0 );
+
+                AlgDataType type = callBinding.getOperandType( 1 );
+
+                if ( !(unit instanceof IntervalQualifier qualifier) ) {
+                    return true;
+                }
+                if ( false ) {
+                    if ( throwOnFailure ) {
+                        throw callBinding.newValidationSignatureError();
+                    }
+                    return false;
+                }
+                return true;
+
+            }
+
+
+            @Override
+            public OperandCountRange getOperandCountRange() {
+                return PolyOperandCountRanges.of( 1 );
+            }
+
+
+            @Override
+            public String getAllowedSignatures( Operator op, String opName ) {
+                return null;
+            }
+
+
+            @Override
+            public Consistency getConsistency() {
+                return null;
+            }
+
+
+            @Override
+            public boolean isOptional( int i ) {
+                return false;
+            }
+        };
+
     }
 
 

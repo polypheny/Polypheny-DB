@@ -123,7 +123,7 @@ import org.polypheny.db.util.BsonUtil;
         PolyNode.class,
         PolyEdge.class,
         PolyPath.class }) // add on Constructor already exists exception
-@JsonTypeInfo(use = Id.CLASS) // to allow typed json serialization
+@JsonTypeInfo(use = Id.NAME) // to allow typed json serialization
 @JsonSubTypes({
         @JsonSubTypes.Type(value = PolyList.class, name = "LIST"),
         @JsonSubTypes.Type(value = PolyBigDecimal.class, name = "DECIMAL"),
@@ -368,22 +368,8 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case DOUBLE -> PolyDouble.class;
             case DATE -> PolyDate.class;
             case TIME -> PolyTime.class;
-            case TIME_WITH_LOCAL_TIME_ZONE -> PolyTime.class;
             case TIMESTAMP -> PolyTimestamp.class;
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE -> PolyTimestamp.class;
-            case INTERVAL_YEAR -> PolyInterval.class;
-            case INTERVAL_YEAR_MONTH -> PolyInterval.class;
-            case INTERVAL_MONTH -> PolyInterval.class;
-            case INTERVAL_DAY -> PolyInterval.class;
-            case INTERVAL_DAY_HOUR -> PolyInterval.class;
-            case INTERVAL_DAY_MINUTE -> PolyInterval.class;
-            case INTERVAL_DAY_SECOND -> PolyInterval.class;
-            case INTERVAL_HOUR -> PolyInterval.class;
-            case INTERVAL_HOUR_MINUTE -> PolyInterval.class;
-            case INTERVAL_HOUR_SECOND -> PolyInterval.class;
-            case INTERVAL_MINUTE -> PolyInterval.class;
-            case INTERVAL_MINUTE_SECOND -> PolyInterval.class;
-            case INTERVAL_SECOND -> PolyInterval.class;
+            case INTERVAL -> PolyInterval.class;
             case CHAR -> PolyString.class;
             case VARCHAR -> PolyString.class;
             case BINARY -> PolyBinary.class;
@@ -840,7 +826,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
                 }
                 throw new NotImplementedException();
             }
-            case TIME, TIME_WITH_LOCAL_TIME_ZONE -> {
+            case TIME -> {
                 if ( object instanceof Number number ) {
                     yield PolyTime.of( number );
                 } else if ( object instanceof Calendar calendar ) {
@@ -848,7 +834,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
                 }
                 throw new NotImplementedException();
             }
-            case TIMESTAMP, TIMESTAMP_WITH_LOCAL_TIME_ZONE -> {
+            case TIMESTAMP -> {
                 if ( object instanceof Timestamp timestamp ) {
                     yield PolyTimestamp.of( timestamp );
                 } else if ( object instanceof Calendar calendar ) {

@@ -40,8 +40,8 @@ public class MqlCreateView extends MqlNode implements ExecutableStatement {
     private final BsonArray pipeline;
 
 
-    public MqlCreateView( ParserPos pos, String name, String source, BsonArray pipeline ) {
-        super( pos );
+    public MqlCreateView( ParserPos pos, String name, String namespace, String source, BsonArray pipeline ) {
+        super( pos, namespace );
         this.source = source;
         this.name = name;
         this.pipeline = pipeline;
@@ -50,7 +50,7 @@ public class MqlCreateView extends MqlNode implements ExecutableStatement {
 
     @Override
     public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
-        Long database = parsedQueryContext.getQueryNode().orElseThrow().getNamespaceId();
+        long database = parsedQueryContext.getQueryNode().orElseThrow().getNamespaceId();
 
         long schemaId = context.getSnapshot().getNamespace( database ).orElseThrow().id;
 

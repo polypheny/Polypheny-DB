@@ -28,8 +28,8 @@ import org.polypheny.db.transaction.Statement;
 
 public class MqlDropNamespace extends MqlNode implements ExecutableStatement {
 
-    public MqlDropNamespace( ParserPos pos ) {
-        super( pos );
+    public MqlDropNamespace( ParserPos pos, String namespace ) {
+        super( pos, namespace );
     }
 
 

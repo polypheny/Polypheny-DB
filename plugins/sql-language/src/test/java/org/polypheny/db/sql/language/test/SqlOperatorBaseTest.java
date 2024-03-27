@@ -2519,15 +2519,15 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
         tester.checkScalar(
                 "interval '2' day - interval '1' minute",
                 "+1 23:59",
-                "INTERVAL DAY TO MINUTE NOT NULL" );
+                "INTERVAL MONTH NOT NULL" );
         tester.checkScalar(
                 "interval '2' year - interval '1' month",
                 "+1-11",
-                "INTERVAL YEAR TO MONTH NOT NULL" );
+                "INTERVAL MONTH NOT NULL" );
         tester.checkScalar(
                 "interval '2' year - interval '1' month - interval '3' year",
                 "-1-01",
-                "INTERVAL YEAR TO MONTH NOT NULL" );
+                "INTERVAL MONTH NOT NULL" );
         tester.checkNull(
                 "cast(null as interval day) + interval '2' hour" );
 
@@ -2922,15 +2922,15 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
         tester.checkScalar(
                 "interval '2' day + interval '1' minute",
                 "+2 00:01",
-                "INTERVAL DAY TO MINUTE NOT NULL" );
+                "INTERVAL MONTH NOT NULL" );
         tester.checkScalar(
                 "interval '2' day + interval '5' minute + interval '-3' second",
                 "+2 00:04:57.000000",
-                "INTERVAL DAY TO SECOND NOT NULL" );
+                "INTERVAL MONTH NOT NULL" );
         tester.checkScalar(
                 "interval '2' year + interval '1' month",
                 "+2-01",
-                "INTERVAL YEAR TO MONTH NOT NULL" );
+                "INTERVAL MONTH NOT NULL" );
         tester.checkNull(
                 "interval '2' year + cast(null as interval month)" );
 
@@ -5879,24 +5879,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
                     "BIGINT NOT NULL" );
         }
 
-        // Postgres doesn't support DOW, ISODOW, DOY and WEEK on INTERVAL YEAR MONTH type. SQL standard doesn't have extract units for DOW, ISODOW, DOY and WEEK.
-        tester.checkFails(
-                "^extract(doy from interval '4-2' year to month)^",
-                INVALID_EXTRACT_UNIT_VALIDATION_ERROR,
-                false );
-        tester.checkFails(
-                "^extract(dow from interval '4-2' year to month)^",
-                INVALID_EXTRACT_UNIT_VALIDATION_ERROR,
-                false );
-        tester.checkFails(
-                "^extract(week from interval '4-2' year to month)^",
-                INVALID_EXTRACT_UNIT_VALIDATION_ERROR,
-                false );
-        tester.checkFails(
-                "^extract(isodow from interval '4-2' year to month)^",
-                INVALID_EXTRACT_UNIT_VALIDATION_ERROR,
-                false );
-
         tester.checkScalar(
                 "extract(month from interval '4-2' year to month)",
                 "2",
@@ -5991,31 +5973,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
                     INVALID_EXTRACT_UNIT_CONVERTLET_ERROR,
                     true );
         }
-
-        tester.checkFails(
-                "^extract(month from interval '2 3:4:5.678' day to second)^",
-                "(?s)Cannot apply 'EXTRACT' to arguments of type 'EXTRACT\\(<INTERVAL MONTH> FROM <INTERVAL DAY TO SECOND>\\)'\\. Supported form\\(s\\):.*",
-                false );
-
-        tester.checkFails(
-                "^extract(quarter from interval '2 3:4:5.678' day to second)^",
-                "(?s)Cannot apply 'EXTRACT' to arguments of type 'EXTRACT\\(<INTERVAL QUARTER> FROM <INTERVAL DAY TO SECOND>\\)'\\. Supported form\\(s\\):.*",
-                false );
-
-        tester.checkFails(
-                "^extract(year from interval '2 3:4:5.678' day to second)^",
-                "(?s)Cannot apply 'EXTRACT' to arguments of type 'EXTRACT\\(<INTERVAL YEAR> FROM <INTERVAL DAY TO SECOND>\\)'\\. Supported form\\(s\\):.*",
-                false );
-
-        tester.checkFails(
-                "^extract(isoyear from interval '2 3:4:5.678' day to second)^",
-                "(?s)Cannot apply 'EXTRACT' to arguments of type 'EXTRACT\\(<INTERVAL ISOYEAR> FROM <INTERVAL DAY TO SECOND>\\)'\\. Supported form\\(s\\):.*",
-                false );
-
-        tester.checkFails(
-                "^extract(century from interval '2 3:4:5.678' day to second)^",
-                "(?s)Cannot apply 'EXTRACT' to arguments of type 'EXTRACT\\(<INTERVAL CENTURY> FROM <INTERVAL DAY TO SECOND>\\)'\\. Supported form\\(s\\):.*",
-                false );
     }
 
 

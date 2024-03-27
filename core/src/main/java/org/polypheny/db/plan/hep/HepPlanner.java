@@ -45,6 +45,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.function.Function2;
 import org.apache.calcite.linq4j.function.Functions;
 import org.polypheny.db.algebra.AlgNode;
@@ -81,6 +82,7 @@ import org.polypheny.db.util.graph.TopologicalOrderIterator;
 /**
  * HepPlanner is a heuristic implementation of the {@link AlgPlanner} interface.
  */
+@Slf4j
 public class HepPlanner extends AbstractAlgPlanner {
 
     private final HepProgram mainProgram;
@@ -741,6 +743,9 @@ public class HepPlanner extends AbstractAlgPlanner {
         }
 
         // Recursively add children, replacing this algs inputs with corresponding child vertices.
+        if ( alg == null ) {
+            log.warn( "alg is null" );
+        }
         final List<AlgNode> inputs = alg.getInputs();
         final List<AlgNode> newInputs = new ArrayList<>();
         for ( AlgNode input1 : inputs ) {

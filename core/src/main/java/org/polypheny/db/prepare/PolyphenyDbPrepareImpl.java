@@ -422,16 +422,8 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
      */
     private static String getTypeName( AlgDataType type ) {
         final PolyType polyType = type.getPolyType();
-        return switch ( polyType ) {
-            case INTERVAL_YEAR_MONTH -> "INTERVAL_YEAR_TO_MONTH";
-            case INTERVAL_DAY_HOUR -> "INTERVAL_DAY_TO_HOUR";
-            case INTERVAL_DAY_MINUTE -> "INTERVAL_DAY_TO_MINUTE";
-            case INTERVAL_DAY_SECOND -> "INTERVAL_DAY_TO_SECOND";
-            case INTERVAL_HOUR_MINUTE -> "INTERVAL_HOUR_TO_MINUTE";
-            case INTERVAL_HOUR_SECOND -> "INTERVAL_HOUR_TO_SECOND";
-            case INTERVAL_MINUTE_SECOND -> "INTERVAL_MINUTE_TO_SECOND";
-            default -> polyType.getName(); // e.g. "DECIMAL", "INTERVAL_YEAR_MONTH"
-        };
+        // e.g. "DECIMAL", "INTERVAL_YEAR_MONTH"
+        return polyType.getName();
     }
 
 

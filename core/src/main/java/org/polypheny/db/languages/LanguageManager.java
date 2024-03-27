@@ -19,7 +19,6 @@ package org.polypheny.db.languages;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -248,7 +247,7 @@ public class LanguageManager {
 
     public static List<ParsedQueryContext> toQueryNodes( QueryContext queries ) {
         Processor processor = queries.getLanguage().processorSupplier().get();
-        List<String> splitQueries = Arrays.stream( queries.getQuery().split( ";" ) ).filter( q -> !q.trim().isEmpty() ).toList();
+        List<String> splitQueries = processor.splitStatements( queries.getQuery() );
 
         return splitQueries.stream().flatMap( q -> processor.parse( q ).stream().map( single -> Pair.of( single, q ) ) )
                 .map( p -> ParsedQueryContext.fromQuery( p.right, p.left, queries ) )

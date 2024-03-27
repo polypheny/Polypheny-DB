@@ -42,7 +42,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
-import java.util.TimeZone;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.junit.jupiter.api.BeforeAll;
@@ -60,7 +59,6 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.util.RunMode;
 import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
-import org.polypheny.db.util.TimestampWithTimeZoneString;
 import org.polypheny.db.util.Util;
 
 
@@ -199,66 +197,6 @@ public class RexBuilderTest {
         assertEquals( MOON, (long) literal.getValue().asTimestamp().millisSinceEpoch );
     }
 
-
-    /**
-     * Tests
-     * {@link RexBuilder#makeTimestampWithLocalTimeZoneLiteral(TimestampString, int)}.
-     */
-    @Test
-    public void testTimestampWithLocalTimeZoneLiteral() {
-        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
-        final AlgDataType timestampType = typeFactory.createPolyType( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE );
-        final AlgDataType timestampType3 = typeFactory.createPolyType( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE, 3 );
-        final AlgDataType timestampType9 = typeFactory.createPolyType( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE, 9 );
-        final AlgDataType timestampType18 = typeFactory.createPolyType( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE, 18 );
-        final RexBuilder builder = new RexBuilder( typeFactory );
-
-        // The new way
-        final TimestampWithTimeZoneString ts = new TimestampWithTimeZoneString( 1969, 7, 21, 2, 56, 15, TimeZone.getTimeZone( "PST" ).getID() );
-        checkTimestampWithLocalTimeZone( builder.makeLiteral( ts.getLocalTimestampString(), timestampType, false ) );
-
-        // Now with milliseconds
-        final TimestampWithTimeZoneString ts2 = ts.withMillis( 56 );
-        assertEquals( ts2.toString(), "1969-07-21 02:56:15.056 PST" );
-        final RexNode literal2 = builder.makeLiteral( ts2.getLocalTimestampString(), timestampType3, false );
-        assertEquals( "1969-07-21 02:56:15.056:TIMESTAMP_WITH_LOCAL_TIME_ZONE(3)", literal2.toString() );
-
-        // Now with nanoseconds
-        final TimestampWithTimeZoneString ts3 = ts.withNanos( 56 );
-        final RexNode literal3 = builder.makeLiteral( ts3.getLocalTimestampString(), timestampType9, false );
-        assertEquals( literal3.toString(), "1969-07-21 02:56:15:TIMESTAMP_WITH_LOCAL_TIME_ZONE(3)" );
-        final TimestampWithTimeZoneString ts3b = ts.withNanos( 2345678 );
-        final RexNode literal3b = builder.makeLiteral( ts3b.getLocalTimestampString(), timestampType9, false );
-        assertEquals( literal3b.toString(), "1969-07-21 02:56:15.002:TIMESTAMP_WITH_LOCAL_TIME_ZONE(3)" );
-
-        // Now with a very long fraction
-        final TimestampWithTimeZoneString ts4 = ts.withFraction( "102030405060708090102" );
-        final RexNode literal4 = builder.makeLiteral( ts4.getLocalTimestampString(), timestampType18, false );
-        assertEquals( literal4.toString(), "1969-07-21 02:56:15.102:TIMESTAMP_WITH_LOCAL_TIME_ZONE(3)" );
-
-        // toString
-        assertEquals( ts2.round( 1 ).toString(), "1969-07-21 02:56:15 PST" );
-        assertEquals( ts2.round( 2 ).toString(), "1969-07-21 02:56:15.05 PST" );
-        assertEquals( ts2.round( 3 ).toString(), "1969-07-21 02:56:15.056 PST" );
-        assertEquals( ts2.round( 4 ).toString(), "1969-07-21 02:56:15.056 PST" );
-
-        assertEquals( ts2.toString( 6 ), "1969-07-21 02:56:15.056000 PST" );
-        assertEquals( ts2.toString( 1 ), "1969-07-21 02:56:15.0 PST" );
-        assertEquals( ts2.toString( 0 ), "1969-07-21 02:56:15 PST" );
-
-        assertEquals( ts2.round( 0 ).toString(), "1969-07-21 02:56:15 PST" );
-        assertEquals( ts2.round( 0 ).toString( 0 ), "1969-07-21 02:56:15 PST" );
-        assertEquals( ts2.round( 0 ).toString( 1 ), "1969-07-21 02:56:15.0 PST" );
-        assertEquals( ts2.round( 0 ).toString( 2 ), "1969-07-21 02:56:15.00 PST" );
-    }
-
-
-    private void checkTimestampWithLocalTimeZone( RexNode node ) {
-        assertEquals( node.toString(), "1969-07-21 02:56:15:TIMESTAMP_WITH_LOCAL_TIME_ZONE(0)" );
-        RexLiteral literal = (RexLiteral) node;
-        assertTrue( literal.getValue().isTimestamp() );
-        assertTrue( literal.getValue().isTemporal() );
-    }
 
 
     /**

@@ -23,7 +23,7 @@ import org.polypheny.db.languages.mql.Mql.Type;
 public class MqlShowDatabase extends MqlNode {
 
     public MqlShowDatabase( ParserPos pos ) {
-        super( pos );
+        super( pos, null );
     }
 
 

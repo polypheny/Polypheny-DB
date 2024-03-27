@@ -16,7 +16,6 @@
 
 package org.polypheny.db.algebra.logical.lpg;
 
-import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Set;
 import org.polypheny.db.algebra.AlgNode;
@@ -63,7 +62,7 @@ public class LogicalLpgScan extends LpgScan<Entity> implements RelationalTransfo
                 builder.makeInputRef( nodes.getTupleType().getFields().get( 0 ).getType(), 0 ),
                 builder.makeInputRef( nodesProperty.getTupleType().getFields().get( 0 ).getType(), nodes.getTupleType().getFields().size() ) );
 
-        LogicalRelJoin nodeJoin = new LogicalRelJoin( getCluster(), out, nodes, nodesProperty, nodeCondition, Set.of(), JoinAlgType.LEFT, false, ImmutableList.of() );
+        LogicalRelJoin nodeJoin = new LogicalRelJoin( getCluster(), out, nodes, nodesProperty, nodeCondition, Set.of(), JoinAlgType.LEFT, false );
 
         if ( entities.size() == 2 ) {
             return List.of( nodeJoin );
@@ -77,7 +76,7 @@ public class LogicalLpgScan extends LpgScan<Entity> implements RelationalTransfo
                 builder.makeInputRef( edges.getTupleType().getFields().get( 0 ).getType(), 0 ),
                 builder.makeInputRef( edgesProperty.getTupleType().getFields().get( 0 ).getType(), edges.getTupleType().getFields().size() ) );
 
-        LogicalRelJoin edgeJoin = new LogicalRelJoin( getCluster(), out, edges, edgesProperty, edgeCondition, Set.of(), JoinAlgType.LEFT, false, ImmutableList.of() );
+        LogicalRelJoin edgeJoin = new LogicalRelJoin( getCluster(), out, edges, edgesProperty, edgeCondition, Set.of(), JoinAlgType.LEFT, false );
 
         return List.of( nodeJoin, edgeJoin );
     }

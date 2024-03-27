@@ -34,7 +34,6 @@
 package org.polypheny.db.algebra.core;
 
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.util.List;
 import lombok.Getter;
@@ -129,8 +128,7 @@ public abstract class Correlate extends BiAlg {
                     right.getTupleType(),
                     joinType.toJoinType(),
                     getCluster().getTypeFactory(),
-                    null,
-                    ImmutableList.of() );
+                    null );
             case ANTI, SEMI -> left.getTupleType();
             default -> throw new IllegalStateException( "Unknown join type " + joinType );
         };

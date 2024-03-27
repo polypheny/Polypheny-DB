@@ -19,6 +19,8 @@ package org.polypheny.db.algebra.core.document;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import org.bson.types.ObjectId;
 import org.polypheny.db.algebra.AbstractAlgNode;
@@ -47,7 +49,6 @@ public abstract class DocumentValues extends AbstractAlgNode implements Document
     public final List<PolyDocument> documents;
 
     public final List<RexDynamicParam> dynamicDocuments;
-
 
 
     /**
@@ -86,7 +87,7 @@ public abstract class DocumentValues extends AbstractAlgNode implements Document
 
 
     public boolean isPrepared() {
-        return !dynamicDocuments.isEmpty();//documents.size() == 1 && documents.get( 0 ).asDocument().size() == 1 && documents.get( 0 ).asDocument().containsKey( PolyString.of( DocumentType.DOCUMENT_ID ) );
+        return !dynamicDocuments.isEmpty();
     }
 
 
@@ -118,7 +119,8 @@ public abstract class DocumentValues extends AbstractAlgNode implements Document
     @Override
     public String algCompareString() {
         return getClass().getCanonicalName() + "$"
-                + documents.hashCode() + "&";
+                + (dynamicDocuments == null && documents != null ? documents.stream().map( PolyDocument::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "")
+                + (dynamicDocuments != null ? dynamicDocuments.stream().map( d -> d.name ).collect( Collectors.joining( "$" ) ) : "") + "&";
     }
 
 

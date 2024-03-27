@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.Javalin;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -78,9 +79,8 @@ public class ConfigService implements ConfigListener {
         // Save changes from WebUi
         http.post( PREFIX + "/updateConfigs", ctx -> {
             log.trace( ctx.body() );
-            TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {
-            };
-            Map<String, Object> changes = mapper.convertValue( ctx.body(), typeRef );
+            HashMap<String, Object> changes = mapper.readValue( ctx.body(), new TypeReference<>() { // we need explicit typing to force the correct map type
+            } );
             StringBuilder feedback = new StringBuilder();
             boolean allValid = true;
             for ( Map.Entry<String, Object> entry : changes.entrySet() ) {

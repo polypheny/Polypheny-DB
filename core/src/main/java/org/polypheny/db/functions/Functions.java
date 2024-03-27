@@ -1159,7 +1159,7 @@ public class Functions {
 
 
     public static PolyInterval multiply( PolyInterval b0, PolyNumber b1 ) {
-        return PolyInterval.of( b0.value.multiply( b1.bigDecimalValue() ), b0.qualifier );
+        return PolyInterval.of( b0.millis * b1.longValue(), b0.months * b1.longValue() );
     }
 
 
@@ -2733,7 +2733,7 @@ public class Functions {
     }
 
 
-    public static void jsonArrayAggAdd( List list, Object element, JsonConstructorNullClause nullClause ) {
+    public static void jsonArrayAggAdd( List<PolyValue> list, PolyValue element, JsonConstructorNullClause nullClause ) {
         if ( element == null ) {
             if ( nullClause == JsonConstructorNullClause.NULL_ON_NULL ) {
                 list.add( null );

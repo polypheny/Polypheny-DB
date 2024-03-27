@@ -32,10 +32,10 @@
  */
 package org.polypheny.db.type;
 
-import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.nodes.IntervalQualifier;
+import org.polypheny.db.nodes.TimeUnitRange;
 
 
 public class PolyIntervalQualifier {
@@ -167,7 +167,7 @@ public class PolyIntervalQualifier {
 
 
     public PolyType typeName() {
-        return IntervalQualifier.getRangePolyType( timeUnitRange );
+        return PolyType.INTERVAL;
     }
 
 }

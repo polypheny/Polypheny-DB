@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Objects;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.json.JsonEmptyOrError;
@@ -36,7 +35,7 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Literal;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.NodeVisitor;
-import org.polypheny.db.sql.language.SqlIntervalLiteral.IntervalValue;
+import org.polypheny.db.nodes.TimeUnitRange;
 import org.polypheny.db.sql.language.fun.SqlLiteralChainOperator;
 import org.polypheny.db.sql.language.parser.SqlParserUtil;
 import org.polypheny.db.sql.language.validate.SqlValidator;
@@ -67,12 +66,12 @@ import org.polypheny.db.util.Util;
 
 /**
  * A <code>SqlLiteral</code> is a constant. It is, appropriately, immutable.
- *
+ * <p>
  * How is the value stored? In that respect, the class is somewhat of a black box. There is a {@link #getValue} method which returns the value as an object, but the type of that value is implementation detail, and it is best
  * that your code does not depend upon that knowledge. It is better to use task-oriented methods such as {@link #toSqlString(SqlDialect)} and {@link #toValue}.
- *
+ * <p>
  * If you really need to access the value directly, you should switch on the value of the {@link #typeName} field, rather than making assumptions about the runtime type of the {@link #value}.
- *
+ * <p>
  * The allowable types and combinations are:
  *
  * <table>
@@ -133,7 +132,6 @@ import org.polypheny.db.util.Util;
  * <td>An {@link Enum}</td>
  * </tr>
  * <tr>
- * <td>{@link PolyType#INTERVAL_YEAR} .. {@link PolyType#INTERVAL_SECOND}</td>
  * <td>Interval, for example <code>INTERVAL '1:34' HOUR</code>.</td>
  * <td>{@link SqlIntervalLiteral.IntervalValue}.</td>
  * </tr>
@@ -178,7 +176,7 @@ public class SqlLiteral extends SqlNode implements Literal {
             case DATE -> value instanceof PolyDate;
             case TIME -> value instanceof PolyTime;
             case TIMESTAMP -> value instanceof PolyTimestamp;
-            case INTERVAL_YEAR, INTERVAL_YEAR_MONTH, INTERVAL_MONTH, INTERVAL_DAY, INTERVAL_DAY_HOUR, INTERVAL_DAY_MINUTE, INTERVAL_DAY_SECOND, INTERVAL_HOUR, INTERVAL_HOUR_MINUTE, INTERVAL_HOUR_SECOND, INTERVAL_MINUTE, INTERVAL_MINUTE_SECOND, INTERVAL_SECOND -> value instanceof PolyInterval || value instanceof IntervalValue;
+            case INTERVAL -> value instanceof PolyInterval;
             case BINARY -> value instanceof PolyBinary;
             case CHAR -> value instanceof PolyString;
             case SYMBOL -> (value instanceof SqlSampleSpec) || value instanceof PolySymbol;
@@ -265,9 +263,7 @@ public class SqlLiteral extends SqlNode implements Literal {
                     return clazz.cast( value.asTemporal().toCalendar() );
                 }
                 break;
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_MONTH:
+            case INTERVAL:
                 final SqlIntervalLiteral.IntervalValue valMonth = (SqlIntervalLiteral.IntervalValue) value;
                 if ( clazz == Long.class ) {
                     return clazz.cast( valMonth.getSign() * SqlParserUtil.intervalToMonths( valMonth ) );
@@ -275,25 +271,6 @@ public class SqlLiteral extends SqlNode implements Literal {
                     return clazz.cast( BigDecimal.valueOf( getValueAs( Long.class ) ) );
                 } else if ( clazz == TimeUnitRange.class ) {
                     return clazz.cast( valMonth.getIntervalQualifier().timeUnitRange );
-                }
-                break;
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
-                final SqlIntervalLiteral.IntervalValue valTime = (SqlIntervalLiteral.IntervalValue) value;
-                if ( clazz == Long.class ) {
-                    return clazz.cast( valTime.getSign() * SqlParserUtil.intervalToMillis( valTime ) );
-                } else if ( clazz == BigDecimal.class ) {
-                    return clazz.cast( BigDecimal.valueOf( getValueAs( Long.class ) ) );
-                } else if ( clazz == TimeUnitRange.class ) {
-                    return clazz.cast( valTime.getIntervalQualifier().timeUnitRange );
                 }
                 break;
             case SYMBOL:
@@ -349,7 +326,7 @@ public class SqlLiteral extends SqlNode implements Literal {
      * <li>Otherwise throws {@link IllegalArgumentException}.</li>
      * </ul>
      */
-    public static Comparable value( SqlNode node ) throws IllegalArgumentException {
+    public static Comparable<?> value( SqlNode node ) throws IllegalArgumentException {
         if ( node instanceof SqlLiteral literal ) {
             if ( literal.getTypeName() == PolyType.SYMBOL ) {
                 return literal.value.asSymbol().value;
@@ -362,7 +339,7 @@ public class SqlLiteral extends SqlNode implements Literal {
                 case INTERVAL_YEAR_MONTH:
                     final SqlIntervalLiteral.IntervalValue valMonth = (SqlIntervalLiteral.IntervalValue) literal.value;
                     return valMonth.getSign() * SqlParserUtil.intervalToMonths( valMonth );
-                case INTERVAL_DAY_TIME:
+                case INTERVAL_TIME:
                     final SqlIntervalLiteral.IntervalValue valTime = (SqlIntervalLiteral.IntervalValue) literal.value;
                     return valTime.getSign() * SqlParserUtil.intervalToMillis( valTime );
             }
@@ -427,7 +404,7 @@ public class SqlLiteral extends SqlNode implements Literal {
             return SqlLiteralChainOperator.concatenateOperands( (SqlCall) node );
         } else if ( node instanceof SqlIntervalQualifier q ) {
             return new SqlLiteral(
-                    new SqlIntervalLiteral.IntervalValue( q, 1, q.toString() ),
+                    new SqlIntervalLiteral.IntervalValue( q, PolyInterval.of( 1L, q ) ),
                     q.typeName(),
                     q.pos );
         } else {
@@ -493,7 +470,7 @@ public class SqlLiteral extends SqlNode implements Literal {
 
     /**
      * Creates a NULL literal.
-     *
+     * <p>
      * There's no singleton constant for a NULL literal. Instead, nulls must be instantiated via createNull(), because different instances have different context-dependent types.
      */
     public static SqlLiteral createNull( ParserPos pos ) {
@@ -693,19 +670,7 @@ public class SqlLiteral extends SqlNode implements Literal {
                 type = typeFactory.createTypeWithCharsetAndCollation( type, charset, collation );
                 return type;
 
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_MONTH:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
+            case INTERVAL:
                 SqlIntervalLiteral.IntervalValue intervalValue = (SqlIntervalLiteral.IntervalValue) value;
                 return typeFactory.createIntervalType( intervalValue.getIntervalQualifier() );
 
@@ -718,7 +683,7 @@ public class SqlLiteral extends SqlNode implements Literal {
             case VARBINARY: // should never happen
 
             default:
-                throw Util.needToImplement( toString() + ", operand=" + value );
+                throw Util.needToImplement( this + ", operand=" + value );
         }
     }
 
@@ -741,12 +706,11 @@ public class SqlLiteral extends SqlNode implements Literal {
     /**
      * Creates an interval literal.
      *
-     * @param intervalStr input string of '1:23:04'
      * @param intervalQualifier describes the interval type and precision
      * @param pos Parser position
      */
-    public static SqlIntervalLiteral createInterval( int sign, String intervalStr, SqlIntervalQualifier intervalQualifier, ParserPos pos ) {
-        return new SqlIntervalLiteral( sign, intervalStr, intervalQualifier, intervalQualifier.typeName(), pos );
+    public static SqlIntervalLiteral createInterval( PolyInterval interval, SqlIntervalQualifier intervalQualifier, ParserPos pos ) {
+        return new SqlIntervalLiteral( interval, intervalQualifier, intervalQualifier.typeName(), pos );
     }
 
 
@@ -794,12 +758,6 @@ public class SqlLiteral extends SqlNode implements Literal {
      * Creates a literal like X'ABAB'. Although it matters when we derive a type for this beastie, we don't care at this point whether the number of hexits is odd or even.
      */
     public static SqlBinaryStringLiteral createBinaryString( PolyBinary s, ParserPos pos ) {
-        /*BitString bits;
-        try {
-            bits = BitString.createFromHexString( s );
-        } catch ( NumberFormatException e ) {
-            throw CoreUtil.newContextException( pos, Static.RESOURCE.binaryLiteralInvalid() );
-        }*/
         return new SqlBinaryStringLiteral( s, pos );
     }
 
@@ -823,12 +781,6 @@ public class SqlLiteral extends SqlNode implements Literal {
      * @return Binary string literal
      */
     public static SqlBinaryStringLiteral createBinaryString( byte[] bytes, ParserPos pos ) {
-        /*BitString bits;
-        try {
-            bits = BitString.createFromBytes( bytes );
-        } catch ( NumberFormatException e ) {
-            throw CoreUtil.newContextException( pos, Static.RESOURCE.binaryLiteralInvalid() );
-        }*/
         return new SqlBinaryStringLiteral( PolyBinary.of( bytes ), pos );
     }
 

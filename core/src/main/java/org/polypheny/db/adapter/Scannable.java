@@ -81,12 +81,12 @@ public interface Scannable {
     AdapterCatalog getCatalog();
 
 
-    static void restoreGraphSubstitute( Scannable scannable, AllocationGraph alloc, List<PhysicalEntity> entities ) {
+    static void restoreGraphSubstitute( Scannable scannable, AllocationGraph alloc, List<PhysicalEntity> entities, Context context ) {
         throw new GenericRuntimeException( "todo restore" );
     }
 
 
-    static void restoreCollectionSubstitute( Scannable scannable, AllocationCollection alloc, List<PhysicalEntity> entities ) {
+    static void restoreCollectionSubstitute( Scannable scannable, AllocationCollection alloc, List<PhysicalEntity> entities, Context context ) {
         throw new GenericRuntimeException( "todo restore" );
     }
 
@@ -148,13 +148,13 @@ public interface Scannable {
     List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation );
 
 
-    void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities );
+    void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context );
 
 
-    void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities );
+    void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities, Context context );
 
 
-    void restoreCollection( AllocationCollection alloc, List<PhysicalEntity> entities );
+    void restoreCollection( AllocationCollection alloc, List<PhysicalEntity> entities, Context context );
 
 
     void dropTable( Context context, long allocId );

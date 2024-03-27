@@ -1602,19 +1602,14 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         }
 
         if ( shouldExpandIdentifiers() ) {
-            if ( resolvedConstructor != null ) {
-                ((SqlBasicCall) call).setOperator( resolvedConstructor );
-            } else {
-                // fake a fully-qualified call to the default constructor
-                ((SqlBasicCall) call).setOperator(
-                        new SqlFunction(
-                                new SqlIdentifier( type.getFieldNames(), ParserPos.ZERO ),
-                                ReturnTypes.explicit( type ),
-                                null,
-                                null,
-                                null,
-                                FunctionCategory.USER_DEFINED_CONSTRUCTOR ) );
-            }
+            // fake a fully-qualified call to the default constructor
+            ((SqlBasicCall) call).setOperator( Objects.requireNonNullElseGet( resolvedConstructor, () -> new SqlFunction(
+                    new SqlIdentifier( type.getFieldNames(), ParserPos.ZERO ),
+                    ReturnTypes.explicit( type ),
+                    null,
+                    null,
+                    null,
+                    FunctionCategory.USER_DEFINED_CONSTRUCTOR ) ) );
         }
         return type;
     }
@@ -2805,20 +2800,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                     throw newValidationError( literal, RESOURCE.dateLiteralOutOfRange( literal.toString() ) );
                 }
                 break;
-
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_MONTH:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
+            case INTERVAL:
                 if ( literal instanceof SqlIntervalLiteral ) {
                     SqlIntervalLiteral.IntervalValue interval = (SqlIntervalLiteral.IntervalValue) literal.getValue();
                     SqlIntervalQualifier intervalQualifier = interval.getIntervalQualifier();

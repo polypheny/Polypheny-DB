@@ -56,20 +56,20 @@ public class GraphScanDelegate implements Scannable {
 
 
     @Override
-    public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities ) {
-        scannable.restoreTable( alloc, entities );
+    public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context ) {
+        scannable.restoreTable( alloc, entities, context );
     }
 
 
     @Override
-    public void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities ) {
-        scannable.restoreGraph( alloc, entities );
+    public void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities, Context context ) {
+        scannable.restoreGraph( alloc, entities, context );
     }
 
 
     @Override
-    public void restoreCollection( AllocationCollection alloc, List<PhysicalEntity> entities ) {
-        Scannable.restoreCollectionSubstitute( scannable, alloc, entities );
+    public void restoreCollection( AllocationCollection alloc, List<PhysicalEntity> entities, Context context ) {
+        Scannable.restoreCollectionSubstitute( scannable, alloc, entities, context );
     }
 
 

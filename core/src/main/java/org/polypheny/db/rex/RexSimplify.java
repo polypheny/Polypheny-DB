@@ -56,14 +56,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
-import org.apache.calcite.avatica.util.TimeUnit;
-import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.nodes.TimeUnitRange;
 import org.polypheny.db.plan.AlgOptPredicateList;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.Strong;
@@ -75,6 +74,7 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
+import org.polypheny.db.util.temporal.TimeUnit;
 
 
 /**
@@ -144,7 +144,7 @@ public class RexSimplify {
 
     /**
      * Returns a RexSimplify the same as this but with a specified {@link #predicateElimination} value.
-     *
+     * <p>
      * This is introduced temporarily, until {@link Bug#CALCITE_2401_FIXED [POLYPHENYDB-2401] is fixed}.
      */
     private RexSimplify withPredicateElimination( boolean predicateElimination ) {
@@ -156,7 +156,7 @@ public class RexSimplify {
 
     /**
      * Simplifies a boolean expression, always preserving its type and its nullability.
-     *
+     * <p>
      * This is useful if you are simplifying expressions in a {@link Project}.
      */
     public RexNode simplifyPreservingType( RexNode e ) {
@@ -179,7 +179,7 @@ public class RexSimplify {
 
     /**
      * Simplifies a boolean expression.
-     *
+     * <p>
      * In particular:
      * <ul>
      * <li>{@code simplify(x = 1 AND y = 2 AND NOT x = 1)} returns {@code y = 2}</li>
@@ -187,7 +187,7 @@ public class RexSimplify {
      * </ul>
      *
      * Handles UNKNOWN values using the policy specified when you created this {@code RexSimplify}. Unless you used a deprecated constructor, that policy is {@link RexUnknownAs#UNKNOWN}.
-     *
+     * <p>
      * If the expression is a predicate in a WHERE clause, consider instead using {@link #simplifyUnknownAsFalse(RexNode)}.
      *
      * @param e Expression to simplify
@@ -199,9 +199,9 @@ public class RexSimplify {
 
     /**
      * As {@link #simplify(RexNode)}, but for a boolean expression for which a result of UNKNOWN will be treated as FALSE.
-     *
+     * <p>
      * Use this form for expressions on a WHERE, ON, HAVING or FILTER(WHERE) clause.
-     *
+     * <p>
      * This may allow certain additional simplifications. A result of UNKNOWN may yield FALSE, however it may still yield UNKNOWN.
      * (If the simplified expression has type BOOLEAN NOT NULL, then of course it can only return FALSE.)
      */
@@ -212,7 +212,7 @@ public class RexSimplify {
 
     /**
      * As {@link #simplify(RexNode)}, but specifying how UNKNOWN values are to be treated.
-     *
+     * <p>
      * If UNKNOWN is treated as FALSE, this may allow certain additional simplifications. A result of UNKNOWN may yield FALSE, however it may still yield UNKNOWN. (If the simplified expression has type BOOLEAN NOT NULL,
      * then of course it can only return FALSE.)
      */
@@ -223,7 +223,7 @@ public class RexSimplify {
 
     /**
      * Internal method to simplify an expression.
-     *
+     * <p>
      * Unlike the public {@link #simplify(RexNode)} and {@link #simplifyUnknownAsFalse(RexNode)} methods, never calls {@link #verify(RexNode, RexUnknownAs, Function)}.
      * Verify adds an overhead that is only acceptable for a top-level call.
      */
@@ -915,9 +915,9 @@ public class RexSimplify {
 
     /**
      * Analyzes a given {@link RexNode} and decides whenever it is safe to unwind.
-     *
+     * <p>
      * "Safe" means that it only contains a combination of known good operators.
-     *
+     * <p>
      * Division is an unsafe operator; consider the following: <pre>case when a &gt; 0 then 1 / a else null end</pre>
      */
     static boolean isSafeExpression( RexNode r ) {
@@ -957,7 +957,7 @@ public class RexSimplify {
 
     /**
      * Generic boolean case simplification.
-     *
+     * <p>
      * Rewrites:
      * <pre>
      * CASE
@@ -1325,9 +1325,9 @@ public class RexSimplify {
 
     /**
      * Weakens a term so that it checks only what is not implied by predicates.
-     *
+     * <p>
      * The term is broken into "ref comparison constant", for example "$0 &lt; 5".
-     *
+     * <p>
      * Examples:
      * <ul>
      * <li>{@code residue($0 < 10, [$0 < 5])} returns {@code true}</li>
@@ -1518,7 +1518,7 @@ public class RexSimplify {
 
     /**
      * Tries to simplify CEIL/FLOOR function on top of CEIL/FLOOR.
-     *
+     * <p>
      * Examples:
      * <ul>
      * <li>{@code floor(floor($0, flag(hour)), flag(day))} returns {@code floor($0, flag(day))}</li>
@@ -1603,7 +1603,7 @@ public class RexSimplify {
 
     /**
      * Removes any casts that change nullability but not type.
-     *
+     * <p>
      * For example, {@code CAST(1 = 0 AS BOOLEAN)} becomes {@code 1 = 0}.
      */
     public RexNode removeNullabilityCast( RexNode e ) {
@@ -1955,7 +1955,7 @@ public class RexSimplify {
 
     /**
      * Combines predicates AND, optimizes, and returns null if the result is always false.
-     *
+     * <p>
      * The expression is simplified on the assumption that an UNKNOWN value is always treated as FALSE. Therefore the simplified expression may sometimes evaluate to FALSE where the original
      * expression would evaluate to UNKNOWN.
      *
@@ -1975,9 +1975,9 @@ public class RexSimplify {
 
     /**
      * Replaces the last occurrence of one specified value in a list with another.
-     *
+     * <p>
      * Does not change the size of the list.
-     *
+     * <p>
      * Returns whether the value was found.
      */
     private static <E> boolean replaceLast( List<E> list, E oldVal, E newVal ) {

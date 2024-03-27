@@ -134,8 +134,7 @@ public class SemiJoinProjectTransposeRule extends AlgOptRule {
                         rightChild.getTupleType(),
                         JoinAlgType.INNER,
                         typeFactory,
-                        null,
-                        semiJoin.getSystemFieldList() );
+                        null );
         RexProgramBuilder bottomProgramBuilder = new RexProgramBuilder( bottomInputRowType, rexBuilder );
 
         // add the project expressions, then add input references for the RHS of the semijoin
@@ -159,8 +158,7 @@ public class SemiJoinProjectTransposeRule extends AlgOptRule {
                         rightChild.getTupleType(),
                         JoinAlgType.INNER,
                         typeFactory,
-                        null,
-                        semiJoin.getSystemFieldList() );
+                        null );
         RexProgramBuilder topProgramBuilder = new RexProgramBuilder( topInputRowType, rexBuilder );
         topProgramBuilder.addIdentity();
         topProgramBuilder.addCondition( semiJoin.getCondition() );

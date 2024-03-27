@@ -37,8 +37,8 @@ public class MqlFindOneAndReplace extends MqlCollectionStatement implements MqlQ
     private final BsonDocument upsert;
 
 
-    public MqlFindOneAndReplace( ParserPos pos, String collection, BsonDocument query, BsonDocument replacement, BsonDocument options ) {
-        super( collection, pos );
+    public MqlFindOneAndReplace( ParserPos pos, String collection, String namespace, BsonDocument query, BsonDocument replacement, BsonDocument options ) {
+        super( collection, namespace, pos );
         this.query = query;
         this.replacement = replacement;
         this.projection = getDocumentOrNull( options, "projection" );

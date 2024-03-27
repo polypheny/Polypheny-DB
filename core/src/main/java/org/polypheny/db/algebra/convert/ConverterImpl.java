@@ -71,9 +71,8 @@ public abstract class ConverterImpl extends SingleAlg implements Converter {
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         double dRows = mq.getTupleCount( getInput() );
-        double dCpu = dRows;
         double dIo = 0;
-        return planner.getCostFactory().makeCost( dRows, dCpu, dIo );
+        return planner.getCostFactory().makeCost( dRows, dRows, dIo );
     }
 
 

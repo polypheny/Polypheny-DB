@@ -38,7 +38,7 @@ public class MqlUseNamespace extends MqlNode implements ExecutableStatement {
      * @param namespace the name of the namespace to use
      */
     public MqlUseNamespace( ParserPos pos, String namespace ) {
-        super( pos );
+        super( pos, namespace );
         this.namespace = namespace;
     }
 

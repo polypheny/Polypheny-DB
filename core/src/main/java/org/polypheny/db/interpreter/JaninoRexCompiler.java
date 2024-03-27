@@ -70,6 +70,7 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.rex.RexProgramBuilder;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.Pair;
@@ -99,7 +100,7 @@ public class JaninoRexCompiler implements Interpreter.ScalarCompiler {
 
         final BlockBuilder builder = new BlockBuilder();
         final ParameterExpression context_ = Expressions.parameter( Context.class, "context" );
-        final ParameterExpression outputValues_ = Expressions.parameter( Object[].class, "outputValues" );
+        final ParameterExpression outputValues_ = Expressions.parameter( PolyValue[].class, "outputValues" );
         final JavaTypeFactoryImpl javaTypeFactory = new JavaTypeFactoryImpl( rexBuilder.getTypeFactory().getTypeSystem() );
 
         // public void execute(Context, Object[] outputValues)
@@ -136,14 +137,14 @@ public class JaninoRexCompiler implements Interpreter.ScalarCompiler {
 
         // public Object execute(Context)
         final BlockBuilder builder = new BlockBuilder();
-        final Expression values_ = builder.append( "values", Expressions.newArrayBounds( Object.class, 1, Expressions.constant( 1 ) ) );
+        final Expression values_ = builder.append( "values", Expressions.newArrayBounds( PolyValue.class, 1, Expressions.constant( 1 ) ) );
         builder.add(
                 Expressions.statement(
                         Expressions.call(
                                 Expressions.parameter( Scalar.class, "this" ),
                                 BuiltInMethod.SCALAR_EXECUTE2.method, context_, values_ ) ) );
         builder.add( Expressions.return_( null, Expressions.arrayIndex( values_, Expressions.constant( 0 ) ) ) );
-        declarations.add( Expressions.methodDecl( Modifier.PUBLIC, Object.class, BuiltInMethod.SCALAR_EXECUTE1.method.getName(), ImmutableList.of( context_ ), builder.toBlock() ) );
+        declarations.add( Expressions.methodDecl( Modifier.PUBLIC, PolyValue.class, BuiltInMethod.SCALAR_EXECUTE1.method.getName(), ImmutableList.of( context_ ), builder.toBlock() ) );
 
         final ClassDeclaration classDeclaration = Expressions.classDecl( Modifier.PUBLIC, "Buzz", null, ImmutableList.of( Scalar.class ), declarations );
         String s = Expressions.toString( declarations, "\n", false );

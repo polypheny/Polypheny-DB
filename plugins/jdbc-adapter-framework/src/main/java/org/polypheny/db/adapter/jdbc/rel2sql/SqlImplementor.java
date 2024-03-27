@@ -114,6 +114,7 @@ import org.polypheny.db.sql.language.validate.SqlValidatorUtil;
 import org.polypheny.db.type.IntervalPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.ValidatorUtil;
@@ -522,9 +523,8 @@ public abstract class SqlImplementor {
                         case BOOLEAN:
                             return SqlLiteral.createBoolean( literal.value.asBoolean().value, POS );
                         case INTERVAL_YEAR_MONTH:
-                        case INTERVAL_DAY_TIME:
-                            final boolean negative = literal.value.asInterval().value.signum() < 0;
-                            return SqlLiteral.createInterval( negative ? -1 : 1, literal.intervalString( literal.value.asInterval().value.abs() ), SqlIntervalQualifier.from( literal.getType().getIntervalQualifier() ), POS );
+                        case INTERVAL_TIME:
+                            return SqlLiteral.createInterval( literal.value.asInterval(), SqlIntervalQualifier.from( literal.getType().getIntervalQualifier() ), POS );
                         case DATE:
                             return SqlDateLiteral.createDate( literal.value.asDate(), POS );
                         case TIME:
@@ -538,7 +538,6 @@ public abstract class SqlImplementor {
                                 List<PolyValue> array = literal.getValue().asList();
                                 return SqlLiteral.createArray( array, literal.getType(), POS );
                             } else {
-                                // atm arrays in adapter which do not support arrays are compared in their serialized form, this should be changed todo dl
                                 return SqlLiteral.createCharString( literal.value.toTypedJson(), POS );
                             }
                         case GRAPH:
@@ -579,16 +578,16 @@ public abstract class SqlImplementor {
                     }
                     elseNode = caseNodeList.get( caseNodeList.size() - 1 );
                     return new SqlCase( POS, valueNode, new SqlNodeList( whenList, POS ), new SqlNodeList( thenList, POS ), elseNode );
-
                 case DYNAMIC_PARAM:
                     final RexDynamicParam caseParam = (RexDynamicParam) rex;
                     SqlDynamicParam sqlDynamicParam = new SqlDynamicParam( (int) caseParam.getIndex(), POS );
                     if ( caseParam.getType() instanceof IntervalPolyType ) {
                         if ( dialect.getIntervalParameterStrategy() == IntervalParameterStrategy.MULTIPLICATION ) {
+                            SqlIntervalQualifier intervalQualifier = (SqlIntervalQualifier) caseParam.getType().getIntervalQualifier();
                             return (SqlNode) OperatorRegistry.get( OperatorName.MULTIPLY ).createCall(
                                     POS,
                                     sqlDynamicParam,
-                                    SqlLiteral.createInterval( 1, "1", (SqlIntervalQualifier) caseParam.getType().getIntervalQualifier(), POS ) );
+                                    SqlLiteral.createInterval( PolyInterval.of( 1L, intervalQualifier ), intervalQualifier, POS ) );
                         } else if ( dialect.getIntervalParameterStrategy() == IntervalParameterStrategy.CAST ) {
                             return (SqlNode) OperatorRegistry.get( OperatorName.CAST ).createCall( POS, sqlDynamicParam, dialect.getCastSpec( caseParam.getType() ) );
                         } else if ( dialect.getIntervalParameterStrategy() == IntervalParameterStrategy.NONE ) {
@@ -599,7 +598,6 @@ public abstract class SqlImplementor {
                     } else {
                         return (SqlNode) OperatorRegistry.get( OperatorName.CAST ).createCall( POS, sqlDynamicParam, dialect.getCastSpec( caseParam.getType() ) );
                     }
-
                 case IN:
                     if ( rex instanceof RexSubQuery ) {
                         subQuery = (RexSubQuery) rex;
@@ -634,7 +632,6 @@ public abstract class SqlImplementor {
                         case SIMILAR -> (SqlNode) OperatorRegistry.get( OperatorName.NOT_SIMILAR_TO ).createCall( POS, ((SqlCall) node).getOperandList() );
                         default -> (SqlNode) OperatorRegistry.get( OperatorName.NOT ).createCall( POS, node );
                     };
-
                 default:
                     if ( rex instanceof RexOver ) {
                         return toSql( program, (RexOver) rex );

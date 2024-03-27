@@ -43,7 +43,6 @@ ij_csv_keep_indents_on_empty_lines = true
 ij_csv_wrap_long_lines = false
 
 [*.feature]
-indent_size = 2
 ij_continuation_indent_size = 8
 ij_visual_guides = none
 ij_gherkin_keep_indents_on_empty_lines = false
@@ -315,7 +314,6 @@ ij_java_wrap_first_method_in_call_chain = false
 ij_java_wrap_long_lines = false
 
 [*.less]
-indent_size = 2
 ij_continuation_indent_size = 8
 ij_visual_guides = none
 ij_less_align_closing_brace_with_properties = false
@@ -340,8 +338,6 @@ ij_less_use_double_quotes = true
 ij_less_value_alignment = 0
 
 [*.proto]
-indent_size = 2
-tab_width = 2
 ij_visual_guides = none
 ij_protobuf_keep_blank_lines_in_code = 2
 ij_protobuf_keep_indents_on_empty_lines = false
@@ -353,8 +349,6 @@ ij_protobuf_spaces_within_braces = false
 ij_protobuf_spaces_within_brackets = false
 
 [*.sass]
-indent_size = 2
-tab_width = 2
 ij_visual_guides = none
 ij_sass_align_closing_brace_with_properties = false
 ij_sass_blank_lines_around_nested_selector = 1
@@ -377,8 +371,6 @@ ij_sass_use_double_quotes = true
 ij_sass_value_alignment = 0
 
 [*.scss]
-indent_size = 2
-tab_width = 2
 ij_visual_guides = none
 ij_scss_align_closing_brace_with_properties = false
 ij_scss_blank_lines_around_nested_selector = 1
@@ -433,8 +425,6 @@ ij_xml_text_wrap = normal
 ij_xml_use_custom_settings = false
 
 [{*.bash,*.sh,*.zsh}]
-indent_size = 2
-tab_width = 2
 ij_visual_guides = none
 ij_shell_binary_ops_start_line = false
 ij_shell_keep_column_alignment_padding = false
@@ -812,8 +802,6 @@ ij_markdown_wrap_text_if_long = true
 ij_markdown_wrap_text_inside_blockquotes = true
 
 [{*.pb,*.textproto}]
-indent_size = 2
-tab_width = 2
 ij_visual_guides = none
 ij_prototext_keep_blank_lines_in_code = 2
 ij_prototext_keep_indents_on_empty_lines = false

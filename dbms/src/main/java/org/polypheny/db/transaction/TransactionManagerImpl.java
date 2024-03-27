@@ -95,8 +95,8 @@ public class TransactionManagerImpl implements TransactionManager {
     @Override
     public Transaction startTransaction( long userId, long defaultNamespaceId, boolean analyze, String origin ) {
         return startTransaction(
-                Catalog.snapshot().getUser( userId ).orElseThrow(),
-                Catalog.snapshot().getNamespace( defaultNamespaceId ).orElseThrow(),
+                Catalog.snapshot().getUser( userId ).orElse( null ),
+                Catalog.snapshot().getNamespace( defaultNamespaceId ).orElse( null ),
                 analyze,
                 origin,
                 MultimediaFlavor.DEFAULT );

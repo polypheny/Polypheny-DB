@@ -245,7 +245,7 @@ tasks.register('runDevReset', JavaExec) {
     description = 'Run the main class with JavaExecTask'
     classpath sourceSets.main.runtimeClasspath
     mainClass = 'org.polypheny.db.PolyphenyDb'
-    args = ['-resetCatalog', '-mode', 'dev']  // '-resetPlugins'
+    args = ['-resetCatalog', '-resetDocker', '-mode', 'dev']  // '-resetPlugins'
 }
 
 tasks.register('runDev', JavaExec) {

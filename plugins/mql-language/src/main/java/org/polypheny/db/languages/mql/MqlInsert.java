@@ -27,16 +27,15 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.mql.Mql.Type;
 
 
+@Getter
 public class MqlInsert extends MqlCollectionStatement {
 
-    @Getter
     private final BsonArray values;
-    @Getter
     private final boolean ordered;
 
 
-    public MqlInsert( ParserPos pos, String collection, BsonValue values, BsonDocument options ) {
-        super( collection, pos );
+    public MqlInsert( ParserPos pos, String collection, String namespace, BsonValue values, BsonDocument options ) {
+        super( collection, namespace, pos );
         if ( values.isDocument() ) {
             this.values = new BsonArray( Collections.singletonList( values.asDocument() ) );
         } else if ( values.isArray() ) {

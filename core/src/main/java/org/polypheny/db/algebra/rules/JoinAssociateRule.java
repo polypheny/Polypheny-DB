@@ -107,11 +107,6 @@ public class JoinAssociateRule extends AlgOptRule {
         final ImmutableBitSet aBitSet = ImmutableBitSet.range( 0, aCount );
         final ImmutableBitSet bBitSet = ImmutableBitSet.range( aCount, aCount + bCount );
 
-        if ( !topJoin.getSystemFieldList().isEmpty() ) {
-            // FIXME Enable this rule for joins with system fields
-            return;
-        }
-
         // If either join is not inner, we cannot proceed. (Is this too strict?)
         if ( topJoin.getJoinType() != JoinAlgType.INNER || bottomJoin.getJoinType() != JoinAlgType.INNER ) {
             return;

@@ -105,7 +105,7 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
     }
 
 
-    private AlgNode optimize( AlgNode rootRel ) {
+    private AlgNode optimize( AlgNode rootAlg ) {
         final HepProgram hepProgram =
                 new HepProgramBuilder()
                         .addRuleInstance( CalcSplitRule.INSTANCE )
@@ -115,9 +115,9 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
                         .addRuleInstance( ProjectScanRule.INTERPRETER )
                         .build();
         final HepPlanner planner = new HepPlanner( hepProgram );
-        planner.setRoot( rootRel );
-        rootRel = planner.findBestExp();
-        return rootRel;
+        planner.setRoot( rootAlg );
+        rootAlg = planner.findBestExp();
+        return rootAlg;
     }
 
 

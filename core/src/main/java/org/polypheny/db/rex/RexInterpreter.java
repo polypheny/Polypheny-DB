@@ -42,19 +42,19 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntPredicate;
-import org.apache.calcite.avatica.util.DateTimeUtils;
-import org.apache.calcite.avatica.util.TimeUnit;
-import org.apache.calcite.avatica.util.TimeUnitRange;
+import org.polypheny.db.nodes.TimeUnitRange;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.Util;
+import org.polypheny.db.util.temporal.DateTimeUtils;
+import org.polypheny.db.util.temporal.TimeUnit;
 
 
 /**
  * Evaluates {@link RexNode} expressions.
- *
+ * <p>
  * Caveats:
  * <ul>
  * <li>It uses interpretation, so it is not very efficient.</li>

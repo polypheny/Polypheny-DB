@@ -27,8 +27,8 @@ public class MqlReplace extends MqlCollectionStatement {
     private final BsonDocument document;
 
 
-    public MqlReplace( ParserPos pos, String collection, BsonDocument document ) {
-        super( collection, pos );
+    public MqlReplace( ParserPos pos, String collection, String namespace, BsonDocument document ) {
+        super( collection, namespace, pos );
         this.document = document;
     }
 

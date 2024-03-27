@@ -250,7 +250,6 @@ public class MonitoringQueueImpl implements MonitoringQueue {
                 // Returns list of metrics which was produced by this particular event
                 final List<MonitoringDataPoint> dataPoints = event.analyze();
                 if ( !dataPoints.isEmpty() ) {
-                    log.warn( "No metrics were extracted from event: {}", event.getId() );
                     // Sends all extracted metrics to subscribers
                     for ( MonitoringDataPoint dataPoint : dataPoints ) {
                         persistentRepository.dataPoint( dataPoint );

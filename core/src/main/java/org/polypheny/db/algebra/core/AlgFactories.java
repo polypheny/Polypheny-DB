@@ -393,8 +393,7 @@ public class AlgFactories {
                     condition,
                     variablesSet,
                     joinType,
-                    semiJoinDone,
-                    ImmutableList.of() );
+                    semiJoinDone );
         }
 
     }

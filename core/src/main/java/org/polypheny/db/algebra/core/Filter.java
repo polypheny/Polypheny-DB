@@ -36,6 +36,7 @@ package org.polypheny.db.algebra.core;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
@@ -62,6 +63,7 @@ import org.polypheny.db.util.Litmus;
  *
  * @see LogicalRelFilter
  */
+@Getter
 public abstract class Filter extends SingleAlg {
 
     protected final RexNode condition;
@@ -107,11 +109,6 @@ public abstract class Filter extends SingleAlg {
             return this;
         }
         return copy( traitSet, getInput(), condition );
-    }
-
-
-    public RexNode getCondition() {
-        return condition;
     }
 
 

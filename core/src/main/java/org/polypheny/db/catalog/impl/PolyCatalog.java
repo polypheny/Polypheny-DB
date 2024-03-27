@@ -53,7 +53,6 @@ import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.LogicalQueryInterface;
 import org.polypheny.db.catalog.entity.LogicalUser;
-import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -70,6 +69,7 @@ import org.polypheny.db.catalog.persistance.Persister;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.catalog.snapshot.impl.SnapshotBuilder;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.util.Pair;
 
@@ -182,20 +182,6 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         this.snapshot = SnapshotBuilder.createSnapshot( idBuilder.getNewSnapshotId(), this, logicalCatalogs, allocationCatalogs );
 
         this.listeners.firePropertyChange( "snapshot", null, this.snapshot );
-    }
-
-
-    private void addNamespaceIfNecessary( AllocationEntity entity ) {
-        Adapter<?> adapter = AdapterManager.getInstance().getAdapter( entity.adapterId ).orElseThrow();
-
-        if ( adapter.getCurrentNamespace() == null || adapter.getCurrentNamespace().getId() != entity.namespaceId ) {
-            adapter.updateNamespace( entity.name, entity.namespaceId );
-        }
-
-        // re-add physical namespace, we could check first, but not necessary
-
-        getAdapterCatalog( entity.adapterId ).ifPresent( e -> e.addNamespace( entity.namespaceId, adapter.getCurrentNamespace() ) );
-
     }
 
 
@@ -457,7 +443,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     @Override
-    public void restore() {
+    public void restore( Transaction transaction ) {
         this.backup = persister.read();
         if ( this.backup == null || this.backup.isEmpty() ) {
             log.warn( "No file found to restore" );
@@ -471,7 +457,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
         adapterRestore.forEach( ( id, restore ) -> {
             Adapter<?> adapter = AdapterManager.getInstance().getAdapter( id ).orElseThrow();
-            restore.activate( adapter );
+            restore.activate( adapter, transaction.createStatement().getPrepareContext() );
         } );
 
         updateSnapshot();

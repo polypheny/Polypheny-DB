@@ -175,7 +175,13 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public long createNamespace( String name, DataModel type, boolean ifNotExists, boolean replace, Statement statement ) {
+    public long createNamespace( String initialName, DataModel type, boolean ifNotExists, boolean replace, Statement statement ) {
+        String name = initialName.toLowerCase();
+        // Check that name is not blocked
+        if ( blockedNamespaceNames.contains( name ) ) {
+            throw new GenericRuntimeException( String.format( "Namespace name %s is not allowed.", name ) );
+        }
+
         // Check if there is already a namespace with this name
         Optional<LogicalNamespace> optionalNamespace = catalog.getSnapshot().getNamespace( name );
         if ( optionalNamespace.isPresent() ) {
@@ -278,7 +284,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void dropAdapter( String name, Statement statement ) {
-        long defaultNamespaceId = 1;
+        long defaultNamespaceId = Catalog.defaultNamespaceId;
         name = name.replace( "'", "" );
 
         LogicalAdapter adapter = catalog.getSnapshot().getAdapter( name ).orElseThrow();
@@ -312,6 +318,9 @@ public class DdlManagerImpl extends DdlManager {
                     for ( AllocationColumn column : allocation.unwrap( AllocationTable.class ).get().getColumns() ) {
                         catalog.getAllocRel( defaultNamespaceId ).deleteColumn( allocation.id, column.columnId );
                     }
+
+                    // delete allocation
+                    catalog.getAllocRel( defaultNamespaceId ).deleteAllocation( allocation.id );
 
                     // Remove primary keys
                     catalog.getLogicalRel( defaultNamespaceId ).deletePrimaryKey( table.id );

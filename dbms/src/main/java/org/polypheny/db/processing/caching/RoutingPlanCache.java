@@ -82,20 +82,7 @@ public class RoutingPlanCache {
 
 
     public void put( String queryId, Set<Long> partitionIds, List<CachedProposedRoutingPlan> routingPlans ) {
-        // this seems to be a bug, which occurs when Unions are used. As the cached execution later on needs
-        // all physicalPlacementsOfPartitions or else it will fail later on.
-        // We check here and don't cache if the plan is not complete
-        // This might be only a symptom fix and needs fixing in the ProposedPlan itself
-        /*if ( routingPlans.stream().allMatch( p -> {
-            if ( !partitionIds.stream().allMatch( i -> p.physicalPlacementsOfPartitions.containsKey( i ) ) ) {
-                log.warn( "Does not contain all placement." );
-                return false;
-            }
-            return true;
-        } ) ) {*/
         planCache.put( new Pair<>( queryId, partitionIds ), routingPlans );
-        //}
-
     }
 
 

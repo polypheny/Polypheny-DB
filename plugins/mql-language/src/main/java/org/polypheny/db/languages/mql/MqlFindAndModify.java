@@ -50,8 +50,8 @@ public class MqlFindAndModify extends MqlCollectionStatement implements MqlQuery
     private final BsonDocument let;
 
 
-    public MqlFindAndModify( ParserPos pos, String collection, BsonDocument document ) {
-        super( collection, pos );
+    public MqlFindAndModify( ParserPos pos, String collection, String namespace, BsonDocument document ) {
+        super( collection, namespace, pos );
         this.query = getDocumentOrNull( document, "query" );
         this.sort = getDocumentOrNull( document, "sort" );
         this.remove = getBoolean( document, "remove" );

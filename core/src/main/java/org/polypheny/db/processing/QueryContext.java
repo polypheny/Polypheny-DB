@@ -31,6 +31,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Node;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
 
@@ -54,6 +55,9 @@ public class QueryContext {
 
     @Builder.Default
     long userId = Catalog.defaultUserId;
+
+    @Builder.Default
+    Statement statement = null;
 
     @NotNull
     String origin;
@@ -86,6 +90,12 @@ public class QueryContext {
 
 
         public static ParsedQueryContext fromQuery( String query, Node queryNode, QueryContext context ) {
+            long namespaceId = context.namespaceId;
+
+            if ( queryNode != null && queryNode.getNamespaceName() != null ) {
+                namespaceId = Catalog.snapshot().getNamespace( queryNode.getNamespaceName() ).map( n -> n.id ).orElse( queryNode.getNamespaceId() );
+            }
+
             return ParsedQueryContext.builder()
                     .query( query )
                     .queryNode( queryNode )
@@ -95,7 +105,7 @@ public class QueryContext {
                     .userId( context.userId )
                     .origin( context.getOrigin() )
                     .batch( context.batch )
-                    .namespaceId( context.namespaceId )
+                    .namespaceId( namespaceId )
                     .transactions( context.transactions )
                     .transactionManager( context.transactionManager )
                     .informationTarget( context.informationTarget ).build();

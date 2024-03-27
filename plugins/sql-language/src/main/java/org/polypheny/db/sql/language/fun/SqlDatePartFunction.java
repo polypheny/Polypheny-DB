@@ -18,7 +18,6 @@ package org.polypheny.db.sql.language.fun;
 
 
 import java.util.List;
-import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -36,6 +35,7 @@ import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.InferTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
+import org.polypheny.db.util.temporal.TimeUnit;
 
 
 /**

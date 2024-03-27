@@ -53,11 +53,9 @@ public class ValidatorUtil {
      * @param joinType Type of join
      * @param typeFactory Type factory
      * @param fieldNameList List of names of fields; if null, field names are inherited and made unique
-     * @param systemFieldList List of system fields that will be prefixed to output row type; typically empty but must not be null
      * @return join type
      */
-    public static AlgDataType deriveJoinRowType( AlgDataType leftType, AlgDataType rightType, JoinAlgType joinType, AlgDataTypeFactory typeFactory, List<String> fieldNameList, List<AlgDataTypeField> systemFieldList ) {
-        assert systemFieldList != null;
+    public static AlgDataType deriveJoinRowType( AlgDataType leftType, AlgDataType rightType, JoinAlgType joinType, AlgDataTypeFactory typeFactory, List<String> fieldNameList ) {
         switch ( joinType ) {
             case LEFT:
                 rightType = typeFactory.createTypeWithNullability( rightType, true );
@@ -72,7 +70,7 @@ public class ValidatorUtil {
             default:
                 break;
         }
-        return createJoinType( typeFactory, leftType, rightType, fieldNameList, systemFieldList );
+        return createJoinType( typeFactory, leftType, rightType, fieldNameList );
     }
 
 
@@ -85,14 +83,12 @@ public class ValidatorUtil {
      * @param leftType Type of left input to join
      * @param rightType Type of right input to join, or null for semi-join
      * @param fieldNameList If not null, overrides the original names of the fields
-     * @param systemFieldList List of system fields that will be prefixed to output row type; typically empty but must not be null
      * @return type of row which results when two relations are joined
      */
-    public static AlgDataType createJoinType( AlgDataTypeFactory typeFactory, AlgDataType leftType, AlgDataType rightType, List<String> fieldNameList, List<AlgDataTypeField> systemFieldList ) {
+    public static AlgDataType createJoinType( AlgDataTypeFactory typeFactory, AlgDataType leftType, AlgDataType rightType, List<String> fieldNameList ) {
         assert (fieldNameList == null)
                 || (fieldNameList.size()
-                == (systemFieldList.size()
-                + leftType.getFieldCount()
+                == (leftType.getFieldCount()
                 + rightType.getFieldCount()));
         List<String> nameList = new ArrayList<>();
         final List<AlgDataType> typeList = new ArrayList<>();
@@ -103,7 +99,6 @@ public class ValidatorUtil {
                 typeFactory.getTypeSystem().isSchemaCaseSensitive()
                         ? new HashSet<>()
                         : new TreeSet<>( String.CASE_INSENSITIVE_ORDER );
-        addFields( systemFieldList, typeList, nameList, ids, uniqueNameList );
         addFields( leftType.getFields(), typeList, nameList, ids, uniqueNameList );
         if ( rightType != null ) {
             addFields( rightType.getFields(), typeList, nameList, ids, uniqueNameList );

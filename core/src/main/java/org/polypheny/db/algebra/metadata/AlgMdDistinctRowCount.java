@@ -278,7 +278,7 @@ public class AlgMdDistinctRowCount implements MetadataHandler<BuiltInMetadata.Di
                 Double d2 = mq.getDistinctRowCount( r2, groupKey, predicate );
                 d = NumberUtil.min( d, d2 );
             } catch ( CyclicMetadataException e ) {
-                // Ignore this relational expression; there will be non-cyclic ones in this set.
+                // Ignore this algebra expression; there will be non-cyclic ones in this set.
             }
         }
         return d;

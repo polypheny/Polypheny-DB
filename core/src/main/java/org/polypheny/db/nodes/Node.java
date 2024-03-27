@@ -91,6 +91,11 @@ public interface Node extends Cloneable, Visitable {
         return Catalog.defaultNamespaceId;
     }
 
+    @Nullable
+    default String getNamespaceName() {
+        return null;
+    }
+
     /**
      * Returns whether this node is structurally equivalent to another node.
      * Some examples:

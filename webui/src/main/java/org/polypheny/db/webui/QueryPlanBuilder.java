@@ -84,7 +84,7 @@ public class QueryPlanBuilder {
         }
         switch ( node.type ) {
             case "Scan":
-                return builder.relScan( node.tableName.split( "\\." ) ).as( node.tableName.split( "\\." )[1] );
+                return builder.relScan( node.entityName.split( "\\." ) ).as( node.entityName.split( "\\." )[1] );
             case "Join":
                 return builder.join( node.join, builder.call( getOperator( node.operator ), builder.field( node.inputCount, field1[0], field1[1] ), builder.field( node.inputCount, field2[0], field2[1] ) ) );
             case "Filter":

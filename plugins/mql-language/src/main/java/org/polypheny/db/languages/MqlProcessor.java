@@ -17,6 +17,7 @@
 package org.polypheny.db.languages;
 
 import com.google.common.collect.ImmutableList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -72,6 +73,10 @@ public class MqlProcessor extends Processor {
             log.debug( "MQL: {}", mql );
         }
 
+        // preprocessing
+
+        mql = preprocess( mql );
+
         try {
             final MqlParser parser = MqlParser.create( new SourceStringReader( mql ), parserConfig );
             parsed = parser.parseStmt();
@@ -87,6 +92,23 @@ public class MqlProcessor extends Processor {
             log.debug( "Parsing PolyMQL statement ... done. [{}]", stopWatch );
         }
         return ImmutableList.of( parsed );
+    }
+
+
+    private String preprocess( String query ) {
+        String lowercase = query.toLowerCase();
+        if ( lowercase.startsWith( "use " ) || lowercase.startsWith( "show " ) || lowercase.startsWith( "db." ) ) {
+            return query;
+        }
+        String[] splits = query.split( "\\." );
+        if ( splits.length > 1 ) {
+            // we prefix query "entity".command( with db."entity.command(" as this is simpler to parse
+            if ( splits[1].contains( "(" ) && !(splits[1].startsWith( "create" ) || splits[1].startsWith( "drop" )) ) {
+                return "db." + query;
+            }
+        }
+
+        return query;
     }
 
 
@@ -147,6 +169,12 @@ public class MqlProcessor extends Processor {
     @Override
     public AlgDataType getParameterRowType( Node left ) {
         return null;
+    }
+
+
+    @Override
+    public List<String> splitStatements( String statements ) {
+        return Arrays.stream( statements.split( ";" ) ).filter( q -> !q.trim().isEmpty() ).toList();
     }
 
 }

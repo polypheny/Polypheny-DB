@@ -335,6 +335,19 @@ public class GoogleSheetSource extends DataSource<RelAdapterCatalog> {
     }
 
 
+    protected void updateNativePhysical( long allocId ) {
+        PhysicalTable table = this.adapterCatalog.fromAllocation( allocId );
+        adapterCatalog.replacePhysical( this.currentNamespace.createGoogleSheetTable( table, this ) );
+    }
+
+
+    @Override
+    public void renameLogicalColumn( long id, String newColumnName ) {
+        adapterCatalog.renameLogicalColumn( id, newColumnName );
+        adapterCatalog.fields.values().stream().filter( c -> c.id == id ).forEach( c -> updateNativePhysical( c.allocId ) );
+    }
+
+
     @Override
     public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
         PhysicalTable table = adapterCatalog.createTable(
@@ -368,7 +381,10 @@ public class GoogleSheetSource extends DataSource<RelAdapterCatalog> {
     }
 
 
+    @SuppressWarnings("unused")
     private interface Excludes {
+
+        void renameLogicalColumn( long id, String newColumnName );
 
         void refreshTable( long allocId );
 

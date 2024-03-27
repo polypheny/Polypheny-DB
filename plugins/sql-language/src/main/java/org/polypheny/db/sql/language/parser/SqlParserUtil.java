@@ -51,6 +51,7 @@ import org.polypheny.db.sql.language.SqlSpecialOperator;
 import org.polypheny.db.sql.language.SqlSpecialOperator.TokenSequence;
 import org.polypheny.db.sql.language.SqlTimeLiteral;
 import org.polypheny.db.sql.language.SqlTimestampLiteral;
+import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
@@ -108,10 +109,105 @@ public final class SqlParserUtil {
 
     public static SqlIntervalLiteral parseIntervalLiteral( ParserPos pos, int sign, String s, SqlIntervalQualifier intervalQualifier ) {
         final String intervalStr = CoreUtil.parseString( s );
-        if ( intervalStr.equals( "" ) ) {
+        if ( intervalStr.isEmpty() ) {
             throw CoreUtil.newContextException( pos, RESOURCE.illegalIntervalLiteral( s + " " + intervalQualifier.toString(), pos.toString() ) );
         }
-        return SqlLiteral.createInterval( sign, intervalStr, intervalQualifier, pos );
+        return SqlLiteral.createInterval( parseInterval( sign, s, intervalQualifier ), intervalQualifier, pos );
+    }
+
+
+    private static PolyInterval parseInterval( int sign, String interval, SqlIntervalQualifier intervalQualifier ) {
+        String cleaned = interval.replace( "'", "" ).replace( "\"", "" );
+        // takes only natural numbers like 1, 3, -1
+        if ( !cleaned.contains( ":" ) && !cleaned.contains( "." ) && (!cleaned.contains( "-" ) || (cleaned.split( "-" ).length == 2 && cleaned.startsWith( "-" ))) && !cleaned.contains( " " ) ) {
+            return PolyInterval.of( Long.parseLong( cleaned ) * sign, intervalQualifier );
+        }
+
+        return switch ( intervalQualifier.timeUnitRange ) {
+            case MINUTE_TO_SECOND, MINUTE -> {
+                final String[] splits = cleaned.split( ":" );
+                final String[] seconds = splits[1].split( "\\." );
+                long secondsValue = Long.parseLong( seconds[0] );
+                long minutes = Long.parseLong( splits[0] );
+                long millis = seconds.length > 1 ? Long.parseLong( seconds[1].substring( 0, Math.min( seconds[1].length(), 3 ) ) ) : 0L;
+                sign = sign * (int) Math.signum( minutes );
+                yield new PolyInterval( sign * (millis + secondsValue * 1000 + Math.abs( minutes ) * 60 * 1000), 0L );
+            }
+            case HOUR_TO_MINUTE, HOUR -> {
+                final String[] splits = cleaned.split( ":" );
+                long minutes = Long.parseLong( splits[1] );
+                long hours = Long.parseLong( splits[0] );
+                sign = sign * (int) Math.signum( hours );
+                yield new PolyInterval( sign * (minutes * 60 * 1000 + Math.abs( hours ) * 60 * 60 * 1000), 0L );
+            }
+            case HOUR_TO_SECOND -> {
+                final String[] splits = cleaned.split( ":" );
+                final String[] seconds = splits[2].split( "\\." );
+                long millis = seconds.length > 1 ? Long.parseLong( seconds[1].substring( 0, Math.min( seconds[1].length(), 3 ) ) ) : 0L;
+                long secondsValue = Long.parseLong( seconds[0] );
+                long minutes = Long.parseLong( splits[1] );
+                long hours = Long.parseLong( splits[0] );
+                sign = sign * (int) Math.signum( hours );
+                yield new PolyInterval( sign * (millis + secondsValue * 1000 + minutes * 60 * 1000 + Math.abs( hours ) * 60 * 60 * 1000), 0L );
+            }
+            case YEAR -> {
+                final String[] splits = cleaned.split( ":" );
+                long years = Long.parseLong( splits[0] );
+                long months = Long.parseLong( splits[1] );
+                yield new PolyInterval( 0L, sign * (years * 12 + months) );
+            }
+            case YEAR_TO_MONTH -> {
+                int signExtracted = sign;
+                if ( cleaned.startsWith( "-" ) ) {
+                    signExtracted = -1 * signExtracted;
+                    cleaned = cleaned.substring( 1 );
+                }
+                final String[] splits = cleaned.split( "-" );
+                long years = Long.parseLong( splits[0] );
+                long months = Long.parseLong( splits[1] );
+                yield new PolyInterval( 0L, signExtracted * (years * 12 + months) );
+            }
+            case DAY_TO_HOUR -> {
+                final String[] splits = cleaned.split( " " );
+                long hours = Long.parseLong( splits[1] );
+                long days = Long.parseLong( splits[0] );
+                sign = sign * (int) Math.signum( days );
+                yield new PolyInterval( sign * (hours * 60 * 60 * 1000 + Math.abs( days ) * 24 * 60 * 60 * 1000), 0L );
+            }
+            case DAY_TO_MINUTE -> {
+                final String[] splits = cleaned.split( " " );
+                final String[] time = splits[1].split( ":" );
+                long minutes = Long.parseLong( time[1] );
+                long hours = Long.parseLong( time[0] );
+                long days = Long.parseLong( splits[0] );
+                sign = sign * (int) Math.signum( days );
+                yield new PolyInterval( sign * (minutes * 60 * 1000 + hours * 60 * 60 * 1000 + Math.abs( days ) * 24 * 60 * 60 * 1000), 0L );
+            }
+            case DAY_TO_SECOND -> {
+                final String[] splits = cleaned.split( " " );
+                final String[] time = splits[1].split( ":" );
+                final String[] seconds = time[2].split( "\\." );
+                long millis = seconds.length > 1 ? Long.parseLong( seconds[1].substring( 0, Math.min( seconds[1].length(), 3 ) ) ) : 0L;
+                long secondsValue = Long.parseLong( seconds[0] );
+                long minutes = Long.parseLong( time[1] );
+                long hours = Long.parseLong( time[0] );
+                long days = Long.parseLong( splits[0] );
+                sign = sign * (int) Math.signum( days );
+                yield new PolyInterval( sign * (millis + secondsValue * 1000 + minutes * 60 * 1000 + hours * 60 * 60 * 1000 + Math.abs( days ) * 24 * 60 * 60 * 1000), 0L );
+            }
+            case SECOND -> {
+                final String[] splits = cleaned.split( "\\." );
+                long millis = splits.length > 1 ? Long.parseLong( splits[1].substring( 0, Math.min( splits[1].length(), 3 ) ) ) : 0L;
+                long secondsValue = Long.parseLong( splits[0] );
+                sign = sign * (int) Math.signum( secondsValue );
+                yield new PolyInterval( sign * (millis + Math.abs( secondsValue ) * 1000), 0L );
+            }
+            case DAY -> {
+                long days = Long.parseLong( cleaned );
+                yield new PolyInterval( days * 24 * 60 * 60 * 1000, 0L );
+            }
+            default -> throw new AssertionError( intervalQualifier.timeUnitRange );
+        };
     }
 
 

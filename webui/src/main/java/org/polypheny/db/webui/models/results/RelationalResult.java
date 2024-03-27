@@ -67,6 +67,7 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
             @JsonProperty("UiColumnDefinition") UiColumnDefinition[] header,
             @JsonProperty("exception") Throwable exception,
             @JsonProperty("query") String query,
+            @JsonProperty("queryType") QueryType queryType,
             @JsonProperty("xid") String xid,
             @JsonProperty("error") String error,
             @JsonProperty("currentPage") int currentPage,
@@ -78,7 +79,21 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
             @JsonProperty("ResultType") ResultType type,
             @JsonProperty("hasMoreRows") boolean hasMore,
             @JsonProperty("language") QueryLanguage language ) {
-        super( dataModel, namespace, data, header, exception, query, xid, error, currentPage, highestPage, hasMore, language, affectedTuples );
+        super(
+                dataModel,
+                namespace,
+                data,
+                header,
+                exception,
+                query,
+                queryType,
+                xid,
+                error,
+                currentPage,
+                highestPage,
+                hasMore,
+                language,
+                affectedTuples );
         this.table = table;
         this.tables = tables;
         this.request = request;
@@ -89,6 +104,7 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
     public static RelationalResultBuilder<?, ?> builder() {
         return new RelationalResultBuilderImpl();
     }
+
 
     public String toJson() {
         try {
@@ -134,8 +150,6 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
             this.exception = exception;
             return self();
         }
-
-
 
 
         public B type( ResultType type ) {

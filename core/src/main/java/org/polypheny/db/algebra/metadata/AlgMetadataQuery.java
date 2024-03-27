@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.AlgNode;
@@ -58,27 +59,28 @@ import org.polypheny.db.util.ImmutableBitSet;
 
 
 /**
- * RelMetadataQuery provides a strongly-typed facade on top of {@link AlgMetadataProvider} for the set of relational expression metadata queries defined as standard within Polypheny-DB.
+ * AlgMetadataQuery provides a strongly-typed facade on top of {@link AlgMetadataProvider} for the set of algebra expression metadata queries defined as standard within Polypheny-DB.
  * The Javadoc on these methods serves as their primary specification.
- *
+ * <p>
  * To add a new standard query <code>Xyz</code> to this interface, follow these steps:
  *
  * <ol>
  * <li>Add a static method <code>getXyz</code> specification to this class.</li>
  * <li>Add unit tests to {@code org.polypheny.db.test.RelMetadataTest}.</li>
- * <li>Write a new provider class <code>RelMdXyz</code> in this package. Follow the pattern from an existing class such as {@link AlgMdColumnOrigins}, overloading on all of the logical relational expressions to which the query applies.</li>
+ * <li>Write a new provider class <code>RelMdXyz</code> in this package. Follow the pattern from an existing class such as {@link AlgMdColumnOrigins}, overloading on all of the logical algebra expressions to which the query applies.</li>
  * <li>Add a {@code SOURCE} static member, similar to {@link AlgMdColumnOrigins#SOURCE}.</li>
  * <li>Register the {@code SOURCE} object in {@link DefaultAlgMetadataProvider}.</li>
  * <li>Get unit tests working.
  * </ol>
  *
- * Because relational expression metadata is extensible, extension projects can define similar facades in order to specify access to custom metadata. Please do not add queries here (nor on {@link AlgNode}) which lack meaning
+ * Because algebra expression metadata is extensible, extension projects can define similar facades in order to specify access to custom metadata. Please do not add queries here (nor on {@link AlgNode}) which lack meaning
  * outside of your extension.
- *
- * Besides adding new metadata queries, extension projects may need to add custom providers for the standard queries in order to handle additional relational expressions (either logical or physical). In either case, the
+ * <p>
+ * Besides adding new metadata queries, extension projects may need to add custom providers for the standard queries in order to handle additional algebra expressions (either logical or physical). In either case, the
  * process is the same: write a reflective provider and chain it on to an instance of {@link DefaultAlgMetadataProvider}, pre-pending it to the default providers. Then supply that instance to the planner via the appropriate
  * plugin mechanism.
  */
+@Slf4j
 public class AlgMetadataQuery {
 
     /**
@@ -156,7 +158,7 @@ public class AlgMetadataQuery {
 
 
     /**
-     * Returns an instance of RelMetadataQuery. It ensures that cycles do not occur while computing metadata.
+     * Returns an instance of AlgMetadataQuery. It ensures that cycles do not occur while computing metadata.
      */
     public static AlgMetadataQuery instance() {
         return new AlgMetadataQuery( THREAD_PROVIDERS.get(), EMPTY );
@@ -206,7 +208,7 @@ public class AlgMetadataQuery {
     /**
      * Returns the {@link BuiltInMetadata.NodeTypes#getNodeTypes()} statistic.
      *
-     * @param alg the relational expression
+     * @param alg the algebra expression
      */
     public Multimap<Class<? extends AlgNode>, AlgNode> getNodeTypes( AlgNode alg ) {
         for ( ; ; ) {
@@ -222,8 +224,8 @@ public class AlgMetadataQuery {
     /**
      * Returns the {@link TupleCount#getTupleCount()} statistic.
      *
-     * @param alg the relational expression
-     * @return estimated row count, or null if no reliable estimate can be determined
+     * @param alg the algebra expression
+     * @return estimated tuple count, or null if no reliable estimate can be determined
      */
     public Double getTupleCount( AlgNode alg ) {
         for ( ; ; ) {
@@ -232,6 +234,9 @@ public class AlgMetadataQuery {
                 return validateResult( result );
             } catch ( JaninoRelMetadataProvider.NoHandler e ) {
                 rowCountHandler = revise( e.algClass, TupleCount.DEF );
+            } catch ( CyclicMetadataException e ) {
+                log.warn( "Cyclic metadata detected while computing row count for {}", alg );
+                return null; // Ignore this algebra expression; there will be non-cyclic ones in this set.
             }
         }
     }
@@ -240,7 +245,7 @@ public class AlgMetadataQuery {
     /**
      * Returns the {@link BuiltInMetadata.MaxRowCount#getMaxRowCount()} statistic.
      *
-     * @param alg the relational expression
+     * @param alg the algebra expression
      * @return max row count
      */
     public Double getMaxRowCount( AlgNode alg ) {
@@ -257,7 +262,7 @@ public class AlgMetadataQuery {
     /**
      * Returns the {@link BuiltInMetadata.MinRowCount#getMinRowCount()} statistic.
      *
-     * @param alg the relational expression
+     * @param alg the algebra expression
      * @return max row count
      */
     public Double getMinRowCount( AlgNode alg ) {
@@ -274,8 +279,8 @@ public class AlgMetadataQuery {
     /**
      * Returns the {@link BuiltInMetadata.CumulativeCost#getCumulativeCost()} statistic.
      *
-     * @param alg the relational expression
-     * @return estimated cost, or null if no algiable estimate can be determined
+     * @param alg the algebra expression
+     * @return estimated cost, or null if no reliable estimate can be determined
      */
     public AlgOptCost getCumulativeCost( AlgNode alg ) {
         for ( ; ; ) {
@@ -291,8 +296,8 @@ public class AlgMetadataQuery {
     /**
      * Returns the {@link BuiltInMetadata.NonCumulativeCost#getNonCumulativeCost()} statistic.
      *
-     * @param alg the relational expression
-     * @return estimated cost, or null if no algiable estimate can be determined
+     * @param alg the algebra expression
+     * @return estimated cost, or null if no reliable estimate can be determined
      */
     public AlgOptCost getNonCumulativeCost( AlgNode alg ) {
         for ( ; ; ) {
@@ -308,8 +313,8 @@ public class AlgMetadataQuery {
     /**
      * Returns the {@link BuiltInMetadata.PercentageOriginalRows#getPercentageOriginalRows()} statistic.
      *
-     * @param alg the relational expression
-     * @return estimated percentage (between 0.0 and 1.0), or null if no algiable estimate can be determined
+     * @param alg the algebra expression
+     * @return estimated percentage (between 0.0 and 1.0), or null if no reliable estimate can be determined
      */
     public Double getPercentageOriginalRows( AlgNode alg ) {
         for ( ; ; ) {
@@ -326,7 +331,7 @@ public class AlgMetadataQuery {
     /**
      * Returns the {@link BuiltInMetadata.ColumnOrigin#getColumnOrigins(int)} statistic.
      *
-     * @param alg the relational expression
+     * @param alg the algebra expression
      * @param column 0-based ordinal for output column of interest
      * @return set of origin columns, or null if this information cannot be determined (whereas empty set indicates definitely no origin columns at all)
      */
@@ -409,9 +414,9 @@ public class AlgMetadataQuery {
     /**
      * Returns the {@link BuiltInMetadata.Selectivity#getSelectivity(RexNode)} statistic.
      *
-     * @param alg the relational expression
+     * @param alg the algebra expression
      * @param predicate predicate whose selectivity is to be estimated against {@code alg}'s output
-     * @return estimated selectivity (between 0.0 and 1.0), or null if no algiable estimate can be determined
+     * @return estimated selectivity (between 0.0 and 1.0), or null if no reliable estimate can be determined
      */
     public Double getSelectivity( AlgNode alg, RexNode predicate ) {
         for ( ; ; ) {
@@ -428,7 +433,7 @@ public class AlgMetadataQuery {
     /**
      * Returns the {@link BuiltInMetadata.UniqueKeys#getUniqueKeys(boolean)} statistic.
      *
-     * @param alg the relational expression
+     * @param alg the algebra expression
      * @return set of keys, or null if this information cannot be determined (whereas empty set indicates definitely no keys at all)
      */
     public Set<ImmutableBitSet> getUniqueKeys( AlgNode alg ) {
@@ -439,7 +444,7 @@ public class AlgMetadataQuery {
     /**
      * Returns the {@link BuiltInMetadata.UniqueKeys#getUniqueKeys(boolean)} statistic.
      *
-     * @param alg the relational expression
+     * @param alg the algebra expression
      * @param ignoreNulls if true, ignore null values when determining whether the keys are unique
      * @return set of keys, or null if this information cannot be determined (whereas empty set indicates definitely no keys at all)
      */
@@ -455,10 +460,10 @@ public class AlgMetadataQuery {
 
 
     /**
-     * Returns whether the rows of a given relational expression are distinct. This is derived by applying the {@link BuiltInMetadata.ColumnUniqueness#areColumnsUnique(ImmutableBitSet, boolean)}
+     * Returns whether the rows of a given algebra expression are distinct. This is derived by applying the {@link BuiltInMetadata.ColumnUniqueness#areColumnsUnique(ImmutableBitSet, boolean)}
      * statistic over all columns.
      *
-     * @param alg the relational expression
+     * @param alg the algebra expression
      * @return true or false depending on whether the rows are unique, or null if not enough information is available to make that determination
      */
     public Boolean areRowsUnique( AlgNode alg ) {
@@ -470,7 +475,7 @@ public class AlgMetadataQuery {
     /**
      * Returns the {@link BuiltInMetadata.ColumnUniqueness#areColumnsUnique(ImmutableBitSet, boolean)} statistic.
      *
-     * @param alg the relational expression
+     * @param alg the algebra expression
      * @param columns column mask representing the subset of columns for which uniqueness will be determined
      * @return true or false depending on whether the columns are unique, or null if not enough information is available to make that determination
      */
@@ -482,7 +487,7 @@ public class AlgMetadataQuery {
     /**
      * Returns the {@link BuiltInMetadata.ColumnUniqueness#areColumnsUnique(ImmutableBitSet, boolean)} statistic.
      *
-     * @param alg the relational expression
+     * @param alg the algebra expression
      * @param columns column mask representing the subset of columns for which uniqueness will be determined
      * @param ignoreNulls if true, ignore null values when determining column uniqueness
      * @return true or false depending on whether the columns are unique, or null if not enough information is available to make that determination
@@ -501,7 +506,7 @@ public class AlgMetadataQuery {
     /**
      * Returns the {@link BuiltInMetadata.Collation#collations()} statistic.
      *
-     * @param alg the relational expression
+     * @param alg the algebra expression
      * @return List of sorted column combinations, or null if not enough information is available to make that determination
      */
     public ImmutableList<AlgCollation> collations( AlgNode alg ) {
@@ -518,7 +523,7 @@ public class AlgMetadataQuery {
     /**
      * Returns the {@link BuiltInMetadata.Distribution#distribution()} statistic.
      *
-     * @param alg the relational expression
+     * @param alg the algebra expression
      * @return List of sorted column combinations, or null if not enough information is available to make that determination
      */
     public AlgDistribution distribution( AlgNode alg ) {
@@ -535,9 +540,9 @@ public class AlgMetadataQuery {
     /**
      * Returns the {@link BuiltInMetadata.PopulationSize#getPopulationSize(ImmutableBitSet)} statistic.
      *
-     * @param alg the relational expression
+     * @param alg the algebra expression
      * @param groupKey column mask representing the subset of columns for which the row count will be determined
-     * @return distinct row count for the given groupKey, or null if no algiable estimate can be determined
+     * @return distinct row count for the given groupKey, or null if no reliable estimate can be determined
      */
     public Double getPopulationSize(
             AlgNode alg,
@@ -556,7 +561,7 @@ public class AlgMetadataQuery {
     /**
      * Returns the {@link BuiltInMetadata.Size#averageRowSize()} statistic.
      *
-     * @param alg the relational expression
+     * @param alg the algebra expression
      * @return average size of a row, in bytes, or null if not known
      */
     public Double getAverageRowSize( AlgNode alg ) {
@@ -573,7 +578,7 @@ public class AlgMetadataQuery {
     /**
      * Returns the {@link BuiltInMetadata.Size#averageColumnSizes()} statistic.
      *
-     * @param alg the relational expression
+     * @param alg the algebra expression
      * @return a list containing, for each column, the average size of a column value, in bytes. Each value or the entire list may be null if the metadata is not available
      */
     public List<Double> getAverageColumnSizes( AlgNode alg ) {
@@ -601,8 +606,8 @@ public class AlgMetadataQuery {
     /**
      * Returns the {@link BuiltInMetadata.Parallelism#isPhaseTransition()} statistic.
      *
-     * @param alg the relational expression
-     * @return whether each physical operator implementing this relational expression belongs to a different process than its inputs, or null if not known
+     * @param alg the algebra expression
+     * @return whether each physical operator implementing this algebra expression belongs to a different process than its inputs, or null if not known
      */
     public Boolean isPhaseTransition( AlgNode alg ) {
         for ( ; ; ) {
@@ -618,7 +623,7 @@ public class AlgMetadataQuery {
     /**
      * Returns the {@link BuiltInMetadata.Parallelism#splitCount()} statistic.
      *
-     * @param alg the relational expression
+     * @param alg the algebra expression
      * @return the number of distinct splits of the data, or null if not known
      */
     public Integer splitCount( AlgNode alg ) {
@@ -635,8 +640,8 @@ public class AlgMetadataQuery {
     /**
      * Returns the {@link BuiltInMetadata.Memory#memory()} statistic.
      *
-     * @param alg the relational expression
-     * @return the expected amount of memory, in bytes, required by a physical operator implementing this relational expression, across all splits, or null if not known
+     * @param alg the algebra expression
+     * @return the expected amount of memory, in bytes, required by a physical operator implementing this algebra expression, across all splits, or null if not known
      */
     public Double memory( AlgNode alg ) {
         for ( ; ; ) {
@@ -652,8 +657,8 @@ public class AlgMetadataQuery {
     /**
      * Returns the {@link BuiltInMetadata.Memory#cumulativeMemoryWithinPhase()} statistic.
      *
-     * @param alg the relational expression
-     * @return the cumulative amount of memory, in bytes, required by the physical operator implementing this relational expression, and all other operators within the same phase, across all splits, or null if not known
+     * @param alg the algebra expression
+     * @return the cumulative amount of memory, in bytes, required by the physical operator implementing this algebra expression, and all other operators within the same phase, across all splits, or null if not known
      */
     public Double cumulativeMemoryWithinPhase( AlgNode alg ) {
         for ( ; ; ) {
@@ -669,8 +674,8 @@ public class AlgMetadataQuery {
     /**
      * Returns the {@link BuiltInMetadata.Memory#cumulativeMemoryWithinPhaseSplit()} statistic.
      *
-     * @param alg the relational expression
-     * @return the expected cumulative amount of memory, in bytes, required by the physical operator implementing this relational expression, and all operators within the same phase, within each split, or null if not known
+     * @param alg the algebra expression
+     * @return the expected cumulative amount of memory, in bytes, required by the physical operator implementing this algebra expression, and all operators within the same phase, within each split, or null if not known
      */
     public Double cumulativeMemoryWithinPhaseSplit( AlgNode alg ) {
         for ( ; ; ) {
@@ -686,10 +691,10 @@ public class AlgMetadataQuery {
     /**
      * Returns the {@link BuiltInMetadata.DistinctRowCount#getDistinctRowCount(ImmutableBitSet, RexNode)} statistic.
      *
-     * @param alg the relational expression
+     * @param alg the algebra expression
      * @param groupKey column mask representing group by columns
      * @param predicate pre-filtered predicates
-     * @return distinct row count for groupKey, filtered by predicate, or null if no algiable estimate can be determined
+     * @return distinct row count for groupKey, filtered by predicate, or null if no reliable estimate can be determined
      */
     public Double getDistinctRowCount( AlgNode alg, ImmutableBitSet groupKey, RexNode predicate ) {
         for ( ; ; ) {
@@ -706,7 +711,7 @@ public class AlgMetadataQuery {
     /**
      * Returns the {@link BuiltInMetadata.Predicates#getPredicates()} statistic.
      *
-     * @param alg the relational expression
+     * @param alg the algebra expression
      * @return Predicates that can be pulled above this AlgNode
      */
     public AlgOptPredicateList getPulledUpPredicates( AlgNode alg ) {
@@ -723,7 +728,7 @@ public class AlgMetadataQuery {
     /**
      * Returns the {@link BuiltInMetadata.AllPredicates#getAllPredicates()} statistic.
      *
-     * @param alg the relational expression
+     * @param alg the algebra expression
      * @return All predicates within and below this AlgNode
      */
     public AlgOptPredicateList getAllPredicates( AlgNode alg ) {
@@ -740,7 +745,7 @@ public class AlgMetadataQuery {
     /**
      * Returns the {@link BuiltInMetadata.ExplainVisibility#isVisibleInExplain(ExplainLevel)} statistic.
      *
-     * @param alg the relational expression
+     * @param alg the algebra expression
      * @param explainLevel level of detail
      * @return true for visible, false for invisible; if no metadata is available, defaults to true
      */
@@ -765,8 +770,8 @@ public class AlgMetadataQuery {
     /**
      * Returns the {@link BuiltInMetadata.Distribution#distribution()} statistic.
      *
-     * @param alg the relational expression
-     * @return description of how the rows in the relational expression are physically distributed
+     * @param alg the algebra expression
+     * @return description of how the rows in the algebra expression are physically distributed
      */
     public AlgDistribution getDistribution( AlgNode alg ) {
         final BuiltInMetadata.Distribution metadata = alg.metadata( BuiltInMetadata.Distribution.class, this );

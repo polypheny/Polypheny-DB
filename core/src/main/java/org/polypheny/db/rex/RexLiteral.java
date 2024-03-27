@@ -47,7 +47,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Value;
-import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -59,22 +58,22 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.util.Collation;
-import org.polypheny.db.util.CompositeList;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.Unsafe;
 import org.polypheny.db.util.Util;
+import org.polypheny.db.util.temporal.TimeUnit;
 
 
 /**
  * Constant value in a row-expression.
- *
+ * <p>
  * There are several methods for creating literals in {@link RexBuilder}: {@link RexBuilder#makeLiteral(boolean)} and so forth.
- *
+ * <p>
  * How is the value stored? In that respect, the class is somewhat of a black box. There is a {@link #getValue} method which returns the value as an object, but the type of that value is implementation detail,
  * and it is best that your code does not depend upon that knowledge. It is better to use task-oriented methods such as {@link #getValue} and {@link #toJavaString}.
- *
+ * <p>
  * The allowable types and combinations are:
  *
  * <table>
@@ -120,21 +119,12 @@ import org.polypheny.db.util.Util;
  * <td>{@link TimestampString}; also {@link Calendar} (UTC time zone) and {@link Long} (milliseconds since POSIX epoch)</td>
  * </tr>
  * <tr>
- * <td>{@link PolyType#INTERVAL_DAY},
- * {@link PolyType#INTERVAL_DAY_HOUR},
- * {@link PolyType#INTERVAL_DAY_MINUTE},
- * {@link PolyType#INTERVAL_DAY_SECOND},
- * {@link PolyType#INTERVAL_HOUR},
- * {@link PolyType#INTERVAL_HOUR_MINUTE},
- * {@link PolyType#INTERVAL_HOUR_SECOND},
- * {@link PolyType#INTERVAL_MINUTE},
- * {@link PolyType#INTERVAL_MINUTE_SECOND},
- * {@link PolyType#INTERVAL_SECOND}</td>
+ * <td>{@link PolyType#INTERVAL},
  * <td>Interval, for example <code>INTERVAL '4:3:2' HOUR TO SECOND</code></td>
  * <td>{@link BigDecimal}; also {@link Long} (milliseconds)</td>
  * </tr>
  * <tr>
- * <td>{@link PolyType#INTERVAL_YEAR}, {@link PolyType#INTERVAL_YEAR_MONTH}, {@link PolyType#INTERVAL_MONTH}</td>
+ * <td> {@link PolyType#INTERVAL}</td>
  * <td>Interval, for example <code>INTERVAL '2-3' YEAR TO MONTH</code></td>
  * <td>{@link BigDecimal}; also {@link Integer} (months)</td>
  * </tr>
@@ -211,12 +201,12 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
 
     /**
      * Returns a string which concisely describes the definition of this rex literal. Two literals are equivalent if and only if their digests are the same.
-     *
+     * <p>
      * The digest does not contain the expression's identity, but does include the identity of children.
-     *
+     * <p>
      * Technically speaking 1:INT differs from 1:FLOAT, so we need data type in the literal's digest, however we want to avoid extra verbosity of the {@link AlgNode#getDigest()} for readability purposes, so we omit type info in certain cases.
      * For instance, 1:INT becomes 1 (INT is implied by default), however 1:BIGINT always holds the type
-     *
+     * <p>
      * Here's a non-exhaustive list of the "well known cases":
      * <ul>
      * <li>Hide "NOT NULL" for not null literals</li>
@@ -282,9 +272,9 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
             // not allowed -- use Decimal
             case INTEGER, TINYINT, SMALLINT, DECIMAL, DOUBLE, FLOAT, REAL, BIGINT -> value.isNumber();
             case DATE -> value.isDate();
-            case TIME, TIME_WITH_LOCAL_TIME_ZONE -> value.isTime();
-            case TIMESTAMP, TIMESTAMP_WITH_LOCAL_TIME_ZONE -> value.isTimestamp();
-            case INTERVAL_YEAR, INTERVAL_YEAR_MONTH, INTERVAL_MONTH, INTERVAL_DAY, INTERVAL_DAY_HOUR, INTERVAL_DAY_MINUTE, INTERVAL_DAY_SECOND, INTERVAL_HOUR, INTERVAL_HOUR_MINUTE, INTERVAL_HOUR_SECOND, INTERVAL_MINUTE, INTERVAL_MINUTE_SECOND, INTERVAL_SECOND ->
+            case TIME -> value.isTime();
+            case TIMESTAMP -> value.isTimestamp();
+            case INTERVAL ->
                 // The value of a DAY-TIME interval (whatever the start and end units, even say HOUR TO MINUTE) is in milliseconds (perhaps fractional milliseconds). The value of a YEAR-MONTH interval is in months.
                     value.isInterval();
             case VARBINARY -> // not allowed -- use Binary
@@ -336,7 +326,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
     /**
      * Computes if data type can be omitted from the digset.
      * For instance, {@code 1:BIGINT} has to keep data type while {@code 1:INT} should be represented as just {@code 1}.
-     *
+     * <p>
      * Implementation assumption: this method should be fast. In fact might call {@link NlsString#getValue()} which could decode the string, however we rely on the cache there.
      *
      * @param value value of the literal
@@ -384,46 +374,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
     }
 
 
-    /**
-     * Returns a list of the time units covered by an interval type such as HOUR TO SECOND. Adds MILLISECOND if the end is SECOND, to deal with fractional seconds.
-     */
-    private static List<TimeUnit> getTimeUnits( PolyType typeName ) {
-        final TimeUnit start = typeName.getStartUnit();
-        final TimeUnit end = typeName.getEndUnit();
-        final ImmutableList<TimeUnit> list = TIME_UNITS.subList( start.ordinal(), end.ordinal() + 1 );
-        if ( end == TimeUnit.SECOND ) {
-            return CompositeList.of( list, ImmutableList.of( TimeUnit.MILLISECOND ) );
-        }
-        return list;
-    }
-
-
-    public String intervalString( BigDecimal v ) {
-        final List<TimeUnit> timeUnits = getTimeUnits( type.getPolyType() );
-        final StringBuilder b = new StringBuilder();
-        for ( TimeUnit timeUnit : timeUnits ) {
-            final BigDecimal[] result = v.divideAndRemainder( timeUnit.multiplier );
-            if ( !b.isEmpty() ) {
-                b.append( timeUnit.separator );
-            }
-            final int width = b.isEmpty() ? -1 : width( timeUnit ); // don't pad 1st
-            pad( b, result[0].toString(), width );
-            v = result[1];
-        }
-        if ( Util.last( timeUnits ) == TimeUnit.MILLISECOND ) {
-            while ( b.toString().matches( ".*\\.[0-9]*0" ) ) {
-                if ( b.toString().endsWith( ".0" ) ) {
-                    b.setLength( b.length() - 2 ); // remove ".0"
-                } else {
-                    b.setLength( b.length() - 1 ); // remove "0"
-                }
-            }
-        }
-        return b.toString();
-    }
-
-
-    private static void pad( StringBuilder b, String s, int width ) {
+    public static void pad( StringBuilder b, String s, int width ) {
         if ( width >= 0 ) {
             b.append( "0".repeat( Math.max( 0, width - s.length() ) ) );
         }
@@ -431,7 +382,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
     }
 
 
-    private static int width( TimeUnit timeUnit ) {
+    public static int width( TimeUnit timeUnit ) {
         return switch ( timeUnit ) {
             case MILLISECOND -> 3;
             case HOUR, MINUTE, SECOND -> 2;
@@ -442,7 +393,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
 
     /**
      * Prints a value as a Java string. The value must be consistent with the type, as per {@link #valueMatchesType}.
-     *
+     * <p>
      * Typical return values:
      *
      * <ul>
@@ -517,30 +468,16 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
                 pw.print( value.toJson() );
                 break;
             case TIME:
-            case TIME_WITH_LOCAL_TIME_ZONE:
                 assert value.isTime();
                 pw.print( value.toJson() );
                 break;
             case TIMESTAMP:
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                 assert value.isTimestamp();
                 pw.print( value.asTimestamp() );
                 break;
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_MONTH:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
+            case INTERVAL:
                 assert value.isInterval();
-                pw.print( value.asInterval().getValue().toString() );
+                pw.print( value.asInterval().getMonths() + "-" + value.asInterval().getMillis() );
                 break;
             case ARRAY:
                 pw.print( value.asList().stream().map( e -> e == null ? "" : e.toString() ).toList() );

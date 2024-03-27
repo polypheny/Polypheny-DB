@@ -2532,7 +2532,7 @@ public class AlgBuilder {
                 builder.makeInputRef( nodesScan.getTupleType().getFields().get( 0 ).getType(), 0 ),
                 builder.makeInputRef( propertiesScan.getTupleType().getFields().get( 0 ).getType(), nodesScan.getTupleType().getFields().size() ) );
 
-        LogicalRelJoin join = new LogicalRelJoin( nodesScan.getCluster(), out, nodesScan, propertiesScan, nodeCondition, Set.of(), JoinAlgType.LEFT, false, ImmutableList.of() );
+        LogicalRelJoin join = new LogicalRelJoin( nodesScan.getCluster(), out, nodesScan, propertiesScan, nodeCondition, Set.of(), JoinAlgType.LEFT, false );
         return LogicalRelSort.create(
                 join,
                 ImmutableList.of( RexIndexRef.of( 0, join.getTupleType().getFields() ) ),

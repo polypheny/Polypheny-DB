@@ -66,11 +66,11 @@ public class DashboardInformation {
 
 
     public DashboardInformation() {
-        updatePolyphenyStatistic();
+        updateStatistic();
     }
 
 
-    public void updatePolyphenyStatistic() {
+    public void updateStatistic() {
         Snapshot snapshot = Catalog.getInstance().getSnapshot();
         this.catalogPersistent = Catalog.getInstance().isPersistent;
 

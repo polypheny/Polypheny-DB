@@ -17,6 +17,7 @@
 package org.polypheny.db.webui;
 
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
@@ -609,11 +610,13 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 .query( query )
                 .language( language )
                 .origin( ORIGIN )
+                .statement( statement )
+                .transactions( new ArrayList<>( List.of( transaction ) ) )
                 .transactionManager( transactionManager )
                 .build();
 
         UIRequest request = UIRequest.builder().build();
-        Result<?, ?> result = LanguageCrud.anyQueryResult( context, request ).get( 0 );//executeSqlUpdate( statement, transaction, query );
+        Result<?, ?> result = LanguageCrud.anyQueryResult( context, request ).get( 0 );
         ctx.json( result );
 
     }
@@ -1001,9 +1004,12 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                             .dimension( logicalColumn.dimension )
                             .cardinality( logicalColumn.cardinality )
                             .primary( primaryColumns.contains( logicalColumn.name ) )
-                            .defaultValue( defaultValue ).build() );
+                            .defaultValue( defaultValue )
+                            .build() );
         }
-        RelationalResultBuilder<?, ?> result = RelationalResult.builder().header( cols.toArray( new UiColumnDefinition[0] ) );
+        RelationalResultBuilder<?, ?> result = RelationalResult
+                .builder()
+                .header( cols.toArray( new UiColumnDefinition[0] ) );
         if ( table.entityType == EntityType.ENTITY ) {
             result.type( ResultType.TABLE );
         } else if ( table.entityType == EntityType.MATERIALIZED_VIEW ) {
@@ -1019,12 +1025,12 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     void getDataSourceColumns( final Context ctx ) {
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
 
-        LogicalTable tablee = Catalog.snapshot().rel().getTable( request.entityId ).orElseThrow();
+        LogicalTable table = Catalog.snapshot().rel().getTable( request.entityId ).orElseThrow();
 
-        if ( tablee.entityType == EntityType.VIEW ) {
+        if ( table.entityType == EntityType.VIEW ) {
 
             List<UiColumnDefinition> columns = new ArrayList<>();
-            List<LogicalColumn> cols = Catalog.snapshot().rel().getColumns( tablee.id );
+            List<LogicalColumn> cols = Catalog.snapshot().rel().getColumns( table.id );
             for ( LogicalColumn col : cols ) {
                 columns.add( UiColumnDefinition.builder()
                         .name( col.name )
@@ -1043,16 +1049,16 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             }
             ctx.json( RelationalResult.builder().header( columns.toArray( new UiColumnDefinition[0] ) ).type( ResultType.VIEW ).build() );
         } else {
-            List<AllocationEntity> allocs = Catalog.snapshot().alloc().getFromLogical( tablee.id );
-            if ( Catalog.snapshot().alloc().getFromLogical( tablee.id ).size() != 1 ) {
+            List<AllocationEntity> allocs = Catalog.snapshot().alloc().getFromLogical( table.id );
+            if ( Catalog.snapshot().alloc().getFromLogical( table.id ).size() != 1 ) {
                 throw new GenericRuntimeException( "The table has an unexpected number of placements!" );
             }
 
             long adapterId = allocs.get( 0 ).adapterId;
-            LogicalPrimaryKey primaryKey = Catalog.snapshot().rel().getPrimaryKey( tablee.primaryKey ).orElseThrow();
+            LogicalPrimaryKey primaryKey = Catalog.snapshot().rel().getPrimaryKey( table.primaryKey ).orElseThrow();
             List<String> pkColumnNames = primaryKey.getFieldNames();
             List<UiColumnDefinition> columns = new ArrayList<>();
-            for ( AllocationColumn ccp : Catalog.snapshot().alloc().getColumnPlacementsOnAdapterPerEntity( adapterId, tablee.id ) ) {
+            for ( AllocationColumn ccp : Catalog.snapshot().alloc().getColumnPlacementsOnAdapterPerEntity( adapterId, table.id ) ) {
                 LogicalColumn col = Catalog.snapshot().rel().getColumn( ccp.columnId ).orElseThrow();
                 columns.add( UiColumnDefinition.builder()
                         .name( col.name )
@@ -2058,8 +2064,21 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     /**
      * Deploy a new adapter
      */
-    void addAdapter( final Context ctx ) {
-        AdapterModel a = ctx.bodyAsClass( AdapterModel.class );
+    void addAdapter( final Context ctx ) throws ServletException, IOException {
+        initMultipart( ctx );
+        String body = "";
+        Map<String, InputStream> inputStreams = new HashMap<>();
+
+        // collect all files e.g. csv files
+        for ( Part part : ctx.req.getParts() ) {
+            if ( part.getName().equals( "body" ) ) {
+                body = IOUtils.toString( ctx.req.getPart( "body" ).getInputStream(), StandardCharsets.UTF_8 );
+            } else {
+                inputStreams.put( part.getName(), part.getInputStream() );
+            }
+        }
+
+        AdapterModel a = HttpServer.mapper.readValue( body, AdapterModel.class );
         Map<String, String> settings = new HashMap<>();
 
         ConnectionMethod method = ConnectionMethod.UPLOAD;
@@ -2081,10 +2100,14 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         ctx.json( RelationalResult.builder().exception( e ).build() );
                         return;
                     }
+                    settings.put( set.name, entry.value() );
                 } else {
-                    handleUploadFiles( null, a, setting );
+                    List<String> fileNames = HttpServer.mapper.readValue( entry.value(), new TypeReference<>() {
+                    } );
+                    String directory = handleUploadFiles( inputStreams, fileNames, setting, a );
+                    settings.put( set.name, directory );
                 }
-                settings.put( set.name, entry.value() );
+
 
             } else {
                 settings.put( set.name, entry.value() );
@@ -2128,8 +2151,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    private static void handleUploadFiles( Map<String, InputStream> inputStreams, AdapterModel a, AbstractAdapterSettingDirectory setting ) {
-        for ( String fileName : setting.fileNames ) {
+    private static String handleUploadFiles( Map<String, InputStream> inputStreams, List<String> fileNames, AbstractAdapterSettingDirectory setting, AdapterModel a ) {
+        for ( String fileName : fileNames ) {
             setting.inputStreams.put( fileName, inputStreams.get( fileName ) );
         }
         File path = PolyphenyHomeDirManager.getInstance().registerNewFolder( "data/csv/" + a.name );
@@ -2141,7 +2164,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 throw new GenericRuntimeException( e );
             }
         }
-        setting.setDirectory( path.getAbsolutePath() );
+        return path.getAbsolutePath();
     }
 
 
@@ -2679,13 +2702,14 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
     void getFile( final Context ctx ) {
-        getFile( ctx, ".polypheny/tmp/", true );
+        getFile( ctx, "tmp", true );
     }
 
 
     private File getFile( Context ctx, String location, boolean sendBack ) {
         String fileName = ctx.pathParam( "file" );
-        File f = new File( System.getProperty( "user.home" ), location + fileName );
+        File folder = PolyphenyHomeDirManager.getInstance().registerNewFolder( location );
+        File f = PolyphenyHomeDirManager.getInstance().registerNewFile( folder, fileName );
         if ( !f.exists() ) {
             ctx.status( 404 );
             ctx.result( "" );

@@ -35,8 +35,8 @@ import org.polypheny.db.transaction.Statement;
 
 public class MqlAddPlacement extends MqlCollectionStatement implements ExecutableStatement {
 
-    public MqlAddPlacement( ParserPos pos, String collection, List<String> stores ) {
-        super( collection, pos );
+    public MqlAddPlacement( ParserPos pos, String collection, String namespace, List<String> stores ) {
+        super( collection, namespace, pos );
         this.stores = stores;
     }
 

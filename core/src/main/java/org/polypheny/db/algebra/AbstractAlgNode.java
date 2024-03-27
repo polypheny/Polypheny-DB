@@ -62,8 +62,23 @@ import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.ConventionTraitDef;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexCorrelVariable;
+import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexElementRef;
+import org.polypheny.db.rex.RexFieldAccess;
+import org.polypheny.db.rex.RexIndexRef;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexLocalRef;
+import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexOver;
+import org.polypheny.db.rex.RexPatternFieldRef;
+import org.polypheny.db.rex.RexRangeRef;
 import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.rex.RexSubQuery;
+import org.polypheny.db.rex.RexTableIndexRef;
+import org.polypheny.db.rex.RexVisitor;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.schema.trait.ModelTraitDef;
 import org.polypheny.db.util.Litmus;
@@ -437,6 +452,95 @@ public abstract class AbstractAlgNode implements AlgNode {
                 };
         explain( pw );
         return sw.toString();
+    }
+
+
+    public static class AlgComparatorBuilder extends AlgShuttleImpl implements RexVisitor<String> {
+
+
+        @Override
+        public String visitIndexRef( RexIndexRef inputRef ) {
+            return "$" + inputRef.getIndex();
+        }
+
+
+        @Override
+        public String visitLocalRef( RexLocalRef localRef ) {
+            return "l$" + localRef.getIndex();
+        }
+
+
+        @Override
+        public String visitLiteral( RexLiteral literal ) {
+            return literal.value == null ? "null" : literal.value.toJson();
+        }
+
+
+        @Override
+        public String visitCall( RexCall call ) {
+            return call.op.getName() + "(" + call.getOperands().stream().map( operand -> operand.accept( this ) ).reduce( ( s, s2 ) -> s + "," + s2 ).orElse( "" ) + ")";
+        }
+
+
+        @Override
+        public String visitOver( RexOver over ) {
+            return "$over";
+        }
+
+
+        @Override
+        public String visitCorrelVariable( RexCorrelVariable correlVariable ) {
+            return "$" + correlVariable.id;
+        }
+
+
+        @Override
+        public String visitDynamicParam( RexDynamicParam dynamicParam ) {
+            return "$" + dynamicParam.getIndex() + "(" + dynamicParam.getType().getFullTypeString() + ")";
+        }
+
+
+        @Override
+        public String visitRangeRef( RexRangeRef rangeRef ) {
+            return "$" + rangeRef.getOffset() + "[" + rangeRef.getOffset() + ".." + rangeRef.getOffset() + "]";
+        }
+
+
+        @Override
+        public String visitFieldAccess( RexFieldAccess fieldAccess ) {
+            return fieldAccess.toString();
+        }
+
+
+        @Override
+        public String visitSubQuery( RexSubQuery subQuery ) {
+            return "$subquery[" + subQuery.alg.accept( this ) + "]";
+        }
+
+
+        @Override
+        public String visitTableInputRef( RexTableIndexRef fieldRef ) {
+            return "$table" + fieldRef.getIndex();
+        }
+
+
+        @Override
+        public String visitPatternFieldRef( RexPatternFieldRef fieldRef ) {
+            return "$pattern" + fieldRef.getIndex();
+        }
+
+
+        @Override
+        public String visitNameRef( RexNameRef nameRef ) {
+            return "$name" + nameRef.getName();
+        }
+
+
+        @Override
+        public String visitElementRef( RexElementRef rexElementRef ) {
+            return "$element(" + rexElementRef.getCollectionRef().accept( this ) + ")";
+        }
+
     }
 
 

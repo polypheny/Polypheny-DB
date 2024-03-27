@@ -39,8 +39,6 @@ public class LogicalDocumentProject extends DocumentProject {
 
 
     public static LogicalDocumentProject create( AlgNode node, Map<String, RexNode> includes, List<String> excludes ) {
-        // final AlgMetadataQuery mq = node.getCluster().getMetadataQuery();
-        // AlgTraitSet traitSet = node.getCluster().traitSet().replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.project( mq, node, ids ) );
         return new LogicalDocumentProject( node.getCluster(), node.getTraitSet(), node, includes, excludes );
     }
 

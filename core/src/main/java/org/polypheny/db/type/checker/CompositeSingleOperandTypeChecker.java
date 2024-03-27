@@ -48,7 +48,7 @@ public class CompositeSingleOperandTypeChecker extends CompositeOperandTypeCheck
 
     @Override
     public boolean checkSingleOperandType( CallBinding callBinding, Node node, int iFormalOperand, boolean throwOnFailure ) {
-        assert allowedRules.size() >= 1;
+        assert !allowedRules.isEmpty();
 
         final ImmutableList<? extends PolySingleOperandTypeChecker> rules = getRules();
         if ( composition == Composition.SEQUENCE ) {
@@ -65,18 +65,13 @@ public class CompositeSingleOperandTypeChecker extends CompositeOperandTypeCheck
             }
         }
 
-        boolean ret;
-        switch ( composition ) {
-            case AND:
-                ret = typeErrorCount == 0;
-                break;
-            case OR:
-                ret = typeErrorCount < allowedRules.size();
-                break;
-            default:
+        boolean ret = switch ( composition ) {
+            case AND -> typeErrorCount == 0;
+            case OR -> typeErrorCount < allowedRules.size();
+            default ->
                 // should never come here
-                throw Util.unexpected( composition );
-        }
+                    throw Util.unexpected( composition );
+        };
 
         if ( !ret && throwOnFailure ) {
             // In the case of a composite OR, we want to throw an error describing in more detail what the problem was,

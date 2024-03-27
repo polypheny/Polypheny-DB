@@ -377,6 +377,7 @@ public class PolyphenyDb {
         StatusService.initialize( transactionManager, server.getServer() );
 
         log.debug( "Setting Docker Timeouts" );
+        Catalog.resetDocker = resetDocker;
         RuntimeConfig.DOCKER_TIMEOUT.setInteger( mode == RunMode.DEVELOPMENT || mode == RunMode.TEST ? 5 : RuntimeConfig.DOCKER_TIMEOUT.getInteger() );
         if ( initializeDockerManager() ) {
             return;
@@ -406,7 +407,8 @@ public class PolyphenyDb {
                 null,
                 AlgProcessor::new,
                 null,
-                q -> null );
+                q -> null,
+                c -> c );
         LanguageManager.getINSTANCE().addQueryLanguage( language );
 
         // Initialize index manager
@@ -578,7 +580,9 @@ public class PolyphenyDb {
         Catalog.memoryCatalog = memoryCatalog;
         Catalog.mode = mode;
         Catalog.resetDocker = resetDocker;
+
         Catalog catalog = Catalog.setAndGetInstance( new PolyCatalog() );
+
         if ( catalog == null ) {
             throw new GenericRuntimeException( "There was no catalog submitted, aborting." );
         }
@@ -596,8 +600,13 @@ public class PolyphenyDb {
     private void restore( Authenticator authenticator, Catalog catalog ) {
         PolyPluginManager.startUp( transactionManager, authenticator );
 
-        if ( !resetCatalog && mode != RunMode.TEST ) {
-            Catalog.getInstance().restore();
+        Transaction trx = transactionManager.startTransaction(
+                Catalog.defaultUserId,
+                Catalog.defaultNamespaceId,
+                false,
+                "Catalog Startup" );
+        if ( !resetCatalog && !memoryCatalog && mode != RunMode.TEST ) {
+            Catalog.getInstance().restore( trx );
         }
         Catalog.getInstance().updateSnapshot();
 
@@ -607,21 +616,15 @@ public class PolyphenyDb {
 
         QueryInterfaceManager.getInstance().restoreInterfaces( catalog.getSnapshot() );
 
-        commitRestore();
+        commitRestore( trx );
     }
 
 
     /**
      * Tries to commit the restored catalog.
      */
-    private void commitRestore() {
-        Transaction trx = null;
+    private void commitRestore( Transaction trx ) {
         try {
-            trx = transactionManager.startTransaction(
-                    Catalog.defaultUserId,
-                    Catalog.defaultNamespaceId,
-                    false,
-                    "Catalog Startup" );
             trx.commit();
         } catch ( TransactionException e ) {
             try {

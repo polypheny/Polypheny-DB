@@ -52,12 +52,16 @@ public abstract class Result<E, F> {
 
     public F[] header;
 
+
     /**
      * Exception with additional information
      */
     public Throwable exception;
 
     public String query;
+
+    @Builder.Default
+    public QueryType queryType = QueryType.DQL;
 
     /**
      * Transaction id, for the websocket. It will not be serialized to gson.
@@ -111,6 +115,7 @@ public abstract class Result<E, F> {
             this.exception = instance.exception;
             this.language$value = instance.language;
             this.error = instance.error;
+            this.queryType$value = instance.queryType;
 
             return self();
         }

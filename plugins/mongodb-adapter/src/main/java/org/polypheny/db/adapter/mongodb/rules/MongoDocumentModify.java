@@ -98,7 +98,7 @@ public class MongoDocumentModify extends DocumentModify<MongoEntity> implements 
 
         implementor.filter = condImplementor.filter;
 
-        final RexToMongoTranslator translator = new RexToMongoTranslator( getCluster().getTypeFactory(), List.of(), implementor, DataModel.DOCUMENT );
+        final RexToMongoTranslator translator = new RexToMongoTranslator( List.of(), implementor, DataModel.DOCUMENT );
         for ( Entry<String, ? extends RexNode> entry : updates.entrySet() ) {
             String key = entry.getKey();
             String value = entry.getValue().accept( translator );

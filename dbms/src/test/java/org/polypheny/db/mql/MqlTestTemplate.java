@@ -33,7 +33,7 @@ import org.polypheny.db.webui.models.results.DocResult;
  */
 public class MqlTestTemplate {
 
-    public static String database = "test";
+    public static String namespace = "test";
 
 
     @BeforeAll
@@ -45,13 +45,13 @@ public class MqlTestTemplate {
 
     @BeforeEach
     public void initCollection() {
-        initCollection( database );
+        initCollection( namespace );
     }
 
 
     @AfterEach
     public void dropCollection() {
-        dropCollection( database );
+        dropCollection( namespace );
     }
 
 
@@ -83,7 +83,7 @@ public class MqlTestTemplate {
 
 
     protected static void dropDatabase() {
-        dropDatabase( database );
+        dropDatabase( namespace );
     }
 
 
@@ -98,7 +98,7 @@ public class MqlTestTemplate {
 
 
     public static void initDatabase() {
-        initDatabase( database );
+        initDatabase( namespace );
     }
 
 
@@ -193,12 +193,12 @@ public class MqlTestTemplate {
 
 
     public static void insert( String json ) {
-        insert( json, database );
+        insert( json, namespace );
     }
 
 
     public static void insert( String json, String collection ) {
-        insert( json, collection, database );
+        insert( json, collection, namespace );
     }
 
 
@@ -208,7 +208,7 @@ public class MqlTestTemplate {
 
 
     public static void insertMany( List<String> jsons ) {
-        insertMany( jsons, database );
+        insertMany( jsons, namespace );
     }
 
 
@@ -218,7 +218,7 @@ public class MqlTestTemplate {
 
 
     public static void update( String query, String update ) {
-        update( query, update, database );
+        update( query, update, namespace );
     }
 
 
@@ -228,7 +228,7 @@ public class MqlTestTemplate {
 
 
     protected DocResult find( String query, String project ) {
-        return find( query, project, database );
+        return find( query, project, namespace );
     }
 
 
@@ -238,7 +238,7 @@ public class MqlTestTemplate {
 
 
     protected DocResult aggregate( String... stages ) {
-        return aggregate( database, Arrays.asList( stages ) );
+        return aggregate( namespace, Arrays.asList( stages ) );
     }
 
 
@@ -248,7 +248,7 @@ public class MqlTestTemplate {
 
 
     protected static void deleteMany( String query ) {
-        deleteMany( query, database );
+        deleteMany( query, namespace );
     }
 
 
