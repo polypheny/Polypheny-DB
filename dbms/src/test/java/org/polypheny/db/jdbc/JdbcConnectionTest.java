@@ -49,7 +49,8 @@ import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.jdbc.PolyConnection;
-import org.polypheny.jdbc.ProtoInterfaceServiceException;
+import org.polypheny.jdbc.PrismInterfaceClient;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.jdbctypes.PolyphenyBlob;
 import org.polypheny.jdbc.jdbctypes.PolyphenyClob;
 
@@ -336,7 +337,7 @@ public class JdbcConnectionTest {
     @Test
     public void setInvalidNamespaceTest() {
         String namespaceName = "nonexistentNamespace";
-        assertThrows( ProtoInterfaceServiceException.class, () -> {
+        assertThrows( PrismInterfaceServiceException.class, () -> {
             try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
                 Connection connection = jdbcConnection.getConnection();
                 connection.setSchema( namespaceName );
