@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import lombok.extern.slf4j.Slf4j;
@@ -195,7 +196,7 @@ public class PIService {
             return;
         }
 
-        LinkedList<Request> waiting = new LinkedList<>();
+        Queue<Request> waiting = new LinkedList<>();
         CompletableFuture<Request> request = waitForRequest();
         CompletableFuture<Response> response = null;
         Thread handle = null;
@@ -225,7 +226,7 @@ public class PIService {
                     handle = null;
                     Response r = response.get();
                     if ( r.getTypeCase() == Response.TypeCase.DISCONNECT_RESPONSE ) {
-                        throw new EOFException();
+                        break;
                     }
                     response = null;
                 }
