@@ -171,7 +171,6 @@ import org.polypheny.db.webui.crud.LanguageCrud;
 @Slf4j
 public class SqlLanguagePlugin extends PolyPlugin {
 
-    public static final String LIMIT = "limit";
     @Getter
     @VisibleForTesting
     private static boolean isInit = false;
@@ -223,7 +222,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
 
     private static QueryContext removeLimit( QueryContext queryContext ) {
         String lowercase = queryContext.getQuery().toLowerCase();
-        if ( !lowercase.contains( LIMIT ) ) {
+        if ( !lowercase.contains( "limit" ) ) {
             return queryContext;
         }
 
