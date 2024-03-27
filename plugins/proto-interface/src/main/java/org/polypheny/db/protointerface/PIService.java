@@ -224,7 +224,7 @@ public class PIService {
                     handle.join();
                     handle = null;
                     Response r = response.get();
-                    if ( r.getTypeCase() == Response.TypeCase.DISCONNECT_RESPONSE || r.getTypeCase() == Response.TypeCase.ERROR_RESPONSE ) {
+                    if ( r.getTypeCase() == Response.TypeCase.DISCONNECT_RESPONSE ) {
                         throw new EOFException();
                     }
                     response = null;
