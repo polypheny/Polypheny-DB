@@ -194,7 +194,7 @@ public class LanguageManager {
                 implementationContexts.add( new ImplementationContext( implementation, parsed, statement, null ) );
 
             } catch ( Throwable e ) {
-                log.warn( "Caught exception: ", e );
+                log.warn( "Caught exception: ", e ); // TODO: This should not log in all cases, at least not with stacktrace
                 if ( transaction.isAnalyze() ) {
                     transaction.getQueryAnalyzer().attachStacktrace( e );
                 }
