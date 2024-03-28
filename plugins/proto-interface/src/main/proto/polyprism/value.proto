@@ -199,9 +199,9 @@ Represents a BigDecimal value with specified precision and scale.
 */
 message ProtoBigDecimal {
   // The scale of the BigDecimal.
-  uint32 scale = 1;
+  int32 scale = 1;
   // The precision of the BigDecimal.
-  uint32 precision = 2;
+  uint32 precision = 2;  // TODO: Currently unused
   // The unscaled value of the BigDecimal.
   bytes unscaled_value = 3;
 }
