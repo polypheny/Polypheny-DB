@@ -93,7 +93,8 @@ public class ProtoValueDeserializer {
             case BINARY -> deserializeToPolyBinary( protoValue );
             case NULL -> deserializeToPolyNull();
             case LIST -> deserializeToPolyList( protoValue );
-            default -> throw new GenericRuntimeException( "Should never be thrown" );
+            case VALUE_NOT_SET -> throw new GenericRuntimeException( "Invalid ProtoValue: no value is set" );
+            default -> throw new GenericRuntimeException( "Deserialization of type " + protoValue.getValueCase() + " is not supported" );
         };
     }
 
