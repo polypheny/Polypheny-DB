@@ -170,9 +170,8 @@ public class ProtoValueDeserializer {
 
     private static BigDecimal deserializeToBigDecimal( ProtoValue protoValue ) {
         ProtoBigDecimal protoBigDecimal = protoValue.getBigDecimal();
-        MathContext context = new MathContext( protoBigDecimal.getPrecision() );
         byte[] unscaledValue = protoBigDecimal.getUnscaledValue().toByteArray();
-        return new BigDecimal( new BigInteger( unscaledValue ), protoBigDecimal.getScale(), context );
+        return new BigDecimal( new BigInteger( unscaledValue ), protoBigDecimal.getScale() );
     }
 
 }

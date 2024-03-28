@@ -389,7 +389,6 @@ public class PolyValueSerializer {
         return ProtoBigDecimal.newBuilder()
                 .setUnscaledValue( ByteString.copyFrom( bigDecimal.unscaledValue().toByteArray() ) )
                 .setScale( bigDecimal.scale() )
-                .setPrecision( bigDecimal.precision() )
                 .build();
     }
 
