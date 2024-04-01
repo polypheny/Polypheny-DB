@@ -61,6 +61,7 @@ import org.polypheny.db.util.PasswordGenerator;
 @Slf4j
 @AdapterProperties(
         name = "MonetDB",
+        logo = "assets/dbms-logos/monetdb.png",
         description = "MonetDB is an execute-source column-oriented database management system. It is based on an optimistic concurrency control.",
         usedModes = { DeployMode.REMOTE, DeployMode.DOCKER },
         defaultMode = DeployMode.DOCKER)

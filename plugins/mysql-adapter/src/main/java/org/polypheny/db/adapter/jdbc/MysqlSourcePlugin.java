@@ -69,6 +69,7 @@ public class MysqlSourcePlugin extends PolyPlugin {
     @Slf4j
     @AdapterProperties(
             name = "MySQL",
+            logo = "assets/dbms-logos/mysql.png",
             description = "Data source adapter for the relational database systems MariaDB and MySQL.",
             usedModes = DeployMode.REMOTE,
             defaultMode = DeployMode.REMOTE)

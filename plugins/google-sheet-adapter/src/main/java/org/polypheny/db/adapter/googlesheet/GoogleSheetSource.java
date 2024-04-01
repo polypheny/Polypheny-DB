@@ -72,6 +72,7 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 @Slf4j
 @AdapterProperties(
         name = "GoogleSheets",
+        logo = "assets/dbms-logos/google.png",
         description = "An adapter for querying online Google Sheets, using the Google Sheets Java API. Currently, this adapter only supports read operations.",
         usedModes = DeployMode.REMOTE,
         defaultMode = DeployMode.REMOTE)

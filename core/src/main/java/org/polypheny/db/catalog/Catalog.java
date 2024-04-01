@@ -230,7 +230,7 @@ public abstract class Catalog implements ExtensionPoint {
      */
     public abstract void dropQueryInterface( long id );
 
-    public abstract long createAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, String description, List<DeployMode> modes, List<AbstractAdapterSetting> settings, Function4<Long, String, Map<String, String>, Adapter<?>> deployer );
+    public abstract long createAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, String description, List<DeployMode> modes, List<AbstractAdapterSetting> settings, Function4<Long, String, Map<String, String>, Adapter<?>> deployer, String adapterLogo );
 
 
     public abstract void createInterfaceTemplate( String name, QueryInterfaceTemplate queryInterfaceTemplate );

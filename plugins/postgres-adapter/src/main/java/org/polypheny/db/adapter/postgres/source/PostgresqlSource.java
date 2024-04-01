@@ -39,6 +39,7 @@ import org.polypheny.db.prepare.Context;
 @Slf4j
 @AdapterProperties(
         name = "PostgreSQL",
+        logo = "assets/dbms-logos/postgres.svg",
         description = "Relational database system optimized for transactional workload that provides an advanced set of features. PostgreSQL is fully ACID compliant and ensures that all requirements are met.",
         usedModes = DeployMode.REMOTE,
         defaultMode = DeployMode.REMOTE)

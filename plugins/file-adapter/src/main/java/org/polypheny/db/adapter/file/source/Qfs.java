@@ -65,6 +65,7 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 @Slf4j
 @AdapterProperties(
         name = "QFS",
+        logo = "fa fa-folder-open-o",
         description = "This data source maps a file system on the Polypheny-DB host system as a relational entity and allows to query it.",
         usedModes = DeployMode.EMBEDDED,
         defaultMode = DeployMode.EMBEDDED)
