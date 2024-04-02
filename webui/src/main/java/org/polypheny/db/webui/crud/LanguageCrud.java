@@ -146,7 +146,7 @@ public class LanguageCrud {
         transaction.setUseCache( context.isUsesCache() );
         attachAnalyzerIfSpecified( context, crud, transaction );
 
-        List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( context.addTransaction( transaction ), context.getStatement() == null ? transaction.createStatement() : context.getStatement() );
+        List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( context.addTransaction( transaction ) );
 
         List<Result<?, ?>> results = new ArrayList<>();
         TriFunction<ExecutedContext, UIRequest, Statement, ResultBuilder<?, ?, ?, ?>> builder = REGISTER.get( context.getLanguage() );
@@ -216,7 +216,7 @@ public class LanguageCrud {
                         .namespaceId( getNamespaceIdOrDefault( namespace ) )
                         .transactionManager( manager )
                         .informationTarget( i -> i.setSession( session ) )
-                        .build(), transaction.createStatement() ).get( 0 );
+                        .build(), transaction ).get( 0 );
 
         if ( context.getException().isPresent() ) {
             return new PolyGraph( PolyMap.of( new HashMap<>() ), PolyMap.of( new HashMap<>() ) );

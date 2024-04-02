@@ -287,7 +287,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
         TriFunction<ExecutedContext, UIRequest, Statement, ResultBuilder<?, ?, ?, ?>> builder = LanguageCrud.getToResult( language );
 
-        Statement statement = transaction.createStatement();
         ImplementationContext implementationContext = LanguageManager.getINSTANCE().anyPrepareQuery(
                 QueryContext.builder()
                         .query( query.toString() )
@@ -295,8 +294,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         .origin( transaction.getOrigin() )
                         .batch( request.noLimit ? -1 : getPageSize() )
                         .transactionManager( transactionManager )
-                        .build(), statement ).get( 0 );
-        resultBuilder = (RelationalResultBuilder<?, ?>) builder.apply( implementationContext.execute( statement ), request, statement );//.executeSqlSelect( transaction.createStatement(), request, query.toString(), request.noLimit, this );
+                        .build(), transaction ).get( 0 );
+        resultBuilder = (RelationalResultBuilder<?, ?>) builder.apply( implementationContext.execute( implementationContext.getStatement() ), request, implementationContext.getStatement() );
 
         // determine if it is a view or a table
         LogicalTable table = Catalog.snapshot().rel().getTable( request.entityId ).orElseThrow();
@@ -2835,22 +2834,22 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         if ( request.filter != null ) {
             query += " " + filterTable( request.filter );
         }
-        Statement statement = transaction.createStatement();
+
         QueryLanguage language = QueryLanguage.from( "sql" );
         ImplementationContext context = LanguageManager.getINSTANCE().anyPrepareQuery(
                 QueryContext.builder()
                         .query( query )
                         .language( language )
                         .origin( ORIGIN )
-                        .transactionManager( transactionManager ).build(), statement ).get( 0 );
-        List<List<PolyValue>> values = context.execute( statement ).getIterator().getNextBatch();
+                        .transactionManager( transactionManager ).build(), transaction ).get( 0 );
+        List<List<PolyValue>> values = context.execute( context.getStatement() ).getIterator().getNextBatch();
         // We expect the result to be in the first column of the first row
         if ( values.isEmpty() || values.get( 0 ).isEmpty() ) {
             return 0;
         } else {
             PolyNumber number = values.get( 0 ).get( 0 ).asNumber();
-            if ( statement.getMonitoringEvent() != null ) {
-                StatementEvent eventData = statement.getMonitoringEvent();
+            if ( context.getStatement().getMonitoringEvent() != null ) {
+                StatementEvent eventData = context.getStatement().getMonitoringEvent();
                 eventData.setRowCount( number.longValue() );
             }
             return number.longValue();

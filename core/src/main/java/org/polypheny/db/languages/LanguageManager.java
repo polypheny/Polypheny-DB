@@ -83,9 +83,8 @@ public class LanguageManager {
     }
 
 
-    public List<ImplementationContext> anyPrepareQuery( QueryContext context, Statement statement ) {
-        Transaction transaction = statement.getTransaction();
-
+    public List<ImplementationContext> anyPrepareQuery( QueryContext context, Transaction transaction ) {
+        Statement statement = transaction.createStatement();
         if ( transaction.isAnalyze() ) {
             context.getInformationTarget().accept( transaction.getQueryAnalyzer() );
         }
@@ -118,7 +117,11 @@ public class LanguageManager {
         Processor processor = context.getLanguage().processorSupplier().get();
         List<ImplementationContext> implementationContexts = new ArrayList<>();
         boolean previousDdl = false;
+        int i = 0;
         for ( ParsedQueryContext parsed : parsedQueries ) {
+            if ( i != 0 ) {
+                statement = transaction.createStatement();
+            }
             try {
                 // test if parsing was successful
                 if ( parsed.getQueryNode().isEmpty() ) {
@@ -191,6 +194,7 @@ public class LanguageManager {
                 implementationContexts.add( ImplementationContext.ofError( e, parsed, statement ) );
                 return implementationContexts;
             }
+            i++;
         }
         return implementationContexts;
     }
@@ -218,9 +222,8 @@ public class LanguageManager {
     }
 
 
-    public List<ExecutedContext> anyQuery( QueryContext context, Statement statement ) {
-        List<ImplementationContext> prepared = anyPrepareQuery( context, statement );
-        Transaction transaction = statement.getTransaction();
+    public List<ExecutedContext> anyQuery( QueryContext context ) {
+        List<ImplementationContext> prepared = anyPrepareQuery( context, context.getTransactions().get( context.getTransactions().size() - 1 ) );
 
         List<ExecutedContext> executedContexts = new ArrayList<>();
 
@@ -231,6 +234,7 @@ public class LanguageManager {
                 }
                 executedContexts.add( implementation.execute( implementation.getStatement() ) );
             } catch ( Throwable e ) {
+                Transaction transaction = implementation.getStatement().getTransaction();
                 if ( transaction.isAnalyze() && implementation.getException().isEmpty() ) {
                     transaction.getQueryAnalyzer().attachStacktrace( e );
                 }
