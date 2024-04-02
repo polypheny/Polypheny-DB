@@ -102,16 +102,29 @@ public abstract class DdlManager {
     public abstract long createNamespace( String name, DataModel type, boolean ifNotExists, boolean replace, Statement statement );
 
     /**
-     * Adds a new adapter (data store or data source)
+     * Adds a new data store(adapter)
      *
-     * @param uniqueName unique name of the newly created adapter
-     * @param adapterName name of adapter, which is used to create the adapter
-     * @param defaultNamespace the default namespace for the adapter
-     * @param adapterType the specific {@link AdapterType} for the adapter to create
-     * @param config configuration for the adapter
+     * @param uniqueName unique name of the newly created store
+     * @param adapterName name of store, which is used to create the store
+     * @param adapterType the specific {@link AdapterType} for the store to create
+     * @param config configuration for the store
      * @param mode the deploy mode
      */
-    public abstract void createAdapter( String uniqueName, String adapterName, long defaultNamespace, AdapterType adapterType, Map<String, String> config, DeployMode mode );
+    public abstract void createStore( String uniqueName, String adapterName, AdapterType adapterType, Map<String, String> config, DeployMode mode );
+
+
+    /**
+     * Adds a new data source(adapter)
+     *
+     * @param uniqueName unique name of the newly created source
+     * @param adapterName name of source, which is used to create the source
+     * @param namespace the target namespace for the adapter
+     * @param adapterType the specific {@link AdapterType} for the source to create
+     * @param config configuration for the source
+     * @param mode the deploy mode
+     */
+    public abstract void createSource( String uniqueName, String adapterName, long namespace, AdapterType adapterType, Map<String, String> config, DeployMode mode );
+
 
     /**
      * Drop an adapter

@@ -21,6 +21,7 @@ import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
 
 
+@SuppressWarnings("unused")
 public class GoogleSheetPlugin extends PolyPlugin {
 
 

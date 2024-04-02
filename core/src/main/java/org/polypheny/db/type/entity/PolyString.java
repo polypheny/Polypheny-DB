@@ -34,10 +34,10 @@ import java.util.stream.Collectors;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Util;
@@ -102,20 +102,18 @@ public class PolyString extends PolyValue {
     }
 
 
-    public static PolyString convert( Object value ) {
+    public static PolyString convert( @Nullable PolyValue value ) {
         if ( value == null ) {
             return null;
         }
-        if ( value instanceof PolyValue poly ) {
-            if ( poly.isString() ) {
-                return poly.asString();
-            } else if ( poly.isDocument() ) {
-                return PolyString.of( poly.asDocument().toJson() );
-            } else {
-                return PolyString.of( poly.toJson() );
-            }
+
+        if ( value.isString() ) {
+            return value.asString();
+        } else if ( value.isDocument() ) {
+            return PolyString.of( value.asDocument().toJson() );
         }
-        throw new NotImplementedException( "convert value to string" );
+
+        throw new GenericRuntimeException( getConvertError( value, PolyString.class ) );
     }
 
 

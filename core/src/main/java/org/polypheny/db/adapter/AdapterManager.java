@@ -170,7 +170,7 @@ public class AdapterManager {
     }
 
 
-    public Adapter<?> addAdapter( String adapterName, String uniqueName, long defaultNamespace, AdapterType adapterType, DeployMode mode, Map<String, String> settings ) {
+    public Adapter<?> addAdapter( String adapterName, String uniqueName, AdapterType adapterType, DeployMode mode, Map<String, String> settings ) {
         uniqueName = uniqueName.toLowerCase();
         if ( getAdapters().containsKey( uniqueName ) ) {
             throw new GenericRuntimeException( "There is already an adapter with this unique name" );
@@ -181,7 +181,7 @@ public class AdapterManager {
 
         AdapterTemplate adapterTemplate = AdapterTemplate.fromString( adapterName, adapterType );
 
-        long adapterId = Catalog.getInstance().createAdapter( uniqueName, adapterName, defaultNamespace, adapterType, settings, mode );
+        long adapterId = Catalog.getInstance().createAdapter( uniqueName, adapterName, adapterType, settings, mode );
         try {
             Adapter<?> adapter = adapterTemplate.getDeployer().get( adapterId, uniqueName, settings );
             adapterByName.put( adapter.getUniqueName(), adapter );
@@ -260,14 +260,6 @@ public class AdapterManager {
     public interface Function4<P1, P2, P3, R> {
 
         R get( P1 p1, P2 p2, P3 p3 );
-
-    }
-
-
-    @FunctionalInterface
-    public interface Function5<P1, P2, P3, P4, R> {
-
-        R get( P1 p1, P2 p2, P3 p3, P4 p4 );
 
     }
 

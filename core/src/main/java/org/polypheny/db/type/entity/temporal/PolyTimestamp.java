@@ -37,7 +37,6 @@ import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyTemporal;
-import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.util.TimestampString;
 
 @Getter
@@ -160,7 +159,7 @@ public class PolyTimestamp extends PolyTemporal {
         } else if ( value.isTemporal() ) {
             return PolyTimestamp.of( value.asTemporal().getMillisSinceEpoch() );
         }
-        throw new GenericRuntimeException( getConvertError( value, PolyDouble.class ) );
+        throw new GenericRuntimeException( getConvertError( value, PolyTimestamp.class ) );
     }
 
 

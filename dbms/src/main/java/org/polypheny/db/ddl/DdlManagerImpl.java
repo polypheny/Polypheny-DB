@@ -206,17 +206,17 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createAdapter( String uniqueName, String adapterName, long defaultNamespace, AdapterType adapterType, Map<String, String> config, DeployMode mode ) {
+    public void createStore( String uniqueName, String adapterName, AdapterType adapterType, Map<String, String> config, DeployMode mode ) {
         uniqueName = uniqueName.toLowerCase();
-        Adapter<?> adapter = AdapterManager.getInstance().addAdapter( adapterName, uniqueName, defaultNamespace, adapterType, mode, config );
-
-        if ( adapter instanceof DataSource<?> ) {
-            handleSource( (DataSource<?>) adapter, defaultNamespace );
-        }
+        Adapter<?> adapter = AdapterManager.getInstance().addAdapter( adapterName, uniqueName, adapterType, mode, config );
     }
 
 
-    private void handleSource( DataSource<?> adapter, long defaultNamespace ) {
+    @Override
+    public void createSource( String uniqueName, String adapterName, long namespace, AdapterType adapterType, Map<String, String> config, DeployMode mode ) {
+        uniqueName = uniqueName.toLowerCase();
+        DataSource<?> adapter = (DataSource<?>) AdapterManager.getInstance().addAdapter( adapterName, uniqueName, adapterType, mode, config );
+
         Map<String, List<ExportedColumn>> exportedColumns;
         try {
             exportedColumns = adapter.getExportedColumns();
@@ -228,26 +228,26 @@ public class DdlManagerImpl extends DdlManager {
         for ( Map.Entry<String, List<ExportedColumn>> entry : exportedColumns.entrySet() ) {
             // Make sure the table name is unique
             String tableName = entry.getKey();
-            if ( catalog.getSnapshot().rel().getTable( defaultNamespace, tableName ).isPresent() ) { // apparently we put them all into 1?
+            if ( catalog.getSnapshot().rel().getTable( namespace, tableName ).isPresent() ) {
                 int i = 0;
-                while ( catalog.getSnapshot().rel().getTable( defaultNamespace, tableName + i ).isPresent() ) {
+                while ( catalog.getSnapshot().rel().getTable( namespace, tableName + i ).isPresent() ) {
                     i++;
                 }
                 tableName += i;
             }
 
-            LogicalTable logical = catalog.getLogicalRel( defaultNamespace ).addTable( tableName, EntityType.SOURCE, !(adapter).isDataReadOnly() );
+            LogicalTable logical = catalog.getLogicalRel( namespace ).addTable( tableName, EntityType.SOURCE, !(adapter).isDataReadOnly() );
             List<LogicalColumn> columns = new ArrayList<>();
 
             Pair<AllocationPartition, PartitionProperty> partitionProperty = createSinglePartition( logical.namespaceId, logical );
 
-            AllocationPlacement placement = catalog.getAllocRel( defaultNamespace ).addPlacement( logical.id, defaultNamespace, adapter.adapterId );
-            AllocationEntity allocation = catalog.getAllocRel( defaultNamespace ).addAllocation( adapter.getAdapterId(), placement.id, partitionProperty.left.id, logical.id );
+            AllocationPlacement placement = catalog.getAllocRel( namespace ).addPlacement( logical.id, namespace, adapter.adapterId );
+            AllocationEntity allocation = catalog.getAllocRel( namespace ).addAllocation( adapter.getAdapterId(), placement.id, partitionProperty.left.id, logical.id );
             List<AllocationColumn> aColumns = new ArrayList<>();
             int colPos = 1;
 
             for ( ExportedColumn exportedColumn : entry.getValue() ) {
-                LogicalColumn column = catalog.getLogicalRel( defaultNamespace ).addColumn(
+                LogicalColumn column = catalog.getLogicalRel( namespace ).addColumn(
                         exportedColumn.name,
                         logical.id,
                         colPos++,
@@ -260,7 +260,7 @@ public class DdlManagerImpl extends DdlManager {
                         exportedColumn.nullable,
                         Collation.getDefaultCollation() );
 
-                AllocationColumn allocationColumn = catalog.getAllocRel( defaultNamespace ).addColumn(
+                AllocationColumn allocationColumn = catalog.getAllocRel( namespace ).addColumn(
                         placement.id,
                         logical.id,
                         column.id,

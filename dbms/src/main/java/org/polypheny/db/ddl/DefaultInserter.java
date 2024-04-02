@@ -66,7 +66,7 @@ public class DefaultInserter {
 
         // Deploy default storeId
         Map<String, String> defaultStore = Catalog.snapshot().getAdapterTemplate( Catalog.defaultStore.getAdapterName(), AdapterType.STORE ).orElseThrow().getDefaultSettings();
-        ddlManager.createAdapter( "hsqldb", Catalog.defaultStore.getAdapterName(), Catalog.defaultNamespaceId, AdapterType.STORE, defaultStore, DeployMode.EMBEDDED );
+        ddlManager.createStore( "hsqldb", Catalog.defaultStore.getAdapterName(), AdapterType.STORE, defaultStore, DeployMode.EMBEDDED );
 
         if ( mode == RunMode.TEST ) {
             return; // source adapters create schema structure, which we do not want for testing
@@ -74,7 +74,7 @@ public class DefaultInserter {
 
         // Deploy default CSV view
         Map<String, String> defaultSource = Catalog.snapshot().getAdapterTemplate( Catalog.defaultSource.getAdapterName(), AdapterType.SOURCE ).orElseThrow().getDefaultSettings();
-        ddlManager.createAdapter( "hr", Catalog.defaultSource.getAdapterName(), Catalog.defaultNamespaceId, AdapterType.SOURCE, defaultSource, DeployMode.REMOTE );
+        ddlManager.createSource( "hr", Catalog.defaultSource.getAdapterName(), Catalog.defaultNamespaceId, AdapterType.SOURCE, defaultSource, DeployMode.REMOTE );
 
 
     }

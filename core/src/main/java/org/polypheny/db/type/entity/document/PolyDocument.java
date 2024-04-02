@@ -46,8 +46,8 @@ import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
@@ -104,21 +104,16 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
     }
 
 
-    public static PolyDocument parse( String string ) {
-        throw new GenericRuntimeException( "error on parsing Document" );
-    }
-
-
-    public static PolyDocument convert( Object value ) {
+    public static PolyDocument convert( @Nullable PolyValue value ) {
         if ( value == null ) {
             return null;
         }
-        if ( value instanceof PolyValue ) {
-            if ( ((PolyValue) value).isDocument() ) {
-                return ((PolyValue) value).asDocument();
-            }
+
+        if ( value.isDocument() ) {
+            return value.asDocument();
         }
-        throw new NotImplementedException( "convert value to Document" );
+
+        throw new GenericRuntimeException( getConvertError( value, PolyDocument.class ) );
     }
 
 

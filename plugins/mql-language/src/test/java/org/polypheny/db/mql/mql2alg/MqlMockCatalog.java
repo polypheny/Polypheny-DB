@@ -35,18 +35,6 @@ import org.polypheny.db.transaction.Transaction;
 
 public class MqlMockCatalog extends MockCatalog {
 
-    /*@Override
-    public LogicalNamespace getNamespace( long id ) {
-        return new LogicalNamespace( 1, "private", 0, 0, "tester", NamespaceType.DOCUMENT, true );
-    }
-
-
-    @Override
-    public CatalogUser getUser( long id ) {
-        return new CatalogUser( 0, "name", "name" );
-    }*/
-
-
     @Override
     public void change() {
 

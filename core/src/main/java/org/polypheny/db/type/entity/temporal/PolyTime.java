@@ -32,7 +32,6 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.category.PolyTemporal;
-import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.util.TimeString;
 
 @EqualsAndHashCode(callSuper = true)
@@ -90,7 +89,7 @@ public class PolyTime extends PolyTemporal {
             return value.asTime();
         }
 
-        throw new GenericRuntimeException( getConvertError( value, PolyDouble.class ) );
+        throw new GenericRuntimeException( getConvertError( value, PolyTime.class ) );
     }
 
 
