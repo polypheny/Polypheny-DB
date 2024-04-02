@@ -806,6 +806,7 @@ public class RexToLixTranslator {
             }
         }
         if ( Types.isAssignableFrom( PolyValue.class, toType ) ) {
+            operand = Expressions.convert_( operand, PolyValue.class );
             if ( toType == PolyNumber.class && !Types.isAssignableFrom( toType, operand.type ) ) {
                 return Expressions.call( PolyBigDecimal.class, "convert", operand );
             } else if ( toType == PolyString.class ) {

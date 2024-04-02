@@ -187,6 +187,8 @@ public class PolyLong extends PolyNumber {
             return PolyLong.of( value.asTemporal().getMillisSinceEpoch() );
         } else if ( value.isString() ) {
             return PolyLong.of( Long.parseLong( value.asString().value ) );
+        } else if ( value.isNumber() ) {
+            return PolyLong.of( value.asNumber().LongValue() );
         }
 
         throw new GenericRuntimeException( getConvertError( value, PolyLong.class ) );

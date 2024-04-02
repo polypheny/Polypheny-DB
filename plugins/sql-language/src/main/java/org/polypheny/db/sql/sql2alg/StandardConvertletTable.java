@@ -718,15 +718,12 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
 
 
     private PolyValue toPolyValue( SqlNode node ) {
-        switch ( node.getKind() ) {
-            case LITERAL:
-                return ((SqlLiteral) node).getPolyValue();
-            case CAST:
-                return PolyValue.convert( toPolyValue( ((SqlCall) node).operand( 0 ) ), ((DataTypeSpec) ((SqlCall) node).operand( 1 )).getType() );
-            case ARRAY_VALUE_CONSTRUCTOR:
-                return PolyList.of( ((SqlCall) node).getSqlOperandList().stream().map( this::toPolyValue ).toList() );
-        }
-        return null;
+        return switch ( node.getKind() ) {
+            case LITERAL -> ((SqlLiteral) node).getPolyValue();
+            case CAST -> PolyValue.convert( toPolyValue( ((SqlCall) node).operand( 0 ) ), ((DataTypeSpec) ((SqlCall) node).operand( 1 )).getType() );
+            case ARRAY_VALUE_CONSTRUCTOR -> PolyList.of( ((SqlCall) node).getSqlOperandList().stream().map( this::toPolyValue ).toList() );
+            default -> null;
+        };
     }
 
 

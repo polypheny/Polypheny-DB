@@ -111,6 +111,10 @@ public class PolyString extends PolyValue {
             return value.asString();
         } else if ( value.isDocument() ) {
             return PolyString.of( value.asDocument().toJson() );
+        } else if ( value.isNumber() ) {
+            return PolyString.of( value.toJson() );
+        } else if ( value.isBoolean() ) {
+            return PolyString.of( value.asBoolean().value.toString() );
         }
 
         throw new GenericRuntimeException( getConvertError( value, PolyString.class ) );
