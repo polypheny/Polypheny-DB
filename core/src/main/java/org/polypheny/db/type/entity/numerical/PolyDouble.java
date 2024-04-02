@@ -45,11 +45,12 @@ public class PolyDouble extends PolyNumber {
 
     @Serialize
     @JsonProperty
+    @Nullable
     public Double value;
 
 
     @JsonCreator
-    public PolyDouble( @Deserialize("value") @JsonProperty("value") Double value ) {
+    public PolyDouble( @Deserialize("value") @JsonProperty("value") @Nullable Double value ) {
         super( PolyType.DOUBLE );
         this.value = value;
     }
@@ -86,20 +87,22 @@ public class PolyDouble extends PolyNumber {
     }
 
 
-    public static PolyDouble convert( @Nullable Object object ) {
-        if ( object == null ) {
+    public static PolyDouble convert( @Nullable PolyValue value ) {
+        if ( value == null ) {
             return null;
         }
 
-        if ( object instanceof PolyValue ) {
-            if ( ((PolyValue) object).isDouble() ) {
-                return ((PolyValue) object).asDouble();
-            } else if ( ((PolyValue) object).isNumber() ) {
-                return PolyDouble.of( ((PolyValue) object).asNumber().DoubleValue() );
-            }
+        if ( value.isDouble() ) {
+            return value.asDouble();
+        } else if ( value.isNumber() ) {
+            return PolyDouble.of( value.asNumber().DoubleValue() );
+        } else if ( value.isTemporal() ) {
+            return PolyDouble.of( value.asTemporal().getMillisSinceEpoch() );
+        } else if ( value.isString() ) {
+            return PolyDouble.of( Double.parseDouble( value.asString().value ) );
         }
 
-        throw new GenericRuntimeException( "Could not convert Integer" );
+        throw new GenericRuntimeException( getConvertError( value, PolyDouble.class ) );
     }
 
 

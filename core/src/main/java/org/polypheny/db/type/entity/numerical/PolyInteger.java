@@ -46,10 +46,11 @@ public class PolyInteger extends PolyNumber {
     public static final PolyInteger ZERO = PolyInteger.of( 0 );
     @Serialize
     @JsonProperty
+    @Nullable
     public Integer value;
 
 
-    public PolyInteger( @JsonProperty("value") @Deserialize("value") Integer value ) {
+    public PolyInteger( @JsonProperty("value") @Deserialize("value") @Nullable Integer value ) {
         super( PolyType.INTEGER );
         this.value = value;
     }
@@ -61,20 +62,22 @@ public class PolyInteger extends PolyNumber {
     }
 
 
-    public static PolyInteger convert( @Nullable Object object ) {
+    public static PolyInteger convert( @Nullable PolyValue object ) {
         if ( object == null ) {
             return null;
         }
 
-        if ( object instanceof PolyValue ) {
-            if ( ((PolyValue) object).isInteger() ) {
-                return ((PolyValue) object).asInteger();
-            } else if ( ((PolyValue) object).isNumber() ) {
-                return PolyInteger.ofNullable( ((PolyValue) object).asNumber().NumberValue() );
-            }
+        if ( object.isInteger() ) {
+            return object.asInteger();
+        } else if ( object.isNumber() ) {
+            return PolyInteger.ofNullable( object.asNumber().NumberValue() );
+        } else if ( object.isTemporal() ) {
+            return PolyInteger.of( object.asTemporal().getMillisSinceEpoch() );
+        } else if ( object.isString() ) {
+            return PolyInteger.of( Integer.parseInt( object.asString().value ) );
         }
 
-        throw new GenericRuntimeException( "Could not convert Integer" );
+        throw new GenericRuntimeException( getConvertError( object, PolyInteger.class ) );
     }
 
 
@@ -111,31 +114,6 @@ public class PolyInteger extends PolyNumber {
     @Override
     public Expression asExpression() {
         return Expressions.new_( PolyInteger.class, Expressions.constant( value ) );
-    }
-
-
-    @Override
-    public boolean equals( Object o ) {
-        if ( this == o ) {
-            return true;
-        }
-        if ( o == null ) {
-            return false;
-        }
-
-        if ( !(o instanceof PolyValue val) ) {
-            return false;
-        }
-
-        if ( val.isNull() ) {
-            return false;
-        }
-
-        if ( val.isNumber() ) {
-            return PolyNumber.compareTo( this, val.asNumber() ) == 0;
-        }
-
-        return false;
     }
 
 
@@ -183,16 +161,6 @@ public class PolyInteger extends PolyNumber {
     public int intValue() {
         return value;
     }
-
-
-    public static PolyValue from( PolyValue value ) {
-        if ( PolyType.NUMERIC_TYPES.contains( value.type ) ) {
-            return PolyInteger.of( value.asNumber().intValue() );
-        }
-
-        throw new GenericRuntimeException( String.format( "%s does not support conversion to %s.", value, value.type ) );
-    }
-
 
     @Override
     public long longValue() {

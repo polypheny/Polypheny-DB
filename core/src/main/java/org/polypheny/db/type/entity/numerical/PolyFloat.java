@@ -45,11 +45,12 @@ public class PolyFloat extends PolyNumber {
 
     @Serialize
     @JsonProperty
+    @Nullable
     public Float value;
 
 
     @JsonCreator
-    public PolyFloat( @Deserialize("value") @JsonProperty("value") Float value ) {
+    public PolyFloat( @Deserialize("value") @JsonProperty("value") @Nullable Float value ) {
         super( PolyType.FLOAT );
         this.value = value;
     }
@@ -70,20 +71,22 @@ public class PolyFloat extends PolyNumber {
     }
 
 
-    public static PolyFloat convert( @Nullable Object object ) {
+    public static PolyFloat convert( @Nullable PolyValue object ) {
         if ( object == null ) {
             return null;
         }
 
-        if ( object instanceof PolyValue ) {
-            if ( ((PolyValue) object).isFloat() ) {
-                return ((PolyValue) object).asFloat();
-            } else if ( ((PolyValue) object).isNumber() ) {
-                return PolyFloat.ofNullable( ((PolyValue) object).asNumber().FloatValue() );
-            }
+        if ( object.isFloat() ) {
+            return object.asFloat();
+        } else if ( object.isNumber() ) {
+            return PolyFloat.ofNullable( object.asNumber().FloatValue() );
+        } else if ( object.isTemporal() ) {
+            return PolyFloat.of( object.asTemporal().getMillisSinceEpoch() );
+        } else if ( object.isString() ) {
+            return PolyFloat.of( Float.parseFloat( object.asString().value ) );
         }
 
-        throw new GenericRuntimeException( "Could not convert Integer" );
+        throw new GenericRuntimeException( getConvertError( object, PolyFloat.class ) );
     }
 
 

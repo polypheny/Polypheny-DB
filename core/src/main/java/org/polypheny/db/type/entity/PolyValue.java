@@ -323,6 +323,12 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
+    @NotNull
+    protected static String getConvertError( @NotNull Object object, Class<? extends PolyValue> clazz ) {
+        return "Could not convert " + object + " to " + clazz.getSimpleName();
+    }
+
+
     @Nullable
     public abstract Long deriveByteSize();
 
@@ -794,12 +800,12 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
 
         switch ( type ) {
             case INTEGER:
-                return PolyInteger.from( value );
+                return PolyInteger.convert( value );
             case DOCUMENT:
                 // docs accept all
                 return value;
             case BIGINT:
-                return PolyLong.from( value );
+                return PolyLong.convert( value );
         }
         if ( type.getFamily() == value.getType().getFamily() ) {
             return value;

@@ -33,7 +33,6 @@ import java.util.Objects;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -42,13 +41,13 @@ import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
-import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 
 @Value
 public class PolyLong extends PolyNumber {
 
     @Serialize
     @JsonProperty
+    @Nullable
     public Long value;
 
 
@@ -58,7 +57,7 @@ public class PolyLong extends PolyNumber {
      * @param value The value of the PolyLong
      */
     @JsonCreator
-    public PolyLong( @JsonProperty("value") @Deserialize("value") Long value ) {
+    public PolyLong( @JsonProperty("value") @Deserialize("value") @Nullable Long value ) {
         super( PolyType.BIGINT );
         this.value = value;
     }
@@ -81,15 +80,6 @@ public class PolyLong extends PolyNumber {
 
     public static PolyLong ofNullable( Number value ) {
         return value == null ? null : of( value );
-    }
-
-
-    public static PolyLong from( PolyValue value ) {
-        if ( PolyType.NUMERIC_TYPES.contains( value.type ) ) {
-            return PolyLong.of( value.asNumber().longValue() );
-        }
-
-        throw new GenericRuntimeException( String.format( "%s does not support conversion to %s.", value, value.type ) );
     }
 
 
@@ -186,47 +176,20 @@ public class PolyLong extends PolyNumber {
     }
 
 
-    @Override
-    public boolean equals( Object o ) {
-        if ( this == o ) {
-            return true;
-        }
-        if ( o == null ) {
-            return false;
-        }
-
-        if ( !(o instanceof PolyValue val) ) {
-            return false;
-        }
-
-        if ( val.isNull() ) {
-            return false;
-        }
-
-        if ( val.isNumber() ) {
-            return PolyNumber.compareTo( this, val.asNumber() ) == 0;
-        }
-
-        return false;
-    }
-
-
-    public static PolyLong convert( Object value ) {
+    public static PolyLong convert( PolyValue value ) {
         if ( value == null ) {
             return null;
         }
 
-        if ( value instanceof PolyValue ) {
-            if ( ((PolyValue) value).isLong() ) {
-                return PolyLong.of( ((PolyValue) value).asNumber().longValue() );
-            } else if ( ((PolyValue) value).isTemporal() ) {
-                return PolyLong.of( ((PolyValue) value).asTemporal().getMillisSinceEpoch() );
-            } else if ( ((PolyValue) value).isString() ) {
-                return PolyLong.of( Long.parseLong( ((PolyValue) value).asString().value ) );
-            }
+        if ( value.isLong() ) {
+            return PolyLong.of( value.asNumber().longValue() );
+        } else if ( value.isTemporal() ) {
+            return PolyLong.of( value.asTemporal().getMillisSinceEpoch() );
+        } else if ( value.isString() ) {
+            return PolyLong.of( Long.parseLong( value.asString().value ) );
         }
 
-        throw new NotImplementedException( "convert " + PolyTimestamp.class.getSimpleName() );
+        throw new GenericRuntimeException( getConvertError( value, PolyLong.class ) );
     }
 
 
