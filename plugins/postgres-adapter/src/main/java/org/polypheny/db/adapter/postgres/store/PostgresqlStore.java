@@ -88,7 +88,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
     private DockerContainer container;
 
 
-    public PostgresqlStore( long storeId, String uniqueName, final Map<String, String> settings ) {
+    public PostgresqlStore( final long storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, PostgresqlSqlDialect.DEFAULT, true );
     }
 
@@ -290,7 +290,6 @@ public class PostgresqlStore extends AbstractJdbcStore {
         builder.append( dialect.quoteIdentifier( index.physicalName + "_" + table.id ) );
         executeUpdate( builder, context );
     }
-
 
 
     @Override

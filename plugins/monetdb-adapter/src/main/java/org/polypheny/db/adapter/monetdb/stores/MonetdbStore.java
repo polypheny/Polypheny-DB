@@ -78,7 +78,7 @@ public class MonetdbStore extends AbstractJdbcStore {
     private DockerContainer container;
 
 
-    public MonetdbStore( long storeId, String uniqueName, final Map<String, String> settings ) {
+    public MonetdbStore( final long storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, MonetdbSqlDialect.DEFAULT, true );
     }
 

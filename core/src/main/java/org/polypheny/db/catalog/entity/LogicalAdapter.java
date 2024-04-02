@@ -19,6 +19,7 @@ package org.polypheny.db.catalog.entity;
 
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import java.io.Serial;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.EqualsAndHashCode;
@@ -35,6 +36,7 @@ import org.polypheny.db.type.entity.PolyValue;
 @SuperBuilder(toBuilder = true)
 public class LogicalAdapter implements PolyObject {
 
+    @Serial
     private static final long serialVersionUID = -6140489767408917639L;
 
     @Serialize
@@ -51,6 +53,8 @@ public class LogicalAdapter implements PolyObject {
     public String adapterTypeName;
     @Serialize
     public DeployMode mode;
+    @Serialize
+    public long defaultNamespace;
 
 
     public enum AdapterType {STORE, SOURCE}
@@ -62,7 +66,8 @@ public class LogicalAdapter implements PolyObject {
             @Deserialize("adapterName") @NonNull final String adapterName,
             @Deserialize("type") @NonNull final AdapterType adapterType,
             @Deserialize("mode") @NotNull final DeployMode mode,
-            @Deserialize("settings") @NonNull final Map<String, String> settings ) {
+            @Deserialize("settings") @NonNull final Map<String, String> settings,
+            @Deserialize("defaultNamespace") final long defaultNamespace ) {
         this.id = id;
         this.uniqueName = uniqueName;
         this.adapterName = adapterName;
@@ -70,6 +75,7 @@ public class LogicalAdapter implements PolyObject {
         this.settings = new HashMap<>( settings );
         this.adapterTypeName = getAdapterName();
         this.mode = mode;
+        this.defaultNamespace = defaultNamespace;
     }
 
 

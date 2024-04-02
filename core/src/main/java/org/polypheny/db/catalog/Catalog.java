@@ -191,12 +191,13 @@ public abstract class Catalog implements ExtensionPoint {
      *
      * @param uniqueName The unique name of the adapter
      * @param clazz The class name of the adapter
+     * @param defaultNamespace The default namespace of the adapter
      * @param type The type of adapter
      * @param settings The configuration of the adapter
-     * @param mode
+     * @param mode The deploy mode of the adapter
      * @return The id of the newly added adapter
      */
-    public abstract long createAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings, DeployMode mode );
+    public abstract long createAdapter( String uniqueName, String clazz, long defaultNamespace, AdapterType type, Map<String, String> settings, DeployMode mode );
 
     /**
      * Update settings of an adapter

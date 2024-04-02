@@ -360,7 +360,7 @@ public class SqlDialect {
     public void unparseSqlIntervalLiteral( SqlWriter writer, SqlIntervalLiteral literal, int leftPrec, int rightPrec ) {
         SqlIntervalLiteral.IntervalValue interval = (SqlIntervalLiteral.IntervalValue) literal.getValue();
         writer.keyword( "INTERVAL" );
-        if ( interval.getSign() == -1 || interval.millis < 0 || interval.months < 0 ) {
+        if ( interval.isNegative() || interval.millis < 0 || interval.months < 0 ) {
             writer.print( "-" );
         }
         String intervalStr = literal.getValue().toString();

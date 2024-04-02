@@ -65,12 +65,12 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
 
 
     public AbstractJdbcSource(
-            long storeId,
-            String uniqueName,
-            Map<String, String> settings,
-            String diverClass,
-            SqlDialect dialect,
-            boolean readOnly ) {
+            final long storeId,
+            final String uniqueName,
+            final Map<String, String> settings,
+            final String diverClass,
+            final SqlDialect dialect,
+            final boolean readOnly ) {
         super( storeId, uniqueName, settings, readOnly, new RelAdapterCatalog( storeId ) );
         this.connectionFactory = createConnectionFactory( settings, dialect, diverClass );
         this.dialect = dialect;

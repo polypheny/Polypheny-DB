@@ -1200,7 +1200,7 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
         return CoreUtil.newContextException(
                 pos,
                 RESOURCE.unsupportedIntervalLiteral(
-                        "'" + value + "'", "INTERVAL " + toString() ) );
+                        "'" + value + "'", "INTERVAL " + this ) );
     }
 
 

@@ -60,7 +60,7 @@ import org.polypheny.db.prepare.Context;
         description = "List of tables which should be imported. The names must to be separated by a comma.")
 public class PostgresqlSource extends AbstractJdbcSource {
 
-    public PostgresqlSource( long storeId, String uniqueName, final Map<String, String> settings ) {
+    public PostgresqlSource( final long storeId, final String uniqueName, final Map<String, String> settings ) {
         super(
                 storeId,
                 uniqueName,

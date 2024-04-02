@@ -80,13 +80,12 @@ public class SqlIntervalLiteral extends SqlLiteral {
     /**
      * A Interval value.
      */
+    @Getter
     public static class IntervalValue extends PolyInterval {
 
-        @Getter
         private final SqlIntervalQualifier intervalQualifier;
         private final String intervalStr;
-        @Getter
-        private final int sign;
+        private final boolean negative;
 
 
         /**
@@ -97,10 +96,9 @@ public class SqlIntervalLiteral extends SqlLiteral {
         IntervalValue( SqlIntervalQualifier intervalQualifier, PolyInterval interval ) {
             super( interval.millis, interval.months );
             this.intervalQualifier = intervalQualifier;
-            this.sign = interval.millis < 0 ? -1 : 1;
+            this.negative = interval.millis < 0 || interval.months < 0;
             this.intervalStr = SqlIntervalQualifier.intervalString( interval, intervalQualifier );
         }
-
 
 
         public boolean equals( Object obj ) {
@@ -108,13 +106,18 @@ public class SqlIntervalLiteral extends SqlLiteral {
                 return false;
             }
             return this.intervalStr.equals( that.intervalStr )
-                    && (this.sign == that.sign)
+                    && (this.negative == that.negative)
                     && this.intervalQualifier.equalsDeep( that.intervalQualifier, Litmus.IGNORE );
         }
 
 
+        public int getSign() {
+            return negative ? -1 : 1;
+        }
+
+
         public int hashCode() {
-            return Objects.hash( sign, intervalStr, intervalQualifier );
+            return Objects.hash( getSign(), intervalStr, intervalQualifier );
         }
 
 

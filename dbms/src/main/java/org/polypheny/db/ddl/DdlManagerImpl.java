@@ -206,17 +206,17 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createAdapter( String uniqueName, String adapterName, AdapterType adapterType, Map<String, String> config, DeployMode mode ) {
+    public void createAdapter( String uniqueName, String adapterName, long defaultNamespace, AdapterType adapterType, Map<String, String> config, DeployMode mode ) {
         uniqueName = uniqueName.toLowerCase();
-        Adapter<?> adapter = AdapterManager.getInstance().addAdapter( adapterName, uniqueName, adapterType, mode, config );
+        Adapter<?> adapter = AdapterManager.getInstance().addAdapter( adapterName, uniqueName, defaultNamespace, adapterType, mode, config );
 
         if ( adapter instanceof DataSource<?> ) {
-            handleSource( (DataSource<?>) adapter );
+            handleSource( (DataSource<?>) adapter, defaultNamespace );
         }
     }
 
 
-    private void handleSource( DataSource<?> adapter ) {
+    private void handleSource( DataSource<?> adapter, long defaultNamespace ) {
         Map<String, List<ExportedColumn>> exportedColumns;
         try {
             exportedColumns = adapter.getExportedColumns();
@@ -228,26 +228,26 @@ public class DdlManagerImpl extends DdlManager {
         for ( Map.Entry<String, List<ExportedColumn>> entry : exportedColumns.entrySet() ) {
             // Make sure the table name is unique
             String tableName = entry.getKey();
-            if ( catalog.getSnapshot().rel().getTable( Catalog.defaultNamespaceId, tableName ).isPresent() ) { // apparently we put them all into 1?
+            if ( catalog.getSnapshot().rel().getTable( defaultNamespace, tableName ).isPresent() ) { // apparently we put them all into 1?
                 int i = 0;
-                while ( catalog.getSnapshot().rel().getTable( Catalog.defaultNamespaceId, tableName + i ).isPresent() ) {
+                while ( catalog.getSnapshot().rel().getTable( defaultNamespace, tableName + i ).isPresent() ) {
                     i++;
                 }
                 tableName += i;
             }
 
-            LogicalTable logical = catalog.getLogicalRel( Catalog.defaultNamespaceId ).addTable( tableName, EntityType.SOURCE, !(adapter).isDataReadOnly() );
+            LogicalTable logical = catalog.getLogicalRel( defaultNamespace ).addTable( tableName, EntityType.SOURCE, !(adapter).isDataReadOnly() );
             List<LogicalColumn> columns = new ArrayList<>();
 
             Pair<AllocationPartition, PartitionProperty> partitionProperty = createSinglePartition( logical.namespaceId, logical );
 
-            AllocationPlacement placement = catalog.getAllocRel( Catalog.defaultNamespaceId ).addPlacement( logical.id, Catalog.defaultNamespaceId, adapter.adapterId );
-            AllocationEntity allocation = catalog.getAllocRel( Catalog.defaultNamespaceId ).addAllocation( adapter.getAdapterId(), placement.id, partitionProperty.left.id, logical.id );
+            AllocationPlacement placement = catalog.getAllocRel( defaultNamespace ).addPlacement( logical.id, defaultNamespace, adapter.adapterId );
+            AllocationEntity allocation = catalog.getAllocRel( defaultNamespace ).addAllocation( adapter.getAdapterId(), placement.id, partitionProperty.left.id, logical.id );
             List<AllocationColumn> aColumns = new ArrayList<>();
             int colPos = 1;
 
             for ( ExportedColumn exportedColumn : entry.getValue() ) {
-                LogicalColumn column = catalog.getLogicalRel( Catalog.defaultNamespaceId ).addColumn(
+                LogicalColumn column = catalog.getLogicalRel( defaultNamespace ).addColumn(
                         exportedColumn.name,
                         logical.id,
                         colPos++,
@@ -260,7 +260,7 @@ public class DdlManagerImpl extends DdlManager {
                         exportedColumn.nullable,
                         Collation.getDefaultCollation() );
 
-                AllocationColumn allocationColumn = catalog.getAllocRel( Catalog.defaultNamespaceId ).addColumn(
+                AllocationColumn allocationColumn = catalog.getAllocRel( defaultNamespace ).addColumn(
                         placement.id,
                         logical.id,
                         column.id,
@@ -284,7 +284,6 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void dropAdapter( String name, Statement statement ) {
-        long defaultNamespaceId = Catalog.defaultNamespaceId;
         name = name.replace( "'", "" );
 
         LogicalAdapter adapter = catalog.getSnapshot().getAdapter( name ).orElseThrow();
@@ -300,7 +299,7 @@ public class DdlManagerImpl extends DdlManager {
                 } else if ( allocation.unwrap( AllocationTable.class ).isPresent() ) {
 
                     for ( LogicalForeignKey fk : catalog.getSnapshot().rel().getForeignKeys( allocation.logicalId ) ) {
-                        catalog.getLogicalRel( defaultNamespaceId ).deleteForeignKey( fk.id );
+                        catalog.getLogicalRel( allocation.namespaceId ).deleteForeignKey( fk.id );
                     }
 
                     LogicalTable table = catalog.getSnapshot().rel().getTable( allocation.logicalId ).orElseThrow();
@@ -316,22 +315,22 @@ public class DdlManagerImpl extends DdlManager {
                     }
                     // Delete column placement in catalog
                     for ( AllocationColumn column : allocation.unwrap( AllocationTable.class ).get().getColumns() ) {
-                        catalog.getAllocRel( defaultNamespaceId ).deleteColumn( allocation.id, column.columnId );
+                        catalog.getAllocRel( allocation.namespaceId ).deleteColumn( allocation.id, column.columnId );
                     }
 
                     // delete allocation
-                    catalog.getAllocRel( defaultNamespaceId ).deleteAllocation( allocation.id );
+                    catalog.getAllocRel( allocation.namespaceId ).deleteAllocation( allocation.id );
 
                     // Remove primary keys
-                    catalog.getLogicalRel( defaultNamespaceId ).deletePrimaryKey( table.id );
+                    catalog.getLogicalRel( allocation.namespaceId ).deletePrimaryKey( table.id );
 
                     // Delete columns
                     for ( LogicalColumn column : catalog.getSnapshot().rel().getColumns( allocation.logicalId ) ) {
-                        catalog.getLogicalRel( defaultNamespaceId ).deleteColumn( column.id );
+                        catalog.getLogicalRel( allocation.namespaceId ).deleteColumn( column.id );
                     }
 
                     // Delete the table
-                    catalog.getLogicalRel( defaultNamespaceId ).deleteTable( table.id );
+                    catalog.getLogicalRel( allocation.namespaceId ).deleteTable( table.id );
                     // Reset plan cache implementation cache & routing cache
                     statement.getQueryProcessor().resetCaches();
                 }

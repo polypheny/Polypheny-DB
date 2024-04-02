@@ -106,11 +106,12 @@ public abstract class DdlManager {
      *
      * @param uniqueName unique name of the newly created adapter
      * @param adapterName name of adapter, which is used to create the adapter
+     * @param defaultNamespace the default namespace for the adapter
      * @param adapterType the specific {@link AdapterType} for the adapter to create
      * @param config configuration for the adapter
      * @param mode the deploy mode
      */
-    public abstract void createAdapter( String uniqueName, String adapterName, AdapterType adapterType, Map<String, String> config, DeployMode mode );
+    public abstract void createAdapter( String uniqueName, String adapterName, long defaultNamespace, AdapterType adapterType, Map<String, String> config, DeployMode mode );
 
     /**
      * Drop an adapter

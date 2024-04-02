@@ -25,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
@@ -99,6 +100,7 @@ public class SqlAlterAdaptersAdd extends SqlAlter {
         DdlManager.getInstance().createAdapter(
                 removeQuotationMarks( uniqueName.toString() ),
                 removeQuotationMarks( adapterName.toString() ),
+                Catalog.defaultNamespaceId,
                 AdapterType.valueOf( removeQuotationMarks( adapterType.toString().toUpperCase() ) ),
                 configMap,
                 configMap.containsKey( "mode" ) ? DeployMode.valueOf( configMap.get( "mode" ).toUpperCase() ) : DeployMode.EMBEDDED );

@@ -72,11 +72,11 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
 
 
     public AbstractJdbcStore(
-            long storeId,
-            String uniqueName,
-            Map<String, String> settings,
-            SqlDialect dialect,
-            boolean persistent ) {
+            final long storeId,
+            final String uniqueName,
+            final Map<String, String> settings,
+            final SqlDialect dialect,
+            final boolean persistent ) {
         super( storeId, uniqueName, settings, persistent, new RelAdapterCatalog( storeId ) );
         this.dialect = dialect;
 
