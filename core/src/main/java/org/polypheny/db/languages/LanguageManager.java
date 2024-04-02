@@ -84,9 +84,17 @@ public class LanguageManager {
 
 
     public List<ImplementationContext> anyPrepareQuery( QueryContext context, Transaction transaction ) {
-        Statement statement = transaction.createStatement();
+        return anyPrepareQuery( context, transaction.createStatement() );
+    }
+
+
+    // This method is still called from the Avatica interface and leaves the statement management to the caller.
+    // This should be refactored to use the new method only transmitting the transaction as soon as the
+    // new prism interface is enabled
+    public List<ImplementationContext> anyPrepareQuery( QueryContext context, Statement statement ) {
+        Transaction transaction = statement.getTransaction();
         if ( transaction.isAnalyze() ) {
-            context.getInformationTarget().accept( transaction.getQueryAnalyzer() );
+            context.getInformationTarget().accept( statement.getTransaction().getQueryAnalyzer() );
         }
 
         if ( transaction.isAnalyze() ) {

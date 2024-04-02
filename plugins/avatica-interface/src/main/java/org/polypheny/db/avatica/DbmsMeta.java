@@ -1334,7 +1334,7 @@ public class DbmsMeta implements ProtobufMeta {
                 .transactionManager( transactionManager )
                 .build();
 
-        PolySignature signature = PolySignature.from( LanguageManager.getINSTANCE().anyPrepareQuery( context, statementHandle.getStatement().getTransaction() ).get( 0 ) );
+        PolySignature signature = PolySignature.from( LanguageManager.getINSTANCE().anyPrepareQuery( context, statementHandle.getStatement() ).get( 0 ) );
 
         h.signature = signature;
         statementHandle.setSignature( signature );
