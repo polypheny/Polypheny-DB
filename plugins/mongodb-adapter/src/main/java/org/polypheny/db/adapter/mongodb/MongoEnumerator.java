@@ -52,6 +52,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyNull;
@@ -196,6 +197,7 @@ class MongoEnumerator implements Enumerator<PolyValue[]> {
                     throw new NotImplementedException();
                 }
             }
+            case INTERVAL -> new PolyInterval( o.asDocument().get( "ms" ).asNumber().longValue(), o.asDocument().get( "m" ).asNumber().longValue() );
             case BINARY -> PolyBinary.of( o.asBinary().getData() );
             case TIMESTAMP -> PolyTimestamp.of( o.asNumber().longValue() );
             case TIME -> PolyTime.of( o.asNumber().longValue() );

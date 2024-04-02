@@ -1402,12 +1402,6 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
         }
 
 
-        private RexNode interval2Num( RexBuilder rexBuilder, RexLiteral rexLiteral ) {
-            return rexBuilder.makeCall(
-                    AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.BIGINT ),
-                    OperatorRegistry.get( OperatorName.UNWRAP_INTERVAL ),
-                    rexLiteral );
-        }
 
     }
 

@@ -317,7 +317,10 @@ public class BsonUtil {
 
 
     private static BsonValue handleInterval( PolyValue obj ) {
-        return new BsonDecimal128( new Decimal128( obj.asInterval().getMergedMillis() ) );
+        return new BsonDocument() {{
+            this.put( "m", new BsonInt64( obj.asInterval().getMonths() ) );
+            this.put( "ms", new BsonInt64( obj.asInterval().getMillis() ) );
+        }};
     }
 
 
@@ -668,7 +671,7 @@ public class BsonUtil {
             case DECIMAL128:
                 return PolyBigDecimal.of( input.asDecimal128().getValue().bigDecimalValue() );
         }
-        throw new org.apache.commons.lang3.NotImplementedException( "Not considered: " + input.getBsonType() );
+        throw new GenericRuntimeException( "Not considered: " + input.getBsonType() );
     }
 
 }

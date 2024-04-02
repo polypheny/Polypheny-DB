@@ -100,7 +100,7 @@ public class HsqldbSqlDialect extends SqlDialect {
                 castSpec = "_BLOB";
                 break;
             case INTERVAL:
-                castSpec = "INTERVAL";
+                castSpec = "_INTERVAL";
                 break;
             default:
                 return super.getCastSpec( type );

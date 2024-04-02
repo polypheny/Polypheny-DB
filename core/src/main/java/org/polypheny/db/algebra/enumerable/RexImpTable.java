@@ -351,8 +351,6 @@ public class RexImpTable {
         map.put( OperatorRegistry.get( OperatorName.LOCALTIME ), systemFunctionImplementor );
         map.put( OperatorRegistry.get( OperatorName.LOCALTIMESTAMP ), systemFunctionImplementor );
 
-        defineMethod( OperatorRegistry.get( OperatorName.UNWRAP_INTERVAL ), BuiltInMethod.UNWRAP_INTERVAL.method, NullPolicy.NONE );
-
         aggMap.put( OperatorRegistry.getAgg( OperatorName.COUNT ), constructorSupplier( CountImplementor.class ) );
         aggMap.put( OperatorRegistry.getAgg( OperatorName.REGR_COUNT ), constructorSupplier( CountImplementor.class ) );
         aggMap.put( OperatorRegistry.getAgg( OperatorName.SUM0 ), constructorSupplier( SumImplementor.class ) );

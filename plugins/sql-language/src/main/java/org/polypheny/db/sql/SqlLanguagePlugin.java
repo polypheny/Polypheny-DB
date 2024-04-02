@@ -227,7 +227,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
         }
 
         // ends with "LIMIT <number>" or "LIMIT <number>;" with optional whitespace, matches <number>
-        Pattern pattern = Pattern.compile( "LIMIT\\s+(\\d+)\\s*(?:;\\s*\\z|$)", Pattern.CASE_INSENSITIVE );
+        Pattern pattern = Pattern.compile( "LIMIT\\s+(\\d+)(?:,(\\d+))?\\s*((?:;\\s*\\z|$)|OFFSET\\s*\\d+;$)", Pattern.CASE_INSENSITIVE );
         String limitClause = null;
         Matcher matcher = pattern.matcher( lowercase );
         if ( matcher.find() && matcher.groupCount() > 0 ) {
@@ -2517,11 +2517,6 @@ public class SqlLanguagePlugin extends PolyPlugin {
         register(
                 OperatorName.CROSS_MODEL_ITEM,
                 new LangFunctionOperator( OperatorName.CROSS_MODEL_ITEM.name(), Kind.CROSS_MODEL_ITEM ) );
-
-        /*
-         * Operator for unwrapping an interval value to handle it as number.
-         */
-        register( OperatorName.UNWRAP_INTERVAL, new LangFunctionOperator( OperatorName.UNWRAP_INTERVAL.name(), Kind.OTHER_FUNCTION ) );
 
         /*
          * Operator which transforms a value to JSON.

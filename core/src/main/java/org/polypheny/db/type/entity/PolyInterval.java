@@ -26,6 +26,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
@@ -48,8 +49,8 @@ public class PolyInterval extends PolyValue {
 
 
     /**
-     * Creates a PolyInterval, which includes a millis and a month value, to allow for combinations liki 7-1 Month to Day, which is 7 months and 7 days.
-     * And required for example by the SQL standard.
+     * Creates a PolyInterval, which includes a millis and a month value, to allow for combinations like 7-1 Month to Day (e.g. used in SQL).
+     * Which is 7 months and 1 day (represented as PolyInterval with 7 months and 1*24h*60min*60s*1000ms).
      *
      * @param millis millis since Epoch.
      * @param months months since Epoch.
@@ -77,7 +78,7 @@ public class PolyInterval extends PolyValue {
         } else if ( unit == TimeUnit.MILLISECOND ) {
             return new MonthsMilliseconds( 0, value );
         } else {
-            throw new NotImplementedException( "since Epoch" );
+            throw new GenericRuntimeException( "Normalization is not supported" );
 
         }
 

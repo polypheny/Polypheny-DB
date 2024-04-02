@@ -17,8 +17,6 @@
 package org.polypheny.db.sql.language;
 
 
-import static org.polypheny.db.sql.language.SqlIntervalQualifier.intervalString;
-
 import java.util.Objects;
 import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -100,7 +98,7 @@ public class SqlIntervalLiteral extends SqlLiteral {
             super( interval.millis, interval.months );
             this.intervalQualifier = intervalQualifier;
             this.sign = interval.millis < 0 ? -1 : 1;
-            this.intervalStr = intervalString( interval, intervalQualifier );
+            this.intervalStr = SqlIntervalQualifier.intervalString( interval, intervalQualifier );
         }
 
 
