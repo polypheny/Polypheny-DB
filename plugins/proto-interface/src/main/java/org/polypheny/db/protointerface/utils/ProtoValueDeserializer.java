@@ -18,7 +18,6 @@ package org.polypheny.db.protointerface.utils;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.math.MathContext;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
