@@ -154,11 +154,6 @@ public class PolyInterval extends PolyValue {
     }
 
 
-    public Long getMergedMillis() {
-        return millis + months * 30 * 24 * 60 * 60 * 1000;
-    }
-
-
     public PolyNumber getLeap( IntervalQualifier intervalQualifier ) {
         switch ( intervalQualifier.getTimeUnitRange() ) {
             case YEAR, QUARTER, MONTH, YEAR_TO_MONTH -> {
