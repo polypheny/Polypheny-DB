@@ -1363,7 +1363,7 @@ public abstract class AlgOptUtil {
     public static String dumpPlan( String header, AlgNode alg, ExplainFormat format, ExplainLevel detailLevel ) {
         //TODO: Delete lines for testing PolyAlg serialization
         StringBuilder sb = new StringBuilder();
-        alg.buildPolyAlgebra( sb );
+        alg.buildPolyAlgebra( sb, "" );
         System.out.println( "===== " + header + " =====" );
         System.out.println( sb );
         System.out.print( "----> " );

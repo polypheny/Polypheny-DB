@@ -245,8 +245,13 @@ public interface AlgNode extends AlgOptNode, Cloneable {
      * The basic structure of PolyAlgebra is {@code OPERATOR[attributes](children)}.
      *
      * @param sb StringBuilder for building the representation
+     * @param prefix Prefix to be added in front of each operator (resulting in operators having a visual indentation) or null if not desired
      */
-    void buildPolyAlgebra( StringBuilder sb );
+    void buildPolyAlgebra( StringBuilder sb, String prefix );
+
+    default void buildPolyAlgebra( StringBuilder sb) {
+        buildPolyAlgebra( sb, null );
+    }
 
     /**
      * Retrieves the PolyAlgDeclaration for this AlgNode implementation.

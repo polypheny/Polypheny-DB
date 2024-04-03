@@ -357,9 +357,12 @@ public abstract class AbstractAlgNode implements AlgNode {
 
 
     @Override
-    public void buildPolyAlgebra( StringBuilder sb ) {
+    public void buildPolyAlgebra( StringBuilder sb, String prefix ) {
+        final String INDENT = " ";
+        String nextPrefix = prefix == null ? null : prefix + INDENT;
+
         PolyAlgDeclaration decl = getPolyAlgDeclaration();
-        sb.append( decl.opName );
+        sb.append( prefix == null ? "" : prefix ).append( decl.opName );
         sb.append( collectAttributes().serializeArguments( this ) );
 
         int size = getInputs().size();
@@ -375,13 +378,14 @@ public abstract class AbstractAlgNode implements AlgNode {
 
             StringBuilder csb = new StringBuilder();
             if ( projections.isEmpty() ) {
-                child.buildPolyAlgebra( csb );
+                child.buildPolyAlgebra( csb, nextPrefix );
             } else {
-                csb.append( PolyAlgRegistry.getDeclaration( LogicalRelProject.class ).opName )
+                csb.append( nextPrefix )
+                        .append( PolyAlgRegistry.getDeclaration( LogicalRelProject.class ).opName )
                         .append( "#[" )
                         .append( PolyAlgUtils.joinMultiValued( projections, true ) )
                         .append( "](\n" );
-                child.buildPolyAlgebra( csb );
+                child.buildPolyAlgebra( csb, nextPrefix == null ? null : nextPrefix + INDENT );
                 csb.append( ")" );
             }
             sb.append( csb );
