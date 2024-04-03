@@ -20,6 +20,9 @@ package org.polypheny.db.algebra.polyalg;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.StringJoiner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.rex.RexCall;
@@ -38,8 +41,20 @@ import org.polypheny.db.rex.RexRangeRef;
 import org.polypheny.db.rex.RexSubQuery;
 import org.polypheny.db.rex.RexTableIndexRef;
 import org.polypheny.db.rex.RexVisitor;
+import org.polypheny.db.type.PolyType;
 
 public class PolyAlgUtils {
+
+    private static final Pattern CAST_PATTERN;
+
+
+    static {
+        StringJoiner joiner = new StringJoiner( "|", "CAST\\(([^)]+)\\):(", ")" );
+        for ( PolyType type : PolyType.values() ) {
+            joiner.add( type.getName() );
+        }
+        CAST_PATTERN = Pattern.compile( joiner.toString() ); // matches group "my_field" in "CAST(my_field):INTEGER"
+    }
 
 
     public static String getFieldNameFromIndex( AlgNode alg, int idx ) {
@@ -55,7 +70,7 @@ public class PolyAlgUtils {
 
 
     public static String appendAlias( String exp, String alias ) {
-        if ( alias == null || alias.equals( exp ) ) {
+        if ( alias == null || alias.equals( exp ) || isCastWithSameName( exp, alias ) ) {
             return exp;
         }
         return exp + " AS " + alias;
@@ -64,7 +79,7 @@ public class PolyAlgUtils {
 
     /**
      * Each element in exps is compared with the corresponding element in aliases.
-     * If they differ, the alias is appended to the element, separated by the keyword {@code AS}.
+     * If they differ (and not just by a CAST expression), the alias is appended to the element, separated by the keyword {@code AS}.
      * For example {@code AVG(age) AS average}.
      *
      * @param exps List of strings to be assigned an alias
@@ -78,6 +93,12 @@ public class PolyAlgUtils {
             list.add( appendAlias( exps.get( i ), aliases.get( i ) ) );
         }
         return list;
+    }
+
+
+    private static boolean isCastWithSameName( String exp, String alias ) {
+        Matcher m = CAST_PATTERN.matcher( exp );
+        return m.find() && m.group( 1 ).equals( alias );
     }
 
 
@@ -95,7 +116,7 @@ public class PolyAlgUtils {
     }
 
 
-    public static List<String> getAuxProjections( AlgNode child, Set<String> fieldNames) {
+    public static List<String> getAuxProjections( AlgNode child, Set<String> fieldNames ) {
         List<String> projections = new ArrayList<>();
         for ( AlgDataTypeField field : child.getTupleType().getFields() ) {
             String name = field.getName();
@@ -184,7 +205,8 @@ public class PolyAlgUtils {
 
         @Override
         public String visitRangeRef( RexRangeRef rangeRef ) {
-            return "rangeRef: " + rangeRef;
+            // Regular RexNode trees do not contain this construct
+            return rangeRef.toString();
         }
 
 
