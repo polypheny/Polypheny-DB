@@ -1463,17 +1463,10 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     void dropConstraint( final Context ctx ) {
         ConstraintRequest request = ctx.bodyAsClass( ConstraintRequest.class );
 
-        String[] t = request.table.split( "\\." );
-        String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
+        long entityId = request.entityId;
+        String fullEntityName = getFullEntityName( entityId );
 
-        String query;
-        if ( request.constraint.type.equals( "PRIMARY KEY" ) ) {
-            query = String.format( "ALTER TABLE %s DROP PRIMARY KEY", tableId );
-        } else if ( request.constraint.type.equals( "FOREIGN KEY" ) ) {
-            query = String.format( "ALTER TABLE %s DROP FOREIGN KEY \"%s\"", tableId, request.constraint.name );
-        } else {
-            query = String.format( "ALTER TABLE %s DROP CONSTRAINT \"%s\"", tableId, request.constraint.name );
-        }
+        String query = getDropConstraintQuery( request, fullEntityName );
         QueryLanguage language = QueryLanguage.from( "sql" );
         Result<?, ?> res = LanguageCrud.anyQueryResult(
                 QueryContext.builder()
@@ -1486,14 +1479,27 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
+    private static String getDropConstraintQuery( ConstraintRequest request, String fullEntityName ) {
+        String query;
+        if ( request.constraint.type.equals( ConstraintType.PRIMARY.name() ) ) {
+            query = String.format( "ALTER TABLE %s DROP PRIMARY KEY", fullEntityName );
+        } else if ( request.constraint.type.equals( ConstraintType.FOREIGN.name() ) ) {
+            query = String.format( "ALTER TABLE %s DROP FOREIGN KEY \"%s\"", fullEntityName, request.constraint.name );
+        } else {
+            query = String.format( "ALTER TABLE %s DROP CONSTRAINT \"%s\"", fullEntityName, request.constraint.name );
+        }
+        return query;
+    }
+
+
     /**
      * Add a primary key to a table
      */
     void addPrimaryKey( final Context ctx ) {
         ConstraintRequest request = ctx.bodyAsClass( ConstraintRequest.class );
 
-        String[] t = request.table.split( "\\." );
-        String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
+        long entityId = request.entityId;
+        String tableId = getFullEntityName( entityId );
 
         RelationalResult result;
         if ( request.constraint.columns.length < 1 ) {
@@ -1525,8 +1531,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     void addUniqueConstraint( final Context ctx ) {
         ConstraintRequest request = ctx.bodyAsClass( ConstraintRequest.class );
 
-        String[] t = request.table.split( "\\." );
-        String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
+        long entityId = request.entityId;
+        String tableName = getFullEntityName( entityId );
 
         Result<?, ?> result;
         if ( request.constraint.columns.length > 0 ) {
@@ -1534,7 +1540,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             for ( String s : request.constraint.columns ) {
                 joiner.add( "\"" + s + "\"" );
             }
-            String query = "ALTER TABLE " + tableId + " ADD CONSTRAINT \"" + request.constraint.name + "\" UNIQUE " + joiner;
+            String query = "ALTER TABLE " + tableName + " ADD CONSTRAINT \"" + request.constraint.name + "\" UNIQUE " + joiner;
             QueryLanguage language = QueryLanguage.from( "sql" );
             result = LanguageCrud.anyQueryResult(
                     QueryContext.builder()

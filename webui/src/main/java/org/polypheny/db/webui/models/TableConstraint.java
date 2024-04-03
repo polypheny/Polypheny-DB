@@ -17,20 +17,35 @@
 package org.polypheny.db.webui.models;
 
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import java.util.StringJoiner;
+import lombok.Value;
+import lombok.experimental.NonFinal;
 
 
+@Value
 public class TableConstraint {
 
+    @JsonProperty
     public String name;
+
+    @JsonProperty
     public String type;
+
+    @NonFinal
     public boolean deferrable;
+
+    @NonFinal
     public boolean initially_deferred;
+
+    @JsonProperty
     public String[] columns;
 
 
-    public TableConstraint( final String name, final String type, List<String> columns ) {
+    @JsonCreator
+    public TableConstraint( @JsonProperty("name") final String name, @JsonProperty("type") final String type, @JsonProperty("columns") List<String> columns ) {
         this.name = name;
         this.type = type;
         this.columns = columns.toArray( new String[0] );

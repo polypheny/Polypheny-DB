@@ -137,6 +137,12 @@ public class MockRelSnapshot implements LogicalRelSnapshot {
 
 
     @Override
+    public @NotNull List<LogicalForeignKey> getForeignKeys() {
+        throw new UnsupportedOperationException();
+    }
+
+
+    @Override
     public boolean isPrimaryKey( long keyId ) {
         throw new UnsupportedOperationException();
     }

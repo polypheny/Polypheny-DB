@@ -22,6 +22,6 @@ import org.polypheny.db.webui.models.TableConstraint;
 
 public class ConstraintRequest {
 
-    public String table;
+    public long entityId;
     public TableConstraint constraint;
 }
