@@ -163,7 +163,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public long createAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings, DeployMode mode ) {
+    public long createAdapter( String uniqueName, String clazz, String adapterLogo, AdapterType type, Map<String, String> settings, DeployMode mode ) {
         throw new NotImplementedException();
     }
 

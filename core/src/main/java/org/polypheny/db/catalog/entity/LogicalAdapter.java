@@ -51,6 +51,8 @@ public class LogicalAdapter implements PolyObject {
     public String adapterTypeName;
     @Serialize
     public DeployMode mode;
+    @Serialize
+    public String adapterLogo;
 
 
     public enum AdapterType {STORE, SOURCE}
@@ -60,12 +62,14 @@ public class LogicalAdapter implements PolyObject {
             @Deserialize("id") final long id,
             @Deserialize("uniqueName") @NonNull final String uniqueName,
             @Deserialize("adapterName") @NonNull final String adapterName,
+            @Deserialize("adapterLogo") @NonNull final String adapterLogo,
             @Deserialize("type") @NonNull final AdapterType adapterType,
             @Deserialize("mode") @NotNull final DeployMode mode,
             @Deserialize("settings") @NonNull final Map<String, String> settings ) {
         this.id = id;
         this.uniqueName = uniqueName;
         this.adapterName = adapterName;
+        this.adapterLogo = adapterLogo;
         this.type = adapterType;
         this.settings = new HashMap<>( settings );
         this.adapterTypeName = getAdapterName();

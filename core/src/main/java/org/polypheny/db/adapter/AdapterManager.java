@@ -184,7 +184,7 @@ public class AdapterManager {
 
         AdapterTemplate adapterTemplate = AdapterTemplate.fromString( adapterName, adapterType );
 
-        long adapterId = Catalog.getInstance().createAdapter( uniqueName, adapterName, adapterType, settings, mode );
+        long adapterId = Catalog.getInstance().createAdapter( uniqueName, adapterName, adapterTemplate.adapterLogo, adapterType, settings, mode );
         try {
             Adapter<?> adapter = adapterTemplate.getDeployer().get( adapterId, uniqueName, settings );
             adapterByName.put( adapter.getUniqueName(), adapter );

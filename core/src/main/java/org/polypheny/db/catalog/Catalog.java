@@ -195,7 +195,7 @@ public abstract class Catalog implements ExtensionPoint {
      * @param mode
      * @return The id of the newly added adapter
      */
-    public abstract long createAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings, DeployMode mode );
+    public abstract long createAdapter( String uniqueName, String clazz, String adapterLogo, AdapterType type, Map<String, String> settings, DeployMode mode );
 
     /**
      * Update settings of an adapter

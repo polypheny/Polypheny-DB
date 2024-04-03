@@ -383,9 +383,9 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     @Override
-    public long createAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings, DeployMode mode ) {
+    public long createAdapter( String uniqueName, String clazz, String adapterLogo, AdapterType type, Map<String, String> settings, DeployMode mode ) {
         long id = idBuilder.getNewAdapterId();
-        adapters.put( id, new LogicalAdapter( id, uniqueName, clazz, type, mode, settings ) );
+        adapters.put( id, new LogicalAdapter( id, uniqueName, clazz, adapterLogo, type, mode, settings ) );
         change();
         return id;
     }

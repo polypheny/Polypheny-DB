@@ -56,17 +56,22 @@ public class AdapterModel extends IdEntity {
     @JsonProperty
     public List<IndexMethodModel> indexMethods;
 
+    @JsonProperty
+    public String adapterLogo;
+
 
     public AdapterModel(
             @JsonProperty("id") @Nullable Long id,
             @JsonProperty("name") @Nullable String name,
             @JsonProperty("adapterName") String adapterName,
+            @JsonProperty("adapterLogo") String adapterLogo,
             @JsonProperty("type") AdapterType type,
             @JsonProperty("settings") Map<String, AdapterSettingValueModel> settings,
             @JsonProperty("mode") DeployMode mode,
             @JsonProperty("indexMethods") List<IndexMethodModel> indexMethods ) {
         super( id, name );
         this.adapterName = adapterName;
+        this.adapterLogo = adapterLogo;
         this.type = type;
         this.settings = settings;
         this.mode = mode;
@@ -83,6 +88,7 @@ public class AdapterModel extends IdEntity {
                 adapter.id,
                 adapter.uniqueName,
                 adapter.adapterName,
+                adapter.adapterLogo,
                 adapter.type,
                 settings,
                 adapter.mode,
