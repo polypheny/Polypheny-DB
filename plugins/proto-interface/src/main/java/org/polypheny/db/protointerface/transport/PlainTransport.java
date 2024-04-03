@@ -18,6 +18,7 @@ package org.polypheny.db.protointerface.transport;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.SocketChannel;
@@ -98,6 +99,7 @@ public class PlainTransport implements Transport {
 
     public static Transport accept( SocketChannel con ) {
         try {
+            con.setOption( StandardSocketOptions.TCP_NODELAY, true );
             return new PlainTransport( con );
         } catch ( IOException e ) {
             throw new GenericRuntimeException( e );

@@ -145,7 +145,6 @@ public class PIServer {
         while ( true ) {
             try {
                 SocketChannel s = server.accept();
-                s.socket().setTcpNoDelay( true );
                 long connectionId = ID_COUNTER.getAndIncrement();
                 Thread t = new Thread( () -> acceptConnection( s, name, connectionId, createTransport, clientManager ), String.format( "ProtoInterface" + name + "ClientConnection%d", connectionId ) );
                 t.start();
