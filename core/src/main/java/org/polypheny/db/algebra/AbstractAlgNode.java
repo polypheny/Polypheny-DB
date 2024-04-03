@@ -378,7 +378,7 @@ public abstract class AbstractAlgNode implements AlgNode {
                 child.buildPolyAlgebra( csb );
             } else {
                 csb.append( PolyAlgRegistry.getDeclaration( LogicalRelProject.class ).opName )
-                        .append( "*[" )
+                        .append( "#[" )
                         .append( PolyAlgUtils.joinMultiValued( projections, true ) )
                         .append( "](\n" );
                 child.buildPolyAlgebra( csb );
