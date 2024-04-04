@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Stream;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.webui.models.AdapterTemplateModel;
@@ -107,11 +106,7 @@ public record SnapshotModel(
         keys.addAll( snapshot.rel().getKeys().stream().map( KeyModel::from ).toList() );
         keys.addAll( snapshot.rel().getPrimaryKeys().stream().map( KeyModel::from ).toList() );
 
-        List<ConstraintModel> constraints = Stream.concat(
-                Stream.concat(
-                        snapshot.rel().getPrimaryKeys().stream().map( ConstraintModel::from ),
-                        snapshot.rel().getForeignKeys().stream().map( ConstraintModel::from ) ),
-                snapshot.rel().getConstraints().stream().map( ConstraintModel::from ) ).toList();
+        List<ConstraintModel> constraints = snapshot.rel().getConstraints().stream().map( ConstraintModel::from ).toList();
 
         List<AllocationEntityModel> allocations = snapshot.alloc().getAllocations().stream().map( AllocationEntityModel::from ).toList();
 

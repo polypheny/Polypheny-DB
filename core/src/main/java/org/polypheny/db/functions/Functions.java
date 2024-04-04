@@ -373,11 +373,11 @@ public class Functions {
 
 
     @SuppressWarnings("unused")
-    public static Enumerable<?> enforceConstraint( DataContext context, Function0<Enumerable<PolyValue[]>> modify, Function0<Enumerable<PolyValue[]>> control, List<Class<? extends Exception>> exceptions, List<String> msgs ) {
-        List<PolyValue> results = new ArrayList<>();
+    public static Enumerable<PolyValue[]> enforceConstraint( DataContext context, Function0<Enumerable<PolyValue[]>> modify, Function0<Enumerable<PolyValue[]>> control, List<Class<? extends Exception>> exceptions, List<String> msgs ) {
+        List<PolyValue[]> results = new ArrayList<>();
         try {
             for ( PolyValue[] object : modify.apply() ) {
-                results.add( object[0] );
+                results.add( object );
             }
         } catch ( Exception e ) {
             throw new ConstraintViolationException( Joiner.on( "\n" ).join( msgs ) );
