@@ -30,7 +30,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.Enumerator;
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
@@ -349,8 +348,7 @@ class ExcelEnumerator implements Enumerator<PolyValue[]> {
 
         protected PolyValue convert( ExcelFieldType fieldType, Cell cell ) {
             if ( fieldType == null ) {
-                throw new NotImplementedException();
-                //return cell;
+                return PolyString.of( cell.getStringCellValue() );
             }
             if ( cell == null ) {
                 return PolyNull.NULL;
