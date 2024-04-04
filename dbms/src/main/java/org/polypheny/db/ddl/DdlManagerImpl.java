@@ -2707,7 +2707,7 @@ public class DdlManagerImpl extends DdlManager {
                 }
                 long columnId = catalog.getSnapshot().rel().getColumn( foreignTableId, information.foreignKeyColumnName ).orElseThrow().id;
                 catalog.getLogicalRel( namespaceId ).addForeignKey( tableId, columnIds, foreignTableId, List.of( columnId ), constraintName, ForeignKeyOption.NONE, ForeignKeyOption.NONE );
-                catalog.getLogicalRel( namespaceId ).addConstraint( tableId, ConstraintType.PRIMARY.name(), columnIds, ConstraintType.FOREIGN );
+                catalog.getLogicalRel( namespaceId ).addConstraint( tableId, ConstraintType.FOREIGN.name(), columnIds, ConstraintType.FOREIGN );
 
                 break;
         }

@@ -447,7 +447,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     @Override
     public @NonNull List<LogicalConstraint> getConstraints( long tableId ) {
         List<Long> keysOfTable = getTableKeys( tableId ).stream().map( t -> t.id ).toList();
-        return constraints.values().stream().filter( c -> keysOfTable.contains( c.keyId ) ).collect( Collectors.toList() );
+        return constraints.values().stream().filter( c -> keysOfTable.contains( c.keyId ) ).toList();
     }
 
 
