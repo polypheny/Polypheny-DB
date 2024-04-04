@@ -16,6 +16,8 @@
 
 package org.polypheny.db.protointerface.utils;
 
+import static org.polypheny.db.protointerface.proto.ProtoValue.ValueCase.STRING;
+
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -26,6 +28,7 @@ import java.util.stream.Collectors;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.protointerface.proto.IndexedParameters;
 import org.polypheny.db.protointerface.proto.ProtoBigDecimal;
+import org.polypheny.db.protointerface.proto.ProtoDocument;
 import org.polypheny.db.protointerface.proto.ProtoValue;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
@@ -34,6 +37,8 @@ import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyBlob;
+import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
@@ -92,9 +97,28 @@ public class ProtoValueDeserializer {
             case BINARY -> deserializeToPolyBinary( protoValue );
             case NULL -> deserializeToPolyNull();
             case LIST -> deserializeToPolyList( protoValue );
+            case FILE -> deserializeToPolyBlob( protoValue );
+            case DOCUMENT -> deserializeToPolyDocument( protoValue );
             case VALUE_NOT_SET -> throw new GenericRuntimeException( "Invalid ProtoValue: no value is set" );
             default -> throw new GenericRuntimeException( "Deserialization of type " + protoValue.getValueCase() + " is not supported" );
         };
+    }
+
+
+    private static PolyValue deserializeToPolyDocument( ProtoValue protoValue ) {
+        PolyDocument document = new PolyDocument(  );
+        protoValue.getDocument().getEntriesList().stream()
+                .filter( e -> e.getKey().getValueCase() == STRING )
+                .forEach( e -> document.put(
+                        new PolyString(e.getKey().getString().getString()),
+                        deserializeProtoValue( e.getValue() )
+                ) );
+        return document;
+    }
+
+
+    private static PolyValue deserializeToPolyBlob( ProtoValue protoValue ) {
+        return PolyBlob.of( protoValue.getFile().getBinary().toByteArray() );
     }
 
 

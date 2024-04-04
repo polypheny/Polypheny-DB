@@ -49,10 +49,9 @@ import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.jdbc.PolyConnection;
-import org.polypheny.jdbc.PrismInterfaceClient;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
-import org.polypheny.jdbc.jdbctypes.PolyphenyBlob;
-import org.polypheny.jdbc.jdbctypes.PolyphenyClob;
+import org.polypheny.jdbc.types.PolyphenyBlob;
+import org.polypheny.jdbc.types.PolyphenyClob;
 
 @Slf4j
 public class JdbcConnectionTest {

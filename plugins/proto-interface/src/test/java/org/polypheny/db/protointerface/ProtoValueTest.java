@@ -33,6 +33,7 @@ import org.polypheny.db.TestHelper;
 import org.polypheny.db.protointerface.proto.ProtoValue;
 import org.polypheny.db.protointerface.proto.ProtoValue.ValueCase;
 import org.polypheny.db.protointerface.utils.PolyValueSerializer;
+import org.polypheny.db.protointerface.utils.ProtoValueDeserializer;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
@@ -42,6 +43,7 @@ import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyUserDefinedValue;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
@@ -50,7 +52,7 @@ import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 
-public class PolyValueSerializationTest {
+public class ProtoValueTest {
 
     @BeforeAll
     public static void init() {
@@ -118,9 +120,17 @@ public class PolyValueSerializationTest {
 
     @Test
     public void polyBinarySerializationTest() {
-        PolyBinary expected = PolyBinary.of( new byte[]{ 0x01, 0x02, 0x03 } );
+        byte[] data = new byte[]{ 0x01, 0x02, 0x03 };
+        PolyBinary expected = PolyBinary.of( data );
         ProtoValue protoValue = PolyValueSerializer.serialize( expected );
-        assertArrayEquals( new byte[]{ 0x01, 0x02, 0x03 }, protoValue.getBinary().toByteArray() );
+
+        assertArrayEquals( data, protoValue.getBinary().toByteArray() );
+        assertEquals( ValueCase.BINARY, protoValue.getValueCase() );
+
+        PolyValue deserialized = ProtoValueDeserializer.deserializeProtoValue( protoValue );
+
+        assertEquals( PolyType.BINARY, deserialized.type  );
+        assertEquals( data, deserialized.asBinary().getValue() );
     }
 
 
@@ -210,6 +220,41 @@ public class PolyValueSerializationTest {
         PolyTimestamp expected = new PolyTimestamp( 1691879380700L );
         ProtoValue protoValue = PolyValueSerializer.serialize( expected );
         assertEquals( 1691879380700L, protoValue.getTimestamp().getTimestamp() );
+    }
+
+
+    @Test
+    public void polyDocumentSerializationTest() {
+        PolyDocument document = new PolyDocument();
+        document.put( new PolyString( "1st" ), new PolyBoolean( false ) );
+        document.put( new PolyString( "2nd" ), PolyBinary.of( new byte[]{ 0, 1, 2, 3, 4 } ) );
+        document.put( new PolyString( "3rd" ), new PolyDate( 47952743435L ));
+        ProtoValue protoValue = PolyValueSerializer.serialize( document );
+
+    }
+
+
+    @Test
+    public void polyFileSerializationTest() {
+
+    }
+
+
+    @Test
+    public void polyAudioSerializationTest() {
+
+    }
+
+
+    @Test
+    public void polyImageSerializationTest() {
+
+    }
+
+
+    @Test
+    public void polyVideoSerializationTest() {
+
     }
 
 

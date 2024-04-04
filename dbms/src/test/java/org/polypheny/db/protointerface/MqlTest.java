@@ -39,7 +39,7 @@ public class MqlTest {
 
     @Test
     public void connectionUnwrapTest() {
-        try ( Connection connection = new JdbcConnection( true ).getConnection() ) {
+        try (Connection connection = new JdbcConnection( true ).getConnection() ) {
             if ( !connection.isWrapperFor( PolyConnection.class ) ) {
                 fail( "Driver must support unwrapping to PolyphenyConnection" );
             }

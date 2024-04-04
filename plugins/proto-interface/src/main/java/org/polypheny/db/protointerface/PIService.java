@@ -26,6 +26,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
+import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
@@ -542,12 +543,24 @@ public class PIService {
 
 
     public Response fetchResult( FetchRequest request, ResponseMaker<Frame> responseObserver ) {
+
+        PIPerformanceLogger logger = new PIPerformanceLogger();
+        logger.openFile( "fetchSaI" );
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+
         PIClient client = getClient();
         PIStatement statement = client.getStatementManager().getStatement( request.getStatementId() );
         int fetchSize = request.hasFetchSize()
                 ? request.getFetchSize()
                 : PropertyUtils.DEFAULT_FETCH_SIZE;
         Frame frame = StatementProcessor.fetch( statement, fetchSize );
+
+        stopWatch.stop();
+        logger.write( stopWatch.getNanoTime() + "");
+        logger.writeNewLine();
+        logger.closeFile();
+
         return responseObserver.makeResponse( frame );
     }
 

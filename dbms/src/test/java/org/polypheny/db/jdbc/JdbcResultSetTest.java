@@ -29,7 +29,7 @@ import java.sql.Statement;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.jdbc.PolyhenyResultSet;
+import org.polypheny.jdbc.PolyphenyResultSet;
 
 public class JdbcResultSetTest {
 
@@ -117,7 +117,8 @@ public class JdbcResultSetTest {
                 Statement statement = connection.createStatement() ) {
             createTableWithData( connection );
             ResultSet rs = statement.executeQuery( SELECT_SQL );
-            while ( rs.next() ) ;
+            while ( rs.next() )
+                ;
             assertTrue( rs.isAfterLast() );
             rs.close();
             statement.executeUpdate( DROP_TABLE_SQL );
@@ -998,7 +999,7 @@ public class JdbcResultSetTest {
         ) {
             createTableWithData( connection );
             ResultSet rs = statement.executeQuery( SELECT_SQL );
-            assertTrue( rs.isWrapperFor( PolyhenyResultSet.class ) );
+            assertTrue( rs.isWrapperFor( PolyphenyResultSet.class ) );
             rs.close();
             statement.executeUpdate( DROP_TABLE_SQL );
         }
@@ -1014,7 +1015,7 @@ public class JdbcResultSetTest {
         ) {
             createTableWithData( connection );
             ResultSet rs = statement.executeQuery( SELECT_SQL );
-            PolyhenyResultSet polyRs = rs.unwrap( PolyhenyResultSet.class );
+            PolyphenyResultSet polyRs = rs.unwrap( PolyphenyResultSet.class );
             rs.close();
             statement.executeUpdate( DROP_TABLE_SQL );
         }
