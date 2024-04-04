@@ -218,7 +218,6 @@ public interface NeoUtil {
             return new PolyList<>( (value).asList( NeoUtil::getComparableOrString ) );
         }
         throw new NotImplementedException( "Type not supported" );
-        //return PolyString.of( value.asObject().toString() );
     }
 
     static Function1<Record, PolyValue[]> getTypesFunction( NestedPolyType types ) {

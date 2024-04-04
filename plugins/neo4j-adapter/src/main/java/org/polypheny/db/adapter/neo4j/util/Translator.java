@@ -191,11 +191,11 @@ public class Translator extends RexVisitorImpl<String> {
         RexNode rightRex = call.operands.get( 1 );
         String left = leftRex.accept( this );
         if ( leftRex.isA( Kind.LITERAL ) && PolyType.STRING_TYPES.contains( leftRex.getType().getPolyType() ) ) {
-            left = String.format( "'%s'", left );
+            //left = String.format( "'%s'", left );
         }
         String right = rightRex.accept( this );
         if ( rightRex.isA( Kind.LITERAL ) && PolyType.STRING_TYPES.contains( rightRex.getType().getPolyType() ) ) {
-            right = String.format( "'%s'", right );
+            //right = String.format( "'%s'", right );
         }
 
         return getFinalFunction( call, List.of( left, right ) );
@@ -204,7 +204,6 @@ public class Translator extends RexVisitorImpl<String> {
 
 
     private String handleExtractFromPath( RexCall call ) {
-        //AlgDataTypeField field = beforeFields.get( ((RexInputRef) call.operands.get( 0 )).getIndex() );
         assert call.operands.get( 1 ).isA( Kind.LITERAL );
 
         return ((RexLiteral) call.operands.get( 1 )).value.asString().value;
