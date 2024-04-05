@@ -186,6 +186,7 @@ import org.polypheny.db.webui.models.PartitionFunctionModel;
 import org.polypheny.db.webui.models.PartitionFunctionModel.FieldType;
 import org.polypheny.db.webui.models.PartitionFunctionModel.PartitionFunctionColumn;
 import org.polypheny.db.webui.models.PathAccessRequest;
+import org.polypheny.db.webui.models.PlacementFieldsModel;
 import org.polypheny.db.webui.models.PlacementModel;
 import org.polypheny.db.webui.models.PlacementModel.RelationalStore;
 import org.polypheny.db.webui.models.QueryInterfaceModel;
@@ -1737,27 +1738,27 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      * Index method: either 'ADD' or 'DROP'
      */
     void addDropPlacement( final Context ctx ) {
-        IndexModel index = ctx.bodyAsClass( IndexModel.class );
-        if ( !index.getMethod().equalsIgnoreCase( "ADD" ) && !index.getMethod().equalsIgnoreCase( "DROP" ) && !index.getMethod().equalsIgnoreCase( "MODIFY" ) ) {
+        PlacementFieldsModel placementFields = ctx.bodyAsClass( PlacementFieldsModel.class );
+        if ( placementFields.method() == null ) {
             ctx.json( RelationalResult.builder().error( "Invalid request" ).build() );
             return;
         }
         StringJoiner columnJoiner = new StringJoiner( ",", "(", ")" );
         int counter = 0;
-        if ( !index.getMethod().equalsIgnoreCase( "DROP" ) ) {
-            for ( long col : index.columnIds ) {
-                columnJoiner.add( "\"" + Catalog.snapshot().rel().getColumn( col ).orElseThrow().name + "\"" );
+        if ( placementFields.method() != PlacementFieldsModel.Method.DROP ) {
+            for ( String name : placementFields.fieldNames() ) {
+                columnJoiner.add( "\"" + name + "\"" );
                 counter++;
             }
         }
         String columnListStr = counter > 0 ? columnJoiner.toString() : "";
         String query = String.format(
                 "ALTER TABLE \"%s\".\"%s\" %s PLACEMENT %s ON STORE \"%s\"",
-                index.getNamespaceId(),
-                index.getEntityId(),
-                index.getMethod().toUpperCase(),
+                Catalog.snapshot().getNamespace( placementFields.namespaceId() ).orElseThrow().name,
+                Catalog.snapshot().rel().getTable( placementFields.entityId() ).orElseThrow().name,
+                placementFields.method().name(),
                 columnListStr,
-                index.getStoreUniqueName() );
+                placementFields.adapterName() );
         QueryLanguage language = QueryLanguage.from( "sql" );
         Result<?, ?> res = LanguageCrud.anyQueryResult(
                 QueryContext.builder()
