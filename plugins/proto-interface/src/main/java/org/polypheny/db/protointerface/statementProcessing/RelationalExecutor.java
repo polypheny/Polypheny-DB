@@ -37,7 +37,7 @@ import org.polypheny.db.type.entity.PolyValue;
 
 public class RelationalExecutor extends Executor {
 
-    private static DataModel namespaceType = DataModel.RELATIONAL;
+    private static final DataModel namespaceType = DataModel.RELATIONAL;
 
 
     @Override
