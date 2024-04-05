@@ -102,25 +102,19 @@ public class RexOver extends RexCall {
     @Override
     protected @Nonnull
     String computeDigest( boolean withType ) {
-        return computeDigest( withType, null );
-    }
-
-
-    @Override
-    protected @Nonnull String computeDigest( boolean withType, RexVisitor<String> visitor ) {
         final StringBuilder sb = new StringBuilder( op.getName() );
         sb.append( "(" );
         if ( distinct ) {
             sb.append( "DISTINCT " );
         }
-        appendOperands( sb, visitor );
+        appendOperands( sb );
         sb.append( ")" );
         if ( withType ) {
             sb.append( ":" );
             sb.append( type.getFullTypeString() );
         }
         sb.append( " OVER (" )
-                .append( window.toString( visitor ) )
+                .append( window )
                 .append( ")" );
         return sb.toString();
     }

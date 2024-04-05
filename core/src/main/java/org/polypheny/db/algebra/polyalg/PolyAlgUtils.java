@@ -17,20 +17,24 @@
 package org.polypheny.db.algebra.polyalg;
 
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.StringJoiner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import lombok.NonNull;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.constant.Syntax;
+import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCorrelVariable;
+import org.polypheny.db.rex.RexDigestIncludeType;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexElementRef;
 import org.polypheny.db.rex.RexFieldAccess;
+import org.polypheny.db.rex.RexFieldCollation;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexLocalRef;
@@ -42,6 +46,8 @@ import org.polypheny.db.rex.RexRangeRef;
 import org.polypheny.db.rex.RexSubQuery;
 import org.polypheny.db.rex.RexTableIndexRef;
 import org.polypheny.db.rex.RexVisitor;
+import org.polypheny.db.rex.RexWindow;
+import org.polypheny.db.rex.RexWindowBound;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ValidatorUtil;
 
@@ -154,7 +160,7 @@ public class PolyAlgUtils {
 
         @Override
         public String visitLocalRef( RexLocalRef localRef ) {
-            return "LocalRef: " + localRef;
+            return "===LocalRef=== " + localRef;
         }
 
 
@@ -166,25 +172,56 @@ public class PolyAlgUtils {
 
         @Override
         public String visitCall( RexCall call ) {
-            return call.toString( this );
+            // This code closely follows call.toString(), but uses the visitor for nested RexNodes
+
+            boolean withType = call.isA( Kind.CAST ) || call.isA( Kind.NEW_SPECIFICATION );
+            final StringBuilder sb = new StringBuilder( call.op.getName() );
+            if ( (!call.operands.isEmpty()) && (call.op.getSyntax() == Syntax.FUNCTION_ID) ) {
+                // Don't print params for empty arg list. For example, we want "SYSTEM_USER", not "SYSTEM_USER()".
+            } else {
+                sb.append( "(" );
+                appendOperands( call, sb );
+                sb.append( ")" );
+            }
+            if ( withType ) {
+                sb.append( ":" );
+                // NOTE jvs 16-Jan-2005:  for digests, it is very important to use the full type string.
+                sb.append( call.type.getFullTypeString() );
+            }
+            return sb.toString();
         }
 
 
         @Override
         public String visitOver( RexOver over ) {
-            return over.toString( this );
+            boolean withType = over.isA( Kind.CAST ) || over.isA( Kind.NEW_SPECIFICATION );
+            final StringBuilder sb = new StringBuilder( over.op.getName() );
+            sb.append( "(" );
+            if ( over.isDistinct() ) {
+                sb.append( "DISTINCT " );
+            }
+            appendOperands( over, sb );
+            sb.append( ")" );
+            if ( withType ) {
+                sb.append( ":" );
+                sb.append( over.type.getFullTypeString() );
+            }
+            sb.append( " OVER (" )
+                    .append( visitRexWindow( over.getWindow() ) )
+                    .append( ")" );
+            return sb.toString();
         }
 
 
         @Override
         public String visitCorrelVariable( RexCorrelVariable correlVariable ) {
-            return "correlVariable: " + correlVariable;
+            return correlVariable.getName();
         }
 
 
         @Override
         public String visitDynamicParam( RexDynamicParam dynamicParam ) {
-            return "dynamicParam: " + dynamicParam;
+            return "===dynamicParam=== " + dynamicParam;
         }
 
 
@@ -197,41 +234,141 @@ public class PolyAlgUtils {
 
         @Override
         public String visitFieldAccess( RexFieldAccess fieldAccess ) {
-            return "fieldAccess: " + fieldAccess;
+            return fieldAccess.getReferenceExpr().accept( this ) + "." + fieldAccess.getField().getName();
         }
 
 
         @Override
         public String visitSubQuery( RexSubQuery subQuery ) {
-            /* TODO: handling subquery when constructing PolyAlg representation
-                in method computeDigest( boolean withType, RexVisitor<String> visitor ),
-                sb.append( AlgOptUtil.toString( alg ) );
-                */
-            return "subQuery: " + subQuery;
+            /* TODO: make sure subquery is parsed correctly
+             */
+            final StringBuilder sb = new StringBuilder( subQuery.op.getName() );
+            sb.append( "(" );
+            for ( RexNode operand : subQuery.operands ) {
+                sb.append( operand );
+                sb.append( ", " );
+            }
+            sb.append( "{\n" );
+            subQuery.alg.buildPolyAlgebra( sb );
+            sb.append( "})" );
+            return "subQuery: " + sb.toString();
         }
 
 
         @Override
         public String visitTableInputRef( RexTableIndexRef fieldRef ) {
-            return "tableInputRef: " + fieldRef;
+            return "===tableInputRef=== " + fieldRef;
         }
 
 
         @Override
         public String visitPatternFieldRef( RexPatternFieldRef fieldRef ) {
-            return "patternFieldRef: " + fieldRef;
+            return "===patternFieldRef=== " + fieldRef;
         }
 
 
         @Override
         public String visitNameRef( RexNameRef nameRef ) {
-            return "nameRef: " + nameRef;
+            return "===nameRef=== " + nameRef;
         }
 
 
         @Override
         public String visitElementRef( RexElementRef rexElementRef ) {
-            return "elementRef: " + rexElementRef;
+            return "===elementRef=== " + rexElementRef;
+        }
+
+
+        private void appendOperands( RexCall call, StringBuilder sb ) {
+            for ( int i = 0; i < call.operands.size(); i++ ) {
+                if ( i > 0 ) {
+                    sb.append( ", " );
+                }
+                RexNode operand = call.operands.get( i );
+                if ( !(operand instanceof RexLiteral) ) {
+                    sb.append( operand.accept( this ) );
+                    continue;
+                }
+                // Type information might be omitted in certain cases to improve readability
+                // For instance, AND/OR arguments should be BOOLEAN, so AND(true, null) is better than AND(true, null:BOOLEAN), and we keep the same info +($0, 2) is better than +($0, 2:BIGINT). Note: if $0 has BIGINT,
+                // then 2 is expected to be of BIGINT type as well.
+                RexDigestIncludeType includeType = RexDigestIncludeType.OPTIONAL;
+                if ( (call.isA( Kind.AND ) || call.isA( Kind.OR )) && operand.getType().getPolyType() == PolyType.BOOLEAN ) {
+                    includeType = RexDigestIncludeType.NO_TYPE;
+                }
+                if ( RexCall.SIMPLE_BINARY_OPS.contains( call.getKind() ) ) {
+                    RexNode otherArg = call.operands.get( 1 - i );
+                    if ( (!(otherArg instanceof RexLiteral) || ((RexLiteral) otherArg).digestIncludesType() == RexDigestIncludeType.NO_TYPE) && RexCall.equalSansNullability( operand.getType(), otherArg.getType() ) ) {
+                        includeType = RexDigestIncludeType.NO_TYPE;
+                    }
+                }
+                sb.append( ((RexLiteral) operand).computeDigest( includeType ) );
+            }
+        }
+
+
+        private String visitRexWindow( RexWindow window ) {
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter( sw );
+            int clauseCount = 0;
+            if ( window.partitionKeys.size() > 0 ) {
+                if ( clauseCount++ > 0 ) {
+                    pw.print( ' ' );
+                }
+                pw.print( "PARTITION BY " );
+                for ( int i = 0; i < window.partitionKeys.size(); i++ ) {
+                    if ( i > 0 ) {
+                        pw.print( ", " );
+                    }
+                    RexNode partitionKey = window.partitionKeys.get( i );
+                    pw.print( partitionKey.accept( this ) );
+                }
+            }
+            if ( window.orderKeys.size() > 0 ) {
+                if ( clauseCount++ > 0 ) {
+                    pw.print( ' ' );
+                }
+                pw.print( "ORDER BY " );
+                for ( int i = 0; i < window.orderKeys.size(); i++ ) {
+                    if ( i > 0 ) {
+                        pw.print( ", " );
+                    }
+                    RexFieldCollation orderKey = window.orderKeys.get( i );
+                    pw.print( orderKey.toString( this ) );
+                }
+            }
+            if ( window.getLowerBound() == null ) {
+                // No ROWS or RANGE clause
+            } else if ( window.getUpperBound() == null ) {
+                if ( clauseCount++ > 0 ) {
+                    pw.print( ' ' );
+                }
+                if ( window.isRows() ) {
+                    pw.print( "ROWS " );
+                } else {
+                    pw.print( "RANGE " );
+                }
+                pw.print( visitRexWindowBound( window.getLowerBound() ) );
+            } else {
+                if ( clauseCount++ > 0 ) {
+                    pw.print( ' ' );
+                }
+                if ( window.isRows() ) {
+                    pw.print( "ROWS BETWEEN " );
+                } else {
+                    pw.print( "RANGE BETWEEN " );
+                }
+                pw.print( visitRexWindowBound( window.getLowerBound() ) );
+                pw.print( " AND " );
+                pw.print( visitRexWindowBound( window.getUpperBound() ) );
+            }
+            return sw.toString();
+        }
+
+
+        private String visitRexWindowBound( RexWindowBound bound ) {
+            // at this point it is simply much easier to rely on the toString method of the RexWindowBound subclasses.
+            return bound.toString( this );
         }
 
     }

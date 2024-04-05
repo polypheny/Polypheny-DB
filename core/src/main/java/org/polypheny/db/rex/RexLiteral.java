@@ -245,7 +245,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
      * @return true if {@link RexDigestIncludeType#OPTIONAL} digest would include data type
      * @see RexCall#computeDigest(boolean)
      */
-    RexDigestIncludeType digestIncludesType() {
+    public RexDigestIncludeType digestIncludesType() {
         return shouldIncludeType( value, type );
     }
 

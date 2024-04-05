@@ -69,7 +69,7 @@ public class RexCall extends RexNode {
     public final ImmutableList<RexNode> operands;
     public final AlgDataType type;
 
-    private static final Set<Kind> SIMPLE_BINARY_OPS;
+    public static final Set<Kind> SIMPLE_BINARY_OPS;
 
 
     static {
@@ -82,7 +82,6 @@ public class RexCall extends RexNode {
     public RexCall( AlgDataType type, Operator op, RexNode... operands ) {
         this( type, op, ImmutableList.copyOf( operands ) );
     }
-
 
     public RexCall( AlgDataType type, Operator op, List<? extends RexNode> operands ) {
         this.type = Objects.requireNonNull( type );
@@ -102,26 +101,13 @@ public class RexCall extends RexNode {
      * @see RexLiteral#computeDigest(RexDigestIncludeType)
      */
     protected final StringBuilder appendOperands( StringBuilder sb ) {
-        return appendOperands( sb, null );
-    }
-
-
-    /**
-     * Like appendOperands( StringBuilder sb), but additionally takes a visitor for generating the
-     * string representation of any operands that are not RexLiterals.
-     *
-     * @param sb destination
-     * @param visitor RexVisitor which visits any non-literal operand for generating the string representation.
-     * @return original StringBuilder for fluent API
-     */
-    protected final StringBuilder appendOperands( StringBuilder sb, RexVisitor<String> visitor ) {
         for ( int i = 0; i < operands.size(); i++ ) {
             if ( i > 0 ) {
                 sb.append( ", " );
             }
             RexNode operand = operands.get( i );
             if ( !(operand instanceof RexLiteral) ) {
-                sb.append( visitor == null ? operand : operand.accept( visitor ) );
+                sb.append( operand );
                 continue;
             }
             // Type information might be omitted in certain cases to improve readability
@@ -151,7 +137,7 @@ public class RexCall extends RexNode {
      * @param b second type
      * @return true if the types are equal or the only difference is nullability
      */
-    private static boolean equalSansNullability( AlgDataType a, AlgDataType b ) {
+    public static boolean equalSansNullability( AlgDataType a, AlgDataType b ) {
         String x = a.getFullTypeString();
         String y = b.getFullTypeString();
         if ( x.length() < y.length() ) {
@@ -165,17 +151,12 @@ public class RexCall extends RexNode {
 
 
     protected @Nonnull String computeDigest( boolean withType ) {
-        return computeDigest( withType, null );
-    }
-
-
-    protected @Nonnull String computeDigest( boolean withType, RexVisitor<String> visitor ) {
         final StringBuilder sb = new StringBuilder( op.getName() );
         if ( (operands.isEmpty()) && (op.getSyntax() == Syntax.FUNCTION_ID) ) {
             // Don't print params for empty arg list. For example, we want "SYSTEM_USER", not "SYSTEM_USER()".
         } else {
             sb.append( "(" );
-            appendOperands( sb, visitor );
+            appendOperands( sb );
             sb.append( ")" );
         }
         if ( withType ) {
@@ -196,18 +177,6 @@ public class RexCall extends RexNode {
             digest = Objects.requireNonNull( localDigest );
         }
         return localDigest;
-    }
-
-
-    /**
-     * Computes a string representation where the given visitor is used for generating
-     * the string of each operand.
-     *
-     * @param visitor RexVisitor that visits every operand for generating the string representation used
-     * @return String representation of this call, where operands are customized by the visitor.
-     */
-    public final @Nonnull String toString( RexVisitor<String> visitor ) {
-        return Objects.requireNonNull( computeDigest( isA( Kind.CAST ) || isA( Kind.NEW_SPECIFICATION ), visitor ) );
     }
 
 

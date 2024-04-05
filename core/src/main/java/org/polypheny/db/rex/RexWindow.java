@@ -77,14 +77,6 @@ public class RexWindow {
     }
 
 
-    public String toString( RexVisitor<String> visitor ) {
-        if ( visitor == null ) {
-            return toString();
-        }
-        return computeDigest( visitor );
-    }
-
-
     public int hashCode() {
         return digest.hashCode();
     }
@@ -100,11 +92,6 @@ public class RexWindow {
 
 
     private String computeDigest() {
-        return computeDigest( null );
-    }
-
-
-    private String computeDigest( RexVisitor<String> visitor ) {
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter( sw );
         int clauseCount = 0;
@@ -118,7 +105,7 @@ public class RexWindow {
                     pw.print( ", " );
                 }
                 RexNode partitionKey = partitionKeys.get( i );
-                pw.print( visitor == null ? partitionKey.toString() : partitionKey.accept( visitor ) );
+                pw.print( partitionKey.toString() );
             }
         }
         if ( orderKeys.size() > 0 ) {
@@ -131,7 +118,7 @@ public class RexWindow {
                     pw.print( ", " );
                 }
                 RexFieldCollation orderKey = orderKeys.get( i );
-                pw.print( orderKey.toString( visitor ) );
+                pw.print( orderKey.toString() );
             }
         }
         if ( lowerBound == null ) {
@@ -145,7 +132,7 @@ public class RexWindow {
             } else {
                 pw.print( "RANGE " );
             }
-            pw.print( lowerBound.toString( visitor ) );
+            pw.print( lowerBound.toString() );
         } else {
             if ( clauseCount++ > 0 ) {
                 pw.print( ' ' );
@@ -155,9 +142,9 @@ public class RexWindow {
             } else {
                 pw.print( "RANGE BETWEEN " );
             }
-            pw.print( lowerBound.toString( visitor ) );
+            pw.print( lowerBound.toString() );
             pw.print( " AND " );
-            pw.print( upperBound.toString( visitor ) );
+            pw.print( upperBound.toString() );
         }
         return sw.toString();
     }
@@ -176,6 +163,5 @@ public class RexWindow {
     public boolean isRows() {
         return isRows;
     }
-
 }
 
