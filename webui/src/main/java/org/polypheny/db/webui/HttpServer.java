@@ -89,6 +89,10 @@ public class HttpServer implements Runnable {
         config.jsonMapper( new JavalinJackson( mapper ) );
         config.enableCorsForAllOrigins();
         config.addStaticFiles( staticFileConfig -> staticFileConfig.directory = "webapp/" );
+        config.addStaticFiles( staticFileConfig -> {
+            staticFileConfig.directory = "public/";
+            staticFileConfig.hostedPath = "/public";
+        });
     } ).start( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
     private Crud crud;
 
