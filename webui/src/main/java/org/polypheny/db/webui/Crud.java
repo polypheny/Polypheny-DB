@@ -291,6 +291,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 QueryContext.builder()
                         .query( query.toString() )
                         .language( language )
+                        .transactions( List.of( transaction ) )
                         .origin( transaction.getOrigin() )
                         .batch( request.noLimit ? -1 : getPageSize() )
                         .transactionManager( transactionManager )
@@ -934,6 +935,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         Result<?, ?> result = LanguageCrud.anyQueryResult(
                 QueryContext.builder()
                         .query( query )
+                        .statement( statement )
+                        .transactions( List.of( transaction ) )
                         .language( language )
                         .origin( ORIGIN )
                         .transactionManager( transactionManager )

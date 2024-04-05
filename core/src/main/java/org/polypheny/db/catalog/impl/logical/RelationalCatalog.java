@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -215,10 +216,15 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
 
     @Override
-    public void setPrimaryKey( long tableId, Long keyId ) {
-        tables.put( tableId, tables.get( tableId ).toBuilder().primaryKey( keyId ).build() );
+    public void setPrimaryKey( long tableId, @Nullable Long keyId ) {
+        LogicalTable oldTable = tables.get( tableId );
+        // we temporarily can remove the primary, to clean-up old primaries before adding a new one
+        tables.put( tableId, oldTable.toBuilder().primaryKey( keyId ).build() );
 
-        keys.put( keyId, new LogicalPrimaryKey( keys.get( keyId ) ) );
+        if ( keyId != null ) {
+            keys.put( keyId, new LogicalPrimaryKey( keys.get( keyId ) ) );
+        }
+
         change( CatalogEvent.PRIMARY_KEY_CREATED, tableId, keyId );
     }
 

@@ -181,7 +181,7 @@ public class WebSocket implements Consumer<WsConfig> {
                                             .language( QueryLanguage.from( "cypher" ) )
                                             .origin( POLYPHENY_UI )
                                             .batch( uiRequest.noLimit ? -1 : crud.getPageSize() )
-                                            .namespaceId( namespace == null ? Catalog.defaultNamespaceId : namespace.id )
+                                            .namespaceId( namespace.id )
                                             .transactionManager( crud.getTransactionManager() )
                                             .informationTarget( i -> i.setSession( ctx.session ) )
                                             .build(), uiRequest ).get( 0 );

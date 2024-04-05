@@ -775,11 +775,20 @@ public class DdlManagerImpl extends DdlManager {
 
         LogicalPrimaryKey oldPk = catalog.getSnapshot().rel().getPrimaryKey( table.primaryKey ).orElse( null );
 
-        List<Long> columnIds = new LinkedList<>();
+        List<Long> columnIds = new ArrayList<>();
         for ( String columnName : columnNames ) {
             LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( table.id, columnName ).orElseThrow();
             columnIds.add( logicalColumn.id );
         }
+
+        if ( oldPk != null && oldPk.key.fieldIds.containsAll( columnIds ) && columnIds.contains( oldPk.key.fieldIds ) ) {
+            return;
+        }
+
+        if ( oldPk != null ) {
+            dropConstraint( table, ConstraintType.PRIMARY.name() );
+        }
+
         catalog.getLogicalRel( table.namespaceId ).addPrimaryKey( table.id, columnIds );
         catalog.getLogicalRel( table.namespaceId ).addConstraint( table.id, ConstraintType.PRIMARY.name(), columnIds, ConstraintType.PRIMARY );
 

@@ -84,7 +84,7 @@ public class LanguageManager {
 
 
     public List<ImplementationContext> anyPrepareQuery( QueryContext context, Transaction transaction ) {
-        return anyPrepareQuery( context, transaction.createStatement() );
+        return anyPrepareQuery( context, context.getStatement() != null ? context.getStatement() : transaction.createStatement() );
     }
 
 

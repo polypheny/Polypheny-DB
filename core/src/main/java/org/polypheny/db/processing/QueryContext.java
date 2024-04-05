@@ -78,6 +78,7 @@ public class QueryContext {
     // we can have mixed transactions, which have ddls and dmls, as long as we commit instantly for ddls,
     // we have to open a new transaction for the next statement, so we need to keep track of all transactions (in theory only the last one is needed)
     @Builder.Default
+    @NonFinal
     List<Transaction> transactions = new ArrayList<>();
 
 
@@ -120,8 +121,10 @@ public class QueryContext {
 
 
     public <T extends QueryContext> T addTransaction( Transaction transaction ) {
+        transactions = new ArrayList<>( transactions );
         transactions.add( transaction );
         return (T) this;
     }
+
 
 }
