@@ -17,6 +17,7 @@
 package org.polypheny.db.algebra.polyalg.arguments;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
 import lombok.Getter;
@@ -40,18 +41,18 @@ public class PolyAlgArgs {
     }
 
 
-    public String serializeArguments( AlgNode context ) {
+    public String serializeArguments( AlgNode context, List<String> inputFieldNames ) {
         StringJoiner joiner = new StringJoiner( ", ", "[", "]" );
 
         for ( Parameter p : decl.posParams ) {
             assert args.containsKey( p );
             PolyAlgArg arg = getArg( p );
-            joiner.add( arg.toPolyAlg( context ) );
+            joiner.add( arg.toPolyAlg( context, inputFieldNames ) );
         }
         for ( Parameter p : decl.kwParams ) {
             if ( args.containsKey( p ) ) {
                 PolyAlgArg arg = getArg( p );
-                String value = arg.toPolyAlg( context );
+                String value = arg.toPolyAlg( context, inputFieldNames );
                 if ( !p.getDefaultValue().equals( value ) ) {
                     joiner.add( p.getName() + "=" + value );
                 }

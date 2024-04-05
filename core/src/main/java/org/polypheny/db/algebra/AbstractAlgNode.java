@@ -360,10 +360,11 @@ public abstract class AbstractAlgNode implements AlgNode {
     public void buildPolyAlgebra( StringBuilder sb, String prefix ) {
         final String INDENT = " ";
         String nextPrefix = prefix == null ? null : prefix + INDENT;
+        List<String> inputFieldNames = PolyAlgUtils.uniquifiedInputFieldNames( this );
 
         PolyAlgDeclaration decl = getPolyAlgDeclaration();
         sb.append( prefix == null ? "" : prefix ).append( decl.opName );
-        sb.append( collectAttributes().serializeArguments( this ) );
+        sb.append( collectAttributes().serializeArguments( this, inputFieldNames ) );
 
         int size = getInputs().size();
         if ( size == 0 ) {
@@ -371,24 +372,21 @@ public abstract class AbstractAlgNode implements AlgNode {
         }
 
         sb.append( "(\n" );
-        Set<String> fieldNames = new HashSet<>();
+        int inputIdx = 0;
         for ( AlgNode child : getInputs() ) {
+            List<String> projections = PolyAlgUtils.getAuxProjections( child, inputFieldNames, inputIdx );
+            inputIdx += child.getTupleType().getFieldCount();
 
-            List<String> projections = PolyAlgUtils.getAuxProjections( child, fieldNames );
-
-            StringBuilder csb = new StringBuilder();
             if ( projections.isEmpty() ) {
-                child.buildPolyAlgebra( csb, nextPrefix );
+                child.buildPolyAlgebra( sb, nextPrefix );
             } else {
-                csb.append( nextPrefix )
-                        .append( PolyAlgRegistry.getDeclaration( LogicalRelProject.class ).opName )
-                        .append( "#[" )
-                        .append( PolyAlgUtils.joinMultiValued( projections, true ) )
-                        .append( "](\n" );
-                child.buildPolyAlgebra( csb, nextPrefix == null ? null : nextPrefix + INDENT );
-                csb.append( ")" );
+                sb.append( nextPrefix )
+                        .append( PolyAlgRegistry.getDeclaration( LogicalRelProject.class ).opName ).append( "#" )  // TODO: select Project depending on data model, logical / physical
+                        .append( "[" ).append( PolyAlgUtils.joinMultiValued( projections, true ) ).append( "]")
+                        .append("(\n" );
+                child.buildPolyAlgebra( sb, nextPrefix == null ? null : nextPrefix + INDENT );
+                sb.append( ")" );
             }
-            sb.append( csb );
 
             size--;
             if ( size > 0 ) {

@@ -16,6 +16,9 @@
 
 package org.polypheny.db.algebra.polyalg.arguments;
 
+import java.util.List;
+import lombok.NonNull;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 import org.polypheny.db.catalog.entity.Entity;
 
@@ -36,7 +39,7 @@ public class EntityArg implements PolyAlgArg {
 
 
     @Override
-    public String toPolyAlg() {
+    public String toPolyAlg( AlgNode context, @NonNull List<String> inputFieldNames ) {
         return e.getNamespaceName() + "." + e.name;
     }
 

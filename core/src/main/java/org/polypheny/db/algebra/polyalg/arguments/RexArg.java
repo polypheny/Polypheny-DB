@@ -16,7 +16,9 @@
 
 package org.polypheny.db.algebra.polyalg.arguments;
 
+import java.util.List;
 import lombok.Getter;
+import lombok.NonNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
@@ -47,21 +49,15 @@ public class RexArg implements PolyAlgArg {
 
 
     @Override
-    public String toPolyAlg() {
-        return toPolyAlg( null );
-    }
-
-
-    @Override
-    public String toPolyAlg( AlgNode context ) {
+    public String toPolyAlg( AlgNode context, @NonNull List<String> inputFieldNames ) {
         String str = node == null ? "" : node.toString();
         if ( omitTrue && str.equals( "true" ) ) {
             return "";
         }
-        if ( context == null || node == null ) {
+        if ( inputFieldNames.isEmpty() || node == null ) {
             return str;
         }
-        return PolyAlgUtils.digestWithNames( node, context );
+        return PolyAlgUtils.digestWithNames( node, inputFieldNames );
     }
 
 }

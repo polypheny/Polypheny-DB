@@ -16,6 +16,9 @@
 
 package org.polypheny.db.algebra.polyalg.arguments;
 
+import java.util.List;
+import lombok.NonNull;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 
 public class BooleanArg implements PolyAlgArg {
@@ -35,7 +38,7 @@ public class BooleanArg implements PolyAlgArg {
 
 
     @Override
-    public String toPolyAlg() {
+    public String toPolyAlg( AlgNode context, @NonNull List<String> inputFieldNames ) {
         return Boolean.toString( arg );
     }
 

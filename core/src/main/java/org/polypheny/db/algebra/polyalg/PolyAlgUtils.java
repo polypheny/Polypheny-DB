@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.StringJoiner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.NonNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.rex.RexCall;
@@ -42,6 +43,7 @@ import org.polypheny.db.rex.RexSubQuery;
 import org.polypheny.db.rex.RexTableIndexRef;
 import org.polypheny.db.rex.RexVisitor;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.ValidatorUtil;
 
 public class PolyAlgUtils {
 
@@ -54,18 +56,6 @@ public class PolyAlgUtils {
             joiner.add( type.getName() );
         }
         CAST_PATTERN = Pattern.compile( joiner.toString() ); // matches group "my_field" in "CAST(my_field):INTEGER"
-    }
-
-
-    public static String getFieldNameFromIndex( AlgNode alg, int idx ) {
-        for ( AlgNode input : alg.getInputs() ) {
-            List<AlgDataTypeField> fields = input.getTupleType().getFields();
-            if ( idx < fields.size() ) {
-                return fields.get( idx ).getName();
-            }
-            idx += fields.size();
-        }
-        return Integer.toString( idx );
     }
 
 
@@ -116,38 +106,33 @@ public class PolyAlgUtils {
     }
 
 
-    public static List<String> getAuxProjections( AlgNode child, Set<String> fieldNames ) {
+    public static List<String> getAuxProjections( AlgNode child, List<String> inputFieldNames, int startIndex ) {
         List<String> projections = new ArrayList<>();
-        for ( AlgDataTypeField field : child.getTupleType().getFields() ) {
-            String name = field.getName();
-            if ( fieldNames.contains( name ) ) {
-                int i = 0;
-                String prefix = name;
-                do {
-                    name = prefix + i;
-                    i++;
-                } while ( fieldNames.contains( name ) );
-                projections.add( prefix + " AS " + name );
+        List<String> names = child.getTupleType().getFieldNames();
+        for ( int i = 0; i < names.size(); i++ ) {
+            String name = names.get( i );
+            String uniqueName = inputFieldNames.get( startIndex + i );
+            if ( !name.equals( uniqueName ) ) {
+                projections.add( name + " AS " + uniqueName );
             }
-            fieldNames.add( name );
         }
         return projections;
     }
 
 
-    public static List<String> getFieldNames( AlgNode context ) {
+    public static List<String> uniquifiedInputFieldNames( AlgNode context ) {
         if ( context == null ) {
             return List.of();
         }
-        return context.getInputs().stream()
-                .flatMap( node -> node.getTupleType().getFields().stream() )
-                .map( AlgDataTypeField::getName )
+        List<String> names = context.getInputs().stream()
+                .flatMap( node -> node.getTupleType().getFieldNames().stream() )
                 .toList();
+        return ValidatorUtil.uniquify( names, ValidatorUtil.ATTEMPT_SUGGESTER, true );
     }
 
 
-    public static String digestWithNames( RexNode expr, AlgNode context ) {
-        return expr.accept( new NameReplacer( getFieldNames( context ) ) );
+    public static String digestWithNames( RexNode expr, List<String> inputFieldNames ) {
+        return expr.accept( new NameReplacer( inputFieldNames ) );
     }
 
 

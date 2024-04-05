@@ -16,6 +16,8 @@
 
 package org.polypheny.db.algebra.polyalg.arguments;
 
+import java.util.List;
+import lombok.NonNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 
@@ -23,10 +25,13 @@ public interface PolyAlgArg {
 
     ParamType getType();
 
-    String toPolyAlg();
-
-    default String toPolyAlg( AlgNode context ) {
-        return toPolyAlg();
-    }
+    /**
+     * Returns the PolyAlg representation of this argument.
+     *
+     * @param context the AlgNode this argument belongs to
+     * @param inputFieldNames list of field names of all children with duplicate names uniquified
+     * @return string representing the PolyAlg representation of this argument
+     */
+    String toPolyAlg( AlgNode context, @NonNull List<String> inputFieldNames );
 
 }

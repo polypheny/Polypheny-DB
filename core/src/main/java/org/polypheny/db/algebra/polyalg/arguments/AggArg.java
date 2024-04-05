@@ -16,6 +16,8 @@
 
 package org.polypheny.db.algebra.polyalg.arguments;
 
+import java.util.List;
+import lombok.NonNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
@@ -39,14 +41,8 @@ public class AggArg implements PolyAlgArg {
 
 
     @Override
-    public String toPolyAlg() {
-        return toPolyAlg( null );
-    }
-
-
-    @Override
-    public String toPolyAlg( AlgNode context ) {
-        String str = agg.toString( PolyAlgUtils.getFieldNames( context ) );
+    public String toPolyAlg( AlgNode context, @NonNull List<String> inputFieldNames ) {
+        String str = agg.toString( inputFieldNames.isEmpty() ? null : inputFieldNames );
         String name = agg.getName();
         if ( name == null ) {
             // TODO: make sure agg.getName() is never null
@@ -55,7 +51,7 @@ public class AggArg implements PolyAlgArg {
             if ( i != -1 ) {
                 i += instance.getGroupSet().asList().size();
             }
-            name = "$f" + i;
+            name = "$ffff" + i;
         }
         return PolyAlgUtils.appendAlias( str, name );
     }

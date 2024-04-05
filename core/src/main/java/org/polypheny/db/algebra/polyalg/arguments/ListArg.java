@@ -19,6 +19,7 @@ package org.polypheny.db.algebra.polyalg.arguments;
 import java.util.List;
 import java.util.function.Function;
 import lombok.Getter;
+import lombok.NonNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
@@ -69,14 +70,8 @@ public class ListArg<E extends PolyAlgArg> implements PolyAlgArg {
 
 
     @Override
-    public String toPolyAlg() {
-        return toPolyAlg( null );
-    }
-
-
-    @Override
-    public String toPolyAlg( AlgNode context ) {
-        List<String> strArgs = args.stream().map( a -> a.toPolyAlg( context ) ).toList();
+    public String toPolyAlg( AlgNode context, @NonNull List<String> inputFieldNames ) {
+        List<String> strArgs = args.stream().map( a -> a.toPolyAlg( context, inputFieldNames ) ).toList();
 
         if ( aliases != null ) {
             strArgs = PolyAlgUtils.appendAliases( strArgs, aliases );
