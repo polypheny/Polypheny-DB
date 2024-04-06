@@ -1795,16 +1795,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         .setSqlSuffix( currentColumn.getSqlSuffix() ) );
             } else {
 
-                String defaultValue = currentColumn.getDefaultValue();
-
-                // Used specifically for Temp-Partitioning since number of selected partitions remains 2 but chunks change
-                // enables user to use selected "number of partitions" being used as default value for "number of internal data chunks"
-                if ( request.method.equals( PartitionType.TEMPERATURE ) ) {
-
-                    if ( type.equals( FieldType.STRING ) && currentColumn.getDefaultValue().equals( "-04071993" ) ) {
-                        defaultValue = String.valueOf( request.numPartitions );
-                    }
-                }
+                String defaultValue = getDefaultValue( request, currentColumn, type );
 
                 constructedRow.add( new PartitionFunctionColumn( type, defaultValue )
                         .setModifiable( currentColumn.isModifiable() )
@@ -1815,6 +1806,21 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         }
 
         return constructedRow;
+    }
+
+
+    private static String getDefaultValue( PartitioningRequest request, PartitionFunctionInfoColumn currentColumn, FieldType type ) {
+        String defaultValue = currentColumn.getDefaultValue();
+
+        // Used specifically for Temp-Partitioning since number of selected partitions remains 2 but chunks change
+        // enables user to use selected "number of partitions" being used as default value for "number of internal data chunks"
+        if ( request.method.equals( PartitionType.TEMPERATURE ) ) {
+
+            if ( type.equals( FieldType.STRING ) && currentColumn.getDefaultValue().equals( "-04071993" ) ) {
+                defaultValue = String.valueOf( request.numPartitions );
+            }
+        }
+        return defaultValue;
     }
 
 

@@ -59,6 +59,7 @@ import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.processing.ImplementationContext;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.processing.QueryContext;
+import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -67,6 +68,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.relational.PolyMap;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.util.RunMode;
 import org.polypheny.db.webui.Crud;
@@ -193,19 +195,16 @@ public class LanguageCrud {
     }
 
 
-    @Nullable
-    public static InformationManager attachAnalyzerIfSpecified( QueryContext context, InformationObserver observer, Transaction transaction ) {
+    public static void attachAnalyzerIfSpecified( QueryContext context, InformationObserver observer, Transaction transaction ) {
         // This is not a nice solution. In case of a sql script with auto commit only the first statement is analyzed
         // and in case of auto commit of, the information is overwritten
-        InformationManager queryAnalyzer = null;
         if ( context.isAnalysed() ) {
-            queryAnalyzer = transaction.getQueryAnalyzer().observe( observer );
+            transaction.getQueryAnalyzer().observe( observer );
         }
-        return queryAnalyzer;
     }
 
 
-    public static PolyGraph getGraph( String namespace, TransactionManager manager, Session session ) {
+    public static Pair<@Nullable PolyXid, @NotNull PolyGraph> getGraph( String namespace, TransactionManager manager, Session session ) {
         QueryLanguage language = QueryLanguage.from( "cypher" );
         Transaction transaction = Crud.getTransaction( false, false, manager, Catalog.defaultUserId, Catalog.defaultNamespaceId, "getGraph" );
         ImplementationContext context = LanguageManager.getINSTANCE().anyPrepareQuery(
@@ -219,7 +218,7 @@ public class LanguageCrud {
                         .build(), transaction ).get( 0 );
 
         if ( context.getException().isPresent() ) {
-            return new PolyGraph( PolyMap.of( new HashMap<>() ), PolyMap.of( new HashMap<>() ) );
+            return Pair.of( null, new PolyGraph( PolyMap.of( new HashMap<>() ), PolyMap.of( new HashMap<>() ) ) );
         }
 
         ResultIterator iterator = context.execute( context.getStatement() ).getIterator();
@@ -233,7 +232,8 @@ public class LanguageCrud {
         }
 
         if ( res.size() == 1 && res.get( 0 ).size() == 1 && res.get( 0 ).get( 0 ).isGraph() ) {
-            return res.get( 0 ).get( 0 ).asGraph();
+
+            return Pair.of( transaction.getXid(), res.get( 0 ).get( 0 ).asGraph() );
         }
 
         throw new GenericRuntimeException( "Error while retrieving graph." );
@@ -241,7 +241,6 @@ public class LanguageCrud {
 
 
     public static ResultBuilder<?, ?, ?, ?> buildErrorResult( Transaction transaction, ExecutedContext context, Throwable t ) {
-        //String msg = t.getMessage() == null ? "" : t.getMessage();
         ResultBuilder<?, ?, ?, ?> result = switch ( context.getQuery().getLanguage().dataModel() ) {
             case RELATIONAL -> RelationalResult.builder().error( t == null ? null : t.getMessage() ).exception( t ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() );
             case DOCUMENT -> DocResult.builder().error( t == null ? null : t.getMessage() ).exception( t ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() );
