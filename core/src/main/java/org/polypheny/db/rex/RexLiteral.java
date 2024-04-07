@@ -654,6 +654,9 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
      * @return the value of this literal
      */
     public PolyValue getValue( AlgDataType type ) {
+        if ( value == null ) {
+            return null;
+        }
         if ( PolyType.EXACT_TYPES.contains( type.getPolyType() ) && (PolyType.APPROX_TYPES.contains( value.type ) || PolyType.DECIMAL == value.type) ) {
             return PolyValue.convert( value, type.getPolyType() );
         }
