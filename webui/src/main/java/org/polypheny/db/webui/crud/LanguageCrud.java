@@ -261,6 +261,10 @@ public class LanguageCrud {
 
     @NotNull
     public static ResultBuilder<?, ?, ?, ?> getRelResult( ExecutedContext context, UIRequest request, Statement statement ) {
+        if ( context.getException().isPresent() ) {
+            return buildErrorResult( statement.getTransaction(), context, context.getException().get() );
+        }
+
         Catalog catalog = Catalog.getInstance();
         ResultIterator iterator = context.getIterator();
         List<List<PolyValue>> rows = new ArrayList<>();
