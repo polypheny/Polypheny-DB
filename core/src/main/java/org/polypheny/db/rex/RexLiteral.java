@@ -184,7 +184,6 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
             System.err.println( polyType );
             throw new IllegalArgumentException();
         }
-//        Preconditions.checkArgument( valueMatchesType( value, typeName, true ) );
         Preconditions.checkArgument( (value != null) || type.isNullable() );
         Preconditions.checkArgument( polyType != PolyType.ANY );
         this.digest = computeDigest( RexDigestIncludeType.OPTIONAL );
@@ -645,6 +644,20 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
         return this.digest.equals( o.digest )
                 ? 0 : this.digest.length() > o.digest.length()
                 ? 1 : -1;
+    }
+
+
+    /**
+     * Returns the value of this literal with the possibility to handle some edge cases. Like for parameterization.
+     *
+     * @param type the type to convert the value to
+     * @return the value of this literal
+     */
+    public PolyValue getValue( AlgDataType type ) {
+        if ( PolyType.EXACT_TYPES.contains( type.getPolyType() ) && (PolyType.APPROX_TYPES.contains( value.type ) || PolyType.DECIMAL == value.type) ) {
+            return PolyValue.convert( value, type.getPolyType() );
+        }
+        return value;
     }
 
 }

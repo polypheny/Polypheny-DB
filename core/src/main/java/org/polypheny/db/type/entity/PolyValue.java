@@ -66,8 +66,6 @@ import org.polypheny.db.type.entity.PolyBinary.ByteStringDeserializer;
 import org.polypheny.db.type.entity.PolyBinary.ByteStringSerializer;
 import org.polypheny.db.type.entity.PolyBoolean.PolyBooleanSerializerDef;
 import org.polypheny.db.type.entity.PolyList.PolyListSerializerDef;
-import org.polypheny.db.type.entity.numerical.PolyLong;
-import org.polypheny.db.type.entity.numerical.PolyLong.PolyLongSerializerDef;
 import org.polypheny.db.type.entity.PolyNull.PolyNullSerializerDef;
 import org.polypheny.db.type.entity.PolyString.PolyStringSerializerDef;
 import org.polypheny.db.type.entity.category.PolyBlob;
@@ -92,6 +90,8 @@ import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyFloat.PolyFloatSerializerDef;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.numerical.PolyInteger.PolyIntegerSerializerDef;
+import org.polypheny.db.type.entity.numerical.PolyLong;
+import org.polypheny.db.type.entity.numerical.PolyLong.PolyLongSerializerDef;
 import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.type.entity.relational.PolyMap.PolyMapSerializerDef;
 import org.polypheny.db.type.entity.temporal.PolyDate;
@@ -807,6 +807,8 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
                 return value;
             case BIGINT:
                 return PolyLong.convert( value );
+            case VARCHAR:
+                return PolyString.convert( value );
         }
         if ( type.getFamily() == value.getType().getFamily() ) {
             return value;
