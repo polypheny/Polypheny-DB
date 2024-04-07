@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -85,6 +86,7 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.util.Pair;
 
 @Slf4j
 public class ConstraintEnforceAttacher {
@@ -615,23 +617,25 @@ public class ConstraintEnforceAttacher {
 
         @Override
         public void onConfigChange( Config c ) {
-            if ( !testConstraintsValid() ) {
+            Pair<Boolean, String> validError = testConstraintsValid();
+            if ( !validError.getKey() ) {
                 c.setBoolean( !c.getBoolean() );
-                throw new GenericRuntimeException( "Could not change the constraints." );
+                throw new GenericRuntimeException( "Could not change the constraints. \n" + validError.getValue() );
             }
         }
 
 
         @Override
         public void restart( Config c ) {
-            if ( !testConstraintsValid() ) {
+            Pair<Boolean, String> validError = testConstraintsValid();
+            if ( !validError.getKey() ) {
                 c.setBoolean( !c.getBoolean() );
-                throw new GenericRuntimeException( "After restart the constraints where not longer enforceable." );
+                throw new GenericRuntimeException( "After restart the constraints where not longer enforceable. \n" + validError.getValue() );
             }
         }
 
 
-        private boolean testConstraintsValid() {
+        private Pair<Boolean, @Nullable String> testConstraintsValid() {
             if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() || RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() ) {
                 try {
                     List<LogicalTable> tables = Catalog
@@ -658,20 +662,28 @@ public class ConstraintEnforceAttacher {
 
                     if ( !rows.isEmpty() ) {
                         int index = rows.get( 0 ).get( 0 ).get( 1 ).asNumber().intValue();
+                        if ( statement.getTransaction() != null ) {
+                            statement.getTransaction().rollback();
+                        }
+
                         throw new TransactionException( infos.get( 0 ).errorMessages().get( index ) + "\nThere are violated constraints, the transaction was rolled back!" );
                     }
                     try {
                         statement.getTransaction().commit();
                     } catch ( TransactionException e ) {
-                        throw new GenericRuntimeException( "Error while committing constraint enforcement check." );
+                        if ( statement.getTransaction() != null ) {
+                            statement.getTransaction().rollback();
+                        }
+
+                        throw new GenericRuntimeException( "Error while committing constraint enforcement check, the transaction was rolled back!" );
                     }
 
 
                 } catch ( TransactionException e ) {
-                    return false;
+                    return Pair.of( false, e.getMessage() );
                 }
             }
-            return true;
+            return Pair.of( true, null );
         }
 
     }
