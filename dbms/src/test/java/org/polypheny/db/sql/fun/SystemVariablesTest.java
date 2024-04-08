@@ -96,8 +96,11 @@ public class SystemVariablesTest {
     }
 
 
-    // The problem is, that Polyphenys PI constant is not rewritten for the data store.
     @Test
+    @Tag("mongodb")
+    @Tag("file")
+    @Tag("cottontail")
+    @Tag("neo4j")
     public void testPiConstant() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

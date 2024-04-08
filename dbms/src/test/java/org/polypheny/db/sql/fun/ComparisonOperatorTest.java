@@ -33,6 +33,7 @@ import org.polypheny.db.TestHelper;
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
 @Tag("adapter")
+@Tag("file")
 public class ComparisonOperatorTest {
 
 
@@ -94,6 +95,7 @@ public class ComparisonOperatorTest {
 
 
     @Test
+    @Tag("mongodb")
     public void testNotEqualOperator() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -112,6 +114,7 @@ public class ComparisonOperatorTest {
 
 
     @Test
+    @Tag("mongodb")
     public void testNotEqualAlternativeOperator() throws SQLException {
         // This test should only be run in environments where '!=' is supported
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
@@ -239,6 +242,10 @@ public class ComparisonOperatorTest {
 
 
     @Test
+    @Tag("mongodb")
+    @Tag("postgresql")
+    @Tag("monetdb")
+    @Tag("cottontail")
     public void testIsDistinctFromOperator() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -383,6 +390,9 @@ public class ComparisonOperatorTest {
 
 
     @Test
+    @Tag("mongodb")
+    @Tag("cottontail")
+    @Tag("neo4j")
     public void testNotInOperator() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -505,6 +515,7 @@ public class ComparisonOperatorTest {
 
 
     @Test
+    @Tag("mongodb")
     public void testExistsWithSubQuery() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -525,6 +536,7 @@ public class ComparisonOperatorTest {
 
 
     @Test
+    @Tag("neo4j")
     public void complexLogicalTestOne() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -545,6 +557,7 @@ public class ComparisonOperatorTest {
 
 
     @Test
+    @Tag("neo4j")
     public void complexLogicalTestTwo() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
