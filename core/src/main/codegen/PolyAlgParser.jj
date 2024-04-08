@@ -5,20 +5,42 @@ options {
     UNICODE_INPUT = true;
 }
 
-PARSER_BEGIN(PolyAlgParser)
+PARSER_BEGIN(PolyAlgParserImpl)
 
 package org.polypheny.db.algebra.polyalg.parser;
 
 import java.io.StringReader;
+import java.io.Reader;
+import org.polypheny.db.languages.ParserFactory;
+import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.algebra.polyalg.parser.PolyAlgAbstractParserImpl;
+import org.polypheny.db.algebra.polyalg.parser.PolyAlgLiteral;
+import java.util.Arrays;
+import java.util.List;
+import java.util.ArrayList;
 
 /**
  * Parses Poly Algebra.
  */
-public class PolyAlgParser {
+public class PolyAlgParserImpl extends PolyAlgAbstractParserImpl {
+
+    /**
+     * ParserFactory implementation for creating parser.
+     */
+    public static final ParserFactory FACTORY = new ParserFactory() {
+        public PolyAlgAbstractParserImpl getParser(Reader reader) {
+            final PolyAlgParserImpl parser = new PolyAlgParserImpl(reader);
+            /*if (reader instanceof SourceStringReader) {
+                final String mql = ((SourceStringReader) reader).getSourceString();
+                parser.setOriginalMql(mql);
+            }*/
+          return parser;
+        }
+    };
 
     /** Main entry point. */
     public static void parse(String str) {
-        PolyAlgParser parser = new PolyAlgParser(new StringReader(str));
+        PolyAlgParserImpl parser = new PolyAlgParserImpl(new StringReader(str));
 
 
         try {
@@ -31,9 +53,60 @@ public class PolyAlgParser {
         }
     }
 
+    public PolyAlgParseException normalizeException(Throwable ex) {
+        try {
+            return convertException(ex);
+        } catch (ParseException e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    PolyAlgParseException convertException(Throwable ex) throws ParseException {
+        if (ex instanceof PolyAlgParseException) {
+            return (PolyAlgParseException) ex;
+        }
+
+        ParserPos pos = null;
+        int[][] expectedTokenSequences = null;
+        String[] tokenImage = null;
+        if (ex instanceof ParseException) {
+            ParseException pex = (ParseException) ex;
+            expectedTokenSequences = pex.expectedTokenSequences;
+            tokenImage = pex.tokenImage;
+            if (pex.currentToken != null) {
+                final Token token = pex.currentToken.next;
+                pos = new ParserPos(
+                    token.beginLine,
+                    token.beginColumn,
+                    token.endLine,
+                    token.endColumn);
+            }
+        } else if (ex instanceof TokenMgrError) {
+            TokenMgrError tme = (TokenMgrError) ex;
+            expectedTokenSequences = null;
+            tokenImage = null;
+            // Example:
+            //    Lexical error at line 3, column 24.  Encountered "#" after "a".
+            final java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(
+                "(?s)Lexical error at line ([0-9]+), column ([0-9]+).*");
+            java.util.regex.Matcher matcher = pattern.matcher(ex.getMessage());
+            if (matcher.matches()) {
+                int line = Integer.parseInt(matcher.group(1));
+                int column = Integer.parseInt(matcher.group(2));
+                pos = new ParserPos(line, column, line, column);
+            }
+        }
+        return new PolyAlgParseException(ex.getMessage(), pos, expectedTokenSequences, tokenImage, ex);
+    }
+
+
+    public PolyAlgNode parsePolyAlgEof() throws Exception {
+        return Input();
+    }
+
 }
 
-PARSER_END(PolyAlgParser)
+PARSER_END(PolyAlgParserImpl)
 
 SKIP :
 {
@@ -79,51 +152,89 @@ TOKEN :
       "'">
 }
 
+JAVACODE protected ParserPos getPos()
+{
+    return new ParserPos(
+        token.beginLine,
+        token.beginColumn,
+        token.endLine,
+        token.endColumn);
+}
+
 /** Root production. */
-void Input() :
-{}
+PolyAlgNode Input() :
 {
-    Operator() <EOF>
+    PolyAlgNode n;
+}
+{
+    n = Operator() <EOF>
+    {return n;}
 }
 
 
-void Operator() :
-{}
+PolyAlgOperator Operator() :
 {
-    OpName() <LBRACK> [Arguments()] <RBRACK> [<LPAR> [ChildOperators()] <RPAR>]
+    String opName;
+    List<PolyAlgNamedArgument> args = null;
+    List<PolyAlgOperator> children = null;
+}
+{
+    opName = OpName() <LBRACK> [args = Arguments()] <RBRACK> [<LPAR> [children = ChildOperators()] <RPAR>]
+    {return new PolyAlgOperator(opName, args, children, getPos());}
 }
 
-void ChildOperators() :
-{}
+List<PolyAlgOperator> ChildOperators() :
 {
-    Operator() (<SEP> Operator())*
+    PolyAlgOperator o;
+    List<PolyAlgOperator> children = new ArrayList<>();
+}
+{
+    o = Operator() {children.add(o);} (<SEP> o = Operator() {children.add(o);})*
+    {return children;}
 }
 
-void Arguments() :
-{}
+List<PolyAlgNamedArgument> Arguments() :
 {
-    NamedArgument() (<SEP> NamedArgument())*
+    PolyAlgNamedArgument n;
+    List<PolyAlgNamedArgument> args = new ArrayList<>();
+}
+{
+    n = NamedArgument() {args.add(n);} (<SEP> n = NamedArgument() {args.add(n);})*
+    {return args;}
 }
 
-void NamedArgument() :
-{}
+PolyAlgNamedArgument NamedArgument() :
 {
-    [LOOKAHEAD(2) ParamName() <EQUALS> ] AliasedArgument()
+    String name = null;
+    PolyAlgAliasedArgument arg;
+}
+{
+    [LOOKAHEAD(2) name = ParamName() <EQUALS> ] arg = AliasedArgument()
+    {return new PolyAlgNamedArgument(name, arg, getPos());}
 }
 
 
-void AliasedArgument() :
-{}
+PolyAlgAliasedArgument AliasedArgument() :
 {
-     Argument() [<AS> AliasName() ]
+    PolyAlgArgument arg;
+    String alias = null;
+}
+{
+     arg = Argument() [<AS> alias = AliasName() ]
+     {return new PolyAlgAliasedArgument(arg, alias, getPos()); }
 }
 
-void Argument() :
-{}
+PolyAlgArgument Argument() :
 {
-     OuterExpression()
-     |
-     ListArgument()
+    PolyAlgArgument arg = new PolyAlgArgument();
+}
+{
+     (
+         OuterExpression()
+         |
+         ListArgument()
+     )
+     {return arg;}
 }
 
 void ListArgument() :
@@ -172,22 +283,33 @@ void Literal() :
      <EQUALS>
 }
 
-void OpName() :
-{}
+String OpName() :
 {
-    <IDENTIFIER>
-    |
-    <QUOTED>
+    String name = "opName";
+}
+{
+    (
+        <IDENTIFIER>
+        |
+        <QUOTED>
+    )
+    {return name;}
 }
 
-void AliasName() :
-{}
+String AliasName() :
 {
-    OpName()
+    String name;
+}
+{
+    name = OpName()
+    {return name;}
 }
 
-void ParamName() :
-{}
+String ParamName() :
 {
-    OpName()
+    String name;
+}
+{
+    name = OpName()
+    {return name;}
 }
