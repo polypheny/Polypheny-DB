@@ -284,7 +284,11 @@ public class SqlDialect {
 
 
     public void unparseCall( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
-        ((SqlOperator) call.getOperator()).unparse( writer, call, leftPrec, rightPrec );
+        if ( OperatorName.PI == call.getOperator().getOperatorName() ) {
+            writer.literal( "PI()" );
+        } else {
+            ((SqlOperator) call.getOperator()).unparse( writer, call, leftPrec, rightPrec );
+        }
     }
 
 

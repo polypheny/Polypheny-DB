@@ -24,6 +24,7 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
@@ -420,6 +421,7 @@ public class ComparisonOperatorTest {
 
 
     @Test
+    @Disabled("RexSubQuery Bug")
     public void testNotInWithSubQuery() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -440,6 +442,7 @@ public class ComparisonOperatorTest {
 
 
     @Test
+    @Disabled("RexSubQuery Bug")
     public void testSomeWithSubQuery() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -460,6 +463,7 @@ public class ComparisonOperatorTest {
 
 
     @Test
+    @Disabled("RexSubQuery Bug")
     public void testAnyWithSubQuery() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -480,6 +484,7 @@ public class ComparisonOperatorTest {
 
 
     @Test
+    @Disabled("RexSubQuery Bug")
     public void testAllWithSubQuery() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

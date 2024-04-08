@@ -311,7 +311,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         this.exprConverter = new SqlNodeToRexConverterImpl( convertletTable );
         this.explainParamCount = 0;
         this.config = new ConfigBuilder().config( config ).build();
-        this.algBuilder = config.getAlgBuilderFactory().create( cluster, null );
+        this.algBuilder = config.algBuilderFactory().create( cluster, null );
     }
 
 
@@ -933,7 +933,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             case ALL:
                 call = (SqlBasicCall) subQuery.node;
                 query = call.operand( 1 );
-                if ( !config.isExpand() && !(query instanceof SqlNodeList) ) {
+                if ( !config.expand() && !(query instanceof SqlNodeList) ) {
                     return;
                 }
                 final SqlNode leftKeyNode = call.operand( 0 );
@@ -949,7 +949,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                 }
 
                 if ( query instanceof SqlNodeList valueList ) {
-                    if ( !containsNullLiteral( valueList ) && valueList.size() < config.getInSubQueryThreshold() ) {
+                    if ( !containsNullLiteral( valueList ) && valueList.size() < config.inSubQueryThreshold() ) {
                         // We're under the threshold, so convert to OR.
                         subQuery.expr = convertInToOr( bb, leftKeys, valueList, (SqlInOperator) call.getOperator() );
                         return;
@@ -1062,7 +1062,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                 // If there is no correlation, the expression is replaced with a boolean indicating whether the sub-query returned 0 or >= 1 row.
                 call = (SqlBasicCall) subQuery.node;
                 query = call.operand( 0 );
-                if ( !config.isExpand() ) {
+                if ( !config.expand() ) {
                     return;
                 }
                 converted = convertExists(
@@ -1080,7 +1080,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
             case SCALAR_QUERY:
                 // Convert the sub-query.  If it's non-correlated, convert it to a constant expression.
-                if ( !config.isExpand() ) {
+                if ( !config.expand() ) {
                     return;
                 }
                 call = (SqlBasicCall) subQuery.node;
@@ -1228,7 +1228,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             // First check if the sub-query has already been converted because it's a nested sub-query.  If so, don't re-evaluate it again.
             RexNode constExpr = mapConvertedNonCorrSubqs.get( call );
             if ( constExpr == null ) {
-                constExpr = subQueryConverter.convertSubQuery( call, this, isExists, config.isExplain() );
+                constExpr = subQueryConverter.convertSubQuery( call, this, isExists, config.explain() );
             }
             if ( constExpr != null ) {
                 subQuery.expr = constExpr;
@@ -1414,7 +1414,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                     if ( (rexLiteral == null) && allowLiteralsOnly ) {
                         return null;
                     }
-                    if ( (rexLiteral == null) || !config.isCreateValuesAlg() ) {
+                    if ( (rexLiteral == null) || !config.createValuesAlg() ) {
                         // fallback to convertRowConstructor
                         tuple = null;
                         break;
@@ -1427,7 +1427,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                 }
             } else {
                 RexLiteral rexLiteral = convertLiteralInValuesList( node, bb, rowType, 0 );
-                if ( (rexLiteral != null) && config.isCreateValuesAlg() ) {
+                if ( (rexLiteral != null) && config.createValuesAlg() ) {
                     tuples.add( ImmutableList.of( rexLiteral ) );
                     continue;
                 } else {
@@ -2072,7 +2072,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             final List<AlgDataTypeField> extendedFields = SqlValidatorUtil.getExtendedColumns( validator.getTypeFactory(), table, extendedColumns );
         }
         final AlgNode tableRel;
-        if ( config.isConvertTableAccess() ) {
+        if ( config.convertTableAccess() ) {
             tableRel = toAlg( table );
         } else if ( table.entityType == EntityType.VIEW ) {
             tableRel = LogicalRelViewScan.create( cluster, table );
@@ -2701,7 +2701,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
     @Deprecated // to be removed before 2.0
     protected boolean enableDecorrelation() {
         // disable sub-query decorrelation when needed. e.g. if outer joins are not supported.
-        return config.isDecorrelationEnabled();
+        return config.decorrelationEnabled();
     }
 
 
@@ -2718,7 +2718,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
     @Override
     @Deprecated // to be removed before 2.0
     public boolean isTrimUnusedFields() {
-        return config.isTrimUnusedFields();
+        return config.trimUnusedFields();
     }
 
 
@@ -3898,7 +3898,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             // Sub-queries and OVER expressions are not like ordinary expressions.
             final Kind kind = expr.getKind();
             final SubQuery subQuery;
-            if ( !config.isExpand() ) {
+            if ( !config.expand() ) {
                 final SqlCall call;
                 final SqlNode query;
                 final AlgRoot root;
@@ -3961,7 +3961,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             switch ( kind ) {
                 case SOME:
                 case ALL:
-                    if ( config.isExpand() ) {
+                    if ( config.expand() ) {
                         throw new GenericRuntimeException( kind + " is only supported if expand = false" );
                     }
                     // fall through

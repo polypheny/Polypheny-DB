@@ -109,6 +109,7 @@ import org.polypheny.db.schema.impl.AggregateFunctionImpl;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
@@ -2552,14 +2553,14 @@ public class RexImpTable {
             if ( op.equals( OperatorRegistry.get( OperatorName.CURRENT_USER ) )
                     || op.getOperatorName() == OperatorName.SESSION_USER
                     || op.getOperatorName() == OperatorName.USER ) {
-                return Expressions.constant( "sa" );
+                return PolyString.of( "pa" ).asExpression();
             } else if ( op.getOperatorName() == OperatorName.SYSTEM_USER ) {
-                return Expressions.constant( System.getProperty( "user.name" ) );
+                return PolyString.of( System.getProperty( "user.name" ) ).asExpression();
             } else if ( op.getOperatorName() == OperatorName.CURRENT_PATH
                     || op.getOperatorName() == OperatorName.CURRENT_ROLE
                     || op.getOperatorName() == OperatorName.CURRENT_CATALOG ) {
                 // By default, the CURRENT_ROLE and CURRENT_CATALOG functions return the empty string because a role or a catalog has to be set explicitly.
-                return Expressions.constant( "" );
+                return PolyString.of( "" ).asExpression();
             } else if ( op.getOperatorName() == OperatorName.CURRENT_TIMESTAMP ) {
                 return Expressions.call( BuiltInMethod.CURRENT_TIMESTAMP.method, root );
             } else if ( op.getOperatorName() == OperatorName.CURRENT_TIME ) {

@@ -79,7 +79,7 @@ public class SystemVariablesTest {
 
 
     @Test
-    public void testRowConstructor() throws SQLException {
+    public void testUserConstants() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
