@@ -101,7 +101,7 @@ import org.polypheny.db.schema.types.ModifiableTable;
 import org.polypheny.db.schema.types.QueryableEntity;
 import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.transaction.PolyXid;
-import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.Util;

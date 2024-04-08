@@ -36,7 +36,7 @@ import org.polypheny.db.processing.DataContextImpl;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.processing.QueryProviderImpl;
 import org.polypheny.db.processing.VolcanoQueryProcessor;
-import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.FileInputHandle;
 
 public class StatementImpl implements Statement {

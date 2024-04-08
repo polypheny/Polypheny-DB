@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,26 +14,24 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.config;
+package org.polypheny.db.webui.models;
 
-import lombok.AllArgsConstructor;
-import lombok.Value;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.List;
 
-@AllArgsConstructor
-@Value
-public class Feedback {
-
-    public boolean successful;
-    public String message;
-
-
-    public static Feedback of( boolean successful ) {
-        return new Feedback( successful, "" );
-    }
+public record PlacementFieldsModel(
+        @JsonProperty("namespaceId") Long namespaceId,
+        @JsonProperty("entityId") Long entityId,
+        @JsonProperty("adapterName") String adapterName,
+        @JsonProperty("method") Method method,
+        @JsonProperty("fieldNames") List<String> fieldNames
+) {
 
 
-    public static Feedback of( boolean successful, String message ) {
-        return new Feedback( successful, message );
+    public enum Method {
+        ADD,
+        DROP,
+        MODIFY
     }
 
 }

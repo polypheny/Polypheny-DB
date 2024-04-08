@@ -959,8 +959,7 @@ public abstract class Config {
     boolean validate( final Object i ) {
         if ( this.validationMethod != null ) {
             return this.validationMethod.validate( i );
-        } //else if (this.validationMethod == null ) {
-        else {
+        } else {
             return true;
         }
     }

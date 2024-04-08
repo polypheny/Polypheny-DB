@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.type.entity;
+package org.polypheny.db.type.entity.numerical;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -29,7 +29,7 @@ import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.def.SimpleSerializerDef;
 import java.math.BigDecimal;
 import java.math.MathContext;
-import lombok.EqualsAndHashCode;
+import java.util.Objects;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -39,10 +39,9 @@ import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
-import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 
-@EqualsAndHashCode(callSuper = false)
 @Value
 public class PolyLong extends PolyNumber {
 
@@ -62,6 +61,7 @@ public class PolyLong extends PolyNumber {
         super( PolyType.BIGINT );
         this.value = value;
     }
+
 
 
     public static PolyLong of( long value ) {
@@ -96,6 +96,11 @@ public class PolyLong extends PolyNumber {
             return -1;
         }
         return ObjectUtils.compare( value, o.asNumber().LongValue() );
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash( super.hashCode(), value );
     }
 
 

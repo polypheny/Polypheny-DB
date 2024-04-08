@@ -16,6 +16,8 @@
 
 package org.polypheny.db.algebra.rules;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.AlgNode;
@@ -25,9 +27,11 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTraitDef;
 import org.polypheny.db.tools.AlgBuilder;
 
@@ -89,6 +93,10 @@ public class AllocationToPhysicalScanRule extends AlgOptRule {
     private AlgNode handleRelationalEntity( AlgOptRuleCall call, Scan<?> scan, AllocationEntity alloc ) {
         AlgNode alg = AdapterManager.getInstance().getAdapter( alloc.adapterId ).orElseThrow().getRelScan( alloc.id, call.builder() );
         if ( scan.getModel() == scan.entity.dataModel ) {
+            if ( scan.getTupleType().getFieldCount() != alg.getTupleType().getFieldCount() ) {
+                alg = reduce( alg, scan, call.builder() );
+            }
+
             alg = attachReorder( alg, scan, call.builder() );
         }
 
@@ -97,6 +105,19 @@ public class AllocationToPhysicalScanRule extends AlgOptRule {
             alg = call.builder().push( alg ).transform( scan.getTraitSet().getTrait( ModelTraitDef.INSTANCE ), scan.getTupleType(), true, null ).build();
         }
         return alg;
+    }
+
+
+    private AlgNode reduce( AlgNode current, Scan<?> scan, AlgBuilder builder ) {
+        builder.push( current );
+
+        List<RexNode> projects = new ArrayList<>();
+        for ( AlgDataTypeField field : scan.getTupleType().getFields() ) {
+            if ( current.getTupleType().getField( field.getName(), true, false ) != null ) {
+                projects.add( builder.field( field.getName() ) );
+            }
+        }
+        return builder.project( projects ).build();
     }
 
 

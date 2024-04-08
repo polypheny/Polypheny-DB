@@ -31,6 +31,7 @@ import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.category.PolyNumber;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.temporal.TimeUnit;
 
 @EqualsAndHashCode(callSuper = true)

@@ -28,6 +28,7 @@ import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.def.SimpleSerializerDef;
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.util.Objects;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -40,14 +41,15 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 
-@EqualsAndHashCode(callSuper = false)
 @Value
 public class PolyInteger extends PolyNumber {
 
     public static final PolyInteger ZERO = PolyInteger.of( 0 );
+
     @Serialize
     @JsonProperty
     @Nullable
+    @EqualsAndHashCode.Include
     public Integer value;
 
 
@@ -111,6 +113,10 @@ public class PolyInteger extends PolyNumber {
         return value == null ? null : of( value );
     }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash( super.hashCode(), value );
+    }
 
     @Override
     public Expression asExpression() {
@@ -156,6 +162,7 @@ public class PolyInteger extends PolyNumber {
     public int intValue() {
         return value;
     }
+
 
     @Override
     public long longValue() {

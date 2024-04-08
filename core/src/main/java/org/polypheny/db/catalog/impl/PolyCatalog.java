@@ -228,11 +228,14 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     public void rollback() {
+        long id = snapshot.id();
         restoreLastState();
 
         log.debug( "rollback" );
 
-        updateSnapshot();
+        if ( id != snapshot.id() ) {
+            updateSnapshot();
+        }
 
     }
 

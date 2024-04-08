@@ -28,7 +28,9 @@ import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.def.SimpleSerializerDef;
 import java.math.BigDecimal;
+import java.util.Objects;
 import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang3.ObjectUtils;
@@ -40,7 +42,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 
-@EqualsAndHashCode(callSuper = true)
+@Value
 public class PolyFloat extends PolyNumber {
 
     @Serialize
@@ -102,6 +104,11 @@ public class PolyFloat extends PolyNumber {
             return -1;
         }
         return ObjectUtils.compare( value, o.asFloat().value );
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash( super.hashCode(), value );
     }
 
 

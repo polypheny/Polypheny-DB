@@ -53,7 +53,7 @@ public class PlacementModel {
 
 
     public PlacementModel addAdapter( final RelationalStore s ) {
-        if ( s.columnPlacements.size() > 0 ) {
+        if ( !s.columnPlacements.isEmpty() ) {
             this.stores.add( s );
         }
         return this;
