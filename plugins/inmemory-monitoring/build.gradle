@@ -11,9 +11,6 @@ dependencies {
     compileOnly project(":monitoring")
 
     implementation group: "com.google.guava", name: "guava", version: guava_version
-    implementation(group: "org.mapdb", name: "mapdb", version: mapdb_version) {  // Apache 2.0
-        exclude group: "com.google.guava"
-    }
 
 
     // --- Test Compile ---
@@ -80,7 +77,4 @@ java {
 licensee {
     allow('Apache-2.0')
     allow('MIT')
-
-    // Category B
-    allow('EPL-1.0')
 }
