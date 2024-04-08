@@ -2419,7 +2419,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             return RelationalResult.builder().error( e.getMessage() ).build();
         }
 
-        // Wrap {@link AlgNode} into a RelRoot
+        // Wrap {@link AlgNode} into a AlgRoot
         final AlgDataType rowType = result.getTupleType();
         final List<Pair<Integer, String>> fields = Pair.zip( IntStream.range( 0, rowType.getFieldCount() ).boxed().toList(), rowType.getFieldNames() );
         final AlgCollation collation =

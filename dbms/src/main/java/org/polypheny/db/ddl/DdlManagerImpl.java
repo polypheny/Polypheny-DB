@@ -522,7 +522,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createForeignKey( LogicalTable table, LogicalTable refTable, List<String> columnNames, List<String> refColumnNames, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete ) {
+    public void createForeignKey( LogicalTable table, LogicalTable refTable, List<String> columnNames, List<String> refColumnNames, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete, Statement statement ) {
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfDdlPossible( table.entityType );
         checkIfDdlPossible( refTable.entityType );
@@ -539,6 +539,8 @@ public class DdlManagerImpl extends DdlManager {
         }
         catalog.getLogicalRel( table.namespaceId ).addForeignKey( table.id, columnIds, refTable.id, referencesIds, constraintName, onUpdate, onDelete );
         catalog.getLogicalRel( table.namespaceId ).addConstraint( table.id, ConstraintType.FOREIGN.name(), columnIds, ConstraintType.FOREIGN );
+
+        statement.getTransaction().getLogicalTables().add( table );
     }
 
 
@@ -816,12 +818,13 @@ public class DdlManagerImpl extends DdlManager {
                 }
             }
         }
+        statement.getTransaction().getLogicalTables().add( table );
 
     }
 
 
     @Override
-    public void createUniqueConstraint( LogicalTable table, List<String> columnNames, String constraintName ) {
+    public void createUniqueConstraint( LogicalTable table, List<String> columnNames, String constraintName, Statement statement ) {
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfDdlPossible( table.entityType );
 
@@ -833,6 +836,7 @@ public class DdlManagerImpl extends DdlManager {
             columnIds.add( logicalColumn.id );
         }
         catalog.getLogicalRel( table.namespaceId ).addUniqueConstraint( table.id, constraintName, columnIds );
+        statement.getTransaction().getLogicalTables().add( table );
 
     }
 

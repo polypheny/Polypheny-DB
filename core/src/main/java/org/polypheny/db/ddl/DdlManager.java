@@ -179,7 +179,7 @@ public abstract class DdlManager {
      * @param onUpdate how to enforce the constraint on updated
      * @param onDelete how to enforce the constraint on delete
      */
-    public abstract void createForeignKey( LogicalTable table, LogicalTable refTable, List<String> columnNames, List<String> refColumnNames, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete );
+    public abstract void createForeignKey( LogicalTable table, LogicalTable refTable, List<String> columnNames, List<String> refColumnNames, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete, Statement statement );
 
     /**
      * Adds an index to a table
@@ -234,7 +234,7 @@ public abstract class DdlManager {
      * @param columnNames the names of the columns which are part of the constraint
      * @param constraintName the name of the unique constraint
      */
-    public abstract void createUniqueConstraint( LogicalTable table, List<String> columnNames, String constraintName );
+    public abstract void createUniqueConstraint( LogicalTable table, List<String> columnNames, String constraintName, Statement statement );
 
     /**
      * Drop a specific column in a table
