@@ -55,7 +55,7 @@ import org.polypheny.db.sql.language.SqlDialect;
 @AdapterSettingString(name = "table", defaultValue = "public.foo,public.bar", description = "Maximum number of concurrent JDBC connections.")
 public class MonetdbSource extends AbstractJdbcSource {
 
-    public MonetdbSource( long storeId, String uniqueName, final Map<String, String> settings ) {
+    public MonetdbSource( final long storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, "nl.cwi.monetdb.jdbc.MonetDriver", MonetdbSqlDialect.DEFAULT, false );
     }
 

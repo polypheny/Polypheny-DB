@@ -26,7 +26,6 @@ import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.entity.PolyList;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
@@ -38,6 +37,7 @@ import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.relational.PolyMap;
 
 @DisplayName("Binary/Typed-json Serialization")
@@ -149,6 +149,16 @@ public class PolyValueSerializationTest {
 
 
     @Test
+    public void simpleDocument2Test() {
+        PolyDocument d1 = PolyDocument.ofDocument( Map.of(
+                PolyString.of( "test" ), PolyFloat.of( 3.f ),
+                PolyString.of( "test2" ), PolyInteger.of( 3 ) ) );
+
+        assertEqualAfterSerialization( d1 );
+    }
+
+
+    @Test
     public void simpleMapTest() {
         PolyMap<PolyString, PolyFloat> d1 = PolyMap.of( Map.of( PolyString.of( "test" ), PolyFloat.of( 3.f ) ) );
 
@@ -158,7 +168,9 @@ public class PolyValueSerializationTest {
 
     @Test
     public void simpleMixedMapTest() {
-        PolyMap<PolyValue, PolyValue> d1 = PolyMap.of( Map.of( PolyString.of( "test" ), PolyFloat.of( 3.f ), PolyFloat.of( 4.5f ), PolyDouble.of( 3d ) ) );
+        PolyMap<PolyValue, PolyValue> d1 = PolyMap.of( Map.of(
+                PolyString.of( "test" ), PolyFloat.of( 3.f ),
+                PolyFloat.of( 4.5f ), PolyDouble.of( 3d ) ) );
 
         assertEqualAfterSerialization( d1 );
     }

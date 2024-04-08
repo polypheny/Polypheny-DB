@@ -206,7 +206,6 @@ public class InMemoryRepository implements PersistentMonitoringRepository {
         synchronized ( this ) {
             File folder = PolyphenyHomeDirManager.getInstance().registerNewFolder( folderName );
 
-
             // Assume that file is locked
             long secondsToWait = 30;
 

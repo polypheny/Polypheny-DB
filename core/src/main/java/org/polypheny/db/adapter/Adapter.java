@@ -59,8 +59,7 @@ public abstract class Adapter<ACatalog extends AdapterCatalog> implements Scanna
     private final AdapterProperties properties;
     protected final DeployMode deployMode;
     protected String deploymentId;
-    @Getter
-    private final String adapterName;
+    public final String adapterName;
     public final ACatalog adapterCatalog;
 
 

@@ -17,7 +17,6 @@
 package org.polypheny.db.sql.sql2alg;
 
 
-import java.math.BigDecimal;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.rex.RexBuilder;
@@ -31,7 +30,7 @@ import org.polypheny.db.sql.language.SqlTimeLiteral;
 import org.polypheny.db.sql.language.SqlTimestampLiteral;
 import org.polypheny.db.sql.language.validate.SqlValidator;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.BitString;
+import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.util.Util;
 
 
@@ -84,10 +83,6 @@ public class SqlNodeToRexConverterImpl implements SqlNodeToRexConverter {
             return rexBuilder.makeCast( type, rexBuilder.constantNull() );
         }
 
-        BitString bitString;
-        SqlIntervalLiteral.IntervalValue intervalValue;
-        long l;
-
         return switch ( literal.getTypeName() ) {
             case DECIMAL ->
                 // exact number
@@ -107,10 +102,10 @@ public class SqlNodeToRexConverterImpl implements SqlNodeToRexConverter {
                     literal.value.asTime(),
                     ((SqlTimeLiteral) literal).getPrec() );
             case DATE -> rexBuilder.makeDateLiteral( literal.value.asDate() );
-            case INTERVAL_YEAR, INTERVAL_YEAR_MONTH, INTERVAL_MONTH, INTERVAL_DAY, INTERVAL_DAY_HOUR, INTERVAL_DAY_MINUTE, INTERVAL_DAY_SECOND, INTERVAL_HOUR, INTERVAL_HOUR_MINUTE, INTERVAL_HOUR_SECOND, INTERVAL_MINUTE, INTERVAL_MINUTE_SECOND, INTERVAL_SECOND -> {
+            case INTERVAL -> {
                 SqlIntervalQualifier sqlIntervalQualifier = literal.getValueAs( SqlIntervalLiteral.IntervalValue.class ).getIntervalQualifier();
                 yield rexBuilder.makeIntervalLiteral(
-                        literal.getValueAs( BigDecimal.class ),
+                        new PolyInterval( literal.value.asInterval().millis, literal.value.asInterval().months ),
                         sqlIntervalQualifier );
             }
             default -> throw Util.unexpected( literal.getTypeName() );

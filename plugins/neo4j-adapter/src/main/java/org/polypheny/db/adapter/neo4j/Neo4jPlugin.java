@@ -158,7 +158,7 @@ public class Neo4jPlugin extends PolyPlugin {
         private String host;
 
 
-        public Neo4jStore( long adapterId, String uniqueName, Map<String, String> adapterSettings ) {
+        public Neo4jStore( final long adapterId, final String uniqueName, final Map<String, String> adapterSettings ) {
             super( adapterId, uniqueName, adapterSettings, true, new GraphAdapterCatalog( adapterId ) );
 
             this.user = "neo4j";

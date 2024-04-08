@@ -19,11 +19,8 @@ package org.polypheny.db.functions;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.polypheny.db.type.entity.PolyInterval;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.util.Pair;
 
@@ -82,9 +79,5 @@ public class RefactorFunctions {
         return PolyDocument.ofDocument( map );
     }
 
-
-    public static PolyNumber unwrapInterval( PolyInterval interval ) {
-        return PolyLong.of( interval.value );
-    }
 
 }

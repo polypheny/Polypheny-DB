@@ -20,7 +20,6 @@ package org.polypheny.db.hsqldb.stores;
 import com.google.common.io.CharStreams;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.hsqldb.jdbc.JDBCClobClient;
 import org.polypheny.db.algebra.constant.Kind;
@@ -30,6 +29,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.TimeUnitRange;
 import org.polypheny.db.sql.language.SqlBasicCall;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlDataTypeSpec;
@@ -99,20 +99,8 @@ public class HsqldbSqlDialect extends SqlDialect {
                 // We need to flag the type with a underscore to flag the type (the underscore is removed in the unparse method)
                 castSpec = "_BLOB";
                 break;
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MONTH:
-            case INTERVAL_SECOND:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_YEAR:
-                castSpec = "INTERVAL";
+            case INTERVAL:
+                castSpec = "_INTERVAL";
                 break;
             default:
                 return super.getCastSpec( type );

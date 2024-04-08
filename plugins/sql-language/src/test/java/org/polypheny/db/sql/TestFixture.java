@@ -39,11 +39,11 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexSimplify;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
@@ -237,11 +237,6 @@ public class TestFixture {
 
     public RexNode timestampLiteral( TimestampString ts ) {
         return rexBuilder.makeTimestampLiteral( ts, timestampDataType.getPrecision() );
-    }
-
-
-    public RexNode timestampLocalTzLiteral( TimestampString ts ) {
-        return rexBuilder.makeTimestampWithLocalTimeZoneLiteral( ts, timestampDataType.getPrecision() );
     }
 
 

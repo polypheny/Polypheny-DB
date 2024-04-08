@@ -41,7 +41,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
-import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.docker.DockerContainer;
@@ -79,7 +78,7 @@ public class MonetdbStore extends AbstractJdbcStore {
     private DockerContainer container;
 
 
-    public MonetdbStore( long storeId, String uniqueName, final Map<String, String> settings ) {
+    public MonetdbStore( final long storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, MonetdbSqlDialect.DEFAULT, true );
     }
 
@@ -384,12 +383,5 @@ public class MonetdbStore extends AbstractJdbcStore {
         return false;
     }
 
-
-    @Override
-    public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities ) {
-        PhysicalEntity table = entities.get( 0 );
-        updateNamespace( table.namespaceName, table.namespaceId );
-        adapterCatalog.addPhysical( alloc, currentJdbcSchema.createJdbcTable( table.unwrap( PhysicalTable.class ).orElseThrow() ) );
-    }
 
 }

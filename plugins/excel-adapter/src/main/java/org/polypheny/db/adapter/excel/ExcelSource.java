@@ -89,7 +89,7 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> {
     public String sheetName;
 
 
-    public ExcelSource( long storeId, String uniqueName, Map<String, String> settings ) {
+    public ExcelSource( final long storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, true, new RelAdapterCatalog( storeId ) );
 
         this.connectionMethod = settings.containsKey( "method" ) ? ConnectionMethod.from( settings.get( "method" ) ) : ConnectionMethod.UPLOAD;

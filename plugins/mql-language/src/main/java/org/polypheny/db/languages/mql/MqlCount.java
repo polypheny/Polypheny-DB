@@ -33,13 +33,13 @@ public class MqlCount extends MqlCollectionStatement implements MqlQueryStatemen
     private final BsonDocument options;
 
 
-    public MqlCount( ParserPos pos, String collection, BsonDocument query, BsonDocument options ) {
-        this( pos, collection, query, options, false );
+    public MqlCount( ParserPos pos, String collection, String namespace, BsonDocument query, BsonDocument options ) {
+        this( pos, collection, namespace, query, options, false );
     }
 
 
-    public MqlCount( ParserPos pos, String collection, BsonDocument query, BsonDocument options, boolean isEstimate ) {
-        super( collection, pos );
+    public MqlCount( ParserPos pos, String collection, String namespace, BsonDocument query, BsonDocument options, boolean isEstimate ) {
+        super( collection, namespace, pos );
         this.query = query;
         this.options = options;
         this.isEstimate = isEstimate;

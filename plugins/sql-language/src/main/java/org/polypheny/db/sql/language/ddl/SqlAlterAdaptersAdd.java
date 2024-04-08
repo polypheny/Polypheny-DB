@@ -25,7 +25,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;
@@ -96,12 +98,18 @@ public class SqlAlterAdaptersAdd extends SqlAlter {
         @SuppressWarnings("unchecked")
         Map<String, String> configMap = new Gson().fromJson( removeQuotationMarks( config.toString() ), Map.class );
 
-        DdlManager.getInstance().createAdapter(
-                removeQuotationMarks( uniqueName.toString() ),
-                removeQuotationMarks( adapterName.toString() ),
-                AdapterType.valueOf( removeQuotationMarks( adapterType.toString().toUpperCase() ) ),
-                configMap,
-                configMap.containsKey( "mode" ) ? DeployMode.valueOf( configMap.get( "mode" ).toUpperCase() ) : DeployMode.EMBEDDED );
+        AdapterType type = AdapterType.valueOf( removeQuotationMarks( adapterType.toString().toUpperCase() ) );
+        DeployMode mode = configMap.containsKey( "mode" ) ? DeployMode.valueOf( configMap.get( "mode" ).toUpperCase() ) : DeployMode.EMBEDDED;
+        String uniqueName = removeQuotationMarks( this.uniqueName.toString() );
+        String adapterName = removeQuotationMarks( this.adapterName.toString() );
+        if ( type == AdapterType.STORE ) {
+            DdlManager.getInstance().createStore( uniqueName, adapterName, type, configMap, mode );
+        } else if ( type == AdapterType.SOURCE ) {
+            DdlManager.getInstance().createSource( uniqueName, adapterName, Catalog.defaultNamespaceId, type, configMap, mode );
+        } else {
+            log.error( "Unknown adapter type: {}", type );
+            throw new GenericRuntimeException( "Unknown adapter type: " + type );
+        }
     }
 
 

@@ -23,9 +23,10 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
@@ -47,6 +48,7 @@ import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.plugins.PolyPluginManager;
+import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.sql.language.SqlAggFunction;
 import org.polypheny.db.sql.language.SqlAsOperator;
 import org.polypheny.db.sql.language.SqlBinaryOperator;
@@ -163,6 +165,7 @@ import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Optionality;
+import org.polypheny.db.util.temporal.TimeUnit;
 import org.polypheny.db.webui.crud.LanguageCrud;
 
 @Slf4j
@@ -203,7 +206,8 @@ public class SqlLanguagePlugin extends PolyPlugin {
                 SqlParserImpl.FACTORY,
                 SqlProcessor::new,
                 SqlLanguagePlugin::getValidator,
-                LanguageManager::toQueryNodes );
+                LanguageManager::toQueryNodes,
+                SqlLanguagePlugin::removeLimit );
         LanguageManager.getINSTANCE().addQueryLanguage( language );
         PolyPluginManager.AFTER_INIT.add( () -> {
             // add language to webui
@@ -212,6 +216,32 @@ public class SqlLanguagePlugin extends PolyPlugin {
 
         if ( !isInit() ) {
             registerOperators();
+        }
+    }
+
+
+    private static QueryContext removeLimit( QueryContext queryContext ) {
+        String lowercase = queryContext.getQuery().toLowerCase();
+        if ( !lowercase.contains( "limit" ) ) {
+            return queryContext;
+        }
+
+        // ends with "LIMIT <number>" or "LIMIT <number>;" with optional whitespace, matches <number>
+        Pattern pattern = Pattern.compile( "LIMIT\\s+(\\d+)(?:,(\\d+))?\\s*((?:;\\s*\\z|$)|OFFSET\\s*\\d+;$)", Pattern.CASE_INSENSITIVE );
+        String limitClause = null;
+        Matcher matcher = pattern.matcher( lowercase );
+        if ( matcher.find() && matcher.groupCount() > 0 ) {
+            limitClause = matcher.group( 1 );
+        }
+        if ( limitClause == null ) {
+            return queryContext;
+        }
+        try {
+            int limit = Integer.parseInt( limitClause.trim() );
+            return queryContext.toBuilder().query( queryContext.getQuery() ).batch( limit ).build();
+        } catch ( NumberFormatException e ) {
+            log.error( "Could not parse limit clause: {}", limitClause );
+            return queryContext;
         }
     }
 
@@ -248,9 +278,6 @@ public class SqlLanguagePlugin extends PolyPlugin {
             case "oracle":
                 tables.add( OracleSqlOperatorTable.instance() );
                 return;
-            //case "spatial":
-            //    tables.add( PolyphenyDbCatalogReader.operatorTable( GeoFunctions.class.getName() ) );
-            //    return;
             default:
                 throw new IllegalArgumentException( "Unknown operator table: " + s );
         }
@@ -2490,11 +2517,6 @@ public class SqlLanguagePlugin extends PolyPlugin {
         register(
                 OperatorName.CROSS_MODEL_ITEM,
                 new LangFunctionOperator( OperatorName.CROSS_MODEL_ITEM.name(), Kind.CROSS_MODEL_ITEM ) );
-
-        /*
-         * Operator for unwrapping an interval value to handle it as number.
-         */
-        register( OperatorName.UNWRAP_INTERVAL, new LangFunctionOperator( OperatorName.UNWRAP_INTERVAL.name(), Kind.OTHER_FUNCTION ) );
 
         /*
          * Operator which transforms a value to JSON.

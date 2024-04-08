@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.Javalin;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -78,99 +79,116 @@ public class ConfigService implements ConfigListener {
         // Save changes from WebUi
         http.post( PREFIX + "/updateConfigs", ctx -> {
             log.trace( ctx.body() );
-            TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {
-            };
-            Map<String, Object> changes = mapper.convertValue( ctx.body(), typeRef );
+            HashMap<String, Object> changes = mapper.readValue( ctx.body(), new TypeReference<>() { // we need explicit typing to force the correct map type
+            } );
             StringBuilder feedback = new StringBuilder();
             boolean allValid = true;
             for ( Map.Entry<String, Object> entry : changes.entrySet() ) {
-                Config c = cm.getConfig( entry.getKey() );
-                switch ( c.getConfigType() ) {
-                    case "ConfigInteger":
-                        Double d = (Double) entry.getValue();
-                        if ( !c.setInt( d.intValue() ) ) {
-                            allValid = false;
-                            appendError( feedback, entry, c );
-                        }
-                        break;
-                    case "ConfigDouble":
-                        if ( !c.setDouble( (double) entry.getValue() ) ) {
-                            allValid = false;
-                            appendError( feedback, entry, c );
-                        }
-                        break;
-                    case "ConfigDecimal":
-                        if ( !c.setDecimal( (BigDecimal) entry.getValue() ) ) {
-                            allValid = false;
-                            appendError( feedback, entry, c );
-                        }
-                        break;
-                    case "ConfigLong":
-                        if ( !c.setLong( (long) entry.getValue() ) ) {
-                            allValid = false;
-                            appendError( feedback, entry, c );
-                        }
-                    case "ConfigString":
-                        if ( !c.setString( (String) entry.getValue() ) ) {
-                            allValid = false;
-                            appendError( feedback, entry, c );
-                        }
-                        break;
-                    case "ConfigBoolean":
-                        if ( !c.setBoolean( (boolean) entry.getValue() ) ) {
-                            allValid = false;
-                            appendError( feedback, entry, c );
-                        }
-                        break;
-                    case "ConfigClazz":
-                    case "ConfigEnum":
-                        if ( !c.parseStringAndSetValue( (String) entry.getValue() ) ) {
-                            allValid = false;
-                            appendError( feedback, entry, c );
-                        }
-                        break;
-                    case "ConfigClazzList":
-                    case "ConfigEnumList":
-                        try {
-                            if ( !c.parseStringAndSetValue( mapper.writeValueAsString( entry.getValue() ) ) ) {
-                                allValid = false;
-                                appendError( feedback, entry, c );
-                            }
-                        } catch ( JsonProcessingException e ) {
-                            allValid = false;
-                            appendError( feedback, entry, c );
-                        }
-
-                        break;
-                    case "ConfigList":
-                        Feedback res = c.setConfigObjectList( (List<Object>) entry.getValue(), c.getTemplateClass() );
-                        if ( !res.successful ) {
-                            allValid = false;
-                            if ( res.message.trim().isEmpty() ) {
-                                appendError( feedback, entry, c );
-                            } else {
-                                feedback.append( "Could not set " )
-                                        .append( c.getKey() )
-                                        .append( " due to: " )
-                                        .append( res.message )
-                                        .append( " " );
-                            }
-
-                        }
-                        break;
-                    default:
-                        allValid = false;
-                        feedback.append( "Config with type " ).append( c.getConfigType() ).append( " is not supported yet." );
-                        log.error( "Config with type {} is not supported yet.", c.getConfigType() );
+                try {
+                    allValid = trySetConfig( entry, cm, allValid, feedback );
+                } catch ( Exception e ) {
+                    allValid = false;
+                    feedback.append( "Could not set " )
+                            .append( entry.getKey() )
+                            .append( " to " )
+                            .append( entry.getValue() )
+                            .append( " because of: " )
+                            .append( e.getMessage() )
+                            .append( " " );
                 }
+
             }
             if ( allValid ) {
-                ctx.result( "{\"success\":1}" );
+                ctx.json( new Feedback( true, "All values were saved." ) );
             } else {
                 feedback.append( "All other values were saved." );
-                ctx.result( "{\"warning\": \"" + feedback + "\"}" );
+                ctx.json( new Feedback( false, feedback.toString() ) );
             }
         } );
+    }
+
+
+    private boolean trySetConfig( Entry<String, Object> entry, ConfigManager cm, boolean allValid, StringBuilder feedback ) {
+        Config c = cm.getConfig( entry.getKey() );
+        switch ( c.getConfigType() ) {
+            case "ConfigInteger":
+                Double d = (Double) entry.getValue();
+                if ( !c.setInt( d.intValue() ) ) {
+                    allValid = false;
+                    appendError( feedback, entry, c );
+                }
+                break;
+            case "ConfigDouble":
+                if ( !c.setDouble( (double) entry.getValue() ) ) {
+                    allValid = false;
+                    appendError( feedback, entry, c );
+                }
+                break;
+            case "ConfigDecimal":
+                if ( !c.setDecimal( (BigDecimal) entry.getValue() ) ) {
+                    allValid = false;
+                    appendError( feedback, entry, c );
+                }
+                break;
+            case "ConfigLong":
+                if ( !c.setLong( (long) entry.getValue() ) ) {
+                    allValid = false;
+                    appendError( feedback, entry, c );
+                }
+            case "ConfigString":
+                if ( !c.setString( (String) entry.getValue() ) ) {
+                    allValid = false;
+                    appendError( feedback, entry, c );
+                }
+                break;
+            case "ConfigBoolean":
+                if ( !c.setBoolean( (boolean) entry.getValue() ) ) {
+                    allValid = false;
+                    appendError( feedback, entry, c );
+                }
+                break;
+            case "ConfigClazz":
+            case "ConfigEnum":
+                if ( !c.parseStringAndSetValue( (String) entry.getValue() ) ) {
+                    allValid = false;
+                    appendError( feedback, entry, c );
+                }
+                break;
+            case "ConfigClazzList":
+            case "ConfigEnumList":
+                try {
+                    if ( !c.parseStringAndSetValue( mapper.writeValueAsString( entry.getValue() ) ) ) {
+                        allValid = false;
+                        appendError( feedback, entry, c );
+                    }
+                } catch ( JsonProcessingException e ) {
+                    allValid = false;
+                    appendError( feedback, entry, c );
+                }
+
+                break;
+            case "ConfigList":
+                Feedback res = c.setConfigObjectList( (List<Object>) entry.getValue(), c.getTemplateClass() );
+                if ( !res.successful ) {
+                    allValid = false;
+                    if ( res.message.trim().isEmpty() ) {
+                        appendError( feedback, entry, c );
+                    } else {
+                        feedback.append( "Could not set " )
+                                .append( c.getKey() )
+                                .append( " due to: " )
+                                .append( res.message )
+                                .append( " " );
+                    }
+
+                }
+                break;
+            default:
+                allValid = false;
+                feedback.append( "Config with type " ).append( c.getConfigType() ).append( " is not supported yet." );
+                log.error( "Config with type {} is not supported yet.", c.getConfigType() );
+        }
+        return allValid;
     }
 
 

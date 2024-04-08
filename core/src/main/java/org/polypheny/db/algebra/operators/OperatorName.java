@@ -1303,8 +1303,6 @@ public enum OperatorName {
      */
     PATTERN_EXCLUDE( Operator.class ),
 
-    UNWRAP_INTERVAL( LangFunctionOperator.class ),
-
     //-------------------------------------------------------------
     //                   SET OPERATORS
     //-------------------------------------------------------------

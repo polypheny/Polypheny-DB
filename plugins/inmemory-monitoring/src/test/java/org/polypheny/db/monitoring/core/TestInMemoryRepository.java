@@ -17,6 +17,7 @@
 package org.polypheny.db.monitoring.core;
 
 import java.io.File;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.NonNull;
 import org.polypheny.db.monitoring.InMemoryRepository;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
@@ -28,7 +29,7 @@ public class TestInMemoryRepository extends InMemoryRepository {
     private static final String FILE_PATH = "testDb";
     private static final String FOLDER_NAME = "monitoring";
 
-    int count = 0;
+    AtomicInteger count = new AtomicInteger();
 
 
     @Override
@@ -47,7 +48,7 @@ public class TestInMemoryRepository extends InMemoryRepository {
     @Override
     public void dataPoint( @NonNull MonitoringDataPoint dataPoint ) {
         super.dataPoint( dataPoint );
-        count++;
+        count.incrementAndGet();
     }
 
 }

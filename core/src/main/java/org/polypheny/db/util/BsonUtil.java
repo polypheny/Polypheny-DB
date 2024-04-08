@@ -67,7 +67,6 @@ import org.polypheny.db.runtime.PolyCollections.FlatMap;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
@@ -75,12 +74,15 @@ import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 
 
 public class BsonUtil {
 
     private final static List<Pair<String, String>> mappings = new ArrayList<>();
     private final static List<String> stops = new ArrayList<>();
+    public static final String DOC_MONTH_KEY = "m";
+    public static final String DOC_MILLIS_KEY = "ms";
 
 
     static {
@@ -172,11 +174,6 @@ public class BsonUtil {
     }
 
 
-    public static String getObjectId( String template ) {
-        return new ObjectId( template ).toHexString();
-    }
-
-
     /**
      * Direct transformation of an untyped input to the correct Bson format according to the
      * provided PolyType.
@@ -208,9 +205,7 @@ public class BsonUtil {
             case BOOLEAN -> new BsonBoolean( obj.asBoolean().value );
             case BINARY -> new BsonString( new ByteString( obj.asBinary().value ).toBase64String() );
             case AUDIO, IMAGE, VIDEO, FILE -> handleMultimedia( bucket, obj );
-            case INTERVAL_MONTH -> handleMonthInterval( obj );
-            case INTERVAL_DAY -> handleDayInterval( obj );
-            case INTERVAL_YEAR -> handleYearInterval( obj );
+            case INTERVAL -> handleInterval( obj );
             case JSON -> handleDocument( obj );
             default -> new BsonString( obj.toString() );
         };
@@ -260,9 +255,7 @@ public class BsonUtil {
             case BOOLEAN -> BsonUtil::handleBoolean;
             case BINARY -> BsonUtil::handleBinary;
             case AUDIO, IMAGE, VIDEO, FILE -> ( o ) -> handleMultimedia( bucket, o );
-            case INTERVAL_MONTH -> BsonUtil::handleMonthInterval;
-            case INTERVAL_DAY -> BsonUtil::handleDayInterval;
-            case INTERVAL_YEAR -> BsonUtil::handleYearInterval;
+            case INTERVAL -> BsonUtil::handleInterval;
             case JSON -> BsonUtil::handleDocument;
             case ARRAY -> {
                 Function<PolyValue, BsonValue> transformer = getBsonTransformer( types, bucket );
@@ -325,18 +318,11 @@ public class BsonUtil {
     }
 
 
-    private static BsonValue handleYearInterval( PolyValue obj ) {
-        return new BsonDecimal128( new Decimal128( obj.asInterval().value ) );
-    }
-
-
-    private static BsonValue handleMonthInterval( PolyValue obj ) {
-        return new BsonDecimal128( new Decimal128( obj.asInterval().value ) );
-    }
-
-
-    private static BsonValue handleDayInterval( PolyValue obj ) {
-        return new BsonDecimal128( new Decimal128( obj.asInterval().value ) );
+    private static BsonValue handleInterval( PolyValue obj ) {
+        return new BsonDocument() {{
+            this.put( DOC_MONTH_KEY, new BsonInt64( obj.asInterval().getMonths() ) );
+            this.put( DOC_MILLIS_KEY, new BsonInt64( obj.asInterval().getMillis() ) );
+        }};
     }
 
 
@@ -424,8 +410,8 @@ public class BsonUtil {
             case FLOAT, REAL -> Float.class;
             case DOUBLE -> Double.class;
             case DATE -> Date.class;
-            case TIME, TIME_WITH_LOCAL_TIME_ZONE -> Time.class;
-            case TIMESTAMP, TIMESTAMP_WITH_LOCAL_TIME_ZONE -> Timestamp.class;
+            case TIME -> Time.class;
+            case TIMESTAMP -> Timestamp.class;
             case CHAR, VARCHAR, BINARY, VARBINARY -> String.class;
             case FILE, IMAGE, VIDEO, AUDIO -> PushbackInputStream.class;
             default -> throw new IllegalStateException( "Unexpected value: " + type );
@@ -486,7 +472,7 @@ public class BsonUtil {
         return switch ( type ) {
             case BOOLEAN -> 8;
             case TINYINT, SMALLINT, INTEGER -> 16;
-            case BIGINT, DATE, TIME, TIME_WITH_LOCAL_TIME_ZONE, TIMESTAMP, TIMESTAMP_WITH_LOCAL_TIME_ZONE -> 18;
+            case BIGINT, DATE, TIME, TIMESTAMP -> 18;
             case DECIMAL -> 19;
             case FLOAT, REAL, DOUBLE -> 1;
             case CHAR, VARCHAR, BINARY, VARBINARY -> 2;
@@ -519,7 +505,7 @@ public class BsonUtil {
             case BOOLEAN:
                 return value.asBoolean().getValue();
             case ARRAY:
-                return ComparableList.copyOf( value.asArray().stream().map( BsonUtil::getUnderlyingValue ).map( e -> (T) e ).collect( Collectors.toList() ).listIterator() );
+                return ComparableList.copyOf( value.asArray().stream().map( BsonUtil::getUnderlyingValue ).map( e -> (T) e ).toList().listIterator() );
             case DOCUMENT:
                 FlatMap<String, Comparable<?>> map = new FlatMap<>();
                 value.asDocument().forEach( ( key, val ) -> map.put( key, getUnderlyingValue( val ) ) );
@@ -686,7 +672,7 @@ public class BsonUtil {
             case DECIMAL128:
                 return PolyBigDecimal.of( input.asDecimal128().getValue().bigDecimalValue() );
         }
-        throw new org.apache.commons.lang3.NotImplementedException( "Not considered: " + input.getBsonType() );
+        throw new GenericRuntimeException( "Not considered: " + input.getBsonType() );
     }
 
 }

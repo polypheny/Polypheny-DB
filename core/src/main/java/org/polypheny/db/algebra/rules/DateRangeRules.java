@@ -53,19 +53,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.TimeZone;
 import java.util.function.Predicate;
 import javax.annotation.Nonnull;
-import org.apache.calcite.avatica.util.DateTimeUtils;
-import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
-import org.polypheny.db.functions.TemporalFunctions;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.nodes.TimeUnitRange;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.rex.RexBuilder;
@@ -80,7 +77,6 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.TimestampString;
-import org.polypheny.db.util.TimestampWithTimeZoneString;
 import org.polypheny.db.util.Util;
 
 
@@ -518,15 +514,6 @@ public abstract class DateRangeRules {
                     ts = TimestampString.fromCalendarFields( calendar );
                     p = operand.getType().getPrecision();
                     return rexBuilder.makeTimestampLiteral( ts, p );
-                case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                    ts = TimestampString.fromCalendarFields( calendar );
-                    final TimeZone tz = TimeZone.getTimeZone( this.timeZone );
-                    final TimestampString localTs =
-                            new TimestampWithTimeZoneString( ts, tz )
-                                    .withTimeZone( DateTimeUtils.UTC_ZONE )
-                                    .getLocalTimestampString();
-                    p = operand.getType().getPrecision();
-                    return rexBuilder.makeTimestampWithLocalTimeZoneLiteral( localTs, p );
                 case DATE:
                     final DateString d = DateString.fromCalendarFields( calendar );
                     return rexBuilder.makeDateLiteral( d );
@@ -537,20 +524,14 @@ public abstract class DateRangeRules {
 
 
         private Range<Calendar> extractRange( TimeUnitRange timeUnit, Kind comparison, Calendar c ) {
-            switch ( comparison ) {
-                case EQUALS:
-                    return Range.closedOpen( round( c, timeUnit, true ), round( c, timeUnit, false ) );
-                case LESS_THAN:
-                    return Range.lessThan( round( c, timeUnit, true ) );
-                case LESS_THAN_OR_EQUAL:
-                    return Range.lessThan( round( c, timeUnit, false ) );
-                case GREATER_THAN:
-                    return Range.atLeast( round( c, timeUnit, false ) );
-                case GREATER_THAN_OR_EQUAL:
-                    return Range.atLeast( round( c, timeUnit, true ) );
-                default:
-                    throw new AssertionError( comparison );
-            }
+            return switch ( comparison ) {
+                case EQUALS -> Range.closedOpen( round( c, timeUnit, true ), round( c, timeUnit, false ) );
+                case LESS_THAN -> Range.lessThan( round( c, timeUnit, true ) );
+                case LESS_THAN_OR_EQUAL -> Range.lessThan( round( c, timeUnit, false ) );
+                case GREATER_THAN -> Range.atLeast( round( c, timeUnit, false ) );
+                case GREATER_THAN_OR_EQUAL -> Range.atLeast( round( c, timeUnit, true ) );
+                default -> throw new AssertionError( comparison );
+            };
         }
 
 
@@ -591,14 +572,9 @@ public abstract class DateRangeRules {
 
         private Calendar timestampValue( RexLiteral timeLiteral ) {
             return switch ( timeLiteral.getPolyType() ) {
-                case TIMESTAMP_WITH_LOCAL_TIME_ZONE -> {
-                    final TimeZone tz = TimeZone.getTimeZone( this.timeZone );
-                    yield Util.calendar( TemporalFunctions.timestampWithLocalTimeZoneToTimestamp( timeLiteral.value.asTimestamp().getPolyMillisSinceEpoch(), tz ).millisSinceEpoch );
-                }
                 case TIMESTAMP -> Util.calendar( timeLiteral.value.asTimestamp().millisSinceEpoch );
                 case DATE ->
                     // Cast date to timestamp with local time zone
-                    //final DateString d = timeLiteral.getValue( DateString.class );
                         Util.calendar( timeLiteral.value.asDate().millisSinceEpoch );
                 default -> throw Util.unexpected( timeLiteral.getPolyType() );
             };

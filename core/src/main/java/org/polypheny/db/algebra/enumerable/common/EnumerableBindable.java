@@ -82,9 +82,8 @@ public class EnumerableBindable extends ConverterImpl implements BindableAlg {
     public Enumerable<PolyValue[]> bind( DataContext dataContext ) {
         final Map<String, Object> map = new HashMap<>();
         final Bindable<?> bindable = EnumerableInterpretable.toBindable( map, (EnumerableAlg) getInput(), Prefer.ARRAY, dataContext.getStatement() ).left;
-        final ArrayBindable arrayBindable = EnumerableInterpretable.box( bindable );
+        final ArrayBindable<PolyValue> arrayBindable = EnumerableInterpretable.box( bindable );
         dataContext.addAll( map );
-        //noinspection unchecked
         return arrayBindable.bind( dataContext );
     }
 

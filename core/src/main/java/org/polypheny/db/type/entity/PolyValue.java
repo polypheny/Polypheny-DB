@@ -66,7 +66,6 @@ import org.polypheny.db.type.entity.PolyBinary.ByteStringDeserializer;
 import org.polypheny.db.type.entity.PolyBinary.ByteStringSerializer;
 import org.polypheny.db.type.entity.PolyBoolean.PolyBooleanSerializerDef;
 import org.polypheny.db.type.entity.PolyList.PolyListSerializerDef;
-import org.polypheny.db.type.entity.PolyLong.PolyLongSerializerDef;
 import org.polypheny.db.type.entity.PolyNull.PolyNullSerializerDef;
 import org.polypheny.db.type.entity.PolyString.PolyStringSerializerDef;
 import org.polypheny.db.type.entity.category.PolyBlob;
@@ -91,6 +90,8 @@ import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyFloat.PolyFloatSerializerDef;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.numerical.PolyInteger.PolyIntegerSerializerDef;
+import org.polypheny.db.type.entity.numerical.PolyLong;
+import org.polypheny.db.type.entity.numerical.PolyLong.PolyLongSerializerDef;
 import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.type.entity.relational.PolyMap.PolyMapSerializerDef;
 import org.polypheny.db.type.entity.temporal.PolyDate;
@@ -123,7 +124,7 @@ import org.polypheny.db.util.BsonUtil;
         PolyNode.class,
         PolyEdge.class,
         PolyPath.class }) // add on Constructor already exists exception
-@JsonTypeInfo(use = Id.CLASS) // to allow typed json serialization
+@JsonTypeInfo(use = Id.NAME) // to allow typed json serialization
 @JsonSubTypes({
         @JsonSubTypes.Type(value = PolyList.class, name = "LIST"),
         @JsonSubTypes.Type(value = PolyBigDecimal.class, name = "DECIMAL"),
@@ -323,6 +324,12 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
+    @NotNull
+    protected static String getConvertError( @NotNull Object object, Class<? extends PolyValue> clazz ) {
+        return "Could not convert " + object + " to " + clazz.getSimpleName();
+    }
+
+
     @Nullable
     public abstract Long deriveByteSize();
 
@@ -368,22 +375,8 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case DOUBLE -> PolyDouble.class;
             case DATE -> PolyDate.class;
             case TIME -> PolyTime.class;
-            case TIME_WITH_LOCAL_TIME_ZONE -> PolyTime.class;
             case TIMESTAMP -> PolyTimestamp.class;
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE -> PolyTimestamp.class;
-            case INTERVAL_YEAR -> PolyInterval.class;
-            case INTERVAL_YEAR_MONTH -> PolyInterval.class;
-            case INTERVAL_MONTH -> PolyInterval.class;
-            case INTERVAL_DAY -> PolyInterval.class;
-            case INTERVAL_DAY_HOUR -> PolyInterval.class;
-            case INTERVAL_DAY_MINUTE -> PolyInterval.class;
-            case INTERVAL_DAY_SECOND -> PolyInterval.class;
-            case INTERVAL_HOUR -> PolyInterval.class;
-            case INTERVAL_HOUR_MINUTE -> PolyInterval.class;
-            case INTERVAL_HOUR_SECOND -> PolyInterval.class;
-            case INTERVAL_MINUTE -> PolyInterval.class;
-            case INTERVAL_MINUTE_SECOND -> PolyInterval.class;
-            case INTERVAL_SECOND -> PolyInterval.class;
+            case INTERVAL -> PolyInterval.class;
             case CHAR -> PolyString.class;
             case VARCHAR -> PolyString.class;
             case BINARY -> PolyBinary.class;
@@ -808,12 +801,14 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
 
         switch ( type ) {
             case INTEGER:
-                return PolyInteger.from( value );
+                return PolyInteger.convert( value );
             case DOCUMENT:
                 // docs accept all
                 return value;
             case BIGINT:
-                return PolyLong.from( value );
+                return PolyLong.convert( value );
+            case VARCHAR:
+                return PolyString.convert( value );
         }
         if ( type.getFamily() == value.getType().getFamily() ) {
             return value;
@@ -840,7 +835,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
                 }
                 throw new NotImplementedException();
             }
-            case TIME, TIME_WITH_LOCAL_TIME_ZONE -> {
+            case TIME -> {
                 if ( object instanceof Number number ) {
                     yield PolyTime.of( number );
                 } else if ( object instanceof Calendar calendar ) {
@@ -848,7 +843,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
                 }
                 throw new NotImplementedException();
             }
-            case TIMESTAMP, TIMESTAMP_WITH_LOCAL_TIME_ZONE -> {
+            case TIMESTAMP -> {
                 if ( object instanceof Timestamp timestamp ) {
                     yield PolyTimestamp.of( timestamp );
                 } else if ( object instanceof Calendar calendar ) {

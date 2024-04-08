@@ -1,6 +1,5 @@
-
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +14,22 @@
  * limitations under the License.
  */
 
-/**
- * Query provider based on a MongoDB database.
- */
+package org.polypheny.db.webui.models.results;
 
-@PackageMarker
-package org.polypheny.db.adapter.mongodb;
+import org.polypheny.db.algebra.constant.Kind;
+
+public enum QueryType {
+    DDL,
+    DML,
+    DQL;
 
 
-import org.apache.calcite.avatica.util.PackageMarker;
-
+    public static QueryType from( Kind kind ) {
+        if ( Kind.DDL.contains( kind ) ) {
+            return DDL;
+        } else if ( Kind.DML.contains( kind ) ) {
+            return DML;
+        }
+        return DQL;
+    }
+}

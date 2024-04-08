@@ -19,7 +19,6 @@ package org.polypheny.db.languages;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -84,11 +83,18 @@ public class LanguageManager {
     }
 
 
+    public List<ImplementationContext> anyPrepareQuery( QueryContext context, Transaction transaction ) {
+        return anyPrepareQuery( context, context.getStatement() != null ? context.getStatement() : transaction.createStatement() );
+    }
+
+
+    // This method is still called from the Avatica interface and leaves the statement management to the caller.
+    // This should be refactored to use the new method only transmitting the transaction as soon as the
+    // new prism interface is enabled
     public List<ImplementationContext> anyPrepareQuery( QueryContext context, Statement statement ) {
         Transaction transaction = statement.getTransaction();
-
         if ( transaction.isAnalyze() ) {
-            context.getInformationTarget().accept( transaction.getQueryAnalyzer() );
+            context.getInformationTarget().accept( statement.getTransaction().getQueryAnalyzer() );
         }
 
         if ( transaction.isAnalyze() ) {
@@ -119,7 +125,11 @@ public class LanguageManager {
         Processor processor = context.getLanguage().processorSupplier().get();
         List<ImplementationContext> implementationContexts = new ArrayList<>();
         boolean previousDdl = false;
+        int i = 0;
         for ( ParsedQueryContext parsed : parsedQueries ) {
+            if ( i != 0 ) {
+                statement = transaction.createStatement();
+            }
             try {
                 // test if parsing was successful
                 if ( parsed.getQueryNode().isEmpty() ) {
@@ -192,6 +202,7 @@ public class LanguageManager {
                 implementationContexts.add( ImplementationContext.ofError( e, parsed, statement ) );
                 return implementationContexts;
             }
+            i++;
         }
         return implementationContexts;
     }
@@ -219,9 +230,8 @@ public class LanguageManager {
     }
 
 
-    public List<ExecutedContext> anyQuery( QueryContext context, Statement statement ) {
-        List<ImplementationContext> prepared = anyPrepareQuery( context, statement );
-        Transaction transaction = statement.getTransaction();
+    public List<ExecutedContext> anyQuery( QueryContext context ) {
+        List<ImplementationContext> prepared = anyPrepareQuery( context, context.getTransactions().get( context.getTransactions().size() - 1 ) );
 
         List<ExecutedContext> executedContexts = new ArrayList<>();
 
@@ -232,6 +242,7 @@ public class LanguageManager {
                 }
                 executedContexts.add( implementation.execute( implementation.getStatement() ) );
             } catch ( Throwable e ) {
+                Transaction transaction = implementation.getStatement().getTransaction();
                 if ( transaction.isAnalyze() && implementation.getException().isEmpty() ) {
                     transaction.getQueryAnalyzer().attachStacktrace( e );
                 }
@@ -248,7 +259,7 @@ public class LanguageManager {
 
     public static List<ParsedQueryContext> toQueryNodes( QueryContext queries ) {
         Processor processor = queries.getLanguage().processorSupplier().get();
-        List<String> splitQueries = Arrays.stream( queries.getQuery().split( ";" ) ).filter( q -> !q.trim().isEmpty() ).toList();
+        List<String> splitQueries = processor.splitStatements( queries.getQuery() );
 
         return splitQueries.stream().flatMap( q -> processor.parse( q ).stream().map( single -> Pair.of( single, q ) ) )
                 .map( p -> ParsedQueryContext.fromQuery( p.right, p.left, queries ) )

@@ -45,8 +45,8 @@ public class MqlFindOneAndUpdate extends MqlCollectionStatement implements MqlQu
     private final BsonDocument collation;
 
 
-    public MqlFindOneAndUpdate( ParserPos pos, String collection, BsonDocument query, BsonValue updateOrPipeline, BsonDocument options ) {
-        super( collection, pos );
+    public MqlFindOneAndUpdate( ParserPos pos, String collection, String namespace, BsonDocument query, BsonValue updateOrPipeline, BsonDocument options ) {
+        super( collection, namespace, pos );
         this.query = query;
         if ( updateOrPipeline.isArray() ) {
             this.pipeline = updateOrPipeline.asArray();

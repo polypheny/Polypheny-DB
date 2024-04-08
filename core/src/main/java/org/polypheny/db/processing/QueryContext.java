@@ -31,6 +31,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Node;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
 
@@ -55,6 +56,9 @@ public class QueryContext {
     @Builder.Default
     long userId = Catalog.defaultUserId;
 
+    @Builder.Default
+    Statement statement = null;
+
     @NotNull
     String origin;
 
@@ -74,6 +78,7 @@ public class QueryContext {
     // we can have mixed transactions, which have ddls and dmls, as long as we commit instantly for ddls,
     // we have to open a new transaction for the next statement, so we need to keep track of all transactions (in theory only the last one is needed)
     @Builder.Default
+    @NonFinal
     List<Transaction> transactions = new ArrayList<>();
 
 
@@ -86,6 +91,12 @@ public class QueryContext {
 
 
         public static ParsedQueryContext fromQuery( String query, Node queryNode, QueryContext context ) {
+            long namespaceId = context.namespaceId;
+
+            if ( queryNode != null && queryNode.getNamespaceName() != null ) {
+                namespaceId = Catalog.snapshot().getNamespace( queryNode.getNamespaceName() ).map( n -> n.id ).orElse( queryNode.getNamespaceId() );
+            }
+
             return ParsedQueryContext.builder()
                     .query( query )
                     .queryNode( queryNode )
@@ -95,7 +106,7 @@ public class QueryContext {
                     .userId( context.userId )
                     .origin( context.getOrigin() )
                     .batch( context.batch )
-                    .namespaceId( context.namespaceId )
+                    .namespaceId( namespaceId )
                     .transactions( context.transactions )
                     .transactionManager( context.transactionManager )
                     .informationTarget( context.informationTarget ).build();
@@ -110,8 +121,10 @@ public class QueryContext {
 
 
     public <T extends QueryContext> T addTransaction( Transaction transaction ) {
+        transactions = new ArrayList<>( transactions );
         transactions.add( transaction );
         return (T) this;
     }
+
 
 }

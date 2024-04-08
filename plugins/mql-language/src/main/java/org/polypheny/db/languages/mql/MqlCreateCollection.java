@@ -38,8 +38,8 @@ public class MqlCreateCollection extends MqlNode implements ExecutableStatement 
     private final String name;
 
 
-    public MqlCreateCollection( ParserPos pos, String name, BsonDocument options ) {
-        super( pos );
+    public MqlCreateCollection( ParserPos pos, String name, String namespace, BsonDocument options ) {
+        super( pos, namespace );
         this.name = name;
         this.options = options;
     }

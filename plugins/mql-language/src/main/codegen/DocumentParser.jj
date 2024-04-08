@@ -9,6 +9,7 @@ PARSER_BEGIN(MqlParserImpl)
 
 package org.polypheny.db.mql.parser;
 
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.languages.mql.MqlAggregate;
 import org.polypheny.db.languages.mql.MqlCount;
@@ -400,9 +401,10 @@ MqlNode Statement() :
 {
     MqlNode n;
     String name;
+    String namespace = null;
 }
 {
-    <DB> <DOT> n=Db_Statement()
+    <DB> <DOT> n=Db_Statement( namespace )
     {return n;}
     |
     <USE> name = Literal()
@@ -410,10 +412,13 @@ MqlNode Statement() :
     |
     <USE_DB>
     {return new MqlShowDatabase( getPos() );}
+    |
+    namespace=Literal() <DOT> n=Db_Statement( namespace )
+    {return n;}
 }
 
 
-MqlNode Db_Statement():
+MqlNode Db_Statement( String namespace ):
 {
     MqlNode n;
     String name = null;
@@ -424,70 +429,70 @@ MqlNode Db_Statement():
 {
     (
         <CREATE_COLLECTION> name = Literal() [<COMMA> doc = Document()  ]")"
-        {n = new MqlCreateCollection(getPos(), name, doc);}
+        {n = new MqlCreateCollection(getPos(), name, namespace, doc);}
         (Details(n))* (Primary(n))*
 
     |
         <GET_COLLECTION> name = Literal() ")"
-        < DOT > n = Collection_Statement(name)
+        < DOT > n = Collection_Statement( name, namespace )
         (Details(n))* (Primary(n))*
 
     |
-        <CREATE_VIEW> name = Literal() < COMMA > source = Literal() (< COMMA > array=Array() )? ")"
-        {n = new MqlCreateView(getPos(), name, source, array);}
+        <CREATE_VIEW> name = Literal() <COMMA> source = Literal() (< COMMA > array=Array() )? ")"
+        {n = new MqlCreateView( getPos(), name, namespace, source, array );}
     |
         <DROP_DATABASE> (name = Literal())? ")"
-        {n = new MqlDropNamespace(getPos());}
+        {n = new MqlDropNamespace( getPos(), namespace );}
     |
         <DROP_NAMESPACE> (name = Literal())? ")"
-        {n = new MqlDropNamespace(getPos());}
+        {n = new MqlDropNamespace( getPos(), namespace );}
     |
-        n = Collection_Statement(null)
+        n = Collection_Statement( null, namespace )
     |
-        name=Literal() < DOT > n=Collection_Statement(name)
+        name=Literal() < DOT > n=Collection_Statement( name, namespace )
     )
     {return n;}
 }
 
-MqlNode Collection_Statement(String collection):
+MqlNode Collection_Statement( String collection, String namespace ):
 {
     MqlNode n;
 }
 {
     (
-        n = Find_Statement(collection)
+        n = Find_Statement( collection, namespace )
     |
-        n = Find_And_Statement(collection)
+        n = Find_And_Statement( collection, namespace )
     |
-        n = Insert_Statement(collection)
+        n = Insert_Statement( collection, namespace )
     |
-        n = Count_Statement(collection)
+        n = Count_Statement( collection, namespace )
     |
-        n = Estimate_Count_Statement(collection)
+        n = Estimate_Count_Statement( collection, namespace )
     |
-        n = Aggregate_Statement(collection)
+        n = Aggregate_Statement( collection, namespace )
     |
-        n = Update_Statement(collection)
+        n = Update_Statement( collection, namespace )
     |
-        n = Replace_Statement(collection)
+        n = Replace_Statement( collection, namespace )
     |
-        n = Rename_Statement(collection)
+        n = Rename_Statement( collection, namespace )
     |
-        n = Drop_Statement(collection)
+        n = Drop_Statement( collection, namespace )
     |
-        n = Modify_Placement(collection)
+        n = Modify_Placement( collection, namespace )
     |
-        n = Delete_Statement(collection)
+        n = Delete_Statement( collection, namespace )
     |
-        n = Save_Statement(collection)
+        n = Save_Statement( collection, namespace )
     |
-        n = Remove_Statement(collection)
+        n = Remove_Statement( collection, namespace )
     )
     {return n;}
 
 }
 
-MqlNode Modify_Placement(String collection):
+MqlNode Modify_Placement(String collection, String namespace):
 {
     List<String> stores = new ArrayList();
     String store = null;
@@ -496,18 +501,18 @@ MqlNode Modify_Placement(String collection):
     <ADD_PLACEMENT> store=Literal() <EOB>
     {
         stores.add( store  );
-        return new MqlAddPlacement( getPos(), collection, stores );
+        return new MqlAddPlacement( getPos(), collection, namespace, stores );
     }
     |
     <DELETE_PLACEMENT> store=Literal() <EOB>
     {
         stores.add( store );
-        return new MqlDeletePlacement( getPos(), collection, stores );
+        return new MqlDeletePlacement( getPos(), collection, namespace, stores );
     }
 }
 
 
-MqlNode Delete_Statement(String collection):
+MqlNode Delete_Statement(String collection, String namespace):
 {
     List<BsonDocument> docs = new ArrayList();
     boolean onlyOne = false;
@@ -522,9 +527,9 @@ MqlNode Delete_Statement(String collection):
     [docs=Document_Splits()]
     {
         if ( docs.size() == 2 ){
-            return new MqlDelete(getPos(), collection, docs.get(0), docs.get(1), onlyOne);
+            return new MqlDelete(getPos(), collection, namespace, docs.get(0), docs.get(1), onlyOne);
         }else if ( docs.size() == 1 ){
-            return new MqlDelete(getPos(), collection, docs.get(0), null, onlyOne);
+            return new MqlDelete(getPos(), collection, namespace, docs.get(0), null, onlyOne);
         }else {
             throw new RuntimeException( "The used operation needs a least one empty document." );
         }
@@ -532,7 +537,7 @@ MqlNode Delete_Statement(String collection):
     }
 }
 
-MqlNode Rename_Statement(String collection):
+MqlNode Rename_Statement(String collection, String namespace):
 {
     String newName;
     boolean dropTarget = false;
@@ -540,49 +545,49 @@ MqlNode Rename_Statement(String collection):
 {
     < RENAME_COLLECTION > newName = Literal() [<COMMA> dropTarget=Bool() ] ")"
     {
-        return new MqlRenameCollection(getPos(), collection, newName, dropTarget);
+        return new MqlRenameCollection(getPos(), collection, namespace, newName, dropTarget);
     }
 }
 
-MqlNode Drop_Statement(String collection):
+MqlNode Drop_Statement(String collection, String namespace):
 {
     BsonDocument doc = null;
 }
 {
     <DROP>[doc=Document()]")"
-    {return new MqlDrop(getPos(), collection);}
+    {return new MqlDrop(getPos(), collection, namespace);}
 }
 
-MqlNode Remove_Statement(String collection):
+MqlNode Remove_Statement(String collection, String namespace):
 {
     BsonDocument doc;
 }
 {
     <REMOVE> "("doc=Document()")"
-    {return new MqlRemove(getPos(), collection, doc);}
+    {return new MqlRemove(getPos(), collection, namespace, doc);}
 }
 
 
-MqlNode Save_Statement(String collection):
+MqlNode Save_Statement(String collection, String namespace):
 {
     BsonDocument doc;
 }
 {
     <SAVE> doc=Document()
-    {return new MqlSave(getPos(), collection, doc);}
+    {return new MqlSave(getPos(), collection, namespace, doc);}
 }
 
 
-MqlNode Replace_Statement(String collection):
+MqlNode Replace_Statement(String collection, String namespace):
 {
     BsonDocument doc;
 }
 {
     <REPLACE_ONE> doc=Document()
-    {return new MqlReplace(getPos(), collection, doc);}
+    {return new MqlReplace(getPos(), collection, namespace, doc);}
 }
 
-MqlNode Update_Statement(String collection):
+MqlNode Update_Statement(String collection, String namespace):
 {
     List<BsonValue> docs;
     boolean onlyOne = false;
@@ -607,16 +612,16 @@ MqlNode Update_Statement(String collection):
                 throw new RuntimeException( "Options for update need to be a document." );
             }
 
-            return new MqlUpdate(getPos(), collection, docs.get(0).asDocument(), docs.get(1), docs.get(2).asDocument(), onlyOne );
+            return new MqlUpdate(getPos(), collection, namespace, docs.get(0).asDocument(), docs.get(1), docs.get(2).asDocument(), onlyOne );
         }else if ( docs.size() == 2 ) {
-            return new MqlUpdate(getPos(), collection, docs.get(0).asDocument(), docs.get(1), null, onlyOne );
+            return new MqlUpdate(getPos(), collection, namespace, docs.get(0).asDocument(), docs.get(1), null, onlyOne );
         }else {
             throw new RuntimeException( "An update needs at least a filter and a update document." );
         }
     }
 }
 
-MqlNode Aggregate_Statement(String collection):
+MqlNode Aggregate_Statement(String collection, String namespace):
 {
     List<BsonValue> docs;
 }
@@ -624,16 +629,16 @@ MqlNode Aggregate_Statement(String collection):
     <AGGREGATE> docs=Bson_Splits()
     {
         if ( docs.size() == 1 && docs.get(0).isArray() ) {
-            return new MqlAggregate(getPos(), collection, docs.get(0).asArray(), null );
+            return new MqlAggregate(getPos(), collection, namespace, docs.get(0).asArray(), null );
         }else if ( docs.size() == 2 && docs.get(0).isArray() && docs.get(1).isDocument() ){
-            return new MqlAggregate(getPos(), collection, docs.get(0).asArray(), docs.get(1).asDocument() );
+            return new MqlAggregate(getPos(), collection, namespace, docs.get(0).asArray(), docs.get(1).asDocument() );
         }else {
-            throw new RuntimeException("The aggregation pipepline needs either either an array or an array and a options document");
+            throw new RuntimeException("The aggregation pipeline needs either either an array or an array and a options document");
         }
     }
 }
 
-MqlNode Count_Statement(String collection):
+MqlNode Count_Statement(String collection, String namespace):
 {
     List<BsonDocument> docs = new ArrayList();
     boolean isEstimate = false;
@@ -647,9 +652,9 @@ MqlNode Count_Statement(String collection):
     docs=Document_Splits()
     {
         if ( docs.size() == 2 ){
-            return new MqlCount(getPos(), collection, docs.get(0), docs.get(1), isEstimate);
+            return new MqlCount(getPos(), collection, namespace, docs.get(0), docs.get(1), isEstimate);
         }else if ( docs.size() == 1 ){
-            return new MqlCount(getPos(), collection, docs.get(0), null, isEstimate);
+            return new MqlCount(getPos(), collection, namespace, docs.get(0), null, isEstimate);
         }else {
             throw new RuntimeException( "The used operation needs a least one empty document." );
         }
@@ -658,20 +663,20 @@ MqlNode Count_Statement(String collection):
 
 }
 
-MqlNode Estimate_Count_Statement(String collection):
+MqlNode Estimate_Count_Statement(String collection, String namespace):
 {
     BsonDocument doc = null;
 }
 {
     <ESTIMATECOUNT> [doc=Document()]
     {
-        return new MqlCount(getPos(), collection, null, doc, true);
+        return new MqlCount(getPos(), collection, namespace, null, doc, true);
     }
 
 }
 
 
-MqlNode Find_Statement(String collection):
+MqlNode Find_Statement(String collection, String namespace):
 {
     List<BsonDocument> docs = new ArrayList();
     BsonDocument query = null;
@@ -688,17 +693,17 @@ MqlNode Find_Statement(String collection):
     docs=Document_Splits()
     {
         if ( docs.size() == 2 ){
-            return new MqlFind( getPos(), collection, docs.get(0), docs.get(1), onlyOne );
+            return new MqlFind( getPos(), collection, namespace, docs.get(0), docs.get(1), onlyOne );
         }else if ( docs.size() == 1 ){
-            return new MqlFind( getPos(), collection, docs.get(0), null, onlyOne );
+            return new MqlFind( getPos(), collection, namespace, docs.get(0), null, onlyOne );
         }else {
-            return new MqlFind( getPos(), collection, null, null, onlyOne );
+            return new MqlFind( getPos(), collection, namespace, null, null, onlyOne );
         }
 
     }
 }
 
-MqlNode Find_And_Statement(String collection):
+MqlNode Find_And_Statement(String collection, String namespace):
 {
     BsonDocument doc;
     List<BsonDocument> docs = new ArrayList();
@@ -706,14 +711,14 @@ MqlNode Find_And_Statement(String collection):
 }
 {
     < FIND_AND_MODIFY > "(" doc=Document() ")"
-    {return new MqlFindAndModify( getPos(), collection, doc);}
+    {return new MqlFindAndModify( getPos(), collection, namespace, doc);}
     |
     < FIND_ONE_AND_DELETE > docs=Document_Splits()
     {
         if( docs.size() == 2 ){
-            return new MqlFindOneAndDelete( getPos(), collection, docs.get(0), docs.get(1));
+            return new MqlFindOneAndDelete( getPos(), collection, namespace, docs.get(0), docs.get(1));
         }else if (docs.size() == 1 ){
-            return new MqlFindOneAndDelete( getPos(), collection, docs.get(0), null );
+            return new MqlFindOneAndDelete( getPos(), collection, namespace, docs.get(0), null );
         }else {
             throw new RuntimeException("findOneAndDelete requires a filter document");
         }
@@ -722,9 +727,9 @@ MqlNode Find_And_Statement(String collection):
     <FIND_ONE_AND_REPLACE> docs=Document_Splits()
     {
         if ( docs.size() == 3 ) {
-            return new MqlFindOneAndReplace( getPos(), collection, docs.get(0), docs.get(1), docs.get(2));
+            return new MqlFindOneAndReplace( getPos(), collection, namespace, docs.get(0), docs.get(1), docs.get(2));
         } else if( docs.size() == 2 ){
-            return new MqlFindOneAndReplace( getPos(), collection, docs.get(0), docs.get(1), null);
+            return new MqlFindOneAndReplace( getPos(), collection, namespace, docs.get(0), docs.get(1), null);
         } else {
             throw new RuntimeException("findOneAndReplace requires a filter and a replacement document");
         }
@@ -733,16 +738,16 @@ MqlNode Find_And_Statement(String collection):
     <FIND_ONE_AND_UPDATE> mixed=Bson_Splits()
     {
         if ( mixed.size() == 3 ) {
-            return new MqlFindOneAndUpdate( getPos(), collection, docs.get(0).asDocument(), docs.get(1), docs.get(2).asDocument());
+            return new MqlFindOneAndUpdate( getPos(), collection, namespace, docs.get(0).asDocument(), docs.get(1), docs.get(2).asDocument());
         } else if( docs.size() == 2 ){
-            return new MqlFindOneAndUpdate( getPos(), collection, docs.get(0).asDocument(), docs.get(1), null);
+            return new MqlFindOneAndUpdate( getPos(), collection, namespace, docs.get(0).asDocument(), docs.get(1), null);
         } else {
             throw new RuntimeException("findOneAndDelete requires a filter document, and an update document");
         }
     }
 }
 
-MqlNode Insert_Statement(String collection):
+MqlNode Insert_Statement( String collection, String namespace ):
 {
     List<BsonValue> docs = new ArrayList();
 }
@@ -760,9 +765,9 @@ MqlNode Insert_Statement(String collection):
             if ( docs.get(1).isDocument() ) {
                 throw new RuntimeException( "Options need to be a document" );
             }
-            return new MqlInsert( getPos(), collection, docs.get(0), docs.get(1).asDocument() );
+            return new MqlInsert( getPos(), collection, namespace, docs.get(0), docs.get(1).asDocument() );
         }else if ( docs.size() == 1 ) {
-            return new MqlInsert( getPos(), collection, docs.get(0), null );
+            return new MqlInsert( getPos(), collection, namespace, docs.get(0), null );
         }else {
             throw new RuntimeException( "Insert requires a least one document" );
         }

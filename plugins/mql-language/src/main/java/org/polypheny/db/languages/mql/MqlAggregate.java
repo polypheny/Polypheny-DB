@@ -32,8 +32,8 @@ public class MqlAggregate extends MqlCollectionStatement {
     private final BsonDocument option;
 
 
-    public MqlAggregate( ParserPos pos, String collection, BsonArray pipeline, BsonDocument option ) {
-        super( collection, pos );
+    public MqlAggregate( ParserPos pos, String collection, String namespace, BsonArray pipeline, BsonDocument option ) {
+        super( collection, namespace, pos );
         this.pipeline = pipeline;
         this.option = option;
         enforceNonEmptyProject( pipeline );

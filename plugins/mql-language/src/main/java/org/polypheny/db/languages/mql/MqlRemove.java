@@ -27,8 +27,8 @@ public class MqlRemove extends MqlCollectionStatement {
     private final BsonDocument document;
 
 
-    public MqlRemove( ParserPos pos, String collection, BsonDocument document ) {
-        super( collection, pos );
+    public MqlRemove( ParserPos pos, String collection, String namespace, BsonDocument document ) {
+        super( collection, namespace, pos );
         this.document = document;
     }
 

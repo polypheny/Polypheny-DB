@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
-import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.FunctionCategory;
@@ -90,6 +89,7 @@ import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.Optionality;
 import org.polypheny.db.util.Util;
+import org.polypheny.db.util.temporal.TimeUnit;
 import org.slf4j.Logger;
 
 public class SqlTypeUtil {

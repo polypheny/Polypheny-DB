@@ -119,7 +119,7 @@ public class ReflectiveAlgMetadataProvider implements AlgMetadataProvider {
     private static AlgMetadataProvider reflectiveSource( final MetadataHandler<?> target, final ImmutableList<Method> methods ) {
         final Space2 space = Space2.create( target, methods );
 
-        // This needs to be a concurrent map since RelMetadataProvider are cached in static fields, thus the map is subject to concurrent modifications later.
+        // This needs to be a concurrent map since AlgMetadataProvider are cached in static fields, thus the map is subject to concurrent modifications later.
         // See map.put in org.polypheny.db.alg.metadata.ReflectiveRelMetadataProvider.apply(java.lang.Class<? extends org.polypheny.db.alg.AlgNode>)
         final ConcurrentMap<Class<AlgNode>, UnboundMetadata<Metadata>> methodsMap = new ConcurrentHashMap<>();
         for ( Class<AlgNode> key : space.classes ) {
@@ -190,6 +190,7 @@ public class ReflectiveAlgMetadataProvider implements AlgMetadataProvider {
         return new ReflectiveAlgMetadataProvider( methodsMap, space.metadataClass0, space.providers );
     }
 
+
     @Override
     public <M extends Metadata> Multimap<Method, MetadataHandler<M>> handlers( MetadataDef<M> def ) {
         final ImmutableMultimap.Builder<Method, MetadataHandler<M>> builder = ImmutableMultimap.builder();
@@ -227,7 +228,6 @@ public class ReflectiveAlgMetadataProvider implements AlgMetadataProvider {
             return null;
         }
     }
-
 
 
     @SuppressWarnings({ "unchecked" })
@@ -354,4 +354,3 @@ public class ReflectiveAlgMetadataProvider implements AlgMetadataProvider {
     }
 
 }
-

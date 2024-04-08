@@ -72,11 +72,11 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
 
 
     public AbstractJdbcStore(
-            long storeId,
-            String uniqueName,
-            Map<String, String> settings,
-            SqlDialect dialect,
-            boolean persistent ) {
+            final long storeId,
+            final String uniqueName,
+            final Map<String, String> settings,
+            final SqlDialect dialect,
+            final boolean persistent ) {
         super( storeId, uniqueName, settings, persistent, new RelAdapterCatalog( storeId ) );
         this.dialect = dialect;
 
@@ -171,7 +171,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
     }
 
 
-    private void executeCreateTable( Context context, PhysicalTable table, List<Long> pkIds ) {
+    public void executeCreateTable( Context context, PhysicalTable table, List<Long> pkIds ) {
         if ( log.isDebugEnabled() ) {
             log.debug( "[{}] createTable: Qualified names: {}, physicalTableName: {}", getUniqueName(), table.namespaceName, table.name );
         }
@@ -406,6 +406,21 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
         } catch ( SQLException | ConnectionHandlerException e ) {
             throw new GenericRuntimeException( e );
         }
+    }
+
+
+    @Override
+    public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context ) {
+        for ( PhysicalEntity entity : entities ) {
+            PhysicalTable table = entity.unwrap( PhysicalTable.class ).orElseThrow();
+            if ( !isPersistent() ) {
+                executeCreateTable( context, table, table.uniqueFieldIds );
+            }
+
+            updateNamespace( table.namespaceName, table.namespaceId );
+            adapterCatalog.addPhysical( alloc, currentJdbcSchema.createJdbcTable( table.unwrap( PhysicalTable.class ).orElseThrow() ) );
+        }
+
     }
 
 

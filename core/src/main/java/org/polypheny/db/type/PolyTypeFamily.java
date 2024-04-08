@@ -63,7 +63,7 @@ public enum PolyTypeFamily implements AlgDataTypeFamily {
     TIMESTAMP,
     BOOLEAN,
     INTERVAL_YEAR_MONTH,
-    INTERVAL_DAY_TIME,
+    INTERVAL_TIME,
 
     // Secondary families.
 
@@ -88,10 +88,6 @@ public enum PolyTypeFamily implements AlgDataTypeFamily {
 
     private static final Map<Integer, PolyTypeFamily> JDBC_TYPE_TO_FAMILY =
             ImmutableMap.<Integer, PolyTypeFamily>builder()
-                    // Not present:
-                    // PolyType.MULTISET shares Types.ARRAY with PolyType.ARRAY;
-                    // PolyType.MAP has no corresponding JDBC type
-                    // PolyType.COLUMN_LIST has no corresponding JDBC type
                     .put( Types.BIT, NUMERIC )
                     .put( Types.TINYINT, NUMERIC )
                     .put( Types.SMALLINT, NUMERIC )
@@ -146,11 +142,11 @@ public enum PolyTypeFamily implements AlgDataTypeFamily {
             case BINARY -> PolyType.BINARY_TYPES;
             case NUMERIC -> PolyType.NUMERIC_TYPES;
             case DATE -> ImmutableList.of( PolyType.DATE );
-            case TIME -> ImmutableList.of( PolyType.TIME, PolyType.TIME_WITH_LOCAL_TIME_ZONE );
-            case TIMESTAMP -> ImmutableList.of( PolyType.TIMESTAMP, PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE );
+            case TIME -> ImmutableList.of( PolyType.TIME );
+            case TIMESTAMP -> ImmutableList.of( PolyType.TIMESTAMP );
             case BOOLEAN -> PolyType.BOOLEAN_TYPES;
-            case INTERVAL_YEAR_MONTH -> PolyType.YEAR_INTERVAL_TYPES;
-            case INTERVAL_DAY_TIME -> PolyType.DAY_INTERVAL_TYPES;
+            case INTERVAL_YEAR_MONTH -> PolyType.INTERVAL_TYPES;
+            case INTERVAL_TIME -> PolyType.INTERVAL_TYPES;
             case STRING -> PolyType.STRING_TYPES;
             case APPROXIMATE_NUMERIC -> PolyType.APPROX_TYPES;
             case EXACT_NUMERIC -> PolyType.EXACT_TYPES;

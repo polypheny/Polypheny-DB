@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,9 +47,9 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 
 /**
  * Rule to convert an {@link Join inner join} to a {@link Filter filter} on top of a {@link Join cartesian inner join}.
- *
+ * <p>
  * One benefit of this transformation is that after it, the join condition can be combined with conditions and expressions above the join. It also makes the <code>FennelCartesianJoinRule</code> applicable.
- *
+ * <p>
  * The constructor is parameterized to allow any sub-class of {@link Join}.
  */
 public abstract class AbstractJoinExtractFilterRule extends AlgOptRule {
@@ -74,11 +74,6 @@ public abstract class AbstractJoinExtractFilterRule extends AlgOptRule {
             return;
         }
 
-        if ( !join.getSystemFieldList().isEmpty() ) {
-            // FIXME Enable this rule for joins with system fields
-            return;
-        }
-
         final AlgBuilder builder = call.builder();
 
         // NOTE jvs 14-Mar-2006:  See JoinCommuteRule for why we preserve attribute semiJoinDone here.
@@ -98,4 +93,3 @@ public abstract class AbstractJoinExtractFilterRule extends AlgOptRule {
     }
 
 }
-
