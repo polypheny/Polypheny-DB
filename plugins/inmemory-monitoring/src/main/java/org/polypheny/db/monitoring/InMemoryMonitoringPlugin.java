@@ -20,13 +20,13 @@ import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.plugins.PolyPluginManager;
 
-public class MapDBMonitoringPlugin extends PolyPlugin {
+public class InMemoryMonitoringPlugin extends PolyPlugin {
 
     /**
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to be successfully loaded by manager.
      */
-    public MapDBMonitoringPlugin( PluginContext context ) {
+    public InMemoryMonitoringPlugin( PluginContext context ) {
         super( context );
     }
 
