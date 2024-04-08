@@ -6268,7 +6268,6 @@ public class SqlParserTest extends SqlLanguageDependent {
     }
 
 
-
     @Test
     public void testIntervalOperators() {
         checkExp( "interval '1' day + interval '1' day", "(INTERVAL '1' DAY + INTERVAL '1' DAY)" );

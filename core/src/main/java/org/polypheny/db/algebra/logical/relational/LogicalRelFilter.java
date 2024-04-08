@@ -102,7 +102,6 @@ public final class LogicalRelFilter extends Filter implements RelAlg {
     }
 
 
-
     @Override
     public LogicalRelFilter copy( AlgTraitSet traitSet, AlgNode input, RexNode condition ) {
         assert traitSet.containsIfApplicable( Convention.NONE );
@@ -122,4 +121,3 @@ public final class LogicalRelFilter extends Filter implements RelAlg {
     }
 
 }
-

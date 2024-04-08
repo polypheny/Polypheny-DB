@@ -40,7 +40,6 @@ import org.polypheny.db.util.temporal.TimeUnit;
 @NonFinal
 public class PolyInterval extends PolyValue {
 
-
     @NotNull
     public Long millis;
 
@@ -80,9 +79,7 @@ public class PolyInterval extends PolyValue {
             return new MonthsMilliseconds( 0, value );
         } else {
             throw new GenericRuntimeException( "Normalization is not supported" );
-
         }
-
     }
 
 

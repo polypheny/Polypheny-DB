@@ -61,6 +61,7 @@ public class GraphResult extends Result<String[], FieldDefinition> {
                 affectedTuples );
     }
 
+
     public static abstract class GraphResultBuilder<C extends GraphResult, B extends GraphResultBuilder<C, B>> extends ResultBuilder<String[], FieldDefinition, C, B> {
 
     }

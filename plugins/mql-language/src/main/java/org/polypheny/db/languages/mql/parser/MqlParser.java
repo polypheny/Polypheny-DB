@@ -73,8 +73,6 @@ public class MqlParser implements Parser {
     }
 
 
-
-
     /**
      * Parses a <code>SELECT</code> statement.
      *
@@ -170,4 +168,3 @@ public class MqlParser implements Parser {
     }
 
 }
-

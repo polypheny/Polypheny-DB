@@ -40,6 +40,7 @@ class MonitoringQueueImplTest {
         TestHelper.getInstance();
     }
 
+
     @Test
     public void ctorValidParametersInstanceNotNull() {
         // arrange

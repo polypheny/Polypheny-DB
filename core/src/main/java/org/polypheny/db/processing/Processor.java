@@ -87,4 +87,5 @@ public abstract class Processor {
     public abstract AlgDataType getParameterRowType( Node left );
 
     public abstract List<String> splitStatements( String statements );
+
 }

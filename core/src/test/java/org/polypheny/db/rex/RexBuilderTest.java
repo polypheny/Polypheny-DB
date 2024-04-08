@@ -198,7 +198,6 @@ public class RexBuilderTest {
     }
 
 
-
     /**
      * Tests {@link RexBuilder#makeTimeLiteral(TimeString, int)}.
      */

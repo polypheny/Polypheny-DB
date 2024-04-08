@@ -260,12 +260,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
         tester.setFor( null );
     }
 
-
-
-
-
-
-
     //--- Tests -----------------------------------------------------------
 
 
@@ -4448,8 +4442,6 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
     }
 
 
-
-
     @Test
     public void testRandSeedFunc() {
         tester.setFor( OperatorRegistry.get( OperatorName.RAND ) );
@@ -7992,4 +7984,3 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
     }
 
 }
-
