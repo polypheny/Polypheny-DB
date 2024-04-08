@@ -113,10 +113,12 @@ public class PolyInteger extends PolyNumber {
         return value == null ? null : of( value );
     }
 
+
     @Override
     public int hashCode() {
         return Objects.hash( super.hashCode(), value );
     }
+
 
     @Override
     public Expression asExpression() {

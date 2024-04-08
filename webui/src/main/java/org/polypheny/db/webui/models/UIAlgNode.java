@@ -60,7 +60,6 @@ public class UIAlgNode {
     public int inputCount;
 
 
-
     //join
     @JsonProperty
     public JoinAlgType join;

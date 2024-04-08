@@ -92,6 +92,7 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
         this.value = new ArrayList<>( value );
     }
 
+
     public static <E extends PolyValue> PolyList<E> copyOf( List<E> value ) {
         return new PolyList<>( value );
     }
@@ -105,6 +106,7 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
     public static <E extends PolyValue> PolyList<E> copyOf( Iterator<E> iterator ) {
         return copyOf( Lists.newArrayList( iterator ) );
     }
+
 
     @SafeVarargs
     public PolyList( E... value ) {
@@ -122,6 +124,7 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
             return PolyNull.NULL.toTypedJson();
         }
     }
+
 
     public static PolyList<?> convert( @Nullable Object object ) {
         if ( object == null ) {

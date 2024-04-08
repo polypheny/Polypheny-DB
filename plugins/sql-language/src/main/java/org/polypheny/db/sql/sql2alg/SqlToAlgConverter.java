@@ -290,7 +290,6 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
     /**
      * Mapping of non-correlated sub-queries that have been converted to their equivalent constants. Used to avoid
      * re-evaluating the sub-query if it's already been evaluated.
-
      */
     @Getter
     private final Map<SqlNode, RexNode> mapConvertedNonCorrSubqs = new HashMap<>();
@@ -4931,4 +4930,3 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
 
 }
-

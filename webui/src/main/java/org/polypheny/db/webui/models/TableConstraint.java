@@ -59,4 +59,5 @@ public class TableConstraint {
         }
         return new String[]{ this.name, this.type, joiner.toString() };
     }
+
 }

@@ -1014,7 +1014,6 @@ public class RexBuilder {
     }
 
 
-
     /**
      * Creates a Timestamp literal.
      */
@@ -1507,4 +1506,3 @@ public class RexBuilder {
     }
 
 }
-

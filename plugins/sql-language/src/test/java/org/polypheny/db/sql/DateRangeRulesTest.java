@@ -49,6 +49,7 @@ public class DateRangeRulesTest {
         TestHelper.getInstance();
     }
 
+
     @Test
     public void testExtractYearFromDateColumn() {
         final Fixture2 f = new Fixture2();
@@ -765,4 +766,3 @@ public class DateRangeRulesTest {
     }
 
 }
-

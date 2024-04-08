@@ -63,7 +63,6 @@ public class PolyLong extends PolyNumber {
     }
 
 
-
     public static PolyLong of( long value ) {
         return new PolyLong( value );
     }
@@ -97,6 +96,7 @@ public class PolyLong extends PolyNumber {
         }
         return ObjectUtils.compare( value, o.asNumber().LongValue() );
     }
+
 
     @Override
     public int hashCode() {

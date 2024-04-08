@@ -49,6 +49,7 @@ public class GraphScanDelegate implements Scannable {
         return Scannable.getDocumentScanSubstitute( scannable, allocId, builder );
     }
 
+
     @Override
     public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
         return scannable.createTable( context, logical, allocation );

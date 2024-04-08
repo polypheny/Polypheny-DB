@@ -52,11 +52,11 @@ import org.polypheny.db.functions.Functions;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Utilities;
 import org.polypheny.db.type.entity.PolyBoolean;
-import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 
 
@@ -834,4 +834,3 @@ public class FunctionsTest {
     }
 
 }
-

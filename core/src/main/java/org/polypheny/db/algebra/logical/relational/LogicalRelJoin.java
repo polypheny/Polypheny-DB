@@ -65,7 +65,6 @@ public final class LogicalRelJoin extends Join implements RelAlg {
     private final boolean semiJoinDone;
 
 
-
     /**
      * Creates a LogicalJoin.
      *
@@ -144,4 +143,3 @@ public final class LogicalRelJoin extends Join implements RelAlg {
 
 
 }
-

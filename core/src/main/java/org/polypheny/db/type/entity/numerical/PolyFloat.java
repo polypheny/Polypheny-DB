@@ -29,7 +29,6 @@ import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.def.SimpleSerializerDef;
 import java.math.BigDecimal;
 import java.util.Objects;
-import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -105,6 +104,7 @@ public class PolyFloat extends PolyNumber {
         }
         return ObjectUtils.compare( value, o.asFloat().value );
     }
+
 
     @Override
     public int hashCode() {

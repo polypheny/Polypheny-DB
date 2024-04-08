@@ -197,7 +197,6 @@ public abstract class Join extends BiAlg {
     }
 
 
-
     @Override
     public final Join copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         assert inputs.size() == 2;
@@ -249,4 +248,3 @@ public abstract class Join extends BiAlg {
 
 
 }
-

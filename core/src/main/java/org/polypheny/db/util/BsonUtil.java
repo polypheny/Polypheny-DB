@@ -67,7 +67,6 @@ import org.polypheny.db.runtime.PolyCollections.FlatMap;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
-import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
@@ -75,6 +74,7 @@ import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 
 
 public class BsonUtil {
@@ -324,7 +324,6 @@ public class BsonUtil {
             this.put( DOC_MILLIS_KEY, new BsonInt64( obj.asInterval().getMillis() ) );
         }};
     }
-
 
 
     private static BsonValue handleDecimal( PolyValue obj ) {
