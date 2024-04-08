@@ -233,4 +233,8 @@ public class StatementManager {
                 .contains( statementLanguageName );
     }
 
+    public int openStatementCount() {
+        return openStatements.size();
+    }
+
 }

@@ -19,10 +19,12 @@ package org.polypheny.db.protointerface;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
@@ -44,14 +46,15 @@ public class ClientManager {
     @Getter
     private long heartbeatInterval;
 
-    private final ConcurrentHashMap<String, PIClient> openConnections;
+    private final ConcurrentHashMap<String, PIClient> clients;
     private final Authenticator authenticator;
     private final TransactionManager transactionManager;
     private Timer cleanupTimer;
+    private final MonitoringPage monitoringPage;
 
 
     public ClientManager( PIPlugin.ProtoInterface protoInterface ) {
-        this.openConnections = new ConcurrentHashMap<>();
+        this.clients = new ConcurrentHashMap<>();
         this.authenticator = protoInterface.getAuthenticator();
         this.transactionManager = protoInterface.getTransactionManager();
         if ( protoInterface.isRequiresHeartbeat() ) {
@@ -60,13 +63,15 @@ public class ClientManager {
             cleanupTimer.schedule( createNewCleanupTask(), 0, heartbeatInterval + HEARTBEAT_TOLERANCE );
         }
         this.heartbeatInterval = 0;
+        this.monitoringPage = protoInterface.getMonitoringPage();
+        monitoringPage.setClientManager( this );
     }
 
 
     public void unregisterConnection( PIClient client ) {
         synchronized ( client ) {
             client.prepareForDisposal();
-            openConnections.remove( client.getClientUUID() );
+            clients.remove( client.getClientUUID() );
         }
     }
 
@@ -102,13 +107,23 @@ public class ClientManager {
                 user,
                 transactionManager,
                 namespace,
+                monitoringPage,
                 isAutocommit
         );
-        openConnections.put( uuid, client );
+        clients.put( uuid, client );
         if ( log.isTraceEnabled() ) {
             log.trace( "proto-interface established connection to user {}.", uuid );
         }
         return uuid;
+    }
+
+
+    public Stream<Entry<String, PIClient>> getClients() {
+        return clients.entrySet().stream();
+    }
+
+    public int getClientCount() {
+        return clients.size();
     }
 
 
@@ -135,10 +150,10 @@ public class ClientManager {
 
 
     public PIClient getClient( String clientUUID ) throws PIServiceException {
-        if ( !openConnections.containsKey( clientUUID ) ) {
+        if ( !clients.containsKey( clientUUID ) ) {
             throw new PIServiceException( "Client not registered! Has the server been restarted in the meantime?" );
         }
-        return openConnections.get( clientUUID );
+        return clients.get( clientUUID );
     }
 
 
@@ -154,14 +169,9 @@ public class ClientManager {
 
 
     private void unregisterInactiveClients() {
-        List<PIClient> inactiveClients = openConnections.values().stream()
+        List<PIClient> inactiveClients = clients.values().stream()
                 .filter( c -> !c.returnAndResetIsActive() ).toList();
         inactiveClients.forEach( this::unregisterConnection );
-    }
-
-
-    private boolean isConnected( String clientUUID ) {
-        return openConnections.containsKey( clientUUID );
     }
 
 }

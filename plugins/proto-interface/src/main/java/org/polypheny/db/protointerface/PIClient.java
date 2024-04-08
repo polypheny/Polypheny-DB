@@ -45,6 +45,8 @@ public class PIClient {
     @Setter
     private LogicalNamespace namespace;
     private boolean isActive;
+    @Getter
+    private MonitoringPage monitoringPage;
 
 
     public PIClient(
@@ -52,6 +54,7 @@ public class PIClient {
             LogicalUser catalogUser,
             TransactionManager transactionManager,
             LogicalNamespace namespace,
+            MonitoringPage monitoringPage,
             boolean isAutoCommit ) {
         this.statementManager = new StatementManager( this );
         this.PIClientInfoProperties = new PIClientInfoProperties();
@@ -61,6 +64,8 @@ public class PIClient {
         this.transactionManager = transactionManager;
         this.isAutoCommit = isAutoCommit;
         this.isActive = true;
+        this.monitoringPage = monitoringPage;
+        monitoringPage.addStatementManager( statementManager );
     }
 
 
@@ -134,6 +139,7 @@ public class PIClient {
         if ( !hasNoTransaction() ) {
             rollbackCurrentTransaction();
         }
+        monitoringPage.removeStatementManager( statementManager );
     }
 
 

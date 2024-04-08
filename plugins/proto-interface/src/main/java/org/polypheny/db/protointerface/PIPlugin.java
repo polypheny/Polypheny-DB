@@ -81,6 +81,8 @@ public class PIPlugin extends PolyPlugin {
         @Getter
         private ClientManager clientManager;
         private PIServer protoInterfaceServer;
+        @Getter
+        private MonitoringPage monitoringPage;
 
 
         enum Transport {
@@ -104,6 +106,7 @@ public class PIPlugin extends PolyPlugin {
                 this.requiresHeartbeat = false;
                 this.heartbeatInterval = 0;
             }
+            this.monitoringPage = new MonitoringPage( uniqueName, INTERFACE_NAME );
         }
 
 
