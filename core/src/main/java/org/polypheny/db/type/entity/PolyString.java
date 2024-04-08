@@ -88,12 +88,12 @@ public class PolyString extends PolyValue {
 
     @Override
     public @Nullable String toJson() {
-        return value == null ? JsonToken.VALUE_NULL.asString() : value.replace( "\"", "\\\"" );
+        return value == null ? JsonToken.VALUE_NULL.asString() : value.replace( "\\", "\\\\" ).replace( "\"", "\\\"" );
     }
 
 
     public @Nullable String toQuotedJson() {
-        return value == null ? JsonToken.VALUE_NULL.asString() : "\"" + value.replace( "\"", "\\\"" ) + "\"";
+        return value == null ? JsonToken.VALUE_NULL.asString() : "\"" + value.replace( "\\", "\\\\" ).replace( "\"", "\\\"" ) + "\"";
     }
 
 
