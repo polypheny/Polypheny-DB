@@ -190,13 +190,7 @@ public class Translator extends RexVisitorImpl<String> {
         RexNode leftRex = call.operands.get( 0 );
         RexNode rightRex = call.operands.get( 1 );
         String left = leftRex.accept( this );
-        if ( leftRex.isA( Kind.LITERAL ) && PolyType.STRING_TYPES.contains( leftRex.getType().getPolyType() ) ) {
-            //left = String.format( "'%s'", left );
-        }
         String right = rightRex.accept( this );
-        if ( rightRex.isA( Kind.LITERAL ) && PolyType.STRING_TYPES.contains( rightRex.getType().getPolyType() ) ) {
-            //right = String.format( "'%s'", right );
-        }
 
         return getFinalFunction( call, List.of( left, right ) );
 

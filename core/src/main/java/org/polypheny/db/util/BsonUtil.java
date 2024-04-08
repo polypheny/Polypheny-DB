@@ -81,6 +81,8 @@ public class BsonUtil {
 
     private final static List<Pair<String, String>> mappings = new ArrayList<>();
     private final static List<String> stops = new ArrayList<>();
+    public static final String DOC_MONTH_KEY = "m";
+    public static final String DOC_MILLIS_KEY = "ms";
 
 
     static {
@@ -318,8 +320,8 @@ public class BsonUtil {
 
     private static BsonValue handleInterval( PolyValue obj ) {
         return new BsonDocument() {{
-            this.put( "m", new BsonInt64( obj.asInterval().getMonths() ) );
-            this.put( "ms", new BsonInt64( obj.asInterval().getMillis() ) );
+            this.put( DOC_MONTH_KEY, new BsonInt64( obj.asInterval().getMonths() ) );
+            this.put( DOC_MILLIS_KEY, new BsonInt64( obj.asInterval().getMillis() ) );
         }};
     }
 

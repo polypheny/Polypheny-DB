@@ -197,7 +197,7 @@ class MongoEnumerator implements Enumerator<PolyValue[]> {
                     throw new NotImplementedException();
                 }
             }
-            case INTERVAL -> new PolyInterval( o.asDocument().get( "ms" ).asNumber().longValue(), o.asDocument().get( "m" ).asNumber().longValue() );
+            case INTERVAL -> new PolyInterval( o.asDocument().get( BsonUtil.DOC_MILLIS_KEY ).asNumber().longValue(), o.asDocument().get( BsonUtil.DOC_MONTH_KEY ).asNumber().longValue() );
             case BINARY -> PolyBinary.of( o.asBinary().getData() );
             case TIMESTAMP -> PolyTimestamp.of( o.asNumber().longValue() );
             case TIME -> PolyTime.of( o.asNumber().longValue() );
