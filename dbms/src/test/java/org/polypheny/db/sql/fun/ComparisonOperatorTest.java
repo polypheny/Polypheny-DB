@@ -33,7 +33,7 @@ import org.polypheny.db.TestHelper;
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
 @Tag("adapter")
-@Tag("file")
+@Tag("fileExcluded")
 public class ComparisonOperatorTest {
 
 
@@ -95,7 +95,7 @@ public class ComparisonOperatorTest {
 
 
     @Test
-    @Tag("mongodb")
+    @Tag("mongodbExcluded")
     public void testNotEqualOperator() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -114,7 +114,7 @@ public class ComparisonOperatorTest {
 
 
     @Test
-    @Tag("mongodb")
+    @Tag("mongodbExcluded")
     public void testNotEqualAlternativeOperator() throws SQLException {
         // This test should only be run in environments where '!=' is supported
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
@@ -242,10 +242,10 @@ public class ComparisonOperatorTest {
 
 
     @Test
-    @Tag("mongodb")
-    @Tag("postgresql")
-    @Tag("monetdb")
-    @Tag("cottontail")
+    @Tag("mongodbExcluded")
+    @Tag("postgresqlExcluded")
+    @Tag("monetdbExcluded")
+    @Tag("cottontailExcluded")
     public void testIsDistinctFromOperator() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -390,9 +390,9 @@ public class ComparisonOperatorTest {
 
 
     @Test
-    @Tag("mongodb")
-    @Tag("cottontail")
-    @Tag("neo4j")
+    @Tag("mongodbExcluded")
+    @Tag("cottontailExcluded")
+    @Tag("neo4jExcluded")
     public void testNotInOperator() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -515,7 +515,7 @@ public class ComparisonOperatorTest {
 
 
     @Test
-    @Tag("mongodb")
+    @Tag("mongodbExcluded")
     public void testExistsWithSubQuery() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -536,7 +536,7 @@ public class ComparisonOperatorTest {
 
 
     @Test
-    @Tag("neo4j")
+    @Tag("neo4jExcluded")
     public void complexLogicalTestOne() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -557,7 +557,7 @@ public class ComparisonOperatorTest {
 
 
     @Test
-    @Tag("neo4j")
+    @Tag("neo4jExcluded")
     public void complexLogicalTestTwo() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

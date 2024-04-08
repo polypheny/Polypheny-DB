@@ -354,12 +354,12 @@ public class EnumUtils {
 
 
     public static Expression foldAnd( List<Expression> expressions ) {
-        return Expressions.call( PolyBoolean.class, "of", Expressions.foldAnd( expressions.stream().map( e -> e.type == PolyBoolean.class ? Expressions.field( e, "value" ) : e ).collect( Collectors.toList() ) ) );
+        return Expressions.call( PolyBoolean.class, "of", Expressions.foldAnd( expressions.stream().map( e -> e.type == PolyBoolean.class ? Expressions.field( e, "value" ) : e ).toList() ) );
     }
 
 
     public static Expression foldOr( List<Expression> expressions ) {
-        return Expressions.call( PolyBoolean.class, "of", Expressions.foldOr( expressions.stream().map( e -> e.type == PolyBoolean.class ? Expressions.field( e, "value" ) : e ).collect( Collectors.toList() ) ) );
+        return Expressions.call( PolyBoolean.class, "of", Expressions.foldOr( expressions.stream().map( e -> e.type == PolyBoolean.class ? Expressions.field( e, "value" ) : e ).toList() ) );
     }
 
 

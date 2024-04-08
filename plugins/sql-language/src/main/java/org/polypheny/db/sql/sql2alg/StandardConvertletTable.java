@@ -432,8 +432,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
         assert call.getKind() == Kind.CAST;
         final SqlNode left = call.operand( 0 );
         final SqlNode right = call.operand( 1 );
-        if ( right instanceof SqlIntervalQualifier ) {
-            final SqlIntervalQualifier intervalQualifier = (SqlIntervalQualifier) right;
+        if ( right instanceof SqlIntervalQualifier intervalQualifier ) {
             if ( left instanceof SqlIntervalLiteral ) {
                 RexLiteral sourceInterval = (RexLiteral) cx.convertExpression( left );
                 Long sourceValue = sourceInterval.value.asInterval().millis;
@@ -442,7 +441,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
             } else if ( left instanceof SqlNumericLiteral ) {
                 RexLiteral sourceInterval = (RexLiteral) cx.convertExpression( left );
                 long sourceValue = sourceInterval.getValue().asNumber().longValue();
-                final Long multiplier = intervalQualifier.getUnit().multiplier.longValue();
+                final long multiplier = intervalQualifier.getUnit().multiplier.longValue();
                 sourceValue = sourceValue * multiplier;
                 RexLiteral castedInterval = cx.getRexBuilder().makeIntervalLiteral( sourceValue, intervalQualifier );
                 return castToValidatedType( cx, call, castedInterval );
