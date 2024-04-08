@@ -16,7 +16,6 @@
 
 package org.polypheny.db.languages;
 
-import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -168,7 +167,6 @@ public interface NodeToAlgConverter {
      * Implementation of {@link Config}.
      * Called by builder; all values are in private final fields.
      */
-    @Getter
     record ConfigImpl(boolean convertTableAccess, boolean decorrelationEnabled, boolean trimUnusedFields, boolean createValuesAlg, boolean explain, boolean expand, int inSubQueryThreshold, AlgBuilderFactory algBuilderFactory) implements Config {
 
     }
