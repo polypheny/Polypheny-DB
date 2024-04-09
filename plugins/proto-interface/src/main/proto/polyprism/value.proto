@@ -205,7 +205,7 @@ The value is reconstructed by calculating unscaled_value * 10 ^ -scale.
 */
 message ProtoBigDecimal {
   // The scale of the BigDecimal.
-  uint32 scale = 1;
+  int32 scale = 1;
   // The precision of the BigDecimal.
   uint32 precision = 2;
   // The unscaled value of the BigDecimal.
@@ -253,16 +253,11 @@ message ProtoTimestamp {
 }
 
 /*
-Represents an interval value. Intervals ar specified either in months or milliseconds. The applicable unit is determined
-by the field set in the message. Only one of the fields is set.
+Represents an interval value.
 */
 message ProtoInterval {
-  oneof unit {
-    // Contains the duration of the interval in milliseconds if milliseconds where chosen as the unit of time for that interval.
-    int64 milliseconds = 1;
-    // Contains the duration of the interval in months if months where chosen as the unit of time for that interval.
-    int64 months = 2;
-  }
+  int64 milliseconds = 1;
+  int64 months = 2;
 }
 
 /*

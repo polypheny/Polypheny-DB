@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.NotImplementedException;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.protointerface.proto.ProtoBigDecimal;
 import org.polypheny.db.protointerface.proto.ProtoBinary;
 import org.polypheny.db.protointerface.proto.ProtoBoolean;
@@ -42,16 +41,16 @@ import org.polypheny.db.protointerface.proto.ProtoTime;
 import org.polypheny.db.protointerface.proto.ProtoTimestamp;
 import org.polypheny.db.protointerface.proto.ProtoValue;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.PolyInterval;
-import org.polypheny.db.type.entity.PolyList;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.temporal.PolyTime;
@@ -113,25 +112,11 @@ public class PolyValueSerializer {
                 return serializeAsProtoDate( polyValue.asDate() );
             case TIME:
                 // used by PolyTime
-            case TIME_WITH_LOCAL_TIME_ZONE:
                 return serializeAsProtoTime( polyValue.asTime() );
             case TIMESTAMP:
                 // used by PolyTimeStamp
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                 return serializeAsProtoTimestamp( polyValue.asTimestamp() );
-            case INTERVAL_SECOND:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY:
-            case INTERVAL_MONTH:
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_YEAR:
+            case INTERVAL:
                 return serializeAsProtoInterval( polyValue.asInterval() );
             case CHAR:
             case VARCHAR:
@@ -219,32 +204,9 @@ public class PolyValueSerializer {
     }
 
 
-    private static ProtoInterval getInterval( PolyInterval polyInterval ) {
-        switch ( polyInterval.getType() ) {
-            case INTERVAL_SECOND:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY:
-                return ProtoInterval.newBuilder().setMilliseconds( polyInterval.getValue().longValue() ).build();
-            case INTERVAL_MONTH:
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_YEAR:
-                return ProtoInterval.newBuilder().setMonths( polyInterval.getValue().longValue() ).build();
-            default:
-                throw new GenericRuntimeException( "Invalid type for PolyInterval: " + polyInterval.getType().getTypeName() );
-        }
-    }
-
-
     private static ProtoValue serializeAsProtoInterval( PolyInterval polyInterval ) {
         return ProtoValue.newBuilder()
-                .setInterval( getInterval( polyInterval ) )
+                .setInterval( ProtoInterval.newBuilder().setMonths( polyInterval.getMonths() ).setMilliseconds( polyInterval.getMillis() ).build() )
                 .build();
     }
 
