@@ -35,42 +35,16 @@ enum ProtoPolyType {
   DATE = 10;
   // Time value without timezone in milliseconds since midnight.
   TIME = 11;
-  // Time with local timezone. Same as time but including a time zone enum value. Not supported yet!
-  TIME_WITH_LOCAL_TIME_ZONE = 12;
   // Timestamp without timezone. Specified as milliseconds since epoch.
   TIMESTAMP = 13;
-  // Timestamp with local timezone. Same as timestamp but including a time zon enum value. Not supported yet!
-  TIMESTAMP_WITH_LOCAL_TIME_ZONE = 14;
-  // Interval in seconds.
-  INTERVAL_SECOND = 15;
-  // Interval in minutes to seconds.
-  INTERVAL_MINUTE_SECOND = 16;
-  // Interval in minutes.
-  INTERVAL_MINUTE = 17;
-  // Interval in hours to seconds.
-  INTERVAL_HOUR_SECOND = 18;
-  // Interval in hours to minutes.
-  INTERVAL_HOUR_MINUTE = 19;
-  // Interval in hours.
-  INTERVAL_HOUR = 20;
-  // Interval in days to seconds.
-  INTERVAL_DAY_SECOND = 21;
-  // Interval in days to minutes.
-  INTERVAL_DAY_MINUTE = 22;
-  // Interval in days to hours.
-  INTERVAL_DAY_HOUR = 23;
-  // Interval in days.
-  INTERVAL_DAY = 24;
-  // Interval in months.
-  INTERVAL_MONTH = 25;
-  // Interval in years to months.
-  INTERVAL_YEAR_MONTH = 26;
-  // Interval in years.
-  INTERVAL_YEAR = 27;
+  // Interval
+  INTERVAL = 15;
   // Fixed length character string.
   CHAR = 28;
   // Variable length character string.
   VARCHAR = 29;
+  // Text data type.
+  TEXT = 58;
   // Binary data as byte string.
   BINARY = 30;
   // Variable length binary data as byte string.
@@ -127,8 +101,6 @@ enum ProtoPolyType {
   USER_DEFINED_TYPE = 56;
   // Row identifier type.
   ROW_ID = 57;
-  // Text data type.
-  TEXT = 58;
 }
 
 
