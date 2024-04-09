@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.algebra.polyalg.parser;
+package org.polypheny.db.algebra.polyalg.parser.nodes;
 
 import java.util.Set;
 import lombok.Getter;

@@ -13,8 +13,13 @@ import java.io.StringReader;
 import java.io.Reader;
 import org.polypheny.db.languages.ParserFactory;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.algebra.polyalg.parser.PolyAlgAbstractParserImpl;
-import org.polypheny.db.algebra.polyalg.parser.PolyAlgLiteral;
+import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgLiteral;
+import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgAliasedArgument;
+import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgNamedArgument;
+import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgNode;
+import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgOperator;
+import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgNodeList;
+import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgExpression;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ArrayList;
@@ -127,6 +132,7 @@ TOKEN :
 | <RBRACK: "]">
 | <SEP: ",">
 | <EQUALS: "=">
+| <COLON: ":">
 | <AS: "AS">
 | <IDENTIFIER: (<LETTER> | <IDENTIFIER_SYMBOL>) (<LETTER> | <DIGIT> | <IDENTIFIER_SYMBOL>)+>
 | <NUMBER: (<DIGIT>)+ (".")? (<DIGIT>)*>
@@ -216,7 +222,7 @@ PolyAlgNamedArgument NamedArgument() :
 
 PolyAlgAliasedArgument AliasedArgument() :
 {
-    PolyAlgArgument arg;
+    PolyAlgNode arg;
     String alias = null;
 }
 {
@@ -224,41 +230,73 @@ PolyAlgAliasedArgument AliasedArgument() :
      {return new PolyAlgAliasedArgument(arg, alias, getPos()); }
 }
 
-PolyAlgArgument Argument() :
+PolyAlgNode Argument() :
 {
-    PolyAlgArgument arg = new PolyAlgArgument();
+    PolyAlgNode n;
 }
 {
      (
-         OuterExpression()
+         n = Expression()
          |
-         ListArgument()
+         n = ListArgument()
      )
-     {return arg;}
+     {return n;}
 }
 
-void ListArgument() :
-{}
+PolyAlgNode ListArgument() : // we return a PolyAlgNodeList instead of a List<PolyAlgNode> as an Argument() could also be a PolyAlgExpression
 {
-     <LBRACK> AliasedArgument() (<SEP> AliasedArgument())* <RBRACK>
+    List<PolyAlgNode> args = new ArrayList<>();
+    PolyAlgNode n;
+}
+{
+     <LBRACK> n = AliasedArgument() {args.add(n);} (<SEP> n = AliasedArgument() {args.add(n);})* <RBRACK>
+     {return new PolyAlgNodeList(args, getPos());}
 }
 
-void OuterExpression() :
-{}
+PolyAlgExpression Expression():
+{
+    List<PolyAlgLiteral> literals = new ArrayList<>();
+    List<PolyAlgExpression> childExps = null;
+    Token t;
+    PolyAlgLiteral l;
+    String cast = null;
+    PolyAlgExpression exp;
+}
+{
+    (l = Literal() {literals.add(l);})+ [<LPAR> childExps = ChildExpressions() <RPAR>] [<COLON> t = <IDENTIFIER> {cast = t.image;}]  // TODO: handle OVER
+    {return new PolyAlgExpression(literals, childExps, cast, getPos());}
+    |
+    <LPAR> exp = Expression() <RPAR>  // optional outer parentheses
+    {return exp;}
+}
+
+/*PolyAlgNode OuterExpression() : // outer expressions cannot contain separators, as they could not always be differentiated from a ListArgument
+{
+    PolyAlgNode n = new PolyAlgLiteral();  // only temporary
+}
 {
     (
-        <LPAR> InnerExpression() <RPAR>
+        AnyExpression()
         |
-        <LCURL> InnerExpression() <RCURL>
-        |
-        Literal()
-    )+  // outer expressions cannot contain separators, as they could not always be differentiated from a ListArgument
-}
+        <LPAR> OuterExpression() <RPAR>  // optional outer parentheses
+    )
 
-void InnerExpression() : // An expression which appears within parentheses
-{}
+
+
+
+    {return n;}
+}*/
+
+List<PolyAlgExpression> ChildExpressions() : // List of expressions separated by <SEP>
 {
-    ((
+    List<PolyAlgExpression> exps = new ArrayList<>();
+    PolyAlgExpression e;
+}
+{
+    e = Expression() {exps.add(e);} (<SEP> e = Expression() {exps.add(e);})*
+    {return exps;}
+
+    /*((
         <LPAR> InnerExpression() <RPAR>
         |
         <LCURL> InnerExpression() <RCURL>
@@ -266,42 +304,55 @@ void InnerExpression() : // An expression which appears within parentheses
         Literal()
         |
         <AS>  // inner expressions can contain <AS>, since we know it cannot be an alias for an argument
-    ) (<SEP>)* )*  // inner expressions can contain separators!
+    ) (<SEP>)* )*  // inner expressions can contain separators!*/
 }
 
-void Literal() :
-{}
+
+PolyAlgLiteral Literal() :
 {
-     <IDENTIFIER>
-     |
-     <NUMBER>
-     |
-     <SYMBOL>
-     |
-     <QUOTED>
-     |
-     <EQUALS>
+    Token t;
+    boolean isNumber = false;
+
+}
+{
+    (
+        t = <IDENTIFIER>
+        |
+        t = <NUMBER> {isNumber = true;}
+        |
+        t = <SYMBOL>
+        |
+        t = <QUOTED>
+        |
+        t = <EQUALS>
+    )
+    {return new PolyAlgLiteral(t.image, isNumber, getPos());}
+
 }
 
 String OpName() :
 {
-    String name = "opName";
+    Token t;
 }
 {
     (
-        <IDENTIFIER>
-        |
-        <QUOTED>
+        t = <IDENTIFIER>
     )
-    {return name;}
+    {return t.image;}
 }
 
 String AliasName() :
 {
+    Token t;
     String name;
 }
 {
-    name = OpName()
+    (
+        name = OpName()
+        |
+        t = <QUOTED>
+        {name = t.image;}
+    )
     {return name;}
 }
 

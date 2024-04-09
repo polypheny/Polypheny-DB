@@ -16,6 +16,7 @@
 
 package org.polypheny.db.algebra.polyalg.parser;
 
+import org.polypheny.db.algebra.polyalg.parser.nodes.PolyAlgNode;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.ParserImpl;
 

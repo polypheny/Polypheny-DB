@@ -14,20 +14,21 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.algebra.polyalg.parser;
+package org.polypheny.db.algebra.polyalg.parser.nodes;
 
 import org.polypheny.db.languages.ParserPos;
 
-public class PolyAlgAliasedArgument extends PolyAlgNode {
+public class PolyAlgLiteral extends PolyAlgNode {
 
-    private final PolyAlgArgument argument;
-    private final String alias;
+    private final String str;
+    private final boolean isNumber;
 
 
-    public PolyAlgAliasedArgument( PolyAlgArgument argument, String alias, ParserPos pos ) {
+    public PolyAlgLiteral( String str, boolean isNumber, ParserPos pos ) {
         super( pos );
-        this.argument = argument;
-        this.alias = alias;
+
+        this.str = str;
+        this.isNumber = isNumber;
     }
 
 }

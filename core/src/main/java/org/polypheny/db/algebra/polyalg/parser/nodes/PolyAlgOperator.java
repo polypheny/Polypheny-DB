@@ -14,20 +14,24 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.algebra.polyalg.parser;
+package org.polypheny.db.algebra.polyalg.parser.nodes;
 
+import java.util.List;
 import org.polypheny.db.languages.ParserPos;
 
-public class PolyAlgNamedArgument extends PolyAlgNode {
+public class PolyAlgOperator extends PolyAlgNode {
 
-    private final String name;
-    private final PolyAlgAliasedArgument aliasedArg;
+    private final String opName;
+    private final List<PolyAlgNamedArgument> arguments;
+    private final List<PolyAlgOperator> children;
 
 
-    public PolyAlgNamedArgument( String name, PolyAlgAliasedArgument aliasedArg, ParserPos pos ) {
+    public PolyAlgOperator( String opName, List<PolyAlgNamedArgument> arguments, List<PolyAlgOperator> children, ParserPos pos ) {
         super( pos );
-        this.name = name;
-        this.aliasedArg = aliasedArg;
+
+        this.opName = opName;
+        this.arguments = arguments == null ? List.of() : arguments;
+        this.children = children == null ? List.of() : children;
     }
 
 }

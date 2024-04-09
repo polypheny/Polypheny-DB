@@ -27,7 +27,6 @@ import java.util.regex.Pattern;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Syntax;
-import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCorrelVariable;
 import org.polypheny.db.rex.RexDigestIncludeType;
@@ -166,7 +165,7 @@ public class PolyAlgUtils {
 
         @Override
         public String visitLiteral( RexLiteral literal ) {
-            return literal.toString();
+            return literal.computeDigest( RexDigestIncludeType.OPTIONAL );
         }
 
 
