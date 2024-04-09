@@ -65,7 +65,7 @@ message Request {
     CommitRequest commit_request = 33;
     RollbackRequest rollback_request = 34;
     ConnectionPropertiesUpdateRequest connection_properties_update_request = 35;
-    CloseResultRequest close_result_response = 36;
+    CloseResultRequest close_result_request = 36;
   }
 }
 

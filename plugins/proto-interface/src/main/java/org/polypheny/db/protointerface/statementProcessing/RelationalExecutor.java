@@ -74,7 +74,7 @@ public class RelationalExecutor extends Executor {
         StatementResult.Builder resultBuilder = StatementResult.newBuilder();
         if ( implementation.isDDL() || Kind.DML.contains( implementation.getKind() ) ) {
             try ( ResultIterator iterator = implementation.execute( statement, -1 ) ) {
-                resultBuilder.setScalar( PolyImplementation.getRowsChanged( statement, iterator.getIterator(), MonitoringType.NONE ) );
+                resultBuilder.setScalar( PolyImplementation.getRowsChanged( statement, iterator.getIterator(), MonitoringType.from( implementation.getKind() ) ) );
             }
             client.commitCurrentTransactionIfAuto();
             return resultBuilder.build();
@@ -117,7 +117,7 @@ public class RelationalExecutor extends Executor {
         }
         if ( Kind.DML.contains( implementation.getKind() ) ) {
             try ( ResultIterator iterator = implementation.execute( statement, -1 ) ) {
-                resultBuilder.setScalar( PolyImplementation.getRowsChanged( statement, iterator.getIterator(), MonitoringType.NONE ) );
+                resultBuilder.setScalar( PolyImplementation.getRowsChanged( statement, iterator.getIterator(), MonitoringType.from( implementation.getKind() ) ) );
             }
             client.commitCurrentTransactionIfAuto();
             return resultBuilder.build();
