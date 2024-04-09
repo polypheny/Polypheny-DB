@@ -134,7 +134,7 @@ TOKEN :
 | <EQUALS: "=">
 | <COLON: ":">
 | <AS: "AS">
-| <IDENTIFIER: (<LETTER> | <IDENTIFIER_SYMBOL>) (<LETTER> | <DIGIT> | <IDENTIFIER_SYMBOL>)+>
+| <IDENTIFIER: (<LETTER> | <IDENTIFIER_SYMBOL>) (<LETTER> | <DIGIT> | <IDENTIFIER_SYMBOL>)*>
 | <NUMBER: (<DIGIT>)+ (".")? (<DIGIT>)*>
 | <#LETTER: ["_","a"-"z","A"-"Z","ö", "Ö", "ä", "Ä", "ü", "Ü", "à", "À", "ç","Ç", "á", "Á", "è", "È","í","Í", "î", "Î","ó","Ó","ò", "ô", "Ô", "Ò" , "í", "Í", "ë", "Ë", "â", "Â", "ï", "Ï", "é", "É", "ñ", "Ñ", "ß"] >
 | <#DIGIT: ["0"-"9"]>
@@ -260,14 +260,14 @@ PolyAlgExpression Expression():
     Token t;
     PolyAlgLiteral l;
     String cast = null;
-    PolyAlgExpression exp;
+    PolyAlgExpression exp = null;
 }
 {
-    (l = Literal() {literals.add(l);})+ [<LPAR> childExps = ChildExpressions() <RPAR>] [<COLON> t = <IDENTIFIER> {cast = t.image;}]  // TODO: handle OVER
+    (l = Literal() {literals.add(l);})+ [<LPAR> [childExps = ChildExpressions()] <RPAR>] [<COLON> t = <IDENTIFIER> {cast = t.image;}]  // TODO: handle OVER
     {return new PolyAlgExpression(literals, childExps, cast, getPos());}
     |
-    <LPAR> exp = Expression() <RPAR>  // optional outer parentheses
-    {return exp;}
+    <LPAR> [exp = Expression()] <RPAR>  // optional outer parentheses
+    {return exp == null ? new PolyAlgExpression(List.of(), null, null, getPos()) : exp;}
 }
 
 /*PolyAlgNode OuterExpression() : // outer expressions cannot contain separators, as they could not always be differentiated from a ListArgument

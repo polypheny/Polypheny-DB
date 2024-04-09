@@ -16,8 +16,10 @@
 
 package org.polypheny.db.algebra.polyalg.parser.nodes;
 
+import lombok.Getter;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class PolyAlgNamedArgument extends PolyAlgNode {
 
     private final String name;
@@ -28,6 +30,11 @@ public class PolyAlgNamedArgument extends PolyAlgNode {
         super( pos );
         this.name = name;
         this.aliasedArg = aliasedArg;
+    }
+
+
+    public boolean isPositionalArg() {
+        return name == null;
     }
 
 }

@@ -53,12 +53,42 @@ public class PolyAlgArgs {
             if ( args.containsKey( p ) ) {
                 PolyAlgArg arg = getArg( p );
                 String value = arg.toPolyAlg( context, inputFieldNames );
-                if ( !p.getDefaultValue().equals( value ) ) {
+                if ( !p.getDefaultAsPolyAlg( context, inputFieldNames ).equals( value ) ) {
                     joiner.add( p.getName() + "=" + value );
                 }
             }
         }
         return joiner.toString();
+    }
+
+
+    public boolean contains( Parameter p ) {
+        return args.containsKey( p );
+    }
+
+
+    /**
+     * Validates if all required parameters are present and adds default values for missing keyword parameters if specified.
+     *
+     * @param addDefaultOnMissingKw {@code true} to add default values for missing keyword parameters
+     * @return {@code true} if all required parameters are present, {@code false} otherwise.
+     */
+    public boolean validate( boolean addDefaultOnMissingKw ) {
+        for ( Parameter p : decl.posParams ) {
+            if ( !args.containsKey( p ) ) {
+                return false;
+            }
+        }
+        for ( Parameter p : decl.kwParams ) {
+            if ( !args.containsKey( p ) ) {
+                if ( addDefaultOnMissingKw ) {
+                    put( p, p.getDefaultValue() );
+                } else {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
 
@@ -72,8 +102,22 @@ public class PolyAlgArgs {
     }
 
 
-    private PolyAlgArgs put( Parameter p, PolyAlgArg arg ) {
-        assert p.getType() == arg.getType();
+    public PolyAlgArgs putWithCheck( Parameter p, PolyAlgArg arg ) {
+        if ( decl.containsParam( p ) ) {
+            put( p, arg );
+        }
+        return this;
+    }
+
+
+    /**
+     * Inserts an argument for the specified parameter.
+     * If you are not sure whether that parameter belongs to the declaration, it is better to use {@link #putWithCheck}.
+     *
+     * @return this instance for chaining calls
+     */
+    public PolyAlgArgs put( Parameter p, PolyAlgArg arg ) {
+        assert p.isCompatible( arg.getType() );
 
         args.put( p, arg );
         return this;

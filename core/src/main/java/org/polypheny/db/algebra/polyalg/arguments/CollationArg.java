@@ -20,11 +20,11 @@ import java.util.List;
 import lombok.NonNull;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
-import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
 
 public class CollationArg implements PolyAlgArg {
+
+    public static final CollationArg NULL = new CollationArg( null );
 
     private final AlgFieldCollation arg;
 
@@ -39,8 +39,12 @@ public class CollationArg implements PolyAlgArg {
         return ParamType.COLLATION;
     }
 
+
     @Override
     public String toPolyAlg( AlgNode context, @NonNull List<String> inputFieldNames ) {
+        if ( arg == null ) {
+            return "";
+        }
         int idx = arg.getFieldIndex();
         String str = inputFieldNames.size() > idx ? inputFieldNames.get( idx ) : Integer.toString( idx );
         if ( arg.direction != AlgFieldCollation.Direction.ASCENDING || arg.nullDirection != arg.direction.defaultNullDirection() ) {

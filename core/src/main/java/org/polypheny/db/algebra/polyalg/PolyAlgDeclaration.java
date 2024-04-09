@@ -19,12 +19,29 @@ package org.polypheny.db.algebra.polyalg;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.Singular;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.polyalg.arguments.AggArg;
+import org.polypheny.db.algebra.polyalg.arguments.AnyArg;
+import org.polypheny.db.algebra.polyalg.arguments.BooleanArg;
+import org.polypheny.db.algebra.polyalg.arguments.CollationArg;
+import org.polypheny.db.algebra.polyalg.arguments.CorrelationArg;
+import org.polypheny.db.algebra.polyalg.arguments.EntityArg;
+import org.polypheny.db.algebra.polyalg.arguments.EnumArg;
+import org.polypheny.db.algebra.polyalg.arguments.FieldArg;
+import org.polypheny.db.algebra.polyalg.arguments.IntArg;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 
 
 public class PolyAlgDeclaration {
@@ -38,11 +55,20 @@ public class PolyAlgDeclaration {
     public final ImmutableList<Parameter> kwParams;
     private final ImmutableMap<String, Parameter> paramLookup;
 
+    private final BiFunction<PolyAlgArgs, List<AlgNode>, AlgNode> creator;
+
 
     @Builder
-    public PolyAlgDeclaration( @NonNull String opName, @Singular ImmutableList<String> opAliases, @Singular ImmutableList<OperatorTag> opTags, int numInputs, @Singular ImmutableList<Parameter> params ) {
+    public PolyAlgDeclaration(
+            @NonNull String opName,
+            @Singular ImmutableList<String> opAliases,
+            BiFunction<PolyAlgArgs, List<AlgNode>, AlgNode> creator,
+            @Singular ImmutableList<OperatorTag> opTags,
+            int numInputs,
+            @Singular ImmutableList<Parameter> params ) {
         this.opName = opName;
         this.opAliases = (opAliases != null) ? opAliases : ImmutableList.of();
+        this.creator = creator;
         this.numInputs = numInputs;
         this.opTags = (opTags != null) ? opTags : ImmutableList.of();
         params = (params != null) ? params : ImmutableList.of();
@@ -53,6 +79,8 @@ public class PolyAlgDeclaration {
         ImmutableList.Builder<Parameter> bPos = ImmutableList.builder();
         ImmutableList.Builder<Parameter> bKey = ImmutableList.builder();
         for ( Parameter p : params ) {
+            assert p.hasValidDefault();
+
             bMap.put( p.name, p );
             bMap.putAll( p.aliases.stream().collect( Collectors.toMap( a -> a, a -> p ) ) );
 
@@ -68,11 +96,32 @@ public class PolyAlgDeclaration {
     }
 
 
+    public AlgNode createNode( PolyAlgArgs args, List<AlgNode> children ) {
+        return creator.apply( args, children );
+    }
+
+
+    /**
+     * Retrieves the positional parameter at the specified position.
+     *
+     * @param i The position of the parameter to retrieve.
+     * @return The parameter at the specified position, or {@code null} if the position is out of bounds.
+     */
     public Parameter getPos( int i ) {
+        if ( i < 0 || i >= posParams.size() ) {
+            return null;
+        }
         return posParams.get( i );
     }
 
 
+    /**
+     * Retrieves the parameter (positional or keyword) associated with the specified name.
+     * It is also possible to specify an alias name.
+     *
+     * @param name The name of the parameter to retrieve.
+     * @return The parameter associated with the specified name, or {@code null} if no parameter is found.
+     */
     public Parameter getParam( String name ) {
         return paramLookup.get( name );
     }
@@ -108,6 +157,11 @@ public class PolyAlgDeclaration {
     }
 
 
+    public boolean containsParam( Parameter p ) {
+        return posParams.contains( p ) || kwParams.contains( p );
+    }
+
+
     /**
      * Depending on whether a defaultValue is specified, a Parameter can result in two types of corresponding arguments:
      * <ul>
@@ -131,78 +185,94 @@ public class PolyAlgDeclaration {
         @NonNull
         private final ParamType type;
         private final boolean isMultiValued;
-        private final String defaultValue;
+        private final PolyAlgArg defaultValue;
 
 
         public boolean isPositional() {
             return defaultValue == null;
         }
 
+
+        public boolean isCompatible( ParamType type ) {
+            return this.type == type || (isMultiValued && type == ParamType.EMPTY_LIST);
+        }
+
+
+        /**
+         * Checks if the parameter has a valid default value.
+         * This can either be no default value at all, or it is a {@link PolyAlgArg} of a compatible type.
+         *
+         * @return true if the default value is valid
+         */
+        public boolean hasValidDefault() {
+            return isPositional() || isCompatible( defaultValue.getType() );
+        }
+
+
+        public String getDefaultAsPolyAlg( AlgNode context, List<String> inputFieldNames ) {
+            if ( isPositional() ) {
+                return null;
+            }
+            return defaultValue.toPolyAlg( context, inputFieldNames );
+        }
+
     }
 
 
+    @Getter
     public enum ParamType {
         /**
          * The default type. Should only be used if no other type fits better.
          */
-        ANY,
-        INTEGER,
-        STRING,
+        ANY( AnyArg.class ),
+        INTEGER( IntArg.class ),
 
         /**
          * A boolean flag, either "true" or "false".
          */
-        BOOLEAN,
+        BOOLEAN( BooleanArg.class ),
 
         /**
          * A serialized RexNode
          */
-        SIMPLE_REX,
-        AGGREGATE,
+        SIMPLE_REX( RexArg.class ),
+        AGGREGATE( AggArg.class ),
+        ENTITY( EntityArg.class ),
 
-        /**
-         * A REX that evaluates to a boolean.
-         */
-        BOOLEAN_REX,
-        ENTITY,
-
-        JOIN_TYPE_ENUM( true ),
+        JOIN_TYPE_ENUM( EnumArg.class, true ),
 
         /**
          * A specific field (= column in the relational data model).
          */
-        FIELD,
+        FIELD( FieldArg.class ),
 
         /**
          * A list with no elements.
          */
-        EMPTY_LIST,
+        EMPTY_LIST( ListArg.class ),
 
         /**
          *
          */
-        COLLATION,
+        COLLATION( CollationArg.class ),
 
         /**
          * Correlation ID
          */
-        CORR_ID;
+        CORR_ID( CorrelationArg.class );
 
+        private final Class<? extends PolyAlgArg> argClass;
         private final boolean isEnum;
 
 
-        ParamType() {
-            this.isEnum = false;
+        ParamType( Class<? extends PolyAlgArg> argClass ) {
+            this( argClass, false );
         }
 
 
-        ParamType( boolean isEnum ) {
+        ParamType( Class<? extends PolyAlgArg> argClass, boolean isEnum ) {
+            this.argClass = argClass;
             this.isEnum = isEnum;
-        }
-
-
-        public boolean isEnum() {
-            return isEnum;
         }
 
     }

@@ -23,6 +23,9 @@ import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 
 public class BooleanArg implements PolyAlgArg {
 
+    public static final BooleanArg FALSE = new BooleanArg( false );
+    public static final BooleanArg TRUE = new BooleanArg( true );
+
     private final boolean arg;
 
 

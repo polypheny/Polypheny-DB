@@ -17,8 +17,10 @@
 package org.polypheny.db.algebra.polyalg.parser.nodes;
 
 import java.util.List;
+import java.util.StringJoiner;
 import lombok.Getter;
 import lombok.NonNull;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.ParserPos;
 
 /**
@@ -49,8 +51,63 @@ public class PolyAlgExpression extends PolyAlgNode {
         return childExps == null;
     }
 
+
+    public boolean isSingleLiteral() {
+        return !isCall() && literals.size() == 1;
+    }
+
+
     public boolean hasCast() {
         return cast != null;
+    }
+
+
+    public int toInt() {
+        if ( !isSingleLiteral() ) {
+            throw new GenericRuntimeException( "Not a valid integer" );
+        }
+        return literals.get( 0 ).toInt();
+    }
+
+
+    public boolean toBoolean() {
+        if ( !isSingleLiteral() ) {
+            throw new GenericRuntimeException( "Not a valid integer" );
+        }
+        return literals.get( 0 ).toBoolean();
+    }
+
+
+    public <T extends Enum<T>> T toEnum( Class<T> enumClass ) {
+        if ( !isSingleLiteral() ) {
+            throw new GenericRuntimeException( "Not a valid integer" );
+        }
+        return Enum.valueOf( enumClass, literals.get( 0 ).toString() );
+    }
+
+
+    public List<String> getLiteralsAsStrings() {
+        return literals.stream().map( PolyAlgLiteral::toString ).toList();
+    }
+
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        for ( PolyAlgLiteral literal : literals ) {
+            sb.append( literal );
+        }
+        if ( isCall() ) {
+            StringJoiner joiner = new StringJoiner( ", " );
+            for ( PolyAlgExpression e : childExps ) {
+                joiner.add( e.toString() );
+            }
+            sb.append( "(" ).append( joiner ).append( ")" );
+        }
+        if ( hasCast() ) {
+            sb.append( ":" ).append( cast );
+        }
+        return sb.toString();
     }
 
 }

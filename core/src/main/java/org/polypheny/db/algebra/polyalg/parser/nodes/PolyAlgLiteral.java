@@ -16,6 +16,7 @@
 
 package org.polypheny.db.algebra.polyalg.parser.nodes;
 
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.ParserPos;
 
 public class PolyAlgLiteral extends PolyAlgNode {
@@ -29,6 +30,25 @@ public class PolyAlgLiteral extends PolyAlgNode {
 
         this.str = str;
         this.isNumber = isNumber;
+    }
+
+
+    public int toInt() {
+        if ( !this.isNumber ) {
+            throw new GenericRuntimeException( "Not a valid integer" );
+        }
+        return Integer.parseInt( str );
+    }
+
+
+    public boolean toBoolean() {
+        return Boolean.parseBoolean( str ) || str.equals( "1" );
+    }
+
+
+    @Override
+    public String toString() {
+        return str;
     }
 
 }

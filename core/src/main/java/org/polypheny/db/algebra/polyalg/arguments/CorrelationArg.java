@@ -22,7 +22,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 
-public class CorrelationArg implements PolyAlgArg{
+public class CorrelationArg implements PolyAlgArg {
 
     private final CorrelationId arg;
 
@@ -40,7 +40,7 @@ public class CorrelationArg implements PolyAlgArg{
 
     @Override
     public String toPolyAlg( AlgNode context, @NonNull List<String> inputFieldNames ) {
-        return arg.toString();
+        return String.valueOf( arg.getId() );
     }
 
 }

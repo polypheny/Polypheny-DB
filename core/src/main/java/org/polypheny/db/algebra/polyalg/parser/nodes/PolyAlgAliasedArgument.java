@@ -16,8 +16,10 @@
 
 package org.polypheny.db.algebra.polyalg.parser.nodes;
 
+import lombok.Getter;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class PolyAlgAliasedArgument extends PolyAlgNode {
 
     private final PolyAlgNode arg;

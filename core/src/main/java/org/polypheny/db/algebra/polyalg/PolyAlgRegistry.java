@@ -27,6 +27,11 @@ import org.polypheny.db.algebra.logical.relational.*;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.OperatorTag;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.Parameter;
+import org.polypheny.db.algebra.polyalg.arguments.BooleanArg;
+import org.polypheny.db.algebra.polyalg.arguments.CollationArg;
+import org.polypheny.db.algebra.polyalg.arguments.EnumArg;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 
 public class PolyAlgRegistry {
 
@@ -44,6 +49,7 @@ public class PolyAlgRegistry {
         ImmutableList<OperatorTag> logRelTags = ImmutableList.of( OperatorTag.LOGICAL, OperatorTag.REL );
 
         declarations.put( LogicalRelProject.class, PolyAlgDeclaration.builder()
+                .creator( LogicalRelProject::create )
                 .opName( "PROJECT" ).opAlias( "P" ).numInputs( 1 ).opTags( logRelTags )
                 .param( Parameter.builder().name( "projects" ).isMultiValued( true ).type( ParamType.SIMPLE_REX ).build() )
                 .build() );
@@ -60,45 +66,45 @@ public class PolyAlgRegistry {
 
         declarations.put( LogicalRelAggregate.class, PolyAlgDeclaration.builder()
                 .opName( "AGG" ).numInputs( 1 ).opTags( logRelTags )
-                .param( Parameter.builder().name( "group" ).type( ParamType.FIELD ).isMultiValued( true ).defaultValue( "" ).build() )  // select count(*) has no group
-                .param( Parameter.builder().name( "groups" ).type( ParamType.ANY ).isMultiValued( true ).defaultValue( "" ).build() )
-                .param( Parameter.builder().name( "aggs" ).type( ParamType.AGGREGATE ).isMultiValued( true ).defaultValue( "" ).build() )
+                .param( Parameter.builder().name( "group" ).type( ParamType.FIELD ).isMultiValued( true ).defaultValue( ListArg.EMPTY ).build() )  // select count(*) has no group
+                .param( Parameter.builder().name( "groups" ).type( ParamType.ANY ).isMultiValued( true ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "aggs" ).type( ParamType.AGGREGATE ).isMultiValued( true ).defaultValue( ListArg.EMPTY ).build() )
                 .build() );
 
         declarations.put( LogicalRelMinus.class, PolyAlgDeclaration.builder()
                 .opName( "MINUS" ).numInputs( 2 ).opTags( logRelTags )
-                .param( Parameter.builder().name( "all" ).type( ParamType.BOOLEAN ).defaultValue( "false" ).build() )
+                .param( Parameter.builder().name( "all" ).type( ParamType.BOOLEAN ).defaultValue( BooleanArg.FALSE ).build() )
                 .build() );
 
         declarations.put( LogicalRelUnion.class, PolyAlgDeclaration.builder()
                 .opName( "UNION" ).numInputs( 2 ).opTags( logRelTags )
-                .param( Parameter.builder().name( "all" ).type( ParamType.BOOLEAN ).defaultValue( "false" ).build() )
+                .param( Parameter.builder().name( "all" ).type( ParamType.BOOLEAN ).defaultValue( BooleanArg.FALSE ).build() )
                 .build() );
 
         declarations.put( LogicalRelIntersect.class, PolyAlgDeclaration.builder()
                 .opName( "INTERSECT" ).numInputs( 2 ).opTags( logRelTags )
-                .param( Parameter.builder().name( "all" ).type( ParamType.BOOLEAN ).defaultValue( "false" ).build() )
+                .param( Parameter.builder().name( "all" ).type( ParamType.BOOLEAN ).defaultValue( BooleanArg.FALSE ).build() )
                 .build() );
 
         declarations.put( LogicalRelSort.class, PolyAlgDeclaration.builder()
                 .opName( "SORT" ).numInputs( 1 ).opTags( logRelTags )
-                .param( Parameter.builder().name( "sort" ).aliases( List.of( "collation", "order" ) ).type( ParamType.COLLATION ).defaultValue( "" ).build() )
-                .param( Parameter.builder().name( "limit" ).alias( "fetch" ).type( ParamType.SIMPLE_REX ).defaultValue( "" ).build() )
-                .param( Parameter.builder().name( "offset" ).type( ParamType.SIMPLE_REX ).defaultValue( "" ).build() )
+                .param( Parameter.builder().name( "sort" ).aliases( List.of( "collation", "order" ) ).type( ParamType.COLLATION ).defaultValue( CollationArg.NULL ).build() )
+                .param( Parameter.builder().name( "limit" ).alias( "fetch" ).type( ParamType.SIMPLE_REX ).defaultValue( RexArg.NULL ).build() )
+                .param( Parameter.builder().name( "offset" ).type( ParamType.SIMPLE_REX ).defaultValue( RexArg.NULL ).build() )
                 .build() );
 
         declarations.put( LogicalRelJoin.class, PolyAlgDeclaration.builder()
                 .opName( "JOIN" ).numInputs( 2 ).opTags( logRelTags )
                 .param( Parameter.builder().name( "condition" ).type( ParamType.SIMPLE_REX ).build() )
-                .param( Parameter.builder().name( "type" ).type( ParamType.JOIN_TYPE_ENUM ).defaultValue( JoinAlgType.INNER.name() ).build() )
-                .param( Parameter.builder().name( "semiJoinDone" ).type( ParamType.BOOLEAN ).defaultValue( "false" ).build() )
+                .param( Parameter.builder().name( "type" ).type( ParamType.JOIN_TYPE_ENUM ).defaultValue( new EnumArg<>( JoinAlgType.INNER, ParamType.JOIN_TYPE_ENUM ) ).build() )
+                .param( Parameter.builder().name( "semiJoinDone" ).type( ParamType.BOOLEAN ).defaultValue( BooleanArg.FALSE ).build() )
                 .build() );
 
         declarations.put( LogicalCalc.class, PolyAlgDeclaration.builder()
                 .opName( "CALC" ).numInputs( 1 ).opTags( logRelTags )
                 .param( Parameter.builder().name( "exps" ).type( ParamType.SIMPLE_REX ).isMultiValued( true ).build() )
                 .param( Parameter.builder().name( "projects" ).type( ParamType.SIMPLE_REX ).isMultiValued( true ).build() )
-                .param( Parameter.builder().name( "condition" ).type( ParamType.SIMPLE_REX ).defaultValue( "" ).build() )
+                .param( Parameter.builder().name( "condition" ).type( ParamType.SIMPLE_REX ).defaultValue( RexArg.NULL ).build() )
                 .build() );
 
         /*

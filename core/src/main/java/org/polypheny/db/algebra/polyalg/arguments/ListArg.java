@@ -26,6 +26,8 @@ import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
 
 public class ListArg<E extends PolyAlgArg> implements PolyAlgArg {
 
+    public static final ListArg<AnyArg> EMPTY = new ListArg<>( List.of(), List.of() );
+
     @Getter
     private final List<E> args;
     @Getter
@@ -37,6 +39,16 @@ public class ListArg<E extends PolyAlgArg> implements PolyAlgArg {
         this.args = args;
         this.aliases = aliases;
         this.unpackValues = unpackValues;
+    }
+
+
+    public ListArg( List<E> args ) {
+        this( args, (List<String>) null, false );
+    }
+
+
+    public ListArg( List<E> args, List<String> aliases ) {
+        this( args, aliases, false );
     }
 
 
