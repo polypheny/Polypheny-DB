@@ -103,7 +103,7 @@ public class DefaultInserter {
             Catalog.getInstance().createQueryInterface(
                     "Proto Interface .polypheny Listener (Unix transport)",
                     "Proto Interface (Unix transport)",
-                    Map.of( "path", PolyphenyHomeDirManager.getInstance().registerNewGlobalFile( "polypheny-proto.sock" ).getAbsolutePath() )
+                    Map.of( "path", PolyphenyHomeDirManager.getInstance().registerNewGlobalFile( "polypheny-prism.sock" ).getAbsolutePath() )
             );
         }
         Catalog.getInstance().commit();

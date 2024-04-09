@@ -67,7 +67,7 @@ public class PIPlugin extends PolyPlugin {
                 new QueryInterfaceSettingLong( "heartbeat interval", false, true, false, 300000L )
         );
         public static final List<QueryInterfaceSetting> AVAILABLE_UNIX_SETTINGS = ImmutableList.of(
-                new QueryInterfaceSettingString( "path", false, true, false, "polypheny-proto.sock" )
+                new QueryInterfaceSettingString( "path", false, true, false, "polypheny-prism.sock" )
         );
 
         @Getter
