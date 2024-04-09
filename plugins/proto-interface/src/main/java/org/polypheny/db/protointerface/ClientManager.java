@@ -76,6 +76,31 @@ public class ClientManager {
     }
 
 
+    public LogicalUser getUser( ConnectionRequest connectionRequest, Transport t ) throws AuthenticationException {
+        if ( connectionRequest.hasUsername() ) {
+            String username = connectionRequest.getUsername();
+            if ( !connectionRequest.hasPassword() ) {
+                throw new AuthenticationException( "A password is required" );
+            }
+            String password = connectionRequest.getPassword();
+            return authenticator.authenticate( username, password );
+        } else if ( t.getPeer().isPresent() ) {
+            String username = t.getPeer().get();
+            Optional<LogicalUser> catalogUser = Catalog.getInstance().getSnapshot().getUser( username );
+            if ( catalogUser.isPresent() ) {
+                return catalogUser.get();
+            } else {
+                if ( username.equals( System.getProperty( "user.name" ) ) ) {
+                    return Catalog.getInstance().getSnapshot().getUser( Catalog.USER_NAME ).orElseThrow();
+                } else {
+                    throw new AuthenticationException( "Peer authentication failed: No user with that name" );
+                }
+            }
+        }
+        throw new AuthenticationException( "Authentication failed" );
+    }
+
+
     public String registerConnection( ConnectionRequest connectionRequest, Transport t ) throws AuthenticationException, TransactionException, PIServiceException {
         byte[] raw = new byte[32];
         new SecureRandom().nextBytes( raw );
@@ -84,20 +109,7 @@ public class ClientManager {
         if ( log.isTraceEnabled() ) {
             log.trace( "User {} tries to establish connection via proto interface.", uuid );
         }
-        final LogicalUser user;
-        if ( connectionRequest.hasUsername() ) {
-            String username = connectionRequest.getUsername();
-            if ( !connectionRequest.hasPassword() ) {
-                throw new AuthenticationException( "A password is required" );
-            }
-            String password = connectionRequest.getPassword();
-            user = authenticator.authenticate( username, password );
-        } else {
-            user = t.getPeer()
-                    .flatMap( u -> Catalog.getInstance().getSnapshot().getUser( u ) )
-                    .orElseThrow( () -> new AuthenticationException( "Peer authentication failed: No user with that name" ) );
-        }
-
+        final LogicalUser user = getUser( connectionRequest, t );
         Transaction transaction = transactionManager.startTransaction( user.id, false, "proto-interface" );
         transaction.commit();
         LogicalNamespace namespace = getNamespaceOrDefault( connectionRequest );
@@ -121,6 +133,7 @@ public class ClientManager {
     public Stream<Entry<String, PIClient>> getClients() {
         return clients.entrySet().stream();
     }
+
 
     public int getClientCount() {
         return clients.size();
