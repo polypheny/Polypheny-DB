@@ -18,7 +18,6 @@ package org.polypheny.db.processing.shuttles;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -451,7 +450,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
             return literal;
         }
         int i = index.getAndIncrement();
-        values.put( i, Collections.singletonList( new ParameterValue( i, literal.getType(), literal.getValue() ) ) );
+        values.put( i, List.of( new ParameterValue( i, literal.getType(), literal.getValue( literal.getType() ) ) ) );
         types.add( literal.getType() );
         return new RexDynamicParam( literal.getType(), i );
     }
@@ -464,7 +463,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
         } else if ( call.op.getKind() == Kind.ARRAY_VALUE_CONSTRUCTOR ) {
             int i = index.getAndIncrement();
             PolyList<PolyValue> list = createListForArrays( call.operands );
-            values.put( i, Collections.singletonList( new ParameterValue( i, call.type, list ) ) );
+            values.put( i, List.of( new ParameterValue( i, call.type, list ) ) );
             types.add( call.type );
             return new RexDynamicParam( call.type, i );
         } else {

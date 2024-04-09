@@ -41,7 +41,8 @@ public record QueryLanguage(
         @Nullable ParserFactory factory,
         @NotNull Supplier<Processor> processorSupplier,
         @Nullable BiFunction<Context, Snapshot, Validator> validatorSupplier,
-        @NotNull Function<QueryContext, List<ParsedQueryContext>> splitter
+        @NotNull Function<QueryContext, List<ParsedQueryContext>> splitter,
+        @NotNull Function<QueryContext, QueryContext> limitRemover
 ) {
 
 

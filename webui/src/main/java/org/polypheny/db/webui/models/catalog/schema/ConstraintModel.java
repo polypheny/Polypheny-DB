@@ -21,6 +21,8 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
+import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
+import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
 import org.polypheny.db.catalog.logistic.ConstraintType;
 import org.polypheny.db.webui.models.catalog.IdEntity;
 
@@ -48,6 +50,16 @@ public class ConstraintModel extends IdEntity {
 
     public static ConstraintModel from( LogicalConstraint constraint ) {
         return new ConstraintModel( constraint.id, constraint.name, constraint.keyId, constraint.type );
+    }
+
+
+    public static ConstraintModel from( LogicalForeignKey key ) {
+        return new ConstraintModel( key.id, key.name, key.id, ConstraintType.FOREIGN );
+    }
+
+
+    public static ConstraintModel from( LogicalPrimaryKey key ) {
+        return new ConstraintModel( key.id, ConstraintType.PRIMARY.name(), key.id, ConstraintType.PRIMARY );
     }
 
 }

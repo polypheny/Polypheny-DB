@@ -35,7 +35,6 @@ package org.polypheny.db.algebra.rules;
 
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
@@ -181,8 +180,7 @@ public class JoinProjectTransposeRule extends AlgOptRule {
                         rightJoinChild.getTupleType(),
                         JoinAlgType.INNER,
                         joinRel.getCluster().getTypeFactory(),
-                        null,
-                        Collections.emptyList() );
+                        null );
 
         // Create projection expressions, combining the projection expressions from the projects that feed into the join.
         // For the RHS projection expressions, shift them to the right by the number of fields on the LHS.

@@ -71,12 +71,12 @@ import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.entity.PolyList;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.RunMode;
 import org.polypheny.db.webui.HttpServer;
@@ -295,7 +295,7 @@ public class TestHelper {
             int j = 0;
             while ( j < expectedRow.length ) {
                 if ( expectedRow.length >= j + 1 ) {
-                    int columnType = rsmd.getColumnType( j + 1 );
+                    int columnType = rsmd.getColumnType( j + 1 ); // this leads to errors if expected is different aka expected is decimal and actual is integer
                     if ( columnType == Types.BINARY ) {
                         if ( expectedRow[j] == null ) {
                             assertNull( row[j], "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': " );
@@ -315,14 +315,15 @@ public class TestHelper {
                                 double diff = Math.abs( (double) expectedRow[j] - (double) row[j] );
                                 assertTrue( diff < EPSILON,
                                         "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': The difference between the expected double and the received double exceeds the epsilon. Difference: " + (diff - EPSILON) );
-                            } else if ( columnType == Types.DECIMAL ) { // Decimals are exact // but not for calculations?
+                            } else if ( columnType == Types.DECIMAL || (expectedRow[j] instanceof Float || expectedRow[j] instanceof Double) ) { // Decimals are exact // but not for calculations?
                                 BigDecimal expectedResult = new BigDecimal( expectedRow[j].toString() );
-                                double diff = Math.abs( expectedResult.doubleValue() - ((BigDecimal) row[j]).doubleValue() );
+                                BigDecimal actualResult = new BigDecimal( row[j].toString() );
+                                double diff = Math.abs( expectedResult.doubleValue() - actualResult.doubleValue() );
                                 if ( isConvertingDecimals ) {
                                     assertTrue( diff < EPSILON,
                                             "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': The difference between the expected decimal and the received decimal exceeds the epsilon. Difference: " + (diff - EPSILON) );
                                 } else {
-                                    assertEquals( 0, expectedResult.doubleValue() - ((BigDecimal) row[j]).doubleValue(), 0.0, "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'" );
+                                    assertEquals( 0, expectedResult.doubleValue() - actualResult.doubleValue(), 0.0, "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'" );
                                 }
                             } else if ( expectedRow[j] != null && row[j] != null && expectedRow[j] instanceof Number && row[j] instanceof Number ) {
                                 assertEquals( ((Number) expectedRow[j]).longValue(), ((Number) row[j]).longValue(), "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'" );
@@ -335,7 +336,6 @@ public class TestHelper {
                             }
                         } else {
                             assertEquals(
-
                                     expectedRow[j],
                                     row[j],
                                     "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'"

@@ -89,9 +89,15 @@ public class AlgJsonWriter implements AlgWriter {
         }
 
         put( map, "rowcount", mq.getTupleCount( alg ) );
-        put( map, "rows cost", mq.getCumulativeCost( alg ).getRows() );
-        put( map, "cpu cost", mq.getCumulativeCost( alg ).getCpu() );
-        put( map, "io cost", mq.getCumulativeCost( alg ).getIo() );
+        try {
+            put( map, "rows cost", mq.getCumulativeCost( alg ).getRows() );
+            put( map, "cpu cost", mq.getCumulativeCost( alg ).getCpu() );
+            put( map, "io cost", mq.getCumulativeCost( alg ).getIo() );
+        } catch ( Exception e ) {
+            put( map, "rows cost", "unknown" );
+            put( map, "cpu cost", "unknown" );
+            put( map, "io cost", "unknown" );
+        }
 
         final List<Object> list = explainInputs( alg.getInputs() );
         List<Object> l = new LinkedList<>();
@@ -111,7 +117,7 @@ public class AlgJsonWriter implements AlgWriter {
 
 
     private String replaceWithFieldNames( AlgNode alg, Object right ) {
-        String str = right.toString();
+        String str = right == null ? "" : right.toString();
         if ( str.contains( "$" ) ) {
             int offset = 0;
             for ( AlgNode input : alg.getInputs() ) {

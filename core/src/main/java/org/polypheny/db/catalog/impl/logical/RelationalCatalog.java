@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -215,10 +216,15 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
 
     @Override
-    public void setPrimaryKey( long tableId, Long keyId ) {
-        tables.put( tableId, tables.get( tableId ).toBuilder().primaryKey( keyId ).build() );
+    public void setPrimaryKey( long tableId, @Nullable Long keyId ) {
+        LogicalTable oldTable = tables.get( tableId );
+        // we temporarily can remove the primary, to clean-up old primaries before adding a new one
+        tables.put( tableId, oldTable.toBuilder().primaryKey( keyId ).build() );
 
-        keys.put( keyId, new LogicalPrimaryKey( keys.get( keyId ) ) );
+        if ( keyId != null ) {
+            keys.put( keyId, new LogicalPrimaryKey( keys.get( keyId ) ) );
+        }
+
         change( CatalogEvent.PRIMARY_KEY_CREATED, tableId, keyId );
     }
 
@@ -365,7 +371,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
 
     @Override
-    public LogicalTable addPrimaryKey( long tableId, List<Long> columnIds ) {
+    public void addPrimaryKey( long tableId, List<Long> columnIds ) {
         if ( columnIds.stream().anyMatch( id -> columns.get( id ).nullable ) ) {
             throw new GenericRuntimeException( "Primary key is not allowed to use nullable columns." );
         }
@@ -389,7 +395,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
         long keyId = getOrAddKey( tableId, columnIds, EnforcementTime.ON_QUERY );
         setPrimaryKey( tableId, keyId );
         change( CatalogEvent.PRIMARY_KEY_CREATED, tableId, keyId );
-        return tables.get( tableId );
+        tables.get( tableId );
     }
 
 
@@ -501,7 +507,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
 
     @Override
-    public LogicalTable addUniqueConstraint( long tableId, String constraintName, List<Long> columnIds ) {
+    public void addUniqueConstraint( long tableId, String constraintName, List<Long> columnIds ) {
         long keyId = getOrAddKey( tableId, columnIds, EnforcementTime.ON_QUERY );
         // Check if there is already a unique constraint
         List<LogicalConstraint> logicalConstraints = constraints.values().stream()
@@ -510,12 +516,20 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
         if ( !logicalConstraints.isEmpty() ) {
             throw new GenericRuntimeException( "There is already a unique constraint!" );
         }
+        addConstraint( tableId, constraintName, columnIds, ConstraintType.UNIQUE );
+    }
+
+
+    @Override
+    public void addConstraint( long tableId, String constraintName, List<Long> columnIds, ConstraintType type ) {
+        long keyId = getOrAddKey( tableId, columnIds, EnforcementTime.ON_QUERY );
+
         long id = idBuilder.getNewConstraintId();
         synchronized ( this ) {
-            constraints.put( id, new LogicalConstraint( id, keyId, ConstraintType.UNIQUE, constraintName, Objects.requireNonNull( keys.get( keyId ) ) ) );
+            constraints.put( id, new LogicalConstraint( id, keyId, type, constraintName, Objects.requireNonNull( keys.get( keyId ) ) ) );
             change( CatalogEvent.CONSTRAINT_CREATED, null, id );
         }
-        return tables.get( tableId );
+        tables.get( tableId );
     }
 
 

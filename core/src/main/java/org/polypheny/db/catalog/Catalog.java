@@ -49,6 +49,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.RunMode;
 
 public abstract class Catalog implements ExtensionPoint {
@@ -192,7 +193,7 @@ public abstract class Catalog implements ExtensionPoint {
      * @param clazz The class name of the adapter
      * @param type The type of adapter
      * @param settings The configuration of the adapter
-     * @param mode
+     * @param mode The deploy mode of the adapter
      * @return The id of the newly added adapter
      */
     public abstract long createAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings, DeployMode mode );
@@ -274,7 +275,7 @@ public abstract class Catalog implements ExtensionPoint {
     public abstract PropertyChangeListener getChangeListener();
 
 
-    public abstract void restore();
+    public abstract void restore( Transaction transaction );
 
 
     public abstract void attachCommitConstraint( Supplier<Boolean> constraintChecker, String description );

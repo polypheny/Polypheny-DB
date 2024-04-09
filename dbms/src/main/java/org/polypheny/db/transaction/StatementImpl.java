@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.Getter;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.information.InformationGroup;
@@ -35,7 +36,7 @@ import org.polypheny.db.processing.DataContextImpl;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.processing.QueryProviderImpl;
 import org.polypheny.db.processing.VolcanoQueryProcessor;
-import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.FileInputHandle;
 
 public class StatementImpl implements Statement {
@@ -104,7 +105,7 @@ public class StatementImpl implements Statement {
             prepareContext = new ContextImpl(
                     transaction.getSnapshot(),
                     getDataContext(),
-                    transaction.getDefaultNamespace().name,
+                    transaction.getDefaultNamespace() == null ? Catalog.DEFAULT_NAMESPACE_NAME : transaction.getDefaultNamespace().name,
                     this );
         }
         return prepareContext;

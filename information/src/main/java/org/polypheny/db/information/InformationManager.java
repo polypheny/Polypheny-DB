@@ -143,7 +143,7 @@ public class InformationManager {
 
 
     /**
-     * Deregister a information page.
+     * Deregister an information page.
      *
      * @param page Page tp remove
      */

@@ -139,7 +139,7 @@ public class MongoPlugin extends PolyPlugin {
         private final List<PolyType> unsupportedTypes = ImmutableList.of();
 
 
-        public MongoStore( long adapterId, String uniqueName, Map<String, String> settings ) {
+        public MongoStore( final long adapterId, final String uniqueName, final Map<String, String> settings ) {
             super( adapterId, uniqueName, settings, true, new DocAdapterCatalog( adapterId ) );
 
             if ( deployMode == DeployMode.DOCKER ) {

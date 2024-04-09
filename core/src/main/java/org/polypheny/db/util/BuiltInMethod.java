@@ -51,7 +51,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TimeZone;
-import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.EnumerableDefaults;
@@ -112,11 +111,11 @@ import org.polypheny.db.functions.CypherFunctions;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.functions.Functions.FlatProductInputType;
 import org.polypheny.db.functions.MqlFunctions;
-import org.polypheny.db.functions.RefactorFunctions;
 import org.polypheny.db.functions.TemporalFunctions;
 import org.polypheny.db.interpreter.Context;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.interpreter.Scalar;
+import org.polypheny.db.nodes.TimeUnitRange;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.ArrayBindable;
 import org.polypheny.db.runtime.BinarySearch;
@@ -424,7 +423,6 @@ public enum BuiltInMethod {
     AGG_LAMBDA_FACTORY_ACC_SINGLE_GROUP_RESULT_SELECTOR( AggregateLambdaFactory.class, "singleGroupResultSelector", Function1.class ),
     RESULTSET_GETBYTES( ResultSet.class, "getBytes", int.class ),
     RESULTSET_GETBINARYSTREAM( ResultSet.class, "getBinaryStream", int.class ),
-    UNWRAP_INTERVAL( RefactorFunctions.class, "unwrapInterval", PolyInterval.class ),
     /// MQL BUILT-IN METHODS
     MQL_EQ( MqlFunctions.class, "docEq", PolyValue.class, PolyValue.class ),
     MQL_GT( MqlFunctions.class, "docGt", PolyValue.class, PolyValue.class ),

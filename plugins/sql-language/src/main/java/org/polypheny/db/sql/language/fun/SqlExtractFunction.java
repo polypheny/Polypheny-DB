@@ -17,8 +17,6 @@
 package org.polypheny.db.sql.language.fun;
 
 
-import java.util.Objects;
-import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Monotonicity;
@@ -29,6 +27,7 @@ import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.Util;
 
@@ -72,8 +71,9 @@ public class SqlExtractFunction extends SqlFunction {
     @Override
     public Monotonicity getMonotonicity( OperatorBinding call ) {
         ///0, , TimeUnitRange.class ) ) {
-        if ( call.getOperandLiteralValue( 0, PolyType.INTERVAL_DAY ).isInterval() ) {
-            if ( Objects.requireNonNull( call.getOperandLiteralValue( 0, PolyType.INTERVAL_DAY ).asInterval().qualifier.getTimeUnitRange() ) == TimeUnitRange.YEAR ) {
+        PolyValue interval = call.getOperandLiteralValue( 0, PolyType.INTERVAL );
+        if ( interval != null && interval.isInterval() ) {
+            if ( interval.asInterval().months != null && interval.asInterval().months > 0 ) {
                 return call.getOperandMonotonicity( 1 ).unstrict();
             }
         }

@@ -52,21 +52,20 @@ public class DocumentScanDelegate implements Scannable {
 
 
     @Override
-    public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities ) {
-        scannable.restoreTable( alloc, entities );
+    public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context ) {
+        scannable.restoreTable( alloc, entities, context );
     }
 
 
     @Override
-    public void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities ) {
-        Scannable.restoreGraphSubstitute( scannable, alloc, entities );
+    public void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities, Context context ) {
+        Scannable.restoreGraphSubstitute( scannable, alloc, entities, context );
     }
 
 
-
     @Override
-    public void restoreCollection( AllocationCollection alloc, List<PhysicalEntity> entities ) {
-        scannable.restoreCollection( alloc, entities );
+    public void restoreCollection( AllocationCollection alloc, List<PhysicalEntity> entities, Context context ) {
+        scannable.restoreCollection( alloc, entities, context );
     }
 
 
@@ -92,6 +91,7 @@ public class DocumentScanDelegate implements Scannable {
     public AlgNode getGraphScan( long allocId, AlgBuilder builder ) {
         return Scannable.getGraphScanSubstitute( scannable, allocId, builder );
     }
+
 
     @Override
     public List<PhysicalEntity> createCollection( Context context, LogicalCollection logical, AllocationCollection allocation ) {

@@ -36,6 +36,7 @@ public class DocResult extends Result<String, FieldDefinition> {
             @JsonProperty("header") FieldDefinition[] header,
             @JsonProperty("exception") Throwable exception,
             @JsonProperty("query") String query,
+            @JsonProperty("queryType") QueryType queryType,
             @JsonProperty("xid") String xid,
             @JsonProperty("error") String error,
             @JsonProperty("currentPage") int currentPage,
@@ -50,6 +51,7 @@ public class DocResult extends Result<String, FieldDefinition> {
                 header,
                 exception,
                 query,
+                queryType,
                 xid,
                 error,
                 currentPage,
@@ -59,6 +61,5 @@ public class DocResult extends Result<String, FieldDefinition> {
                 affectedTuples );
     }
 
-    // public Throwable exception;
 
 }

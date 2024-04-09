@@ -469,10 +469,10 @@ public class SqlJsonFunctionsTest extends SqlLanguageDependent {
 
     @Test
     public void testJsonArrayAggAdd() {
-        List<Object> list = new ArrayList<>();
-        List<Object> expected = new ArrayList<>();
-        expected.add( "foo" );
-        assertJsonArrayAggAdd( list, "foo", JsonConstructorNullClause.NULL_ON_NULL, is( expected ) );
+        List<PolyValue> list = new ArrayList<>();
+        List<PolyValue> expected = new ArrayList<>();
+        expected.add( PolyString.of( "foo" ) );
+        assertJsonArrayAggAdd( list, PolyString.of( "foo" ), JsonConstructorNullClause.NULL_ON_NULL, is( expected ) );
         expected.add( null );
         assertJsonArrayAggAdd( list, null, JsonConstructorNullClause.NULL_ON_NULL, is( expected ) );
         assertJsonArrayAggAdd( list, null, JsonConstructorNullClause.ABSENT_ON_NULL, is( expected ) );
@@ -595,7 +595,7 @@ public class SqlJsonFunctionsTest extends SqlLanguageDependent {
     }
 
 
-    private void assertJsonArrayAggAdd( List<?> list, Object element, JsonConstructorNullClause nullClause, Matcher<? super List<?>> matcher ) {
+    private void assertJsonArrayAggAdd( List<PolyValue> list, PolyValue element, JsonConstructorNullClause nullClause, Matcher<? super List<?>> matcher ) {
         Functions.jsonArrayAggAdd( list, element, nullClause );
         assertThat(
                 invocationDesc( INVOC_DESC_JSON_ARRAY_AGG_ADD, list, element, nullClause ),

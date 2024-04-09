@@ -38,6 +38,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
@@ -50,11 +51,12 @@ public class PolyBigDecimal extends PolyNumber {
     @JsonProperty
     @Serialize
     @SerializeNullable
+    @Nullable
     public BigDecimal value;
 
 
     @JsonCreator
-    public PolyBigDecimal( @JsonProperty("value") @Deserialize("value") BigDecimal value ) {
+    public PolyBigDecimal( @JsonProperty("value") @Deserialize("value") @Nullable BigDecimal value ) {
         super( PolyType.DECIMAL );
         this.value = value;
     }
@@ -101,22 +103,7 @@ public class PolyBigDecimal extends PolyNumber {
     }
 
 
-    public static PolyBigDecimal convert( Object value ) {
-        if ( value == null ) {
-            return null;
-        }
-
-        if ( value instanceof PolyNumber ) {
-            return PolyBigDecimal.of( ((PolyNumber) value).bigDecimalValue() );
-        } else if ( value instanceof PolyValue ) {
-            log.warn( "error in Decimal convert" );
-            return null;
-        }
-        return null;
-    }
-
-
-    public static PolyBigDecimal convert( PolyValue value ) {
+    public static PolyBigDecimal convert( @Nullable PolyValue value ) {
         if ( value == null ) {
             return null;
         }
@@ -127,7 +114,7 @@ public class PolyBigDecimal extends PolyNumber {
         } else if ( value.isString() ) {
             return PolyBigDecimal.of( value.asString().value );
         }
-        return null;
+        throw new GenericRuntimeException( getConvertError( value, PolyBigDecimal.class ) );
     }
 
 

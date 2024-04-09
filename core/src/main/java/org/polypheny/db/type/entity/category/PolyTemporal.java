@@ -25,8 +25,8 @@ import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 
 @NonFinal
 public abstract class PolyTemporal extends PolyNumber {

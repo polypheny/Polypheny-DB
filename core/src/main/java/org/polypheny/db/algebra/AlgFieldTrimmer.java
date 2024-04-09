@@ -486,9 +486,9 @@ public class AlgFieldTrimmer implements AlgProducingVisitor3<TrimResult, Immutab
      * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link LogicalRelJoin}.
      */
     public TrimResult trimFields( Join join, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
-        final int fieldCount = join.getSystemFieldList().size() + join.getLeft().getTupleType().getFieldCount() + join.getRight().getTupleType().getFieldCount();
+        final int fieldCount = join.getLeft().getTupleType().getFieldCount() + join.getRight().getTupleType().getFieldCount();
         final RexNode conditionExpr = join.getCondition();
-        final int systemFieldCount = join.getSystemFieldList().size();
+        final int systemFieldCount = 0;
 
         // Add in fields used in the condition.
         final Set<AlgDataTypeField> combinedInputExtraFields = new LinkedHashSet<>( extraFields );
@@ -498,18 +498,8 @@ public class AlgFieldTrimmer implements AlgProducingVisitor3<TrimResult, Immutab
         final ImmutableBitSet fieldsUsedPlus = inputFinder.inputBitSet.build();
 
         // If no system fields are used, we can remove them.
-        int systemFieldUsedCount = 0;
-        for ( int i = 0; i < systemFieldCount; ++i ) {
-            if ( fieldsUsed.get( i ) ) {
-                ++systemFieldUsedCount;
-            }
-        }
         final int newSystemFieldCount;
-        if ( systemFieldUsedCount == 0 ) {
-            newSystemFieldCount = 0;
-        } else {
-            newSystemFieldCount = systemFieldCount;
-        }
+        newSystemFieldCount = 0;
 
         int offset = systemFieldCount;
         int changeCount = 0;
@@ -553,9 +543,6 @@ public class AlgFieldTrimmer implements AlgProducingVisitor3<TrimResult, Immutab
         }
 
         Mapping mapping = Mappings.create( MappingType.INVERSE_SURJECTION, fieldCount, newFieldCount );
-        for ( int i = 0; i < newSystemFieldCount; ++i ) {
-            mapping.set( i, i );
-        }
         offset = systemFieldCount;
         int newOffset = newSystemFieldCount;
         for ( int i = 0; i < inputMappings.size(); i++ ) {
@@ -586,9 +573,6 @@ public class AlgFieldTrimmer implements AlgProducingVisitor3<TrimResult, Immutab
                     MappingType.INVERSE_SURJECTION,
                     join.getTupleType().getFieldCount(),
                     newSystemFieldCount + inputMapping.getTargetCount() );
-            for ( int i = 0; i < newSystemFieldCount; ++i ) {
-                mapping.set( i, i );
-            }
             offset = systemFieldCount;
             newOffset = newSystemFieldCount;
             for ( IntPair pair : inputMapping ) {

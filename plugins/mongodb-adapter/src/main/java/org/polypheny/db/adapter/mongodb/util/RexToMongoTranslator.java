@@ -31,7 +31,6 @@ import org.polypheny.db.adapter.mongodb.bson.BsonKeyValue;
 import org.polypheny.db.adapter.mongodb.rules.MongoRules;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
@@ -52,7 +51,6 @@ import org.polypheny.db.util.Util;
  */
 public class RexToMongoTranslator extends RexVisitorImpl<String> {
 
-    private final AlgDataTypeFactory typeFactory;
     private final List<String> inFields;
 
     static final Map<Operator, String> MONGO_OPERATORS = new HashMap<>();
@@ -103,10 +101,9 @@ public class RexToMongoTranslator extends RexVisitorImpl<String> {
     private final DataModel model;
 
 
-    public RexToMongoTranslator( AlgDataTypeFactory typeFactory, List<String> inFields, Implementor implementor, DataModel model ) {
+    public RexToMongoTranslator( List<String> inFields, Implementor implementor, DataModel model ) {
         super( true );
         this.implementor = implementor;
-        this.typeFactory = typeFactory;
         this.inFields = inFields;
         this.model = model;
     }
@@ -117,7 +114,7 @@ public class RexToMongoTranslator extends RexVisitorImpl<String> {
         if ( literal.getValue() == null ) {
             return "null";
         }
-        return "{$literal: " + literal.value.toJson() + "}";
+        return "{$literal: " + (literal.value.isString() ? literal.value.asString().toQuotedJson() : literal.value.toJson()) + "}";
     }
 
 
@@ -324,13 +321,6 @@ public class RexToMongoTranslator extends RexVisitorImpl<String> {
             return "{\"$replaceWith\": " + key.toJson() + "}";
         }
         return "{\"$replaceWith\": " + names + "}";
-    }
-
-
-    private String stripQuotes( String s ) {
-        return s.startsWith( "'" ) && s.endsWith( "'" )
-                ? s.substring( 1, s.length() - 1 )
-                : s;
     }
 
 

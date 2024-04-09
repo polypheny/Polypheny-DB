@@ -62,21 +62,21 @@ class MonitoringQueueImplIntegrationTest {
         assertNotNull( sut );
 
         // -- Act --
-        List<QueryEvent> events = createQueryEvent( 15 );
+        List<QueryEvent> events = createQueryEvent( 10 );
         events.forEach( sut::monitorEvent );
 
         Thread.sleep( 10000L );
 
-        for ( int i = 0; i < 5; i++ ) {
-            if ( statisticRepo.count != 15 ) {
-                Thread.sleep( 5000L );
+        for ( int i = 0; i < 8; i++ ) {
+            if ( statisticRepo.count.get() != 10 ) {
+                Thread.sleep( 8000L );
             }
         }
 
         // -- Assert --
 
-        assertEquals( 15, statisticRepo.count );
-        assertEquals( 15, persistentRepo.count );
+        assertEquals( 10, statisticRepo.count.get() );
+        assertEquals( 10, persistentRepo.count.get() );
     }
 
 

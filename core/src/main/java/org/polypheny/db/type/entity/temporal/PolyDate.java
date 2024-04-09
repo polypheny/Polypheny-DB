@@ -27,9 +27,9 @@ import lombok.Value;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.functions.TemporalFunctions;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
@@ -44,6 +44,7 @@ public class PolyDate extends PolyTemporal {
     public static final DateFormat dateFormat = new SimpleDateFormat( "yyyy-MM-dd" );
 
     @JsonProperty
+    @Nullable
     public Long millisSinceEpoch;
 
 
@@ -107,23 +108,24 @@ public class PolyDate extends PolyTemporal {
         return new java.sql.Date( millisSinceEpoch + offset );
     }
 
+
     public static PolyDate of( Date date ) {
         return new PolyDate( TemporalFunctions.dateToLong( date ) );
     }
 
 
-    public static PolyDate convert( Object value ) {
+    public static PolyDate convert( @Nullable PolyValue value ) {
         if ( value == null ) {
             return null;
         }
-        if ( value instanceof PolyValue poly ) {
-            if ( poly.isDate() ) {
-                return poly.asDate();
-            } else if ( poly.isNumber() ) {
-                return ofDays( poly.asNumber().intValue() );
-            }
+
+        if ( value.isDate() ) {
+            return value.asDate();
+        } else if ( value.isNumber() ) {
+            return ofDays( value.asNumber().intValue() );
         }
-        throw new NotImplementedException( "convert value to Date" );
+
+        throw new GenericRuntimeException( getConvertError( value, PolyDate.class ) );
     }
 
 

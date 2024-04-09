@@ -1398,7 +1398,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             // Get approximated costs and cache routing plans
             approximatedCosts = proposed.plans.stream()
                     .map( p -> p.optimalNode().computeSelfCost( getPlanner(), p.optimalNode().getCluster().getMetadataQuery() ) )
-                    .collect( Collectors.toList() );
+                    .toList();
             this.cacheRouterPlans(
                     proposedRoutingPlans,
                     approximatedCosts,

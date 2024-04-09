@@ -17,7 +17,6 @@
 package org.polypheny.db.sql.language.fun;
 
 
-import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -27,11 +26,12 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
+import org.polypheny.db.util.temporal.TimeUnit;
 
 
 /**
  * The <code>TIMESTAMPADD</code> function, which adds an interval to a datetime (TIMESTAMP, TIME or DATE).
- *
+ * <p>
  * The SQL syntax is
  *
  * <blockquote>
