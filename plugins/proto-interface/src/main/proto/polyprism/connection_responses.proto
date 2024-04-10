@@ -24,11 +24,6 @@ message ConnectionResponse {
   int32 major_api_version = 2;
   // The minor version number of the server’s API. Provides finer granularity about the server’s capabilities.
   int32 minor_api_version = 3;
-  /*
-  Specifies the interval in milliseconds at which the client should send heartbeat signals to maintain the connection.
-  If not provided, the connection does not require a heartbeat to remain valid.
-  */
-  optional int64 heartbeat_interval = 4;
 }
 
 /*

@@ -57,12 +57,6 @@ public class ClientManager {
         this.clients = new ConcurrentHashMap<>();
         this.authenticator = protoInterface.getAuthenticator();
         this.transactionManager = protoInterface.getTransactionManager();
-        if ( protoInterface.isRequiresHeartbeat() ) {
-            this.heartbeatInterval = protoInterface.getHeartbeatInterval();
-            this.cleanupTimer = new Timer();
-            cleanupTimer.schedule( createNewCleanupTask(), 0, heartbeatInterval + HEARTBEAT_TOLERANCE );
-        }
-        this.heartbeatInterval = 0;
         this.monitoringPage = protoInterface.getMonitoringPage();
         monitoringPage.setClientManager( this );
     }
@@ -167,24 +161,6 @@ public class ClientManager {
             throw new PIServiceException( "Client not registered! Has the server been restarted in the meantime?" );
         }
         return clients.get( clientUUID );
-    }
-
-
-    private TimerTask createNewCleanupTask() {
-        Runnable runnable = this::unregisterInactiveClients;
-        return new TimerTask() {
-            @Override
-            public void run() {
-                runnable.run();
-            }
-        };
-    }
-
-
-    private void unregisterInactiveClients() {
-        List<PIClient> inactiveClients = clients.values().stream()
-                .filter( c -> !c.returnAndResetIsActive() ).toList();
-        inactiveClients.forEach( this::unregisterConnection );
     }
 
 }
